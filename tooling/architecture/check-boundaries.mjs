@@ -44,12 +44,24 @@ function workspaceTarget(specifier) {
   return specifier.slice(workspacePackagePrefix.length).split("/", 1)[0];
 }
 
-function relativeWorkspaceTarget(specifier, sourceFile, packagesDirectory) {
+function relativeImportEscape(specifier, sourceFile, packageDirectory, packagesDirectory) {
   if (!specifier.startsWith(".")) return undefined;
   const resolved = path.resolve(path.dirname(sourceFile), specifier);
-  const relative = path.relative(packagesDirectory, resolved);
-  if (relative.startsWith("..") || path.isAbsolute(relative)) return undefined;
-  return relative.split(path.sep, 1)[0];
+  const relativeToPackage = path.relative(packageDirectory, resolved);
+  const leavesPackage =
+    relativeToPackage === ".." ||
+    relativeToPackage.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(relativeToPackage);
+  if (!leavesPackage) return undefined;
+
+  const relativeToPackages = path.relative(packagesDirectory, resolved);
+  const leavesPackages =
+    relativeToPackages === ".." ||
+    relativeToPackages.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(relativeToPackages);
+  return leavesPackages
+    ? { kind: "outside-workspace" }
+    : { kind: "cross-package", target: relativeToPackages.split(path.sep, 1)[0] };
 }
 
 function packageDependencies(manifest) {
@@ -67,12 +79,28 @@ function formatPath(repositoryRoot, filePath) {
 export async function checkWorkspace(repositoryRoot) {
   const packagesDirectory = path.join(repositoryRoot, "packages");
   const packageEntries = await readdir(packagesDirectory, { withFileTypes: true });
-  const actualPackages = packageEntries
+  const packageDirectories = packageEntries
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
-    .filter((name) => Object.hasOwn(packageBoundaries, name))
     .sort();
+  const policyPackages = Object.keys(packageBoundaries).sort();
   const issues = [];
+
+  for (const packageName of packageDirectories) {
+    if (!Object.hasOwn(packageBoundaries, packageName)) {
+      issues.push(`packages/${packageName}: package directory lacks an architecture policy`);
+    }
+  }
+
+  for (const packageName of policyPackages) {
+    if (!packageDirectories.includes(packageName)) {
+      issues.push(`packages/${packageName}: architecture policy lacks a package directory`);
+    }
+  }
+
+  const actualPackages = packageDirectories.filter((name) =>
+    Object.hasOwn(packageBoundaries, name),
+  );
 
   for (const packageName of actualPackages) {
     const packageDirectory = path.join(packagesDirectory, packageName);
@@ -122,9 +150,26 @@ export async function checkWorkspace(repositoryRoot) {
       const source = await readFile(sourceFile, "utf8");
       for (const match of source.matchAll(importPattern)) {
         const specifier = match[1] ?? match[2];
-        const target =
-          workspaceTarget(specifier) ??
-          relativeWorkspaceTarget(specifier, sourceFile, packagesDirectory);
+        const relativeEscape = relativeImportEscape(
+          specifier,
+          sourceFile,
+          packageDirectory,
+          packagesDirectory,
+        );
+        if (relativeEscape?.kind === "cross-package") {
+          issues.push(
+            `${formatPath(repositoryRoot, sourceFile)}: relative cross-package import ${packageName} -> ${relativeEscape.target} is forbidden (${specifier})`,
+          );
+          continue;
+        }
+        if (relativeEscape?.kind === "outside-workspace") {
+          issues.push(
+            `${formatPath(repositoryRoot, sourceFile)}: relative import leaves package ${packageName} (${specifier})`,
+          );
+          continue;
+        }
+
+        const target = workspaceTarget(specifier);
         if (!target || target === packageName) continue;
 
         if (!allowed.has(target)) {

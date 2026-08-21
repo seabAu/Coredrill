@@ -34,10 +34,12 @@ describe("workspace import boundaries", () => {
         "packages/application/tsconfig.json: TypeScript reference contracts lacks a declared workspace dependency",
         "packages/application/tsconfig.json: forbidden TypeScript reference application -> ui",
         "packages/application/src/bad.ts: import application -> contracts lacks a declared workspace dependency",
-        "packages/application/src/bad.ts: forbidden import application -> storage-native (../../storage-native/src/index.js)",
+        "packages/application/src/bad.ts: relative cross-package import application -> storage-native is forbidden (../../storage-native/src/index.js)",
+        "packages/application/src/bad.ts: relative import leaves package application (../../../outside-root.js)",
         "packages/application/src/bad.ts: forbidden import application -> ui (@job-workspace/ui)",
         "packages/storage-core/package.json: forbidden manifest edge storage-core -> test-fixtures",
         "packages/storage-core/package.json: production package cannot depend on test-fixtures",
+        "packages/unregistered: package directory lacks an architecture policy",
       ]),
     );
   });

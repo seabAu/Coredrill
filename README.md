@@ -26,7 +26,7 @@ Read these before implementation work:
 4. Relevant numbered design documents under [`docs/design/job-workspace-design-kit/`](docs/design/job-workspace-design-kit/README.md)
 5. [Living implementation checklist](docs/design/job-workspace-design-kit/LIVING-CHECKLIST.md)
 
-The repository-local design kit is a verbatim implementation copy of the original kit supplied on 2026-08-21. Its provenance is recorded in [docs/design/README.md](docs/design/README.md).
+The repository-local design kit is the implementation copy supplied on 2026-08-21; its living checklist evolves with proven work. Its provenance and authority rules are recorded in [docs/design/README.md](docs/design/README.md).
 
 ## Repository shape
 

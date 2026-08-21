@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-21  
 Current milestone: Phase 0 — foundations and risk retirement  
-Current work item: `FND-001` through `FND-008` — repository foundations  
-Next recommended slice: finish proof/blockers for this slice, then `FND-009` through `FND-010`
+Current work item: `FND-001` and `FND-006` blocked; `FND-002`–`FND-005`, `FND-007`, and `FND-008` proven  
+Next recommended slice: `FND-009` through `FND-010`; track the two owner/hosted blockers independently
 
 ## How to use this file
 
@@ -27,9 +27,9 @@ Next recommended slice: finish proof/blockers for this slice, then `FND-009` thr
 | Item range | `FND-001` through `FND-008` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-21 |
-| Expected proof | Governance/ADR review, tree and boundary reports, frozen clean-clone install/build, typecheck/lint/unit/coverage/policy results, Changesets validation, CI workflow syntax |
+| Expected proof | [Foundation verification report](../../proof/foundation-verification.md) records governance/ADR review, tree and boundary reports, frozen clean-clone install/build, typecheck/lint/unit/coverage/policy results, Changesets validation, and local CI-equivalent checks |
 | Blocker | Final public license and private conduct/security contact are unresolved (`Q-013`); no GitHub remote exists for the required green workflow URL |
-| Next handoff | Complete every locally provable foundation item; retain honest blockers for owner/hosted follow-up |
+| Next handoff | Begin the unblocked `FND-009` through `FND-010` slice; close `FND-001` and `FND-006` independently when the owner supplies the license/reporting route and GitHub workflow URL |
 
 ## Milestone status
 
@@ -64,14 +64,14 @@ Next recommended slice: finish proof/blockers for this slice, then `FND-009` thr
 
 ## Repository and governance
 
-- [ ] **FND-001** Create repository, license, `README.md`, `AGENTS.md`, `SECURITY.md`, `CONTRIBUTING.md`, code of conduct, and support policy. — Proof: _paths + review_
-- [ ] **FND-002** Configure pnpm workspaces, Turborepo, committed lockfile, and toolchain-version files. — Proof: _clean clone install/build_
-- [ ] **FND-003** Create the approved `apps/`, `packages/`, `migrations/`, `fixtures/`, and `docs/` skeleton without placeholder runtime coupling. — Proof: _tree + architecture check_
-- [ ] **FND-004** Configure TypeScript strict project references and import-boundary rules. — Proof: _typecheck + intentional violation test_
-- [ ] **FND-005** Configure ESLint, Prettier, unit tests, coverage output, and affected-task commands. — Proof: _CI/local commands_
-- [ ] **FND-006** Configure GitHub Actions for install, typecheck, lint, unit, dependency/license, and secret checks. — Proof: _green workflow URL_
-- [ ] **FND-007** Add Changesets and release-note/migration-note templates. — Proof: _sample changeset_
-- [ ] **FND-008** Add ADR template and copy the accepted design decisions into repository docs with links back to this kit. — Proof: _ADR index_
+- [ ] **FND-001** Create repository, license, `README.md`, `AGENTS.md`, `SECURITY.md`, `CONTRIBUTING.md`, code of conduct, and support policy. — Proof: [all required paths reviewed; final license and reporting route remain blocked](../../proof/foundation-verification.md#outcome)
+- [x] **FND-002** Configure pnpm workspaces, Turborepo, committed lockfile, and toolchain-version files. — Proof: [frozen clean-clone install/build](../../proof/foundation-verification.md#clean-clone-proof)
+- [x] **FND-003** Create the approved `apps/`, `packages/`, `migrations/`, `fixtures/`, and `docs/` skeleton without placeholder runtime coupling. — Proof: [tree and 19-policy architecture check](../../proof/foundation-verification.md#reviewed-repository-evidence)
+- [x] **FND-004** Configure TypeScript strict project references and import-boundary rules. — Proof: [19-project typecheck and intentional violation tests](../../proof/foundation-verification.md#local-gate-results)
+- [x] **FND-005** Configure ESLint, Prettier, unit tests, coverage output, and affected-task commands. — Proof: [local and Git-history affected command results](../../proof/foundation-verification.md#local-gate-results)
+- [ ] **FND-006** Configure GitHub Actions for install, typecheck, lint, unit, dependency/license, and secret checks. — Proof: [workflow configured and local equivalent green; hosted URL remains blocked](../../proof/foundation-verification.md#outcome)
+- [x] **FND-007** Add Changesets and release-note/migration-note templates. — Proof: [sample changeset and templates](../../proof/foundation-verification.md#reviewed-repository-evidence)
+- [x] **FND-008** Add ADR template and copy the accepted design decisions into repository docs with links back to this kit. — Proof: [ADR index and accepted-baseline ADR](../../proof/foundation-verification.md#reviewed-repository-evidence)
 - [ ] **FND-009** Record exact current stable dependency selections, versions, licenses, maintainers, and known advisories. — Proof: _dependency inventory_
 - [ ] **FND-010** Establish reference hardware, OS, browser, accessibility, and performance test matrix. — Proof: _versioned matrix_
 
@@ -513,7 +513,8 @@ This phase is deliberately deferred. Re-open only after `GATE-6`, demonstrated m
 
 | Date | Item | Blocker | Checks attempted | Owner/next action | Status |
 |---|---|---|---|---|---|
-| — | — | — | — | — | — |
+| 2026-08-21 | `FND-001` | `Q-013` leaves the public license unresolved, and no durable private conduct/security reporting address was supplied. | Reviewed the goal, decision register, and every governance path; installed a restrictive temporary notice and kept external contributions closed. | Owner: select the license and private reporting route, then update every governance reference. | Open |
+| 2026-08-21 | `FND-006` | No GitHub remote exists, so the required green workflow URL cannot be produced locally. | Configured commit-pinned jobs, ran the full local equivalent, and verified a frozen isolated-clone install/build. | Owner: create/attach a GitHub remote, push `main`, run the workflow, and link the green run. | Open |
 
 ## Accepted scope changes
 

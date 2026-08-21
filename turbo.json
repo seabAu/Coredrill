@@ -6,12 +6,12 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", "../../tooling/typescript/**"],
-      "outputs": ["dist/**", "../../.turbo/tsbuildinfo/**"]
+      "outputs": ["dist/**", ".turbo/build.tsbuildinfo"]
     },
     "typecheck": {
-      "dependsOn": ["^typecheck"],
+      "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", "../../tooling/typescript/**"],
-      "outputs": ["../../.turbo/tsbuildinfo/**"]
+      "outputs": [".turbo/typecheck.tsbuildinfo"]
     },
     "lint": {
       "inputs": ["$TURBO_DEFAULT$", "../../eslint.config.mjs"],

@@ -3,7 +3,7 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",
-    "tsBuildInfoFile": "../../.turbo/tsbuildinfo/search-filter.tsbuildinfo"
+    "tsBuildInfoFile": ".turbo/build.tsbuildinfo"
   },
   "include": ["src/**/*.ts"],
   "references": []

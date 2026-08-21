@@ -12,7 +12,7 @@ Job Workspace is in a private, pre-release foundation phase. External contributi
 ## Development workflow
 
 - Use the pinned toolchain and `pnpm install --frozen-lockfile`.
-- Use the repository scripts for Turborepo tasks; they disable optional tool telemetry and update checks.
+- Use the repository scripts for Turborepo tasks; they disable optional tool telemetry and the update notifier.
 - Write or update the executable proof before marking a checklist item complete.
 - Keep domain and application packages independent from concrete adapters and runtime apps.
 - Use synthetic or licensed fixtures only; never commit personal career data or credentials.
@@ -25,7 +25,7 @@ Run:
 pnpm verify
 ```
 
-For a change based on Git history, use `pnpm check:affected`. CI always runs the full foundation gate on protected branches.
+For a change based on Git history, use `pnpm check:affected`; pass an explicit base such as `pnpm check:affected -- HEAD^` when recording reproducible proof. Build and typecheck run sequentially so they cannot race over TypeScript outputs. CI always runs the full foundation gate on protected branches.
 
 ## Change description
 

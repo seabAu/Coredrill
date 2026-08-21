@@ -28,9 +28,9 @@ Evidence and full alternatives are preserved in the repository-local [goal](../d
 
 ## Decision and rationale
 
-Adopt option 3. The repository accepts the following register decisions exactly as they stood on 2026-08-21:
+Adopt option 3. The repository imports the following Accepted register decisions as they stood on 2026-08-21. This table is a concise navigation summary; the linked decision register remains authoritative for each exact Decision sentence, rationale, consequence, and revisit trigger.
 
-| ID      | Accepted decision                                                                                 |
+| ID      | Accepted decision summary                                                                         |
 | ------- | ------------------------------------------------------------------------------------------------- |
 | `D-001` | Job Workspace is a standalone application, not a COMPOSR runtime dependency.                      |
 | `D-002` | Hosted PWA and desktop baseline require no account or hosted database.                            |
@@ -39,7 +39,7 @@ Adopt option 3. The repository accepts the following register decisions exactly 
 | `D-011` | Board and dense table are peer views over the same Pipeline records.                              |
 | `D-013` | Show explainable evidence coverage, not an ATS score or hiring probability.                       |
 | `D-014` | Use calm, professional, non-gamified interaction language.                                        |
-| `D-020` | TypeScript owns shared logic, SQL schema, and Rust only a thin native boundary.                   |
+| `D-020` | TypeScript owns shared logic; SQL owns schema/migrations; Rust is a thin native boundary.         |
 | `D-021` | Use a React + Vite shared frontend rather than a server-first framework.                          |
 | `D-024` | SQLite is canonical in every full app mode through shared repositories/migrations.                |
 | `D-026` | Use reviewed SQL and focused repositories, not a full ORM.                                        |

@@ -6,7 +6,7 @@
   "license": "UNLICENSED",
   "packageManager": "pnpm@11.22.0",
   "engines": {
-    "node": ">=22.18.0 <25",
+    "node": ">=24.19.0 <25",
     "pnpm": "11.22.0"
   },
   "scripts": {
@@ -20,7 +20,7 @@
     "test:coverage": "vitest run --coverage",
     "test:boundaries": "vitest run tooling/tests/import-boundaries.test.mjs",
     "check:boundaries": "node tooling/architecture/check-boundaries.mjs",
-    "check:affected": "node tooling/scripts/run-turbo.mjs run build typecheck lint --affected && vitest run --changed",
+    "check:affected": "node tooling/scripts/check-affected.mjs",
     "check:licenses": "node tooling/scripts/check-licenses.mjs",
     "report:licenses": "pnpm licenses list --json",
     "check:secrets": "node tooling/scripts/check-secrets.mjs",
