@@ -1,5 +1,9 @@
 name: Foundation CI
 
+env:
+  DO_NOT_TRACK: "1"
+  TURBO_TELEMETRY_DISABLED: "1"
+
 on:
   push:
     branches: [main]

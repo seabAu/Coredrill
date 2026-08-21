@@ -2,6 +2,7 @@
 node_modules/
 .pnpm-store/
 .corepack/
+.corepack-shims/
 .turbo/
 
 # Build and test output

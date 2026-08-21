@@ -12,6 +12,7 @@ Job Workspace is in a private, pre-release foundation phase. External contributi
 ## Development workflow
 
 - Use the pinned toolchain and `pnpm install --frozen-lockfile`.
+- Use the repository scripts for Turborepo tasks; they disable optional tool telemetry and update checks.
 - Write or update the executable proof before marking a checklist item complete.
 - Keep domain and application packages independent from concrete adapters and runtime apps.
 - Use synthetic or licensed fixtures only; never commit personal career data or credentials.

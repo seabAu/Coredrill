@@ -10,9 +10,9 @@
     "pnpm": "11.22.0"
   },
   "scripts": {
-    "build": "turbo run build",
-    "typecheck": "turbo run typecheck",
-    "lint": "turbo run lint && eslint tooling --max-warnings 0",
+    "build": "node tooling/scripts/run-turbo.mjs run build",
+    "typecheck": "node tooling/scripts/run-turbo.mjs run typecheck",
+    "lint": "node tooling/scripts/run-turbo.mjs run lint && eslint tooling --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "pnpm test:unit",
@@ -20,7 +20,7 @@
     "test:coverage": "vitest run --coverage",
     "test:boundaries": "vitest run tooling/tests/import-boundaries.test.mjs",
     "check:boundaries": "node tooling/architecture/check-boundaries.mjs",
-    "check:affected": "turbo run build typecheck lint --affected && vitest run --changed",
+    "check:affected": "node tooling/scripts/run-turbo.mjs run build typecheck lint --affected && vitest run --changed",
     "check:licenses": "node tooling/scripts/check-licenses.mjs",
     "report:licenses": "pnpm licenses list --json",
     "check:secrets": "node tooling/scripts/check-secrets.mjs",
