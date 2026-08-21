@@ -1,0 +1,21 @@
+{
+  "name": "@job-workspace/storage-native",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Reserved native SQLite adapter boundary behind Tauri capabilities.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b --pretty false",
+    "lint": "eslint src --max-warnings 0"
+  }
+}

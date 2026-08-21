@@ -1,0 +1,558 @@
+# Living implementation checklist
+
+This file is the single progress ledger. `GOAL.md` defines the outcome; numbered design documents define behavior; `11-decision-register.md` defines accepted choices. This checklist records what is actually proven.
+
+Last design update: 2026-08-21  
+Current milestone: Phase 0 — foundations and risk retirement  
+Current work item: `FND-001` through `FND-008` — repository foundations  
+Next recommended slice: finish proof/blockers for this slice, then `FND-009` through `FND-010`
+
+## How to use this file
+
+- IDs are permanent. Never renumber or reuse an ID; append new ones.
+- `[ ]` means not proven. `[x]` means complete with linked/reproducible proof.
+- Track the single active slice in “Current work” below; do not invent a third checkbox state.
+- A code commit is not proof by itself. Proof is a test, artifact, screenshot, report, fixture result, or reviewed document.
+- If an item changes an Accepted decision, stop, write an ADR, and update every affected doc/checklist item in the same commit.
+- If blocked, leave the item unchecked and add a dated entry in the blocker log with the next action.
+- Do not close a milestone gate until all required child items and its end-to-end journey pass.
+- Optional items are labeled **Optional**; all others are release requirements for their milestone.
+- Security, privacy, accessibility, migration, and recovery work is part of the feature, not a final cleanup phase.
+
+## Current work
+
+| Field | Value |
+|---|---|
+| Milestone | Phase 0 |
+| Item range | `FND-001` through `FND-008` |
+| Branch/worktree | `main` / repository root |
+| Started | 2026-08-21 |
+| Expected proof | Governance/ADR review, tree and boundary reports, frozen clean-clone install/build, typecheck/lint/unit/coverage/policy results, Changesets validation, CI workflow syntax |
+| Blocker | Final public license and private conduct/security contact are unresolved (`Q-013`); no GitHub remote exists for the required green workflow URL |
+| Next handoff | Complete every locally provable foundation item; retain honest blockers for owner/hosted follow-up |
+
+## Milestone status
+
+| Phase | Outcome | Status | Gate |
+|---|---|---|---|
+| 0 | Repository, UX prototypes, and risky platform assumptions proven | In progress | `GATE-0` |
+| 1 | Complete local tracker and recovery loop | Not started | `GATE-1` |
+| 2 | Safe capture, review, and approved extraction | Not started | `GATE-2` |
+| 3 | Career evidence and versioned documents | Not started | `GATE-3` |
+| 4 | Optional evidence-grounded AI assistance | Not started | `GATE-4` |
+| 5 | Salary context and compliant discovery | Not started | `GATE-5` |
+| 6 | Public-beta hardening and distribution | Not started | `GATE-6` |
+| 7 | Optional hosted sync/service capabilities | Deferred | `GATE-7` |
+
+## Design baseline (completed)
+
+- [x] **DSN-001** Record standalone/local-first product thesis. — Proof: [README](README.md), [goal](GOAL.md)
+- [x] **DSN-002** Specify UI, screens, journeys, responsive behavior, and error states. — Proof: [01](01-product-ui-and-journeys.md), [09](09-interface-system.md)
+- [x] **DSN-003** Specify runtime architecture, ports, monorepo, and capture bridge. — Proof: [02](02-runtime-architecture.md)
+- [x] **DSN-004** Specify entities, indexes, migrations, provenance, and sync readiness. — Proof: [03](03-data-model.md)
+- [x] **DSN-005** Specify extraction tiers, compliant sources, connector policy, and Python boundary. — Proof: [04](04-capture-extraction-sources.md)
+- [x] **DSN-006** Specify evidence-first generation, document behavior, and salary logic. — Proof: [05](05-ai-documents-salary.md)
+- [x] **DSN-007** Specify security, privacy, sync, deployment, and test strategy. — Proof: [06](06-security-sync-deployment-testing.md)
+- [x] **DSN-008** Research category leaders and derive adopt/adapt/reject patterns. — Proof: [08](08-competitive-patterns.md)
+- [x] **DSN-009** Select the language and technology direction with fallback gates. — Proof: [10](10-technology-stack.md)
+- [x] **DSN-010** Create revisable decision authority and open-question log. — Proof: [11](11-decision-register.md)
+- [x] **DSN-011** Create phased Codex execution guidance. — Proof: [07](07-delivery-plan-codex.md), this checklist
+
+---
+
+# Phase 0 — Foundations and risk retirement
+
+## Repository and governance
+
+- [ ] **FND-001** Create repository, license, `README.md`, `AGENTS.md`, `SECURITY.md`, `CONTRIBUTING.md`, code of conduct, and support policy. — Proof: _paths + review_
+- [ ] **FND-002** Configure pnpm workspaces, Turborepo, committed lockfile, and toolchain-version files. — Proof: _clean clone install/build_
+- [ ] **FND-003** Create the approved `apps/`, `packages/`, `migrations/`, `fixtures/`, and `docs/` skeleton without placeholder runtime coupling. — Proof: _tree + architecture check_
+- [ ] **FND-004** Configure TypeScript strict project references and import-boundary rules. — Proof: _typecheck + intentional violation test_
+- [ ] **FND-005** Configure ESLint, Prettier, unit tests, coverage output, and affected-task commands. — Proof: _CI/local commands_
+- [ ] **FND-006** Configure GitHub Actions for install, typecheck, lint, unit, dependency/license, and secret checks. — Proof: _green workflow URL_
+- [ ] **FND-007** Add Changesets and release-note/migration-note templates. — Proof: _sample changeset_
+- [ ] **FND-008** Add ADR template and copy the accepted design decisions into repository docs with links back to this kit. — Proof: _ADR index_
+- [ ] **FND-009** Record exact current stable dependency selections, versions, licenses, maintainers, and known advisories. — Proof: _dependency inventory_
+- [ ] **FND-010** Establish reference hardware, OS, browser, accessibility, and performance test matrix. — Proof: _versioned matrix_
+
+## Domain and contracts
+
+- [ ] **DOM-001** Define branded IDs, date-only/instant/time-zone types, money/rate units, URL, source reference, and confidence value objects. — Proof: _unit/property tests_
+- [ ] **DOM-002** Define status semantic categories and validated custom-stage mapping. — Proof: _transition tests_
+- [ ] **DOM-003** Define versioned `CaptureEnvelope` JSON Schema and generated TypeScript/Zod boundary validator. — Proof: _round-trip/invalid fixtures_
+- [ ] **DOM-004** Define field candidate/provenance/conflict/user-confirmation contracts. — Proof: _contract examples + tests_
+- [ ] **DOM-005** Define portable-archive manifest and checksum contract. — Proof: _schema + sample manifest_
+- [ ] **DOM-006** Define `DatabasePort`, repository contracts, and transaction semantics. — Proof: _contract test harness_
+- [ ] **DOM-007** Define `ExtractionPort`, `AiPort`, `LaborDataPort`, `DocumentPort`, and deferred `SyncPort`. — Proof: _public API review_
+- [ ] **DOM-008** Define application command/query/result/error conventions. — Proof: _example use case + tests_
+- [ ] **DOM-009** Define privacy-safe diagnostic event schema with forbidden-field tests. — Proof: _schema + redaction test_
+
+## Browser SQLite/OPFS spike
+
+- [ ] **STG-001** Run official SQLite WASM in a dedicated Worker and open an `opfs-sahpool` database. — Proof: _spike code + browser log_
+- [ ] **STG-002** Apply shared migration, transact, query, close, reopen, and verify durability. — Proof: _automated browser test_
+- [ ] **STG-003** Export a portable database/archive and restore it into a clean origin/profile. — Proof: _checksum + E2E test_
+- [ ] **STG-004** Test Chromium, Firefox, and Safari current/previous stable support or document exact unsupported fallbacks. — Proof: _matrix report_
+- [ ] **STG-005** Test private browsing, denied persistence, quota pressure, storage eviction diagnostics, and corrupted database behavior. — Proof: _failure matrix_
+- [ ] **STG-006** Test second-tab contention, read-only/handoff UX, crash/reload, and `SQLITE_BUSY` recovery. — Proof: _multi-context test_
+- [ ] **STG-007** Measure create/migrate/search/import/export/startup on reference data sizes. — Proof: _benchmark report_
+- [ ] **STG-008** Decide VFS/browser support and update D-025/Q-002. — Proof: _accepted ADR/update_
+
+## Tauri/native spike
+
+- [ ] **NAT-001** Scaffold Tauri 2 shell with strict capability allowlist and shared Vite frontend. — Proof: _desktop smoke build_
+- [ ] **NAT-002** Compare official SQL plugin and a narrow `rusqlite` command adapter against requirements. — Proof: _decision matrix_
+- [ ] **NAT-003** Run the same repository/migration contract suite against native SQLite. — Proof: _test report_
+- [ ] **NAT-004** Store database/attachments in OS app-data and validate path canonicalization. — Proof: _platform test_
+- [ ] **NAT-005** Store/delete a test provider secret through OS secure storage without logging it. — Proof: _redacted integration test_
+- [ ] **NAT-006** Export/restore with native file picker and atomic replacement behavior. — Proof: _E2E test_
+- [ ] **NAT-007** Build installable artifact for the first target OS and record size/startup/memory. — Proof: _artifact + benchmark_
+- [ ] **NAT-008** Decide native adapter and update D-022/D-024/Q-003. — Proof: _ADR/update_
+
+## Extension spike
+
+- [ ] **EXT-001** Scaffold WXT MV3 extension with side-panel and popup fallback entrypoints. — Proof: _build artifacts_
+- [ ] **EXT-002** Capture title/company/URL/selected text under a user `activeTab` action. — Proof: _fixture demo + permission manifest_
+- [ ] **EXT-003** Validate and store a bounded, checksummed outbox item. — Proof: _unit/integration tests_
+- [ ] **EXT-004** Transfer idempotently to a hosted app origin with acknowledgement and retry. — Proof: _E2E test_
+- [ ] **EXT-005** Prove Firefox fallback/manual export path. — Proof: _browser report_
+- [ ] **EXT-006** Test malicious page messages, oversized input, replay, wrong origin/ID, and expired capture. — Proof: _security tests_
+- [ ] **EXT-007** Inspect production manifest/bundle for permissions, CSP, remote code, and secret leakage. — Proof: _review report_
+- [ ] **EXT-008** Decide WXT/side-panel baseline and update D-023/Q-005. — Proof: _ADR/update_
+
+## Editor/export spike
+
+- [ ] **EDT-001** Define restricted Tiptap document schema and versioned intermediate representation. — Proof: _schema + fixtures_
+- [ ] **EDT-002** Test edit/undo/paste sanitation/version round-trip and 100-page stress case. — Proof: _test report_
+- [ ] **EDT-003** Import representative DOCX/PDF/text fixtures with source mapping and failure messages. — Proof: _goldens_
+- [ ] **EDT-004** Export accessible DOCX and PDF fixtures and visually compare pagination. — Proof: _rendered artifacts_
+- [ ] **EDT-005** Complete keyboard/screen-reader editor smoke test. — Proof: _manual report_
+- [ ] **EDT-006** Decide Tiptap baseline and update D-027/Q-004. — Proof: _ADR/update_
+
+## UX prototype and validation
+
+- [ ] **UXR-001** Create low-fidelity shell, Home, Pipeline Board/Table, Inbox review, job workspace, and document studio prototypes. — Proof: _prototype link/artifacts_
+- [ ] **UXR-002** Create mobile quick-add, Pipeline, job detail, and network-preflight prototypes. — Proof: _prototype artifacts_
+- [ ] **UXR-003** Prepare neutral sample vault and ten scripted usability tasks from the interface spec. — Proof: _script + data_
+- [ ] **UXR-004** Test with at least five representative users including keyboard-heavy and nontechnical participants. — Proof: _anonymized findings_
+- [ ] **UXR-005** Validate storage-location comprehension and quick-start versus guided onboarding. — Proof: _results_
+- [ ] **UXR-006** Validate capture triage, Board/Table discovery, job-detail context, and exact submitted-document retrieval. — Proof: _results_
+- [ ] **UXR-007** Validate Evidence coverage language and AI/data-destination comprehension. — Proof: _results_
+- [ ] **UXR-008** Resolve Q-006 and update D-010/D-012/D-015/interface spec. — Proof: _decision updates_
+
+## Phase 0 gate
+
+- [ ] **GATE-0** All mandatory Phase 0 items pass; repository builds from a clean clone; the selected browser/native/extension/editor choices have written evidence; no release-blocking open question remains for Phase 1. — Proof: _Phase 0 gate report_
+
+---
+
+# Phase 1 — Local tracker and recovery loop
+
+## Database and repositories
+
+- [ ] **DB-001** Implement initial schema and migration ledger for vault/settings. — Proof: _migration + adapter tests_
+- [ ] **DB-002** Implement companies, contacts, jobs, job sources/snapshots, field candidates, and provenance. — Proof: _migration + repository tests_
+- [ ] **DB-003** Implement stages, applications/status history, interactions, next actions, interviews, and reminders. — Proof: _transaction tests_
+- [ ] **DB-004** Implement tags, saved views, filter AST serialization, and safe SQL compiler. — Proof: _property tests_
+- [ ] **DB-005** Implement documents/versions/attachments manifest skeleton without AI dependency. — Proof: _repository tests_
+- [ ] **DB-006** Implement audit timestamps, tombstones/future-sync IDs, and integrity constraints. — Proof: _constraint/property tests_
+- [ ] **DB-007** Implement indexes and FTS5 capability detection/fallback. — Proof: _query/benchmark report_
+- [ ] **DB-008** Run identical repository contract suite in browser and native CI jobs. — Proof: _CI links_
+
+## Application services
+
+- [ ] **APP-001** Implement vault create/open/diagnostics command flow. — Proof: _use-case tests_
+- [ ] **APP-002** Implement manual `CreateJob` and transactional `ChangeStatus` with timeline event. — Proof: _use-case tests_
+- [ ] **APP-003** Implement `SetNextAction`, reminders, interviews, and interactions. — Proof: _clock/time-zone tests_
+- [ ] **APP-004** Implement company/contact relationship commands with provenance rules. — Proof: _tests_
+- [ ] **APP-005** Implement Pipeline queries, counts, board groups, table pagination, and job workspace DTO. — Proof: _query tests_
+- [ ] **APP-006** Implement validated filter/sort/group/saved-view commands. — Proof: _AST fuzz/property tests_
+- [ ] **APP-007** Implement undo token for status/next-action edits with durable consistency. — Proof: _integration tests_
+- [ ] **APP-008** Implement local diagnostic log and user-copyable redacted support bundle. — Proof: _privacy tests_
+
+## Shell and core UI
+
+- [ ] **UI-001** Implement design tokens, themes, density modes, typography, icon wrapper, focus styles, and reduced motion. — Proof: _component catalog + contrast report_
+- [ ] **UI-002** Implement responsive application shell, navigation, vault health, global search, command menu, and Add menu. — Proof: _responsive/a11y tests_
+- [ ] **UI-003** Implement Quick start and Guided setup with disposable demo vault. — Proof: _E2E paths_
+- [ ] **UI-004** Implement Home attention queue, due actions, recent items, and optional snapshot. — Proof: _component/E2E tests_
+- [ ] **UI-005** Implement Pipeline header, view switch, filter chips, saved views, and selection/bulk-action shell. — Proof: _E2E tests_
+- [ ] **UI-006** Implement accessible Board with drag, keyboard move, semantic stages, undo, and virtualization. — Proof: _keyboard/screen-reader/E2E report_
+- [ ] **UI-007** Implement virtualized Table with pinned/configurable columns and safe inline editing. — Proof: _E2E/performance test_
+- [ ] **UI-008** Implement contextual/full-page Job workspace with route/back/refresh/scroll restoration. — Proof: _navigation tests_
+- [ ] **UI-009** Implement Overview, Timeline, Company, and Source skeleton tabs. — Proof: _component/E2E tests_
+- [ ] **UI-010** Implement Network companies/contacts/interactions views. — Proof: _E2E tests_
+- [ ] **UI-011** Implement scoped and global local search with result keyboard navigation. — Proof: _search tests_
+- [ ] **UI-012** Implement all Phase 1 loading/empty/partial/error/offline/permission states. — Proof: _state catalog_
+
+## Backup, export, restore, delete
+
+- [ ] **BKP-001** Implement portable archive writer with manifest, database/data, attachments, and checksums. — Proof: _golden archive_
+- [ ] **BKP-002** Implement human-readable JSON and CSV exports with documented field mapping. — Proof: _fixtures + schema docs_
+- [ ] **BKP-003** Implement restore dry run, version/checksum validation, conflict preview, and transactional commit. — Proof: _E2E + corruption tests_
+- [ ] **BKP-004** Implement desktop automatic backup rotation without deleting last known-good backup. — Proof: _filesystem tests_
+- [ ] **BKP-005** Implement browser persistence/quota health and export reminder without manipulative prompts. — Proof: _browser tests_
+- [ ] **BKP-006** Implement typed-confirmation vault deletion, secret cleanup, and recoverability warning. — Proof: _E2E/security test_
+- [ ] **BKP-007** Restore a Phase 1 vault into clean browser and desktop installations and compare canonical hashes. — Proof: _recovery report_
+
+## Phase 1 quality
+
+- [ ] **Q1-001** Meet reference-data startup/query/board/table performance budgets or record approved adjustment. — Proof: _benchmark report_
+- [ ] **Q1-002** Pass offline, refresh, crash, storage-denied, quota, and second-tab journeys. — Proof: _E2E matrix_
+- [ ] **Q1-003** Pass Phase 1 WCAG automated/manual matrix. — Proof: _accessibility report_
+- [ ] **Q1-004** Complete threat review for SQL, XSS, IPC, attachments, paths, and diagnostics. — Proof: _security review_
+- [ ] **Q1-005** Run canonical journey: create vault → add job → move stages → schedule interview/follow-up → export → delete → restore. — Proof: _recorded E2E artifact_
+- [ ] **GATE-1** Phase 1 canonical journey passes in browser and first desktop OS; recovery is proven; no account/network/AI is required. — Proof: _Phase 1 gate report_
+
+---
+
+# Phase 2 — Capture, review, and approved extraction
+
+## Capture core
+
+- [ ] **CAP-001** Implement capture envelope, source snapshot reference, checksum, nonce/sequence, expiry, and version compatibility. — Proof: _contract/property tests_
+- [ ] **CAP-002** Implement ingestion idempotency and duplicate suggestions by source ID, canonical URL, content hash, and fuzzy title/company. — Proof: _fixture tests_
+- [ ] **CAP-003** Implement manual form, paste text/URL, saved HTML/text, and JSON capture paths. — Proof: _E2E tests_
+- [ ] **CAP-004** Implement sanitized source preview and excerpt/path navigation. — Proof: _XSS fixtures + UI test_
+- [ ] **CAP-005** Preserve all field candidates/conflicts without overwriting user-confirmed values. — Proof: _property/regression tests_
+
+## Extractors and policy
+
+- [ ] **XTR-001** Implement connector policy registry and runtime kill switch before network connectors. — Proof: _policy tests_
+- [ ] **XTR-002** Implement Schema.org `JobPosting` parser with nested/array/malformed fixtures. — Proof: _golden accuracy report_
+- [ ] **XTR-003** Implement selected-text and conservative generic DOM/Readability extractor. — Proof: _golden fixtures_
+- [ ] **XTR-004** Implement Greenhouse public postings adapter under reviewed current interface/terms. — Proof: _policy record + fixtures_
+- [ ] **XTR-005** Implement Lever public postings adapter under reviewed current interface/terms. — Proof: _policy record + fixtures_
+- [ ] **XTR-006** Implement USAJOBS adapter/configuration under reviewed current requirements. — Proof: _policy record + contract tests_
+- [ ] **XTR-007** Implement normalization for title/company/location/work mode/salary/currency/date/source without erasing raw values. — Proof: _property/golden tests_
+- [ ] **XTR-008** Publish per-field precision, coverage, and confidence calibration by adapter/version. — Proof: _generated report_
+- [ ] **XTR-009** Implement connector attribution, cache/retention, rate limit, retry/backoff, and last-review display. — Proof: _integration/policy tests_
+- [ ] **XTR-010** Add explicit disabled records/tests for prohibited/unreviewed sources, including LinkedIn/Glassdoor automation. — Proof: _policy fixtures_
+
+## Review inbox
+
+- [ ] **REV-001** Implement Inbox queue, counts, keyboard selection, and review routing. — Proof: _E2E test_
+- [ ] **REV-002** Implement field groups with candidate, method, confidence, source excerpt, confirmation, and conflict UI. — Proof: _component/E2E tests_
+- [ ] **REV-003** Implement Accept high-confidence fields without accepting conflicts/unknowns. — Proof: _rule tests_
+- [ ] **REV-004** Implement Merge, Snooze, Discard/undo, and Save job flows. — Proof: _transaction/E2E tests_
+- [ ] **REV-005** Implement expired/changed/blocked source, unsupported page, and manual fallback states. — Proof: _state fixtures_
+- [ ] **REV-006** Implement listing freshness and source-diff representation without automatic trusted-field overwrite. — Proof: _diff tests_
+
+## Production extension
+
+- [ ] **PEX-001** Implement recognized/unrecognized/needs-input/queued/transferred/permission states. — Proof: _state catalog_
+- [ ] **PEX-002** Implement side-panel preview, page-selection correction, note, and source/freshness display. — Proof: _browser E2E_
+- [ ] **PEX-003** Implement bounded persistent outbox, retry/backoff, expiry warning, export, and post-ack cleanup. — Proof: _crash/restart tests_
+- [ ] **PEX-004** Implement exact app-origin/extension-ID validation and compatibility handshake. — Proof: _security tests_
+- [ ] **PEX-005** Implement hosted app transfer and Firefox/manual fallback. — Proof: _browser matrix_
+- [ ] **PEX-006** Add optional source permissions only through policy-reviewed enable flow. — Proof: _manifest/settings test_
+- [ ] **PEX-007** Run malicious-page, prompt-injection-text, huge-page, SPA-change, iframe, redirect, and replay fixtures. — Proof: _security report_
+- [ ] **PEX-008** Draft accurate extension privacy disclosure and store listing from actual build permissions. — Proof: _reviewed draft_
+
+## Phase 2 quality
+
+- [ ] **Q2-001** Measure capture-to-reviewed-record median and correction rate in representative tests. — Proof: _usability/accuracy report_
+- [ ] **Q2-002** Verify no acknowledged capture is lost across browser/app crash and upgrade. — Proof: _fault-injection test_
+- [ ] **Q2-003** Pass review Inbox keyboard/screen-reader and mobile workflows. — Proof: _a11y report_
+- [ ] **Q2-004** Pass connector source-policy, attribution, retention, rate-limit, and kill-switch audit. — Proof: _audit_
+- [ ] **Q2-005** Run canonical journey: extension capture → outbox → Inbox review/conflict → save → source diff → manual correction. — Proof: _recorded E2E artifact_
+- [ ] **GATE-2** Phase 2 safely captures and reviews representative jobs with measured extraction quality and no prohibited scraping dependency. — Proof: _Phase 2 gate report_
+
+---
+
+# Phase 3 — Career evidence and versioned documents
+
+## Career profile and evidence
+
+- [ ] **EVD-001** Implement employment, education, project, skill, accomplishment, certification, publication, volunteer, story, and preference repositories. — Proof: _schema/repository tests_
+- [ ] **EVD-002** Implement evidence source/verification/staleness and privacy-tag state. — Proof: _domain tests_
+- [ ] **EVD-003** Implement manual Career Profile editors and safe date/range validation. — Proof: _component/E2E tests_
+- [ ] **EVD-004** Import PDF/DOCX/text resume into a proposal queue without auto-verification. — Proof: _golden import tests_
+- [ ] **EVD-005** Implement duplicate role/date/skill conflict resolution and source excerpts. — Proof: _E2E tests_
+- [ ] **EVD-006** Implement Situation/Action/Result stories and evidence linking. — Proof: _use-case/UI tests_
+- [ ] **EVD-007** Implement reusable Answer Library with sensitivity classification, source, last-used, and version history. — Proof: _tests_
+- [ ] **EVD-008** Ensure deletion/exports include all evidence relationships and attachments. — Proof: _recovery tests_
+
+## Requirements and evidence coverage
+
+- [ ] **MAT-001** Implement requirement categories, confidence, source excerpt, and manual correction. — Proof: _domain/UI tests_
+- [ ] **MAT-002** Implement deterministic requirement parsing baseline and proposal review. — Proof: _golden fixtures_
+- [ ] **MAT-003** Implement evidence candidate retrieval using relations, FTS, and user selection. — Proof: _retrieval eval_
+- [ ] **MAT-004** Implement Strength/Partial/Gap/Unknown/Not Applicable decisions with explanation. — Proof: _rule tests_
+- [ ] **MAT-005** Implement separate parseability, literal-term, and qualification-evidence panels. — Proof: _UI comprehension test_
+- [ ] **MAT-006** Prevent automatic inference of sensitive eligibility/demographic answers. — Proof: _negative tests_
+- [ ] **MAT-007** Re-run and diff coverage after evidence/document edits. — Proof: _integration test_
+
+## Documents and versions
+
+- [ ] **DOC-001** Implement document, base/template, job derivative, version, attachment, and submitted-snapshot model. — Proof: _repository tests_
+- [ ] **DOC-002** Implement Documents views: All, Resumes, Cover letters, Answers, Templates, Submitted. — Proof: _E2E tests_
+- [ ] **DOC-003** Implement structured editor with safe paste, autosave/recovery, undo, version creation, and comparison. — Proof: _component/fault tests_
+- [ ] **DOC-004** Implement deterministic cover-letter and answer templates for AI-disabled mode. — Proof: _golden outputs_
+- [ ] **DOC-005** Implement job/application document set selection and preparation status. — Proof: _use-case/UI tests_
+- [ ] **DOC-006** Implement DOCX/PDF/text export with preview, metadata, and warnings. — Proof: _rendered goldens_
+- [ ] **DOC-007** Implement Mark Applied flow that snapshots exact submitted artifacts and answers. — Proof: _E2E test_
+- [ ] **DOC-008** Implement import/export round-trip without silent content or evidence-link loss. — Proof: _round-trip report_
+- [ ] **DOC-009** Implement document accessibility, print, pagination, and high-zoom tests. — Proof: _manual/visual report_
+
+## Phase 3 quality
+
+- [ ] **Q3-001** Run resume import review with varied layouts, corrupt files, scanned PDFs, and large documents. — Proof: _fixture report_
+- [ ] **Q3-002** Validate Evidence coverage terminology/actions with representative users. — Proof: _research report_
+- [ ] **Q3-003** Verify template-only user can prepare and export a truthful application set offline. — Proof: _E2E test_
+- [ ] **Q3-004** Complete document parser/editor/export threat review. — Proof: _security report_
+- [ ] **Q3-005** Run canonical journey: import resume → confirm evidence → compare job → prepare documents → mark Applied → retrieve submitted set. — Proof: _recorded E2E artifact_
+- [ ] **GATE-3** Phase 3 produces versioned, recoverable application materials and transparent evidence coverage without AI. — Proof: _Phase 3 gate report_
+
+---
+
+# Phase 4 — Evidence-grounded AI assistance
+
+## AI boundary and provider setup
+
+- [ ] **AIP-001** Implement `DisabledAiAdapter` and keep every AI entry point useful or clearly unavailable in template-only mode. — Proof: _E2E tests_
+- [ ] **AIP-002** Implement provider capability model, structured request/result/error records, cancellation, and bounded retry. — Proof: _contract tests_
+- [ ] **AIP-003** Implement local OpenAI-compatible endpoint adapter with explicit connection test and model capabilities. — Proof: _integration tests_
+- [ ] **AIP-004** Evaluate official provider SDKs versus a provider-agnostic SDK inside adapters; record decision without leaking SDK types. — Proof: _ADR_
+- [ ] **AIP-005** Implement first direct BYOK adapter only after CORS/secret/retention review for browser and secure-store review for desktop. — Proof: _security/policy record_
+- [ ] **AIP-006** Implement provider settings with exact data-flow, credential location, last use, test, disable, and delete controls. — Proof: _UI/E2E tests_
+- [ ] **AIP-007** Implement per-run network preflight and remembered-choice rules. — Proof: _privacy tests_
+- [ ] **AIP-008** Prove keys/prompts/documents never enter logs, crash reports, URLs, extension storage, or public build config. — Proof: _secret/privacy audit_
+
+## Prompt engine and context planning
+
+- [ ] **PRM-001** Implement versioned `PromptTemplateV1`, variable schema, output schema, and migration/import/export. — Proof: _contract/golden tests_
+- [ ] **PRM-002** Implement context-plan builder from selected job requirements, evidence, style examples, and user instructions. — Proof: _unit/eval cases_
+- [ ] **PRM-003** Enforce token/context budgets, deterministic ordering, private-field minimization, and explicit truncation. — Proof: _property/eval tests_
+- [ ] **PRM-004** Delimit job/source content as untrusted data and ignore embedded instructions. — Proof: _prompt-injection eval_
+- [ ] **PRM-005** Record provider/model/template/context references/hashes/parameters/validation/user disposition for every run. — Proof: _generation record test_
+- [ ] **PRM-006** Add advanced prompt/context trace that is understandable and secret-redacted. — Proof: _UI/privacy review_
+- [ ] **PRM-007** Implement safe generation cancellation, timeout, invalid-schema repair limit, and retry idempotency. — Proof: _fault tests_
+
+## Claim ledger and drafting
+
+- [ ] **CLM-001** Define factual, style-only, inferred, and user-asserted claim categories. — Proof: _domain tests_
+- [ ] **CLM-002** Link generated factual claim spans to evidence IDs/source excerpts. — Proof: _round-trip tests_
+- [ ] **CLM-003** Block or visibly flag unsupported factual claims before acceptance/export. — Proof: _negative E2E tests_
+- [ ] **CLM-004** Implement user override with reason/audit record; never relabel an override as verified evidence. — Proof: _use-case tests_
+- [ ] **CLM-005** Implement cover-letter drafting from context plan with length/tone/template controls. — Proof: _eval set + UI tests_
+- [ ] **CLM-006** Implement job-specific application-answer drafting with sensitivity classification and answer-library reuse. — Proof: _eval set + E2E tests_
+- [ ] **CLM-007** Implement selection-based revision, diff, accept/reject, and pin phrasing without overwriting user edits. — Proof: _editor tests_
+- [ ] **CLM-008** Implement explanation for why evidence/requirement was included and what remained unknown. — Proof: _comprehension test_
+- [ ] **CLM-009** Snapshot accepted generation into a document version while retaining trace/claim ledger. — Proof: _repository/E2E test_
+
+## AI evaluation and safety
+
+- [ ] **EVAL-001** Create licensed/synthetic frozen cases spanning career levels, gaps, role changes, remote work, and incomplete listings. — Proof: _fixture manifest_
+- [ ] **EVAL-002** Define rubrics for factual support, requirement relevance, voice, specificity, privacy, and refusal. — Proof: _rubric review_
+- [ ] **EVAL-003** Add adversarial listings containing instructions, encoded text, data-exfiltration attempts, and false user claims. — Proof: _red-team set_
+- [ ] **EVAL-004** Establish model/provider baseline reports; never compare models only on prose preference. — Proof: _eval report_
+- [ ] **EVAL-005** Gate prompt/model/template changes on no-regression thresholds and reviewer sampling. — Proof: _CI/eval job_
+- [ ] **EVAL-006** Measure unsupported-claim rate before/after inspector and user correction rate. — Proof: _quality report_
+- [ ] **EVAL-007** Test model unavailable, rate limit, partial stream, malformed output, context overflow, and cancellation recovery. — Proof: _fault matrix_
+
+## Phase 4 quality
+
+- [ ] **Q4-001** Validate AI-disabled, local, and first BYOK modes independently; unavailable mode cannot break document editing. — Proof: _mode matrix_
+- [ ] **Q4-002** Confirm users understand which data leaves device and can cancel before transfer. — Proof: _usability report_
+- [ ] **Q4-003** Confirm generated claims have evidence/flag/override state through edit, export, backup, and restore. — Proof: _integrity test_
+- [ ] **Q4-004** Complete AI provider, prompt injection, secret, retention, and native-fetch security review. — Proof: _security report_
+- [ ] **Q4-005** Run canonical journey: choose mode → preview context/destination → draft → catch unsupported claim → revise → accept version → export. — Proof: _recorded E2E artifact_
+- [ ] **GATE-4** Phase 4 provides optional, provider-neutral, evidence-grounded drafting without weakening local/template-only operation. — Proof: _Phase 4 gate report_
+
+---
+
+# Phase 5 — Salary context and compliant discovery
+
+## Salary intelligence
+
+- [ ] **SAL-001** Implement disclosed-compensation parser for range/single value, hourly/annual, currency, interval, bonus/equity caveats, and raw source. — Proof: _property/golden tests_
+- [ ] **SAL-002** Implement transparent annual/hourly normalization with configurable hours/weeks and no silent currency conversion. — Proof: _unit/property tests_
+- [ ] **SAL-003** Implement title/skills → O*NET-SOC candidate mapping with user override and confidence. — Proof: _mapping eval_
+- [ ] **SAL-004** Implement geography mapping with remote/multi-location/unknown handling. — Proof: _fixture tests_
+- [ ] **SAL-005** Implement reviewed BLS public-data adapter with release date, geography/occupation granularity, caching, and attribution. — Proof: _policy/contract tests_
+- [ ] **SAL-006** Implement reviewed O*NET and CareerOneStop adapters only for allowed data/endpoints. — Proof: _policy/contract tests_
+- [ ] **SAL-007** Keep employer-specific observations separate from public market percentiles and label sample limitations. — Proof: _domain/UI tests_
+- [ ] **SAL-008** Implement explainable negotiation band from disclosed range, public data, user floor/target, and caveats. — Proof: _formula tests + explanation snapshots_
+- [ ] **SAL-009** Implement salary view with source links, release dates, units, confidence, and “why this range.” — Proof: _UI/a11y tests_
+- [ ] **SAL-010** Test missing/stale/coarse/ambiguous data, extreme units, international currencies, and user overrides. — Proof: _edge-case report_
+
+## Approved discovery/import
+
+- [ ] **DSC-001** Validate user need and define Discover as saved connector results, not an uncontrolled crawler. — Proof: _research + decision_
+- [ ] **DSC-002** Implement saved searches/preferences as local query objects independent of any provider. — Proof: _domain tests_
+- [ ] **DSC-003** Implement one reviewed public job-source connector if it has current lawful terms, usable data, and acceptable cost/rate limits. — Proof: _source-policy record + contract tests_
+- [ ] **DSC-004** Show source/attribution/freshness and require review before a result becomes a trusted job. — Proof: _E2E test_
+- [ ] **DSC-005** Implement connector disable/kill behavior that preserves already imported user records. — Proof: _policy test_
+- [ ] **DSC-006** Deduplicate discovery results against local jobs without silent merge. — Proof: _fixture tests_
+- [ ] **DSC-007** **Optional** Evaluate additional Greenhouse/Lever board indexing only with explicit server/robots/terms/load policy. — Proof: _ADR/policy review_
+
+## Insights
+
+- [ ] **INS-001** Implement pipeline funnel and semantic-stage conversion with underlying-record drilldown. — Proof: _query/UI tests_
+- [ ] **INS-002** Implement time-in-stage/response distributions with censored/unknown data handling. — Proof: _statistical tests_
+- [ ] **INS-003** Implement source outcomes with sample size and no causal language. — Proof: _UI/content review_
+- [ ] **INS-004** Implement application activity, salary, and cross-job evidence-gap reports. — Proof: _query/UI tests_
+- [ ] **INS-005** Implement table equivalents, small-sample labels, optional goal hiding, and CSV export. — Proof: _a11y/E2E tests_
+- [ ] **INS-006** Keep personal metrics local unless the user explicitly exports a research report. — Proof: _network/privacy test_
+
+## Phase 5 quality
+
+- [ ] **Q5-001** Validate salary explanations with varied occupations/geographies and a domain reviewer where feasible. — Proof: _review report_
+- [ ] **Q5-002** Audit every Phase 5 source for license/terms/auth/rate/retention/attribution and last-review date. — Proof: _source registry audit_
+- [ ] **Q5-003** Verify no connector failure blocks local jobs, documents, salary records already cached, or export. — Proof: _offline/fault tests_
+- [ ] **Q5-004** Run canonical journey: map occupation/location → fetch public context → explain band → override mapping → preserve citations in notes/export. — Proof: _recorded E2E artifact_
+- [ ] **GATE-5** Phase 5 supplies caveated salary context and any discovery capability through documented, disableable, compliant adapters. — Proof: _Phase 5 gate report_
+
+---
+
+# Phase 6 — Public-beta hardening and distribution
+
+## Security and privacy
+
+- [ ] **SEC-001** Update threat model for shipped surfaces, assets, data flows, and trust boundaries. — Proof: _reviewed threat model_
+- [ ] **SEC-002** Verify production CSP, Trusted Types decision, sanitizer rules, dependency/remote-code inventory, and no `unsafe-eval`. — Proof: _header/build report_
+- [ ] **SEC-003** Audit Tauri commands/capabilities, filesystem paths, URL opening, updater, secure storage, and native fetch allowlists. — Proof: _security audit_
+- [ ] **SEC-004** Audit extension permissions/messages/outbox/content-script isolation and store disclosures. — Proof: _security audit_
+- [ ] **SEC-005** Audit SQL, archive extraction, attachment names/types/sizes, document parser, and formula/CSV injection. — Proof: _security tests_
+- [ ] **SEC-006** Audit AI/source egress, redirects, logs, diagnostics, keys, prompts, and deletion. — Proof: _privacy/security audit_
+- [ ] **SEC-007** Run dependency, license, secret, static-analysis, and artifact malware/signature checks. — Proof: _CI/release reports_
+- [ ] **SEC-008** Publish privacy notice, security policy, data-flow reference, supported-source policy, and vulnerability-reporting route. — Proof: _public docs_
+- [ ] **SEC-009** Perform independent review or structured self-review against the threat model; triage all findings. — Proof: _finding log_
+
+## Accessibility and usability
+
+- [ ] **A11Y-001** Pass automated axe suite for every core route/state/theme/density. — Proof: _CI report_
+- [ ] **A11Y-002** Complete keyboard-only canonical journeys with visible focus and no traps. — Proof: _manual report_
+- [ ] **A11Y-003** Complete NVDA + Chromium/Firefox and VoiceOver + Safari smoke matrix where available. — Proof: _manual report_
+- [ ] **A11Y-004** Validate board/list semantics, announced moves, tables, dialogs, editor, toasts, errors, and charts. — Proof: _a11y report_
+- [ ] **A11Y-005** Validate 200% zoom, text resize, high contrast, reduced motion, touch targets, and mobile orientation. — Proof: _visual/manual report_
+- [ ] **A11Y-006** Resolve critical/serious findings and document remaining minor exceptions with owners. — Proof: _issue links_
+- [ ] **USR-001** Repeat canonical usability study on implementation with at least five representative users. — Proof: _findings_
+- [ ] **USR-002** Validate first-job activation, storage/backup comprehension, evidence coverage, and network preflight. — Proof: _metrics/report_
+- [ ] **USR-003** Resolve release-blocking recurring usability problems and update decision register. — Proof: _changes + retest_
+
+## Reliability, migrations, and performance
+
+- [ ] **REL-001** Build representative small/medium/large vault fixtures with attachments and long history. — Proof: _fixture manifest_
+- [ ] **REL-002** Test every migration from all supported beta schema versions in browser and desktop. — Proof: _migration matrix_
+- [ ] **REL-003** Test backup/restore under interrupted write, corrupted archive, missing attachment, disk full/quota, and newer version. — Proof: _fault report_
+- [ ] **REL-004** Run extension/app compatibility for current and previous capture contracts. — Proof: _matrix_
+- [ ] **REL-005** Meet or explicitly revise startup, interaction, import, search, export, and memory budgets. — Proof: _benchmark report_
+- [ ] **REL-006** Test offline-first install/update, stale service worker, cache corruption, and origin migration guidance. — Proof: _PWA report_
+- [ ] **REL-007** Test desktop update/migration failure and rollback/recovery runbook. — Proof: _release rehearsal_
+- [ ] **REL-008** Run 24-hour soak with repeated capture/import/edit/export and verify no data/hash drift. — Proof: _soak report_
+
+## Documentation and support
+
+- [ ] **DOCS-001** Write install/run guides for hosted PWA, desktop installer, repository clone, and extension. — Proof: _fresh-user test_
+- [ ] **DOCS-002** Write Quick start, Guided setup, capture, tracking, evidence, documents, AI modes, salary, and Insights user guides. — Proof: _docs review_
+- [ ] **DOCS-003** Write backup, restore, export, deletion, browser-origin, storage-limit, and disaster-recovery guides. — Proof: _recovery drill by another person_
+- [ ] **DOCS-004** Write privacy/network/provider/connector explanations in plain language. — Proof: _comprehension review_
+- [ ] **DOCS-005** Write developer architecture, data model, contracts, fixtures, testing, ADR, and release guides. — Proof: _clean-clone contributor test_
+- [ ] **DOCS-006** Write troubleshooting and redacted-diagnostics instructions. — Proof: _support scenario test_
+- [ ] **DOCS-007** Document known limitations, unsupported browsers/sources, and deferred capabilities. — Proof: _release docs_
+
+## Distribution and beta operations
+
+- [ ] **DEP-001** Choose public name after trademark/domain/repository check and update Q-001. — Proof: _decision record_
+- [ ] **DEP-002** Configure dedicated PWA origin, HTTPS, headers, WASM/Worker MIME, immutable assets, and service-worker scope. — Proof: _deployment audit_
+- [ ] **DEP-003** Publish signed/checksummed desktop artifact for supported OS with SBOM and migration notes. — Proof: _release artifacts_
+- [ ] **DEP-004** Publish/sideload extension with permission/privacy review and compatible app-version range. — Proof: _store/package artifact_
+- [ ] **DEP-005** Create release signing, secrets, updater, rollback, incident, connector-kill, and origin-migration runbooks. — Proof: _rehearsal records_
+- [ ] **DEP-006** Establish privacy-safe feedback/bug channel that does not request vault contents by default. — Proof: _published route/template_
+- [ ] **DEP-007** Define beta cohort, support capacity, release stop conditions, and issue severity policy. — Proof: _beta plan_
+- [ ] **DEP-008** Perform clean-machine installation and full canonical journey on each supported platform. — Proof: _release matrix_
+
+## Public beta gate
+
+- [ ] **BETA-001** User can reach first reviewed job without account/profile/AI. — Proof: _activation E2E/usability_
+- [ ] **BETA-002** User can complete truthful template-only application and retrieve exact submitted artifacts. — Proof: _E2E_
+- [ ] **BETA-003** AI-assisted application passes claim ledger, preflight, and privacy checks. — Proof: _E2E/eval_
+- [ ] **BETA-004** Full archive restores in clean browser and desktop builds with verified hashes. — Proof: _recovery report_
+- [ ] **BETA-005** Extension capture survives disconnect/crash/update and requests only reviewed permissions. — Proof: _fault/security report_
+- [ ] **BETA-006** Critical/serious security, privacy, accessibility, migration, and data-loss issues are zero. — Proof: _release issue query_
+- [ ] **BETA-007** Source registry is current; prohibited/unreviewed connectors are absent or disabled. — Proof: _audit_
+- [ ] **BETA-008** Release docs and support runbooks pass a fresh-user rehearsal. — Proof: _rehearsal report_
+- [ ] **GATE-6** Product owner signs the public-beta checklist after reviewing all proof and open questions. — Proof: _dated signed gate report_
+
+---
+
+# Phase 7 — Optional hosted sync and services
+
+This phase is deliberately deferred. Re-open only after `GATE-6`, demonstrated multi-device demand, and a new scope/operations decision.
+
+## Discovery and design gates
+
+- [ ] **SYN-001** Document validated user need and minimum sync/service scope; reject feature-count justification. — Proof: _research report_
+- [ ] **SYN-002** Integrate Authcore as an OIDC client without moving local vault access behind login. — Proof: _architecture/threat review_
+- [ ] **SYN-003** Threat-model E2EE, device enrollment, key derivation/storage, recovery, revocation, account deletion, and metadata leakage. — Proof: _reviewed model_
+- [ ] **SYN-004** Prototype conflicts for scalar edits, stage moves, timelines, evidence, documents, attachments, and deletion. — Proof: _conflict simulation_
+- [ ] **SYN-005** Define encrypted protocol/event/schema versions and server-visible metadata. — Proof: _contracts + privacy review_
+- [ ] **SYN-006** Define hosted AI retention, abuse, rate, billing, provider, deletion, and incident policies. — Proof: _operations design_
+- [ ] **SYN-007** Define cost budgets, quotas, backup, monitoring, regional/data-residency, and shutdown/export plan. — Proof: _operating model_
+- [ ] **SYN-008** Accept or reject optional service milestone through a new ADR and goal revision. — Proof: _decision_
+
+## Optional implementation
+
+- [ ] **SYN-010** Implement opt-in device enrollment and local generation/storage of sync keys. — Proof: _security/E2E tests_
+- [ ] **SYN-011** Implement encrypted change/attachment transport with idempotency and replay protection. — Proof: _protocol tests_
+- [ ] **SYN-012** Implement offline queue, deterministic conflict handling, user conflict UI, and device revocation. — Proof: _multi-device tests_
+- [ ] **SYN-013** Implement minimal encrypted server storage, routing metadata, quotas, backups, deletion, and audit. — Proof: _service tests/audit_
+- [ ] **SYN-014** Implement recovery flow that explains precisely what can/cannot be recovered; no developer backdoor to content. — Proof: _recovery ceremony test_
+- [ ] **SYN-015** Implement hosted AI adapter as separately consented, metered, observable, and deletable. — Proof: _privacy/billing/E2E tests_
+- [ ] **SYN-016** Preserve complete local/offline/export function during service outage or account closure. — Proof: _chaos/offboarding test_
+- [ ] **SYN-017** Complete external security/privacy review before public availability. — Proof: _audit + remediation_
+- [ ] **GATE-7** Optional service meets its own security, privacy, reliability, cost, and local-independence gates. — Proof: _Phase 7 gate report_
+
+---
+
+# Cross-cutting ledgers
+
+## Open blockers
+
+| Date | Item | Blocker | Checks attempted | Owner/next action | Status |
+|---|---|---|---|---|---|
+| — | — | — | — | — | — |
+
+## Accepted scope changes
+
+| Date | ADR | Checklist IDs added/changed | Goal/design documents updated | Summary |
+|---|---|---|---|---|
+| — | — | — | — | — |
+
+## Proof index
+
+Keep proof close to each checkbox. For large milestone reports, also index them here.
+
+| Gate | Commit/tag | Test/report/artifact links | Reviewed by/date |
+|---|---|---|---|
+| `GATE-0` | — | — | — |
+| `GATE-1` | — | — | — |
+| `GATE-2` | — | — | — |
+| `GATE-3` | — | — | — |
+| `GATE-4` | — | — | — |
+| `GATE-5` | — | — | — |
+| `GATE-6` | — | — | — |
+| `GATE-7` | — | — | — |
+
+## Release decision checklist
+
+Before any tagged release, answer in its release notes:
+
+- [ ] Which schema, archive, capture, prompt, and sync contract versions are included?
+- [ ] Which migrations run, and has restore been tested from every supported prior version?
+- [ ] Which browsers/OSs and extension versions are supported by evidence?
+- [ ] Did permissions, CSP, dependencies, licenses, secrets, and artifacts pass review?
+- [ ] Did offline/template-only operation regress?
+- [ ] Did any provider/source terms, retention, attribution, credentials, or endpoints change?
+- [ ] Did any AI prompt/model/template change pass its evaluation gate?
+- [ ] Are user-visible network/data-flow disclosures still accurate?
+- [ ] Can users export, restore, and delete data without the hosted service?
+- [ ] Are known limitations and rollback/recovery instructions published?
+
+## First Codex work request
+
+Use this when implementation begins:
+
+> Start Phase 0 with `FND-001` through `FND-008`. Read `AGENTS.md`, `GOAL.md`, `10-technology-stack.md`, `11-decision-register.md`, and the relevant architecture/security documents before editing. Create only the repository/governance/build skeleton; do not implement product features. Run clean-install, typecheck, lint, and test proof. Update Current work and each completed checkbox with concrete evidence. If a selected tool has a material incompatibility, record an ADR proposal rather than silently substituting it.

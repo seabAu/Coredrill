@@ -1,0 +1,21 @@
+{
+  "name": "@job-workspace/storage-core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Storage ports, shared repository contracts, and migration coordination.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b --pretty false",
+    "lint": "eslint src --max-warnings 0"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "@job-workspace/domain",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@job-workspace/storage-native": "workspace:*"
+  }
+}

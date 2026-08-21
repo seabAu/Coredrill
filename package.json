@@ -1,0 +1,45 @@
+{
+  "name": "job-workspace",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "UNLICENSED",
+  "packageManager": "pnpm@11.22.0",
+  "engines": {
+    "node": ">=22.18.0 <25",
+    "pnpm": "11.22.0"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint && eslint tooling --max-warnings 0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "pnpm test:unit",
+    "test:unit": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:boundaries": "vitest run tooling/tests/import-boundaries.test.mjs",
+    "check:boundaries": "node tooling/architecture/check-boundaries.mjs",
+    "check:affected": "turbo run build typecheck lint --affected && vitest run --changed",
+    "check:licenses": "node tooling/scripts/check-licenses.mjs",
+    "report:licenses": "pnpm licenses list --json",
+    "check:secrets": "node tooling/scripts/check-secrets.mjs",
+    "check:policy": "pnpm check:boundaries && pnpm check:licenses && pnpm check:secrets",
+    "audit:dependencies": "pnpm audit --audit-level=high",
+    "changeset": "changeset",
+    "changeset:status": "changeset status",
+    "verify": "pnpm format:check && pnpm check:boundaries && pnpm typecheck && pnpm lint && pnpm test:unit && pnpm test:coverage && pnpm build && pnpm check:licenses && pnpm check:secrets && pnpm audit:dependencies && pnpm changeset:status"
+  },
+  "devDependencies": {
+    "@changesets/cli": "3.0.1",
+    "@eslint/js": "10.0.1",
+    "@vitest/coverage-v8": "4.1.11",
+    "eslint": "10.8.1",
+    "license-checker-rseidelsohn": "5.0.1",
+    "prettier": "3.9.6",
+    "turbo": "2.10.11",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.67.0",
+    "vitest": "4.1.11"
+  }
+}

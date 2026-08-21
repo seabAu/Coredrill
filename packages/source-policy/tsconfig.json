@@ -1,0 +1,10 @@
+{
+  "extends": "../../tooling/typescript/base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "tsBuildInfoFile": "../../.turbo/tsbuildinfo/source-policy.tsbuildinfo"
+  },
+  "include": ["src/**/*.ts"],
+  "references": []
+}

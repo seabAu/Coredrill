@@ -1,0 +1,9 @@
+.git/
+.turbo/
+coverage/
+dist/
+node_modules/
+pnpm-lock.yaml
+docs/design/
+LICENSE
+tooling/fixtures/

@@ -1,0 +1,303 @@
+# 11 — Decision register
+
+This is the authority for **what has been decided, why, and what would justify revisiting it**. Implementation does not silently replace an accepted decision.
+
+## Status vocabulary
+
+- **Accepted:** current design baseline; implementation may proceed.
+- **Provisional:** preferred choice pending a named spike or user test.
+- **Deferred:** decision intentionally postponed; baseline must not depend on it.
+- **Rejected:** evaluated and excluded from the baseline.
+- **Superseded:** preserved for history and linked to its replacement.
+
+## Change procedure
+
+For a material change, add an ADR under `docs/adr/` using:
+
+```text
+Title / status / date
+Problem and evidence
+Constraints
+Options considered
+Decision and rationale
+Consequences and migration
+Security/privacy/source-policy impact
+Documents, contracts, checklist IDs, and tests to update
+Revisit trigger
+```
+
+The ADR, affected design docs, and checklist change in the same commit. A new dependency or implementation convenience is not by itself evidence to change a product decision.
+
+## Product and scope
+
+### D-001 — Standalone product
+
+- **Status:** Accepted
+- **Decision:** Job Workspace is its own application. COMPOSR may share versioned prompt/model contracts later but is not its container or runtime dependency.
+- **Why:** The product owns durable state, repeated workflows, specialized security/privacy rules, and multiple distribution modes.
+- **Alternatives:** COMPOSR tool; Mindspace module; portfolio feature.
+- **Revisit when:** Only if the standalone workflows fail to establish independent value after prototype testing.
+
+### D-002 — Local-first, accountless baseline
+
+- **Status:** Accepted
+- **Decision:** Hosted PWA and desktop modes operate without an account or hosted database.
+- **Why:** Satisfies privacy, zero-cost operation, offline use, downloadable-kit goal, and graceful independence from the developer's server.
+- **Consequences:** Device/origin vaults are distinct before sync; backup education is mandatory.
+- **Revisit when:** Never for the baseline promise. Accounts may be added only for opt-in services.
+
+### D-003 — User-controlled assistance, not autonomous applying
+
+- **Status:** Accepted
+- **Decision:** V1 captures, analyzes, drafts, and tracks. It does not auto-submit, bulk apply, or send outreach.
+- **Why:** Quality, truthfulness, platform terms, sensitive questions, and user agency.
+- **Revisit when:** A narrowly scoped autofill proposal has a threat model, field-level preview, fixtures, explicit permissions, and no submit capability.
+
+### D-004 — First-release scope hierarchy
+
+- **Status:** Accepted
+- **Decision:** Reliable local vault + tracking + capture/review comes before document AI; document AI before discovery/sync.
+- **Why:** Later features depend on trusted data and recovery.
+- **Revisit when:** Dependency evidence changes; not for demo appeal alone.
+
+## Experience
+
+### D-010 — Six-item primary navigation
+
+- **Status:** Provisional
+- **Decision:** Home, Pipeline, Documents, Career Profile, Network, Insights; Settings at shell bottom. Inbox/Board/Table/Discover live inside Pipeline. Applications are not a duplicate top-level area.
+- **Why:** Competitive review showed broad feature sets become clearer when the pipeline stays the command center; user mental model is an opportunity moving through stages.
+- **Alternatives:** Original ten-item navigation; tracker-only single screen; separate Jobs and Applications.
+- **Gate:** Low-fidelity tests must show users can find capture review, submitted artifacts, and contacts.
+- **Revisit when:** ≥2 of 5 representative users repeatedly mislocate the same major area after terminology refinement.
+
+### D-011 — Board-first with table parity
+
+- **Status:** Accepted
+- **Decision:** Pipeline defaults to a visual board for orientation; a dense table is a first-class peer over the same records.
+- **Why:** Huntr/Teal validate board comprehension; table is needed for comparison, filtering, and bulk review.
+- **Revisit when:** User research shows a different default, but both views remain unless usage proves one unnecessary.
+
+### D-012 — Contextual job workspace
+
+- **Status:** Provisional
+- **Decision:** Wide screens open a resizable side workspace while preserving pipeline context; small/deep-linked screens use a full route.
+- **Why:** Adapts side-peek/command-center patterns without trapping content in a modal.
+- **Gate:** Back, refresh, screen-reader, and mobile prototypes.
+- **Revisit when:** Complexity or accessibility cost outweighs reduced navigation.
+
+### D-013 — Evidence coverage, not ATS score
+
+- **Status:** Accepted
+- **Decision:** Present Strength/Partial/Gap/Unknown by requirement plus separate literal-term and parseability checks. Do not predict hiring chance or call a composite an employer ATS score.
+- **Why:** These are different measurable questions; a single score creates false certainty and encourages dishonest keyword insertion.
+- **Revisit when:** Terminology may change after comprehension tests; the explainability rule does not.
+
+### D-014 — Calm, non-gamified design language
+
+- **Status:** Accepted
+- **Decision:** Neutral professional workspace, restrained accent, semantic status, no streaks/shame/AI spectacle.
+- **Why:** Job search is stressful; attention and trust matter more than engagement loops.
+- **Revisit when:** Visual tokens can evolve after brand work while preserving content/interaction rules.
+
+### D-015 — Quick-start and guided onboarding
+
+- **Status:** Provisional
+- **Decision:** Users may create a vault and add one job immediately; full profile/AI/extension setup is a separate guided path.
+- **Why:** Demonstrates value before asking for extensive personal data.
+- **Gate:** First-run usability tests and storage-comprehension check.
+
+## Architecture and stack
+
+### D-020 — TypeScript-first implementation
+
+- **Status:** Accepted
+- **Decision:** TypeScript owns shared domain/application/UI/extension/extraction code; SQL owns schema; Rust is a thin native boundary.
+- **Why:** Maximum reuse across browser, desktop, and extension with a strong typed contract.
+- **Revisit when:** A measured hotspot or capability cannot be met safely within the boundary.
+
+### D-021 — React + Vite shared frontend
+
+- **Status:** Accepted
+- **Decision:** Use React/Vite rather than a server-first web framework.
+- **Why:** Static/offline PWA, Tauri reuse, existing ecosystem familiarity, and no required v1 server rendering.
+- **Revisit when:** A public SEO/discovery site is built; that site can be separate without replacing the app shell.
+
+### D-022 — Tauri 2 desktop shell
+
+- **Status:** Provisional
+- **Decision:** Tauri 2 packages the shared frontend and exposes native capabilities.
+- **Why:** Small system-webview distribution and Rust capability boundary.
+- **Gate:** Phase 0 native SQLite, secure store, packaging, updater, CSP, and platform tests.
+- **Fallback:** Electron only if a documented blocking WebView/packaging issue cannot be isolated; a local web kit remains another fallback.
+
+### D-023 — WXT extension
+
+- **Status:** Provisional
+- **Decision:** WXT builds the Manifest V3 extension and browser targets.
+- **Why:** Entry-point/manifest tooling and shared TypeScript/React support.
+- **Gate:** Chromium side panel, Firefox fallback, permissions, bundle/CSP, and store packaging.
+- **Fallback:** Browser-specific hand-authored manifests around the same capture packages.
+
+### D-024 — SQLite in every full app mode
+
+- **Status:** Accepted
+- **Decision:** Browser uses official SQLite WASM/OPFS; desktop uses native SQLite; repositories and migrations are shared.
+- **Why:** Relational integrity, transactions, FTS/reporting, portable local data, and one domain model.
+- **Revisit when:** Phase 0 proves an unsupported target cannot satisfy durability/recovery. That mode may be dropped or use an adapter without changing canonical semantics.
+
+### D-025 — Browser `opfs-sahpool` single-writer baseline
+
+- **Status:** Provisional
+- **Decision:** Start with a dedicated Worker and `opfs-sahpool`; coordinate one writer and make other tabs read-only/handoff.
+- **Why:** SQLite documents broad support, high performance, and no COOP/COEP requirement, with the known single-connection trade-off.
+- **Gate:** Browser matrix, crash, quota, private mode, tab contention, export/restore.
+- **Revisit when:** Multi-tab editing becomes a validated user requirement and `opfs-wl` compatibility is proven.
+
+### D-026 — No full ORM
+
+- **Status:** Accepted
+- **Decision:** Reviewed SQL migrations and repository queries with bound parameters; minimal helpers permitted.
+- **Why:** Preserve cross-adapter behavior and visibility into migrations/query features.
+- **Revisit when:** Repetition causes measured defects and a candidate demonstrably preserves shared SQL/SQLite features.
+
+### D-027 — Tiptap open-source core for structured editing
+
+- **Status:** Provisional
+- **Decision:** Use a restricted Tiptap schema and locally owned import/export adapters.
+- **Why:** Headless React integration and structured/versionable content.
+- **Gate:** Round-trip, accessibility, paste sanitation, large documents, PDF/DOCX export, license check.
+- **Fallback:** Lexical or a simpler Markdown/textarea editor if the spike fails.
+
+### D-028 — Python is optional, not baseline
+
+- **Status:** Accepted
+- **Decision:** Python appears only behind a versioned optional worker after a benchmark-backed ADR.
+- **Why:** Live DOM capture and shared contracts favor TypeScript; Python helps only specific NLP/document/batch workloads.
+- **Revisit when:** OCR, parsing, or local-model requirements demonstrate a concrete quality/performance/package advantage.
+
+## Data, capture, and sources
+
+### D-030 — Field-level provenance
+
+- **Status:** Accepted
+- **Decision:** Every extracted candidate records source, excerpt/path, method, extractor version, time, and confidence; user confirmation is durable.
+- **Why:** Trust, correction, debugging, source change, and AI evidence.
+- **Revisit when:** Never remove; storage representation may evolve through migration.
+
+### D-031 — Layered deterministic extraction
+
+- **Status:** Accepted
+- **Decision:** Structured data/API → source-specific deterministic adapter → generic DOM/readability → heuristic/LLM proposal → manual review.
+- **Why:** Accuracy, reproducibility, policy control, and testability.
+- **Revisit when:** Ordering may vary for a reviewed connector based on measured accuracy.
+
+### D-032 — User-invoked extension and bounded outbox
+
+- **Status:** Accepted
+- **Decision:** `activeTab` capture only after user action; extension retains a small retryable outbox, not the full vault.
+- **Why:** Least privilege, resilience, and smaller breach surface.
+- **Revisit when:** A specific optional host permission has a clear feature, review, and disable path.
+
+### D-033 — Approved sources only
+
+- **Status:** Accepted
+- **Decision:** Baseline sources are user-provided content, Schema.org JobPosting, reviewed Greenhouse/Lever/USAJOBS interfaces, and approved public labor datasets. Each network connector has a policy record/kill switch.
+- **Why:** Compliance and maintainability are architecture concerns.
+- **Revisit when:** A source's current terms/API/license are reviewed and documented.
+
+### D-034 — No LinkedIn/Glassdoor scraping foundation
+
+- **Status:** Accepted
+- **Decision:** Do not build the product on automated scraping of LinkedIn or Glassdoor. User paste/manual capture remains available where lawful.
+- **Why:** Their official terms/restrictions conflict with the proposed automated behavior and create unacceptable product dependency.
+- **Revisit when:** Only a documented official/licensed integration changes the situation.
+
+## AI and documents
+
+### D-040 — AI optional and provider-neutral
+
+- **Status:** Accepted
+- **Decision:** Template-only mode is complete; local, direct BYOK, and future hosted adapters sit behind `AiPort`.
+- **Why:** Zero-cost baseline, user choice, testability, and reduced lock-in.
+- **Revisit when:** Adapters may change; the AI-disabled path remains.
+
+### D-041 — Evidence-first generation and claim ledger
+
+- **Status:** Accepted
+- **Decision:** Context is assembled from selected evidence; generated factual claims link to evidence, are style-only, or require explicit review/override.
+- **Why:** Prevent fabrication and make editing auditable.
+- **Revisit when:** Never weaken silently; improve validation through evaluations.
+
+### D-042 — Versioned documents and submitted snapshots
+
+- **Status:** Accepted
+- **Decision:** Regeneration creates a version/diff, user edits are preserved, and Applied stores the exact artifacts submitted.
+- **Why:** Reproducibility and interview preparation.
+- **Revisit when:** Storage/UX details may evolve; submitted artifact identity remains immutable.
+
+## Security, privacy, sync, and operations
+
+### D-050 — Local does not imply automatically encrypted
+
+- **Status:** Accepted
+- **Decision:** Explain actual storage/protection. Desktop secrets use OS secure storage; vault encryption is implemented only with a reviewed key/recovery design.
+- **Why:** Avoid false privacy promises and unrecoverable data loss.
+- **Revisit when:** Encryption spike establishes browser/desktop threat model, UX, key derivation, backup, and recovery.
+
+### D-051 — Portable archive is a core feature
+
+- **Status:** Accepted
+- **Decision:** Versioned archive with database/data, attachments, manifest, checksums, and schema version; human-readable JSON/CSV export also exists.
+- **Why:** Ownership, recovery, migration, and eventual sync independence.
+- **Revisit when:** Format versions evolve compatibly.
+
+### D-052 — Future sync is opt-in and encrypted
+
+- **Status:** Deferred
+- **Decision:** Design IDs/events for future sync but do not deploy sync in v1. Future server stores encrypted content plus minimal routing metadata.
+- **Why:** Sync multiplies identity, conflict, key recovery, privacy, and operations risk.
+- **Prerequisites:** Stable local schema/export, multi-device conflict prototype, Authcore integration review, E2EE/key-recovery threat model, cost/abuse plan.
+
+### D-053 — Telemetry default off
+
+- **Status:** Accepted
+- **Decision:** Privacy-safe local diagnostics first; any product telemetry is separate, opt-in, documented, and content-free.
+- **Why:** Career data is sensitive and baseline must not require network activity.
+- **Revisit when:** Public beta support needs are demonstrated and an event-level privacy review is complete.
+
+## Open questions and required evidence
+
+| ID | Question | Needed evidence | Deadline/gate |
+|---|---|---|---|
+| Q-001 | Product name and public identity | Trademark/domain/repository availability; brand exploration | Before public landing/store listing |
+| Q-002 | Browser support floor | OPFS/Worker/export/restore test matrix | Phase 0 |
+| Q-003 | Native SQLite adapter | Plugin vs `rusqlite` comparison | Phase 0 |
+| Q-004 | Tiptap suitability | Round-trip/accessibility/export spike | Phase 0 |
+| Q-005 | Side panel vs popup fallback | Chromium/Firefox usability and APIs | Phase 0/2 |
+| Q-006 | Exact default pipeline stages | Five-user terminology/usability test | Before Phase 1 UI lock |
+| Q-007 | Browser vault lock/encryption | Threat model and recovery design | Before claiming encrypted browser vault |
+| Q-008 | Local model support floor | Evaluation on realistic consumer hardware | Phase 4 |
+| Q-009 | Direct BYOK in hosted PWA | Provider CORS, secret storage, disclosure, and abuse/security review | Phase 4 |
+| Q-010 | Public discovery connectors | User demand, terms/license, rate limits, operating cost | Phase 5 |
+| Q-011 | Map/calendar | Usability demand and privacy/provider cost | After beta |
+| Q-012 | Optional sync | Stable local product, Authcore client, E2EE/conflict/key recovery | Phase 7 |
+| Q-013 | License/business model | Sustainability plan that preserves free local core/export | Before 1.0 |
+
+## Rejected-pattern log
+
+The following require a new decision, not opportunistic implementation:
+
+- account wall before local use;
+- cloud database as the only source of truth;
+- background crawling or browser-history collection;
+- auto-submit or bulk application;
+- third-party contact enrichment without license/provenance;
+- generated or guessed email addresses presented as facts;
+- opaque ATS/hiring-probability score;
+- silent AI prompt/model/provider changes for stored templates;
+- remote fonts/assets/analytics in the core offline shell;
+- destructive migration without tested export/restore;
+- sync before conflict and key-recovery design;
+- Python service required to run the baseline PWA.
+

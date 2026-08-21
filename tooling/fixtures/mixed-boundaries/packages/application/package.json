@@ -1,0 +1,9 @@
+{
+  "name": "@job-workspace/application",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@job-workspace/domain": "workspace:*"
+  }
+}
