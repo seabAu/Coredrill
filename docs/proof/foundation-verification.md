@@ -3,15 +3,16 @@
 Date: 2026-08-21  
 Scope: `FND-001` through `FND-008` only  
 Branch: `main`  
-Foundation commit: `982aaa5dd125491d00d834dd2c15aa499496d907`  
-Privacy-default follow-up: `03b9274`
+Initial foundation commit: `982aaa5dd125491d00d834dd2c15aa499496d907`  
+Privacy-default follow-up: `03b9274`  
+Verified hardening commit: `abb854be9d26af7c2b1f2b6fef53745f0e79c295`
 
 ## Outcome
 
 | Item      | Result  | Evidence                                                                                                                                                                                                              |
 | --------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `FND-001` | Blocked | Every required governance path exists and was reviewed, but the public license and durable private security/conduct reporting address remain owner decisions under `Q-013`. The temporary `LICENSE` grants no rights. |
-| `FND-002` | Proven  | Exact pnpm workspace and lockfile installed and built from an isolated clone of `982aaa5`; 19 package builds passed.                                                                                                  |
+| `FND-002` | Proven  | Exact pnpm workspace and lockfile installed and built from an isolated clone of `abb854b`; 19 package builds passed.                                                                                                  |
 | `FND-003` | Proven  | Approved parent directories and 19 decoupled package boundaries exist; the architecture checker passed all 19 policies. Product runtimes contain reservation documents only.                                          |
 | `FND-004` | Proven  | Strict TypeScript project references passed for all 19 packages. Seven unit tests include both accepted dependency graphs and intentional forbidden-import fixtures.                                                  |
 | `FND-005` | Proven  | Formatting, lint, unit, coverage, build, and Git-history affected-task paths passed locally.                                                                                                                          |
@@ -48,7 +49,7 @@ CI and privacy defaults:
 
 ## Clean-clone proof
 
-An isolated clone was created outside the repository working tree at `.proof/clean-clone-verified` and checked at `982aaa5dd125491d00d834dd2c15aa499496d907`.
+An isolated clone was created outside the repository working tree at `.proof/final-clean-clone` and checked at `abb854be9d26af7c2b1f2b6fef53745f0e79c295`.
 
 | Command                          | Runtime                             | Exit | Result                                                                |
 | -------------------------------- | ----------------------------------- | ---: | --------------------------------------------------------------------- |
@@ -61,22 +62,22 @@ The disposable clone was removed after its commit and command results were recor
 
 All commands used the pinned Node 24.19.0 and pnpm 11.22.0 runtime unless a row states otherwise.
 
-| Command                          | Exit | Result                                                                                                                                    |
-| -------------------------------- | ---: | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm install --frozen-lockfile` |    0 | Exact dependency graph installed.                                                                                                         |
-| `pnpm format:check`              |    0 | All tracked text matched Prettier.                                                                                                        |
-| `pnpm check:boundaries`          |    0 | 19 package policies passed.                                                                                                               |
-| `pnpm typecheck`                 |    0 | 19 of 19 strict TypeScript projects passed.                                                                                               |
-| `pnpm lint`                      |    0 | 19 package tasks plus repository tooling passed with zero warnings.                                                                       |
-| `pnpm test:unit`                 |    0 | 2 files and 7 tests passed, including expected boundary rejection and secret-pattern cases.                                               |
-| `pnpm test:coverage`             |    0 | Statements 93.87%, branches 85.89%, functions 100%, lines 97.84%; configured thresholds passed.                                           |
-| `pnpm build`                     |    0 | 19 of 19 package builds passed.                                                                                                           |
-| `pnpm check:licenses`            |    0 | 299 dependency records matched the reviewed permissive-license policy; unknowns fail closed.                                              |
-| `pnpm check:secrets`             |    0 | No configured credential or private-key pattern found in the scanned repository files.                                                    |
-| `pnpm audit:dependencies`        |    0 | No known dependency vulnerabilities reported at the high-or-greater gate.                                                                 |
-| `pnpm changeset:status`          |    0 | Sample changeset requests patch releases for `@job-workspace/application` and `@job-workspace/contracts`.                                 |
-| `pnpm check:affected -- HEAD^`   |    0 | An explicit Git base drives sequential affected build/typecheck/lint tasks, repository-tooling lint, and Vitest's changed-test selection. |
-| `pnpm verify`                    |    0 | Complete aggregate local foundation gate passed.                                                                                          |
+| Command                          | Exit | Result                                                                                                                                   |
+| -------------------------------- | ---: | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm install --frozen-lockfile` |    0 | Exact dependency graph installed.                                                                                                        |
+| `pnpm format:check`              |    0 | All files in the configured Prettier scope matched.                                                                                      |
+| `pnpm check:boundaries`          |    0 | 19 package policies passed.                                                                                                              |
+| `pnpm typecheck`                 |    0 | 19 of 19 strict TypeScript projects passed.                                                                                              |
+| `pnpm lint`                      |    0 | 19 package tasks plus repository tooling passed with zero warnings.                                                                      |
+| `pnpm test:unit`                 |    0 | 2 files and 7 tests passed, including expected boundary rejection and secret-pattern cases.                                              |
+| `pnpm test:coverage`             |    0 | Statements 93.87%, branches 85.89%, functions 100%, lines 97.84%; configured thresholds passed.                                          |
+| `pnpm build`                     |    0 | 19 of 19 package builds passed.                                                                                                          |
+| `pnpm check:licenses`            |    0 | 299 dependency records matched the reviewed permissive-license policy; unknowns fail closed.                                             |
+| `pnpm check:secrets`             |    0 | No configured credential or private-key pattern found in the scanned repository files.                                                   |
+| `pnpm audit:dependencies`        |    0 | No known dependency vulnerabilities reported at the high-or-greater gate.                                                                |
+| `pnpm changeset:status`          |    0 | Sample changeset requests patch releases for `@job-workspace/application` and `@job-workspace/contracts`.                                |
+| `pnpm check:affected -- HEAD^`   |    0 | 19 builds, 21 typecheck/prerequisite tasks, 19 lints, and tooling lint passed; no related tests was accepted only for this affected run. |
+| `pnpm verify`                    |    0 | Complete aggregate local foundation gate passed.                                                                                         |
 
 The built-in secret matcher is a fast local guard, not a claim of full-history coverage. The configured CI job supplies the separate full-history Gitleaks scan once the repository is hosted.
 
