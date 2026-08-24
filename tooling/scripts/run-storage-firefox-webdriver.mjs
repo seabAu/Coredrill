@@ -14,6 +14,7 @@ if (firefoxPath === undefined || firefoxPath.trim().length === 0) {
 
 const start = (command, args) =>
   spawn(command, args, {
+    detached: process.platform !== "win32",
     env: process.env,
     shell: false,
     stdio: ["ignore", "pipe", "pipe"],
@@ -24,6 +25,16 @@ const forwardOutput = (child, label) => {
   child.stdout.on("data", (chunk) => process.stdout.write(`[${label}] ${chunk}`));
   child.stderr.on("data", (chunk) => process.stderr.write(`[${label}] ${chunk}`));
   child.on("error", (error) => console.error(`[${label}] process error:`, error));
+};
+
+const stop = (child) => {
+  if (child.exitCode !== null || child.pid === undefined) return;
+  try {
+    if (process.platform === "win32") child.kill();
+    else process.kill(-child.pid, "SIGTERM");
+  } catch {
+    child.kill();
+  }
 };
 
 const waitForHttp = async (url, timeoutMs = 60_000) => {
@@ -175,6 +186,6 @@ try {
   if (sessionId !== undefined) {
     await webdriver(`/session/${sessionId}`, "DELETE").catch(() => undefined);
   }
-  geckodriver.kill();
-  vite.kill();
+  stop(geckodriver);
+  stop(vite);
 }
