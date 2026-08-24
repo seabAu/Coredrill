@@ -4,7 +4,7 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-24  
 Current milestone: Phase 0 — foundations and risk retirement  
-Current work item: `NAT-007` through `NAT-008` — packaging proof and evidence-backed native-adapter decision
+Current work item: `NAT-008` — cross-platform evidence and evidence-backed native-adapter decision
 Next recommended slice: `EXT-001` through `EXT-003` — least-privilege extension shell, user-action capture, and bounded outbox contract
 
 ## How to use this file
@@ -24,10 +24,10 @@ Next recommended slice: `EXT-001` through `EXT-003` — least-privilege extensio
 | Field | Value |
 |---|---|
 | Milestone | Phase 0 |
-| Item range | `NAT-007` through `NAT-008` |
+| Item range | `NAT-008` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-24 |
-| Expected proof | Installable first-OS artifact and resource benchmark; ADR-backed D-022/D-024/Q-003 decision |
+| Expected proof | Cross-platform secure-store/package evidence and ADR-backed D-022/D-024/Q-003 decision |
 | Blocker | None for this slice; the independent `FND-001` private-reporting-route blocker remains open below |
 | Next handoff | Continue with `EXT-001` through `EXT-003` after the native adapter/packaging decision; close `FND-001` independently when the owner publishes both private reporting routes |
 
@@ -106,7 +106,7 @@ Next recommended slice: `EXT-001` through `EXT-003` — least-privilege extensio
 - [x] **NAT-004** Store database/attachments in OS app-data and validate path canonicalization. — Proof: [pinned-Tauri resolver, canonical content-addressed layout, and Windows junction/reparse-point tests](../../proof/native-sqlite-tauri-verification.md#nat-004-os-app-data-and-path-confinement-proof)
 - [x] **NAT-005** Store/delete a test provider secret through OS secure storage without logging it. — Proof: [redacted Windows Credential Manager lifecycle and clean hosted checkout](../../proof/native-secure-storage-verification.md#redacted-integration-proof)
 - [x] **NAT-006** Export/restore with native file picker and atomic replacement behavior. — Proof: [picker-owned checksummed archive, corruption rejection, atomic replacement, recovery, and clean hosted checkout](../../proof/native-archive-verification.md#end-to-end-failure-and-recovery-proof)
-- [ ] **NAT-007** Build installable artifact for the first target OS and record size/startup/memory. — Proof: _artifact + benchmark_
+- [x] **NAT-007** Build installable artifact for the first target OS and record size/startup/memory. — Proof: [clean-commit NSIS artifact, installed lifecycle, and raw size/startup/memory manifests](../../proof/native-windows-package-verification.md#clean-commit-artifact-and-benchmark)
 - [ ] **NAT-008** Decide native adapter and update D-022/D-024/Q-003. — Proof: _ADR/update_
 
 ## Extension spike

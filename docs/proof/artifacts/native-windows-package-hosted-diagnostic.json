@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "proofId": "NAT007-WINDOWS-PACKAGE",
+  "matrixId": "JW-TM-001",
+  "matrixVersion": "1.2.0",
+  "executionTargetId": "DESK-WIN",
+  "targetConformant": false,
+  "targetLimitation": "Phase 0 diagnostics are not the required Windows 11 25H2 / HW-WIN-REF release-performance gate.",
+  "hardwareTargetId": "GH-HOSTED-WINDOWS-DIAGNOSTIC",
+  "operatingSystemTargetId": "GH-WINDOWS-DIAGNOSTIC",
+  "commitSha": "49c920ebd6ad3159a33905aefa3504b34d7f3c02",
+  "dirtyWorktreeAtStart": false,
+  "pnpmLockSha256": "dec392658d3916cd31aeab4d3ff2b8e93c372ea57da0185f4bbc4be82348d031",
+  "fixture": {
+    "id": "NAT007-EMPTY-SHELL",
+    "version": 1,
+    "seed": "coredrill-native-empty-shell-v1",
+    "sha256": "a81fa89661b5152097084929381742c7121c952422e3a5fd9265b103e32d5e35",
+    "containsUserData": false
+  },
+  "environment": {
+    "osCaption": "Microsoft Windows Server 2025 Datacenter",
+    "osVersion": "10.0.26100",
+    "osBuild": "26100",
+    "architecture": "AMD64",
+    "cpu": "AMD EPYC 7763 64-Core Processor",
+    "logicalProcessors": 4,
+    "memoryBytes": 17178693632,
+    "webview2Versions": ["151.0.4129.86"],
+    "powerProfile": "not controlled; diagnostic only"
+  },
+  "package": {
+    "format": "nsis-current-user",
+    "version": "0.0.0",
+    "installerFileName": "Coredrill_0.0.0_x64-setup.exe",
+    "installerBytes": 3017964,
+    "installerSha256": "e946042a76e9254e6a7ee0f6952d861b034be86f82c839fbafac6b9227373159",
+    "installerSignatureStatus": "NotSigned",
+    "webviewInstallMode": "downloadBootstrapper",
+    "appBytes": 11665920,
+    "appSha256": "c6fc11e5a4e63d7aae88e4b0c7c558cfd66e50a08daa9bfbfb33e78516147105",
+    "appSignatureStatus": "NotSigned",
+    "nativeStorageProbeExcluded": true,
+    "uninstallRemovedProgram": true,
+    "uninstallPreservedAppData": true
+  },
+  "measurement": {
+    "readySignal": "native window title set after Tauri PageLoadEvent.Finished",
+    "warmupsDiscarded": 5,
+    "measuredRuns": 20,
+    "failureCount": 0,
+    "startupMilliseconds": {
+      "p50": 582.8,
+      "p95": 605.9,
+      "maximum": 701.5,
+      "raw": [
+        582.3, 582.8, 597.7, 605.9, 603.3, 583.3, 598.9, 589.0, 596.8, 567.1, 586.6, 559.0, 569.8,
+        570.7, 578.7, 571.7, 570.4, 568.4, 590.2, 701.5
+      ]
+    },
+    "aggregateWorkingSetBytes": {
+      "p50": 320827392.0,
+      "p95": 322940928.0,
+      "maximum": 325099520,
+      "raw": [
+        322244608, 318451712, 320827392, 318623744, 318738432, 319053824, 321642496, 322940928,
+        318660608, 318697472, 322199552, 319741952, 319205376, 321880064, 325099520, 322375680,
+        321437696, 321294336, 321822720, 319008768
+      ]
+    },
+    "aggregatePrivateBytes": {
+      "p50": 115388416.0,
+      "p95": 118349824.0,
+      "maximum": 119136256,
+      "raw": [
+        118349824, 114597888, 115253248, 115384320, 114798592, 114741248, 117366784, 117936128,
+        114769920, 114364416, 118083584, 115449856, 115814400, 115388416, 119136256, 117977088,
+        117432320, 115027968, 117309440, 114712576
+      ]
+    },
+    "processCount": {
+      "p50": 8.0,
+      "maximum": 8,
+      "raw": [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8]
+    },
+    "warmupMilliseconds": [14193.7, 779.5, 765.8, 569.8, 568.9]
+  },
+  "startedAt": "2026-08-24T14:25:14.2273281+00:00",
+  "completedAt": "2026-08-24T14:25:59.2077733+00:00",
+  "reviewer": "automated-phase-0-diagnostic"
+}

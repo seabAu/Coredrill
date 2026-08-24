@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "proofId": "NAT007-WINDOWS-PACKAGE",
+  "matrixId": "JW-TM-001",
+  "matrixVersion": "1.2.0",
+  "executionTargetId": "DESK-WIN",
+  "targetConformant": false,
+  "targetLimitation": "Phase 0 diagnostics are not the required Windows 11 25H2 / HW-WIN-REF release-performance gate.",
+  "hardwareTargetId": "HW-LOCAL-DIAG",
+  "operatingSystemTargetId": "OS-WIN10-LOCAL",
+  "commitSha": "49c920ebd6ad3159a33905aefa3504b34d7f3c02",
+  "dirtyWorktreeAtStart": false,
+  "pnpmLockSha256": "dec392658d3916cd31aeab4d3ff2b8e93c372ea57da0185f4bbc4be82348d031",
+  "fixture": {
+    "id": "NAT007-EMPTY-SHELL",
+    "version": 1,
+    "seed": "coredrill-native-empty-shell-v1",
+    "sha256": "a81fa89661b5152097084929381742c7121c952422e3a5fd9265b103e32d5e35",
+    "containsUserData": false
+  },
+  "environment": {
+    "osCaption": "Microsoft Windows 10 Pro",
+    "osVersion": "10.0.19045",
+    "osBuild": "19045",
+    "architecture": "AMD64",
+    "cpu": "Intel(R) Core(TM) Ultra 9 285K",
+    "logicalProcessors": 24,
+    "memoryBytes": 68148977664,
+    "webview2Versions": ["151.0.4129.101"],
+    "powerProfile": "not controlled; diagnostic only"
+  },
+  "package": {
+    "format": "nsis-current-user",
+    "version": "0.0.0",
+    "installerFileName": "Coredrill_0.0.0_x64-setup.exe",
+    "installerBytes": 3012347,
+    "installerSha256": "093f53bc7694d394fc6f6bfe16797307c9c20f43617fcee831342061ec250b21",
+    "installerSignatureStatus": "NotSigned",
+    "webviewInstallMode": "downloadBootstrapper",
+    "appBytes": 11646464,
+    "appSha256": "d110a8333714c6587a1527068ba83c65dff60742ba881e42e21d65eac9907a42",
+    "appSignatureStatus": "NotSigned",
+    "nativeStorageProbeExcluded": true,
+    "uninstallRemovedProgram": true,
+    "uninstallPreservedAppData": true
+  },
+  "measurement": {
+    "readySignal": "native window title set after Tauri PageLoadEvent.Finished",
+    "warmupsDiscarded": 5,
+    "measuredRuns": 20,
+    "failureCount": 0,
+    "startupMilliseconds": {
+      "p50": 546,
+      "p95": 618.5,
+      "maximum": 678,
+      "raw": [
+        511.8, 511.7, 678, 458.2, 580.5, 566.5, 524, 517.3, 595.1, 576.9, 546, 575.6, 591.6, 572.5,
+        522.3, 544.9, 536.3, 618.5, 570, 519.4
+      ]
+    },
+    "aggregateWorkingSetBytes": {
+      "p50": 324526080,
+      "p95": 328298496,
+      "maximum": 379486208,
+      "raw": [
+        326926336, 379486208, 326709248, 323936256, 324407296, 325918720, 322920448, 321368064,
+        325689344, 328298496, 322490368, 324526080, 322777088, 322469888, 325660672, 325935104,
+        322588672, 325566464, 322523136, 325685248
+      ]
+    },
+    "aggregatePrivateBytes": {
+      "p50": 174653440,
+      "p95": 178057216,
+      "maximum": 213663744,
+      "raw": [
+        177254400, 213663744, 174653440, 175083520, 175382528, 176406528, 170233856, 172068864,
+        178057216, 176717824, 170840064, 175681536, 171134976, 169897984, 176803840, 172380160,
+        170954752, 176685056, 169725952, 169705472
+      ]
+    },
+    "processCount": {
+      "p50": 8,
+      "maximum": 9,
+      "raw": [8, 9, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8]
+    },
+    "warmupMilliseconds": [911.3, 504.1, 523.4, 536.1, 510.5]
+  },
+  "startedAt": "2026-08-24T14:12:09.0129497+00:00",
+  "completedAt": "2026-08-24T14:13:03.0085610+00:00",
+  "reviewer": "automated-phase-0-diagnostic"
+}
