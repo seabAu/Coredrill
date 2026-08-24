@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "inventoryId": "JW-DI-001",
-  "version": "1.8.0",
-  "reviewedAt": "2026-08-24T14:48:22Z",
+  "version": "1.9.0",
+  "reviewedAt": "2026-08-24T16:35:13Z",
   "scope": {
     "included": [
       "Pinned Node.js, pnpm, and Rust foundation toolchains",
@@ -17,7 +17,7 @@
   },
   "lockfile": {
     "path": "pnpm-lock.yaml",
-    "sha256": "dec392658d3916cd31aeab4d3ff2b8e93c372ea57da0185f4bbc4be82348d031"
+    "sha256": "4ad7db6c33b07978bbe42e58f1d04855e11cdc8d8f16604bf498b45103be94aa"
   },
   "toolchains": [
     {
@@ -92,18 +92,102 @@
       "selectionNote": "Tauri CLI 2.11.3 was published at 2026-06-19T12:45:00.191Z and satisfies minimumReleaseAge: 1440; current 2.11.4 was published at 2026-06-28T17:58:47.722Z and remains inside the 60-day native dependency review window."
     },
     {
+      "manifest": "apps/extension/package.json",
+      "dependencyType": "dependencies",
+      "name": "react",
+      "version": "19.2.7",
+      "upstreamLatest": "19.2.8",
+      "selectionStatus": "release-age-approved",
+      "license": "MIT",
+      "maintainers": ["fb", "react-bot"],
+      "repository": "https://github.com/facebook/react",
+      "metadataSource": "https://registry.npmjs.org/react/19.2.7",
+      "knownAdvisories": [],
+      "selectionNote": "React 19.2.7 was published at 2026-06-01T18:00:48.323Z and is outside the 60-day review window; current 19.2.8 was published at 2026-07-21T15:41:28.716Z and remains inside it."
+    },
+    {
+      "manifest": "apps/extension/package.json",
+      "dependencyType": "dependencies",
+      "name": "react-dom",
+      "version": "19.2.7",
+      "upstreamLatest": "19.2.8",
+      "selectionStatus": "release-age-approved",
+      "license": "MIT",
+      "maintainers": ["fb", "react-bot"],
+      "repository": "https://github.com/facebook/react",
+      "metadataSource": "https://registry.npmjs.org/react-dom/19.2.7",
+      "knownAdvisories": [],
+      "selectionNote": "React DOM 19.2.7 was published at 2026-06-01T18:01:02.438Z and is outside the 60-day review window; current 19.2.8 was published at 2026-07-21T15:41:41.267Z and remains inside it."
+    },
+    {
+      "manifest": "apps/extension/package.json",
+      "dependencyType": "devDependencies",
+      "name": "@types/react",
+      "version": "19.2.17",
+      "upstreamLatest": "19.2.18",
+      "selectionStatus": "release-age-approved",
+      "license": "MIT",
+      "maintainers": ["types"],
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+      "metadataSource": "https://registry.npmjs.org/@types%2freact/19.2.17",
+      "knownAdvisories": [],
+      "selectionNote": "The selected React types were published at 2026-06-05T20:10:24.692Z and are outside the 60-day review window; current 19.2.18 was published at 2026-07-30T21:54:03.456Z."
+    },
+    {
+      "manifest": "apps/extension/package.json",
+      "dependencyType": "devDependencies",
+      "name": "@types/react-dom",
+      "version": "19.2.3",
+      "upstreamLatest": "19.2.5",
+      "selectionStatus": "release-age-approved",
+      "license": "MIT",
+      "maintainers": ["types"],
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+      "metadataSource": "https://registry.npmjs.org/@types%2freact-dom/19.2.3",
+      "knownAdvisories": [],
+      "selectionNote": "The selected React DOM types were published at 2025-11-12T04:37:39.524Z; current 19.2.5 was published at 2026-08-23T21:05:23.671Z and was also inside minimumReleaseAge: 1440 at review time."
+    },
+    {
+      "manifest": "apps/extension/package.json",
+      "dependencyType": "devDependencies",
+      "name": "@wxt-dev/module-react",
+      "version": "1.2.2",
+      "upstreamLatest": "1.2.2",
+      "selectionStatus": "current",
+      "license": "MIT",
+      "maintainers": ["_aklinker1"],
+      "repository": "https://github.com/wxt-dev/wxt",
+      "metadataSource": "https://registry.npmjs.org/@wxt-dev%2fmodule-react/1.2.2",
+      "knownAdvisories": [],
+      "selectionNote": "Current WXT React integration, published at 2026-03-14T23:48:14.152Z and verified against WXT 0.21.4, React 19.2.7, TypeScript 6.0.3, and Vite 8.2.2."
+    },
+    {
+      "manifest": "apps/extension/package.json",
+      "dependencyType": "devDependencies",
+      "name": "wxt",
+      "version": "0.21.4",
+      "upstreamLatest": "0.21.4",
+      "selectionStatus": "current",
+      "license": "MIT",
+      "maintainers": ["_aklinker1"],
+      "repository": "https://github.com/wxt-dev/wxt",
+      "metadataSource": "https://registry.npmjs.org/wxt/0.21.4",
+      "knownAdvisories": [],
+      "selectionNote": "Current WXT, published at 2026-08-11T13:09:07.895Z. It is deliberately selected inside the 60-day review window because the older release-age candidate 0.20.27 retained an unused browser-runner subtree with critical/high advisories; 0.21.4 removes that subtree and the reviewed lockfile audit is clean."
+    },
+    {
       "manifest": "apps/web/package.json",
       "dependencyType": "devDependencies",
       "name": "vite",
-      "version": "8.1.0",
+      "version": "8.2.2",
       "upstreamLatest": "8.2.2",
-      "selectionStatus": "release-age-approved",
+      "selectionStatus": "current",
       "license": "MIT",
       "maintainers": ["yyx990803", "vitebot"],
       "repository": "https://github.com/vitejs/vite",
-      "metadataSource": "https://registry.npmjs.org/vite/8.1.0",
+      "metadataSource": "https://registry.npmjs.org/vite/8.2.2",
       "knownAdvisories": [],
-      "selectionNote": "Vite 8.1.0 was published at 2026-06-23T11:34:04.988Z and satisfies minimumReleaseAge: 1440; current 8.2.2 was published at 2026-08-20T04:14:39.107Z and remains inside the review window."
+      "selectionNote": "Current Vite 8.2.2 was published at 2026-08-20T04:14:39.107Z and is deliberately selected inside the 60-day review window. The prior 8.1.0 graph retained esbuild 0.27.7 after GHSA-g7r4-m6w7-qqqr; 8.2.2 removes that dependency and the complete reviewed lockfile audit is clean."
     },
     {
       "manifest": "package.json",
@@ -593,10 +677,10 @@
   "advisoryReview": {
     "command": "pnpm audit --json",
     "source": "https://pnpm.io/cli/audit",
-    "reviewedAt": "2026-08-24T10:33:46Z",
-    "lockfileSha256": "dec392658d3916cd31aeab4d3ff2b8e93c372ea57da0185f4bbc4be82348d031",
-    "resolvedDependencyCount": 379,
-    "optionalDependencyCount": 68,
+    "reviewedAt": "2026-08-24T16:35:13Z",
+    "lockfileSha256": "4ad7db6c33b07978bbe42e58f1d04855e11cdc8d8f16604bf498b45103be94aa",
+    "resolvedDependencyCount": 459,
+    "optionalDependencyCount": 47,
     "vulnerabilities": {
       "info": 0,
       "low": 0,
@@ -607,9 +691,9 @@
   },
   "licenseReview": {
     "command": "pnpm check:licenses",
-    "reviewedAt": "2026-08-24T10:33:46Z",
-    "lockfileSha256": "dec392658d3916cd31aeab4d3ff2b8e93c372ea57da0185f4bbc4be82348d031",
-    "resolvedPackageRecords": 309,
+    "reviewedAt": "2026-08-24T16:35:13Z",
+    "lockfileSha256": "4ad7db6c33b07978bbe42e58f1d04855e11cdc8d8f16604bf498b45103be94aa",
+    "resolvedPackageRecords": 348,
     "result": "pass",
     "note": "License records and advisory dependency counts use different tool scopes and are not expected to match."
   },
@@ -640,9 +724,19 @@
       "nextReviewOn": "2026-09-24"
     },
     {
+      "dependency": "react, react-dom, @types/react, and @types/react-dom",
+      "reason": "The runtime and type packages use release-age-reviewed versions while their current patch releases remain inside the 60-day window; re-evaluate them together after the newest type release ages out.",
+      "nextReviewOn": "2026-10-23"
+    },
+    {
+      "dependency": "wxt",
+      "reason": "Current 0.21.4 is intentionally selected inside the 60-day window because release-age candidate 0.20.27 retained an unused browser-runner subtree with critical/high advisories. Recheck upstream patches and the complete audit weekly during the extension spike.",
+      "nextReviewOn": "2026-08-31"
+    },
+    {
       "dependency": "vite",
-      "reason": "8.2.2 is current but remains inside the repository's 60-day dependency review window.",
-      "nextReviewOn": "2026-10-20"
+      "reason": "Current 8.2.2 is intentionally selected inside the 60-day window because the prior 8.1.0 graph retained advisory-affected esbuild 0.27.7. Recheck the current graph and audit with WXT.",
+      "nextReviewOn": "2026-08-31"
     }
   ],
   "reviewTriggers": [

@@ -20,7 +20,7 @@ The identity/license follow-up renamed workspace-only package references from th
 
 ## Dependency selection review
 
-The inventory covers only adopted foundation tooling. React, Vite, Tauri, WXT, SQLite WASM, product UI libraries, scraping, AI, hosted services, and Python remain uninstalled/provisional.
+At the original `FND-009` review, the inventory covered only adopted foundation tooling; React, Vite, Tauri, WXT, SQLite WASM, product UI libraries, scraping, AI, hosted services, and Python were uninstalled/provisional. That sentence is historical rather than current state. Subsequent storage/native/extension spikes update the same governed inventory whenever a manifest or lockfile changes. The current [`JW-DI-001` v1.9.0](foundation-dependency-inventory.json) includes the adopted SQLite, Tauri, Vite, React, and WXT dependencies; see the [browser storage](browser-storage-platform-verification.md), [native](native-cross-platform-verification.md), and [extension](extension-capture-outbox-verification.md) proofs. Scraping, AI, hosted services, Python, and the remaining unspiked product libraries are still absent.
 
 - ESLint moved from `10.8.1` to current stable `10.9.0`, published more than 24 hours before review. Its Node range includes Node 24 and `typescript-eslint` accepts ESLint 10. [ESLint 10.9.0 release](https://github.com/eslint/eslint/releases/tag/v10.9.0)
 - TypeScript remains `6.0.3`. Upstream `7.0.2` is newer, but `typescript-eslint@8.67.0` declares `typescript >=4.8.4 <6.1.0`; `6.0.3` is therefore the latest mutually compatible selection. [TypeScript 7.0.2 release](https://github.com/microsoft/TypeScript/releases/tag/v7.0.2)

@@ -7,6 +7,8 @@ node_modules/
 
 # Build and test output
 dist/
+.output/
+.wxt/
 coverage/
 playwright-report/
 test-results/

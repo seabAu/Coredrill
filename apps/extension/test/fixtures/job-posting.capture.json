@@ -1,0 +1,15 @@
+{
+  "url": "https://jobs.example.test/openings/42?source=fixture",
+  "canonicalUrl": "https://jobs.example.test/openings/42",
+  "pageTitle": "Senior Platform Engineer — Example Systems",
+  "selectedText": "Build reliable local-first systems.",
+  "jsonLd": {
+    "@context": "https://schema.org",
+    "@type": "JobPosting",
+    "title": "Senior Platform Engineer",
+    "hiringOrganization": {
+      "@type": "Organization",
+      "name": "Example Systems"
+    }
+  }
+}

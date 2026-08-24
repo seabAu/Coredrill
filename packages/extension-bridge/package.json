@@ -13,6 +13,10 @@
   "files": [
     "dist"
   ],
+  "dependencies": {
+    "@coredrill/capture-core": "workspace:*",
+    "@coredrill/contracts": "workspace:*"
+  },
   "scripts": {
     "build": "tsc -b",
     "typecheck": "tsc -p tsconfig.json --noEmit --pretty false --tsBuildInfoFile .turbo/typecheck.tsbuildinfo",

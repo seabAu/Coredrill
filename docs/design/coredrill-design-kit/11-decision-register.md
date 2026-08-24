@@ -139,6 +139,7 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
 - **Why:** Entry-point/manifest tooling and shared TypeScript/React support.
 - **Gate:** Chromium side panel, Firefox fallback, permissions, bundle/CSP, and store packaging.
 - **Fallback:** Browser-specific hand-authored manifests around the same capture packages.
+- **Phase 0 evidence (2026-08-24):** `EXT-001` through `EXT-003` prove the Chromium WXT `0.21.4` MV3 side panel/popup build, exact least-privilege manifest, synthetic user-action page capture, versioned provenance-retaining envelope, and bounded checksummed local outbox. The dependency gate rejected WXT `0.20.27` rather than suppressing its obsolete vulnerable runner subtree. Status remains Provisional: transfer acknowledgement, Firefox/manual fallback, hostile-message/replay coverage, final bundle/secret review, and `EXT-008` still gate acceptance. See [extension capture/outbox verification](../../proof/extension-capture-outbox-verification.md).
 
 ### D-024 — SQLite in every full app mode
 

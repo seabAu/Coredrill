@@ -28,6 +28,7 @@
     "test:boundaries": "vitest run tooling/tests/import-boundaries.test.mjs",
     "check:boundaries": "node tooling/architecture/check-boundaries.mjs",
     "check:foundation-records": "node tooling/scripts/check-foundation-records.mjs",
+    "check:extension-build": "node tooling/scripts/check-extension-build.mjs",
     "generate:contract-schemas": "node tooling/scripts/generate-contract-schemas.mjs",
     "check:contract-schemas": "node tooling/scripts/generate-contract-schemas.mjs --check",
     "check:affected": "node tooling/scripts/check-affected.mjs",
@@ -39,7 +40,7 @@
     "audit:dependencies": "pnpm audit --audit-level=low && cargo audit --file apps/desktop/src-tauri/Cargo.lock",
     "changeset": "changeset",
     "changeset:status": "changeset status",
-    "verify": "pnpm format:check && pnpm check:boundaries && pnpm check:foundation-records && pnpm typecheck && pnpm lint && pnpm test:unit && pnpm test:coverage && pnpm build && pnpm test:storage-browser && pnpm test:storage-native && pnpm test:secure-storage && pnpm test:native-archive && pnpm check:contract-schemas && pnpm check:licenses && pnpm check:secrets && pnpm audit:dependencies && pnpm changeset:status"
+    "verify": "pnpm format:check && pnpm check:boundaries && pnpm check:foundation-records && pnpm typecheck && pnpm lint && pnpm test:unit && pnpm test:coverage && pnpm build && pnpm check:extension-build && pnpm test:storage-browser && pnpm test:storage-native && pnpm test:secure-storage && pnpm test:native-archive && pnpm check:contract-schemas && pnpm check:licenses && pnpm check:secrets && pnpm audit:dependencies && pnpm changeset:status"
   },
   "devDependencies": {
     "@changesets/cli": "3.0.1",

@@ -53,6 +53,15 @@ jobs:
       - name: Run foundation gate
         run: pnpm verify
 
+      - name: Upload immutable Chromium extension proof
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coredrill-chromium-extension-${{ github.sha }}
+          path: apps/extension/.output/chrome-mv3
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
       - name: Emit reviewed license inventory
         run: pnpm report:licenses > dependency-licenses.json
 
