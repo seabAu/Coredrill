@@ -20,6 +20,12 @@ const start = (command, args) =>
     windowsHide: true,
   });
 
+const forwardOutput = (child, label) => {
+  child.stdout.on("data", (chunk) => process.stdout.write(`[${label}] ${chunk}`));
+  child.stderr.on("data", (chunk) => process.stderr.write(`[${label}] ${chunk}`));
+  child.on("error", (error) => console.error(`[${label}] process error:`, error));
+};
+
 const waitForHttp = async (url, timeoutMs = 60_000) => {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
@@ -38,6 +44,7 @@ const webdriver = async (path, method = "GET", body) => {
   const response = await fetch(`${webdriverUrl}${path}`, {
     method,
     headers: { "content-type": "application/json" },
+    signal: AbortSignal.timeout(60_000),
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
   const payload = await response.json();
@@ -61,6 +68,8 @@ const vite = start(process.execPath, [
   "--strictPort",
 ]);
 const geckodriver = start(geckodriverPath, ["--host", "127.0.0.1", "--port", "4445"]);
+forwardOutput(vite, "vite");
+forwardOutput(geckodriver, "geckodriver");
 
 let sessionId;
 try {
