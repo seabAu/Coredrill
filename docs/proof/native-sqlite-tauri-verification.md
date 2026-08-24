@@ -8,7 +8,7 @@
 
 ## Outcome
 
-`NAT-001` through `NAT-003` pass their local proof gates. The shared Vite frontend builds as `coredrill.exe` in a Tauri 2 shell with a strict content security policy, a local-window capability, and one generated permission for one versioned native-storage command. A narrow `rusqlite` command layer is the provisional native-adapter candidate because it can preserve the existing callback transaction and migration contracts without broadening the privileged surface. The exact same storage-core transaction suite and a shared migration/repository suite pass against a real Rust process and bundled native SQLite.
+`NAT-001` through `NAT-003` pass their local and hosted proof gates. The shared Vite frontend builds as `coredrill.exe` in a Tauri 2 shell with a strict content security policy, a local-window capability, and one generated permission for one versioned native-storage command. A narrow `rusqlite` command layer is the provisional native-adapter candidate because it can preserve the existing callback transaction and migration contracts without broadening the privileged surface. The exact same storage-core transaction suite and a shared migration/repository suite pass against a real Rust process and bundled native SQLite.
 
 This checkpoint does not accept Tauri or the native adapter. OS app-data/path tests, secure storage, native export/restore, installable packaging, cross-platform evidence, and the final D-022/Q-003 decision remain `NAT-004` through `NAT-008`. The shell adds no account, hosted database, telemetry, scraper, AI/provider call, updater, filesystem plugin, or product feature.
 
@@ -81,7 +81,15 @@ Run with the repository's pinned toolchains:
 | `pnpm check:licenses`                                  | Passed 309 npm package records and 419 Cargo crate records                                |
 | `cargo audit --file apps/desktop/src-tauri/Cargo.lock` | Zero vulnerabilities; 15 reviewed informational warnings                                  |
 
-The complete repository `pnpm verify` gate passed: 25/25 typecheck tasks, 21/21 lint tasks, 16 unit-test files and 98 tests, 99.02% statements/95.29% branches/100% functions/99.19% lines, 21/21 builds, four browser storage E2E tests, five native storage tests, schema drift checks, both license policies, secret scanning, npm/RustSec vulnerability checks, and Changesets status. A final release-mode build after dependency minimization and result-bound hardening produced `coredrill.exe` in 20.27 seconds. Hosted Windows proof is recorded after the implementation commit runs in Foundation CI.
+The complete repository `pnpm verify` gate passed: 25/25 typecheck tasks, 21/21 lint tasks, 16 portable unit-test files and 94 tests, 99.02% statements/95.29% branches/100% functions/99.19% lines, 21/21 builds, four browser storage E2E tests, five separate native storage tests, schema drift checks, both license policies, secret scanning, npm/RustSec vulnerability checks, and Changesets status. A release-mode build after dependency minimization and result-bound hardening produced `coredrill.exe` in 20.27 seconds.
+
+Hosted clean-checkout proof for implementation commit `7fe612d14e9d704a9cc86c4e59daf6a57795d4da` passed [Foundation CI run 32721800309](https://github.com/seabAu/Coredrill/actions/runs/32721800309):
+
+- the [Windows native/Tauri job](https://github.com/seabAu/Coredrill/actions/runs/32721800309/job/97414591853) built prerequisites from an empty checkout, passed the five native contracts, passed complete all-feature Rust lint, and built the shared frontend in the release Tauri shell;
+- the [Linux quality job](https://github.com/seabAu/Coredrill/actions/runs/32721800309/job/97414592126) passed the complete repository gate and emitted both reviewed npm and 419-crate Rust license inventories;
+- both current/previous Chrome and Firefox storage lanes passed, and the [full-history secret scan](https://github.com/seabAu/Coredrill/actions/runs/32721800309/job/97414592000) passed.
+
+The hosted Firefox jobs retain a non-failing GitHub annotation because the checksum-pinned geckodriver setup action still declares a Node.js 20 action runtime that GitHub forces onto Node.js 24. Both exact Firefox lifecycle lanes pass; action-runtime compatibility remains a routine CI maintenance item rather than product proof.
 
 ## Sources
 
