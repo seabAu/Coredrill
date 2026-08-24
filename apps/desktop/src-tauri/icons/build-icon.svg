@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <title>Neutral Coredrill build icon</title>
+  <rect width="1024" height="1024" rx="192" fill="#20242b" />
+  <path
+    fill="#f4f6f8"
+    d="M272 256h480a48 48 0 0 1 48 48v416a48 48 0 0 1-48 48H272a48 48 0 0 1-48-48V304a48 48 0 0 1 48-48Zm48 112v80h384v-80H320Zm0 144v144h112V512H320Zm176 0v144h208V512H496Z"
+  />
+</svg>

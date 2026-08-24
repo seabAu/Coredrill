@@ -5,12 +5,26 @@ import { fileURLToPath } from "node:url";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
-if (process.platform !== "win32") {
-  console.log("NAT005 secure-storage proof skipped: Windows Credential Manager is not available.");
+const backendByPlatform = {
+  darwin: "macos-keychain",
+  linux: "freedesktop-secret-service",
+  win32: "windows-credential-manager",
+};
+const backend = backendByPlatform[process.platform];
+
+if (!backend) {
+  console.log(`Native secure-storage proof skipped: ${process.platform} is not a desktop target.`);
   process.exit(0);
 }
 
-const syntheticSecret = `nat005-${randomBytes(48).toString("base64url")}`;
+if (process.platform === "linux" && process.env.COREDRILL_SECRET_PROOF_REQUIRED !== "true") {
+  console.log(
+    "Native secure-storage proof skipped: a prepared Secret Service session is required.",
+  );
+  process.exit(0);
+}
+
+const syntheticSecret = `nat008-${randomBytes(48).toString("base64url")}`;
 const childEnvironment = {
   ...process.env,
   COREDRILL_SECRET_PROOF_VALUE: syntheticSecret,
@@ -22,9 +36,9 @@ const result = spawnSync(
     "--manifest-path",
     "apps/desktop/src-tauri/Cargo.toml",
     "--locked",
-    "--all-features",
+    "--no-default-features",
     "--lib",
-    "windows_credential_manager_lifecycle_is_redacted",
+    "platform_secure_store_lifecycle_is_redacted",
     "--",
     "--ignored",
     "--nocapture",
@@ -55,8 +69,8 @@ if (result.status !== 0) {
 }
 
 console.log(
-  `NAT005_SECRET_PROOF ${JSON.stringify({
-    backend: "windows-credential-manager",
+  `NAT008_SECRET_PROOF ${JSON.stringify({
+    backend,
     stored: true,
     retrievedInsideRust: true,
     deleted: true,

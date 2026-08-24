@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "inventoryId": "JW-DI-001",
-  "version": "1.7.0",
-  "reviewedAt": "2026-08-24T12:55:00Z",
+  "version": "1.8.0",
+  "reviewedAt": "2026-08-24T14:48:22Z",
   "scope": {
     "included": [
       "Pinned Node.js, pnpm, and Rust foundation toolchains",
@@ -353,7 +353,7 @@
     "manifest": "apps/desktop/src-tauri/Cargo.toml",
     "lockfile": {
       "path": "apps/desktop/src-tauri/Cargo.lock",
-      "sha256": "1d1b889b68954bcb38b97ae8e334e944cef3fec13de594daccfc1e24a208dfb8"
+      "sha256": "8426c712842427fc31455183cb7afa902431220bca4276a52af66cb369d9d41a"
     },
     "directDependencies": [
       {
@@ -484,6 +484,34 @@
       },
       {
         "manifest": "apps/desktop/src-tauri/Cargo.toml",
+        "dependencyType": "target.'cfg(target_os = \"linux\")'.dependencies",
+        "name": "zbus-secret-service-keyring-store",
+        "version": "1.0.1",
+        "upstreamLatest": "1.0.1",
+        "selectionStatus": "current",
+        "license": "MIT OR Apache-2.0",
+        "maintainers": ["Daniel Brotsky", "Open Source Cooperative contributors"],
+        "repository": "https://github.com/open-source-cooperative/zbus-secret-service-keyring-store",
+        "metadataSource": "https://crates.io/crates/zbus-secret-service-keyring-store/1.0.1",
+        "knownAdvisories": [],
+        "selectionNote": "Current FreeDesktop Secret Service store, confined to Linux with default features disabled and the RustCrypto implementation selected. Coredrill serializes entry operations, fails closed when no unlocked Secret Service is available, and never falls back to plaintext storage."
+      },
+      {
+        "manifest": "apps/desktop/src-tauri/Cargo.toml",
+        "dependencyType": "target.'cfg(target_os = \"macos\")'.dependencies",
+        "name": "apple-native-keyring-store",
+        "version": "1.0.2",
+        "upstreamLatest": "1.0.2",
+        "selectionStatus": "current",
+        "license": "MIT OR Apache-2.0",
+        "maintainers": ["Daniel Brotsky", "Open Source Cooperative contributors"],
+        "repository": "https://github.com/open-source-cooperative/apple-native-keyring-store",
+        "metadataSource": "https://crates.io/crates/apple-native-keyring-store/1.0.2",
+        "knownAdvisories": [],
+        "selectionNote": "Current macOS login-Keychain store, target-confined with default features disabled and only the keychain implementation selected. Phase 0 does not request protected, biometric, access-group, or iCloud Keychain behavior; operations remain serialized and failures remain content-free."
+      },
+      {
+        "manifest": "apps/desktop/src-tauri/Cargo.toml",
         "dependencyType": "target.'cfg(target_os = \"windows\")'.dependencies",
         "name": "windows-native-keyring-store",
         "version": "1.1.0",
@@ -529,9 +557,9 @@
       "command": "cargo audit --file apps/desktop/src-tauri/Cargo.lock",
       "toolVersion": "0.22.2",
       "source": "https://rustsec.org/",
-      "reviewedAt": "2026-08-24T12:55:00Z",
-      "lockfileSha256": "1d1b889b68954bcb38b97ae8e334e944cef3fec13de594daccfc1e24a208dfb8",
-      "dependencyCount": 443,
+      "reviewedAt": "2026-08-24T14:48:22Z",
+      "lockfileSha256": "8426c712842427fc31455183cb7afa902431220bca4276a52af66cb369d9d41a",
+      "dependencyCount": 499,
       "vulnerabilities": 0,
       "unmaintainedWarnings": 14,
       "unsoundWarnings": 1,
@@ -552,13 +580,13 @@
         "RUSTSEC-2025-0098",
         "RUSTSEC-2025-0100"
       ],
-      "reviewNote": "RustSec reports no vulnerability. The informational warnings are transitive Tauri/Wry cross-platform lock entries: GTK3/unic/proc-macro maintenance warnings plus glib 0.18.5 unsoundness. Windows does not compile the GTK3 path; this remains an explicit NAT-008 cross-platform review risk rather than a suppressed finding."
+      "reviewNote": "RustSec reports no vulnerability. The informational warnings are transitive Tauri/Wry cross-platform lock entries: GTK3/unic/proc-macro maintenance warnings plus glib 0.18.5 unsoundness. Windows and macOS do not compile the GTK3 path; Linux does, so its package remains diagnostic and release support cannot be accepted without an explicit NAT-008 decision that resolves or knowingly accepts the unsound graph."
     },
     "licenseReview": {
       "command": "pnpm check:licenses",
-      "reviewedAt": "2026-08-24T12:55:00Z",
-      "lockfileSha256": "1d1b889b68954bcb38b97ae8e334e944cef3fec13de594daccfc1e24a208dfb8",
-      "resolvedPackageRecords": 442,
+      "reviewedAt": "2026-08-24T14:48:22Z",
+      "lockfileSha256": "8426c712842427fc31455183cb7afa902431220bca4276a52af66cb369d9d41a",
+      "resolvedPackageRecords": 498,
       "result": "pass"
     }
   },
@@ -603,7 +631,7 @@
     },
     {
       "dependency": "Tauri/Wry cross-platform Cargo graph",
-      "reason": "RustSec reports no vulnerability but records 14 unmaintained transitive warnings and glib 0.18.5 unsoundness in the Linux GTK3 path; review updated Tauri releases and actual macOS/Linux target graphs during NAT-004 and before NAT-008 acceptance.",
+      "reason": "RustSec reports no vulnerability but records 14 unmaintained transitive warnings and glib 0.18.5 unsoundness in the Linux GTK3 path. The Phase 0 Linux AppImage is diagnostic only; public Linux desktop support remains blocked until the graph is replaced, remediated upstream, or accepted through an explicit risk decision.",
       "nextReviewOn": "2026-08-31"
     },
     {

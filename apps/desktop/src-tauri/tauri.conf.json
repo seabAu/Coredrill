@@ -38,8 +38,14 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis"],
     "useLocalToolsDir": true,
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
     "category": "Productivity",
     "shortDescription": "Local-first job application workspace.",
     "longDescription": "Coredrill is an accountless, local-first workspace for managing job applications and career evidence.",

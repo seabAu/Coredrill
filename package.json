@@ -24,6 +24,7 @@
     "test:secure-storage": "node tooling/scripts/run-native-secret-proof.mjs",
     "test:native-archive": "node tooling/scripts/run-native-archive-proof.mjs",
     "test:native-package": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File tooling/scripts/run-native-package-proof.ps1",
+    "test:native-platform-package": "node tooling/scripts/run-native-platform-package-proof.mjs",
     "test:boundaries": "vitest run tooling/tests/import-boundaries.test.mjs",
     "check:boundaries": "node tooling/architecture/check-boundaries.mjs",
     "check:foundation-records": "node tooling/scripts/check-foundation-records.mjs",

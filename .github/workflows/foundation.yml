@@ -125,6 +125,139 @@ jobs:
           retention-days: 30
           compression-level: 0
 
+  native-platform-macos:
+    name: Native secure storage and package / macOS 26
+    runs-on: macos-26
+    timeout-minutes: 35
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install pinned Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+
+      - name: Activate pinned pnpm
+        run: |
+          corepack enable
+          corepack install --global pnpm@11.22.0
+          node --version
+          pnpm --version
+
+      - name: Install pinned Rust
+        run: |
+          rustup toolchain install 1.98.0 --profile minimal --component clippy,rustfmt
+          rustc --version
+          cargo --version
+
+      - name: Install exact dependency graph
+        run: pnpm install --frozen-lockfile
+
+      - name: Prove native SQLite contracts
+        run: pnpm test:storage-native
+
+      - name: Prove redacted macOS Keychain lifecycle
+        env:
+          COREDRILL_SECRET_PROOF_REQUIRED: "true"
+        run: pnpm test:secure-storage
+
+      - name: Lint complete Tauri boundary
+        run: pnpm --filter @coredrill/desktop lint:desktop
+
+      - name: Build macOS application bundle
+        run: pnpm --filter @coredrill/desktop build:bundle:macos
+
+      - name: Inspect and launch packaged macOS application
+        run: >-
+          node tooling/scripts/run-native-platform-package-proof.mjs
+          --output "$RUNNER_TEMP/coredrill-native-package-macos.json"
+
+      - name: Upload immutable macOS package proof
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coredrill-macos-app-${{ github.sha }}
+          path: |
+            apps/desktop/src-tauri/target/release/bundle/macos/Coredrill.app
+            ${{ runner.temp }}/coredrill-native-package-macos.json
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+  native-platform-linux:
+    name: Native secure storage and package / Ubuntu 26.04
+    runs-on: ubuntu-26.04
+    timeout-minutes: 35
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install Tauri, Secret Service, and headless-display dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            curl \
+            dbus-x11 \
+            file \
+            gnome-keyring \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libssl-dev \
+            libwebkit2gtk-4.1-dev \
+            libxdo-dev \
+            wget \
+            xvfb
+
+      - name: Install pinned Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+
+      - name: Activate pinned pnpm
+        run: |
+          corepack enable
+          corepack install --global pnpm@11.22.0
+          node --version
+          pnpm --version
+
+      - name: Install pinned Rust
+        run: |
+          rustup toolchain install 1.98.0 --profile minimal --component clippy,rustfmt
+          rustc --version
+          cargo --version
+
+      - name: Install exact dependency graph
+        run: pnpm install --frozen-lockfile
+
+      - name: Prove native SQLite contracts
+        run: pnpm test:storage-native
+
+      - name: Prove redacted FreeDesktop Secret Service lifecycle
+        run: dbus-run-session -- bash tooling/scripts/run-linux-secret-service-proof.sh
+
+      - name: Lint complete Tauri boundary
+        run: pnpm --filter @coredrill/desktop lint:desktop
+
+      - name: Build Linux AppImage
+        run: pnpm --filter @coredrill/desktop build:bundle:linux
+
+      - name: Inspect and launch packaged Linux application
+        run: >-
+          xvfb-run -a node tooling/scripts/run-native-platform-package-proof.mjs
+          --output "$RUNNER_TEMP/coredrill-native-package-linux.json"
+
+      - name: Upload immutable Linux package proof
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coredrill-linux-appimage-${{ github.sha }}
+          path: |
+            apps/desktop/src-tauri/target/release/bundle/appimage/*.AppImage
+            ${{ runner.temp }}/coredrill-native-package-linux.json
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
   browser-storage-chrome:
     name: Browser storage / Chrome ${{ matrix.chrome }}
     runs-on: ubuntu-latest

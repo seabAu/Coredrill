@@ -9,9 +9,13 @@ const MAX_REQUEST_ID_BYTES: usize = 64;
 const MAX_PROVIDER_ID_BYTES: usize = 64;
 const MAX_SECRET_BYTES: usize = 2_048;
 const SECURE_STORAGE_BACKEND_UNAVAILABLE: &str = "unavailable";
+#[cfg(target_os = "linux")]
+const SECURE_STORAGE_BACKEND_LINUX: &str = "freedesktop_secret_service";
+#[cfg(target_os = "macos")]
+const SECURE_STORAGE_BACKEND_MACOS: &str = "macos_keychain";
 #[cfg(target_os = "windows")]
 const SECURE_STORAGE_BACKEND_WINDOWS: &str = "windows_credential_manager";
-#[cfg(target_os = "windows")]
+#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
 const PROVIDER_SECRET_SERVICE: &str = "app.coredrill.desktop.provider-secrets.v1";
 
 #[derive(Deserialize)]
@@ -148,6 +152,122 @@ impl SecretBackend for UnavailableSecretBackend {
     }
 }
 
+#[cfg(target_os = "macos")]
+#[derive(Clone)]
+struct MacOsKeychainBackend {
+    store: std::sync::Arc<apple_native_keyring_store::keychain::Store>,
+}
+
+#[cfg(target_os = "macos")]
+impl MacOsKeychainBackend {
+    fn new() -> Result<Self, ()> {
+        apple_native_keyring_store::keychain::Store::new()
+            .map(|store| Self { store })
+            .map_err(|_| ())
+    }
+
+    fn entry(&self, provider_id: &str) -> Result<keyring_core::Entry, ()> {
+        use keyring_core::api::CredentialStoreApi;
+
+        self.store
+            .build(PROVIDER_SECRET_SERVICE, provider_id, None)
+            .map_err(|_| ())
+    }
+
+    #[cfg(test)]
+    fn read_for_proof(&self, provider_id: &str) -> Result<Vec<u8>, ()> {
+        self.entry(provider_id)?.get_secret().map_err(|_| ())
+    }
+}
+
+#[cfg(target_os = "macos")]
+impl SecretBackend for MacOsKeychainBackend {
+    fn name(&self) -> &'static str {
+        SECURE_STORAGE_BACKEND_MACOS
+    }
+
+    fn store(&self, provider_id: &str, secret: &[u8]) -> Result<(), ()> {
+        self.entry(provider_id)?.set_secret(secret).map_err(|_| ())
+    }
+
+    fn status(&self, provider_id: &str) -> Result<bool, ()> {
+        match self.entry(provider_id)?.get_secret() {
+            Ok(mut secret) => {
+                secret.zeroize();
+                Ok(true)
+            }
+            Err(keyring_core::Error::NoEntry) => Ok(false),
+            Err(_) => Err(()),
+        }
+    }
+
+    fn delete(&self, provider_id: &str) -> Result<bool, ()> {
+        match self.entry(provider_id)?.delete_credential() {
+            Ok(()) => Ok(true),
+            Err(keyring_core::Error::NoEntry) => Ok(false),
+            Err(_) => Err(()),
+        }
+    }
+}
+
+#[cfg(target_os = "linux")]
+#[derive(Clone)]
+struct LinuxSecretServiceBackend {
+    store: std::sync::Arc<zbus_secret_service_keyring_store::Store>,
+}
+
+#[cfg(target_os = "linux")]
+impl LinuxSecretServiceBackend {
+    fn new() -> Result<Self, ()> {
+        zbus_secret_service_keyring_store::Store::new()
+            .map(|store| Self { store })
+            .map_err(|_| ())
+    }
+
+    fn entry(&self, provider_id: &str) -> Result<keyring_core::Entry, ()> {
+        use keyring_core::api::CredentialStoreApi;
+
+        self.store
+            .build(PROVIDER_SECRET_SERVICE, provider_id, None)
+            .map_err(|_| ())
+    }
+
+    #[cfg(test)]
+    fn read_for_proof(&self, provider_id: &str) -> Result<Vec<u8>, ()> {
+        self.entry(provider_id)?.get_secret().map_err(|_| ())
+    }
+}
+
+#[cfg(target_os = "linux")]
+impl SecretBackend for LinuxSecretServiceBackend {
+    fn name(&self) -> &'static str {
+        SECURE_STORAGE_BACKEND_LINUX
+    }
+
+    fn store(&self, provider_id: &str, secret: &[u8]) -> Result<(), ()> {
+        self.entry(provider_id)?.set_secret(secret).map_err(|_| ())
+    }
+
+    fn status(&self, provider_id: &str) -> Result<bool, ()> {
+        match self.entry(provider_id)?.get_secret() {
+            Ok(mut secret) => {
+                secret.zeroize();
+                Ok(true)
+            }
+            Err(keyring_core::Error::NoEntry) => Ok(false),
+            Err(_) => Err(()),
+        }
+    }
+
+    fn delete(&self, provider_id: &str) -> Result<bool, ()> {
+        match self.entry(provider_id)?.delete_credential() {
+            Ok(()) => Ok(true),
+            Err(keyring_core::Error::NoEntry) => Ok(false),
+            Err(_) => Err(()),
+        }
+    }
+}
+
 #[cfg(target_os = "windows")]
 #[derive(Clone)]
 struct WindowsCredentialBackend {
@@ -207,6 +327,20 @@ impl SecretBackend for WindowsCredentialBackend {
 }
 
 fn current_platform_backend() -> Box<dyn SecretBackend> {
+    #[cfg(target_os = "linux")]
+    {
+        LinuxSecretServiceBackend::new()
+            .map(|backend| Box::new(backend) as Box<dyn SecretBackend>)
+            .unwrap_or_else(|_| Box::new(UnavailableSecretBackend))
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        MacOsKeychainBackend::new()
+            .map(|backend| Box::new(backend) as Box<dyn SecretBackend>)
+            .unwrap_or_else(|_| Box::new(UnavailableSecretBackend))
+    }
+
     #[cfg(target_os = "windows")]
     {
         WindowsCredentialBackend::new()
@@ -214,7 +348,7 @@ fn current_platform_backend() -> Box<dyn SecretBackend> {
             .unwrap_or_else(|_| Box::new(UnavailableSecretBackend))
     }
 
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
     {
         Box::new(UnavailableSecretBackend)
     }
@@ -338,11 +472,11 @@ fn validate_secret(secret: &SecretValue) -> Result<(), NativeSecretError> {
 mod tests {
     use std::{collections::HashMap, sync::Mutex};
 
-    #[cfg(target_os = "windows")]
+    #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
     use std::time::{SystemTime, UNIX_EPOCH};
 
     use zeroize::Zeroize;
-    #[cfg(target_os = "windows")]
+    #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
     use zeroize::Zeroizing;
 
     use super::{
@@ -544,12 +678,37 @@ mod tests {
         assert!(!serialized.contains("test_memory_only"));
     }
 
-    #[cfg(target_os = "windows")]
-    #[test]
-    #[ignore = "run only through the redacted NAT-005 proof harness"]
-    fn windows_credential_manager_lifecycle_is_redacted() {
-        use super::{NativeSecretResponseData, WindowsCredentialBackend};
+    #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+    trait ProofSecretBackend: SecretBackend + Clone {
+        fn read_for_proof(&self, provider_id: &str) -> Result<Vec<u8>, ()>;
+    }
 
+    #[cfg(target_os = "linux")]
+    impl ProofSecretBackend for super::LinuxSecretServiceBackend {
+        fn read_for_proof(&self, provider_id: &str) -> Result<Vec<u8>, ()> {
+            super::LinuxSecretServiceBackend::read_for_proof(self, provider_id)
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    impl ProofSecretBackend for super::MacOsKeychainBackend {
+        fn read_for_proof(&self, provider_id: &str) -> Result<Vec<u8>, ()> {
+            super::MacOsKeychainBackend::read_for_proof(self, provider_id)
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    impl ProofSecretBackend for super::WindowsCredentialBackend {
+        fn read_for_proof(&self, provider_id: &str) -> Result<Vec<u8>, ()> {
+            super::WindowsCredentialBackend::read_for_proof(self, provider_id)
+        }
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+    fn prove_platform_secure_store<B>(backend: B)
+    where
+        B: ProofSecretBackend + 'static,
+    {
         let expected = Zeroizing::new(
             std::env::var("COREDRILL_SECRET_PROOF_VALUE")
                 .expect("the redacted proof harness must supply synthetic secret material"),
@@ -562,17 +721,16 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .expect("the system clock must follow the Unix epoch")
             .as_nanos();
-        let provider_id = format!("nat005-{}-{nonce}", std::process::id());
-        let backend = WindowsCredentialBackend::new()
-            .expect("Windows Credential Manager must initialize for the native proof");
+        let provider_id = format!("nat008-{}-{nonce}", std::process::id());
+        let expected_backend = backend.name();
         let service = NativeSecretService::with_backend(Box::new(backend.clone()));
 
-        struct ProofCleanup {
-            backend: WindowsCredentialBackend,
+        struct ProofCleanup<B: SecretBackend> {
+            backend: B,
             provider_id: String,
         }
 
-        impl Drop for ProofCleanup {
+        impl<B: SecretBackend> Drop for ProofCleanup<B> {
             fn drop(&mut self) {
                 let _ = self.backend.delete(&self.provider_id);
             }
@@ -598,14 +756,14 @@ mod tests {
                     secret: SecretValue(expected.as_str().to_owned()),
                 },
             ))
-            .expect("the synthetic proof secret must store in Windows Credential Manager");
-        assert!(matches!(
-            stored.data,
-            NativeSecretResponseData::Stored {
-                present: true,
-                backend: "windows_credential_manager"
+            .expect("the synthetic proof secret must store in the platform secure store");
+        match stored.data {
+            NativeSecretResponseData::Stored { present, backend } => {
+                assert!(present);
+                assert_eq!(backend, expected_backend);
             }
-        ));
+            _ => panic!("the secure store must return the stored response"),
+        }
 
         let mut retrieved = backend
             .read_for_proof(&provider_id)
@@ -650,5 +808,22 @@ mod tests {
             second_delete.data,
             NativeSecretResponseData::Deleted { deleted: false, .. }
         ));
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+    #[test]
+    #[ignore = "run only through the redacted native secure-storage proof harness"]
+    fn platform_secure_store_lifecycle_is_redacted() {
+        #[cfg(target_os = "linux")]
+        let backend = super::LinuxSecretServiceBackend::new()
+            .expect("FreeDesktop Secret Service must initialize for the native proof");
+        #[cfg(target_os = "macos")]
+        let backend = super::MacOsKeychainBackend::new()
+            .expect("macOS Keychain must initialize for the native proof");
+        #[cfg(target_os = "windows")]
+        let backend = super::WindowsCredentialBackend::new()
+            .expect("Windows Credential Manager must initialize for the native proof");
+
+        prove_platform_secure_store(backend);
     }
 }
