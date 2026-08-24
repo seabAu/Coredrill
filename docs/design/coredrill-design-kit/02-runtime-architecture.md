@@ -129,10 +129,13 @@ Accepted [ADR-0003](../../adr/0003-adopt-browser-storage-support-floor.md) adds 
 
 ### Native adapter
 
-- Tauri commands or its reviewed SQL plugin expose parameterized SQLite operations.
+- `NAT-001` through `NAT-003` provisionally implement one capability-gated Tauri command with a strict, versioned operation protocol over a narrow `rusqlite` 0.40.1 service. The shared TypeScript `DatabasePort`, reviewed SQL migration ledger, and repository contracts remain the public surface; Rust/Tauri/SQLite types do not cross into storage-core.
+- Opaque session identifiers retain one native connection for callback transactions. Query/execute separation, tagged bound values, request/value/result limits, unknown-field denial, serialized access, foreign keys, `trusted_schema = OFF`, WAL, and content-free errors are enforced at the privileged boundary.
 - Database and attachments live in the OS application-data directory, not the repository.
 - Use atomic portable exports and OS-native file pickers.
 - Store provider secrets through OS keychain/secure-store integration; if unavailable, require an encrypted passphrase-backed secret store rather than plaintext config.
+
+The adapter choice is not yet Accepted. `NAT-004` through `NAT-008` must platform-test real app-data paths, secure storage, native export/restore, packaging, resource behavior, and cross-platform dependencies before D-022/Q-003 changes; see [native verification](../../proof/native-sqlite-tauri-verification.md).
 
 ## Capture/extension bridge
 

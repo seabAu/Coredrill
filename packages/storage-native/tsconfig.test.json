@@ -1,11 +1,10 @@
 {
   "extends": "../../tooling/typescript/base.json",
   "compilerOptions": {
-    "rootDir": "src",
-    "outDir": "dist",
-    "tsBuildInfoFile": ".turbo/build.tsbuildinfo"
+    "rootDir": ".",
+    "types": ["node"]
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "test/**/*.ts"],
   "references": [
     {
       "path": "../storage-core"

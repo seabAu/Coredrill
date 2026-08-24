@@ -11,6 +11,8 @@ coverage/
 playwright-report/
 test-results/
 *.tsbuildinfo
+target/
+apps/desktop/src-tauri/gen/
 
 # Local environment and secrets
 .env

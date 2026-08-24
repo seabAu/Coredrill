@@ -3,7 +3,7 @@
 Coredrill is a standalone, local-first workspace for capturing job opportunities, managing an application pipeline, grounding application materials in truthful career evidence, and making explainable decisions about where to focus.
 
 > [!IMPORTANT]
-> This repository is in Phase 0. It contains governance and build foundations only. It does not yet contain a usable product, database implementation, capture extension, AI integration, or hosted service.
+> This repository is in Phase 0. It contains governance/build foundations and isolated browser/native storage risk-spike adapters only. It does not yet contain a usable product, product record repositories, capture extension, AI integration, or hosted service.
 
 ## Product promise
 
@@ -39,7 +39,7 @@ docs/          ADRs, design authority, policies, and runbooks
 tooling/       Repository checks and shared configuration
 ```
 
-Reserved Phase 0 directories document intended ownership only. Their presence does not mean a provisional runtime choice has passed its required spike.
+Reserved Phase 0 directories document intended ownership only. Implemented spike directories carry explicit proof boundaries; their presence does not make a provisional runtime choice Accepted.
 
 ## Development
 
@@ -47,6 +47,7 @@ Prerequisites are pinned in [`.node-version`](.node-version), [`rust-toolchain.t
 
 ```powershell
 pnpm install --frozen-lockfile
+cargo install cargo-audit --version 0.22.2 --locked
 pnpm build
 pnpm typecheck
 pnpm lint

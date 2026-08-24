@@ -1,0 +1,19 @@
+{
+  "name": "@coredrill/desktop",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Provisional Tauri 2 shell and thin native storage boundary.",
+  "scripts": {
+    "build": "pnpm run build:native-probe",
+    "build:desktop": "pnpm --filter @coredrill/web build && tauri build --no-bundle",
+    "build:native-probe": "cargo build --manifest-path src-tauri/Cargo.toml --locked --no-default-features --bin coredrill-native-storage-probe",
+    "dev": "tauri dev",
+    "typecheck": "cargo check --manifest-path src-tauri/Cargo.toml --locked --no-default-features --bin coredrill-native-storage-probe",
+    "lint": "cargo fmt --manifest-path src-tauri/Cargo.toml --all --check && cargo clippy --manifest-path src-tauri/Cargo.toml --locked --no-default-features --bin coredrill-native-storage-probe -- -D warnings",
+    "lint:desktop": "cargo clippy --manifest-path src-tauri/Cargo.toml --locked --all-targets --all-features -- -D warnings"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.11.3"
+  }
+}

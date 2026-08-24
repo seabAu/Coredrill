@@ -64,6 +64,35 @@ function sortedDependencyKeys(entries) {
   return entries.map(dependencyKey).sort(compareText);
 }
 
+function parseCargoDirectDependencies(contents) {
+  const dependencies = [];
+  let dependencyType;
+  for (const rawLine of contents.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    const section = line.match(/^\[(build-dependencies|dependencies)\]$/);
+    if (section) {
+      dependencyType = section[1];
+      continue;
+    }
+    if (line.startsWith("[") || line === "") {
+      if (line.startsWith("[")) dependencyType = undefined;
+      continue;
+    }
+    if (!dependencyType) continue;
+    const dependency = line.match(
+      /^([0-9A-Za-z_-]+)\s*=\s*(?:"=([^"]+)"|\{[^}]*\bversion\s*=\s*"=([^"]+)"[^}]*\})$/,
+    );
+    if (!dependency) continue;
+    dependencies.push({
+      manifest: "apps/desktop/src-tauri/Cargo.toml",
+      dependencyType,
+      name: dependency[1],
+      version: dependency[2] ?? dependency[3],
+    });
+  }
+  return dependencies.sort((left, right) => compareText(dependencyKey(left), dependencyKey(right)));
+}
+
 function uniqueIds(errors, entries, label) {
   const ids = entries.map((entry) => entry.id);
   addError(errors, ids.every(isNonEmptyText), `${label} entries require non-empty IDs.`);
@@ -129,11 +158,23 @@ export async function readFoundationState(repositoryRoot) {
   directDependencies.sort((left, right) => compareText(dependencyKey(left), dependencyKey(right)));
 
   const lockfile = await readFile(path.join(repositoryRoot, "pnpm-lock.yaml"));
+  const cargoManifest = await readFile(
+    path.join(repositoryRoot, "apps", "desktop", "src-tauri", "Cargo.toml"),
+    "utf8",
+  );
+  const cargoLockfile = await readFile(
+    path.join(repositoryRoot, "apps", "desktop", "src-tauri", "Cargo.lock"),
+  );
+  const cargoLockText = cargoLockfile.toString("utf8");
   const rootPackage = manifests.find(({ manifestPath }) => manifestPath === "package.json")?.value;
   if (!rootPackage) throw new Error("Root package.json was not found.");
 
   return {
     directDependencies,
+    cargoDirectDependencies: parseCargoDirectDependencies(cargoManifest),
+    cargoLockSha256: createHash("sha256").update(cargoLockfile).digest("hex"),
+    cargoPackageCount: (cargoLockText.match(/^\[\[package\]\]$/gm) ?? []).length,
+    cargoRegistryPackageCount: (cargoLockText.match(/^source = /gm) ?? []).length,
     lockfileSha256: createHash("sha256").update(lockfile).digest("hex"),
     nodeVersion: (await readFile(path.join(repositoryRoot, ".node-version"), "utf8")).trim(),
     rootPackage,
@@ -352,6 +393,98 @@ export function validateDependencyInventory(record, state) {
     Number.isInteger(license.resolvedPackageRecords) && license.resolvedPackageRecords > 0,
     "License review needs a positive resolved package count.",
   );
+
+  const cargo = record.cargo ?? {};
+  addError(errors, cargo.schemaVersion === 1, "Cargo inventory schemaVersion must be 1.");
+  addError(
+    errors,
+    cargo.lockfile?.sha256 === state.cargoLockSha256,
+    "Cargo inventory lockfile hash does not match Cargo.lock.",
+  );
+  const recordedCargoDependencies = Array.isArray(cargo.directDependencies)
+    ? cargo.directDependencies
+    : [];
+  addError(
+    errors,
+    JSON.stringify(sortedDependencyKeys(recordedCargoDependencies)) ===
+      JSON.stringify(sortedDependencyKeys(state.cargoDirectDependencies)),
+    "Cargo inventory must exactly match every direct Cargo dependency.",
+  );
+  addError(
+    errors,
+    JSON.stringify(recordedCargoDependencies.map(dependencyKey)) ===
+      JSON.stringify(sortedDependencyKeys(recordedCargoDependencies)),
+    "Cargo inventory direct dependencies must be in stable manifest/type/name/version order.",
+  );
+  for (const dependency of recordedCargoDependencies) {
+    const label = `${dependency.name ?? "unknown crate"}@${dependency.version ?? "?"}`;
+    addError(
+      errors,
+      exactVersionPattern.test(dependency.version ?? ""),
+      `${label} is not exact SemVer.`,
+    );
+    addError(
+      errors,
+      exactVersionPattern.test(dependency.upstreamLatest ?? ""),
+      `${label} needs an exact upstreamLatest version.`,
+    );
+    addError(
+      errors,
+      selectionStatuses.has(dependency.selectionStatus),
+      `${label} has an invalid selectionStatus.`,
+    );
+    addError(errors, isNonEmptyText(dependency.license), `${label} needs a license.`);
+    addError(
+      errors,
+      Array.isArray(dependency.maintainers) && dependency.maintainers.length > 0,
+      `${label} needs crate maintainers.`,
+    );
+    addError(errors, isHttpsUrl(dependency.repository), `${label} needs an HTTPS repository.`);
+    addError(
+      errors,
+      isHttpsUrl(dependency.metadataSource),
+      `${label} needs an HTTPS metadata source.`,
+    );
+    addError(
+      errors,
+      Array.isArray(dependency.knownAdvisories),
+      `${label} needs an explicit knownAdvisories array.`,
+    );
+  }
+  const cargoAdvisory = cargo.advisoryReview ?? {};
+  addError(
+    errors,
+    cargoAdvisory.lockfileSha256 === state.cargoLockSha256,
+    "Cargo advisory review is not bound to the current lockfile.",
+  );
+  addError(
+    errors,
+    cargoAdvisory.dependencyCount === state.cargoPackageCount,
+    "Cargo advisory dependency count does not match Cargo.lock.",
+  );
+  addError(
+    errors,
+    cargoAdvisory.vulnerabilities === 0,
+    "Cargo advisory review must report zero vulnerabilities.",
+  );
+  addError(
+    errors,
+    Number.isInteger(cargoAdvisory.unmaintainedWarnings) &&
+      Number.isInteger(cargoAdvisory.unsoundWarnings),
+    "Cargo advisory review must record its informational warning counts.",
+  );
+  const cargoLicense = cargo.licenseReview ?? {};
+  addError(
+    errors,
+    cargoLicense.lockfileSha256 === state.cargoLockSha256,
+    "Cargo license review is not bound to the current lockfile.",
+  );
+  addError(
+    errors,
+    cargoLicense.resolvedPackageRecords === state.cargoRegistryPackageCount,
+    "Cargo license package count does not match Cargo.lock.",
+  );
+  addError(errors, cargoLicense.result === "pass", "Cargo license review must record a pass.");
   return errors;
 }
 

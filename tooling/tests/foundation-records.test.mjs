@@ -32,11 +32,15 @@ describe("foundation dependency and test records", () => {
     const changedState = clone(state);
     changedState.directDependencies[0].version = "99.0.0";
     changedState.lockfileSha256 = "0".repeat(64);
+    changedState.cargoDirectDependencies[0].version = "99.0.0";
+    changedState.cargoLockSha256 = "0".repeat(64);
 
     expect(validateDependencyInventory(inventory, changedState)).toEqual(
       expect.arrayContaining([
         "Dependency inventory lockfile hash does not match pnpm-lock.yaml.",
         "Dependency inventory must exactly match every non-workspace direct manifest dependency.",
+        "Cargo inventory lockfile hash does not match Cargo.lock.",
+        "Cargo inventory must exactly match every direct Cargo dependency.",
       ]),
     );
   });

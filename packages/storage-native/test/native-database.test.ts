@@ -1,0 +1,333 @@
+import { createHash } from "node:crypto";
+import { once } from "node:events";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+
+import {
+  applySqlMigrations,
+  createTransactionSemanticsSuite,
+  defineDatabaseContractSuite,
+  defineSqlMigrations,
+  runDatabaseContractSuite,
+  sqlStatement,
+  type DatabaseContractAdapter,
+  type DatabasePort,
+  type DatabaseSession,
+  type QueryRow,
+  type TransactionContractProbe,
+} from "@coredrill/storage-core";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+
+import {
+  NativeStorageCapabilityError,
+  NativeStorageProtocolError,
+  openNativeSqliteDatabase,
+  type NativeSqliteDatabase,
+  type NativeStorageRequest,
+  type NativeStorageTransport,
+} from "../src/index.js";
+
+interface ProbeEnvelope {
+  readonly ok: boolean;
+  readonly response: unknown;
+  readonly error: unknown;
+}
+
+interface PendingInvocation {
+  readonly resolve: (value: unknown) => void;
+  readonly reject: (reason: unknown) => void;
+}
+
+interface VaultRow extends QueryRow {
+  readonly id: string;
+  readonly name: string;
+  readonly schema_version: number;
+}
+
+interface EntryRow extends QueryRow {
+  readonly value: string;
+}
+
+const repositoryRoot = path.resolve(import.meta.dirname, "..", "..", "..");
+const probeExecutable = path.join(
+  repositoryRoot,
+  "apps",
+  "desktop",
+  "src-tauri",
+  "target",
+  "debug",
+  process.platform === "win32"
+    ? "coredrill-native-storage-probe.exe"
+    : "coredrill-native-storage-probe",
+);
+const migrationPath = path.join(repositoryRoot, "migrations", "0001_vault.sql");
+const APPLIED_AT = "2026-08-24T12:00:00.000Z";
+
+class ProbeTransport implements NativeStorageTransport {
+  private readonly child: ChildProcessWithoutNullStreams;
+  private readonly pending: PendingInvocation[] = [];
+  private stdoutBuffer = "";
+  private closed = false;
+
+  public constructor(
+    executable: string,
+    private readonly root: string,
+  ) {
+    this.child = spawn(executable, [root], {
+      stdio: "pipe",
+      windowsHide: true,
+    });
+    this.child.stdout.setEncoding("utf8");
+    this.child.stdout.on("data", (chunk: string) => this.consumeOutput(chunk));
+    this.child.once("error", () => this.rejectPending());
+    this.child.once("exit", () => {
+      this.closed = true;
+      this.rejectPending();
+    });
+  }
+
+  public invoke(request: NativeStorageRequest): Promise<unknown> {
+    if (this.closed) return Promise.reject(this.transportClosed());
+    return new Promise((resolve, reject) => {
+      this.pending.push({ resolve, reject });
+      this.child.stdin.write(`${JSON.stringify(request)}\n`, (error) => {
+        if (error !== null && error !== undefined) {
+          const pending = this.pending.pop();
+          pending?.reject(this.transportClosed());
+        }
+      });
+    });
+  }
+
+  public async dispose(): Promise<void> {
+    if (!this.closed) {
+      this.child.stdin.end();
+      await once(this.child, "exit");
+    }
+    const resolvedRoot = path.resolve(this.root);
+    const resolvedTemp = path.resolve(tmpdir());
+    if (!resolvedRoot.startsWith(`${resolvedTemp}${path.sep}`)) {
+      throw new Error("Refusing to remove a native-storage test root outside the temp directory.");
+    }
+    await rm(resolvedRoot, { recursive: true, force: true });
+  }
+
+  private consumeOutput(chunk: string): void {
+    this.stdoutBuffer += chunk;
+    let newline = this.stdoutBuffer.indexOf("\n");
+    while (newline >= 0) {
+      const line = this.stdoutBuffer.slice(0, newline);
+      this.stdoutBuffer = this.stdoutBuffer.slice(newline + 1);
+      const pending = this.pending.shift();
+      if (pending !== undefined) {
+        try {
+          const envelope = JSON.parse(line) as ProbeEnvelope;
+          if (envelope.ok) pending.resolve(envelope.response);
+          else pending.reject(envelope.error);
+        } catch {
+          pending.reject(this.transportClosed());
+        }
+      }
+      newline = this.stdoutBuffer.indexOf("\n");
+    }
+  }
+
+  private rejectPending(): void {
+    for (const pending of this.pending.splice(0)) pending.reject(this.transportClosed());
+  }
+
+  private transportClosed(): Readonly<Record<string, unknown>> {
+    return Object.freeze({
+      code: "transport_closed",
+      message: "The native storage proof process is unavailable.",
+      retryable: false,
+    });
+  }
+}
+
+let transport: ProbeTransport;
+let databaseSequence = 1;
+let migrationSql: string;
+let migrationSha256: string;
+
+const nextDatabaseName = (): string => {
+  const name = `native-contract-${String(databaseSequence)}.sqlite3`;
+  databaseSequence += 1;
+  return name;
+};
+
+const migrations = () =>
+  defineSqlMigrations([
+    {
+      version: 1,
+      name: "vault",
+      sha256: migrationSha256,
+      sql: migrationSql,
+    },
+  ]);
+
+const nativeAdapter: DatabaseContractAdapter = {
+  name: "native-rusqlite-candidate",
+  createIsolatedDatabase: async () =>
+    openNativeSqliteDatabase({ databaseName: nextDatabaseName(), transport }),
+  disposeIsolatedDatabase: async (database: DatabasePort) => {
+    await (database as NativeSqliteDatabase).delete();
+  },
+};
+
+const entryProbe: TransactionContractProbe<readonly string[]> = {
+  prepare: async (database) => {
+    await database.execute(sqlStatement("CREATE TABLE contract_entry(value TEXT NOT NULL) STRICT"));
+  },
+  mutate: async (transaction) => {
+    await transaction.execute(
+      sqlStatement("INSERT INTO contract_entry(value) VALUES (?)", ["alpha"]),
+    );
+  },
+  capture: async (session: DatabaseSession) => {
+    const rows = await session.query<EntryRow>(
+      sqlStatement("SELECT value FROM contract_entry ORDER BY value"),
+    );
+    return rows.map(({ value }) => value);
+  },
+  equivalent: (left, right) =>
+    left.length === right.length && left.every((value, index) => value === right[index]),
+};
+
+beforeAll(async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "coredrill-native-"));
+  transport = new ProbeTransport(probeExecutable, root);
+  migrationSql = await readFile(migrationPath, "utf8");
+  migrationSha256 = createHash("sha256").update(migrationSql).digest("hex");
+});
+
+afterAll(async () => {
+  await transport.dispose();
+});
+
+describe("native SQLite repository and migration contracts", () => {
+  it("passes the shared transaction semantics suite", async () => {
+    await expect(
+      runDatabaseContractSuite(nativeAdapter, createTransactionSemanticsSuite(entryProbe)),
+    ).resolves.toEqual({
+      adapterName: "native-rusqlite-candidate",
+      suiteName: "database-transaction-semantics",
+      completedCases: ["commits a fulfilled transaction", "rolls back a rejected transaction"],
+    });
+  });
+
+  it("passes the shared migration and repository suite with bound values", async () => {
+    const suite = defineDatabaseContractSuite("vault-migration-and-repository", [
+      {
+        name: "applies the shared migration and reopens its ledger",
+        run: async (database) => {
+          await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
+            schemaVersion: 1,
+            appliedVersions: [1],
+          });
+          await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
+            schemaVersion: 1,
+            appliedVersions: [],
+          });
+        },
+      },
+      {
+        name: "stores and retrieves a vault without interpolating values",
+        run: async (database) => {
+          await applySqlMigrations(database, migrations(), APPLIED_AT);
+          const adversarialName = "Candidate'); DROP TABLE vault; --";
+          await database.execute(
+            sqlStatement(
+              "INSERT INTO vault(id, name, schema_version, created_at, last_opened_at) VALUES (?, ?, ?, ?, ?)",
+              [
+                "vault-native-1",
+                adversarialName,
+                1,
+                "2026-08-24T12:00:00.000Z",
+                "2026-08-24T12:00:00.000Z",
+              ],
+            ),
+          );
+          await expect(
+            database.query<VaultRow>(
+              sqlStatement("SELECT id, name, schema_version FROM vault WHERE id = ?", [
+                "vault-native-1",
+              ]),
+            ),
+          ).resolves.toEqual([{ id: "vault-native-1", name: adversarialName, schema_version: 1 }]);
+        },
+      },
+    ]);
+
+    await expect(runDatabaseContractSuite(nativeAdapter, suite)).resolves.toEqual({
+      adapterName: "native-rusqlite-candidate",
+      suiteName: "vault-migration-and-repository",
+      completedCases: [
+        "applies the shared migration and reopens its ledger",
+        "stores and retrieves a vault without interpolating values",
+      ],
+    });
+  });
+
+  it("persists the migrated vault across native close and reopen", async () => {
+    const databaseName = nextDatabaseName();
+    const first = await openNativeSqliteDatabase({ databaseName, transport });
+    await applySqlMigrations(first, migrations(), APPLIED_AT);
+    await first.execute(
+      sqlStatement(
+        "INSERT INTO vault(id, name, schema_version, created_at, last_opened_at) VALUES (?, ?, 1, ?, ?)",
+        [
+          "vault-durable",
+          "Durable synthetic vault",
+          "2026-08-24T12:00:00.000Z",
+          "2026-08-24T12:00:00.000Z",
+        ],
+      ),
+    );
+    await first.close();
+
+    const reopened = await openNativeSqliteDatabase({ databaseName, transport });
+    await expect(
+      reopened.query<VaultRow>(
+        sqlStatement("SELECT id, name, schema_version FROM vault WHERE id = ?", ["vault-durable"]),
+      ),
+    ).resolves.toEqual([
+      { id: "vault-durable", name: "Durable synthetic vault", schema_version: 1 },
+    ]);
+    await expect(reopened.diagnostics()).resolves.toMatchObject({
+      adapterName: "native-rusqlite-candidate",
+      health: "ready",
+      persistence: "durable",
+      schemaVersion: 1,
+    });
+    await expect(reopened.delete()).resolves.toBe(true);
+  });
+
+  it("enforces query/execute separation and keeps unfinished capabilities explicit", async () => {
+    const database = await openNativeSqliteDatabase({
+      databaseName: nextDatabaseName(),
+      transport,
+    });
+    await expect(
+      database.query(sqlStatement("CREATE TABLE no_query(id INTEGER)")),
+    ).rejects.toMatchObject({
+      code: "invalid_statement",
+    });
+    await expect(database.execute(sqlStatement("SELECT 1"))).rejects.toMatchObject({
+      code: "invalid_statement",
+    });
+    await expect(database.exportPortable()).rejects.toBeInstanceOf(NativeStorageCapabilityError);
+    await database.delete();
+  });
+
+  it("rejects path-shaped database names before privileged work", async () => {
+    await expect(
+      openNativeSqliteDatabase({ databaseName: "../outside.sqlite3", transport }),
+    ).rejects.toMatchObject({
+      code: "invalid_request",
+      retryable: false,
+    });
+  });
+});

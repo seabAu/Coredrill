@@ -39,6 +39,14 @@ jobs:
           node --version
           pnpm --version
 
+      - name: Install pinned Rust and RustSec audit tool
+        run: |
+          rustup toolchain install 1.98.0 --profile minimal --component clippy,rustfmt
+          cargo install cargo-audit --version 0.22.2 --locked
+          rustc --version
+          cargo --version
+          cargo audit --version
+
       - name: Install exact dependency graph
         run: pnpm install --frozen-lockfile
 
@@ -47,6 +55,49 @@ jobs:
 
       - name: Emit reviewed license inventory
         run: pnpm report:licenses > dependency-licenses.json
+
+      - name: Emit reviewed Rust license inventory
+        run: pnpm report:licenses:rust > dependency-licenses-rust.json
+
+  native-storage-windows:
+    name: Native storage and Tauri shell / Windows
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install pinned Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+
+      - name: Activate pinned pnpm
+        shell: pwsh
+        run: |
+          corepack enable
+          corepack install --global pnpm@11.22.0
+          node --version
+          pnpm --version
+
+      - name: Install pinned Rust
+        shell: pwsh
+        run: |
+          rustup toolchain install 1.98.0 --profile minimal --component clippy,rustfmt
+          rustc --version
+          cargo --version
+
+      - name: Install exact dependency graph
+        run: pnpm install --frozen-lockfile
+
+      - name: Prove native SQLite contracts
+        run: pnpm test:storage-native
+
+      - name: Lint complete Tauri boundary
+        run: pnpm --filter @coredrill/desktop lint:desktop
+
+      - name: Build shared frontend in Tauri shell
+        run: pnpm --filter @coredrill/desktop build:desktop
 
   browser-storage-chrome:
     name: Browser storage / Chrome ${{ matrix.chrome }}

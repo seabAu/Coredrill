@@ -1,23 +1,23 @@
 {
   "schemaVersion": 1,
   "inventoryId": "JW-DI-001",
-  "version": "1.4.0",
-  "reviewedAt": "2026-08-24T08:26:05Z",
+  "version": "1.5.0",
+  "reviewedAt": "2026-08-24T10:33:46Z",
   "scope": {
     "included": [
       "Pinned Node.js, pnpm, and Rust foundation toolchains",
       "Every non-workspace direct dependency declared by a tracked workspace package manifest",
-      "The complete pnpm lockfile graph for license and advisory review"
+      "Every direct crate declared by the Tauri Cargo manifest",
+      "The complete pnpm and Cargo lockfile graphs for license and advisory review"
     ],
     "excluded": [
       "Provisional product dependencies that have not been adopted or installed",
-      "Rust crates because no Cargo manifest or lockfile exists",
       "Operating-system packages and browser binaries covered by the separate reference test matrix"
     ]
   },
   "lockfile": {
     "path": "pnpm-lock.yaml",
-    "sha256": "358dfdbcc831d663582256deee57e5d3c64815bdc979405b3770327e26df23f4"
+    "sha256": "dec392658d3916cd31aeab4d3ff2b8e93c372ea57da0185f4bbc4be82348d031"
   },
   "toolchains": [
     {
@@ -65,10 +65,32 @@
         "https://static.rust-lang.org/dist/channel-rust-stable.toml",
         "https://rust-lang.org/policies/licenses/"
       ],
-      "reviewNote": "No Cargo dependency graph exists yet; crate-level advisory and supply-chain checks are required when the first crate is adopted."
+      "reviewNote": "The first Cargo graph is exact-pinned and covered by Cargo.lock hash validation, cargo metadata license policy, cargo-audit 0.22.2, Clippy, rustfmt, and hosted native proof."
     }
   ],
   "packages": [
+    {
+      "manifest": "apps/desktop/package.json",
+      "dependencyType": "devDependencies",
+      "name": "@tauri-apps/cli",
+      "version": "2.11.3",
+      "upstreamLatest": "2.11.4",
+      "selectionStatus": "release-age-approved",
+      "license": "Apache-2.0 OR MIT",
+      "maintainers": [
+        "nothingismagick",
+        "lucasfernog",
+        "tauri-apps-ci-user",
+        "jbolda",
+        "fabianlars",
+        "amrbashir",
+        "beanow"
+      ],
+      "repository": "https://github.com/tauri-apps/tauri",
+      "metadataSource": "https://registry.npmjs.org/@tauri-apps%2fcli/2.11.3",
+      "knownAdvisories": [],
+      "selectionNote": "Tauri CLI 2.11.3 was published at 2026-06-19T12:45:00.191Z and satisfies minimumReleaseAge: 1440; current 2.11.4 was published at 2026-06-28T17:58:47.722Z and remains inside the 60-day native dependency review window."
+    },
     {
       "manifest": "apps/web/package.json",
       "dependencyType": "devDependencies",
@@ -122,6 +144,20 @@
       "metadataSource": "https://registry.npmjs.org/@playwright%2ftest/1.61.1",
       "knownAdvisories": [],
       "selectionNote": "Playwright 1.61.1 was published at 2026-06-23T19:49:12.825Z and satisfies minimumReleaseAge: 1440; current 1.62.1 was published at 2026-07-30T16:36:55.324Z and remains inside the review window."
+    },
+    {
+      "manifest": "package.json",
+      "dependencyType": "devDependencies",
+      "name": "@types/node",
+      "version": "24.12.4",
+      "upstreamLatest": "26.2.0",
+      "selectionStatus": "latest-compatible",
+      "license": "MIT",
+      "maintainers": ["types"],
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+      "metadataSource": "https://registry.npmjs.org/@types%2fnode/24.12.4",
+      "knownAdvisories": [],
+      "selectionNote": "24.12.4 matches the selected Node 24 LTS type surface and was published at 2026-05-11T22:25:29.000Z; upstream 26.2.0 targets a later Node major and is intentionally not substituted."
     },
     {
       "manifest": "package.json",
@@ -288,15 +324,153 @@
       "metadataSource": "https://registry.npmjs.org/@sqlite.org%2fsqlite-wasm/3.53.0-build1",
       "knownAdvisories": [],
       "selectionNote": "The official SQLite npm subproject provides browser-side SQLite 3.53.0 WASM and the documented opfs-sahpool VFS; no wrapper, ORM, or alternative database implementation is introduced."
+    },
+    {
+      "manifest": "packages/storage-native/package.json",
+      "dependencyType": "dependencies",
+      "name": "@tauri-apps/api",
+      "version": "2.11.1",
+      "upstreamLatest": "2.11.1",
+      "selectionStatus": "current",
+      "license": "Apache-2.0 OR MIT",
+      "maintainers": [
+        "nothingismagick",
+        "lucasfernog",
+        "tauri-apps-ci-user",
+        "jbolda",
+        "fabianlars",
+        "amrbashir",
+        "beanow"
+      ],
+      "repository": "https://github.com/tauri-apps/tauri",
+      "metadataSource": "https://registry.npmjs.org/@tauri-apps%2fapi/2.11.1",
+      "knownAdvisories": [],
+      "selectionNote": "The native adapter imports only Tauri's official invoke API; the privileged command remains separately allowlisted and protocol validated."
     }
   ],
+  "cargo": {
+    "schemaVersion": 1,
+    "manifest": "apps/desktop/src-tauri/Cargo.toml",
+    "lockfile": {
+      "path": "apps/desktop/src-tauri/Cargo.lock",
+      "sha256": "93ad0a6800f5f1868ebcae9e02e4c639c6b5a3a5431518bbdd0938121eea08b8"
+    },
+    "directDependencies": [
+      {
+        "manifest": "apps/desktop/src-tauri/Cargo.toml",
+        "dependencyType": "build-dependencies",
+        "name": "tauri-build",
+        "version": "2.6.3",
+        "upstreamLatest": "2.6.3",
+        "selectionStatus": "current",
+        "license": "Apache-2.0 OR MIT",
+        "maintainers": ["Tauri Programme within Commons Conservancy", "Tauri contributors"],
+        "repository": "https://github.com/tauri-apps/tauri",
+        "metadataSource": "https://crates.io/crates/tauri-build/2.6.3",
+        "knownAdvisories": [],
+        "selectionNote": "Current Tauri build-time code paired with the selected shell; published 2026-06-17T13:45:31.588957Z."
+      },
+      {
+        "manifest": "apps/desktop/src-tauri/Cargo.toml",
+        "dependencyType": "dependencies",
+        "name": "rusqlite",
+        "version": "0.40.1",
+        "upstreamLatest": "0.40.2",
+        "selectionStatus": "release-age-approved",
+        "license": "MIT",
+        "maintainers": ["John Gallagher", "rusqlite contributors"],
+        "repository": "https://github.com/rusqlite/rusqlite",
+        "metadataSource": "https://crates.io/crates/rusqlite/0.40.1",
+        "knownAdvisories": [],
+        "selectionNote": "0.40.1 was published 2026-06-06T06:22:04.508972Z, includes the upstream tainted-SAVEPOINT-name injection fix, and is enabled only with bundled SQLite; 0.40.2 was published 2026-08-08T14:21:52.570893Z and remains inside the review window."
+      },
+      {
+        "manifest": "apps/desktop/src-tauri/Cargo.toml",
+        "dependencyType": "dependencies",
+        "name": "serde",
+        "version": "1.0.228",
+        "upstreamLatest": "1.0.229",
+        "selectionStatus": "release-age-approved",
+        "license": "MIT OR Apache-2.0",
+        "maintainers": ["David Tolnay", "Serde contributors"],
+        "repository": "https://github.com/serde-rs/serde",
+        "metadataSource": "https://crates.io/crates/serde/1.0.228",
+        "knownAdvisories": [],
+        "selectionNote": "1.0.228 was published 2025-09-27T16:51:35.265429Z; 1.0.229 was published 2026-07-18T23:05:13.266456Z and remains inside the review window."
+      },
+      {
+        "manifest": "apps/desktop/src-tauri/Cargo.toml",
+        "dependencyType": "dependencies",
+        "name": "serde_json",
+        "version": "1.0.149",
+        "upstreamLatest": "1.0.151",
+        "selectionStatus": "release-age-approved",
+        "license": "MIT OR Apache-2.0",
+        "maintainers": ["David Tolnay", "Serde contributors"],
+        "repository": "https://github.com/serde-rs/json",
+        "metadataSource": "https://crates.io/crates/serde_json/1.0.149",
+        "knownAdvisories": [],
+        "selectionNote": "1.0.149 was published 2026-01-06T16:23:34.585926Z; 1.0.151 was published 2026-07-20T05:54:44.078083Z and remains inside the review window."
+      },
+      {
+        "manifest": "apps/desktop/src-tauri/Cargo.toml",
+        "dependencyType": "dependencies",
+        "name": "tauri",
+        "version": "2.11.3",
+        "upstreamLatest": "2.11.5",
+        "selectionStatus": "release-age-approved",
+        "license": "Apache-2.0 OR MIT",
+        "maintainers": ["Tauri Programme within Commons Conservancy", "Tauri contributors"],
+        "repository": "https://github.com/tauri-apps/tauri",
+        "metadataSource": "https://crates.io/crates/tauri/2.11.3",
+        "knownAdvisories": [],
+        "selectionNote": "2.11.3 was published 2026-06-17T13:46:40.835406Z and is optional outside the desktop shell; 2.11.5 was published 2026-07-01T13:56:38.810372Z and remains inside the review window. Default Tauri features are disabled, with only wry selected."
+      }
+    ],
+    "advisoryReview": {
+      "command": "cargo audit --file apps/desktop/src-tauri/Cargo.lock",
+      "toolVersion": "0.22.2",
+      "source": "https://rustsec.org/",
+      "reviewedAt": "2026-08-24T10:33:46Z",
+      "lockfileSha256": "93ad0a6800f5f1868ebcae9e02e4c639c6b5a3a5431518bbdd0938121eea08b8",
+      "dependencyCount": 420,
+      "vulnerabilities": 0,
+      "unmaintainedWarnings": 14,
+      "unsoundWarnings": 1,
+      "warningAdvisories": [
+        "RUSTSEC-2024-0370",
+        "RUSTSEC-2024-0411",
+        "RUSTSEC-2024-0412",
+        "RUSTSEC-2024-0413",
+        "RUSTSEC-2024-0415",
+        "RUSTSEC-2024-0416",
+        "RUSTSEC-2024-0418",
+        "RUSTSEC-2024-0419",
+        "RUSTSEC-2024-0420",
+        "RUSTSEC-2024-0429",
+        "RUSTSEC-2025-0075",
+        "RUSTSEC-2025-0080",
+        "RUSTSEC-2025-0081",
+        "RUSTSEC-2025-0098",
+        "RUSTSEC-2025-0100"
+      ],
+      "reviewNote": "RustSec reports no vulnerability. The informational warnings are transitive Tauri/Wry cross-platform lock entries: GTK3/unic/proc-macro maintenance warnings plus glib 0.18.5 unsoundness. Windows does not compile the GTK3 path; this remains an explicit NAT-004/NAT-008 cross-platform review risk rather than a suppressed finding."
+    },
+    "licenseReview": {
+      "command": "pnpm check:licenses",
+      "reviewedAt": "2026-08-24T10:33:46Z",
+      "lockfileSha256": "93ad0a6800f5f1868ebcae9e02e4c639c6b5a3a5431518bbdd0938121eea08b8",
+      "resolvedPackageRecords": 419,
+      "result": "pass"
+    }
+  },
   "advisoryReview": {
     "command": "pnpm audit --json",
     "source": "https://pnpm.io/cli/audit",
-    "reviewedAt": "2026-08-24T08:26:05Z",
-    "lockfileSha256": "358dfdbcc831d663582256deee57e5d3c64815bdc979405b3770327e26df23f4",
-    "resolvedDependencyCount": 364,
-    "optionalDependencyCount": 57,
+    "reviewedAt": "2026-08-24T10:33:46Z",
+    "lockfileSha256": "dec392658d3916cd31aeab4d3ff2b8e93c372ea57da0185f4bbc4be82348d031",
+    "resolvedDependencyCount": 379,
+    "optionalDependencyCount": 68,
     "vulnerabilities": {
       "info": 0,
       "low": 0,
@@ -307,9 +481,9 @@
   },
   "licenseReview": {
     "command": "pnpm check:licenses",
-    "reviewedAt": "2026-08-24T08:26:05Z",
-    "lockfileSha256": "358dfdbcc831d663582256deee57e5d3c64815bdc979405b3770327e26df23f4",
-    "resolvedPackageRecords": 307,
+    "reviewedAt": "2026-08-24T10:33:46Z",
+    "lockfileSha256": "dec392658d3916cd31aeab4d3ff2b8e93c372ea57da0185f4bbc4be82348d031",
+    "resolvedPackageRecords": 309,
     "result": "pass",
     "note": "License records and advisory dependency counts use different tool scopes and are not expected to match."
   },
@@ -328,6 +502,11 @@
       "dependency": "@playwright/test",
       "reason": "1.62.1 is current but remains inside the repository's 60-day dependency review window.",
       "nextReviewOn": "2026-09-29"
+    },
+    {
+      "dependency": "Tauri/Wry cross-platform Cargo graph",
+      "reason": "RustSec reports no vulnerability but records 14 unmaintained transitive warnings and glib 0.18.5 unsoundness in the Linux GTK3 path; review updated Tauri releases and actual macOS/Linux target graphs during NAT-004 and before NAT-008 acceptance.",
+      "nextReviewOn": "2026-08-31"
     },
     {
       "dependency": "typescript",

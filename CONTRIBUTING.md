@@ -11,7 +11,7 @@ Coredrill is in a public, pre-release foundation repository. The code is license
 
 ## Development workflow
 
-- Use the pinned toolchain and `pnpm install --frozen-lockfile`.
+- Use the pinned toolchain, `pnpm install --frozen-lockfile`, and exact `cargo-audit` 0.22.2 required by `pnpm verify`.
 - Use the repository scripts for Turborepo tasks; they disable optional tool telemetry and the update notifier.
 - Write or update the executable proof before marking a checklist item complete.
 - Keep domain and application packages independent from concrete adapters and runtime apps.
