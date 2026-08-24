@@ -424,7 +424,7 @@ Commands declare when unavailable and why. Focus returns to the invoking element
 - Error summaries link to fields; errors are not color-only.
 - Charts provide table equivalents and useful accessible names.
 - Tooltips never contain information unavailable elsewhere.
-- Reduced motion, 200% zoom, browser text resizing, Windows high contrast, and screen magnification are in the release matrix.
+- Reduced motion, 200% zoom/browser text resizing, the separate 320 CSS-pixel reflow case (approximately 400% zoom), Windows high contrast, and screen magnification are in the release matrix.
 - Time limits are avoided; outbox expiry is long, visible, and exportable.
 
 ## 12. Responsive breakpoints
@@ -474,7 +474,7 @@ A screen/journey is complete only when it has:
 
 - default, loading, empty, partial, error, offline, and permission-denied states as relevant;
 - keyboard and screen-reader path;
-- responsive behavior at the four ranges above;
+- responsive behavior at the five ranges above;
 - safe focus restoration and Back/refresh behavior;
 - user-visible provenance/destination where relevant;
 - destructive-action and undo/recovery behavior;
@@ -482,4 +482,3 @@ A screen/journey is complete only when it has:
 - component, integration, and E2E coverage proportional to risk;
 - updated screenshots or story states in the design/dev catalog;
 - linked checklist proof.
-

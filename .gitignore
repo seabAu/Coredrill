@@ -18,6 +18,7 @@ coverage/
 *.key
 
 # Editors and operating systems
+.serena/
 .idea/
 .vscode/*
 !.vscode/extensions.json

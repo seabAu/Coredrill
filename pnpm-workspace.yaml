@@ -2,6 +2,10 @@ packages:
   - "apps/*"
   - "packages/*"
 
+autoInstallPeers: false
+engineStrict: true
 minimumReleaseAge: 1440
-
+resolutionMode: highest
+savePrefix: ""
 strictDepBuilds: true
+strictPeerDependencies: true

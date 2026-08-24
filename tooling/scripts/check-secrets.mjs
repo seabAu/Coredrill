@@ -30,6 +30,15 @@ export function scanText(text) {
   return findings;
 }
 
+export async function readFileIfPresent(filePath) {
+  try {
+    return await readFile(filePath);
+  } catch (error) {
+    if (error && typeof error === "object" && error.code === "ENOENT") return undefined;
+    throw error;
+  }
+}
+
 export async function scanRepository(repositoryRoot) {
   const listing = spawnSync(
     gitExecutable(),
@@ -45,7 +54,8 @@ export async function scanRepository(repositoryRoot) {
 
   const findings = [];
   for (const relativePath of listing.stdout.split("\0").filter(Boolean)) {
-    const buffer = await readFile(path.join(repositoryRoot, relativePath));
+    const buffer = await readFileIfPresent(path.join(repositoryRoot, relativePath));
+    if (!buffer) continue;
     if (buffer.includes(0)) continue;
     const text = buffer.toString("utf8");
     for (const finding of scanText(text)) {

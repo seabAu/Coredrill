@@ -2,10 +2,10 @@
 
 This file is the single progress ledger. `GOAL.md` defines the outcome; numbered design documents define behavior; `11-decision-register.md` defines accepted choices. This checklist records what is actually proven.
 
-Last design update: 2026-08-21  
+Last design update: 2026-08-24  
 Current milestone: Phase 0 — foundations and risk retirement  
-Current work item: `FND-001` and `FND-006` blocked; `FND-002`–`FND-005`, `FND-007`, and `FND-008` proven  
-Next recommended slice: `FND-009` through `FND-010`; track the two owner/hosted blockers independently
+Current work item: `FND-009` through `FND-010` proven; no implementation slice currently active; `FND-001` and `FND-006` remain independently blocked  
+Next recommended slice: `DOM-001` through `DOM-002` — foundational value objects, status semantic categories, and validated custom-stage transitions
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `FND-009` through `FND-010`; track the two owner/hosted 
 | Field | Value |
 |---|---|
 | Milestone | Phase 0 |
-| Item range | `FND-001` through `FND-008` |
+| Item range | `FND-009` through `FND-010` — completed 2026-08-24 |
 | Branch/worktree | `main` / repository root |
-| Started | 2026-08-21 |
-| Expected proof | [Foundation verification report](../../proof/foundation-verification.md) records governance/ADR review, tree and boundary reports, frozen clean-clone install/build, typecheck/lint/unit/coverage/policy results, Changesets validation, and local CI-equivalent checks |
+| Started | 2026-08-24 |
+| Expected proof | [Dependency and reference-baseline verification](../../proof/foundation-baselines-verification.md#outcome), including the [dependency inventory](../../proof/foundation-dependency-inventory.json) and [versioned reference matrix](../../testing/reference-test-matrix.md) |
 | Blocker | Final public license and private conduct/security contact are unresolved (`Q-013`); no GitHub remote exists for the required green workflow URL |
-| Next handoff | Begin the unblocked `FND-009` through `FND-010` slice; close `FND-001` and `FND-006` independently when the owner supplies the license/reporting route and GitHub workflow URL |
+| Next handoff | Begin `DOM-001` through `DOM-002`; close `FND-001` and `FND-006` independently when the owner supplies the license/reporting route and GitHub workflow URL |
 
 ## Milestone status
 
@@ -72,8 +72,8 @@ Next recommended slice: `FND-009` through `FND-010`; track the two owner/hosted 
 - [ ] **FND-006** Configure GitHub Actions for install, typecheck, lint, unit, dependency/license, and secret checks. — Proof: [workflow configured and local equivalent green; hosted URL remains blocked](../../proof/foundation-verification.md#outcome)
 - [x] **FND-007** Add Changesets and release-note/migration-note templates. — Proof: [sample changeset and templates](../../proof/foundation-verification.md#reviewed-repository-evidence)
 - [x] **FND-008** Add ADR template and copy the accepted design decisions into repository docs with links back to this kit. — Proof: [ADR index and accepted-baseline ADR](../../proof/foundation-verification.md#reviewed-repository-evidence)
-- [ ] **FND-009** Record exact current stable dependency selections, versions, licenses, maintainers, and known advisories. — Proof: _dependency inventory_
-- [ ] **FND-010** Establish reference hardware, OS, browser, accessibility, and performance test matrix. — Proof: _versioned matrix_
+- [x] **FND-009** Record exact current stable dependency selections, versions, licenses, maintainers, and known advisories. — Proof: [reviewed inventory, drift validator, and all-severity audit](../../proof/foundation-baselines-verification.md#outcome)
+- [x] **FND-010** Establish reference hardware, OS, browser, accessibility, and performance test matrix. — Proof: [`JW-TM-001` v1.0.0 and executable validation](../../proof/foundation-baselines-verification.md#outcome)
 
 ## Domain and contracts
 

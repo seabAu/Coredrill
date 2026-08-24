@@ -1,0 +1,270 @@
+{
+  "schemaVersion": 1,
+  "inventoryId": "JW-DI-001",
+  "version": "1.0.0",
+  "reviewedAt": "2026-08-24T04:52:20Z",
+  "scope": {
+    "included": [
+      "Pinned Node.js, pnpm, and Rust foundation toolchains",
+      "Every non-workspace direct dependency declared by a tracked workspace package manifest",
+      "The complete pnpm lockfile graph for license and advisory review"
+    ],
+    "excluded": [
+      "Provisional product dependencies that have not been adopted or installed",
+      "Rust crates because no Cargo manifest or lockfile exists",
+      "Operating-system packages and browser binaries covered by the separate reference test matrix"
+    ]
+  },
+  "lockfile": {
+    "path": "pnpm-lock.yaml",
+    "sha256": "f53865d9687f975d2d40d0d65cd4a5c06865b7b479ce7285e747d840b17da977"
+  },
+  "toolchains": [
+    {
+      "name": "node",
+      "version": "24.19.0",
+      "channel": "Krypton LTS",
+      "selectionStatus": "current-selected-channel",
+      "license": "MIT with bundled third-party notices",
+      "maintainers": ["Node.js Project", "OpenJS Foundation"],
+      "pinFiles": [".node-version", ".tool-versions", "package.json#engines.node"],
+      "sources": [
+        "https://nodejs.org/dist/index.json",
+        "https://github.com/nodejs/node/blob/v24.19.0/LICENSE"
+      ],
+      "reviewNote": "Node 26 is the Current line; the repository deliberately selects the current Node 24 LTS line."
+    },
+    {
+      "name": "pnpm",
+      "version": "11.22.0",
+      "channel": "stable, release-age eligible",
+      "selectionStatus": "release-age-approved",
+      "license": "MIT",
+      "maintainers": ["zkochan", "pnpmuser"],
+      "pinFiles": [
+        ".tool-versions",
+        "package.json#packageManager",
+        "package.json#engines.pnpm",
+        ".github/workflows/foundation.yml"
+      ],
+      "sources": [
+        "https://registry.npmjs.org/pnpm/11.22.0",
+        "https://github.com/pnpm/pnpm/releases/tag/v11.23.0"
+      ],
+      "reviewNote": "11.23.0 was published at 2026-08-23T14:56:00Z and remained inside minimumReleaseAge: 1440 at review time; re-query after 2026-08-24T14:56:00Z."
+    },
+    {
+      "name": "rust",
+      "version": "1.98.0",
+      "channel": "stable",
+      "selectionStatus": "current",
+      "license": "Apache-2.0 OR MIT",
+      "maintainers": ["Rust Release Team", "Rust Project"],
+      "pinFiles": [".tool-versions", "rust-toolchain.toml"],
+      "sources": [
+        "https://static.rust-lang.org/dist/channel-rust-stable.toml",
+        "https://rust-lang.org/policies/licenses/"
+      ],
+      "reviewNote": "No Cargo dependency graph exists yet; crate-level advisory and supply-chain checks are required when the first crate is adopted."
+    }
+  ],
+  "packages": [
+    {
+      "manifest": "package.json",
+      "dependencyType": "devDependencies",
+      "name": "@changesets/cli",
+      "version": "3.0.1",
+      "upstreamLatest": "3.0.1",
+      "selectionStatus": "current",
+      "license": "MIT",
+      "maintainers": ["emmatown", "andarist"],
+      "repository": "https://github.com/changesets/changesets",
+      "metadataSource": "https://registry.npmjs.org/@changesets%2fcli/3.0.1",
+      "knownAdvisories": []
+    },
+    {
+      "manifest": "package.json",
+      "dependencyType": "devDependencies",
+      "name": "@eslint/js",
+      "version": "10.0.1",
+      "upstreamLatest": "10.0.1",
+      "selectionStatus": "current",
+      "license": "MIT",
+      "maintainers": ["openjsfoundation", "eslintbot"],
+      "repository": "https://github.com/eslint/eslint",
+      "metadataSource": "https://registry.npmjs.org/@eslint%2fjs/10.0.1",
+      "knownAdvisories": []
+    },
+    {
+      "manifest": "package.json",
+      "dependencyType": "devDependencies",
+      "name": "@vitest/coverage-v8",
+      "version": "4.1.11",
+      "upstreamLatest": "4.1.11",
+      "selectionStatus": "current",
+      "license": "MIT",
+      "maintainers": ["ariperkkio", "antfu", "hiogawa", "oreanno", "yyx990803"],
+      "repository": "https://github.com/vitest-dev/vitest",
+      "metadataSource": "https://registry.npmjs.org/@vitest%2fcoverage-v8/4.1.11",
+      "knownAdvisories": []
+    },
+    {
+      "manifest": "package.json",
+      "dependencyType": "devDependencies",
+      "name": "eslint",
+      "version": "10.9.0",
+      "upstreamLatest": "10.9.0",
+      "selectionStatus": "current",
+      "license": "MIT",
+      "maintainers": ["openjsfoundation", "eslintbot"],
+      "repository": "https://github.com/eslint/eslint",
+      "metadataSource": "https://registry.npmjs.org/eslint/10.9.0",
+      "knownAdvisories": []
+    },
+    {
+      "manifest": "package.json",
+      "dependencyType": "devDependencies",
+      "name": "license-checker-rseidelsohn",
+      "version": "5.0.1",
+      "upstreamLatest": "5.0.1",
+      "selectionStatus": "current",
+      "license": "BSD-3-Clause",
+      "maintainers": ["defaude", "rseidelsohn"],
+      "repository": "https://github.com/RSeidelsohn/license-checker-rseidelsohn",
+      "metadataSource": "https://registry.npmjs.org/license-checker-rseidelsohn/5.0.1",
+      "knownAdvisories": []
+    },
+    {
+      "manifest": "package.json",
+      "dependencyType": "devDependencies",
+      "name": "prettier",
+      "version": "3.9.6",
+      "upstreamLatest": "3.9.6",
+      "selectionStatus": "current",
+      "license": "MIT",
+      "maintainers": [
+        "jlongster",
+        "lydell",
+        "thorn0",
+        "vjeux",
+        "fisker",
+        "suchipi",
+        "duailibe",
+        "ikatyang",
+        "azz",
+        "sosukesuzuki",
+        "prettier-bot"
+      ],
+      "repository": "https://github.com/prettier/prettier",
+      "metadataSource": "https://registry.npmjs.org/prettier/3.9.6",
+      "knownAdvisories": []
+    },
+    {
+      "manifest": "package.json",
+      "dependencyType": "devDependencies",
+      "name": "turbo",
+      "version": "2.10.11",
+      "upstreamLatest": "2.10.11",
+      "selectionStatus": "current",
+      "license": "MIT",
+      "maintainers": ["vercel-release-bot", "turbobot"],
+      "repository": "https://github.com/vercel/turborepo",
+      "metadataSource": "https://registry.npmjs.org/turbo/2.10.11",
+      "knownAdvisories": []
+    },
+    {
+      "manifest": "package.json",
+      "dependencyType": "devDependencies",
+      "name": "typescript",
+      "version": "6.0.3",
+      "upstreamLatest": "7.0.2",
+      "selectionStatus": "latest-compatible",
+      "license": "Apache-2.0",
+      "maintainers": [
+        "microsoft1es",
+        "typescript-bot",
+        "weswigham",
+        "andrewbranch",
+        "typescript-deploys",
+        "microsoft-oss-releases",
+        "jakebailey"
+      ],
+      "repository": "https://github.com/microsoft/TypeScript",
+      "metadataSource": "https://registry.npmjs.org/typescript/6.0.3",
+      "knownAdvisories": [],
+      "selectionNote": "typescript-eslint 8.67.0 declares TypeScript >=4.8.4 <6.1.0, so 6.0.3 is the highest compatible line while upstream 7.0.2 is intentionally deferred."
+    },
+    {
+      "manifest": "package.json",
+      "dependencyType": "devDependencies",
+      "name": "typescript-eslint",
+      "version": "8.67.0",
+      "upstreamLatest": "8.67.0",
+      "selectionStatus": "current",
+      "license": "MIT",
+      "maintainers": ["jameshenry", "bradzacher"],
+      "repository": "https://github.com/typescript-eslint/typescript-eslint",
+      "metadataSource": "https://registry.npmjs.org/typescript-eslint/8.67.0",
+      "knownAdvisories": []
+    },
+    {
+      "manifest": "package.json",
+      "dependencyType": "devDependencies",
+      "name": "vitest",
+      "version": "4.1.11",
+      "upstreamLatest": "4.1.11",
+      "selectionStatus": "current",
+      "license": "MIT",
+      "maintainers": ["ariperkkio", "antfu", "hiogawa", "oreanno", "yyx990803"],
+      "repository": "https://github.com/vitest-dev/vitest",
+      "metadataSource": "https://registry.npmjs.org/vitest/4.1.11",
+      "knownAdvisories": []
+    }
+  ],
+  "advisoryReview": {
+    "command": "pnpm audit --json",
+    "source": "https://pnpm.io/cli/audit",
+    "reviewedAt": "2026-08-24T04:52:20Z",
+    "lockfileSha256": "f53865d9687f975d2d40d0d65cd4a5c06865b7b479ce7285e747d840b17da977",
+    "resolvedDependencyCount": 332,
+    "optionalDependencyCount": 35,
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0
+    }
+  },
+  "licenseReview": {
+    "command": "pnpm check:licenses",
+    "reviewedAt": "2026-08-24T04:52:20Z",
+    "lockfileSha256": "f53865d9687f975d2d40d0d65cd4a5c06865b7b479ce7285e747d840b17da977",
+    "resolvedPackageRecords": 299,
+    "result": "pass",
+    "note": "License records and advisory dependency counts use different tool scopes and are not expected to match."
+  },
+  "maintenanceWatch": [
+    {
+      "dependency": "license-checker-rseidelsohn",
+      "reason": "Two registry maintainers and a comparatively large Arborist subtree; review maintenance and replacement options before production dependency volume grows.",
+      "nextReviewOn": "2026-11-24"
+    },
+    {
+      "dependency": "pnpm",
+      "reason": "11.23.0 was current but not yet release-age eligible at review time.",
+      "nextReviewOn": "2026-08-25"
+    },
+    {
+      "dependency": "typescript",
+      "reason": "TypeScript 7 adoption is blocked by the current typescript-eslint peer range and requires a mutually compatible release.",
+      "nextReviewOn": "2026-09-24"
+    }
+  ],
+  "reviewTriggers": [
+    "Any package manifest or pnpm-lock.yaml change",
+    "Any Node.js, pnpm, Rust, ESLint, TypeScript, or test-runner pin change",
+    "A dependency or maintainer security advisory",
+    "At least quarterly while Phase 0 is active"
+  ]
+}

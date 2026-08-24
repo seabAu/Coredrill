@@ -1,6 +1,8 @@
+import path from "node:path";
+
 import { describe, expect, it } from "vitest";
 
-import { scanText } from "../scripts/check-secrets.mjs";
+import { readFileIfPresent, scanText } from "../scripts/check-secrets.mjs";
 
 describe("secret-pattern scanner", () => {
   it("rejects representative private credentials", () => {
@@ -12,5 +14,11 @@ describe("secret-pattern scanner", () => {
 
   it("permits documented placeholders", () => {
     expect(scanText("api_key = placeholder\nsecret: ${SECRET_FROM_STORE}")).toEqual([]);
+  });
+
+  it("skips a tracked file deleted from the working tree", async () => {
+    await expect(
+      readFileIfPresent(path.join(import.meta.dirname, "definitely-not-present.txt")),
+    ).resolves.toBeUndefined();
   });
 });

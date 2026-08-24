@@ -1,0 +1,655 @@
+{
+  "schemaVersion": 1,
+  "matrixId": "JW-TM-001",
+  "version": "1.0.0",
+  "effectiveDate": "2026-08-24",
+  "lastReviewedAt": "2026-08-24T04:52:20Z",
+  "purpose": "Phase 0 reference targets for repeatable compatibility, accessibility, offline, and performance evidence",
+  "supportPolicy": {
+    "status": "test-targets-not-support-commitment",
+    "note": "A listed target is not supported or verified until its checklist gate has execution evidence. Public OS/browser support remains provisional until STG-004 and the STG-008 decision record."
+  },
+  "statusDefinitions": {
+    "targetPriority": {
+      "required": "Required evidence before the applicable release or platform gate can close.",
+      "supplemental": "Useful compatibility or stress evidence that cannot substitute for a required row.",
+      "diagnostic": "Available for fast feedback only; never a release or performance gate."
+    },
+    "availability": {
+      "available": "A conforming target is provisioned and its exact environment can be recorded in a result manifest.",
+      "available-diagnostic": "Present on the current development workstation but not a conforming reference lane.",
+      "planned": "The target is defined but its runner/device has not been provisioned and verified.",
+      "unavailable": "No conforming environment is currently available."
+    },
+    "verification": {
+      "not-executed": "No result manifest exists; this is not a pass.",
+      "passed": "A result manifest bound to a commit, lockfile, fixture set, and exact environment passed.",
+      "failed": "Execution evidence exists and one or more required assertions failed."
+    }
+  },
+  "versionPolicy": {
+    "patch": "Correct source or patch-version metadata without changing coverage or a budget.",
+    "minor": "Add a compatible target, scenario, or measurement field.",
+    "major": "Remove a target, change a browser/OS floor, or change a performance budget; review the decision register and create an ADR when an Accepted decision is affected."
+  },
+  "hardware": [
+    {
+      "id": "HW-WIN-REF",
+      "purpose": "Primary web, desktop, and performance gate",
+      "targetPriority": "required",
+      "availability": "planned",
+      "verification": "not-executed",
+      "specification": {
+        "architecture": "x64",
+        "cpuModel": "Intel Core i5-12400",
+        "cpuTopology": "6 cores / 12 threads",
+        "memoryGiB": 8,
+        "memory": "8 GiB dual-channel DDR4-3200",
+        "storage": "Samsung 970 EVO Plus 500 GB NVMe SSD with at least 20 GiB free",
+        "graphics": "Intel UHD Graphics 730; hardware acceleration enabled; record the driver version",
+        "powerProfile": "AC power, Windows Balanced mode, vendor defaults; record thermal state",
+        "display": "1920x1080 at 100% scaling",
+        "osTargetId": "OS-WIN11-25H2"
+      }
+    },
+    {
+      "id": "HW-MAC-REF",
+      "purpose": "Safari, VoiceOver, and macOS desktop gate",
+      "targetPriority": "required",
+      "availability": "unavailable",
+      "verification": "not-executed",
+      "specification": {
+        "architecture": "Apple Silicon",
+        "model": "Mac mini (M1, 2020)",
+        "cpuModel": "Apple M1",
+        "memoryGiB": 8,
+        "memory": "8 GiB unified memory",
+        "storage": "256 GB internal SSD with at least 20 GiB free",
+        "powerProfile": "AC power, Low Power Mode off; record thermal state",
+        "display": "1440x900 logical resolution or higher",
+        "osTargetIds": ["OS-MAC-SEQUOIA", "OS-MAC-TAHOE", "OS-MAC-SONOMA-18"]
+      }
+    },
+    {
+      "id": "HW-IOS-REF",
+      "purpose": "Installed mobile Safari PWA, local-storage, and share/import gate",
+      "targetPriority": "required",
+      "availability": "unavailable",
+      "verification": "not-executed",
+      "specification": {
+        "model": "iPhone 11 (2019), 64 GB",
+        "cpuModel": "Apple A13 Bionic",
+        "display": "6.1-inch, 1792x828 at 326 ppi",
+        "powerProfile": "Battery at least 50%, Low Power Mode off; record battery health and thermal state",
+        "networkProfile": "Wi-Fi with a controllable offline/online transition",
+        "osTargetId": "OS-IOS-26"
+      }
+    },
+    {
+      "id": "HW-ANDROID-REF",
+      "purpose": "Installed Android Chrome PWA, local-storage, and share/import gate",
+      "targetPriority": "required",
+      "availability": "unavailable",
+      "verification": "not-executed",
+      "specification": {
+        "model": "Google Pixel 9, 128 GB",
+        "cpuModel": "Google Tensor G4",
+        "memory": "12 GB RAM",
+        "display": "6.3-inch, 2424x1080 at 422 ppi",
+        "powerProfile": "Battery at least 50%, Battery Saver off; record battery health and thermal state",
+        "networkProfile": "Wi-Fi with a controllable offline/online transition",
+        "osTargetId": "OS-ANDROID-17"
+      }
+    },
+    {
+      "id": "HW-STRESS",
+      "purpose": "High-volume storage and capacity investigation; never substitutes for reference performance",
+      "targetPriority": "supplemental",
+      "availability": "planned",
+      "verification": "not-executed",
+      "specification": {
+        "cpu": "8 or more cores",
+        "memoryGiB": 16,
+        "storage": "SSD"
+      }
+    },
+    {
+      "id": "HW-LOCAL-DIAG",
+      "purpose": "Fast local diagnostics only",
+      "targetPriority": "diagnostic",
+      "availability": "available-diagnostic",
+      "verification": "not-executed",
+      "specification": {
+        "architecture": "x64",
+        "cpu": "Intel Core Ultra 9 285K; 24 logical processors",
+        "memoryGiB": 63.5,
+        "display": "2560x1440",
+        "osTargetId": "OS-WIN10-LOCAL"
+      },
+      "privacyNote": "Hostname, serial numbers, user paths, and device identifiers are intentionally omitted."
+    }
+  ],
+  "operatingSystems": [
+    {
+      "id": "OS-WIN11-25H2",
+      "name": "Windows 11 25H2 x64",
+      "role": "primary ordinary-device reference",
+      "targetPriority": "required",
+      "availability": "planned",
+      "verification": "not-executed"
+    },
+    {
+      "id": "OS-WIN11-26H1",
+      "name": "Windows 11 26H1 x64/Arm64",
+      "role": "new-device compatibility",
+      "targetPriority": "supplemental",
+      "availability": "planned",
+      "verification": "not-executed"
+    },
+    {
+      "id": "OS-MAC-TAHOE",
+      "name": "macOS Tahoe 26.6.2",
+      "role": "current macOS desktop compatibility branch; result manifests must record the bundled Safari/WebKit patch actually executed",
+      "targetPriority": "required",
+      "availability": "unavailable",
+      "verification": "not-executed"
+    },
+    {
+      "id": "OS-MAC-SEQUOIA",
+      "name": "macOS Sequoia 15.7.9",
+      "role": "Safari 26.6.1 web and VoiceOver reference branch",
+      "targetPriority": "required",
+      "availability": "unavailable",
+      "verification": "not-executed"
+    },
+    {
+      "id": "OS-MAC-SONOMA-18",
+      "name": "macOS Sonoma 14.7.7 historical snapshot",
+      "role": "isolated Safari 18.6 previous-major runner",
+      "targetPriority": "required",
+      "availability": "unavailable",
+      "verification": "not-executed"
+    },
+    {
+      "id": "OS-IOS-26",
+      "name": "iOS 26.6.1 with bundled Safari/WebKit",
+      "role": "iPhone installed-PWA and mobile-local-vault reference",
+      "targetPriority": "required",
+      "availability": "unavailable",
+      "verification": "not-executed"
+    },
+    {
+      "id": "OS-ANDROID-17",
+      "name": "Android 17 stable with exact build and security patch recorded at execution",
+      "role": "Android installed-PWA and mobile-local-vault reference",
+      "targetPriority": "required",
+      "availability": "unavailable",
+      "verification": "not-executed"
+    },
+    {
+      "id": "OS-UBUNTU-26",
+      "name": "Ubuntu 26.04 LTS x64",
+      "role": "current Linux LTS compatibility",
+      "targetPriority": "supplemental",
+      "availability": "planned",
+      "verification": "not-executed"
+    },
+    {
+      "id": "OS-UBUNTU-24",
+      "name": "Ubuntu 24.04 LTS x64",
+      "role": "previous Linux LTS compatibility",
+      "targetPriority": "supplemental",
+      "availability": "planned",
+      "verification": "not-executed"
+    },
+    {
+      "id": "OS-WIN10-LOCAL",
+      "name": "Windows 10 Pro 22H2 build 19045.6466",
+      "role": "out-of-support local diagnostic environment",
+      "targetPriority": "diagnostic",
+      "availability": "available-diagnostic",
+      "verification": "not-executed"
+    }
+  ],
+  "browserBaseline": {
+    "asOf": "2026-08-24",
+    "rollingRule": "Exercise current and previous stable Chromium, Firefox, and Safari generations where SQLite/OPFS tests pass; otherwise record the exact failure and manual or desktop fallback under STG-004.",
+    "versions": [
+      {
+        "family": "Chrome/Chromium",
+        "current": "152.0.7977.54",
+        "previous": "151.0.7922.108 (Linux) / 151.0.7922.108-.109 (Windows/macOS)"
+      },
+      {
+        "family": "Microsoft Edge",
+        "current": "151.0.4129.101",
+        "previous": "150.0.4078.144"
+      },
+      {
+        "family": "Firefox",
+        "current": "154.0",
+        "previous": "153.0"
+      },
+      {
+        "family": "Safari",
+        "current": "26.6.1",
+        "previous": "18.6",
+        "note": "The previous row is a historical previous-major fallback, not a claim that Apple offers a current installable N-1 stable binary on the same host."
+      }
+    ]
+  },
+  "executionTargets": [
+    {
+      "id": "WEB-CHR-N",
+      "surface": "web-pwa",
+      "environment": "Chrome/Chromium 152.0.7977.54 on OS-WIN11-25H2 and HW-WIN-REF",
+      "hardwareTargetIds": ["HW-WIN-REF"],
+      "operatingSystemTargetIds": ["OS-WIN11-25H2"],
+      "targetPriority": "required",
+      "availability": "planned",
+      "verification": "not-executed"
+    },
+    {
+      "id": "WEB-CHR-N1",
+      "surface": "web-pwa",
+      "environment": "Chrome/Chromium 151 in an isolated synthetic-data profile; record the exact platform patch in the result manifest",
+      "hardwareTargetIds": ["HW-WIN-REF"],
+      "operatingSystemTargetIds": ["OS-WIN11-25H2"],
+      "targetPriority": "required",
+      "availability": "planned",
+      "verification": "not-executed"
+    },
+    {
+      "id": "WEB-EDGE-N",
+      "surface": "web-pwa",
+      "environment": "Edge 151.0.4129.101 on OS-WIN11-25H2; include a WebView2 compatibility smoke",
+      "hardwareTargetIds": ["HW-WIN-REF"],
+      "operatingSystemTargetIds": ["OS-WIN11-25H2"],
+      "targetPriority": "required",
+      "availability": "planned",
+      "verification": "not-executed"
+    },
+    {
+      "id": "WEB-EDGE-N1",
+      "surface": "web-pwa",
+      "environment": "Edge 150.0.4078.144 in an isolated synthetic-data profile",
+      "hardwareTargetIds": ["HW-WIN-REF"],
+      "operatingSystemTargetIds": ["OS-WIN11-25H2"],
+      "targetPriority": "required",
+      "availability": "planned",
+      "verification": "not-executed"
+    },
+    {
+      "id": "WEB-FF-N",
+      "surface": "web-pwa",
+      "environment": "Firefox 154.0 on OS-WIN11-25H2 and HW-WIN-REF",
+      "hardwareTargetIds": ["HW-WIN-REF"],
+      "operatingSystemTargetIds": ["OS-WIN11-25H2"],
+      "targetPriority": "required",
+      "availability": "planned",
+      "verification": "not-executed"
+    },
+    {
+      "id": "WEB-FF-N1",
+      "surface": "web-pwa",
+      "environment": "Firefox 153.0 in an isolated synthetic-data profile",
+      "hardwareTargetIds": ["HW-WIN-REF"],
+      "operatingSystemTargetIds": ["OS-WIN11-25H2"],
+      "targetPriority": "required",
+      "availability": "planned",
+      "verification": "not-executed"
+    },
+    {
+      "id": "WEB-SAF-N",
+      "surface": "web-pwa",
+      "environment": "Safari 26.6.1 on OS-MAC-SEQUOIA and HW-MAC-REF",
+      "hardwareTargetIds": ["HW-MAC-REF"],
+      "operatingSystemTargetIds": ["OS-MAC-SEQUOIA"],
+      "targetPriority": "required",
+      "availability": "unavailable",
+      "verification": "not-executed"
+    },
+    {
+      "id": "WEB-SAF-N1",
+      "surface": "web-pwa",
+      "environment": "Safari 18.6 on the isolated OS-MAC-SONOMA-18 historical snapshot and HW-MAC-REF",
+      "hardwareTargetIds": ["HW-MAC-REF"],
+      "operatingSystemTargetIds": ["OS-MAC-SONOMA-18"],
+      "targetPriority": "required",
+      "availability": "unavailable",
+      "verification": "not-executed",
+      "fallback": "STG-004 must record the exact unsupported condition and the manual or desktop fallback if the historical runner cannot be provisioned."
+    },
+    {
+      "id": "WEB-LINUX",
+      "surface": "web-pwa",
+      "environment": "Current Chromium and Firefox on OS-UBUNTU-26; OS-UBUNTU-24 compatibility smoke",
+      "hardwareTargetIds": [],
+      "operatingSystemTargetIds": ["OS-UBUNTU-26", "OS-UBUNTU-24"],
+      "targetPriority": "supplemental",
+      "availability": "planned",
+      "verification": "not-executed"
+    },
+    {
+      "id": "MOBILE-IOS-PWA",
+      "surface": "mobile-pwa",
+      "environment": "Safari/WebKit bundled with iOS 26.6.1 on HW-IOS-REF",
+      "hardwareTargetIds": ["HW-IOS-REF"],
+      "operatingSystemTargetIds": ["OS-IOS-26"],
+      "scenarios": [
+        "install and relaunch",
+        "offline local-vault create/update/view/search",
+        "OPFS capability and persistence request",
+        "storage pressure/eviction behavior without silent data loss",
+        "share-target capture when offered, with documented file/import fallback otherwise"
+      ],
+      "targetPriority": "required",
+      "availability": "unavailable",
+      "verification": "not-executed"
+    },
+    {
+      "id": "MOBILE-ANDROID-PWA",
+      "surface": "mobile-pwa",
+      "environment": "Chrome 151.0.7922.83 on Android 17 and HW-ANDROID-REF; record the exact OS build and security patch",
+      "hardwareTargetIds": ["HW-ANDROID-REF"],
+      "operatingSystemTargetIds": ["OS-ANDROID-17"],
+      "scenarios": [
+        "install and relaunch",
+        "offline local-vault create/update/view/search",
+        "OPFS capability and persistence request",
+        "storage pressure/eviction behavior without silent data loss",
+        "share-target capture and explicit import/update handoff"
+      ],
+      "targetPriority": "required",
+      "availability": "unavailable",
+      "verification": "not-executed"
+    },
+    {
+      "id": "DESK-WIN",
+      "surface": "desktop",
+      "environment": "Tauri/WebView2 on OS-WIN11-25H2 and HW-WIN-REF",
+      "hardwareTargetIds": ["HW-WIN-REF"],
+      "operatingSystemTargetIds": ["OS-WIN11-25H2"],
+      "targetPriority": "required",
+      "availability": "planned",
+      "verification": "not-executed"
+    },
+    {
+      "id": "DESK-MAC",
+      "surface": "desktop",
+      "environment": "Tauri/WebKit on OS-MAC-TAHOE and HW-MAC-REF; record the bundled Safari/WebKit patch from the runner",
+      "hardwareTargetIds": ["HW-MAC-REF"],
+      "operatingSystemTargetIds": ["OS-MAC-TAHOE"],
+      "targetPriority": "required",
+      "availability": "unavailable",
+      "verification": "not-executed"
+    },
+    {
+      "id": "DESK-LINUX",
+      "surface": "desktop",
+      "environment": "Tauri/WebKitGTK on OS-UBUNTU-26",
+      "hardwareTargetIds": [],
+      "operatingSystemTargetIds": ["OS-UBUNTU-26"],
+      "targetPriority": "supplemental",
+      "availability": "planned",
+      "verification": "not-executed"
+    },
+    {
+      "id": "EXT-CHR",
+      "surface": "extension",
+      "environment": "Current Chrome and Edge with activeTab, side-panel/popup, bounded outbox, and app transfer",
+      "hardwareTargetIds": ["HW-WIN-REF"],
+      "operatingSystemTargetIds": ["OS-WIN11-25H2"],
+      "targetPriority": "required",
+      "availability": "planned",
+      "verification": "not-executed"
+    },
+    {
+      "id": "EXT-FF",
+      "surface": "extension",
+      "environment": "Current Firefox with the documented manual/transfer fallback",
+      "hardwareTargetIds": ["HW-WIN-REF"],
+      "operatingSystemTargetIds": ["OS-WIN11-25H2"],
+      "targetPriority": "required",
+      "availability": "planned",
+      "verification": "not-executed"
+    }
+  ],
+  "availableDiagnostics": [
+    {
+      "id": "LOCAL-EDGE",
+      "environment": "Edge 151.0.4129.101 on OS-WIN10-LOCAL and HW-LOCAL-DIAG",
+      "use": "Fast synthetic smoke checks only",
+      "verification": "not-executed"
+    },
+    {
+      "id": "LOCAL-FIREFOX",
+      "environment": "Firefox 154.0 on OS-WIN10-LOCAL and HW-LOCAL-DIAG",
+      "use": "Fast synthetic smoke checks only",
+      "verification": "not-executed"
+    }
+  ],
+  "accessibility": {
+    "normativeTarget": "WCAG 2.2 AA for shipped flows",
+    "automatedChecksNeverEstablishConformance": true,
+    "cases": [
+      {
+        "id": "A11Y-AXE",
+        "method": "Automated axe checks on every implemented core route/state/theme/density",
+        "targetPriority": "required",
+        "availability": "planned",
+        "verification": "not-executed"
+      },
+      {
+        "id": "A11Y-KEYBOARD",
+        "method": "Keyboard-only canonical journeys, non-drag status movement, focus restoration, dialogs, errors, and shortcuts",
+        "targetPriority": "required",
+        "availability": "planned",
+        "verification": "not-executed"
+      },
+      {
+        "id": "A11Y-NVDA-EDGE",
+        "method": "NVDA 2026.1.1 with current Edge/Chromium on HW-WIN-REF",
+        "targetPriority": "required",
+        "availability": "planned",
+        "verification": "not-executed"
+      },
+      {
+        "id": "A11Y-NVDA-FF",
+        "method": "NVDA 2026.1.1 with current Firefox on HW-WIN-REF",
+        "targetPriority": "required",
+        "availability": "planned",
+        "verification": "not-executed"
+      },
+      {
+        "id": "A11Y-VOICEOVER-SAFARI",
+        "method": "VoiceOver bundled with OS-MAC-SEQUOIA and Safari 26.6.1 on HW-MAC-REF",
+        "targetPriority": "required",
+        "availability": "unavailable",
+        "verification": "not-executed"
+      },
+      {
+        "id": "A11Y-IOS-VOICEOVER",
+        "method": "VoiceOver bundled with iOS 26.6.1 across installed-PWA navigation, editing, offline, and share/import scenarios on HW-IOS-REF",
+        "targetPriority": "required",
+        "availability": "unavailable",
+        "verification": "not-executed"
+      },
+      {
+        "id": "A11Y-ANDROID-TALKBACK",
+        "method": "TalkBack across installed-PWA navigation, editing, offline, and share/import scenarios on HW-ANDROID-REF; record the exact Android Accessibility Suite/TalkBack version",
+        "targetPriority": "required",
+        "availability": "unavailable",
+        "verification": "not-executed"
+      },
+      {
+        "id": "A11Y-DISPLAY",
+        "method": "Windows forced colors/high contrast, reduced motion, screen magnification, and browser text resize to 200%",
+        "targetPriority": "required",
+        "availability": "planned",
+        "verification": "not-executed"
+      },
+      {
+        "id": "A11Y-REFLOW",
+        "method": "320 CSS-pixel reflow case, approximately 400% zoom at a 1280 CSS-pixel viewport, with no loss of information or two-dimensional scrolling except allowed content",
+        "targetPriority": "required",
+        "availability": "planned",
+        "verification": "not-executed"
+      },
+      {
+        "id": "A11Y-RESPONSIVE",
+        "method": "Responsive and keyboard checks at every recorded viewport",
+        "targetPriority": "required",
+        "availability": "planned",
+        "verification": "not-executed"
+      }
+    ],
+    "viewports": [
+      {
+        "id": "VP-MOBILE",
+        "width": 360,
+        "height": 800
+      },
+      {
+        "id": "VP-TABLET-PORTRAIT",
+        "width": 768,
+        "height": 1024
+      },
+      {
+        "id": "VP-TABLET-LANDSCAPE",
+        "width": 1024,
+        "height": 768
+      },
+      {
+        "id": "VP-DESKTOP",
+        "width": 1440,
+        "height": 900
+      },
+      {
+        "id": "VP-WIDE",
+        "width": 1920,
+        "height": 1080
+      }
+    ]
+  },
+  "performance": {
+    "measurementProtocol": {
+      "data": "Deterministic synthetic fixtures with a recorded seed; never production career data",
+      "interactionWarmupsDiscarded": 5,
+      "interactionMeasuredIterations": 50,
+      "warmStartRuns": 20,
+      "report": ["p50", "p95", "max", "failure count", "raw measurements"],
+      "environmentControls": [
+        "Record exact OS/browser/webview patch, power mode, hardware tier, commit, lockfile hash, fixture hash, and app build",
+        "Close unrelated foreground workloads and state whether hardware acceleration is enabled",
+        "Use an isolated profile and local test origin; previous-browser lanes contain synthetic data only"
+      ]
+    },
+    "fixtureProfiles": [
+      {
+        "id": "DATA-SMOKE",
+        "jobs": 100,
+        "purpose": "Fast correctness and diagnostics"
+      },
+      {
+        "id": "DATA-REFERENCE",
+        "jobs": 2000,
+        "purpose": "Reference compatibility and performance"
+      },
+      {
+        "id": "DATA-STRESS",
+        "jobs": 10000,
+        "purpose": "Capacity behavior; does not replace the reference gate"
+      }
+    ],
+    "budgets": [
+      {
+        "id": "PERF-UI",
+        "measure": "Common board/table switch, open job, status move, filter, local search, and field-save interactions excluding import and AI",
+        "statistic": "p95",
+        "operator": "<",
+        "value": 150,
+        "unit": "ms",
+        "status": "design-target"
+      },
+      {
+        "id": "PERF-WARM",
+        "measure": "Installed PWA and desktop warm launch to a usable local shell",
+        "statistic": "p95",
+        "operator": "<",
+        "value": 2000,
+        "unit": "ms",
+        "status": "design-target-pending-storage-spike-validation"
+      },
+      {
+        "id": "PERF-CAPTURE",
+        "measure": "Capture-to-reviewed-record in representative usability tests",
+        "statistic": "median",
+        "operator": "<",
+        "value": 120,
+        "unit": "s",
+        "status": "usability-target"
+      },
+      {
+        "id": "PERF-OFFLINE",
+        "measure": "Unexpected network requests after installed assets during tracking, review, search, evidence, and document-editing core flows",
+        "statistic": "count",
+        "operator": "=",
+        "value": 0,
+        "unit": "requests",
+        "status": "privacy-and-offline-target"
+      }
+    ],
+    "recordOnlyUntilSpike": [
+      "cold startup",
+      "create/migrate/query/search",
+      "import/export/restore",
+      "bundle size",
+      "JavaScript heap and desktop RSS",
+      "database and attachment size"
+    ]
+  },
+  "resultManifestRequiredFields": [
+    "matrixId and version",
+    "target and hardware IDs",
+    "commit SHA and dirty-worktree flag",
+    "pnpm-lock.yaml SHA-256",
+    "fixture ID, seed, and fixture SHA-256",
+    "exact OS, browser/webview, assistive-technology, and app-build versions",
+    "start/end timestamps and run counts",
+    "raw artifact paths, summary statistics, failures, and reviewer"
+  ],
+  "privacyAndIsolation": [
+    "Use only synthetic or licensed fixtures in automated, previous-browser, extension, and shared-runner lanes.",
+    "Use an isolated browser profile and a local test origin.",
+    "Never place real resumes, application answers, provider keys, cookies, or career records in test artifacts."
+  ],
+  "reviewTriggers": [
+    "A browser major reaches stable",
+    "An operating-system branch enters or leaves servicing",
+    "SQLite WASM/VFS, Tauri/WebView, WXT, or accessibility tooling changes",
+    "A performance budget or public support decision changes",
+    "At least quarterly while Phase 0 is active"
+  ],
+  "sources": [
+    "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions.json",
+    "https://chromereleases.googleblog.com/2026/08/stable-channel-update-for-desktop_01193673229.html",
+    "https://learn.microsoft.com/en-us/deployedge/microsoft-edge-relnote-stable-channel",
+    "https://developer.mozilla.org/en-US/docs/Mozilla/Firefox/Releases/154",
+    "https://developer.mozilla.org/en-US/docs/Mozilla/Firefox/Releases/153",
+    "https://support.apple.com/en-us/100100",
+    "https://support.apple.com/en-us/124152",
+    "https://support.apple.com/en-us/111865",
+    "https://support.google.com/pixelphone/answer/7158570",
+    "https://developer.android.com/about/versions/17/get",
+    "https://developer.android.com/blog/posts/android-17-is-here",
+    "https://chromereleases.googleblog.com/2026/08/chrome-for-android-update.html",
+    "https://developer.apple.com/documentation/safari-release-notes",
+    "https://learn.microsoft.com/en-us/windows/release-health/windows11-release-information",
+    "https://learn.microsoft.com/en-us/lifecycle/products/windows-10-home-and-pro",
+    "https://ubuntu.com/about/release-cycle",
+    "https://www.nvaccess.org/download/",
+    "https://www.w3.org/TR/WCAG22/",
+    "https://www.w3.org/WAI/WCAG22/Understanding/reflow.html"
+  ]
+}
