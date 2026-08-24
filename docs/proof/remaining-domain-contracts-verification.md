@@ -7,7 +7,7 @@
 
 ## Outcome
 
-`DOM-007` through `DOM-009` are proven locally. Coredrill now has pure provider-neutral ports for extraction, optional AI, public labor data, local document conversion, and explicitly deferred sync; stable application command/query/result/error conventions; and a strict content-free local diagnostic boundary with fail-closed redaction.
+`DOM-007` through `DOM-009` are proven locally and by hosted CI. Coredrill now has pure provider-neutral ports for extraction, optional AI, public labor data, local document conversion, and explicitly deferred sync; stable application command/query/result/error conventions; and a strict content-free local diagnostic boundary with fail-closed redaction.
 
 This remains contract-only work. It adds no extractor implementation, provider SDK, AI call, labor-data request, document parser/renderer, sync server/account/cryptography, telemetry sink, database schema, browser permission, hosted service, or product UI. Template-only/AI-disabled operation remains complete, and no method introduced here can submit applications, send outreach, fetch arbitrary URLs, or silently sync data.
 
@@ -61,7 +61,7 @@ Run with pinned Node.js 24.19.0 and pnpm 11.22.0:
 | Dependency checks within `verify`       | 301 license records passed; zero known vulnerabilities at every audit severity                                                                                 |
 | `pnpm changeset:status` within `verify` | The four affected packages have pending minor Changesets                                                                                                       |
 
-The implementation commit's hosted Foundation CI run is recorded here after GitHub validates the exact pushed tree.
+Implementation commit [`227e23c6b77cdf5255c8e0aa92245f7df952f098`](https://github.com/seabAu/Coredrill/commit/227e23c6b77cdf5255c8e0aa92245f7df952f098) passed hosted [Foundation CI run `32703945760`](https://github.com/seabAu/Coredrill/actions/runs/32703945760), including the full-history secret scan.
 
 ## Dependency and boundary review
 
