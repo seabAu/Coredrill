@@ -105,8 +105,25 @@ jobs:
       - name: Lint complete Tauri boundary
         run: pnpm --filter @coredrill/desktop lint:desktop
 
-      - name: Build shared frontend in Tauri shell
-        run: pnpm --filter @coredrill/desktop build:desktop
+      - name: Build installable Tauri package
+        run: pnpm --filter @coredrill/desktop build:installer:windows
+
+      - name: Prove installed startup and resources
+        shell: pwsh
+        run: >-
+          ./tooling/scripts/run-native-package-proof.ps1
+          -OutputPath "$env:RUNNER_TEMP/coredrill-native-package-proof.json"
+
+      - name: Upload immutable Windows package proof
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coredrill-windows-nsis-${{ github.sha }}
+          path: |
+            apps/desktop/src-tauri/target/release/bundle/nsis/*-setup.exe
+            ${{ runner.temp }}/coredrill-native-package-proof.json
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
 
   browser-storage-chrome:
     name: Browser storage / Chrome ${{ matrix.chrome }}

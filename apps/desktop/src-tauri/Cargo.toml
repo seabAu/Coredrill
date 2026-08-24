@@ -20,10 +20,12 @@ required-features = ["desktop-shell"]
 [[bin]]
 name = "coredrill-native-storage-probe"
 path = "src/bin/native-storage-probe.rs"
+required-features = ["native-storage-probe"]
 
 [features]
 default = ["desktop-shell"]
 desktop-shell = ["dep:tauri", "dep:tauri-plugin-dialog"]
+native-storage-probe = []
 
 [build-dependencies]
 tauri-build = { version = "=2.6.3", features = [] }

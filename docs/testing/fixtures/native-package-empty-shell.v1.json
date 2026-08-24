@@ -1,0 +1,7 @@
+{
+  "fixtureId": "NAT007-EMPTY-SHELL",
+  "version": 1,
+  "seed": "coredrill-native-empty-shell-v1",
+  "description": "Synthetic empty-vault desktop shell used only for installed startup and resource measurements.",
+  "containsUserData": false
+}

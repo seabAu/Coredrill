@@ -19,6 +19,8 @@ use native_storage::{
     NativeStorageError, NativeStorageRequest, NativeStorageResponse, NativeStorageService,
 };
 #[cfg(feature = "desktop-shell")]
+use tauri::webview::PageLoadEvent;
+#[cfg(feature = "desktop-shell")]
 use tauri::{Manager, Runtime};
 #[cfg(feature = "desktop-shell")]
 use tauri_plugin_dialog::DialogExt;
@@ -93,8 +95,23 @@ fn native_storage_app_data_root<R: Runtime>(
 #[cfg(feature = "desktop-shell")]
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let startup_benchmark = std::env::args_os()
+        .any(|argument| argument == std::ffi::OsStr::new("--coredrill-startup-benchmark"));
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .on_page_load(move |webview, payload| {
+            if webview.label() == "main" && matches!(payload.event(), PageLoadEvent::Finished) {
+                let window = webview.window();
+                window
+                    .set_title("Coredrill")
+                    .expect("Coredrill main window title must become ready");
+                if !startup_benchmark {
+                    window
+                        .show()
+                        .expect("Coredrill main window must show after page load");
+                }
+            }
+        })
         .setup(|app| {
             let storage_root = native_storage_app_data_root(app)?;
             let service = NativeStorageService::new(storage_root)

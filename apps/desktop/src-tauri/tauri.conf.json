@@ -11,13 +11,14 @@
     "windows": [
       {
         "label": "main",
-        "title": "Coredrill",
+        "title": "Coredrill (loading)",
         "width": 1180,
         "height": 760,
         "minWidth": 720,
         "minHeight": 540,
         "resizable": true,
         "fullscreen": false,
+        "visible": false,
         "dragDropEnabled": false
       }
     ],
@@ -36,6 +37,23 @@
     "withGlobalTauri": false
   },
   "bundle": {
-    "active": false
+    "active": true,
+    "targets": ["nsis"],
+    "useLocalToolsDir": true,
+    "category": "Productivity",
+    "shortDescription": "Local-first job application workspace.",
+    "longDescription": "Coredrill is an accountless, local-first workspace for managing job applications and career evidence.",
+    "licenseFile": "../../../LICENSE",
+    "windows": {
+      "allowDowngrades": false,
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper",
+        "silent": true
+      },
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": ["English"]
+      }
+    }
   }
 }

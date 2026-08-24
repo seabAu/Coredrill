@@ -23,6 +23,7 @@
     "test:storage-native": "pnpm --filter @coredrill/storage-core build && pnpm --filter @coredrill/desktop test:native-core && pnpm --filter @coredrill/desktop build:native-probe && vitest run packages/storage-native/test/native-database.test.ts",
     "test:secure-storage": "node tooling/scripts/run-native-secret-proof.mjs",
     "test:native-archive": "node tooling/scripts/run-native-archive-proof.mjs",
+    "test:native-package": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File tooling/scripts/run-native-package-proof.ps1",
     "test:boundaries": "vitest run tooling/tests/import-boundaries.test.mjs",
     "check:boundaries": "node tooling/architecture/check-boundaries.mjs",
     "check:foundation-records": "node tooling/scripts/check-foundation-records.mjs",
