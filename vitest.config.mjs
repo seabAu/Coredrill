@@ -5,7 +5,7 @@ export default defineConfig({
     coverage: {
       all: true,
       clean: true,
-      include: ["tooling/architecture/check-boundaries.mjs"],
+      include: ["packages/domain/src/**/*.ts", "tooling/architecture/check-boundaries.mjs"],
       provider: "v8",
       reporter: ["text", "json", "html"],
       reportsDirectory: "coverage",
@@ -16,7 +16,7 @@ export default defineConfig({
         statements: 80,
       },
     },
-    include: ["tooling/tests/**/*.test.mjs"],
+    include: ["packages/**/test/**/*.test.ts", "tooling/tests/**/*.test.mjs"],
     passWithNoTests: false,
     restoreMocks: true,
   },

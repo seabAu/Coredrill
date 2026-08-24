@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-24  
 Current milestone: Phase 0 — foundations and risk retirement  
-Current work item: Coredrill identity, Apache-2.0, and hosted Foundation CI are proven; `FND-001` remains open only for durable private conduct and vulnerability-reporting routes  
-Next recommended slice: `DOM-001` through `DOM-002` — foundational value objects, status semantic categories, and validated custom-stage transitions
+Current work item: `DOM-001` through `DOM-002` are locally proven; hosted Foundation CI confirmation is pending
+Next recommended slice: `DOM-003` through `DOM-004` — capture-envelope and provenance contracts after the domain foundation is proven
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `DOM-001` through `DOM-002` — foundational value objec
 | Field | Value |
 |---|---|
 | Milestone | Phase 0 |
-| Item range | `FND-001`, `FND-006`, `Q-001`, and `Q-013` identity/license/hosting follow-up |
+| Item range | `DOM-001` through `DOM-002` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-24 |
-| Expected proof | [Identity, license, remote integration, local gate, and green hosted Foundation CI](../../proof/identity-license-hosting-verification.md) |
-| Blocker | `FND-001` remains open because durable private conduct and vulnerability-reporting routes are unspecified; the public Security page currently exposes neither a private vulnerability entry point nor a durable conduct channel |
-| Next handoff | Begin `DOM-001` through `DOM-002`; close `FND-001` independently when the owner publishes both private reporting routes |
+| Expected proof | Unit/property/transition tests and [domain-foundations verification](../../proof/domain-foundations-verification.md) |
+| Blocker | None for this slice; the independent `FND-001` private-reporting-route blocker remains open below |
+| Next handoff | Begin `DOM-003` through `DOM-004` after this slice is proven; close `FND-001` independently when the owner publishes both private reporting routes |
 
 ## Milestone status
 
@@ -77,8 +77,8 @@ Next recommended slice: `DOM-001` through `DOM-002` — foundational value objec
 
 ## Domain and contracts
 
-- [ ] **DOM-001** Define branded IDs, date-only/instant/time-zone types, money/rate units, URL, source reference, and confidence value objects. — Proof: _unit/property tests_
-- [ ] **DOM-002** Define status semantic categories and validated custom-stage mapping. — Proof: _transition tests_
+- [x] **DOM-001** Define branded IDs, date-only/instant/time-zone types, money/rate units, URL, source reference, and confidence value objects. — Proof: [unit/property tests and verification report](../../proof/domain-foundations-verification.md#dom-001-value-object-proof)
+- [x] **DOM-002** Define status semantic categories and validated custom-stage mapping. — Proof: [category-pair and guarded-transition tests](../../proof/domain-foundations-verification.md#dom-002-status-proof)
 - [ ] **DOM-003** Define versioned `CaptureEnvelope` JSON Schema and generated TypeScript/Zod boundary validator. — Proof: _round-trip/invalid fixtures_
 - [ ] **DOM-004** Define field candidate/provenance/conflict/user-confirmation contracts. — Proof: _contract examples + tests_
 - [ ] **DOM-005** Define portable-archive manifest and checksum contract. — Proof: _schema + sample manifest_

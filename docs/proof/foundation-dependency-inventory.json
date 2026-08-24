@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "inventoryId": "JW-DI-001",
-  "version": "1.0.0",
-  "reviewedAt": "2026-08-24T04:52:20Z",
+  "version": "1.1.0",
+  "reviewedAt": "2026-08-24T06:27:12Z",
   "scope": {
     "included": [
       "Pinned Node.js, pnpm, and Rust foundation toolchains",
@@ -17,7 +17,7 @@
   },
   "lockfile": {
     "path": "pnpm-lock.yaml",
-    "sha256": "c3b3e6f7b1d2728a74e2c7dfbbca5e94445f8f3fbfad4ea89192728bb48f9a04"
+    "sha256": "c729212ca5ca8b8486f887f4fb8f66cad22916d67f5bb950c3ccaea730e9c3cf"
   },
   "toolchains": [
     {
@@ -124,6 +124,19 @@
     {
       "manifest": "package.json",
       "dependencyType": "devDependencies",
+      "name": "fast-check",
+      "version": "4.9.0",
+      "upstreamLatest": "4.9.0",
+      "selectionStatus": "current",
+      "license": "MIT",
+      "maintainers": ["ndubien"],
+      "repository": "https://github.com/dubzzz/fast-check",
+      "metadataSource": "https://registry.npmjs.org/fast-check/4.9.0",
+      "knownAdvisories": []
+    },
+    {
+      "manifest": "package.json",
+      "dependencyType": "devDependencies",
       "name": "license-checker-rseidelsohn",
       "version": "5.0.1",
       "upstreamLatest": "5.0.1",
@@ -224,9 +237,9 @@
   "advisoryReview": {
     "command": "pnpm audit --json",
     "source": "https://pnpm.io/cli/audit",
-    "reviewedAt": "2026-08-24T04:52:20Z",
-    "lockfileSha256": "c3b3e6f7b1d2728a74e2c7dfbbca5e94445f8f3fbfad4ea89192728bb48f9a04",
-    "resolvedDependencyCount": 332,
+    "reviewedAt": "2026-08-24T06:27:12Z",
+    "lockfileSha256": "c729212ca5ca8b8486f887f4fb8f66cad22916d67f5bb950c3ccaea730e9c3cf",
+    "resolvedDependencyCount": 334,
     "optionalDependencyCount": 35,
     "vulnerabilities": {
       "info": 0,
@@ -238,9 +251,9 @@
   },
   "licenseReview": {
     "command": "pnpm check:licenses",
-    "reviewedAt": "2026-08-24T04:52:20Z",
-    "lockfileSha256": "c3b3e6f7b1d2728a74e2c7dfbbca5e94445f8f3fbfad4ea89192728bb48f9a04",
-    "resolvedPackageRecords": 299,
+    "reviewedAt": "2026-08-24T06:27:12Z",
+    "lockfileSha256": "c729212ca5ca8b8486f887f4fb8f66cad22916d67f5bb950c3ccaea730e9c3cf",
+    "resolvedPackageRecords": 301,
     "result": "pass",
     "note": "License records and advisory dependency counts use different tool scopes and are not expected to match."
   },
