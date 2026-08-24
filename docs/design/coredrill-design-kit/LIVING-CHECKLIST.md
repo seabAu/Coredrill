@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-24  
 Current milestone: Phase 0 — foundations and risk retirement  
-Current work item: `EXT-004` through `EXT-006` — idempotent transfer, Firefox/manual fallback, and hostile-message/replay tests
-Next recommended slice: `EXT-007` through `EXT-008` — final production bundle review and extension architecture decision
+Current work item: `EXT-007` through `EXT-008` — final production/store-package review and extension architecture decision
+Next recommended slice: `EDT-001` through `EDT-003` — restricted editor schema, round-trip sanitation/stress, and representative imports
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `EXT-007` through `EXT-008` — final production bundle 
 | Field | Value |
 |---|---|
 | Milestone | Phase 0 |
-| Item range | `EXT-004` through `EXT-006` |
+| Item range | `EXT-007` through `EXT-008` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-24 |
-| Expected proof | Idempotent app-origin transfer E2E with acknowledgement/retry, Firefox/manual-export browser report, and malicious-message/oversize/replay/wrong-origin-or-ID/expiry security tests |
+| Expected proof | Exact manifest/bundle/store-ZIP/Firefox-source-ZIP review, secret/remote-code scan, clean source rebuild, and ADR-backed WXT plus side-panel/popup/sidebar decision |
 | Blocker | None for this slice; the independent `FND-001` private-reporting-route blocker remains open below |
-| Next handoff | Continue with `EXT-007` through `EXT-008` after the transfer/fallback/security slice; close `FND-001` independently when the owner publishes both private reporting routes |
+| Next handoff | Continue with `EDT-001` through `EDT-003` after the extension architecture gate; close `FND-001` independently when the owner publishes both private reporting routes |
 
 ## Milestone status
 
@@ -114,9 +114,9 @@ Next recommended slice: `EXT-007` through `EXT-008` — final production bundle 
 - [x] **EXT-001** Scaffold WXT MV3 extension with side-panel and popup fallback entrypoints. — Proof: [hosted clean-commit Chromium build and exact manifest](../../proof/extension-capture-outbox-verification.md#hosted-clean-commit-proof)
 - [x] **EXT-002** Capture title/company/URL/selected text under a user `activeTab` action. — Proof: [user-action fixture, permission boundary, and provenance-retaining envelope](../../proof/extension-capture-outbox-verification.md#capture-fixture-and-envelope-proof)
 - [x] **EXT-003** Validate and store a bounded, checksummed outbox item. — Proof: [bounded checksummed outbox tests and hosted aggregate gate](../../proof/extension-capture-outbox-verification.md#local-verification)
-- [ ] **EXT-004** Transfer idempotently to a hosted app origin with acknowledgement and retry. — Proof: _E2E test_
-- [ ] **EXT-005** Prove Firefox fallback/manual export path. — Proof: _browser report_
-- [ ] **EXT-006** Test malicious page messages, oversized input, replay, wrong origin/ID, and expired capture. — Proof: _security tests_
+- [x] **EXT-004** Transfer idempotently to a hosted app origin with acknowledgement and retry. — Proof: [clean-commit hosted SQLite-before-ack, acknowledgement-loss, attempt-2 retry, and exact deduplication E2E](../../proof/extension-transfer-fallback-security-verification.md#hosted-clean-commit-proof)
+- [x] **EXT-005** Prove Firefox fallback/manual export path. — Proof: [hosted Firefox checksummed JSON import, corrupt-checksum rejection, and idempotent duplicate report](../../proof/extension-transfer-fallback-security-verification.md#hosted-clean-commit-proof)
+- [x] **EXT-006** Test malicious page messages, oversized input, replay, wrong origin/ID, and expired capture. — Proof: [focused security suite plus hostile live-boundary cases](../../proof/extension-transfer-fallback-security-verification.md#security-and-compatibility-tests)
 - [ ] **EXT-007** Inspect production manifest/bundle for permissions, CSP, remote code, and secret leakage. — Proof: _review report_
 - [ ] **EXT-008** Decide WXT/side-panel baseline and update D-023/Q-005. — Proof: _ADR/update_
 

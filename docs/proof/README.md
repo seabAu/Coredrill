@@ -11,3 +11,6 @@ Checklist proof records command, tool version, date, exit status, and artifact p
 - [`NAT-006` native recovery-archive verification](native-archive-verification.md)
 - [`NAT-007` Windows native package and resource verification](native-windows-package-verification.md)
 - [`NAT-008` cross-platform native dependency, secure-store, package, and adapter-decision verification](native-cross-platform-verification.md)
+- [`EXT-001` through `EXT-003` extension capture/outbox verification](extension-capture-outbox-verification.md)
+- [`EXT-004` through `EXT-006` extension transfer/fallback/security verification](extension-transfer-fallback-security-verification.md)
+- [`EXT-007` through `EXT-008` extension production-package and architecture-decision verification](extension-production-package-verification.md)

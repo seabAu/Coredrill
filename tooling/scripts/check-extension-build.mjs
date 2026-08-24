@@ -3,6 +3,8 @@ import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
+import { scanText } from "./check-secrets.mjs";
+
 const commonManifestKeys = [
   "action",
   "background",
@@ -176,6 +178,11 @@ export async function inspectExtensionBuild(buildRoot, requestedTarget) {
       `${relativePath} imports remote executable code.`,
     );
   }
+  const textFiles = files.filter((file) => /\.(?:css|html|js|json)$/u.test(file));
+  for (const relativePath of textFiles) {
+    const source = await readFile(path.join(buildRoot, ...relativePath.split("/")), "utf8");
+    assert(scanText(source).length === 0, `${relativePath} contains a potential secret.`);
+  }
 
   return {
     schemaVersion: 1,
@@ -193,6 +200,8 @@ export async function inspectExtensionBuild(buildRoot, requestedTarget) {
       ? { mode: "manual-json-export-import", allowedOrigins: [] }
       : { mode: "external-message", allowedOrigins: [phase0AppOriginPattern] },
     contentSecurityPolicy: manifest.content_security_policy.extension_pages,
+    remoteCodeScan: { remoteAssets: 0, remoteImports: 0, evalCalls: 0 },
+    secretScan: { scannedTextFiles: textFiles.length, findings: 0 },
     files: await Promise.all(files.map((relativePath) => fileRecord(buildRoot, relativePath))),
   };
 }

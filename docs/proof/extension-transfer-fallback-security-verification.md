@@ -2,7 +2,7 @@
 
 Date: 2026-08-24
 Scope: `EXT-004` through `EXT-006`
-Status: implementation and local proof complete; clean-commit hosted proof pending
+Status: complete — implementation, local proof, clean-commit hosted proof, and immutable artifact review passed
 
 ## Outcome
 
@@ -38,7 +38,7 @@ Result: 2/2 E2E tests passed.
 - The same live boundary rejected an oversized/extra-field request, a wrong envelope ID, an acknowledgement replay after removal, and an unrelated HTTPS origin. The app retained one receipt throughout.
 - Playwright Firefox `151.0` imported the Firefox JSON export twice and recorded one durable `manual_export` receipt (`imported: 1`, then `duplicates: 1`). A changed export checksum was rejected without changing the receipt count.
 
-Machine-readable output is written to `test-results/extension-transfer.json`. The clean-commit hosted run and immutable uploaded artifact will be recorded here before the checklist items are marked complete.
+Machine-readable output is written to `test-results/extension-transfer.json`.
 
 ## Security and compatibility tests
 
@@ -67,6 +67,23 @@ The extension sender-policy test additionally rejects wrong origin, URL/origin d
 - `pnpm-lock.yaml` SHA-256: `58340bbd70a44324afa62d80e902cffb10254a54b940055b2eb3893a4ec79d11`;
 - migration 0002 SHA-256: `b6a44b450f90d40f3b90f6562a8d26964e5e0e9af5d1c308173897414f280925`.
 
+## Hosted clean-commit proof
+
+Implementation commit `32e10b845bb01cd976f4409e732812c7fb8895fe` added the transfer protocol, schema-2 durable inbox, Firefox fallback, security tests, and dedicated CI lane. Commit `82ac13e0fb2f5f56ab1692bfb81c113079f49116` made the hidden WXT output inclusion explicit. [Foundation CI run 32760520779](https://github.com/seabAu/Coredrill/actions/runs/32760520779) completed successfully from `2026-08-24T18:06:42Z` through `2026-08-24T18:18:01Z`.
+
+The dedicated [extension-transfer job 97538341246](https://github.com/seabAu/Coredrill/actions/runs/32760520779/job/97538341246) passed in 2m25s. It installed the exact dependency graph and pinned Playwright browsers, rebuilt and inspected both production targets, passed the two real-browser transfer/fallback tests, and uploaded the immutable artifact.
+
+- artifact ID: `9532590264`;
+- artifact name: `coredrill-extension-transfer-82ac13e0fb2f5f56ab1692bfb81c113079f49116`;
+- artifact size: `797911` bytes;
+- artifact digest: `sha256:08f8d1a9e10d1293113b65bc6f0e86411ecccb92d71033a273e3619744bcecf3`;
+- created: `2026-08-24T18:10:12Z`; expires: `2026-09-23T18:10:11Z`;
+- retained contents: the complete eight-file Chromium build, complete eight-file Firefox build, and Playwright JSON result.
+
+The downloaded artifact was re-inspected with the repository production inspector. Chromium retained only `activeTab`, `scripting`, `sidePanel`, and `storage`, plus the exact reserved test origin; Firefox retained only `activeTab`, `scripting`, and `storage`, the stable Gecko ID, no-data declaration, and no external origin. Both retained the self-only CSP, empty host/optional permissions, local entrypoints, and no content scripts, web-accessible resources, remote assets/imports, or eval. Every hosted file byte count and SHA-256 matched the local clean build. The durable machine record is [extension-transfer-builds.json](artifacts/extension-transfer-builds.json).
+
+Hosted Chromium `149.0.7827.55` proved durable-before-ack storage, attempt-2 retry, queue removal, and hostile origin/oversize/wrong-ID/replay rejection. Hosted Firefox `151.0` proved the manual JSON fallback, checksum rejection, idempotent duplicate import, and schema version 2. The same run also passed the aggregate foundation gate, full-history Gitleaks scan, both exact Chrome storage lanes, both exact Firefox storage lanes, and Windows/macOS/Linux native package regressions.
+
 ## Decision status
 
-This slice implements the transfer/fallback/security portion of provisional `D-023` without changing an Accepted decision. `D-023` and `Q-005` remain open until `EXT-007` completes the final artifact/secret review and `EXT-008` records the WXT/side-panel decision. No ADR is required for this partial gate.
+This slice implements the transfer/fallback/security portion of provisional `D-023` without changing an Accepted decision. `D-023` and `Q-005` remain open until `EXT-007` completes the final store-package/secret review and `EXT-008` records the WXT/side-panel decision. No ADR is required for this partial gate.

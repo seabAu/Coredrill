@@ -93,10 +93,14 @@ jobs:
       - name: Install Playwright Chromium and Firefox
         run: pnpm exec playwright install --with-deps chromium firefox
 
-      - name: Build and inspect both production extension targets
+      - name: Build, package, and inspect both production extension targets
         run: |
           pnpm build
           pnpm check:extension-build
+          pnpm check:extension-packages
+
+      - name: Rebuild Firefox package from the source-review ZIP
+        run: pnpm test:extension-source-package
 
       - name: Prove acknowledged transfer and Firefox fallback
         run: pnpm test:extension-transfer
@@ -108,6 +112,7 @@ jobs:
           path: |
             apps/extension/.output/chrome-mv3
             apps/extension/.output/firefox-mv3
+            apps/extension/.output/*.zip
             test-results/extension-transfer.json
           if-no-files-found: error
           include-hidden-files: true

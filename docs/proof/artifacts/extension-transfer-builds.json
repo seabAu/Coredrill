@@ -1,0 +1,166 @@
+{
+  "schemaVersion": 1,
+  "proofId": "EXT004-006-TRANSFER-BUILDS",
+  "implementationCommit": "32e10b845bb01cd976f4409e732812c7fb8895fe",
+  "sourceCommit": "82ac13e0fb2f5f56ab1692bfb81c113079f49116",
+  "pnpmLockSha256": "58340bbd70a44324afa62d80e902cffb10254a54b940055b2eb3893a4ec79d11",
+  "toolchain": {
+    "node": "24.19.0",
+    "pnpm": "11.22.0",
+    "wxt": "0.21.4",
+    "vite": "8.2.2",
+    "playwright": "1.61.1"
+  },
+  "workflow": {
+    "runId": 32760520779,
+    "runUrl": "https://github.com/seabAu/Coredrill/actions/runs/32760520779",
+    "conclusion": "success",
+    "startedAt": "2026-08-24T18:06:42Z",
+    "completedAt": "2026-08-24T18:18:01Z",
+    "extensionJobId": 97538341246,
+    "extensionJobUrl": "https://github.com/seabAu/Coredrill/actions/runs/32760520779/job/97538341246",
+    "extensionJobConclusion": "success",
+    "extensionJobStartedAt": "2026-08-24T18:07:50Z",
+    "extensionJobCompletedAt": "2026-08-24T18:10:15Z"
+  },
+  "artifact": {
+    "id": 9532590264,
+    "name": "coredrill-extension-transfer-82ac13e0fb2f5f56ab1692bfb81c113079f49116",
+    "url": "https://github.com/seabAu/Coredrill/actions/runs/32760520779/artifacts/9532590264",
+    "sizeInBytes": 797911,
+    "digest": "sha256:08f8d1a9e10d1293113b65bc6f0e86411ecccb92d71033a273e3619744bcecf3",
+    "createdAt": "2026-08-24T18:10:12Z",
+    "expiresAt": "2026-09-23T18:10:11Z",
+    "expiredAtReview": false
+  },
+  "browserProof": {
+    "chromium": {
+      "version": "149.0.7827.55",
+      "extensionId": "menfhkckmahcgfjcmpfklpjnamkmlaml",
+      "appOrigin": "https://app.coredrill.test",
+      "durableBeforeAck": true,
+      "retryAttempt": 2,
+      "wrongOriginRejected": true,
+      "oversizedRejected": true,
+      "wrongIdRejected": true,
+      "replayRejected": true
+    },
+    "firefox": {
+      "version": "151.0",
+      "extensionId": "capture@coredrill.local",
+      "transferMode": "manual-json-export-import",
+      "checksumRejected": true,
+      "idempotent": true,
+      "durableSchemaVersion": 2
+    }
+  },
+  "builds": [
+    {
+      "target": "chrome-mv3",
+      "permissions": ["activeTab", "scripting", "sidePanel", "storage"],
+      "hostPermissions": [],
+      "allowedOrigins": ["https://app.coredrill.test/*"],
+      "contentSecurityPolicy": "script-src 'self'; object-src 'self';",
+      "files": [
+        {
+          "path": "assets/mount-CNnv4U-N.css",
+          "bytes": 1758,
+          "sha256": "5979f69a48f947ea68aa9bcd86d65b3f978234a2f71de6dc2b2335d2ed8711a0"
+        },
+        {
+          "path": "background.js",
+          "bytes": 107332,
+          "sha256": "617d97775a0dba7b1bff27f08ce2a98b4b5f0179e170050ec216d082e41ab810"
+        },
+        {
+          "path": "chunks/mount-DbuS47S_.js",
+          "bytes": 282165,
+          "sha256": "8792f7385de5312a5410b8cda554fc0fb2a3724df1f650dfabf32e61ac835fe8"
+        },
+        {
+          "path": "chunks/popup-z3PasmRJ.js",
+          "bytes": 44,
+          "sha256": "3cfacf3f2f2cd795deb1921fa26ba6574839d039c9a1c4bab2e5ccfc917d7f43"
+        },
+        {
+          "path": "chunks/sidepanel-z3PasmRJ.js",
+          "bytes": 44,
+          "sha256": "3cfacf3f2f2cd795deb1921fa26ba6574839d039c9a1c4bab2e5ccfc917d7f43"
+        },
+        {
+          "path": "manifest.json",
+          "bytes": 655,
+          "sha256": "14ca82719b26c68020bc02c048ccbd45069edb1f8d9c729c286c5c3023940725"
+        },
+        {
+          "path": "popup.html",
+          "bytes": 474,
+          "sha256": "eeddcc5141806452d4df490fb437902ab6b755584120e97af60003a331823fe3"
+        },
+        {
+          "path": "sidepanel.html",
+          "bytes": 484,
+          "sha256": "e5d084c9f249baa43c2589806b3118e7ee325236d8cedf6dbe752718c4e38786"
+        }
+      ]
+    },
+    {
+      "target": "firefox-mv3",
+      "permissions": ["activeTab", "scripting", "storage"],
+      "hostPermissions": [],
+      "allowedOrigins": [],
+      "contentSecurityPolicy": "script-src 'self'; object-src 'self';",
+      "files": [
+        {
+          "path": "assets/mount-CNnv4U-N.css",
+          "bytes": 1758,
+          "sha256": "5979f69a48f947ea68aa9bcd86d65b3f978234a2f71de6dc2b2335d2ed8711a0"
+        },
+        {
+          "path": "background.js",
+          "bytes": 107332,
+          "sha256": "617d97775a0dba7b1bff27f08ce2a98b4b5f0179e170050ec216d082e41ab810"
+        },
+        {
+          "path": "chunks/mount-DbuS47S_.js",
+          "bytes": 282165,
+          "sha256": "8792f7385de5312a5410b8cda554fc0fb2a3724df1f650dfabf32e61ac835fe8"
+        },
+        {
+          "path": "chunks/popup-z3PasmRJ.js",
+          "bytes": 44,
+          "sha256": "3cfacf3f2f2cd795deb1921fa26ba6574839d039c9a1c4bab2e5ccfc917d7f43"
+        },
+        {
+          "path": "chunks/sidepanel-z3PasmRJ.js",
+          "bytes": 44,
+          "sha256": "3cfacf3f2f2cd795deb1921fa26ba6574839d039c9a1c4bab2e5ccfc917d7f43"
+        },
+        {
+          "path": "manifest.json",
+          "bytes": 738,
+          "sha256": "e5ff372016591299066ae05dcad593edc281ae3d755d9d14526040657a5ea3eb"
+        },
+        {
+          "path": "popup.html",
+          "bytes": 474,
+          "sha256": "eeddcc5141806452d4df490fb437902ab6b755584120e97af60003a331823fe3"
+        },
+        {
+          "path": "sidepanel.html",
+          "bytes": 484,
+          "sha256": "e5d084c9f249baa43c2589806b3118e7ee325236d8cedf6dbe752718c4e38786"
+        }
+      ]
+    }
+  ],
+  "validation": {
+    "artifactDownloaded": true,
+    "bothProductionDirectoriesPresent": true,
+    "playwrightJsonPresent": true,
+    "hostedInspectorPassed": true,
+    "downloadedArtifactReinspectionPassed": true,
+    "byteIdenticalToLocal": true,
+    "reviewedAt": "2026-08-24"
+  }
+}
