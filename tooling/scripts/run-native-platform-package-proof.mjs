@@ -301,7 +301,7 @@ async function main() {
   const fixture = JSON.parse(await readFile(fixturePath, "utf8"));
   const packageResult =
     process.platform === "darwin" ? await inspectMacOsPackage() : await inspectLinuxPackage();
-  const uname = requireSuccess("uname", ["-a"]);
+  const uname = requireSuccess("uname", ["-srm"]);
   const platformDetails =
     process.platform === "darwin"
       ? requireSuccess("sw_vers", [])

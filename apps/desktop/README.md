@@ -1,6 +1,6 @@
 # Desktop application
 
-Provisional Tauri 2 composition root for the shared `@coredrill/web` frontend. Rust remains a thin privileged boundary, and D-022 remains Provisional until `NAT-007` and `NAT-008` close installable packaging, resource measurement, cross-platform evidence, and the final adapter decision.
+Accepted Tauri 2 composition root for the shared `@coredrill/web` frontend. [ADR-0004](../../docs/adr/0004-adopt-tauri-rusqlite-native-boundary.md) keeps Rust as a thin privileged `rusqlite`, secure-store, and recovery boundary. Windows and macOS are evidence-backed architecture targets; Linux native remains diagnostic while its GTK3 dependency graph carries an unresolved RustSec unsoundness warning, with the local browser app plus portable export as the supported fallback.
 
 Useful commands:
 

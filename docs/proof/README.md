@@ -9,3 +9,5 @@ Checklist proof records command, tool version, date, exit status, and artifact p
 - [`NAT-001` through `NAT-004` native SQLite/Tauri verification](native-sqlite-tauri-verification.md)
 - [`NAT-005` native OS secure-storage verification](native-secure-storage-verification.md)
 - [`NAT-006` native recovery-archive verification](native-archive-verification.md)
+- [`NAT-007` Windows native package and resource verification](native-windows-package-verification.md)
+- [`NAT-008` cross-platform native dependency, secure-store, package, and adapter-decision verification](native-cross-platform-verification.md)

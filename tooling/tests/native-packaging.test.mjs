@@ -107,6 +107,8 @@ describe("native Windows package boundary", () => {
     expect(platformPackageProof).toContain("Package proof refuses a relative link that escapes");
     expect(platformPackageProof).toContain("absoluteSymlinkCount");
     expect(platformPackageProof).toContain("relativeSymlinksConfined: true");
+    expect(platformPackageProof).toContain('requireSuccess("uname", ["-srm"])');
+    expect(platformPackageProof).not.toContain('requireSuccess("uname", ["-a"])');
     expect(platformPackageProof).toContain("Signature=adhoc");
   });
 });

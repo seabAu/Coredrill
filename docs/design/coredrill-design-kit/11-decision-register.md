@@ -125,12 +125,12 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
 
 ### D-022 — Tauri 2 desktop shell
 
-- **Status:** Provisional
-- **Decision:** Tauri 2 packages the shared frontend and exposes native capabilities.
+- **Status:** Accepted
+- **Decision:** Tauri 2 packages the shared frontend on evidence-backed native targets and exposes only the reviewed SQLite, secure-store, and recovery capabilities. The local browser app plus portable export is the supported fallback where the native shell has an unresolved platform dependency risk.
 - **Why:** Small system-webview distribution and Rust capability boundary.
-- **Gate:** Phase 0 native SQLite, secure store, packaging, updater, CSP, and platform tests.
+- **Gate:** Architecture acceptance requires shared SQLite contracts, exact command permissions, path confinement, secure-store lifecycles, recovery, installable package evidence, and cross-platform dependency review. Public distribution separately requires signing/notarization, updater/provenance, clean-machine checks, and the release performance matrix.
 - **Fallback:** Electron only if a documented blocking WebView/packaging issue cannot be isolated; a local web kit remains another fallback.
-- **Phase 0 evidence (2026-08-24):** `NAT-001` through `NAT-007` build and install the shared Vite frontend as a Windows current-user NSIS package under exact native command permissions, pass the shared migration/transaction suite through a narrow `rusqlite` candidate, platform-test canonical database/content-addressed-attachment roots under Tauri's exact OS app-data resolver, pass a redacted Windows Credential Manager provider-secret lifecycle without secret-read IPC, prove picker-owned checksummed database recovery with atomic replacement and rollback, and record clean-commit installer/application size, installed startup, and aggregate app/WebView2 memory. D-022 remains Provisional because these package metrics are diagnostic rather than the Windows 11 25H2/HW-WIN-REF release gate, and because `NAT-008` still owns cross-platform secure-store/package evidence and the final-adapter decision; see [native verification](../../proof/native-sqlite-tauri-verification.md), [secure-storage verification](../../proof/native-secure-storage-verification.md), [native archive verification](../../proof/native-archive-verification.md), and [native package verification](../../proof/native-windows-package-verification.md).
+- **Phase 0 evidence (2026-08-24):** `NAT-001` through `NAT-008` pass the shared migration/transaction suite through `rusqlite`, confine canonical database and content-addressed-attachment roots under Tauri's platform app-data resolver, prove picker-owned checksummed recovery with atomic replacement and rollback, and package the same boundary for Windows NSIS, macOS app, and Linux AppImage. Exact Windows Credential Manager, macOS Keychain, and Linux Secret Service providers pass redacted store/status/delete lifecycles with no secret-read IPC or plaintext fallback. Windows and macOS are accepted native architecture targets; Linux native remains diagnostic because the compiled GTK3 path retains an unresolved RustSec unsoundness warning and unmaintained dependencies. See [ADR-0004](../../adr/0004-adopt-tauri-rusqlite-native-boundary.md) and [cross-platform native verification](../../proof/native-cross-platform-verification.md).
 
 ### D-023 — WXT extension
 
@@ -146,6 +146,7 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
 - **Decision:** Browser uses official SQLite WASM/OPFS; desktop uses native SQLite; repositories and migrations are shared.
 - **Why:** Relational integrity, transactions, FTS/reporting, portable local data, and one domain model.
 - **Revisit when:** Phase 0 proves an unsupported target cannot satisfy durability/recovery. That mode may be dropped or use an adapter without changing canonical semantics.
+- **Phase 0 evidence (2026-08-24):** The browser adapter passes the accepted OPFS lifecycle matrix, while the native adapter passes the same migration/repository contracts and uses target-confined SQLite. Linux retains the browser full-app mode while its native shell is diagnostic, so canonical SQLite semantics remain unchanged; see [ADR-0004](../../adr/0004-adopt-tauri-rusqlite-native-boundary.md).
 
 ### D-025 — Browser `opfs-sahpool` single-writer baseline
 
@@ -244,7 +245,7 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
 - **Decision:** Explain actual storage/protection. Desktop secrets use OS secure storage; vault encryption is implemented only with a reviewed key/recovery design.
 - **Why:** Avoid false privacy promises and unrecoverable data loss.
 - **Revisit when:** Encryption spike establishes browser/desktop threat model, UX, key derivation, backup, and recovery.
-- **Phase 0 evidence (2026-08-24):** `NAT-005` implements store/status/delete through Windows Credential Manager with no plaintext fallback, no secret-read IPC, stable redacted errors, owned-buffer zeroization, and a one-time synthetic lifecycle proof. macOS/Linux stores and any encrypted passphrase fallback remain explicit `NAT-008` work; see [secure-storage verification](../../proof/native-secure-storage-verification.md).
+- **Phase 0 evidence (2026-08-24):** `NAT-005` and `NAT-008` implement store/status/delete through exact target-confined Windows Credential Manager, macOS Keychain, and Linux Secret Service providers with no plaintext fallback, no secret-read IPC, stable redacted errors, owned-buffer zeroization, and one-time synthetic lifecycle proofs. Linux native support remains diagnostic because of the shell dependency risk, not because secret storage falls back to plaintext; see [secure-storage verification](../../proof/native-secure-storage-verification.md) and [cross-platform native verification](../../proof/native-cross-platform-verification.md).
 
 ### D-051 — Portable archive is a core feature
 
@@ -287,13 +288,13 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
 | ID    | Question              | Resolution                                                                                                                                                                                                                                                                                     | Resolved   |
 | ----- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
 | Q-002 | Browser support floor | [ADR-0003](../../adr/0003-adopt-browser-storage-support-floor.md) accepts current/previous Chromium-family and Firefox desktop after exact hosted lifecycle proof, with Safari/mobile and missing-capability browsers explicitly unsupported until their real rows pass; portable export is the fallback. | 2026-08-24 |
+| Q-003 | Native SQLite adapter  | [ADR-0004](../../adr/0004-adopt-tauri-rusqlite-native-boundary.md) accepts the narrow first-party `rusqlite` command layer after shared-contract, confinement, recovery, secure-store, package, and cross-platform dependency proof. The official Tauri SQL plugin is not selected. Linux native remains diagnostic; the local browser app plus portable export is its supported fallback. | 2026-08-24 |
 
 ## Open questions and required evidence
 
 | ID | Question | Needed evidence | Deadline/gate |
 |---|---|---|---|
 | Q-001 | Coredrill public-identity clearance | Trademark, domain, and marketplace checks for the selected working name; repository availability is proven | Before public landing/store listing |
-| Q-003 | Native SQLite adapter | `NAT-002` provisionally favors a narrow `rusqlite` command layer for shared callback transactions/migrations and the smallest proven IPC surface; `NAT-004` passes app-data/path confinement, `NAT-005` passes the redacted Windows secure-store lifecycle, `NAT-006` passes picker-owned atomic export/restore recovery, and `NAT-007` passes first-OS packaging/resource diagnostics, while cross-platform risk and final ADR evidence remain `NAT-008` | Phase 0 |
 | Q-004 | Tiptap suitability | Round-trip/accessibility/export spike | Phase 0 |
 | Q-005 | Side panel vs popup fallback | Chromium/Firefox usability and APIs | Phase 0/2 |
 | Q-006 | Exact default pipeline stages | Five-user terminology/usability test | Before Phase 1 UI lock |
