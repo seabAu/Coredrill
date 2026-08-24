@@ -130,7 +130,7 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
 - **Why:** Small system-webview distribution and Rust capability boundary.
 - **Gate:** Phase 0 native SQLite, secure store, packaging, updater, CSP, and platform tests.
 - **Fallback:** Electron only if a documented blocking WebView/packaging issue cannot be isolated; a local web kit remains another fallback.
-- **Phase 0 evidence (2026-08-24):** `NAT-001` through `NAT-004` build the shared Vite frontend as a Windows `coredrill.exe` under a strict one-command capability, pass the shared migration/transaction suite through a narrow `rusqlite` candidate, and platform-test canonical database/content-addressed-attachment roots under Tauri's exact OS app-data resolver. D-022 remains Provisional until secure-store, native export/restore, installable packaging, cross-platform, and final-adapter evidence closes `NAT-005` through `NAT-008`; see [native verification](../../proof/native-sqlite-tauri-verification.md).
+- **Phase 0 evidence (2026-08-24):** `NAT-001` through `NAT-005` build the shared Vite frontend as a Windows `coredrill.exe` under exact native command permissions, pass the shared migration/transaction suite through a narrow `rusqlite` candidate, platform-test canonical database/content-addressed-attachment roots under Tauri's exact OS app-data resolver, and pass a redacted Windows Credential Manager provider-secret lifecycle without secret-read IPC. D-022 remains Provisional until native export/restore, installable packaging/resource evidence, cross-platform secure storage, and final-adapter evidence closes `NAT-006` through `NAT-008`; see [native verification](../../proof/native-sqlite-tauri-verification.md) and [secure-storage verification](../../proof/native-secure-storage-verification.md).
 
 ### D-023 — WXT extension
 
@@ -244,6 +244,7 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
 - **Decision:** Explain actual storage/protection. Desktop secrets use OS secure storage; vault encryption is implemented only with a reviewed key/recovery design.
 - **Why:** Avoid false privacy promises and unrecoverable data loss.
 - **Revisit when:** Encryption spike establishes browser/desktop threat model, UX, key derivation, backup, and recovery.
+- **Phase 0 evidence (2026-08-24):** `NAT-005` implements store/status/delete through Windows Credential Manager with no plaintext fallback, no secret-read IPC, stable redacted errors, owned-buffer zeroization, and a one-time synthetic lifecycle proof. macOS/Linux stores and any encrypted passphrase fallback remain explicit `NAT-008` work; see [secure-storage verification](../../proof/native-secure-storage-verification.md).
 
 ### D-051 — Portable archive is a core feature
 
@@ -291,7 +292,7 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
 | ID | Question | Needed evidence | Deadline/gate |
 |---|---|---|---|
 | Q-001 | Coredrill public-identity clearance | Trademark, domain, and marketplace checks for the selected working name; repository availability is proven | Before public landing/store listing |
-| Q-003 | Native SQLite adapter | `NAT-002` provisionally favors a narrow `rusqlite` command layer for shared callback transactions/migrations and the smallest proven IPC surface; `NAT-004` passes the app-data/path gate, while secure storage, export/restore, packaging, cross-platform risk, and final ADR evidence remain `NAT-005`–`NAT-008` | Phase 0 |
+| Q-003 | Native SQLite adapter | `NAT-002` provisionally favors a narrow `rusqlite` command layer for shared callback transactions/migrations and the smallest proven IPC surface; `NAT-004` passes app-data/path confinement and `NAT-005` passes the redacted Windows secure-store lifecycle, while export/restore, packaging/resources, cross-platform risk, and final ADR evidence remain `NAT-006`–`NAT-008` | Phase 0 |
 | Q-004 | Tiptap suitability | Round-trip/accessibility/export spike | Phase 0 |
 | Q-005 | Side panel vs popup fallback | Chromium/Firefox usability and APIs | Phase 0/2 |
 | Q-006 | Exact default pipeline stages | Five-user terminology/usability test | Before Phase 1 UI lock |

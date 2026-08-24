@@ -21,6 +21,7 @@
     "test:storage-browser": "playwright test --config=playwright.storage.config.mjs",
     "test:storage-firefox-webdriver": "node tooling/scripts/run-storage-firefox-webdriver.mjs",
     "test:storage-native": "pnpm --filter @coredrill/storage-core build && pnpm --filter @coredrill/desktop test:native-core && pnpm --filter @coredrill/desktop build:native-probe && vitest run packages/storage-native/test/native-database.test.ts",
+    "test:secure-storage": "node tooling/scripts/run-native-secret-proof.mjs",
     "test:boundaries": "vitest run tooling/tests/import-boundaries.test.mjs",
     "check:boundaries": "node tooling/architecture/check-boundaries.mjs",
     "check:foundation-records": "node tooling/scripts/check-foundation-records.mjs",
@@ -35,7 +36,7 @@
     "audit:dependencies": "pnpm audit --audit-level=low && cargo audit --file apps/desktop/src-tauri/Cargo.lock",
     "changeset": "changeset",
     "changeset:status": "changeset status",
-    "verify": "pnpm format:check && pnpm check:boundaries && pnpm check:foundation-records && pnpm typecheck && pnpm lint && pnpm test:unit && pnpm test:coverage && pnpm build && pnpm test:storage-browser && pnpm test:storage-native && pnpm check:contract-schemas && pnpm check:licenses && pnpm check:secrets && pnpm audit:dependencies && pnpm changeset:status"
+    "verify": "pnpm format:check && pnpm check:boundaries && pnpm check:foundation-records && pnpm typecheck && pnpm lint && pnpm test:unit && pnpm test:coverage && pnpm build && pnpm test:storage-browser && pnpm test:storage-native && pnpm test:secure-storage && pnpm check:contract-schemas && pnpm check:licenses && pnpm check:secrets && pnpm audit:dependencies && pnpm changeset:status"
   },
   "devDependencies": {
     "@changesets/cli": "3.0.1",

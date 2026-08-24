@@ -83,6 +83,8 @@ The accepted browser-storage boundary additionally imports restore data under a 
 - If full-database SQLCipher is selected, verify licensing, Tauri/platform builds, migration, corruption recovery, and backup compatibility before promising it. Otherwise use field/blob encryption plus full-disk-encryption guidance.
 - Lock screen is privacy convenience unless cryptographic key material is actually evicted.
 
+`NAT-005` proves the first Windows provider-secret lifecycle through Windows Credential Manager. The Tauri surface permits store/status/delete but never returns secret material; Coredrill-owned secret strings and retrieved buffers are zeroized, operations are serialized, and platform failures are content-free. The proof harness generates a one-time synthetic value, captures all test output, and refuses to print it if the value is present. Unavailable and non-Windows backends fail closed without a plaintext fallback; cross-platform stores and any encrypted passphrase fallback remain `NAT-008` acceptance work. See [secure-storage verification](../../proof/native-secure-storage-verification.md).
+
 ## Future sync architecture
 
 Sync is a separate product phase and service:
@@ -153,7 +155,7 @@ Run the identical suite against in-memory/reference, browser SQLite worker/OPFS,
 - FTS/search equivalence or documented fallback;
 - Unicode, timezone, large description, attachment failure.
 
-The native checkpoint runs the reusable callback-transaction suite and shared vault-migration/repository suite against the exact Rust service through a JSON-lines probe. `NAT-003` proves bound hostile values, rollback/commit semantics, migration checksums, durability after close/reopen, and query/write separation. `NAT-004` adds Rust layout tests, real-process missing/unusable-root cases, final-leaf and managed-directory confinement, and Windows junction rejection for both database and attachment roots; a separate pinned-Tauri test verifies the configured application-data path on the platform. Export/restore, secure storage, contention, and packaging remain later NAT gates; see [native verification](../../proof/native-sqlite-tauri-verification.md).
+The native checkpoint runs the reusable callback-transaction suite and shared vault-migration/repository suite against the exact Rust service through a JSON-lines probe. `NAT-003` proves bound hostile values, rollback/commit semantics, migration checksums, durability after close/reopen, and query/write separation. `NAT-004` adds Rust layout tests, real-process missing/unusable-root cases, final-leaf and managed-directory confinement, and Windows junction rejection for both database and attachment roots; a separate pinned-Tauri test verifies the configured application-data path on the platform. `NAT-005` adds mock redaction/validation tests and a real Windows Credential Manager lifecycle whose captured output is checked before release. Export/restore, contention, packaging, and cross-platform secure storage remain later NAT gates; see [native verification](../../proof/native-sqlite-tauri-verification.md) and [secure-storage verification](../../proof/native-secure-storage-verification.md).
 
 ### Extractor/connectors
 

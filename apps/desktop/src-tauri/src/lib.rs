@@ -1,8 +1,13 @@
+pub mod native_secrets;
 pub mod native_storage;
 
 #[cfg(feature = "desktop-shell")]
 use std::sync::Arc;
 
+#[cfg(feature = "desktop-shell")]
+use native_secrets::{
+    NativeSecretError, NativeSecretRequest, NativeSecretResponse, NativeSecretService,
+};
 #[cfg(feature = "desktop-shell")]
 use native_storage::{
     NativeStorageError, NativeStorageRequest, NativeStorageResponse, NativeStorageService,
@@ -12,6 +17,21 @@ use tauri::{Manager, Runtime};
 
 #[cfg(feature = "desktop-shell")]
 struct NativeStorageState(Arc<NativeStorageService>);
+
+#[cfg(feature = "desktop-shell")]
+struct NativeSecretState(Arc<NativeSecretService>);
+
+#[cfg(feature = "desktop-shell")]
+#[tauri::command]
+async fn native_secret_invoke(
+    state: tauri::State<'_, NativeSecretState>,
+    request: NativeSecretRequest,
+) -> Result<NativeSecretResponse, NativeSecretError> {
+    let service = Arc::clone(&state.0);
+    tauri::async_runtime::spawn_blocking(move || service.invoke(request))
+        .await
+        .map_err(|_| NativeSecretError::invalid_request())?
+}
 
 #[cfg(feature = "desktop-shell")]
 #[tauri::command]
@@ -41,9 +61,13 @@ pub fn run() {
             let service = NativeStorageService::new(storage_root)
                 .map_err(|_| std::io::Error::other("native storage initialization failed"))?;
             app.manage(NativeStorageState(Arc::new(service)));
+            app.manage(NativeSecretState(Arc::new(NativeSecretService::new())));
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![native_storage_invoke])
+        .invoke_handler(tauri::generate_handler![
+            native_storage_invoke,
+            native_secret_invoke
+        ])
         .run(tauri::generate_context!())
         .expect("Coredrill desktop runtime failed");
 }

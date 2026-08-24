@@ -96,6 +96,9 @@ jobs:
       - name: Prove Tauri app-data resolution
         run: pnpm --filter @coredrill/desktop test:platform
 
+      - name: Prove redacted OS secure storage
+        run: pnpm test:secure-storage
+
       - name: Lint complete Tauri boundary
         run: pnpm --filter @coredrill/desktop lint:desktop
 

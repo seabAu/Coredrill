@@ -1,4 +1,4 @@
-const COMMANDS: &[&str] = &["native_storage_invoke"];
+const COMMANDS: &[&str] = &["native_storage_invoke", "native_secret_invoke"];
 
 fn main() {
     if std::env::var_os("CARGO_FEATURE_DESKTOP_SHELL").is_none() {

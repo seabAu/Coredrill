@@ -69,9 +69,11 @@ function parseCargoDirectDependencies(contents) {
   let dependencyType;
   for (const rawLine of contents.split(/\r?\n/)) {
     const line = rawLine.trim();
-    const section = line.match(/^\[(build-dependencies|dependencies)\]$/);
+    const section = line.match(
+      /^\[((?:target\.'[^']+'\.)?)(build-dependencies|dependencies|dev-dependencies)\]$/,
+    );
     if (section) {
-      dependencyType = section[1];
+      dependencyType = `${section[1]}${section[2]}`;
       continue;
     }
     if (line.startsWith("[") || line === "") {

@@ -45,6 +45,23 @@ describe("foundation dependency and test records", () => {
     );
   });
 
+  it("tracks target-specific and development Cargo declarations", () => {
+    expect(state.cargoDirectDependencies).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          dependencyType: "target.'cfg(target_os = \"windows\")'.dependencies",
+          name: "windows-native-keyring-store",
+          version: "1.1.0",
+        }),
+        expect.objectContaining({
+          dependencyType: "target.'cfg(target_os = \"windows\")'.dev-dependencies",
+          name: "tauri",
+          version: "2.11.3",
+        }),
+      ]),
+    );
+  });
+
   it("rejects product identity and license drift", () => {
     const changedState = clone(state);
     changedState.rootPackage.name = "renamed-without-decision";

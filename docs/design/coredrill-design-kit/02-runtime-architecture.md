@@ -135,7 +135,9 @@ Accepted [ADR-0003](../../adr/0003-adopt-browser-storage-support-floor.md) adds 
 - Use atomic portable exports and OS-native file pickers.
 - Store provider secrets through OS keychain/secure-store integration; if unavailable, require an encrypted passphrase-backed secret store rather than plaintext config.
 
-The adapter choice is not yet Accepted. `NAT-004` platform-tests real Tauri app-data resolution, missing/unusable roots, content-addressed attachment layout, and symlink/Windows-junction rejection. `NAT-005` through `NAT-008` must still prove secure storage, native export/restore, packaging, resource behavior, and cross-platform dependencies before D-022/Q-003 changes; see [native verification](../../proof/native-sqlite-tauri-verification.md).
+`NAT-005` implements that rule on Windows with one separately allowlisted, versioned Rust command backed by Windows Credential Manager. IPC exposes store/status/delete only; retrieved material remains inside Rust and is zeroized before a boolean status response. Operations are serialized, platform errors become stable content-free failures, and an unavailable backend fails closed without SQLite/config/environment fallback. The exact macOS/Linux stores and any reviewed encrypted passphrase fallback remain required evidence for `NAT-008`; no cross-platform claim is made yet.
+
+The adapter choice is not yet Accepted. `NAT-004` platform-tests real Tauri app-data resolution, missing/unusable roots, content-addressed attachment layout, and symlink/Windows-junction rejection; `NAT-005` proves the redacted Windows secure-store lifecycle. `NAT-006` through `NAT-008` must still prove native export/restore, packaging, resource behavior, and cross-platform dependencies before D-022/Q-003 changes; see [native verification](../../proof/native-sqlite-tauri-verification.md) and [secure-storage verification](../../proof/native-secure-storage-verification.md).
 
 ## Capture/extension bridge
 

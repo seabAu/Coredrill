@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "inventoryId": "JW-DI-001",
-  "version": "1.5.0",
-  "reviewedAt": "2026-08-24T10:33:46Z",
+  "version": "1.6.0",
+  "reviewedAt": "2026-08-24T12:13:04Z",
   "scope": {
     "included": [
       "Pinned Node.js, pnpm, and Rust foundation toolchains",
@@ -353,7 +353,7 @@
     "manifest": "apps/desktop/src-tauri/Cargo.toml",
     "lockfile": {
       "path": "apps/desktop/src-tauri/Cargo.lock",
-      "sha256": "93ad0a6800f5f1868ebcae9e02e4c639c6b5a3a5431518bbdd0938121eea08b8"
+      "sha256": "e9178e0b238e62e423f98eeb41d3f1825450e96b753c94b17588e6fe1ae687db"
     },
     "directDependencies": [
       {
@@ -369,6 +369,20 @@
         "metadataSource": "https://crates.io/crates/tauri-build/2.6.3",
         "knownAdvisories": [],
         "selectionNote": "Current Tauri build-time code paired with the selected shell; published 2026-06-17T13:45:31.588957Z."
+      },
+      {
+        "manifest": "apps/desktop/src-tauri/Cargo.toml",
+        "dependencyType": "dependencies",
+        "name": "keyring-core",
+        "version": "1.0.0",
+        "upstreamLatest": "1.0.0",
+        "selectionStatus": "current",
+        "license": "MIT OR Apache-2.0",
+        "maintainers": ["Daniel Brotsky", "Open Source Cooperative contributors"],
+        "repository": "https://github.com/open-source-cooperative/keyring-core",
+        "metadataSource": "https://crates.io/crates/keyring-core/1.0.0",
+        "knownAdvisories": [],
+        "selectionNote": "Current platform-neutral keyring entry API selected directly so Coredrill controls the exact OS backend and does not acquire the all-in-one keyring crate's unrelated default or CLI stores."
       },
       {
         "manifest": "apps/desktop/src-tauri/Cargo.toml",
@@ -425,15 +439,57 @@
         "metadataSource": "https://crates.io/crates/tauri/2.11.3",
         "knownAdvisories": [],
         "selectionNote": "2.11.3 was published 2026-06-17T13:46:40.835406Z and is optional outside the desktop shell; 2.11.5 was published 2026-07-01T13:56:38.810372Z and remains inside the review window. Default Tauri features are disabled, with only wry selected."
+      },
+      {
+        "manifest": "apps/desktop/src-tauri/Cargo.toml",
+        "dependencyType": "dependencies",
+        "name": "zeroize",
+        "version": "1.9.0",
+        "upstreamLatest": "1.9.0",
+        "selectionStatus": "current",
+        "license": "Apache-2.0 OR MIT",
+        "maintainers": ["The RustCrypto Project Developers"],
+        "repository": "https://github.com/RustCrypto/utils",
+        "metadataSource": "https://crates.io/crates/zeroize/1.9.0",
+        "knownAdvisories": [],
+        "selectionNote": "Current portable zeroization primitive used to clear Coredrill-owned secret strings and retrieved byte buffers before release; it does not claim control over copies owned by the WebView, operating system, or process environment."
+      },
+      {
+        "manifest": "apps/desktop/src-tauri/Cargo.toml",
+        "dependencyType": "target.'cfg(target_os = \"windows\")'.dependencies",
+        "name": "windows-native-keyring-store",
+        "version": "1.1.0",
+        "upstreamLatest": "1.1.0",
+        "selectionStatus": "current",
+        "license": "MIT OR Apache-2.0",
+        "maintainers": ["Daniel Brotsky", "Open Source Cooperative contributors"],
+        "repository": "https://github.com/open-source-cooperative/windows-native-keyring-store",
+        "metadataSource": "https://crates.io/crates/windows-native-keyring-store/1.1.0",
+        "knownAdvisories": [],
+        "selectionNote": "Current Windows Credential Manager store, target-confined with default features disabled so search and regex are absent. Coredrill serializes all entry operations because the upstream store warns that same-entry operations from different threads may not sequence reliably."
+      },
+      {
+        "manifest": "apps/desktop/src-tauri/Cargo.toml",
+        "dependencyType": "target.'cfg(target_os = \"windows\")'.dev-dependencies",
+        "name": "tauri",
+        "version": "2.11.3",
+        "upstreamLatest": "2.11.5",
+        "selectionStatus": "release-age-approved",
+        "license": "Apache-2.0 OR MIT",
+        "maintainers": ["Tauri Programme within Commons Conservancy", "Tauri contributors"],
+        "repository": "https://github.com/tauri-apps/tauri",
+        "metadataSource": "https://crates.io/crates/tauri/2.11.3",
+        "knownAdvisories": [],
+        "selectionNote": "The Tauri test harness is confined to the Windows target that runs the platform application-data proof; portable no-default-feature Rust tests do not compile the Linux GTK shell graph."
       }
     ],
     "advisoryReview": {
       "command": "cargo audit --file apps/desktop/src-tauri/Cargo.lock",
       "toolVersion": "0.22.2",
       "source": "https://rustsec.org/",
-      "reviewedAt": "2026-08-24T10:33:46Z",
-      "lockfileSha256": "93ad0a6800f5f1868ebcae9e02e4c639c6b5a3a5431518bbdd0938121eea08b8",
-      "dependencyCount": 420,
+      "reviewedAt": "2026-08-24T12:13:04Z",
+      "lockfileSha256": "e9178e0b238e62e423f98eeb41d3f1825450e96b753c94b17588e6fe1ae687db",
+      "dependencyCount": 423,
       "vulnerabilities": 0,
       "unmaintainedWarnings": 14,
       "unsoundWarnings": 1,
@@ -458,9 +514,9 @@
     },
     "licenseReview": {
       "command": "pnpm check:licenses",
-      "reviewedAt": "2026-08-24T10:33:46Z",
-      "lockfileSha256": "93ad0a6800f5f1868ebcae9e02e4c639c6b5a3a5431518bbdd0938121eea08b8",
-      "resolvedPackageRecords": 419,
+      "reviewedAt": "2026-08-24T12:13:04Z",
+      "lockfileSha256": "e9178e0b238e62e423f98eeb41d3f1825450e96b753c94b17588e6fe1ae687db",
+      "resolvedPackageRecords": 422,
       "result": "pass"
     }
   },
