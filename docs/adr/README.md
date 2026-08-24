@@ -1,6 +1,6 @@
 # Architecture decision records
 
-ADRs record material choices and preserve why they changed. The [design decision register](../design/job-workspace-design-kit/11-decision-register.md) remains the authority for Accepted, Provisional, Deferred, Rejected, and Superseded design choices.
+ADRs record material choices and preserve why they changed. The [design decision register](../design/coredrill-design-kit/11-decision-register.md) remains the authority for Accepted, Provisional, Deferred, Rejected, and Superseded design choices.
 
 ## Process
 
@@ -12,9 +12,10 @@ ADRs record material choices and preserve why they changed. The [design decision
 
 ## Index
 
-| ADR                                   | Status   | Decision/register coverage                                          |
-| ------------------------------------- | -------- | ------------------------------------------------------------------- |
-| [0000](0000-template.md)              | Template | Required ADR fields                                                 |
-| [0001](0001-adopt-design-baseline.md) | Accepted | Repository adoption of every decision marked Accepted on 2026-08-21 |
+| ADR                                                         | Status   | Decision/register coverage                                                              |
+| ----------------------------------------------------------- | -------- | --------------------------------------------------------------------------------------- |
+| [0000](0000-template.md)                                    | Template | Required ADR fields                                                                     |
+| [0001](0001-adopt-design-baseline.md)                       | Accepted | Repository adoption of every decision marked Accepted on 2026-08-21                     |
+| [0002](0002-adopt-coredrill-identity-and-apache-license.md) | Accepted | `D-054`, `D-055`, the license portion of `Q-013`, and working-name selection in `Q-001` |
 
 Provisional decisions `D-010`, `D-012`, `D-015`, `D-022`, `D-023`, `D-025`, and `D-027` retain their named Phase 0/usability gates. Deferred `D-052` does not authorize a sync service or account dependency.

@@ -1,9 +1,9 @@
 {
-  "name": "@job-workspace/storage-core",
+  "name": "@coredrill/storage-core",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "optionalDependencies": {
-    "@job-workspace/test-fixtures": "workspace:*"
+    "@coredrill/test-fixtures": "workspace:*"
   }
 }

@@ -4,7 +4,8 @@ Date: 2026-08-24
 Scope: `FND-009` through `FND-010` only  
 Branch: `main`  
 Dependency review timestamp: `2026-08-24T04:52:20Z`  
-Reviewed lockfile SHA-256: `f53865d9687f975d2d40d0d65cd4a5c06865b7b479ce7285e747d840b17da977`
+Identity/license rebind: `2026-08-24`  
+Reviewed lockfile SHA-256: `c3b3e6f7b1d2728a74e2c7dfbbca5e94445f8f3fbfad4ea89192728bb48f9a04`
 
 ## Outcome
 
@@ -14,6 +15,8 @@ Reviewed lockfile SHA-256: `f53865d9687f975d2d40d0d65cd4a5c06865b7b479ce7285e747
 | `FND-010` | Proven | [`JW-TM-001` v1.0.0](../testing/reference-test-matrix.md) and its [machine-readable record](../testing/reference-test-matrix.v1.json) define reference hardware, OS/browser, accessibility, responsive, privacy/offline, and performance targets while keeping planned, available, executed, and verified states distinct.                                                                                                                                       |
 
 This proof establishes reviewed baselines. It does **not** claim that the SQLite/browser matrix (`STG-004`), performance runs (`STG-007`), full accessibility matrix (`A11Y-003`), or public support decision (`STG-008`/`Q-002`) has executed or passed.
+
+The identity/license follow-up renamed workspace-only package references from the predecessor scope to `@coredrill/*`, changing lockfile text but no selected dependency version or resolved external package graph. The inventory's three reviewed hash bindings were updated to the current lockfile, and the complete foundation gate revalidated the same 10 direct dependencies, 332 audited entries, and 299 license records. See the [follow-up proof](identity-license-hosting-verification.md).
 
 ## Dependency selection review
 

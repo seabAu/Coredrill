@@ -151,6 +151,12 @@ export async function readFoundationState(repositoryRoot) {
 
 export function validateDependencyInventory(record, state) {
   const errors = [];
+  addError(errors, state.rootPackage.name === "coredrill", "Root package name must be coredrill.");
+  addError(
+    errors,
+    state.rootPackage.license === "Apache-2.0",
+    "Root package license must be Apache-2.0.",
+  );
   addError(errors, record.schemaVersion === 1, "Dependency inventory schemaVersion must be 1.");
   addError(
     errors,

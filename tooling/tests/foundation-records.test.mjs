@@ -41,6 +41,19 @@ describe("foundation dependency and test records", () => {
     );
   });
 
+  it("rejects product identity and license drift", () => {
+    const changedState = clone(state);
+    changedState.rootPackage.name = "renamed-without-decision";
+    changedState.rootPackage.license = "UNLICENSED";
+
+    expect(validateDependencyInventory(inventory, changedState)).toEqual(
+      expect.arrayContaining([
+        "Root package name must be coredrill.",
+        "Root package license must be Apache-2.0.",
+      ]),
+    );
+  });
+
   it("rejects incomplete dependency ownership metadata", () => {
     const changedInventory = clone(inventory);
     changedInventory.packages[0].maintainers = [];

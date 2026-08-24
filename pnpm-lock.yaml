@@ -43,10 +43,10 @@ importers:
 
   packages/application:
     dependencies:
-      '@job-workspace/contracts':
+      '@coredrill/contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@job-workspace/domain':
+      '@coredrill/domain':
         specifier: workspace:*
         version: link:../domain
 

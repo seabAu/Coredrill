@@ -44,7 +44,7 @@ Better Auth is a framework, not a turnkey identity appliance. The team therefore
 
 ## 2. Job application workspace
 
-Build it as a standalone product, working title **Job Workspace**. It is a local-first personal applicant-tracking system, career evidence library, document studio, capture extension, job research tool, and salary assistant. That is a durable product domain, not a COMPOSR tool.
+Build it as a standalone product named **Coredrill**, with public-identity clearance still required before a landing page or store listing. It is a local-first personal applicant-tracking system, career evidence library, document studio, capture extension, job research tool, and salary assistant. That is a durable product domain, not a COMPOSR tool.
 
 ### Runtime shape
 
@@ -100,4 +100,3 @@ Python is good scraping tooling; it is not legal permission, and it is not autom
 - [O*NET Web Services](https://services.onetcenter.org/)
 - [LinkedIn prohibited software and extensions](https://www.linkedin.com/help/linkedin/answer/a1341387/prohibited-software-and-extensions)
 - [Glassdoor Terms of Use](https://www.glassdoor.com/about/terms-2022-12-01/)
-

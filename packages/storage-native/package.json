@@ -1,5 +1,5 @@
 {
-  "name": "@job-workspace/storage-native",
+  "name": "@coredrill/storage-native",
   "version": "0.0.0",
   "private": true,
   "type": "module",

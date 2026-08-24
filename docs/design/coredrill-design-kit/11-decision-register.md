@@ -33,7 +33,7 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
 ### D-001 — Standalone product
 
 - **Status:** Accepted
-- **Decision:** Job Workspace is its own application. COMPOSR may share versioned prompt/model contracts later but is not its container or runtime dependency.
+- **Decision:** Coredrill is its own application. COMPOSR may share versioned prompt/model contracts later but is not its container or runtime dependency.
 - **Why:** The product owns durable state, repeated workflows, specialized security/privacy rules, and multiple distribution modes.
 - **Alternatives:** COMPOSR tool; Mindspace module; portfolio feature.
 - **Revisit when:** Only if the standalone workflows fail to establish independent value after prototype testing.
@@ -266,11 +266,25 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
 - **Why:** Career data is sensitive and baseline must not require network activity.
 - **Revisit when:** Public beta support needs are demonstrated and an event-level privacy review is complete.
 
+### D-054 — Coredrill product and repository identity
+
+- **Status:** Accepted
+- **Decision:** Use Coredrill as the working product, repository, root-package, documentation, and internal package-scope identity. Preserve established `JW-*` governance and test-record IDs as stable historical identifiers.
+- **Why:** The owner selected Coredrill and created the `seabAu/Coredrill` repository; one consistent identity avoids split paths and package namespaces while stable record IDs preserve traceability.
+- **Revisit when:** Trademark, domain, marketplace, or public-identity clearance produces a material conflict before a public listing.
+
+### D-055 — Apache-2.0 software license
+
+- **Status:** Accepted
+- **Decision:** License the Coredrill repository under Apache License 2.0. Keep the sustainability/business-model decision separate and preserve the free local core and complete export path.
+- **Why:** The owner selected a permissive, established license with explicit patent terms; resolving source permissions does not require prematurely choosing a commercial model.
+- **Revisit when:** Legal review identifies a concrete incompatibility or a future distribution includes material with different license obligations that must be isolated and documented.
+
 ## Open questions and required evidence
 
 | ID | Question | Needed evidence | Deadline/gate |
 |---|---|---|---|
-| Q-001 | Product name and public identity | Trademark/domain/repository availability; brand exploration | Before public landing/store listing |
+| Q-001 | Coredrill public-identity clearance | Trademark, domain, and marketplace checks for the selected working name; repository availability is proven | Before public landing/store listing |
 | Q-002 | Browser support floor | OPFS/Worker/export/restore test matrix | Phase 0 |
 | Q-003 | Native SQLite adapter | Plugin vs `rusqlite` comparison | Phase 0 |
 | Q-004 | Tiptap suitability | Round-trip/accessibility/export spike | Phase 0 |
@@ -282,7 +296,7 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
 | Q-010 | Public discovery connectors | User demand, terms/license, rate limits, operating cost | Phase 5 |
 | Q-011 | Map/calendar | Usability demand and privacy/provider cost | After beta |
 | Q-012 | Optional sync | Stable local product, Authcore client, E2EE/conflict/key recovery | Phase 7 |
-| Q-013 | License/business model | Sustainability plan that preserves free local core/export | Before 1.0 |
+| Q-013 | Sustainability/business model | Sustainability plan that preserves the Apache-2.0 free local core and complete export | Before 1.0 |
 
 ## Rejected-pattern log
 
@@ -300,4 +314,3 @@ The following require a new decision, not opportunistic implementation:
 - destructive migration without tested export/restore;
 - sync before conflict and key-recovery design;
 - Python service required to run the baseline PWA.
-

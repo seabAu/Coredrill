@@ -1,5 +1,5 @@
 {
-  "name": "@job-workspace/source-policy",
+  "name": "@coredrill/source-policy",
   "version": "0.0.0",
   "private": true,
   "type": "module",

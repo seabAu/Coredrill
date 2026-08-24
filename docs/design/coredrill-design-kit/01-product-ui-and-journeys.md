@@ -142,7 +142,7 @@ Do not imply that installing the PWA on a phone exposes the desktop/browser vaul
 
 1. User invokes extension on a job page.
 2. Deterministic extractor creates a capture envelope and preview.
-3. User confirms; outbox transfers to Job Workspace.
+3. User confirms; outbox transfers to Coredrill.
 4. Inbox normalizes, identifies a possible duplicate, and shows provenance/conflicts.
 5. User saves the job, reviews requirements/match, chooses evidence and resume.
 6. AI or deterministic template drafts a letter/answers.

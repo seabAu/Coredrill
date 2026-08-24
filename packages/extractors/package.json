@@ -1,5 +1,5 @@
 {
-  "name": "@job-workspace/extractors",
+  "name": "@coredrill/extractors",
   "version": "0.0.0",
   "private": true,
   "type": "module",

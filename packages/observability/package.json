@@ -1,5 +1,5 @@
 {
-  "name": "@job-workspace/observability",
+  "name": "@coredrill/observability",
   "version": "0.0.0",
   "private": true,
   "type": "module",

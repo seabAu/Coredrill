@@ -5,22 +5,22 @@ import path from "node:path";
 
 const repositoryRoot = path.dirname(fileURLToPath(import.meta.url));
 const restrictedApplicationPackages = [
-  "@job-workspace/ui",
-  "@job-workspace/storage-core",
-  "@job-workspace/storage-browser",
-  "@job-workspace/storage-native",
-  "@job-workspace/capture-core",
-  "@job-workspace/extractors",
-  "@job-workspace/extension-bridge",
-  "@job-workspace/career-evidence",
-  "@job-workspace/prompt-engine",
-  "@job-workspace/ai-adapters",
-  "@job-workspace/labor-data",
-  "@job-workspace/documents",
-  "@job-workspace/source-policy",
-  "@job-workspace/search-filter",
-  "@job-workspace/observability",
-  "@job-workspace/test-fixtures",
+  "@coredrill/ui",
+  "@coredrill/storage-core",
+  "@coredrill/storage-browser",
+  "@coredrill/storage-native",
+  "@coredrill/capture-core",
+  "@coredrill/extractors",
+  "@coredrill/extension-bridge",
+  "@coredrill/career-evidence",
+  "@coredrill/prompt-engine",
+  "@coredrill/ai-adapters",
+  "@coredrill/labor-data",
+  "@coredrill/documents",
+  "@coredrill/source-policy",
+  "@coredrill/search-filter",
+  "@coredrill/observability",
+  "@coredrill/test-fixtures",
 ];
 
 const restrictedPaths = (packages, message) =>
@@ -87,7 +87,7 @@ export default tseslint.config(
         "error",
         {
           paths: restrictedPaths(
-            ["@job-workspace/test-fixtures"],
+            ["@coredrill/test-fixtures"],
             "Production packages cannot import shared test fixtures.",
           ),
           patterns: [
@@ -108,7 +108,7 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: ["@job-workspace/*", "@tauri-apps/*"],
+              group: ["@coredrill/*", "@tauri-apps/*"],
               message:
                 "Domain and contracts are leaf packages and cannot import workspace adapters or runtimes.",
             },
@@ -146,10 +146,10 @@ export default tseslint.config(
           patterns: [
             {
               group: [
-                "@job-workspace/storage-*",
-                "@job-workspace/ai-adapters",
-                "@job-workspace/extractors",
-                "@job-workspace/source-policy",
+                "@coredrill/storage-*",
+                "@coredrill/ai-adapters",
+                "@coredrill/extractors",
+                "@coredrill/source-policy",
                 "@tauri-apps/*",
               ],
               message:

@@ -1,4 +1,4 @@
-# ADR-0001 — Adopt the Job Workspace design baseline
+# ADR-0001 — Adopt the Coredrill design baseline
 
 - **Status:** Accepted
 - **Date:** 2026-08-21
@@ -10,7 +10,7 @@
 
 The repository began empty while the implementation-ready product and architecture authority lived in an external design kit. Implementation needs a self-contained, reviewable baseline without silently promoting provisional choices or losing the original decision rationale.
 
-Evidence and full alternatives are preserved in the repository-local [goal](../design/job-workspace-design-kit/GOAL.md), [decision register](../design/job-workspace-design-kit/11-decision-register.md), and numbered design documents.
+Evidence and full alternatives are preserved in the repository-local [goal](../design/coredrill-design-kit/GOAL.md), [decision register](../design/coredrill-design-kit/11-decision-register.md), and numbered design documents.
 
 ## Constraints
 
@@ -32,7 +32,7 @@ Adopt option 3. The repository imports the following Accepted register decisions
 
 | ID      | Accepted decision summary                                                                         |
 | ------- | ------------------------------------------------------------------------------------------------- |
-| `D-001` | Job Workspace is a standalone application, not a COMPOSR runtime dependency.                      |
+| `D-001` | Coredrill is a standalone application, not a COMPOSR runtime dependency.                          |
 | `D-002` | Hosted PWA and desktop baseline require no account or hosted database.                            |
 | `D-003` | V1 captures, analyzes, drafts, and tracks; it does not auto-submit, bulk apply, or send outreach. |
 | `D-004` | Reliable local vault/tracking/capture precedes document AI; document AI precedes discovery/sync.  |

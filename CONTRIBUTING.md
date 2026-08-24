@@ -1,6 +1,6 @@
 # Contributing
 
-Job Workspace is in a private, pre-release foundation phase. External contributions are not accepted until the owner selects the project license and publishes a contribution route. The workflow below governs owner-authorized work in the meantime.
+Coredrill is in a private, pre-release foundation phase. The code is licensed under Apache-2.0, but external contributions are not accepted until the owner publishes contribution and private conduct-reporting routes. The workflow below governs owner-authorized work in the meantime.
 
 ## Before starting
 
@@ -41,4 +41,4 @@ Every handoff or future pull request should state:
 
 ## Commit and review expectations
 
-Keep commits reviewable and do not combine unrelated formatting or generated churn with behavior changes. No CLA, DCO, or public contribution license is established yet; that policy must be decided alongside `Q-013` before contributions are opened.
+Keep commits reviewable and do not combine unrelated formatting or generated churn with behavior changes. Unless explicitly marked otherwise in writing, an intentionally submitted contribution accepted for inclusion is licensed under Apache-2.0 as described by the repository license. No CLA or DCO is established yet; contribution intake and enforcement procedures must be published before contributions are opened.

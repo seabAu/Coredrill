@@ -1,3 +1,3 @@
-import "@job-workspace/storage-native";
+import "@coredrill/storage-native";
 
 export {};

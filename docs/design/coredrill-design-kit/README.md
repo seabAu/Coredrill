@@ -1,7 +1,7 @@
-# Local-first Job Workspace design kit
+# Local-first Coredrill design kit
 
 Status: implementation-ready living design; Phase 0 decisions remain subject to named compatibility/usability gates  
-Working title: Job Workspace (replace before public launch)  
+Selected identity: Coredrill (complete public-identity clearance before public launch)  
 Primary modes: hosted local-first web/PWA, downloadable desktop, browser extension  
 Future mode: opt-in encrypted sync and hosted AI
 
@@ -9,7 +9,7 @@ Start with the [one-page goal statement](00-goal-statement.md), then use [GOAL.m
 
 ## Product thesis
 
-Job Workspace turns scattered job pages, career history, application documents, contacts, interviews, and salary research into a private, evidence-backed workflow. It helps a user produce better applications without inventing qualifications, auto-submitting forms, or silently exporting career data.
+Coredrill turns scattered job pages, career history, application documents, contacts, interviews, and salary research into a private, evidence-backed workflow. It helps a user produce better applications without inventing qualifications, auto-submitting forms, or silently exporting career data.
 
 It is a standalone product because it owns durable state and repeated workflows. COMPOSR remains a utility collection. The two may share a versioned prompt-template and model-adapter package; neither product depends on the other's running application.
 

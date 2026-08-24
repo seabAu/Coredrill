@@ -1,9 +1,9 @@
 {
-  "name": "@job-workspace/domain",
+  "name": "@coredrill/domain",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "dependencies": {
-    "@job-workspace/storage-native": "workspace:*"
+    "@coredrill/storage-native": "workspace:*"
   }
 }

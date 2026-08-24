@@ -29,7 +29,7 @@ Chrome Web Store numbers are a dated snapshot and must be rechecked before marke
 
 Sources: [Simplify Chrome listing](https://chromewebstore.google.com/detail/simplify-copilot-autofill/pbanhockgagggenencehbnadejlgchfc), [Teal Chrome listing](https://chromewebstore.google.com/detail/teal-job-search-companion/opafjjlpbiaicbbgifbejoochmmeikep), [Huntr Chrome listing](https://chromewebstore.google.com/detail/huntr-job-search-tracker/mihdfbecejheednfigjpdacgeilhlmnf), and [Careerflow Chrome listing](https://chromewebstore.google.com/detail/careerflow-ai-job-applica/iadokddofjgcgjpjlfhngclhpmaelnli).
 
-These listings also reinforce a privacy differentiator: leading extensions disclose handling website content, and some disclose personal information, activity, authentication information, or web history. Job Workspace should accomplish user-invoked capture with narrower permissions and a much smaller extension-side data footprint.
+These listings also reinforce a privacy differentiator: leading extensions disclose handling website content, and some disclose personal information, activity, authentication information, or web history. Coredrill should accomplish user-invoked capture with narrower permissions and a much smaller extension-side data footprint.
 
 ## Teal
 
@@ -147,13 +147,13 @@ Source: [Jobscan Resume Scanner](https://www.jobscan.co/resume-scanner).
 
 ### Notion: multiple views and contextual detail
 
-Notion demonstrates that one record set can support table, board, list, calendar, and chart views with independent filters, sorts, groups, property visibility, and side-peek detail. Job Workspace should implement a constrained version: Board and Table in v1, saved filters, a right-side job workspace, and later Calendar if user research supports it.
+Notion demonstrates that one record set can support table, board, list, calendar, and chart views with independent filters, sorts, groups, property visibility, and side-peek detail. Coredrill should implement a constrained version: Board and Table in v1, saved filters, a right-side job workspace, and later Calendar if user research supports it.
 
 Source: [Notion database views, filters, sorts, and groups](https://www.notion.com/help/views-filters-and-sorts).
 
 ### Linear: fast triage and keyboard flow
 
-Linear’s Triage pattern allows an incoming item to be accepted, escalated, merged, declined, or snoozed; its command/search and peek patterns minimize navigation loss. Job Workspace should apply this to captured jobs: Accept, Merge, Snooze, or Discard, with keyboard shortcuts and a command palette.
+Linear’s Triage pattern allows an incoming item to be accepted, escalated, merged, declined, or snoozed; its command/search and peek patterns minimize navigation loss. Coredrill should apply this to captured jobs: Accept, Merge, Snooze, or Discard, with keyboard shortcuts and a command palette.
 
 Sources: [Linear Triage](https://linear.app/changelog/2021-06-29-linear-release-and-issue-triage), [Linear Search](https://linear.app/docs/search), and [Linear Peek](https://linear.app/docs/peek).
 

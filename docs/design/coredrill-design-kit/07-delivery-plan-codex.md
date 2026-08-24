@@ -97,15 +97,15 @@ Do not begin hosted sync to solve extension transfer or web persistence; those h
 ## COMPOSR and existing-data migration
 
 1. Inventory COMPOSR's current job helper, prompt-builder schema, model adapters, saved prompts, accepted outputs, and any persistent job data before changing either repository.
-2. Leave the lightweight one-off helper in COMPOSR during the Job Workspace pilot. Add no new longitudinal tracking features there.
+2. Leave the lightweight one-off helper in COMPOSR during the Coredrill pilot. Add no new longitudinal tracking features there.
 3. Define and fixture-test `PromptTemplateV1`. Write explicit import/export adapters from the existing COMPOSR format; do not point both apps at a shared database.
-4. Import selected accepted letters/prompts into Job Workspace as source documents/style examples with original hashes and provenance. The user reviews career evidence extracted from them.
+4. Import selected accepted letters/prompts into Coredrill as source documents/style examples with original hashes and provenance. The user reviews career evidence extracted from them.
 5. If COMPOSR has job records, export a versioned JSON/CSV package and ingest through `ImportRun` with preview, duplicate detection, and transactional rollback.
-6. After the shared contract is stable, either publish a small independently versioned prompt-engine package or keep format-level interoperability. Do not make a cross-repository package a prerequisite for Job Workspace releases.
-7. Add “Open in Job Workspace” as an explicit export/deep-link action. Never silently transfer career/job data.
-8. When Job Workspace is proven, freeze COMPOSR's helper to maintenance scope and document which use case belongs in each product. No forced removal is required.
+6. After the shared contract is stable, either publish a small independently versioned prompt-engine package or keep format-level interoperability. Do not make a cross-repository package a prerequisite for Coredrill releases.
+7. Add “Open in Coredrill” as an explicit export/deep-link action. Never silently transfer career/job data.
+8. When Coredrill is proven, freeze COMPOSR's helper to maintenance scope and document which use case belongs in each product. No forced removal is required.
 
-Future hosted sync registers Job Workspace as a separate OIDC client under the identity kit. Local-only web/desktop modes remain anonymous; installing or using the product must not require SSO.
+Future hosted sync registers Coredrill as a separate OIDC client under the identity kit. Local-only web/desktop modes remain anonymous; installing or using the product must not require SSO.
 
 ## Codex source-of-truth order
 

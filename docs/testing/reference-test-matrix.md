@@ -1,4 +1,4 @@
-# Job Workspace reference test matrix
+# Coredrill reference test matrix
 
 Matrix ID: `JW-TM-001`  
 Version: `1.0.0`  

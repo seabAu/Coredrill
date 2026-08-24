@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-24  
 Current milestone: Phase 0 — foundations and risk retirement  
-Current work item: `FND-009` through `FND-010` proven; no implementation slice currently active; `FND-001` and `FND-006` remain independently blocked  
-Next recommended slice: `DOM-001` through `DOM-002` — foundational value objects, status semantic categories, and validated custom-stage transitions
+Current work item: adopt the Coredrill identity and Apache-2.0 license; close the provable portions of `FND-001` and `FND-006`  
+Next recommended slice: finish identity/license/hosted-CI proof, then begin `DOM-001` through `DOM-002`
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `DOM-001` through `DOM-002` — foundational value objec
 | Field | Value |
 |---|---|
 | Milestone | Phase 0 |
-| Item range | `FND-009` through `FND-010` — completed 2026-08-24 |
+| Item range | `FND-001`, `FND-006`, `Q-001`, and `Q-013` identity/license/hosting follow-up |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-24 |
-| Expected proof | [Dependency and reference-baseline verification](../../proof/foundation-baselines-verification.md#outcome), including the [dependency inventory](../../proof/foundation-dependency-inventory.json) and [versioned reference matrix](../../testing/reference-test-matrix.md) |
-| Blocker | Final public license and private conduct/security contact are unresolved (`Q-013`); no GitHub remote exists for the required green workflow URL |
-| Next handoff | Begin `DOM-001` through `DOM-002`; close `FND-001` and `FND-006` independently when the owner supplies the license/reporting route and GitHub workflow URL |
+| Expected proof | Canonical Apache-2.0 license, consistent Coredrill repository/package identity, ADR and decision-register updates, full local verification, safely integrated remote history, and a green hosted Foundation CI URL |
+| Blocker | The durable private conduct-reporting route is still unspecified; GitHub CLI authentication is stale and may block private vulnerability-reporting settings or hosted-run inspection |
+| Next handoff | Complete every safely provable foundation item, retain any unproven reporting blocker, then begin `DOM-001` through `DOM-002` |
 
 ## Milestone status
 
@@ -64,12 +64,12 @@ Next recommended slice: `DOM-001` through `DOM-002` — foundational value objec
 
 ## Repository and governance
 
-- [ ] **FND-001** Create repository, license, `README.md`, `AGENTS.md`, `SECURITY.md`, `CONTRIBUTING.md`, code of conduct, and support policy. — Proof: [all required paths reviewed; final license and reporting route remain blocked](../../proof/foundation-verification.md#outcome)
+- [ ] **FND-001** Create repository, license, `README.md`, `AGENTS.md`, `SECURITY.md`, `CONTRIBUTING.md`, code of conduct, and support policy. — Proof: [Coredrill identity and Apache-2.0 proven; durable private conduct route remains blocked](../../proof/identity-license-hosting-verification.md#outcome)
 - [x] **FND-002** Configure pnpm workspaces, Turborepo, committed lockfile, and toolchain-version files. — Proof: [frozen clean-clone install/build](../../proof/foundation-verification.md#clean-clone-proof)
 - [x] **FND-003** Create the approved `apps/`, `packages/`, `migrations/`, `fixtures/`, and `docs/` skeleton without placeholder runtime coupling. — Proof: [tree and 19-policy architecture check](../../proof/foundation-verification.md#reviewed-repository-evidence)
 - [x] **FND-004** Configure TypeScript strict project references and import-boundary rules. — Proof: [19-project typecheck and intentional violation tests](../../proof/foundation-verification.md#local-gate-results)
 - [x] **FND-005** Configure ESLint, Prettier, unit tests, coverage output, and affected-task commands. — Proof: [local and Git-history affected command results](../../proof/foundation-verification.md#local-gate-results)
-- [ ] **FND-006** Configure GitHub Actions for install, typecheck, lint, unit, dependency/license, and secret checks. — Proof: [workflow configured and local equivalent green; hosted URL remains blocked](../../proof/foundation-verification.md#outcome)
+- [ ] **FND-006** Configure GitHub Actions for install, typecheck, lint, unit, dependency/license, and secret checks. — Proof: [remote attached and local gate green; hosted run remains pending](../../proof/identity-license-hosting-verification.md#outcome)
 - [x] **FND-007** Add Changesets and release-note/migration-note templates. — Proof: [sample changeset and templates](../../proof/foundation-verification.md#reviewed-repository-evidence)
 - [x] **FND-008** Add ADR template and copy the accepted design decisions into repository docs with links back to this kit. — Proof: [ADR index and accepted-baseline ADR](../../proof/foundation-verification.md#reviewed-repository-evidence)
 - [x] **FND-009** Record exact current stable dependency selections, versions, licenses, maintainers, and known advisories. — Proof: [reviewed inventory, drift validator, and all-severity audit](../../proof/foundation-baselines-verification.md#outcome)
@@ -455,7 +455,7 @@ Next recommended slice: `DOM-001` through `DOM-002` — foundational value objec
 
 ## Distribution and beta operations
 
-- [ ] **DEP-001** Choose public name after trademark/domain/repository check and update Q-001. — Proof: _decision record_
+- [ ] **DEP-001** Complete trademark/domain/marketplace clearance for the selected Coredrill identity and update Q-001. — Proof: [`ADR-0002` records working-name selection; public clearance remains](../../adr/0002-adopt-coredrill-identity-and-apache-license.md)
 - [ ] **DEP-002** Configure dedicated PWA origin, HTTPS, headers, WASM/Worker MIME, immutable assets, and service-worker scope. — Proof: _deployment audit_
 - [ ] **DEP-003** Publish signed/checksummed desktop artifact for supported OS with SBOM and migration notes. — Proof: _release artifacts_
 - [ ] **DEP-004** Publish/sideload extension with permission/privacy review and compatible app-version range. — Proof: _store/package artifact_
@@ -513,14 +513,16 @@ This phase is deliberately deferred. Re-open only after `GATE-6`, demonstrated m
 
 | Date | Item | Blocker | Checks attempted | Owner/next action | Status |
 |---|---|---|---|---|---|
-| 2026-08-21 | `FND-001` | `Q-013` leaves the public license unresolved, and no durable private conduct/security reporting address was supplied. | Reviewed the goal, decision register, and every governance path; installed a restrictive temporary notice and kept external contributions closed. | Owner: select the license and private reporting route, then update every governance reference. | Open |
-| 2026-08-21 | `FND-006` | No GitHub remote exists, so the required green workflow URL cannot be produced locally. | Configured commit-pinned jobs, ran the full local equivalent, and verified a frozen isolated-clone install/build. | Owner: create/attach a GitHub remote, push `main`, run the workflow, and link the green run. | Open |
+| 2026-08-21 | `FND-001` | `Q-013` left the public license unresolved, and no durable private conduct/security reporting address was supplied. | Reviewed the goal, decision register, and every governance path; installed a restrictive temporary notice and kept external contributions closed. | Superseded by the 2026-08-24 follow-up below. | Superseded |
+| 2026-08-21 | `FND-006` | No GitHub remote existed, so the required green workflow URL could not be produced locally. | Configured commit-pinned jobs, ran the full local equivalent, and verified a frozen isolated-clone install/build. | Superseded by the 2026-08-24 follow-up below. | Superseded |
+| 2026-08-24 | `FND-001` | Apache-2.0 and the Coredrill identity are proven, but no durable private conduct-reporting route is published. | Added `ADR-0002`, `D-054`, `D-055`, canonical license text, package metadata checks, governance wording, and full local proof. | Owner: publish a repository-specific private conduct route before external contribution intake. | Open |
+| 2026-08-24 | `FND-006` | The remote is attached, but no green hosted Foundation CI URL has been recorded yet. | Verified the remote's initial license commit, the unrelated histories, and the complete local gate. | Integrate/push `main`, wait for Foundation CI, and link the green run. | Open |
 
 ## Accepted scope changes
 
 | Date | ADR | Checklist IDs added/changed | Goal/design documents updated | Summary |
 |---|---|---|---|---|
-| — | — | — | — | — |
+| 2026-08-24 | [`ADR-0002`](../../adr/0002-adopt-coredrill-identity-and-apache-license.md) | `FND-001`, `FND-006`, `DEP-001`; `Q-001`/`Q-013` narrowed | `README.md`, decision register, design-kit identity/path, package scope, governance/proof records | Adopt Coredrill and Apache-2.0 without changing product architecture; retain public-name clearance, business-model, and private-reporting gates. |
 
 ## Proof index
 
@@ -528,7 +530,7 @@ Keep proof close to each checkbox. For large milestone reports, also index them 
 
 | Gate | Commit/tag | Test/report/artifact links | Reviewed by/date |
 |---|---|---|---|
-| `GATE-0` | — | — | — |
+| `GATE-0` | Pending integrated remote commit | [Foundation](../../proof/foundation-verification.md), [dependency/reference baselines](../../proof/foundation-baselines-verification.md), and [identity/license/hosting follow-up](../../proof/identity-license-hosting-verification.md) | Automated local gates / 2026-08-24 |
 | `GATE-1` | — | — | — |
 | `GATE-2` | — | — | — |
 | `GATE-3` | — | — | — |

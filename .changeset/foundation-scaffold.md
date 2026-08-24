@@ -1,5 +1,5 @@
 ---
-"@job-workspace/contracts": patch
+"@coredrill/contracts": patch
 ---
 
 Establish the buildable, private contract-package boundary for the Phase 0 repository foundation.

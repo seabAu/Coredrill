@@ -20,7 +20,7 @@ describe("workspace import boundaries", () => {
       "packages/domain/package.json: forbidden manifest edge domain -> storage-native",
     );
     expect(issues).toContain(
-      "packages/domain/src/bad.ts: forbidden import domain -> storage-native (@job-workspace/storage-native)",
+      "packages/domain/src/bad.ts: forbidden import domain -> storage-native (@coredrill/storage-native)",
     );
   });
 
@@ -30,13 +30,13 @@ describe("workspace import boundaries", () => {
 
     expect(issues).toEqual(
       expect.arrayContaining([
-        "packages/domain/package.json: package name must be @job-workspace/domain",
+        "packages/domain/package.json: package name must be @coredrill/domain",
         "packages/application/tsconfig.json: TypeScript reference contracts lacks a declared workspace dependency",
         "packages/application/tsconfig.json: forbidden TypeScript reference application -> ui",
         "packages/application/src/bad.ts: import application -> contracts lacks a declared workspace dependency",
         "packages/application/src/bad.ts: relative cross-package import application -> storage-native is forbidden (../../storage-native/src/index.js)",
         "packages/application/src/bad.ts: relative import leaves package application (../../../outside-root.js)",
-        "packages/application/src/bad.ts: forbidden import application -> ui (@job-workspace/ui)",
+        "packages/application/src/bad.ts: forbidden import application -> ui (@coredrill/ui)",
         "packages/storage-core/package.json: forbidden manifest edge storage-core -> test-fixtures",
         "packages/storage-core/package.json: production package cannot depend on test-fixtures",
         "packages/unregistered: package directory lacks an architecture policy",
@@ -61,7 +61,7 @@ describe("workspace import boundaries", () => {
       cwd: repositoryRoot,
       overrideConfigFile: path.join(repositoryRoot, "eslint.config.mjs"),
     });
-    const [result] = await eslint.lintText('import "@job-workspace/storage-native";\n', {
+    const [result] = await eslint.lintText('import "@coredrill/storage-native";\n', {
       filePath: path.join(repositoryRoot, "packages/domain/src/intentional-violation.ts"),
       warnIgnored: false,
     });

@@ -5,7 +5,7 @@ These instructions apply to the entire repository.
 ## Read before changing code
 
 1. Read `README.md`, `SECURITY.md`, and every accepted ADR relevant to the task.
-2. Read `docs/design/job-workspace-design-kit/GOAL.md`, `docs/design/job-workspace-design-kit/11-decision-register.md`, the relevant numbered design documents, and `docs/design/job-workspace-design-kit/LIVING-CHECKLIST.md` to the end.
+2. Read `docs/design/coredrill-design-kit/GOAL.md`, `docs/design/coredrill-design-kit/11-decision-register.md`, the relevant numbered design documents, and `docs/design/coredrill-design-kit/LIVING-CHECKLIST.md` to the end.
 3. Inspect current code, Git status, installed toolchain, and tests. Preserve unrelated user changes.
 
 Authority order is: current user instruction; this file and `SECURITY.md`; `GOAL.md`, accepted ADRs, and the decision register; relevant design/source-policy records; the living checklist; documentation for exact installed versions; then tests and artifacts.

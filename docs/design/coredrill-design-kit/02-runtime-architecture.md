@@ -22,7 +22,7 @@ The domain layer cannot import Tauri, browser extension APIs, Better Auth, an AI
 ## Monorepo
 
 ```text
-job-workspace/
+coredrill/
   README.md
   AGENTS.md
   SECURITY.md
@@ -128,7 +128,7 @@ The extension contains no full vault. It stores a bounded outbox of versioned, c
 Transfer paths:
 
 1. Chromium/Safari hosted web: tightly restricted `externally_connectable` origins and sender validation.
-2. Firefox/web fallback: content-script bridge on the exact Job Workspace origin or explicit JSON export/import, because direct web-page external messaging is not uniformly available.
+2. Firefox/web fallback: content-script bridge on the exact Coredrill origin or explicit JSON export/import, because direct web-page external messaging is not uniformly available.
 3. Desktop: native messaging host or paired loopback bridge in a later subphase; start with explicit outbox import if cross-platform installation becomes disproportionate.
 
 Security requirements:
@@ -208,7 +208,7 @@ type PromptTemplateV1 = {
 };
 ```
 
-Initially, Job Workspace owns `prompt-engine` in a clean package and can import/export this JSON. After both apps prove the contract, extract it to an independently versioned shared package. Do not make Job Workspace call COMPOSR's UI/API, and do not delay v1 on a cross-repository package migration.
+Initially, Coredrill owns `prompt-engine` in a clean package and can import/export this JSON. After both apps prove the contract, extract it to an independently versioned shared package. Do not make Coredrill call COMPOSR's UI/API, and do not delay v1 on a cross-repository package migration.
 
 ## Configuration
 

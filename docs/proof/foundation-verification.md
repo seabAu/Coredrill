@@ -1,5 +1,7 @@
 # Phase 0 foundation verification
 
+> Historical snapshot of the original foundation gate. The later [identity, license, and hosting follow-up](identity-license-hosting-verification.md) supersedes its temporary-name, temporary-license, and no-remote status without rewriting the evidence recorded below.
+
 Date: 2026-08-21  
 Scope: `FND-001` through `FND-008` only  
 Branch: `main`  
@@ -25,7 +27,7 @@ Verified hardening commit: `abb854be9d26af7c2b1f2b6fef53745f0e79c295`
 Governance:
 
 - [`README.md`](../../README.md), [`AGENTS.md`](../../AGENTS.md), [`SECURITY.md`](../../SECURITY.md), [`CONTRIBUTING.md`](../../CONTRIBUTING.md), [`CODE_OF_CONDUCT.md`](../../CODE_OF_CONDUCT.md), [`SUPPORT.md`](../../SUPPORT.md), and the temporary [`LICENSE`](../../LICENSE).
-- The complete supplied design authority is preserved under [`docs/design/job-workspace-design-kit`](../design/job-workspace-design-kit/README.md), with provenance in [`docs/design/README.md`](../design/README.md).
+- The complete supplied design authority is preserved under [`docs/design/coredrill-design-kit`](../design/coredrill-design-kit/README.md), with provenance in [`docs/design/README.md`](../design/README.md).
 - No product feature, database implementation, scraper, AI integration, hosted service, Python worker, or broad extension permission was added.
 
 Workspace and boundaries:
@@ -75,7 +77,7 @@ All commands used the pinned Node 24.19.0 and pnpm 11.22.0 runtime unless a row 
 | `pnpm check:licenses`            |    0 | 299 dependency records matched the reviewed permissive-license policy; unknowns fail closed.                                             |
 | `pnpm check:secrets`             |    0 | No configured credential or private-key pattern found in the scanned repository files.                                                   |
 | `pnpm audit:dependencies`        |    0 | No known dependency vulnerabilities reported at the high-or-greater gate.                                                                |
-| `pnpm changeset:status`          |    0 | Sample changeset requests patch releases for `@job-workspace/application` and `@job-workspace/contracts`.                                |
+| `pnpm changeset:status`          |    0 | Sample changeset requests patch releases for `@coredrill/application` and `@coredrill/contracts`.                                        |
 | `pnpm check:affected -- HEAD^`   |    0 | 19 builds, 21 typecheck/prerequisite tasks, 19 lints, and tooling lint passed; no related tests was accepted only for this affected run. |
 | `pnpm verify`                    |    0 | Complete aggregate local foundation gate passed.                                                                                         |
 

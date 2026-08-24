@@ -20,4 +20,4 @@ export const packageBoundaries = Object.freeze({
   "test-fixtures": [],
 });
 
-export const workspacePackagePrefix = "@job-workspace/";
+export const workspacePackagePrefix = "@coredrill/";

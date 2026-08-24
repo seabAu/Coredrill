@@ -1,5 +1,5 @@
 {
-  "name": "@job-workspace/extension-bridge",
+  "name": "@coredrill/extension-bridge",
   "version": "0.0.0",
   "private": true,
   "type": "module",

@@ -1,5 +1,5 @@
 {
-  "name": "@job-workspace/ai-adapters",
+  "name": "@coredrill/ai-adapters",
   "version": "0.0.0",
   "private": true,
   "type": "module",

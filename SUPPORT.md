@@ -1,6 +1,6 @@
 # Support policy
 
-Job Workspace has no supported public release yet. Phase 0 support is limited to repository setup, documented build checks, and design/governance questions.
+Coredrill has no supported public release yet. Phase 0 support is limited to repository setup, documented build checks, and design/governance questions.
 
 ## Before requesting help
 
