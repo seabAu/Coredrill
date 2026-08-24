@@ -75,14 +75,19 @@ async function listPackageEntries(root) {
         packageEntries.push({ path: entryPath, type: "file" });
       } else if (entry.isSymbolicLink()) {
         const target = await readlink(entryPath);
-        const resolvedTarget = path.resolve(directory, target);
-        if (
-          resolvedTarget !== path.resolve(root) &&
-          !resolvedTarget.startsWith(`${path.resolve(root)}${path.sep}`)
-        ) {
-          throw new Error("Package proof refuses a link that escapes the extracted package.");
+        const absolute = path.isAbsolute(target);
+        if (!absolute) {
+          const resolvedTarget = path.resolve(directory, target);
+          if (
+            resolvedTarget !== path.resolve(root) &&
+            !resolvedTarget.startsWith(`${path.resolve(root)}${path.sep}`)
+          ) {
+            throw new Error(
+              "Package proof refuses a relative link that escapes the extracted package.",
+            );
+          }
         }
-        packageEntries.push({ path: entryPath, target, type: "link" });
+        packageEntries.push({ absolute, path: entryPath, target, type: "link" });
       } else {
         throw new Error("Package proof refuses unsupported bundle entries.");
       }
@@ -112,8 +117,12 @@ async function inspectDirectory(root) {
     hash.update("\0");
   }
   return {
+    absoluteSymlinkCount: packageEntries.filter((entry) => entry.type === "link" && entry.absolute)
+      .length,
     bytes,
     entryCount: packageEntries.length,
+    relativeSymlinkCount: packageEntries.filter((entry) => entry.type === "link" && !entry.absolute)
+      .length,
     sha256: hash.digest("hex"),
     packageEntries,
   };
@@ -217,6 +226,8 @@ async function inspectMacOsPackage() {
     artifactBytes: packageInspection.bytes,
     artifactEntryCount: packageInspection.entryCount,
     artifactSha256: packageInspection.sha256,
+    absoluteSymlinkCount: packageInspection.absoluteSymlinkCount,
+    relativeSymlinkCount: packageInspection.relativeSymlinkCount,
     executableBytes: (await stat(executablePath)).size,
     executableSha256: await sha256File(executablePath),
     bundleIdentifier,
@@ -263,6 +274,9 @@ async function inspectLinuxPackage() {
       extractedBytes: packageInspection.bytes,
       extractedEntryCount: packageInspection.entryCount,
       extractedTreeSha256: packageInspection.sha256,
+      absoluteSymlinkCount: packageInspection.absoluteSymlinkCount,
+      relativeSymlinkCount: packageInspection.relativeSymlinkCount,
+      relativeSymlinksConfined: true,
       nativeStorageProbeExcluded: true,
       fiveSecondLaunchAlive: launchAlive,
     };

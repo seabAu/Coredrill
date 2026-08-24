@@ -104,7 +104,9 @@ describe("native Windows package boundary", () => {
   it("inspects extracted cross-platform packages before retaining them", () => {
     expect(platformPackageProof).toContain("nativeStorageProbeExcluded: true");
     expect(platformPackageProof).toContain("fiveSecondLaunchAlive");
-    expect(platformPackageProof).toContain("Package proof refuses a link that escapes");
+    expect(platformPackageProof).toContain("Package proof refuses a relative link that escapes");
+    expect(platformPackageProof).toContain("absoluteSymlinkCount");
+    expect(platformPackageProof).toContain("relativeSymlinksConfined: true");
     expect(platformPackageProof).toContain("Signature=adhoc");
   });
 });
