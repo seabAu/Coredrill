@@ -33,7 +33,8 @@ function isAllowedExpression(value) {
   return tokens.length > 0 && tokens.every((token) => allowedLicenseTokens.has(token));
 }
 
-const repositoryRoot = path.resolve(process.argv[2] ?? process.cwd());
+const repositoryArgument = process.argv.slice(2).find((argument) => !argument.startsWith("-"));
+const repositoryRoot = path.resolve(repositoryArgument ?? process.cwd());
 const manifestPath = path.join(repositoryRoot, "apps", "desktop", "src-tauri", "Cargo.toml");
 const emitJson = process.argv.includes("--json");
 
