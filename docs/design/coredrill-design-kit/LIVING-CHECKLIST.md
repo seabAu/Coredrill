@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-24  
 Current milestone: Phase 0 — foundations and risk retirement  
-Current work item: `DOM-003` through `DOM-004` are proven locally and in hosted Foundation CI
-Next recommended slice: `DOM-005` through `DOM-006` — portable-archive and database-port contracts after this slice is proven
+Current work item: `DOM-007` through `DOM-009` — remaining ports, application conventions, and privacy-safe diagnostics
+Next recommended slice: `STG-001` through `STG-003` — browser SQLite/OPFS open, transaction, durability, export, and restore spike after the remaining domain contracts are proven
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `DOM-005` through `DOM-006` — portable-archive and dat
 | Field | Value |
 |---|---|
 | Milestone | Phase 0 |
-| Item range | `DOM-003` through `DOM-004` |
+| Item range | `DOM-007` through `DOM-009` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-24 |
-| Expected proof | Round-trip/invalid fixtures, contract examples/tests, generated-schema drift check, and [capture/provenance contracts verification](../../proof/capture-provenance-contracts-verification.md) |
+| Expected proof | Reviewed remaining port APIs, an application command/query/result/error example with tests, and a privacy-safe diagnostic schema with forbidden-field/redaction tests |
 | Blocker | None for this slice; the independent `FND-001` private-reporting-route blocker remains open below |
-| Next handoff | Begin `DOM-005` through `DOM-006`; close `FND-001` independently when the owner publishes both private reporting routes |
+| Next handoff | Begin `STG-001` through `STG-003` after this slice is proven; close `FND-001` independently when the owner publishes both private reporting routes |
 
 ## Milestone status
 
@@ -81,8 +81,8 @@ Next recommended slice: `DOM-005` through `DOM-006` — portable-archive and dat
 - [x] **DOM-002** Define status semantic categories and validated custom-stage mapping. — Proof: [category-pair and guarded-transition tests](../../proof/domain-foundations-verification.md#dom-002-status-proof)
 - [x] **DOM-003** Define versioned `CaptureEnvelope` JSON Schema and generated TypeScript/Zod boundary validator. — Proof: [round-trip/invalid fixtures, size validation, and schema-drift gate](../../proof/capture-provenance-contracts-verification.md#dom-003-capture-envelope-proof)
 - [x] **DOM-004** Define field candidate/provenance/conflict/user-confirmation contracts. — Proof: [contract examples and tests](../../proof/capture-provenance-contracts-verification.md#dom-004-evidence-contract-proof)
-- [ ] **DOM-005** Define portable-archive manifest and checksum contract. — Proof: _schema + sample manifest_
-- [ ] **DOM-006** Define `DatabasePort`, repository contracts, and transaction semantics. — Proof: _contract test harness_
+- [x] **DOM-005** Define portable-archive manifest and checksum contract. — Proof: [generated schema, complete sample, and invalid-invariant tests](../../proof/archive-database-contracts-verification.md#dom-005-portable-archive-proof)
+- [x] **DOM-006** Define `DatabasePort`, repository contracts, and transaction semantics. — Proof: [adapter-neutral isolated contract harness and broken-adapter tests](../../proof/archive-database-contracts-verification.md#dom-006-database-contract-proof)
 - [ ] **DOM-007** Define `ExtractionPort`, `AiPort`, `LaborDataPort`, `DocumentPort`, and deferred `SyncPort`. — Proof: _public API review_
 - [ ] **DOM-008** Define application command/query/result/error conventions. — Proof: _example use case + tests_
 - [ ] **DOM-009** Define privacy-safe diagnostic event schema with forbidden-field tests. — Proof: _schema + redaction test_

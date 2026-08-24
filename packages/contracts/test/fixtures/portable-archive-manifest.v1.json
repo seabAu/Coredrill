@@ -1,0 +1,70 @@
+{
+  "specVersion": 1,
+  "archiveId": "019539af-8a01-7dd4-8b54-395d8f3fe501",
+  "createdAt": "2026-08-24T15:00:00.000Z",
+  "createdBy": {
+    "name": "coredrill",
+    "version": "0.1.0"
+  },
+  "vault": {
+    "id": "019539af-8a02-7dd4-8b54-395d8f3fe502",
+    "schemaVersion": 2,
+    "migrationHistory": [
+      {
+        "version": 1,
+        "name": "initialize_vault",
+        "appliedAt": "2026-08-20T12:00:00.000Z",
+        "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      },
+      {
+        "version": 2,
+        "name": "add_job_sources",
+        "appliedAt": "2026-08-22T12:00:00.000Z",
+        "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      }
+    ]
+  },
+  "checksumAlgorithm": "sha256",
+  "database": {
+    "kind": "database",
+    "path": "database.sqlite3",
+    "mediaType": "application/vnd.sqlite3",
+    "byteLength": 4096,
+    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "dataFiles": [
+    {
+      "kind": "data",
+      "path": "data/jobs.json",
+      "mediaType": "application/json",
+      "byteLength": 512,
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "format": "json",
+      "logicalName": "jobs"
+    },
+    {
+      "kind": "data",
+      "path": "data/jobs.csv",
+      "mediaType": "text/csv",
+      "byteLength": 256,
+      "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "format": "csv",
+      "logicalName": "jobs"
+    }
+  ],
+  "attachments": [
+    {
+      "kind": "attachment",
+      "path": "attachments/dd/dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "mediaType": "application/pdf",
+      "byteLength": 1024,
+      "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "contentId": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "logicalName": "synthetic-resume.pdf"
+    }
+  ],
+  "encryption": {
+    "specVersion": 1,
+    "mode": "none"
+  }
+}

@@ -95,16 +95,23 @@ pnpm workspaces and Turborepo provide the repository task graph; ESLint/TypeScri
 Use one set of reviewed SQL migrations and repositories over a minimal asynchronous interface:
 
 ```ts
-interface DatabasePort {
-  query<T>(statement: SqlStatement): Promise<readonly T[]>;
+interface DatabaseSession {
+  query<Row extends QueryRow>(statement: SqlStatement): Promise<readonly Row[]>;
   execute(statement: SqlStatement): Promise<ExecuteResult>;
-  transaction<T>(work: (tx: DatabasePort) => Promise<T>): Promise<T>;
+}
+
+type DatabaseTransaction = DatabaseSession;
+
+interface DatabasePort extends DatabaseSession {
+  transaction<T>(work: (tx: DatabaseTransaction) => Promise<T>): Promise<T>;
   exportPortable(): Promise<PortableDatabase>;
   diagnostics(): Promise<StorageDiagnostics>;
 }
 ```
 
-`SqlStatement` contains SQL plus bound parameters; repositories never concatenate user values. Browser and native adapters must pass the same repository contract suite.
+`SqlStatement` contains SQL plus bound parameters; repositories never concatenate user values. The transaction callback receives a deliberately narrowed session, so it cannot recursively open a transaction or perform export/diagnostic work. The adapter commits only when the callback fulfills, rolls back when it rejects, and preserves the callback's original error. Browser and native adapters must pass the same isolated database/repository contract suites, including the shared commit/rollback semantics suite.
+
+`PortableDatabase` is the adapter-neutral database-byte/checksum/schema-version handoff. Archive assembly adds the versioned manifest, human-readable JSON/CSV data, attachment inventory, migration history, per-entry SHA-256 checksums, and explicit encryption state required by the portable-archive contract.
 
 ### Browser adapter
 

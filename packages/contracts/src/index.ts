@@ -31,4 +31,20 @@ export {
   type FieldSourceReferenceV1,
   type UserConfirmationV1,
 } from "./field-evidence.js";
+export {
+  PORTABLE_ARCHIVE_LIMITS,
+  PORTABLE_ARCHIVE_MANIFEST_SPEC_VERSION,
+  PORTABLE_ARCHIVE_MANIFEST_V1_SCHEMA_ID,
+  migrationHistoryEntryV1Schema,
+  portableArchiveManifestV1JsonSchema,
+  portableArchiveManifestV1Schema,
+  portableAttachmentEntryV1Schema,
+  portableDataEntryV1Schema,
+  portableDatabaseEntryV1Schema,
+  type MigrationHistoryEntryV1,
+  type PortableArchiveManifestV1,
+  type PortableAttachmentEntryV1,
+  type PortableDataEntryV1,
+  type PortableDatabaseEntryV1,
+} from "./portable-archive.js";
 export { jsonValueSchema, type JsonValue } from "./primitives.js";
