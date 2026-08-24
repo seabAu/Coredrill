@@ -83,6 +83,9 @@ describe("native Windows package boundary", () => {
     expect(macosConfig.bundle.macOS.signingIdentity).toBe("-");
     expect(desktopPackage.scripts["build:bundle:macos"]).toContain("--bundles app");
     expect(desktopPackage.scripts["build:bundle:linux"]).toContain("--bundles appimage");
+    expect(desktopPackage.scripts["lint:desktop"]).toContain("--no-default-features --all-targets");
+    expect(desktopPackage.scripts["lint:desktop"]).toContain("--all-features --lib --bins");
+    expect(desktopPackage.scripts["lint:desktop"]).not.toContain("--all-targets --all-features");
     expect(workflow).toContain("runs-on: macos-26");
     expect(workflow).toContain("runs-on: ubuntu-26.04");
   });

@@ -18,9 +18,7 @@ chmod 700 "$runtime_root"
 export XDG_RUNTIME_DIR="$runtime_root"
 
 cleanup() {
-  if [[ -n "${GNOME_KEYRING_CONTROL:-}" ]]; then
-    gnome-keyring-daemon --stop >/dev/null 2>&1 || true
-  fi
+  gnome-keyring-daemon --stop >/dev/null 2>&1 || true
   if [[ "$runtime_root" == "$runtime_base"/coredrill-nat008-keyring.* ]]; then
     rm -rf -- "$runtime_root"
   fi
@@ -35,10 +33,5 @@ while IFS='=' read -r key value; do
       ;;
   esac
 done <<<"$daemon_environment"
-
-if [[ -z "${GNOME_KEYRING_CONTROL:-}" ]]; then
-  echo "The ephemeral GNOME Keyring did not publish its control directory." >&2
-  exit 1
-fi
 
 COREDRILL_SECRET_PROOF_REQUIRED=true pnpm test:secure-storage

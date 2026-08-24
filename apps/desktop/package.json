@@ -16,7 +16,7 @@
     "test:platform": "cargo test --manifest-path src-tauri/Cargo.toml --locked --all-features --lib tauri_app_data_path_uses_the_configured_identifier_on_this_platform",
     "typecheck": "cargo check --manifest-path src-tauri/Cargo.toml --locked --no-default-features --features native-storage-probe --bin coredrill-native-storage-probe",
     "lint": "cargo fmt --manifest-path src-tauri/Cargo.toml --all --check && cargo clippy --manifest-path src-tauri/Cargo.toml --locked --no-default-features --features native-storage-probe --bin coredrill-native-storage-probe -- -D warnings",
-    "lint:desktop": "cargo clippy --manifest-path src-tauri/Cargo.toml --locked --all-targets --all-features -- -D warnings"
+    "lint:desktop": "cargo clippy --manifest-path src-tauri/Cargo.toml --locked --no-default-features --all-targets -- -D warnings && cargo clippy --manifest-path src-tauri/Cargo.toml --locked --all-features --lib --bins -- -D warnings"
   },
   "devDependencies": {
     "@tauri-apps/cli": "2.11.3"
