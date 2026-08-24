@@ -5,7 +5,11 @@ export default defineConfig({
     coverage: {
       all: true,
       clean: true,
-      include: ["packages/domain/src/**/*.ts", "tooling/architecture/check-boundaries.mjs"],
+      include: [
+        "packages/contracts/src/**/*.ts",
+        "packages/domain/src/**/*.ts",
+        "tooling/architecture/check-boundaries.mjs",
+      ],
       provider: "v8",
       reporter: ["text", "json", "html"],
       reportsDirectory: "coverage",

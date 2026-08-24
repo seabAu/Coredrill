@@ -4,12 +4,21 @@
 
 Every entry path—extension, paste, URL/API connector, file import, or optional Python worker—produces a versioned envelope before modifying domain records.
 
+Contract versions are explicit integers under the accepted compatibility policy in [10 — Technology stack](10-technology-stack.md#14-version-and-compatibility-policy). The earlier illustrative string `"1.0"` was corrected to integer `1` before any durable capture version shipped.
+
 ```ts
 type CaptureEnvelopeV1 = {
-  specVersion: "1.0";
+  specVersion: 1;
   id: string;
   capturedAt: string;
+  expiresAt: string;
   captureMethod: "extension" | "paste" | "file" | "connector" | "manual";
+  sender: {
+    kind: "browser_extension" | "web_app" | "desktop_app" | "import_tool";
+    id: string;
+  };
+  sequence: number;
+  nonce: string;
   source: {
     url?: string;
     canonicalUrl?: string;
@@ -24,39 +33,57 @@ type CaptureEnvelopeV1 = {
     sanitizedHtml?: string;
     apiPayload?: unknown;
   };
+  fieldCandidates: FieldCandidateV1<unknown>[];
   captureClient: { name: string; version: string };
   contentHash: string;
 };
 ```
 
-Limits apply before persistence: maximum text/HTML/payload/attachment sizes, allowed schemes, normalized encoding, and safe truncation markers. Never capture cookies, form inputs, hidden tokens, browser history, authorization headers, or the page's JavaScript state wholesale.
+V1 validates strict object shapes and safe HTTP(S) source URLs, and caps the UTF-8-encoded envelope at 2 MiB before schema traversal. It separately caps selected text at 64 KiB, readable text at 512 KiB, sanitized HTML at 1 MiB, JSON-LD at 64 items, and field candidates at 256. Safe truncation markers belong to capture implementations; a boundary validator never silently truncates. Never capture cookies, form inputs, hidden tokens, browser history, authorization headers, or the page's JavaScript state wholesale.
 
 ## Extraction result
 
 ```ts
-type Candidate<T> = {
+type FieldCandidateV1<T> = {
+  specVersion: 1;
+  id: string;
+  fieldName: string;
   value: T;
-  method: "api" | "jsonld" | "selector" | "readability" | "heuristic" | "llm" | "user";
-  confidence: number;
-  sourcePointer?: string;
-  sourceExcerpt?: string;
+  rawValue?: T;
+  provenance: {
+    specVersion: 1;
+    source: { sourceType: string; sourceId: string; pointer: string };
+    method: "api" | "jsonld" | "selector" | "readability" | "heuristic" | "llm" | "user";
+    extractor: { name: string; version: string };
+    capturedAt: string;
+    confidence: number;
+    sourceExcerpt?: string;
+    licenseNote?: string;
+  };
+  userConfirmation?: {
+    specVersion: 1;
+    id: string;
+    actor: "user";
+    confirmedAt: string;
+    confirmedValueHash: string;
+  };
 };
 
 type ExtractedJobV1 = {
-  title: Candidate<string>[];
-  company: Candidate<string>[];
-  description: Candidate<string>[];
-  salary: Candidate<MoneyRange>[];
-  locations: Candidate<ExtractedLocation>[];
-  workplaceType: Candidate<WorkplaceType>[];
-  postedAt: Candidate<string>[];
-  validThrough: Candidate<string>[];
-  requirements: Candidate<ExtractedRequirement>[];
-  applyUrl: Candidate<string>[];
+  title: FieldCandidateV1<string>[];
+  company: FieldCandidateV1<string>[];
+  description: FieldCandidateV1<string>[];
+  salary: FieldCandidateV1<MoneyRange>[];
+  locations: FieldCandidateV1<ExtractedLocation>[];
+  workplaceType: FieldCandidateV1<WorkplaceType>[];
+  postedAt: FieldCandidateV1<string>[];
+  validThrough: FieldCandidateV1<string>[];
+  requirements: FieldCandidateV1<ExtractedRequirement>[];
+  applyUrl: FieldCandidateV1<string>[];
 };
 ```
 
-Resolution policy ranks user > official API/valid JSON-LD > source-specific selector > generic DOM > heuristic > LLM, while still detecting internal conflicts. Confidence is calibrated per field/extractor using fixtures; it is not a decorative number.
+Resolution policy ranks user > official API/valid JSON-LD > source-specific selector > generic DOM > heuristic > LLM, while still retaining every candidate and detecting internal conflicts. `FieldConflictV1` holds at least two unique candidate IDs; an explicit resolved form records a retained candidate selected by the user. Confirmation remains a separate durable record, so an LLM-derived candidate cannot become confirmed merely by changing its provenance label. Confidence is calibrated per field/extractor using fixtures; it is not a decorative number.
 
 ## Layered pipeline
 
@@ -207,4 +234,3 @@ Candidate stack: `httpx`, `selectolax`, `trafilatura`, `beautifulsoup4` only whe
 - Contract suite shared across TypeScript and optional Python.
 - Live smoke tests only for documented APIs and never as the main CI suite.
 - Per-field precision/recall and review-correction rate by extractor version; regressions require a deliberate golden update.
-

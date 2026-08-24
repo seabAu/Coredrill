@@ -1,0 +1,106 @@
+{
+  "candidates": [
+    {
+      "specVersion": 1,
+      "id": "019539af-7c12-7dd4-8b54-395d8f3fe4c3",
+      "fieldName": "title",
+      "value": "Senior Platform Engineer",
+      "provenance": {
+        "specVersion": 1,
+        "source": {
+          "sourceType": "capture",
+          "sourceId": "019539af-7c11-7dd4-8b54-395d8f3fe4c2",
+          "pointer": "/content/jsonLd/0/title"
+        },
+        "method": "jsonld",
+        "extractor": {
+          "name": "coredrill.jobposting",
+          "version": "1.0.0"
+        },
+        "capturedAt": "2026-08-24T14:03:05.123Z",
+        "confidence": 0.98,
+        "sourceExcerpt": "Senior Platform Engineer"
+      }
+    },
+    {
+      "specVersion": 1,
+      "id": "019539af-7c13-7dd4-8b54-395d8f3fe4c4",
+      "fieldName": "title",
+      "value": "Principal Platform Engineer",
+      "rawValue": "Principal Platform Engineer",
+      "provenance": {
+        "specVersion": 1,
+        "source": {
+          "sourceType": "capture",
+          "sourceId": "019539af-7c11-7dd4-8b54-395d8f3fe4c2",
+          "pointer": "/content/selectedText"
+        },
+        "method": "user",
+        "extractor": {
+          "name": "coredrill.manual",
+          "version": "1.0.0"
+        },
+        "capturedAt": "2026-08-24T14:05:00.000Z",
+        "confidence": 1,
+        "sourceExcerpt": "Principal Platform Engineer"
+      },
+      "userConfirmation": {
+        "specVersion": 1,
+        "id": "019539af-7c14-7dd4-8b54-395d8f3fe4c5",
+        "actor": "user",
+        "confirmedAt": "2026-08-24T14:05:01.000Z",
+        "confirmedValueHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    },
+    {
+      "specVersion": 1,
+      "id": "019539af-7c15-7dd4-8b54-395d8f3fe4c6",
+      "fieldName": "title",
+      "value": "Platform Engineering Lead",
+      "provenance": {
+        "specVersion": 1,
+        "source": {
+          "sourceType": "capture",
+          "sourceId": "019539af-7c11-7dd4-8b54-395d8f3fe4c2",
+          "pointer": "/content/readableText"
+        },
+        "method": "llm",
+        "extractor": {
+          "name": "coredrill.normalizer",
+          "version": "1.0.0"
+        },
+        "capturedAt": "2026-08-24T14:05:02.000Z",
+        "confidence": 0.55,
+        "sourceExcerpt": "lead our platform engineering work"
+      }
+    }
+  ],
+  "conflicts": [
+    {
+      "specVersion": 1,
+      "id": "019539af-7c16-7dd4-8b54-395d8f3fe4c7",
+      "fieldName": "title",
+      "candidateIds": [
+        "019539af-7c12-7dd4-8b54-395d8f3fe4c3",
+        "019539af-7c13-7dd4-8b54-395d8f3fe4c4"
+      ],
+      "status": "unresolved"
+    },
+    {
+      "specVersion": 1,
+      "id": "019539af-7c17-7dd4-8b54-395d8f3fe4c8",
+      "fieldName": "title",
+      "candidateIds": [
+        "019539af-7c12-7dd4-8b54-395d8f3fe4c3",
+        "019539af-7c13-7dd4-8b54-395d8f3fe4c4"
+      ],
+      "status": "resolved",
+      "resolution": {
+        "selectedCandidateId": "019539af-7c13-7dd4-8b54-395d8f3fe4c4",
+        "resolvedAt": "2026-08-24T14:05:03.000Z",
+        "resolvedBy": "user",
+        "reason": "Confirmed against the visible page heading."
+      }
+    }
+  ]
+}

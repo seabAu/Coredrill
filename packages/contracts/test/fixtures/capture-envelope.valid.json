@@ -1,0 +1,63 @@
+{
+  "specVersion": 1,
+  "id": "019539af-7c11-7dd4-8b54-395d8f3fe4c2",
+  "capturedAt": "2026-08-24T14:03:05.123Z",
+  "expiresAt": "2026-08-31T14:03:05.123Z",
+  "captureMethod": "extension",
+  "sender": {
+    "kind": "browser_extension",
+    "id": "abcdefghijklmnopabcdefghijklmnop"
+  },
+  "sequence": 42,
+  "nonce": "abcdefghijklmnopqrstuv",
+  "source": {
+    "url": "https://jobs.example.test/openings/42?source=careers",
+    "canonicalUrl": "https://jobs.example.test/openings/42",
+    "pageTitle": "Senior Platform Engineer — Example Systems",
+    "sourceKind": "official_careers_page",
+    "externalId": "JOB-42"
+  },
+  "content": {
+    "jsonLd": [
+      {
+        "@context": "https://schema.org",
+        "@type": "JobPosting",
+        "title": "Senior Platform Engineer"
+      }
+    ],
+    "selectedText": "Senior Platform Engineer\nExample Systems",
+    "readableText": "Example Systems is seeking a Senior Platform Engineer.",
+    "sanitizedHtml": "<article><h1>Senior Platform Engineer</h1></article>"
+  },
+  "fieldCandidates": [
+    {
+      "specVersion": 1,
+      "id": "019539af-7c12-7dd4-8b54-395d8f3fe4c3",
+      "fieldName": "title",
+      "value": "Senior Platform Engineer",
+      "rawValue": " Senior Platform Engineer ",
+      "provenance": {
+        "specVersion": 1,
+        "source": {
+          "sourceType": "capture",
+          "sourceId": "019539af-7c11-7dd4-8b54-395d8f3fe4c2",
+          "pointer": "/content/jsonLd/0/title"
+        },
+        "method": "jsonld",
+        "extractor": {
+          "name": "coredrill.jobposting",
+          "version": "1.0.0"
+        },
+        "capturedAt": "2026-08-24T14:03:05.123Z",
+        "confidence": 0.98,
+        "sourceExcerpt": "Senior Platform Engineer",
+        "licenseNote": "Synthetic fixture; no third-party content."
+      }
+    }
+  ],
+  "captureClient": {
+    "name": "coredrill.extension",
+    "version": "0.1.0"
+  },
+  "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+}

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "inventoryId": "JW-DI-001",
-  "version": "1.1.0",
-  "reviewedAt": "2026-08-24T06:27:12Z",
+  "version": "1.2.0",
+  "reviewedAt": "2026-08-24T06:57:27Z",
   "scope": {
     "included": [
       "Pinned Node.js, pnpm, and Rust foundation toolchains",
@@ -17,7 +17,7 @@
   },
   "lockfile": {
     "path": "pnpm-lock.yaml",
-    "sha256": "c729212ca5ca8b8486f887f4fb8f66cad22916d67f5bb950c3ccaea730e9c3cf"
+    "sha256": "23f27418bee651e48aa09cb7c10fb55b3ac67b2f725dae84d82ae4c44a7e9e07"
   },
   "toolchains": [
     {
@@ -232,14 +232,28 @@
       "repository": "https://github.com/vitest-dev/vitest",
       "metadataSource": "https://registry.npmjs.org/vitest/4.1.11",
       "knownAdvisories": []
+    },
+    {
+      "manifest": "packages/contracts/package.json",
+      "dependencyType": "dependencies",
+      "name": "zod",
+      "version": "4.4.3",
+      "upstreamLatest": "4.4.3",
+      "selectionStatus": "current",
+      "license": "MIT",
+      "maintainers": ["colinhacks"],
+      "repository": "https://github.com/colinhacks/zod",
+      "metadataSource": "https://registry.npmjs.org/zod/4.4.3",
+      "knownAdvisories": [],
+      "selectionNote": "The contracts package uses Zod's stable validation and toJSONSchema APIs. It does not rely on the experimental fromJSONSchema API."
     }
   ],
   "advisoryReview": {
     "command": "pnpm audit --json",
     "source": "https://pnpm.io/cli/audit",
-    "reviewedAt": "2026-08-24T06:27:12Z",
-    "lockfileSha256": "c729212ca5ca8b8486f887f4fb8f66cad22916d67f5bb950c3ccaea730e9c3cf",
-    "resolvedDependencyCount": 334,
+    "reviewedAt": "2026-08-24T06:57:27Z",
+    "lockfileSha256": "23f27418bee651e48aa09cb7c10fb55b3ac67b2f725dae84d82ae4c44a7e9e07",
+    "resolvedDependencyCount": 335,
     "optionalDependencyCount": 35,
     "vulnerabilities": {
       "info": 0,
@@ -251,8 +265,8 @@
   },
   "licenseReview": {
     "command": "pnpm check:licenses",
-    "reviewedAt": "2026-08-24T06:27:12Z",
-    "lockfileSha256": "c729212ca5ca8b8486f887f4fb8f66cad22916d67f5bb950c3ccaea730e9c3cf",
+    "reviewedAt": "2026-08-24T06:57:27Z",
+    "lockfileSha256": "23f27418bee651e48aa09cb7c10fb55b3ac67b2f725dae84d82ae4c44a7e9e07",
     "resolvedPackageRecords": 301,
     "result": "pass",
     "note": "License records and advisory dependency counts use different tool scopes and are not expected to match."

@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-24  
 Current milestone: Phase 0 — foundations and risk retirement  
-Current work item: `DOM-001` through `DOM-002` are proven locally and in hosted Foundation CI
-Next recommended slice: `DOM-003` through `DOM-004` — capture-envelope and provenance contracts after the domain foundation is proven
+Current work item: `DOM-003` through `DOM-004` are proven locally; hosted Foundation CI proof is pending
+Next recommended slice: `DOM-005` through `DOM-006` — portable-archive and database-port contracts after this slice is proven
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `DOM-003` through `DOM-004` — capture-envelope and pro
 | Field | Value |
 |---|---|
 | Milestone | Phase 0 |
-| Item range | `DOM-001` through `DOM-002` |
+| Item range | `DOM-003` through `DOM-004` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-24 |
-| Expected proof | Unit/property/transition tests and [domain-foundations verification](../../proof/domain-foundations-verification.md) |
-| Blocker | None for this slice; the independent `FND-001` private-reporting-route blocker remains open below |
-| Next handoff | Begin `DOM-003` through `DOM-004` after this slice is proven; close `FND-001` independently when the owner publishes both private reporting routes |
+| Expected proof | Round-trip/invalid fixtures, contract examples/tests, generated-schema drift check, and [capture/provenance contracts verification](../../proof/capture-provenance-contracts-verification.md) |
+| Blocker | No implementation blocker; hosted Foundation CI proof is pending, and the independent `FND-001` private-reporting-route blocker remains open below |
+| Next handoff | Push and record green hosted CI, then begin `DOM-005` through `DOM-006`; close `FND-001` independently when the owner publishes both private reporting routes |
 
 ## Milestone status
 
@@ -79,8 +79,8 @@ Next recommended slice: `DOM-003` through `DOM-004` — capture-envelope and pro
 
 - [x] **DOM-001** Define branded IDs, date-only/instant/time-zone types, money/rate units, URL, source reference, and confidence value objects. — Proof: [unit/property tests and verification report](../../proof/domain-foundations-verification.md#dom-001-value-object-proof)
 - [x] **DOM-002** Define status semantic categories and validated custom-stage mapping. — Proof: [category-pair and guarded-transition tests](../../proof/domain-foundations-verification.md#dom-002-status-proof)
-- [ ] **DOM-003** Define versioned `CaptureEnvelope` JSON Schema and generated TypeScript/Zod boundary validator. — Proof: _round-trip/invalid fixtures_
-- [ ] **DOM-004** Define field candidate/provenance/conflict/user-confirmation contracts. — Proof: _contract examples + tests_
+- [x] **DOM-003** Define versioned `CaptureEnvelope` JSON Schema and generated TypeScript/Zod boundary validator. — Proof: [round-trip/invalid fixtures, size validation, and schema-drift gate](../../proof/capture-provenance-contracts-verification.md#dom-003-capture-envelope-proof)
+- [x] **DOM-004** Define field candidate/provenance/conflict/user-confirmation contracts. — Proof: [contract examples and tests](../../proof/capture-provenance-contracts-verification.md#dom-004-evidence-contract-proof)
 - [ ] **DOM-005** Define portable-archive manifest and checksum contract. — Proof: _schema + sample manifest_
 - [ ] **DOM-006** Define `DatabasePort`, repository contracts, and transaction semantics. — Proof: _contract test harness_
 - [ ] **DOM-007** Define `ExtractionPort`, `AiPort`, `LaborDataPort`, `DocumentPort`, and deferred `SyncPort`. — Proof: _public API review_

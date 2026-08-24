@@ -8,14 +8,19 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    }
+    },
+    "./schemas/capture-envelope.v1.json": "./schemas/capture-envelope.v1.schema.json"
   },
   "files": [
-    "dist"
+    "dist",
+    "schemas"
   ],
   "scripts": {
     "build": "tsc -b",
-    "typecheck": "tsc -p tsconfig.json --noEmit --pretty false --tsBuildInfoFile .turbo/typecheck.tsbuildinfo",
+    "typecheck": "tsc -p tsconfig.json --noEmit --pretty false --tsBuildInfoFile .turbo/typecheck.tsbuildinfo && tsc -p tsconfig.test.json --noEmit --pretty false --tsBuildInfoFile .turbo/typecheck-test.tsbuildinfo",
     "lint": "eslint src --max-warnings 0"
+  },
+  "dependencies": {
+    "zod": "4.4.3"
   }
 }

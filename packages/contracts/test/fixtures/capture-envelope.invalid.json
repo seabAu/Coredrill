@@ -1,0 +1,52 @@
+[
+  {
+    "name": "legacy string spec version",
+    "path": ["specVersion"],
+    "value": "1.0"
+  },
+  {
+    "name": "unsafe source scheme",
+    "path": ["source", "url"],
+    "value": "javascript:alert(1)"
+  },
+  {
+    "name": "credentialed source URL",
+    "path": ["source", "canonicalUrl"],
+    "value": "https://user:secret@jobs.example.test/openings/42"
+  },
+  {
+    "name": "non-UUIDv7 capture ID",
+    "path": ["id"],
+    "value": "019539af-7c11-4dd4-8b54-395d8f3fe4c2"
+  },
+  {
+    "name": "unbounded sequence",
+    "path": ["sequence"],
+    "value": 9007199254740992
+  },
+  {
+    "name": "short nonce",
+    "path": ["nonce"],
+    "value": "short"
+  },
+  {
+    "name": "malformed content hash",
+    "path": ["contentHash"],
+    "value": "not-a-sha256"
+  },
+  {
+    "name": "candidate without provenance pointer",
+    "path": ["fieldCandidates", "0", "provenance", "source", "pointer"],
+    "delete": true
+  },
+  {
+    "name": "unknown top-level property",
+    "path": ["cookies"],
+    "value": "must never enter capture"
+  },
+  {
+    "name": "missing required candidate collection",
+    "path": ["fieldCandidates"],
+    "delete": true
+  }
+]
