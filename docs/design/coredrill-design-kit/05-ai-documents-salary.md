@@ -194,6 +194,8 @@ Requires SSO, quotas/billing/abuse controls, provider data-processing policy, de
 - Filename templates are sanitized and collision-safe.
 - Export metadata can include job/document/version IDs locally but never hidden sensitive content in the public file.
 
+**Phase 0 evidence (2026-08-24):** [ADR-0006](../../adr/0006-adopt-tiptap-local-document-baseline.md) accepts the restricted local editing/import/export architecture. The checked-in synthetic DOCX and tagged PDF outputs derive from the same validated IR, render to matching unclipped pages, and retain semantic headings, lists, links, language, and controlled metadata without tables, text boxes, hidden sensitive content, hosted conversion, or implicit OCR. See [document editor/export verification](../../proof/document-editor-export-verification.md).
+
 ## Salary intelligence
 
 ### Source order
@@ -253,4 +255,3 @@ Curate synthetic/redacted jobs and career profiles with known evidence. Metrics:
 - human acceptance/edit distance by purpose.
 
 Run template-only baseline and each supported model. Model changes fail closed if factuality/sensitive-answer gates regress.
-

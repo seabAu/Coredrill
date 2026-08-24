@@ -165,11 +165,12 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
 
 ### D-027 — Tiptap open-source core for structured editing
 
-- **Status:** Provisional
-- **Decision:** Use a restricted Tiptap schema and locally owned import/export adapters.
-- **Why:** Headless React integration and structured/versionable content.
-- **Gate:** Round-trip, accessibility, paste sanitation, large documents, PDF/DOCX export, license check.
-- **Fallback:** Lexical or a simpler Markdown/textarea editor if the spike fails.
+- **Status:** Accepted
+- **Decision:** Use Tiptap open-source core 3.30.2 behind Coredrill's restricted schema and version-1 canonical document IR; use locally owned Mammoth/PDF.js/text proposal importers, `docx` 9.7.1 for controlled DOCX output, and semantic browser/Tauri print HTML/CSS for tagged PDF output.
+- **Why:** Real-browser proof passes deterministic round-trip, hostile-paste sanitation, keyboard semantics, source-mapped local imports, scanned-PDF handling, a 2,100-block synthetic 100-page workload, tagged PDF structure, controlled DOCX packaging, and one-page visual parity for the final exports. Exact-pinned dependencies pass the repository advisory/license gates without any hosted editor, conversion, AI, or collaboration requirement.
+- **Revisit when:** The schema expands materially; representative assistive-technology/user testing or the supported Word/PDF matrix exposes a blocking issue; a dependency adds unacceptable security, license, cloud, or maintenance risk; or another editor proves materially better behind the same versioned IR.
+- **Fallback:** Lexical or a simpler Markdown/textarea editor behind the same canonical IR if an accepted-boundary regression cannot be isolated.
+- **Phase 0 evidence (2026-08-24):** See [ADR-0006](../../adr/0006-adopt-tiptap-local-document-baseline.md), [document editor/export verification](../../proof/document-editor-export-verification.md), the [browser spike report](../../evidence/document-editor-spike-report.md), and the [accessibility smoke report](../../evidence/document-editor-accessibility-smoke.md).
 
 ### D-028 — Python is optional, not baseline
 
@@ -290,6 +291,7 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
 | ----- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
 | Q-002 | Browser support floor | [ADR-0003](../../adr/0003-adopt-browser-storage-support-floor.md) accepts current/previous Chromium-family and Firefox desktop after exact hosted lifecycle proof, with Safari/mobile and missing-capability browsers explicitly unsupported until their real rows pass; portable export is the fallback. | 2026-08-24 |
 | Q-003 | Native SQLite adapter  | [ADR-0004](../../adr/0004-adopt-tauri-rusqlite-native-boundary.md) accepts the narrow first-party `rusqlite` command layer after shared-contract, confinement, recovery, secure-store, package, and cross-platform dependency proof. The official Tauri SQL plugin is not selected. Linux native remains diagnostic; the local browser app plus portable export is its supported fallback. | 2026-08-24 |
+| Q-004 | Tiptap suitability | [ADR-0006](../../adr/0006-adopt-tiptap-local-document-baseline.md) accepts restricted Tiptap 3.30.2 behind canonical document IR 1 after round-trip, sanitation, stress, local import/export, rendered pagination, keyboard semantics, advisory, and license proof. | 2026-08-24 |
 | Q-005 | Side panel vs popup fallback | [ADR-0005](../../adr/0005-adopt-wxt-multisurface-extension-baseline.md) accepts Chromium side panel and Firefox sidebar as the primary surfaces, retains a popup fallback on both targets, and keeps checksummed manual export/import as Firefox's supported transfer fallback after exact package and real-browser proof. | 2026-08-24 |
 
 ## Open questions and required evidence
@@ -297,7 +299,6 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
 | ID | Question | Needed evidence | Deadline/gate |
 |---|---|---|---|
 | Q-001 | Coredrill public-identity clearance | Trademark, domain, and marketplace checks for the selected working name; repository availability is proven | Before public landing/store listing |
-| Q-004 | Tiptap suitability | Round-trip/accessibility/export spike | Phase 0 |
 | Q-006 | Exact default pipeline stages | Five-user terminology/usability test | Before Phase 1 UI lock |
 | Q-007 | Browser vault lock/encryption | Threat model and recovery design | Before claiming encrypted browser vault |
 | Q-008 | Local model support floor | Evaluation on realistic consumer hardware | Phase 4 |

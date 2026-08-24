@@ -65,7 +65,7 @@ Phase 0 records exact Node, pnpm, Rust, and OS build prerequisites in `.tool-ver
 | UI primitives | Radix UI primitives with local styled wrappers | Accessibility baseline; avoid cloud/paid dependency |
 | Styling | Tailwind CSS + CSS custom-property tokens | Theme/density/responsive implementation |
 | Icons | Lucide React | One open icon language |
-| Editor | Tiptap open-source core + selected extensions | Restricted schema, versioned JSON, HTML/Markdown adapters |
+| Editor | Tiptap open-source core 3.30.2 + selected extensions | Accepted restricted schema and versioned Coredrill IR; no cloud/collaboration dependency |
 | Charts | Recharts | Small accessible reports; always pair with data table |
 | Dates | date-fns + date-fns-tz | Explicit date-only vs instant/time-zone types in domain |
 | Sanitization | DOMPurify plus plain-text/source-snapshot rules | Defense in depth; raw source never mounted as active HTML |
@@ -136,12 +136,14 @@ Autofill is not part of the baseline capture extension. If added later, it becom
 | PDF text import | `pdfjs-dist`, with page/line provenance and graceful scanned-PDF detection |
 | DOCX import | `mammoth` into a constrained intermediate representation |
 | Plain text/Markdown | Native parse plus strict normalization |
-| Rich editing | Tiptap JSON as editable representation; sanitized export adapters |
-| DOCX export | `docx` or a reviewed equivalent; golden-file and Word/LibreOffice checks |
-| PDF export | Print-focused HTML/CSS through browser/Tauri webview; visual regression checks |
+| Rich editing | Tiptap 3.30.2 JSON as editable adapter representation; canonical content is Coredrill document IR 1 |
+| DOCX export | `docx` 9.7.1 with controlled semantic styles; golden-file and Word/LibreOffice checks |
+| PDF export | Semantic print-focused HTML/CSS through browser/Tauri webview; tagged-output and visual checks |
 | Attachment hashing | Web Crypto in browser; Rust/standard crypto in native boundary |
 
 Imported binary files are untrusted. Enforce size/type limits, do not execute macros, and do not rely only on extensions/MIME declarations. OCR is deferred; scanned files produce an actionable manual/OCR-worker option.
+
+**Phase 0 evidence (2026-08-24):** `EDT-001` through `EDT-006` accept this exact local document baseline after canonical-schema, round-trip, hostile-paste, keyboard semantics, 100-page stress, source-mapped DOCX/PDF/text import, scanned-file, controlled DOCX, tagged PDF, rendered pagination, advisory, and license proof. See [ADR-0006](../../adr/0006-adopt-tiptap-local-document-baseline.md) and [document editor/export verification](../../proof/document-editor-export-verification.md).
 
 ## 9. Extraction and source connectors
 

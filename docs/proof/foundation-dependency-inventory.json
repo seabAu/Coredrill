@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "inventoryId": "JW-DI-001",
-  "version": "1.10.0",
-  "reviewedAt": "2026-08-24T17:51:49Z",
+  "version": "1.12.0",
+  "reviewedAt": "2026-08-24T20:05:31Z",
   "scope": {
     "included": [
       "Pinned Node.js, pnpm, and Rust foundation toolchains",
@@ -17,7 +17,7 @@
   },
   "lockfile": {
     "path": "pnpm-lock.yaml",
-    "sha256": "58340bbd70a44324afa62d80e902cffb10254a54b940055b2eb3893a4ec79d11"
+    "sha256": "f4f43ec75830e3e6cb05da2ee0d08655c7e2b608c805aeda876bed0395cff172"
   },
   "toolchains": [
     {
@@ -396,6 +396,131 @@
       "selectionNote": "The contracts package uses Zod's stable validation and toJSONSchema APIs. It does not rely on the experimental fromJSONSchema API."
     },
     {
+      "manifest": "packages/documents/package.json",
+      "dependencyType": "dependencies",
+      "name": "@tiptap/core",
+      "version": "3.30.2",
+      "upstreamLatest": "3.30.3",
+      "selectionStatus": "release-age-approved",
+      "license": "MIT",
+      "maintainers": [
+        "arnaugomeztiptap",
+        "patrickbaber",
+        "timoisik",
+        "_bdbch",
+        "svenadlung",
+        "tiptap-bot"
+      ],
+      "repository": "https://github.com/ueberdosis/tiptap",
+      "metadataSource": "https://registry.npmjs.org/@tiptap%2fcore/3.30.2",
+      "knownAdvisories": [],
+      "selectionNote": "Tiptap 3.30.2 was published at 2026-08-18T19:27:36Z and satisfies minimumReleaseAge: 1440; 3.30.3 was published at 2026-08-24T03:26:46Z and remained inside minimumReleaseAge at review time."
+    },
+    {
+      "manifest": "packages/documents/package.json",
+      "dependencyType": "dependencies",
+      "name": "@tiptap/pm",
+      "version": "3.30.2",
+      "upstreamLatest": "3.30.3",
+      "selectionStatus": "release-age-approved",
+      "license": "MIT",
+      "maintainers": [
+        "arnaugomeztiptap",
+        "patrickbaber",
+        "timoisik",
+        "_bdbch",
+        "svenadlung",
+        "tiptap-bot"
+      ],
+      "repository": "https://github.com/ueberdosis/tiptap",
+      "metadataSource": "https://registry.npmjs.org/@tiptap%2fpm/3.30.2",
+      "knownAdvisories": [],
+      "selectionNote": "The ProseMirror integration is pinned to the same reviewed Tiptap 3.30.2 release as the core and starter-kit packages."
+    },
+    {
+      "manifest": "packages/documents/package.json",
+      "dependencyType": "dependencies",
+      "name": "@tiptap/starter-kit",
+      "version": "3.30.2",
+      "upstreamLatest": "3.30.3",
+      "selectionStatus": "release-age-approved",
+      "license": "MIT",
+      "maintainers": [
+        "arnaugomeztiptap",
+        "patrickbaber",
+        "timoisik",
+        "_bdbch",
+        "svenadlung",
+        "tiptap-bot"
+      ],
+      "repository": "https://github.com/ueberdosis/tiptap",
+      "metadataSource": "https://registry.npmjs.org/@tiptap%2fstarter-kit/3.30.2",
+      "knownAdvisories": [],
+      "selectionNote": "Only the open-source starter-kit extensions admitted by Coredrill's restricted document schema are enabled; unsupported blocks and marks remain disabled."
+    },
+    {
+      "manifest": "packages/documents/package.json",
+      "dependencyType": "dependencies",
+      "name": "docx",
+      "version": "9.7.1",
+      "upstreamLatest": "9.7.1",
+      "selectionStatus": "current",
+      "license": "MIT",
+      "maintainers": ["dolanmiu"],
+      "repository": "https://github.com/dolanmiu/docx",
+      "metadataSource": "https://registry.npmjs.org/docx/9.7.1",
+      "knownAdvisories": [],
+      "selectionNote": "Current local OOXML writer, published 2026-05-27T15:47:15.479Z. Coredrill maps only validated document IR into controlled semantic heading, paragraph, list, mark, hyperlink, language, and metadata constructs; it does not use remote conversion or execute imported office content."
+    },
+    {
+      "manifest": "packages/documents/package.json",
+      "dependencyType": "dependencies",
+      "name": "mammoth",
+      "version": "1.12.1",
+      "upstreamLatest": "1.12.1",
+      "selectionStatus": "current",
+      "license": "BSD-2-Clause",
+      "maintainers": ["mwilliamson"],
+      "repository": "https://github.com/mwilliamson/mammoth.js",
+      "metadataSource": "https://registry.npmjs.org/mammoth/1.12.1",
+      "knownAdvisories": [],
+      "selectionNote": "Current browser-capable DOCX parser. Coredrill disables external file access, omits images, treats Mammoth HTML as untrusted, and maps only whitelisted detached nodes into the canonical IR."
+    },
+    {
+      "manifest": "packages/documents/package.json",
+      "dependencyType": "dependencies",
+      "name": "pdfjs-dist",
+      "version": "6.2.108",
+      "upstreamLatest": "6.2.108",
+      "selectionStatus": "current",
+      "license": "Apache-2.0",
+      "maintainers": [
+        "yurydelendik",
+        "pdfjsbot",
+        "brendandahl",
+        "calixteman",
+        "pdfjs-release-automation"
+      ],
+      "repository": "https://github.com/mozilla/pdf.js",
+      "metadataSource": "https://registry.npmjs.org/pdfjs-dist/6.2.108",
+      "knownAdvisories": [],
+      "selectionNote": "Current Mozilla PDF.js distribution, used locally with a bundled worker for page-scoped text extraction; OCR remains separate, explicit, and optional."
+    },
+    {
+      "manifest": "packages/documents/package.json",
+      "dependencyType": "dependencies",
+      "name": "zod",
+      "version": "4.4.3",
+      "upstreamLatest": "4.4.3",
+      "selectionStatus": "current",
+      "license": "MIT",
+      "maintainers": ["colinhacks"],
+      "repository": "https://github.com/colinhacks/zod",
+      "metadataSource": "https://registry.npmjs.org/zod/4.4.3",
+      "knownAdvisories": [],
+      "selectionNote": "The documents package uses the same exact Zod version as contracts for strict IR, source-map, import-proposal, and JSON Schema validation."
+    },
+    {
       "manifest": "packages/storage-browser/package.json",
       "dependencyType": "dependencies",
       "name": "@sqlite.org/sqlite-wasm",
@@ -677,10 +802,10 @@
   "advisoryReview": {
     "command": "pnpm audit --json",
     "source": "https://pnpm.io/cli/audit",
-    "reviewedAt": "2026-08-24T17:51:49Z",
-    "lockfileSha256": "58340bbd70a44324afa62d80e902cffb10254a54b940055b2eb3893a4ec79d11",
-    "resolvedDependencyCount": 459,
-    "optionalDependencyCount": 47,
+    "reviewedAt": "2026-08-24T20:05:31Z",
+    "lockfileSha256": "f4f43ec75830e3e6cb05da2ee0d08655c7e2b608c805aeda876bed0395cff172",
+    "resolvedDependencyCount": 548,
+    "optionalDependencyCount": 59,
     "vulnerabilities": {
       "info": 0,
       "low": 0,
@@ -691,9 +816,9 @@
   },
   "licenseReview": {
     "command": "pnpm check:licenses",
-    "reviewedAt": "2026-08-24T17:51:49Z",
-    "lockfileSha256": "58340bbd70a44324afa62d80e902cffb10254a54b940055b2eb3893a4ec79d11",
-    "resolvedPackageRecords": 348,
+    "reviewedAt": "2026-08-24T20:05:31Z",
+    "lockfileSha256": "f4f43ec75830e3e6cb05da2ee0d08655c7e2b608c805aeda876bed0395cff172",
+    "resolvedPackageRecords": 351,
     "result": "pass",
     "note": "License records and advisory dependency counts use different tool scopes and are not expected to match."
   },

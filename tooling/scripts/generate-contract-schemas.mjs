@@ -6,6 +6,7 @@ import { format, resolveConfig } from "prettier";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const contractsEntry = path.join(repositoryRoot, "packages/contracts/dist/index.js");
+const documentsEntry = path.join(repositoryRoot, "packages/documents/dist/index.js");
 const generatedSchemas = [
   {
     exportName: "captureEnvelopeV1JsonSchema",
@@ -21,6 +22,12 @@ const generatedSchemas = [
   {
     exportName: "diagnosticEventV1JsonSchema",
     path: path.join(repositoryRoot, "packages/contracts/schemas/diagnostic-event.v1.schema.json"),
+    source: "contracts",
+  },
+  {
+    exportName: "documentIrV1JsonSchema",
+    path: path.join(repositoryRoot, "packages/documents/schemas/document-ir.v1.schema.json"),
+    source: "documents",
   },
 ];
 
@@ -60,9 +67,11 @@ async function checkSchema(schemaPath, expected) {
 }
 
 const contracts = await import(pathToFileURL(contractsEntry).href);
+const documents = await import(pathToFileURL(documentsEntry).href);
+const sources = { contracts, documents };
 let failed = false;
 for (const generatedSchema of generatedSchemas) {
-  const schema = contracts[generatedSchema.exportName];
+  const schema = sources[generatedSchema.source ?? "contracts"][generatedSchema.exportName];
   if (schema === undefined)
     throw new Error(`Missing contracts export ${generatedSchema.exportName}.`);
   const expected = await generatedSchemaText(schema, generatedSchema.path);

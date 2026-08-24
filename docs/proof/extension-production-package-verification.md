@@ -100,6 +100,10 @@ The artifact was downloaded after upload and independently re-inspected. Both pr
 
 The retained browser report is bound to commit `57bab5b6a6e88f49fc6f2a9b563b6a87300c471c` and run `32764058550`. Chromium `149.0.7827.55` proved durable-before-ack receipt, attempt-2 retry, and wrong-origin/oversize/wrong-ID/replay rejection. Firefox `151.0` proved checksummed manual import, corrupt-checksum rejection, idempotent duplicate handling, and SQLite schema version 2. The durable machine record is [extension-production-packages.json](artifacts/extension-production-packages.json).
 
+The final decision/checklist closure commit `cfdab913d3ca936cf67acbab0c357e898d40d9c1`
+also completed [Foundation CI run 32765727022](https://github.com/seabAu/Coredrill/actions/runs/32765727022)
+successfully on every required job, confirming the accepted records against a clean checkout.
+
 ## Decision closure
 
 ADR-0005 is Accepted. `D-023` is promoted to Accepted with WXT `0.21.4`, Chromium side panel, Firefox sidebar, popup fallback on both targets, exact-origin Chromium pull/ack transfer, checksummed Firefox manual fallback, and exact reproducible store/source packages. `Q-005` is resolved and `EXT-007`/`EXT-008` are complete. Public identity clearance, owner-selected production origin, store submission, credentials, listing copy, signing, and release distribution remain separate gates.

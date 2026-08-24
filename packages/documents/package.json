@@ -8,6 +8,18 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./browser": {
+      "types": "./dist/browser.d.ts",
+      "default": "./dist/browser.js"
+    },
+    "./editor": {
+      "types": "./dist/editor.d.ts",
+      "default": "./dist/editor.js"
+    },
+    "./export": {
+      "types": "./dist/export.d.ts",
+      "default": "./dist/export.js"
     }
   },
   "files": [
@@ -15,7 +27,16 @@
   ],
   "scripts": {
     "build": "tsc -b",
-    "typecheck": "tsc -p tsconfig.json --noEmit --pretty false --tsBuildInfoFile .turbo/typecheck.tsbuildinfo",
+    "typecheck": "tsc -p tsconfig.json --noEmit --pretty false --tsBuildInfoFile .turbo/typecheck.tsbuildinfo && tsc -p tsconfig.test.json --noEmit --pretty false --tsBuildInfoFile .turbo/typecheck-test.tsbuildinfo",
     "lint": "eslint src --max-warnings 0"
+  },
+  "dependencies": {
+    "@tiptap/core": "3.30.2",
+    "@tiptap/pm": "3.30.2",
+    "@tiptap/starter-kit": "3.30.2",
+    "docx": "9.7.1",
+    "mammoth": "1.12.1",
+    "pdfjs-dist": "6.2.108",
+    "zod": "4.4.3"
   }
 }

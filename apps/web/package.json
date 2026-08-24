@@ -7,12 +7,13 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite",
-    "prebuild": "pnpm --filter @coredrill/storage-browser build && pnpm --filter @coredrill/extension-bridge build",
-    "predev": "pnpm --filter @coredrill/storage-browser build && pnpm --filter @coredrill/extension-bridge build",
+    "prebuild": "pnpm --filter @coredrill/storage-browser build && pnpm --filter @coredrill/extension-bridge build && pnpm --filter @coredrill/documents build",
+    "predev": "pnpm --filter @coredrill/storage-browser build && pnpm --filter @coredrill/extension-bridge build && pnpm --filter @coredrill/documents build",
     "typecheck": "tsc -p tsconfig.json --noEmit --pretty false --tsBuildInfoFile .turbo/typecheck.tsbuildinfo",
     "lint": "eslint src vite.config.mjs --max-warnings 0"
   },
   "dependencies": {
+    "@coredrill/documents": "workspace:*",
     "@coredrill/extension-bridge": "workspace:*",
     "@coredrill/storage-browser": "workspace:*",
     "@coredrill/storage-core": "workspace:*"

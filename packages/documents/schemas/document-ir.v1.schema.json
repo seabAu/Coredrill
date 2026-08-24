@@ -1,0 +1,306 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://coredrill.local/schemas/document-ir.v1.schema.json",
+  "type": "object",
+  "properties": {
+    "specVersion": { "type": "number", "const": 1 },
+    "document": {
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "const": "doc" },
+        "content": {
+          "maxItems": 10000,
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "type": { "type": "string", "const": "paragraph" },
+                  "content": {
+                    "maxItems": 10000,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": { "type": "string", "const": "text" },
+                        "text": { "type": "string", "minLength": 1, "maxLength": 100000 },
+                        "marks": {
+                          "maxItems": 3,
+                          "type": "array",
+                          "items": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": { "type": { "type": "string", "const": "bold" } },
+                                "required": ["type"],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": { "type": { "type": "string", "const": "italic" } },
+                                "required": ["type"],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": { "type": "string", "const": "link" },
+                                  "attrs": {
+                                    "type": "object",
+                                    "properties": {
+                                      "href": {
+                                        "type": "string",
+                                        "maxLength": 2048,
+                                        "pattern": "^(?:https?:|mailto:)"
+                                      }
+                                    },
+                                    "required": ["href"],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "required": ["type", "attrs"],
+                                "additionalProperties": false
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "required": ["type", "text"],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": ["type"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": { "type": "string", "const": "heading" },
+                  "attrs": {
+                    "type": "object",
+                    "properties": {
+                      "level": {
+                        "anyOf": [
+                          { "type": "number", "const": 1 },
+                          { "type": "number", "const": 2 },
+                          { "type": "number", "const": 3 }
+                        ]
+                      }
+                    },
+                    "required": ["level"],
+                    "additionalProperties": false
+                  },
+                  "content": {
+                    "maxItems": 10000,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": { "type": "string", "const": "text" },
+                        "text": { "type": "string", "minLength": 1, "maxLength": 100000 },
+                        "marks": {
+                          "maxItems": 3,
+                          "type": "array",
+                          "items": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": { "type": { "type": "string", "const": "bold" } },
+                                "required": ["type"],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": { "type": { "type": "string", "const": "italic" } },
+                                "required": ["type"],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": { "type": "string", "const": "link" },
+                                  "attrs": {
+                                    "type": "object",
+                                    "properties": {
+                                      "href": {
+                                        "type": "string",
+                                        "maxLength": 2048,
+                                        "pattern": "^(?:https?:|mailto:)"
+                                      }
+                                    },
+                                    "required": ["href"],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "required": ["type", "attrs"],
+                                "additionalProperties": false
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "required": ["type", "text"],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": ["type", "attrs"],
+                "additionalProperties": false
+              },
+              { "$ref": "#/$defs/__schema0" },
+              {
+                "type": "object",
+                "properties": {
+                  "type": { "type": "string", "const": "orderedList" },
+                  "attrs": {
+                    "type": "object",
+                    "properties": {
+                      "start": { "type": "integer", "minimum": 1, "maximum": 1000000 }
+                    },
+                    "required": ["start"],
+                    "additionalProperties": false
+                  },
+                  "content": {
+                    "minItems": 1,
+                    "maxItems": 10000,
+                    "type": "array",
+                    "items": { "$ref": "#/$defs/__schema1" }
+                  }
+                },
+                "required": ["type", "content"],
+                "additionalProperties": false
+              }
+            ]
+          }
+        }
+      },
+      "required": ["type", "content"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["specVersion", "document"],
+  "additionalProperties": false,
+  "title": "Coredrill DocumentIntermediateRepresentationV1",
+  "description": "A bounded canonical document model for local editing, source-mapped imports, and deterministic export.",
+  "x-coredrill-maxBlocks": 10000,
+  "x-coredrill-maxCharacters": 2000000,
+  "$defs": {
+    "__schema0": {
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "const": "bulletList" },
+        "content": {
+          "minItems": 1,
+          "maxItems": 10000,
+          "type": "array",
+          "items": { "$ref": "#/$defs/__schema1" }
+        }
+      },
+      "required": ["type", "content"],
+      "additionalProperties": false
+    },
+    "__schema1": {
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "const": "listItem" },
+        "content": {
+          "minItems": 1,
+          "maxItems": 10000,
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "type": { "type": "string", "const": "paragraph" },
+                  "content": {
+                    "maxItems": 10000,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": { "type": "string", "const": "text" },
+                        "text": { "type": "string", "minLength": 1, "maxLength": 100000 },
+                        "marks": {
+                          "maxItems": 3,
+                          "type": "array",
+                          "items": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": { "type": { "type": "string", "const": "bold" } },
+                                "required": ["type"],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": { "type": { "type": "string", "const": "italic" } },
+                                "required": ["type"],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": { "type": "string", "const": "link" },
+                                  "attrs": {
+                                    "type": "object",
+                                    "properties": {
+                                      "href": {
+                                        "type": "string",
+                                        "maxLength": 2048,
+                                        "pattern": "^(?:https?:|mailto:)"
+                                      }
+                                    },
+                                    "required": ["href"],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "required": ["type", "attrs"],
+                                "additionalProperties": false
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "required": ["type", "text"],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": ["type"],
+                "additionalProperties": false
+              },
+              { "$ref": "#/$defs/__schema0" },
+              {
+                "type": "object",
+                "properties": {
+                  "type": { "type": "string", "const": "orderedList" },
+                  "attrs": {
+                    "type": "object",
+                    "properties": {
+                      "start": { "type": "integer", "minimum": 1, "maximum": 1000000 }
+                    },
+                    "required": ["start"],
+                    "additionalProperties": false
+                  },
+                  "content": {
+                    "minItems": 1,
+                    "maxItems": 10000,
+                    "type": "array",
+                    "items": { "$ref": "#/$defs/__schema1" }
+                  }
+                },
+                "required": ["type", "content"],
+                "additionalProperties": false
+              }
+            ]
+          }
+        }
+      },
+      "required": ["type", "content"],
+      "additionalProperties": false
+    }
+  }
+}

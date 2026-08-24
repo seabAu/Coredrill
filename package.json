@@ -19,6 +19,7 @@
     "test:unit": "vitest run --exclude packages/storage-native/test/native-database.test.ts",
     "test:coverage": "vitest run --coverage --exclude packages/storage-native/test/native-database.test.ts",
     "test:storage-browser": "playwright test --config=playwright.storage.config.mjs",
+    "test:documents-browser": "playwright test --config=playwright.documents.config.mjs",
     "test:storage-firefox-webdriver": "node tooling/scripts/run-storage-firefox-webdriver.mjs",
     "test:extension-transfer": "playwright test --config=playwright.extension.config.mjs",
     "test:storage-native": "pnpm --filter @coredrill/storage-core build && pnpm --filter @coredrill/desktop test:native-core && pnpm --filter @coredrill/desktop build:native-probe && vitest run packages/storage-native/test/native-database.test.ts",
@@ -44,7 +45,7 @@
     "audit:dependencies": "pnpm audit --audit-level=low && cargo audit --file apps/desktop/src-tauri/Cargo.lock",
     "changeset": "changeset",
     "changeset:status": "changeset status",
-    "verify": "pnpm format:check && pnpm check:boundaries && pnpm check:foundation-records && pnpm typecheck && pnpm lint && pnpm test:unit && pnpm test:coverage && pnpm build && pnpm check:extension-build && pnpm check:extension-packages && pnpm test:storage-browser && pnpm test:storage-native && pnpm test:secure-storage && pnpm test:native-archive && pnpm check:contract-schemas && pnpm check:licenses && pnpm check:secrets && pnpm audit:dependencies && pnpm changeset:status"
+    "verify": "pnpm format:check && pnpm check:boundaries && pnpm check:foundation-records && pnpm typecheck && pnpm lint && pnpm test:unit && pnpm test:coverage && pnpm build && pnpm check:extension-build && pnpm check:extension-packages && pnpm test:documents-browser && pnpm test:storage-browser && pnpm test:storage-native && pnpm test:secure-storage && pnpm test:native-archive && pnpm check:contract-schemas && pnpm check:licenses && pnpm check:secrets && pnpm audit:dependencies && pnpm changeset:status"
   },
   "devDependencies": {
     "@changesets/cli": "3.0.1",

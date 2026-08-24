@@ -1,0 +1,39 @@
+{
+  "docx": {
+    "fileName": "synthetic-resume.docx",
+    "blockTypes": [
+      "heading",
+      "paragraph",
+      "heading",
+      "paragraph",
+      "heading",
+      "bulletList",
+      "heading",
+      "paragraph"
+    ],
+    "firstMapping": {
+      "targetPath": "/document/content/0",
+      "sourcePointer": "/word/document.xml#paragraph=1",
+      "sourceExcerpt": "Jordan Rivera"
+    },
+    "requiredText": ["Jordan Rivera", "Reduced research turnaround by 42%"]
+  },
+  "pdf": {
+    "fileName": "synthetic-two-page.pdf",
+    "pageCount": 2,
+    "requiredText": ["Page one evidence line.", "Page two salary source line."],
+    "sourcePointerPrefixes": ["/pages/1/lines/", "/pages/2/lines/"]
+  },
+  "scannedPdf": {
+    "fileName": "synthetic-scanned.pdf",
+    "warning": {
+      "code": "scanned_pdf",
+      "message": "No extractable text was found. This PDF may be scanned. Choose a local OCR tool explicitly or paste the text manually; the original file remains unchanged."
+    }
+  },
+  "text": {
+    "fileName": "synthetic-profile.md",
+    "blockTypes": ["heading", "paragraph", "bulletList"],
+    "sourcePointers": ["/lines/1", "/lines/3", "/lines/5"]
+  }
+}

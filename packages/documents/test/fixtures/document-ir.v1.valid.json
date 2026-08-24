@@ -1,0 +1,57 @@
+{
+  "specVersion": 1,
+  "document": {
+    "type": "doc",
+    "content": [
+      {
+        "type": "heading",
+        "attrs": { "level": 1 },
+        "content": [{ "type": "text", "text": "Jordan Rivera" }]
+      },
+      {
+        "type": "paragraph",
+        "content": [
+          { "type": "text", "text": "Built an " },
+          { "type": "text", "text": "accessible", "marks": [{ "type": "bold" }] },
+          { "type": "text", "text": " local-first workflow." }
+        ]
+      },
+      {
+        "type": "bulletList",
+        "content": [
+          {
+            "type": "listItem",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Portfolio",
+                    "marks": [
+                      { "type": "link", "attrs": { "href": "https://example.test/portfolio" } }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "attrs": { "level": 2 },
+        "content": [{ "type": "text", "text": "Experience" }]
+      },
+      {
+        "type": "paragraph",
+        "content": [
+          {
+            "type": "text",
+            "text": "Coredrill Labs — Product Engineer — 2024–2026"
+          }
+        ]
+      }
+    ]
+  }
+}

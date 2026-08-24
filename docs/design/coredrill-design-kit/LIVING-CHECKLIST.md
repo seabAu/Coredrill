@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-24  
 Current milestone: Phase 0 — foundations and risk retirement  
-Current work item: `EDT-001` through `EDT-003` — restricted editor schema, round-trip sanitation/stress, and representative imports
-Next recommended slice: `EDT-004` through `EDT-006` — accessible exports, assistive-technology smoke proof, and editor architecture decision
+Current work item: `UXR-001` through `UXR-003` — low-fidelity desktop/mobile prototypes, neutral sample vault, and scripted usability tasks
+Next recommended slice: `UXR-004` through `UXR-006` — five-user validation, vocabulary/accessibility synthesis, and Phase 0 decision updates
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `EDT-004` through `EDT-006` — accessible exports, assi
 | Field | Value |
 |---|---|
 | Milestone | Phase 0 |
-| Item range | `EDT-001` through `EDT-003` |
+| Item range | `UXR-001` through `UXR-003` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-24 |
-| Expected proof | Versioned restricted Tiptap schema and fixtures; edit/undo/paste sanitation and 100-page stress report; representative DOCX/PDF/text import goldens with source mapping and actionable failure messages |
+| Expected proof | Low-fidelity desktop/mobile prototypes; neutral synthetic sample vault; scripted desktop and mobile usability tasks |
 | Blocker | None for this slice; the independent `FND-001` private-reporting-route blocker remains open below |
-| Next handoff | Continue with `EDT-004` through `EDT-006` after the import/schema slice; close `FND-001` independently when the owner publishes both private reporting routes |
+| Next handoff | Continue with `UXR-001` through `UXR-003` after the export/accessibility/decision slice; close `FND-001` independently when the owner publishes both private reporting routes |
 
 ## Milestone status
 
@@ -122,12 +122,12 @@ Next recommended slice: `EDT-004` through `EDT-006` — accessible exports, assi
 
 ## Editor/export spike
 
-- [ ] **EDT-001** Define restricted Tiptap document schema and versioned intermediate representation. — Proof: _schema + fixtures_
-- [ ] **EDT-002** Test edit/undo/paste sanitation/version round-trip and 100-page stress case. — Proof: _test report_
-- [ ] **EDT-003** Import representative DOCX/PDF/text fixtures with source mapping and failure messages. — Proof: _goldens_
-- [ ] **EDT-004** Export accessible DOCX and PDF fixtures and visually compare pagination. — Proof: _rendered artifacts_
-- [ ] **EDT-005** Complete keyboard/screen-reader editor smoke test. — Proof: _manual report_
-- [ ] **EDT-006** Decide Tiptap baseline and update D-027/Q-004. — Proof: _ADR/update_
+- [x] **EDT-001** Define restricted Tiptap document schema and versioned intermediate representation. — Proof: [version-1 generated JSON Schema](../../../packages/documents/schemas/document-ir.v1.schema.json), [canonical IR fixture](../../../packages/documents/test/fixtures/document-ir.v1.valid.json), and [schema/normalization tests](../../../packages/documents/test/document-ir.test.ts)
+- [x] **EDT-002** Test edit/undo/paste sanitation/version round-trip and 100-page stress case. — Proof: [browser test report and measured 100-page results](../../evidence/document-editor-spike-report.md) backed by the [reproducible Playwright suite](../../../e2e/document-editor.spec.mjs)
+- [x] **EDT-003** Import representative DOCX/PDF/text fixtures with source mapping and failure messages. — Proof: [checked-in import goldens](../../../fixtures/imports/expected-imports.json), [synthetic fixtures and regeneration instructions](../../../fixtures/imports/README.md), and [real-browser import/failure tests](../../../e2e/document-editor.spec.mjs)
+- [x] **EDT-004** Export accessible DOCX and PDF fixtures and visually compare pagination. — Proof: [synthetic exports, regeneration guide, and final page renders](../../../fixtures/exports/README.md) plus [verification report](../../proof/document-editor-export-verification.md)
+- [x] **EDT-005** Complete keyboard/screen-reader editor smoke test. — Proof: [keyboard, semantic, and manual visual smoke report](../../evidence/document-editor-accessibility-smoke.md) backed by the [real-browser suite](../../../e2e/document-editor.spec.mjs)
+- [x] **EDT-006** Decide Tiptap baseline and update D-027/Q-004. — Proof: [ADR-0006](../../adr/0006-adopt-tiptap-local-document-baseline.md) and the updated [decision register](11-decision-register.md)
 
 ## UX prototype and validation
 
