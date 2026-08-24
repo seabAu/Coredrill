@@ -7,6 +7,7 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite",
+    "prebuild": "pnpm --filter @coredrill/storage-browser build",
     "predev": "pnpm --filter @coredrill/storage-browser build",
     "typecheck": "tsc -p tsconfig.json --noEmit --pretty false --tsBuildInfoFile .turbo/typecheck.tsbuildinfo",
     "lint": "eslint src vite.config.mjs --max-warnings 0"
