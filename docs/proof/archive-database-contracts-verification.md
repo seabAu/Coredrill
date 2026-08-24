@@ -7,7 +7,7 @@
 
 ## Outcome
 
-`DOM-005` and `DOM-006` are proven locally. Coredrill now has a strict integer-versioned portable-archive manifest and an adapter-neutral asynchronous database boundary with executable commit/rollback semantics. Both remain accountless, offline-capable, provider-neutral, and useful with AI disabled.
+`DOM-005` and `DOM-006` are proven locally and in hosted CI. Coredrill now has a strict integer-versioned portable-archive manifest and an adapter-neutral asynchronous database boundary with executable commit/rollback semantics. Both remain accountless, offline-capable, provider-neutral, and useful with AI disabled.
 
 This is deliberately a contract slice. It adds no archive writer/importer, SQLite implementation, migration, OPFS/VFS choice, Tauri command, background task, network service, account, AI path, browser permission, or product UI. Those behaviors remain gated by later `STG-*`, `DB-*`, and product checklist work.
 
@@ -60,7 +60,7 @@ Run with pinned Node.js 24.19.0 and pnpm 11.22.0:
 | Dependency checks within `verify`       | 301 license records passed; zero known vulnerabilities at every audit severity                                                                                                             |
 | `pnpm changeset:status` within `verify` | `@coredrill/contracts` and `@coredrill/storage-core` have pending minor Changesets                                                                                                         |
 
-The implementation commit's hosted Foundation CI run is recorded here after GitHub validates the exact pushed tree.
+Hosted [Foundation CI run #8](https://github.com/seabAu/Coredrill/actions/runs/32701786838) passed for implementation commit `00d2de6`, including the frozen install, complete foundation gate, reviewed license inventory, and full-history secret scan.
 
 ## Dependency review
 
