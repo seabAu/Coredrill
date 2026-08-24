@@ -226,7 +226,7 @@
       {
         "family": "Chrome/Chromium",
         "current": "152.0.7977.54",
-        "previous": "151.0.7922.108 (Linux) / 151.0.7922.108-.109 (Windows/macOS)"
+        "previous": "151.0.7922.138 (Chrome for Testing exact lane)"
       },
       {
         "family": "Microsoft Edge",
@@ -651,6 +651,7 @@
   ],
   "sources": [
     "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions.json",
+    "https://googlechromelabs.github.io/chrome-for-testing/latest-versions-per-milestone-with-downloads.json",
     "https://chromereleases.googleblog.com/2026/08/stable-channel-update-for-desktop_01193673229.html",
     "https://learn.microsoft.com/en-us/deployedge/microsoft-edge-relnote-stable-channel",
     "https://developer.mozilla.org/en-US/docs/Mozilla/Firefox/Releases/154",
@@ -672,6 +673,8 @@
     "https://sqlite.org/wasm/doc/tip/persistence.md",
     "https://playwright.dev/docs/browsers",
     "https://github.com/browser-actions/setup-chrome",
-    "https://github.com/browser-actions/setup-firefox"
+    "https://github.com/browser-actions/setup-firefox",
+    "https://github.com/browser-actions/setup-geckodriver",
+    "https://github.com/mozilla/geckodriver/releases/tag/v0.37.1"
   ]
 }

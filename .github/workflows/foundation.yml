@@ -55,7 +55,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        chrome: ["152.0.7977.54", "151.0.7922.108"]
+        chrome: ["152.0.7977.54", "151.0.7922.138"]
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -118,7 +118,9 @@ jobs:
           firefox-version: ${{ matrix.firefox }}
 
       - name: Install geckodriver
-        uses: browser-actions/setup-geckodriver@bf8266f624ca122cedb6d0381a031f18f6c431cd # reviewed 2026-05-09
+        uses: browser-actions/setup-geckodriver@eb8b0670366f719ca31703766a8cb7e3ea2c56ed # v0.0.0
+        with:
+          geckodriver-version: "0.37.1"
 
       - name: Prove SQLite/OPFS lifecycle
         env:
