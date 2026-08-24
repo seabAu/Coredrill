@@ -176,7 +176,10 @@ Validate maximum depth/count and field/operator compatibility. Compile to parame
 - Older clients fail safely on newer schema; they never attempt a downgrade write.
 - Every release tests fresh install, each supported upgrade path, failed migration rollback, export/restore, and cross-adapter logical equivalence.
 
+The first shared migration, `migrations/0001_vault.sql`, creates only the strict vault root needed by the storage spike. The storage-core migration runner validates contiguous positive versions, stable kebab-case names, lowercase SHA-256 checksums, and nonempty SQL. It creates a strict `coredrill_schema_migration(version, name, sha256, applied_at)` ledger, verifies every previously applied row against reviewed source, applies new SQL and `PRAGMA user_version` in one adapter transaction, and fails closed on source drift. Unit tests prove idempotent reapplication, invalid-definition rejection, checksum-drift rejection, and rollback of a failed migration.
+
+This Phase 0 migration is not the complete product schema described above. Later repository slices add those entities through additional shared forward migrations and their upgrade/rollback/export compatibility proof.
+
 ## Future sync readiness
 
 Reserve `row_version`, `updated_at`, and stable IDs now; add an append-only `sync_op` table only when sync is implemented. Do not burden v1 with a speculative CRDT. The later sync ADR must define per-entity conflict rules, tombstones, attachment handling, encryption, compaction, and device removal before a server endpoint exists.
-

@@ -18,6 +18,7 @@
     "test": "pnpm test:unit",
     "test:unit": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:storage-browser": "playwright test --config=playwright.storage.config.mjs",
     "test:boundaries": "vitest run tooling/tests/import-boundaries.test.mjs",
     "check:boundaries": "node tooling/architecture/check-boundaries.mjs",
     "check:foundation-records": "node tooling/scripts/check-foundation-records.mjs",
@@ -31,11 +32,12 @@
     "audit:dependencies": "pnpm audit --audit-level=low",
     "changeset": "changeset",
     "changeset:status": "changeset status",
-    "verify": "pnpm format:check && pnpm check:boundaries && pnpm check:foundation-records && pnpm typecheck && pnpm lint && pnpm test:unit && pnpm test:coverage && pnpm build && pnpm check:contract-schemas && pnpm check:licenses && pnpm check:secrets && pnpm audit:dependencies && pnpm changeset:status"
+    "verify": "pnpm format:check && pnpm check:boundaries && pnpm check:foundation-records && pnpm typecheck && pnpm lint && pnpm test:unit && pnpm test:coverage && pnpm build && pnpm test:storage-browser && pnpm check:contract-schemas && pnpm check:licenses && pnpm check:secrets && pnpm audit:dependencies && pnpm changeset:status"
   },
   "devDependencies": {
     "@changesets/cli": "3.0.1",
     "@eslint/js": "10.0.1",
+    "@playwright/test": "1.61.1",
     "@vitest/coverage-v8": "4.1.11",
     "eslint": "10.9.0",
     "fast-check": "4.9.0",

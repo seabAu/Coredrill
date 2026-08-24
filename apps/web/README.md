@@ -1,3 +1,3 @@
-# Web application (reserved)
+# Web application
 
-Reserved composition root for the accountless static PWA. No React, Vite, service worker, SQLite, or runtime dependency is installed in the foundation slice.
+Accountless static PWA composition root. During Phase 0 it hosts the automated browser SQLite/OPFS verification harness; product UI begins only in its authorized checklist slice.

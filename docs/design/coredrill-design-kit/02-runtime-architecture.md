@@ -121,6 +121,10 @@ interface DatabasePort extends DatabaseSession {
 - Detect persistent-storage availability, quota, private mode, and eviction risk. Request persistent storage where supported and maintain export reminders.
 - Serve the hosted app from its own origin; changing origin creates a different inaccessible browser vault.
 
+The Phase 0 `STG-001`–`STG-003` implementation now proves the first vertical storage path. `@coredrill/storage-browser` starts the official SQLite WASM package only inside a dedicated Worker, disables unrelated browser VFSes, installs `opfs-sahpool` under a Coredrill-owned OPFS directory, and opens a reviewed absolute database filename. Its versioned internal message protocol exposes only parameterized query/execute, serialized `BEGIN IMMEDIATE` transactions, diagnostics, portable export/restore, close, and delete operations. Foreign keys are enabled and verified on every open.
+
+The browser coordinator serializes public operations so the Phase 0 path has one writer per Worker. Restore verifies byte length and SHA-256 before replacement, reopens the imported database, and requires both `PRAGMA integrity_check = 'ok'` and the expected `user_version`. The automated Edge proof covers migration, commit, rollback, close/reopen durability, clean-context restore, corruption rejection, byte-for-byte re-export, and delete. It does not yet prove multi-tab coordination, quota/private-mode behavior, browser compatibility, or final VFS selection; those remain `STG-004`–`STG-008`, and D-025 remains Provisional.
+
 ### Native adapter
 
 - Tauri commands or its reviewed SQL plugin expose parameterized SQLite operations.

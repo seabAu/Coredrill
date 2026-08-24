@@ -82,12 +82,14 @@ SQLite is the source of truth. TanStack Query caches query results; Zustand stor
 
 ### Browser
 
-- Official `@sqlite.org/sqlite-wasm` (package name verified at scaffold time).
+- Official `@sqlite.org/sqlite-wasm` 3.53.0-build1, pinned in the reviewed lockfile and dependency inventory.
 - Dedicated database Worker; no synchronous database work on UI thread.
 - Initial VFS: `opfs-sahpool` for a single-writer model because SQLite documents broad support and no COOP/COEP requirement.
 - One coordinator per vault. Secondary tabs are read-only or show a controlled handoff until multi-tab tests justify another VFS.
 - `navigator.storage.persist()` request where supported, quota diagnostics, private-mode detection, and visible backup reminders.
 - Service worker caches application assets; it does not copy or sync the vault.
+
+The Phase 0 proof harness uses Vite 8.1.0 and Playwright 1.61.1, both exact-reviewed development dependencies rather than product runtime services. On Edge 151 it opens SQLite 3.53.0 with `opfs-sahpool` in a dedicated Worker and proves transactional migration, durability, checksummed export, clean-context restore, and delete. Browser support, failure/locking behavior, benchmarks, and the final VFS decision remain explicit `STG-004`–`STG-008` gates; this evidence does not promote D-025 from Provisional.
 
 ### Desktop
 
@@ -278,4 +280,3 @@ The direction becomes fully locked only after these spikes:
 10. accessibility smoke test of shell, Pipeline, review, and editor.
 
 If a gate fails, record evidence in [11 — Decision register](11-decision-register.md) and choose the smallest replacement that preserves the product boundary.
-

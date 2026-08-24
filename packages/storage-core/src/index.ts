@@ -24,3 +24,9 @@ export {
   type StorageHealth,
   type StoragePersistence,
 } from "./database-port.js";
+export {
+  applySqlMigrations,
+  defineSqlMigrations,
+  type MigrationResult,
+  type SqlMigration,
+} from "./migrations.js";

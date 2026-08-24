@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-24  
 Current milestone: Phase 0 — foundations and risk retirement  
-Current work item: `STG-001` through `STG-003` — browser SQLite/OPFS open, transaction, durability, export, and restore spike
-Next recommended slice: `STG-004` through `STG-008` — browser compatibility, failure/locking matrices, benchmarks, and VFS decision after the core storage journey is proven
+Current work item: `STG-004` through `STG-008` — browser compatibility, failure/locking matrices, benchmarks, and evidence-backed VFS decision
+Next recommended slice: `NAT-001` through `NAT-003` — Tauri shell, native-adapter comparison, and shared storage-contract proof after the browser decision is recorded
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `STG-004` through `STG-008` — browser compatibility, f
 | Field | Value |
 |---|---|
 | Milestone | Phase 0 |
-| Item range | `STG-001` through `STG-003` |
+| Item range | `STG-004` through `STG-008` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-24 |
-| Expected proof | Official SQLite WASM Worker/OPFS spike code and automated open/migrate/transact/reload/export/delete/restore proof with checksum |
+| Expected proof | Current/previous browser matrix with explicit fallbacks; private/persistence/quota/corruption failure matrix; second-tab/crash/`SQLITE_BUSY` proof; reference-data benchmarks; accepted VFS/browser-support decision update |
 | Blocker | None for this slice; the independent `FND-001` private-reporting-route blocker remains open below |
-| Next handoff | Begin `STG-004` through `STG-008` after the core storage journey is proven; close `FND-001` independently when the owner publishes both private reporting routes |
+| Next handoff | Begin `NAT-001` through `NAT-003` after D-025/Q-002 are updated from the completed browser evidence; close `FND-001` independently when the owner publishes both private reporting routes |
 
 ## Milestone status
 
@@ -89,9 +89,9 @@ Next recommended slice: `STG-004` through `STG-008` — browser compatibility, f
 
 ## Browser SQLite/OPFS spike
 
-- [ ] **STG-001** Run official SQLite WASM in a dedicated Worker and open an `opfs-sahpool` database. — Proof: _spike code + browser log_
-- [ ] **STG-002** Apply shared migration, transact, query, close, reopen, and verify durability. — Proof: _automated browser test_
-- [ ] **STG-003** Export a portable database/archive and restore it into a clean origin/profile. — Proof: _checksum + E2E test_
+- [x] **STG-001** Run official SQLite WASM in a dedicated Worker and open an `opfs-sahpool` database. — Proof: [official adapter diagnostics and browser log](../../proof/browser-sqlite-opfs-verification.md#stg-001-official-sqlite-workeropfs-proof)
+- [x] **STG-002** Apply shared migration, transact, query, close, reopen, and verify durability. — Proof: [shared migration and automated durability/rollback test](../../proof/browser-sqlite-opfs-verification.md#stg-002-migration-transaction-and-durability-proof)
+- [x] **STG-003** Export a portable database/archive and restore it into a clean origin/profile. — Proof: [checksum, corruption rejection, clean-context restore, and delete E2E](../../proof/browser-sqlite-opfs-verification.md#stg-003-portable-database-restore-proof)
 - [ ] **STG-004** Test Chromium, Firefox, and Safari current/previous stable support or document exact unsupported fallbacks. — Proof: _matrix report_
 - [ ] **STG-005** Test private browsing, denied persistence, quota pressure, storage eviction diagnostics, and corrupted database behavior. — Proof: _failure matrix_
 - [ ] **STG-006** Test second-tab contention, read-only/handoff UX, crash/reload, and `SQLITE_BUSY` recovery. — Proof: _multi-context test_

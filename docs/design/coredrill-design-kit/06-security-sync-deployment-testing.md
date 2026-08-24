@@ -55,6 +55,8 @@ Any URL fetcher enforces scheme/port, DNS and redirect revalidation, private/lin
 - Desktop atomic timestamped backups with retention and restore verification.
 - Portable archive manifest/checksums and dry-run import.
 
+The Phase 0 browser adapter exports SQLite bytes with schema version, byte length, and SHA-256. Restore rejects length/checksum mismatch before import, imports only through the official `opfs-sahpool` utility, then requires SQLite `integrity_check` and the expected schema version before success. The browser E2E test proves a corrupt checksum cannot replace the target, restores into a separate clean browser context, compares logical rows, confirms the re-export checksum, and deletes the restored database. This is database-byte recovery proof for `STG-003`; full archive assembly, attachments, encryption metadata, dry-run UX, quota/eviction behavior, and atomic native replacement remain later work.
+
 ### AI/provider leakage
 
 - Provider disabled by default.

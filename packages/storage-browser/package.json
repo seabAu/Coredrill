@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Reserved browser SQLite Worker and OPFS adapter boundary.",
+  "description": "Official SQLite WASM Worker and OPFS adapter boundary.",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -17,5 +17,9 @@
     "build": "tsc -b",
     "typecheck": "tsc -p tsconfig.json --noEmit --pretty false --tsBuildInfoFile .turbo/typecheck.tsbuildinfo",
     "lint": "eslint src --max-warnings 0"
+  },
+  "dependencies": {
+    "@coredrill/storage-core": "workspace:*",
+    "@sqlite.org/sqlite-wasm": "3.53.0-build1"
   }
 }

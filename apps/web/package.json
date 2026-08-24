@@ -1,0 +1,21 @@
+{
+  "name": "@coredrill/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Accountless static PWA composition root and Phase 0 browser storage harness.",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite",
+    "predev": "pnpm --filter @coredrill/storage-browser build",
+    "typecheck": "tsc -p tsconfig.json --noEmit --pretty false --tsBuildInfoFile .turbo/typecheck.tsbuildinfo",
+    "lint": "eslint src vite.config.mjs --max-warnings 0"
+  },
+  "dependencies": {
+    "@coredrill/storage-browser": "workspace:*",
+    "@coredrill/storage-core": "workspace:*"
+  },
+  "devDependencies": {
+    "vite": "8.1.0"
+  }
+}

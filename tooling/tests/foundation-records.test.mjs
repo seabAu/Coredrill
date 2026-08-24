@@ -56,13 +56,16 @@ describe("foundation dependency and test records", () => {
 
   it("rejects incomplete dependency ownership metadata", () => {
     const changedInventory = clone(inventory);
-    changedInventory.packages[0].maintainers = [];
-    changedInventory.packages[0].knownAdvisories = undefined;
+    const dependency = changedInventory.packages[0];
+    const dependencyLabel = `${dependency.name}@${dependency.version}`;
+
+    dependency.maintainers = [];
+    dependency.knownAdvisories = undefined;
 
     expect(validateDependencyInventory(changedInventory, state)).toEqual(
       expect.arrayContaining([
-        "@changesets/cli@3.0.1 needs registry maintainer handles.",
-        "@changesets/cli@3.0.1 needs an explicit knownAdvisories array.",
+        `${dependencyLabel} needs registry maintainer handles.`,
+        `${dependencyLabel} needs an explicit knownAdvisories array.`,
       ]),
     );
   });

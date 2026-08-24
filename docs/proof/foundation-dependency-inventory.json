@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "inventoryId": "JW-DI-001",
-  "version": "1.3.0",
-  "reviewedAt": "2026-08-24T07:48:23Z",
+  "version": "1.4.0",
+  "reviewedAt": "2026-08-24T08:26:05Z",
   "scope": {
     "included": [
       "Pinned Node.js, pnpm, and Rust foundation toolchains",
@@ -17,7 +17,7 @@
   },
   "lockfile": {
     "path": "pnpm-lock.yaml",
-    "sha256": "a79a7163063ea36971cba6c71205885a174161c7a66d682041cffa073682877c"
+    "sha256": "358dfdbcc831d663582256deee57e5d3c64815bdc979405b3770327e26df23f4"
   },
   "toolchains": [
     {
@@ -70,6 +70,20 @@
   ],
   "packages": [
     {
+      "manifest": "apps/web/package.json",
+      "dependencyType": "devDependencies",
+      "name": "vite",
+      "version": "8.1.0",
+      "upstreamLatest": "8.2.2",
+      "selectionStatus": "release-age-approved",
+      "license": "MIT",
+      "maintainers": ["yyx990803", "vitebot"],
+      "repository": "https://github.com/vitejs/vite",
+      "metadataSource": "https://registry.npmjs.org/vite/8.1.0",
+      "knownAdvisories": [],
+      "selectionNote": "Vite 8.1.0 was published at 2026-06-23T11:34:04.988Z and satisfies minimumReleaseAge: 1440; current 8.2.2 was published at 2026-08-20T04:14:39.107Z and remains inside the review window."
+    },
+    {
       "manifest": "package.json",
       "dependencyType": "devDependencies",
       "name": "@changesets/cli",
@@ -94,6 +108,20 @@
       "repository": "https://github.com/eslint/eslint",
       "metadataSource": "https://registry.npmjs.org/@eslint%2fjs/10.0.1",
       "knownAdvisories": []
+    },
+    {
+      "manifest": "package.json",
+      "dependencyType": "devDependencies",
+      "name": "@playwright/test",
+      "version": "1.61.1",
+      "upstreamLatest": "1.62.1",
+      "selectionStatus": "release-age-approved",
+      "license": "Apache-2.0",
+      "maintainers": ["pavelfeldman", "yurys", "dgozman-ms", "playwright-bot"],
+      "repository": "https://github.com/microsoft/playwright",
+      "metadataSource": "https://registry.npmjs.org/@playwright%2ftest/1.61.1",
+      "knownAdvisories": [],
+      "selectionNote": "Playwright 1.61.1 was published at 2026-06-23T19:49:12.825Z and satisfies minimumReleaseAge: 1440; current 1.62.1 was published at 2026-07-30T16:36:55.324Z and remains inside the review window."
     },
     {
       "manifest": "package.json",
@@ -246,15 +274,29 @@
       "metadataSource": "https://registry.npmjs.org/zod/4.4.3",
       "knownAdvisories": [],
       "selectionNote": "The contracts package uses Zod's stable validation and toJSONSchema APIs. It does not rely on the experimental fromJSONSchema API."
+    },
+    {
+      "manifest": "packages/storage-browser/package.json",
+      "dependencyType": "dependencies",
+      "name": "@sqlite.org/sqlite-wasm",
+      "version": "3.53.0-build1",
+      "upstreamLatest": "3.53.0-build1",
+      "selectionStatus": "current",
+      "license": "Apache-2.0",
+      "maintainers": ["tomayac", "sgbeal"],
+      "repository": "https://github.com/sqlite/sqlite-wasm",
+      "metadataSource": "https://registry.npmjs.org/@sqlite.org%2fsqlite-wasm/3.53.0-build1",
+      "knownAdvisories": [],
+      "selectionNote": "The official SQLite npm subproject provides browser-side SQLite 3.53.0 WASM and the documented opfs-sahpool VFS; no wrapper, ORM, or alternative database implementation is introduced."
     }
   ],
   "advisoryReview": {
     "command": "pnpm audit --json",
     "source": "https://pnpm.io/cli/audit",
-    "reviewedAt": "2026-08-24T07:48:23Z",
-    "lockfileSha256": "a79a7163063ea36971cba6c71205885a174161c7a66d682041cffa073682877c",
-    "resolvedDependencyCount": 335,
-    "optionalDependencyCount": 35,
+    "reviewedAt": "2026-08-24T08:26:05Z",
+    "lockfileSha256": "358dfdbcc831d663582256deee57e5d3c64815bdc979405b3770327e26df23f4",
+    "resolvedDependencyCount": 364,
+    "optionalDependencyCount": 57,
     "vulnerabilities": {
       "info": 0,
       "low": 0,
@@ -265,9 +307,9 @@
   },
   "licenseReview": {
     "command": "pnpm check:licenses",
-    "reviewedAt": "2026-08-24T07:48:23Z",
-    "lockfileSha256": "a79a7163063ea36971cba6c71205885a174161c7a66d682041cffa073682877c",
-    "resolvedPackageRecords": 301,
+    "reviewedAt": "2026-08-24T08:26:05Z",
+    "lockfileSha256": "358dfdbcc831d663582256deee57e5d3c64815bdc979405b3770327e26df23f4",
+    "resolvedPackageRecords": 307,
     "result": "pass",
     "note": "License records and advisory dependency counts use different tool scopes and are not expected to match."
   },
@@ -283,9 +325,19 @@
       "nextReviewOn": "2026-08-25"
     },
     {
+      "dependency": "@playwright/test",
+      "reason": "1.62.1 is current but remains inside the repository's 60-day dependency review window.",
+      "nextReviewOn": "2026-09-29"
+    },
+    {
       "dependency": "typescript",
       "reason": "TypeScript 7 adoption is blocked by the current typescript-eslint peer range and requires a mutually compatible release.",
       "nextReviewOn": "2026-09-24"
+    },
+    {
+      "dependency": "vite",
+      "reason": "8.2.2 is current but remains inside the repository's 60-day dependency review window.",
+      "nextReviewOn": "2026-10-20"
     }
   ],
   "reviewTriggers": [
