@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-24  
 Current milestone: Phase 0 — foundations and risk retirement  
-Current work item: `EXT-001` through `EXT-003` — least-privilege extension shell, user-action capture, and bounded outbox contract
-Next recommended slice: `EXT-004` through `EXT-006` — idempotent transfer, Firefox/manual fallback, and hostile-message/replay tests
+Current work item: `EXT-004` through `EXT-006` — idempotent transfer, Firefox/manual fallback, and hostile-message/replay tests
+Next recommended slice: `EXT-007` through `EXT-008` — final production bundle review and extension architecture decision
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `EXT-004` through `EXT-006` — idempotent transfer, Fir
 | Field | Value |
 |---|---|
 | Milestone | Phase 0 |
-| Item range | `EXT-001` through `EXT-003` |
+| Item range | `EXT-004` through `EXT-006` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-24 |
-| Expected proof | Chromium side-panel and popup-fallback builds, exact least-privilege manifest, user-action capture fixture, and bounded checksummed outbox contract tests |
+| Expected proof | Idempotent app-origin transfer E2E with acknowledgement/retry, Firefox/manual-export browser report, and malicious-message/oversize/replay/wrong-origin-or-ID/expiry security tests |
 | Blocker | None for this slice; the independent `FND-001` private-reporting-route blocker remains open below |
-| Next handoff | Continue with `EXT-004` through `EXT-006` after the extension shell/capture/outbox contract; close `FND-001` independently when the owner publishes both private reporting routes |
+| Next handoff | Continue with `EXT-007` through `EXT-008` after the transfer/fallback/security slice; close `FND-001` independently when the owner publishes both private reporting routes |
 
 ## Milestone status
 
@@ -111,9 +111,9 @@ Next recommended slice: `EXT-004` through `EXT-006` — idempotent transfer, Fir
 
 ## Extension spike
 
-- [ ] **EXT-001** Scaffold WXT MV3 extension with side-panel and popup fallback entrypoints. — Proof: _build artifacts_
-- [ ] **EXT-002** Capture title/company/URL/selected text under a user `activeTab` action. — Proof: _fixture demo + permission manifest_
-- [ ] **EXT-003** Validate and store a bounded, checksummed outbox item. — Proof: _unit/integration tests_
+- [x] **EXT-001** Scaffold WXT MV3 extension with side-panel and popup fallback entrypoints. — Proof: [hosted clean-commit Chromium build and exact manifest](../../proof/extension-capture-outbox-verification.md#hosted-clean-commit-proof)
+- [x] **EXT-002** Capture title/company/URL/selected text under a user `activeTab` action. — Proof: [user-action fixture, permission boundary, and provenance-retaining envelope](../../proof/extension-capture-outbox-verification.md#capture-fixture-and-envelope-proof)
+- [x] **EXT-003** Validate and store a bounded, checksummed outbox item. — Proof: [bounded checksummed outbox tests and hosted aggregate gate](../../proof/extension-capture-outbox-verification.md#local-verification)
 - [ ] **EXT-004** Transfer idempotently to a hosted app origin with acknowledgement and retry. — Proof: _E2E test_
 - [ ] **EXT-005** Prove Firefox fallback/manual export path. — Proof: _browser report_
 - [ ] **EXT-006** Test malicious page messages, oversized input, replay, wrong origin/ID, and expired capture. — Proof: _security tests_

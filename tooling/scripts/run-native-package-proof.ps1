@@ -315,8 +315,10 @@ try {
     $installedAppSha256 = Get-Sha256 -Path $appPath
     $installedAppSignatureStatus = [string](Get-AuthenticodeSignature -LiteralPath $appPath).Status
 
+    $coldStartTimeoutMilliseconds = [Math]::Max(30000, $ReadyTimeoutMilliseconds)
     for ($index = 0; $index -lt $WarmupRuns; $index += 1) {
-        $run = Invoke-StartupRun -ExecutablePath $appPath -TimeoutMilliseconds $ReadyTimeoutMilliseconds
+        $warmupTimeoutMilliseconds = if ($index -eq 0) { $coldStartTimeoutMilliseconds } else { $ReadyTimeoutMilliseconds }
+        $run = Invoke-StartupRun -ExecutablePath $appPath -TimeoutMilliseconds $warmupTimeoutMilliseconds
         $warmupMeasurements.Add([double]$run.startupMilliseconds)
     }
 
@@ -400,6 +402,8 @@ try {
         }
         measurement = [ordered]@{
             readySignal = "native window title set after Tauri PageLoadEvent.Finished"
+            coldStartTimeoutMilliseconds = $coldStartTimeoutMilliseconds
+            warmAndMeasuredTimeoutMilliseconds = $ReadyTimeoutMilliseconds
             warmupsDiscarded = $WarmupRuns
             measuredRuns = $MeasuredRuns
             failureCount = 0

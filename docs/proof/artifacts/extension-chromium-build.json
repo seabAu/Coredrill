@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "proofId": "EXT001-003-CHROMIUM-BUILD",
+  "sourceCommit": "ce118c15df9e31601817023b2dec87688b9f1d84",
+  "pnpmLockSha256": "4ad7db6c33b07978bbe42e58f1d04855e11cdc8d8f16604bf498b45103be94aa",
+  "toolchain": {
+    "node": "24.19.0",
+    "pnpm": "11.22.0",
+    "wxt": "0.21.4",
+    "vite": "8.2.2"
+  },
+  "workflow": {
+    "runId": 32753181965,
+    "runUrl": "https://github.com/seabAu/Coredrill/actions/runs/32753181965",
+    "finalAttempt": 2,
+    "finalConclusion": "success",
+    "finalAttemptStartedAt": "2026-08-24T17:02:42Z",
+    "finalAttemptCompletedAt": "2026-08-24T17:15:23Z",
+    "artifactProducerAttempt": 1,
+    "qualityJobId": 97514649511,
+    "qualityJobUrl": "https://github.com/seabAu/Coredrill/actions/runs/32753181965/job/97514649511",
+    "qualityJobConclusion": "success",
+    "windowsRetryJobId": 97518283233,
+    "windowsRetryJobUrl": "https://github.com/seabAu/Coredrill/actions/runs/32753181965/job/97518283233",
+    "windowsRetryJobConclusion": "success"
+  },
+  "artifact": {
+    "id": 9530070651,
+    "name": "coredrill-chromium-extension-ce118c15df9e31601817023b2dec87688b9f1d84",
+    "url": "https://github.com/seabAu/Coredrill/actions/runs/32753181965/artifacts/9530070651",
+    "sizeInBytes": 387056,
+    "digest": "sha256:f2ef2c7368dd830e21f96c8550b0cc402af785852a05d8168474e8ac2e9e21bf",
+    "createdAt": "2026-08-24T16:58:17Z",
+    "expiresAt": "2026-09-23T16:58:16Z",
+    "expiredAtReview": false
+  },
+  "build": {
+    "target": "chrome-mv3",
+    "permissions": ["activeTab", "scripting", "sidePanel", "storage"],
+    "hostPermissions": [],
+    "entrypoints": {
+      "background": "background.js",
+      "popup": "popup.html",
+      "sidePanel": "sidepanel.html"
+    },
+    "contentSecurityPolicy": "script-src 'self'; object-src 'self';",
+    "files": [
+      {
+        "path": "assets/mount-CNnv4U-N.css",
+        "bytes": 1758,
+        "sha256": "5979f69a48f947ea68aa9bcd86d65b3f978234a2f71de6dc2b2335d2ed8711a0"
+      },
+      {
+        "path": "background.js",
+        "bytes": 101431,
+        "sha256": "27b906a539492e9d54a31b7c198edd6e264330bb33c387a2e550c9df8f319b25"
+      },
+      {
+        "path": "chunks/mount-CyOPkwWn.js",
+        "bytes": 281176,
+        "sha256": "089cdc3fb8ea189ea65028406fd27798b49659554a837b625bbdbad6553dfab0"
+      },
+      {
+        "path": "chunks/popup-DnMKw_Sp.js",
+        "bytes": 44,
+        "sha256": "b1ea0af7965abddda68abdfbb13728417d976b3d1d1cbe6c5f381d68bcde5961"
+      },
+      {
+        "path": "chunks/sidepanel-DnMKw_Sp.js",
+        "bytes": 44,
+        "sha256": "b1ea0af7965abddda68abdfbb13728417d976b3d1d1cbe6c5f381d68bcde5961"
+      },
+      {
+        "path": "manifest.json",
+        "bytes": 585,
+        "sha256": "abb58f73af4910ac73eb08898d8e321c349a772d9a42477eb183ccb8758f57d4"
+      },
+      {
+        "path": "popup.html",
+        "bytes": 474,
+        "sha256": "9e4f3b1767ccb7013fa7fb87762f335b80e05548f2b3c7631bc2ea1ae2cca7d5"
+      },
+      {
+        "path": "sidepanel.html",
+        "bytes": 484,
+        "sha256": "b6c1642cb0fdc5b7710869e90a8fa0466cba681a5ab976550588e1a0e57ad96b"
+      }
+    ]
+  },
+  "validation": {
+    "hostedInspectorPassed": true,
+    "localInspectorPassed": true,
+    "byteIdenticalToLocal": true,
+    "reviewedAt": "2026-08-24"
+  }
+}

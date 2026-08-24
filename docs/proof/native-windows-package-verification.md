@@ -45,6 +45,8 @@ The local installer SHA-256 is `093f53bc7694d394fc6f6bfe16797307c9c20f43617fcee8
 
 The hosted first warmup took 14,193.7 ms while the new runner initialized its WebView environment. It is retained in raw evidence and discarded exactly as the reviewed warm-start method requires. All 20 measured hosted launches completed after the remaining warmups and stayed below the current `PERF-WARM` design target of 2,000 ms.
 
+A later hosted extension-proof run exposed the original 15,000 ms first-warmup ceiling as brittle: its Windows package reached the installed-startup step but did not publish the page-load title before that cold-run timeout. The harness now permits 30,000 ms only for the discarded first warmup and records that allowance explicitly. The remaining four warmups and all 20 measured launches retain the 15,000 ms timeout, so this runner-resilience correction does not weaken the warm-start result or release target.
+
 Both targets are marked `targetConformant: false`. They satisfy `NAT-007`'s first-OS artifact-and-recording requirement, but neither substitutes for the required Windows 11 25H2 plus `HW-WIN-REF` release-performance execution. Package signing/offline behavior and the reference-hardware gate therefore remain open release work; no supported-performance claim is made from these diagnostics.
 
 ## Hosted verification and retained artifact
