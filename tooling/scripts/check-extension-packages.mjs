@@ -26,13 +26,27 @@ async function listFiles(root, current = root) {
   return files.sort(compareText);
 }
 
-function runTar(argumentsList) {
-  const result = spawnSync("tar", argumentsList, { encoding: "utf8" });
+function runArchiveCommand(command, argumentsList) {
+  const result = spawnSync(command, argumentsList, { encoding: "utf8" });
   if (result.error) throw new Error(`Unable to inspect ZIP archive: ${result.error.message}`);
   if (result.status !== 0) {
     throw new Error(`Unable to inspect ZIP archive: ${(result.stderr ?? "").trim()}`);
   }
   return result.stdout;
+}
+
+function listArchive(archivePath) {
+  return process.platform === "win32"
+    ? runArchiveCommand("tar", ["-tf", archivePath])
+    : runArchiveCommand("unzip", ["-Z1", archivePath]);
+}
+
+function extractArchiveContents(archivePath, destination) {
+  if (process.platform === "win32") {
+    runArchiveCommand("tar", ["-xf", archivePath, "-C", destination]);
+    return;
+  }
+  runArchiveCommand("unzip", ["-q", archivePath, "-d", destination]);
 }
 
 function runPnpm(argumentsList, workingDirectory) {
@@ -67,7 +81,7 @@ function normalizeArchiveEntry(input) {
 }
 
 function archiveEntries(archivePath) {
-  const entries = runTar(["-tf", archivePath])
+  const entries = listArchive(archivePath)
     .split(/\r?\n/u)
     .filter(Boolean)
     .map(normalizeArchiveEntry)
@@ -96,7 +110,7 @@ async function archiveRecord(repositoryRoot, archivePath) {
 async function extractArchive(archivePath, label, operation) {
   const temporaryRoot = await mkdtemp(path.join(tmpdir(), `coredrill-${label}-`));
   try {
-    runTar(["-xf", archivePath, "-C", temporaryRoot]);
+    extractArchiveContents(archivePath, temporaryRoot);
     return await operation(temporaryRoot);
   } finally {
     await rm(temporaryRoot, { recursive: true, force: true });
