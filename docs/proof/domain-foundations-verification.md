@@ -7,7 +7,7 @@ Decision changes: none
 
 ## Outcome
 
-`DOM-001` and `DOM-002` are proven locally. The implementation establishes a pure TypeScript domain surface for validated value objects, semantic reporting categories, custom display stages, and guarded status transitions. It adds no database, migration, serialized boundary version, adapter, hosted service, account, connector, AI path, permission, or telemetry.
+`DOM-001` and `DOM-002` are proven locally and in hosted CI. The implementation establishes a pure TypeScript domain surface for validated value objects, semantic reporting categories, custom display stages, and guarded status transitions. It adds no database, migration, serialized boundary version, adapter, hosted service, account, connector, AI path, permission, or telemetry.
 
 The work preserves the accepted distinction between semantic reporting categories and display stages. It deliberately does not select the default display-stage vocabulary still governed by `Q-006`, nor does it turn the provisional six-column Board presentation into accepted domain policy.
 
@@ -52,17 +52,18 @@ Status moves remain pure domain decisions here. `APP-002` will later make the pe
 
 Run with the pinned Node.js 24.19.0 and pnpm 11.22.0 toolchains:
 
-| Command                                     | Result                                                                                                                                  |
-| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm install --frozen-lockfile`            | Passed for all 20 workspace projects; lockfile already up to date                                                                       |
-| `pnpm exec vitest run packages/domain/test` | 2 files and 20 tests passed                                                                                                             |
-| `pnpm verify`                               | Passed all formatting, boundary, foundation-record, typecheck, lint, unit, coverage, build, license, secret, audit, and Changeset gates |
-| `pnpm test:unit` within `verify`            | 5 files and 34 tests passed                                                                                                             |
-| `pnpm test:coverage` within `verify`        | 97.85% statements, 94.34% branches, 100% functions, 98.21% lines overall; domain sources 98.51% statements and 96.05% branches          |
-| Typecheck/lint/build within `verify`        | 21/21 typecheck tasks, 19/19 lint tasks, and 19/19 build tasks passed                                                                   |
-| Policy checks within `verify`               | 19 package-boundary policies passed; secret scan passed                                                                                 |
-| Dependency checks within `verify`           | 301 license records passed; zero known vulnerabilities at every audit severity                                                          |
-| `pnpm changeset:status` within `verify`     | `@coredrill/domain` has a pending minor Changeset                                                                                       |
+| Command                                                                              | Result                                                                                                                                  |
+| ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm install --frozen-lockfile`                                                     | Passed for all 20 workspace projects; lockfile already up to date                                                                       |
+| `pnpm exec vitest run packages/domain/test`                                          | 2 files and 20 tests passed                                                                                                             |
+| `pnpm verify`                                                                        | Passed all formatting, boundary, foundation-record, typecheck, lint, unit, coverage, build, license, secret, audit, and Changeset gates |
+| `pnpm test:unit` within `verify`                                                     | 5 files and 34 tests passed                                                                                                             |
+| `pnpm test:coverage` within `verify`                                                 | 97.85% statements, 94.34% branches, 100% functions, 98.21% lines overall; domain sources 98.51% statements and 96.05% branches          |
+| Typecheck/lint/build within `verify`                                                 | 21/21 typecheck tasks, 19/19 lint tasks, and 19/19 build tasks passed                                                                   |
+| Policy checks within `verify`                                                        | 19 package-boundary policies passed; secret scan passed                                                                                 |
+| Dependency checks within `verify`                                                    | 301 license records passed; zero known vulnerabilities at every audit severity                                                          |
+| `pnpm changeset:status` within `verify`                                              | `@coredrill/domain` has a pending minor Changeset                                                                                       |
+| [Foundation CI run #4](https://github.com/seabAu/Coredrill/actions/runs/32697763432) | Commit `fd72f10`; full-history secret scan passed, and frozen install + complete foundation gate + reviewed license inventory passed    |
 
 ## Dependency review
 

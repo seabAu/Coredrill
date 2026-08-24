@@ -4,7 +4,7 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-24  
 Current milestone: Phase 0 — foundations and risk retirement  
-Current work item: `DOM-001` through `DOM-002` are locally proven; hosted Foundation CI confirmation is pending
+Current work item: `DOM-001` through `DOM-002` are proven locally and in hosted Foundation CI
 Next recommended slice: `DOM-003` through `DOM-004` — capture-envelope and provenance contracts after the domain foundation is proven
 
 ## How to use this file
