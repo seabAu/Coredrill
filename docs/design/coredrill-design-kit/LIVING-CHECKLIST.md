@@ -4,7 +4,7 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-24  
 Current milestone: Phase 0 — foundations and risk retirement  
-Current work item: `DOM-003` through `DOM-004` are proven locally; hosted Foundation CI proof is pending
+Current work item: `DOM-003` through `DOM-004` are proven locally and in hosted Foundation CI
 Next recommended slice: `DOM-005` through `DOM-006` — portable-archive and database-port contracts after this slice is proven
 
 ## How to use this file
@@ -28,8 +28,8 @@ Next recommended slice: `DOM-005` through `DOM-006` — portable-archive and dat
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-24 |
 | Expected proof | Round-trip/invalid fixtures, contract examples/tests, generated-schema drift check, and [capture/provenance contracts verification](../../proof/capture-provenance-contracts-verification.md) |
-| Blocker | No implementation blocker; hosted Foundation CI proof is pending, and the independent `FND-001` private-reporting-route blocker remains open below |
-| Next handoff | Push and record green hosted CI, then begin `DOM-005` through `DOM-006`; close `FND-001` independently when the owner publishes both private reporting routes |
+| Blocker | None for this slice; the independent `FND-001` private-reporting-route blocker remains open below |
+| Next handoff | Begin `DOM-005` through `DOM-006`; close `FND-001` independently when the owner publishes both private reporting routes |
 
 ## Milestone status
 

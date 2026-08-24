@@ -7,7 +7,7 @@
 
 ## Outcome
 
-`DOM-003` and `DOM-004` are proven locally. Coredrill now has one strict serialized boundary for user-invoked capture input and source-backed field candidates, plus durable contracts for provenance, explicit user confirmation, and retained conflicts. The contract is accountless, offline-capable, provider-neutral, and useful without AI.
+`DOM-003` and `DOM-004` are proven locally and in hosted CI. Coredrill now has one strict serialized boundary for user-invoked capture input and source-backed field candidates, plus durable contracts for provenance, explicit user confirmation, and retained conflicts. The contract is accountless, offline-capable, provider-neutral, and useful without AI.
 
 This slice adds no database, migration, extractor implementation, browser permission, outbox runtime, network connector, AI adapter, hosted service, or user-interface behavior. Ingestion/idempotency, current-and-previous-version compatibility, expiry enforcement, extractor ranking, and persistence behavior remain later `CAP-*`, `XTR-*`, and `DB-*` work.
 
@@ -57,7 +57,7 @@ Run with pinned Node.js 24.19.0 and pnpm 11.22.0:
 | Dependency checks within `verify`       | 301 license records passed; zero known vulnerabilities at every audit severity                                                                          |
 | `pnpm changeset:status` within `verify` | `@coredrill/contracts` has a pending minor Changeset                                                                                                    |
 
-Hosted Foundation CI evidence will be appended after the implementation commit is pushed and the run completes.
+Hosted [Foundation CI run #6](https://github.com/seabAu/Coredrill/actions/runs/32699995934) passed for implementation commit `39a3550`, including the frozen install, complete foundation gate, reviewed license inventory, and full-history secret scan.
 
 ## Dependency review
 
