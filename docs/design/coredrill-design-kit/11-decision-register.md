@@ -130,7 +130,7 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
 - **Why:** Small system-webview distribution and Rust capability boundary.
 - **Gate:** Phase 0 native SQLite, secure store, packaging, updater, CSP, and platform tests.
 - **Fallback:** Electron only if a documented blocking WebView/packaging issue cannot be isolated; a local web kit remains another fallback.
-- **Phase 0 evidence (2026-08-24):** `NAT-001` through `NAT-003` build the shared Vite frontend as a Windows `coredrill.exe` under a strict one-command capability and pass the shared migration/transaction suite through a narrow `rusqlite` candidate. D-022 remains Provisional until app-data, secure-store, native export/restore, installable packaging, cross-platform, and final-adapter evidence closes `NAT-004` through `NAT-008`; see [native verification](../../proof/native-sqlite-tauri-verification.md).
+- **Phase 0 evidence (2026-08-24):** `NAT-001` through `NAT-004` build the shared Vite frontend as a Windows `coredrill.exe` under a strict one-command capability, pass the shared migration/transaction suite through a narrow `rusqlite` candidate, and platform-test canonical database/content-addressed-attachment roots under Tauri's exact OS app-data resolver. D-022 remains Provisional until secure-store, native export/restore, installable packaging, cross-platform, and final-adapter evidence closes `NAT-005` through `NAT-008`; see [native verification](../../proof/native-sqlite-tauri-verification.md).
 
 ### D-023 — WXT extension
 
@@ -291,7 +291,7 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
 | ID | Question | Needed evidence | Deadline/gate |
 |---|---|---|---|
 | Q-001 | Coredrill public-identity clearance | Trademark, domain, and marketplace checks for the selected working name; repository availability is proven | Before public landing/store listing |
-| Q-003 | Native SQLite adapter | `NAT-002` provisionally favors a narrow `rusqlite` command layer for shared callback transactions/migrations and the smallest proven IPC surface; app-data, export/restore, packaging, cross-platform risk, and final ADR evidence remain `NAT-004`–`NAT-008` | Phase 0 |
+| Q-003 | Native SQLite adapter | `NAT-002` provisionally favors a narrow `rusqlite` command layer for shared callback transactions/migrations and the smallest proven IPC surface; `NAT-004` passes the app-data/path gate, while secure storage, export/restore, packaging, cross-platform risk, and final ADR evidence remain `NAT-005`–`NAT-008` | Phase 0 |
 | Q-004 | Tiptap suitability | Round-trip/accessibility/export spike | Phase 0 |
 | Q-005 | Side panel vs popup fallback | Chromium/Firefox usability and APIs | Phase 0/2 |
 | Q-006 | Exact default pipeline stages | Five-user terminology/usability test | Before Phase 1 UI lock |

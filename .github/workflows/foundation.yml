@@ -93,6 +93,9 @@ jobs:
       - name: Prove native SQLite contracts
         run: pnpm test:storage-native
 
+      - name: Prove Tauri app-data resolution
+        run: pnpm --filter @coredrill/desktop test:platform
+
       - name: Lint complete Tauri boundary
         run: pnpm --filter @coredrill/desktop lint:desktop
 

@@ -153,7 +153,7 @@ Run the identical suite against in-memory/reference, browser SQLite worker/OPFS,
 - FTS/search equivalence or documented fallback;
 - Unicode, timezone, large description, attachment failure.
 
-The `NAT-003` native checkpoint now runs the reusable callback-transaction suite and shared vault-migration/repository suite against the exact Rust service through a JSON-lines probe. It proves bound hostile values, rollback/commit semantics, migration checksums, durability after close/reopen, query/write separation, and path-shaped database-name rejection. Export/restore, attachments, contention, and platform paths remain later NAT gates; see [native verification](../../proof/native-sqlite-tauri-verification.md).
+The native checkpoint runs the reusable callback-transaction suite and shared vault-migration/repository suite against the exact Rust service through a JSON-lines probe. `NAT-003` proves bound hostile values, rollback/commit semantics, migration checksums, durability after close/reopen, and query/write separation. `NAT-004` adds Rust layout tests, real-process missing/unusable-root cases, final-leaf and managed-directory confinement, and Windows junction rejection for both database and attachment roots; a separate pinned-Tauri test verifies the configured application-data path on the platform. Export/restore, secure storage, contention, and packaging remain later NAT gates; see [native verification](../../proof/native-sqlite-tauri-verification.md).
 
 ### Extractor/connectors
 

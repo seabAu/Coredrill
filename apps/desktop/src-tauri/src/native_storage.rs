@@ -7,7 +7,7 @@ use std::{
 };
 
 use rusqlite::{
-    Connection, Error as RusqliteError, ErrorCode, params_from_iter,
+    Connection, Error as RusqliteError, ErrorCode, OpenFlags, params_from_iter,
     types::{Value, ValueRef},
 };
 use serde::{Deserialize, Serialize};
@@ -22,6 +22,10 @@ const MAX_INTEGER_BYTES: usize = 24;
 const MAX_VALUE_BYTES: usize = 8 * 1024 * 1024;
 const MAX_RESULT_ROWS: usize = 100_000;
 const MAX_RESULT_BYTES: usize = 32 * 1024 * 1024;
+const DATABASE_DIRECTORY_NAME: &str = "databases";
+const ATTACHMENT_DIRECTORY_NAME: &str = "attachments";
+const ATTACHMENT_HASH_DIRECTORY_NAME: &str = "sha256";
+const SHA256_HEX_BYTES: usize = 64;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -188,20 +192,106 @@ struct NativeStorageState {
 }
 
 pub struct NativeStorageService {
-    root: PathBuf,
+    layout: NativeStorageLayout,
     state: Mutex<NativeStorageState>,
 }
 
-impl NativeStorageService {
-    pub fn new(root: PathBuf) -> Result<Self, NativeStorageError> {
-        if !root.is_absolute() {
+#[derive(Clone, Debug)]
+pub struct NativeStorageLayout {
+    app_data_root: PathBuf,
+    database_root: PathBuf,
+    attachment_root: PathBuf,
+}
+
+impl NativeStorageLayout {
+    pub fn initialize(app_data_root: PathBuf) -> Result<Self, NativeStorageError> {
+        if !app_data_root.is_absolute() {
             return Err(NativeStorageError::storage_unavailable());
         }
-        fs::create_dir_all(&root).map_err(|_| NativeStorageError::storage_unavailable())?;
-        let canonical_root =
-            fs::canonicalize(root).map_err(|_| NativeStorageError::storage_unavailable())?;
+        fs::create_dir_all(&app_data_root)
+            .map_err(|_| NativeStorageError::storage_unavailable())?;
+        let app_data_root = canonical_directory(&app_data_root)?;
+        let database_root =
+            initialize_managed_directory(&app_data_root, Path::new(DATABASE_DIRECTORY_NAME))?;
+        let attachment_container =
+            initialize_managed_directory(&app_data_root, Path::new(ATTACHMENT_DIRECTORY_NAME))?;
+        let attachment_root = initialize_managed_directory(
+            &attachment_container,
+            Path::new(ATTACHMENT_HASH_DIRECTORY_NAME),
+        )?;
+
         Ok(Self {
-            root: canonical_root,
+            app_data_root,
+            database_root,
+            attachment_root,
+        })
+    }
+
+    pub fn app_data_root(&self) -> &Path {
+        &self.app_data_root
+    }
+
+    pub fn database_root(&self) -> &Path {
+        &self.database_root
+    }
+
+    pub fn attachment_root(&self) -> &Path {
+        &self.attachment_root
+    }
+
+    pub fn prepare_attachment_path(&self, sha256: &str) -> Result<PathBuf, NativeStorageError> {
+        validate_sha256(sha256)?;
+        verify_managed_directory(
+            &self.app_data_root,
+            Path::new(ATTACHMENT_DIRECTORY_NAME),
+            self.attachment_root
+                .parent()
+                .ok_or_else(NativeStorageError::storage_unavailable)?,
+        )?;
+        verify_managed_directory(
+            self.attachment_root
+                .parent()
+                .ok_or_else(NativeStorageError::storage_unavailable)?,
+            Path::new(ATTACHMENT_HASH_DIRECTORY_NAME),
+            &self.attachment_root,
+        )?;
+
+        let first_shard =
+            initialize_managed_directory(&self.attachment_root, Path::new(&sha256[0..2]))?;
+        let second_shard = initialize_managed_directory(&first_shard, Path::new(&sha256[2..4]))?;
+        let attachment_path = second_shard.join(sha256);
+        reject_link_or_external_path(&second_shard, &attachment_path)?;
+        Ok(attachment_path)
+    }
+
+    fn database_path(&self, database_name: &str) -> Result<PathBuf, NativeStorageError> {
+        verify_managed_directory(
+            &self.app_data_root,
+            Path::new(DATABASE_DIRECTORY_NAME),
+            &self.database_root,
+        )?;
+        let database_path = self.database_root.join(database_name);
+        reject_link_or_external_path(&self.database_root, &database_path)?;
+        Ok(database_path)
+    }
+
+    fn verify_database_path(&self, database_path: &Path) -> Result<(), NativeStorageError> {
+        let database_name = database_path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .ok_or_else(NativeStorageError::storage_unavailable)?;
+        validate_database_name(database_name)?;
+        if self.database_path(database_name)? != database_path {
+            return Err(NativeStorageError::storage_unavailable());
+        }
+        Ok(())
+    }
+}
+
+impl NativeStorageService {
+    pub fn new(app_data_root: PathBuf) -> Result<Self, NativeStorageError> {
+        Ok(Self {
+            layout: NativeStorageLayout::initialize(app_data_root)?,
             state: Mutex::new(NativeStorageState {
                 next_session: 1,
                 sessions: HashMap::new(),
@@ -241,10 +331,16 @@ impl NativeStorageService {
 
     fn open(&self, database_name: String) -> Result<NativeStorageResponseData, NativeStorageError> {
         validate_database_name(&database_name)?;
-        let database_path = self.root.join(&database_name);
-        reject_external_symlink(&self.root, &database_path)?;
+        let database_path = self.layout.database_path(&database_name)?;
 
-        let connection = Connection::open(&database_path).map_err(map_sqlite_error)?;
+        let connection = Connection::open_with_flags(
+            &database_path,
+            OpenFlags::SQLITE_OPEN_READ_WRITE
+                | OpenFlags::SQLITE_OPEN_CREATE
+                | OpenFlags::SQLITE_OPEN_NO_MUTEX
+                | OpenFlags::SQLITE_OPEN_NOFOLLOW,
+        )
+        .map_err(map_sqlite_error)?;
         connection
             .busy_timeout(Duration::from_secs(5))
             .map_err(map_sqlite_error)?;
@@ -469,6 +565,7 @@ impl NativeStorageService {
             session.transaction_active = false;
         }
         let database_path = session.database_path.clone();
+        self.layout.verify_database_path(&database_path)?;
         drop(session);
         let deleted = remove_database_files(&database_path)?;
         Ok(NativeStorageResponseData::Deleted { deleted })
@@ -517,6 +614,17 @@ fn validate_database_name(database_name: &str) -> Result<(), NativeStorageError>
                 || byte == b'_'
                 || byte == b'.'
         })
+    {
+        return Err(NativeStorageError::invalid_request());
+    }
+    Ok(())
+}
+
+fn validate_sha256(sha256: &str) -> Result<(), NativeStorageError> {
+    if sha256.len() != SHA256_HEX_BYTES
+        || !sha256
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
     {
         return Err(NativeStorageError::invalid_request());
     }
@@ -654,13 +762,64 @@ fn native_value_size(value: &NativeSqlValue) -> usize {
     }
 }
 
-fn reject_external_symlink(root: &Path, database_path: &Path) -> Result<(), NativeStorageError> {
-    if !database_path.exists() {
-        return Ok(());
+fn canonical_directory(path: &Path) -> Result<PathBuf, NativeStorageError> {
+    let canonical =
+        fs::canonicalize(path).map_err(|_| NativeStorageError::storage_unavailable())?;
+    if !fs::metadata(&canonical)
+        .map_err(|_| NativeStorageError::storage_unavailable())?
+        .is_dir()
+    {
+        return Err(NativeStorageError::storage_unavailable());
+    }
+    Ok(canonical)
+}
+
+fn initialize_managed_directory(
+    canonical_parent: &Path,
+    relative_path: &Path,
+) -> Result<PathBuf, NativeStorageError> {
+    if relative_path.components().count() != 1 {
+        return Err(NativeStorageError::storage_unavailable());
+    }
+    let path = canonical_parent.join(relative_path);
+    fs::create_dir_all(&path).map_err(|_| NativeStorageError::storage_unavailable())?;
+    let canonical = canonical_directory(&path)?;
+    if !canonical.starts_with(canonical_parent) {
+        return Err(NativeStorageError::storage_unavailable());
+    }
+    Ok(canonical)
+}
+
+fn verify_managed_directory(
+    canonical_parent: &Path,
+    relative_path: &Path,
+    expected_canonical: &Path,
+) -> Result<(), NativeStorageError> {
+    if relative_path.components().count() != 1 {
+        return Err(NativeStorageError::storage_unavailable());
+    }
+    let canonical = canonical_directory(&canonical_parent.join(relative_path))?;
+    if canonical != expected_canonical || !canonical.starts_with(canonical_parent) {
+        return Err(NativeStorageError::storage_unavailable());
+    }
+    Ok(())
+}
+
+fn reject_link_or_external_path(
+    canonical_parent: &Path,
+    candidate: &Path,
+) -> Result<(), NativeStorageError> {
+    let metadata = match fs::symlink_metadata(candidate) {
+        Ok(metadata) => metadata,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(_) => return Err(NativeStorageError::storage_unavailable()),
+    };
+    if metadata.file_type().is_symlink() {
+        return Err(NativeStorageError::storage_unavailable());
     }
     let canonical =
-        fs::canonicalize(database_path).map_err(|_| NativeStorageError::storage_unavailable())?;
-    if !canonical.starts_with(root) {
+        fs::canonicalize(candidate).map_err(|_| NativeStorageError::storage_unavailable())?;
+    if !canonical.starts_with(canonical_parent) || canonical != candidate {
         return Err(NativeStorageError::storage_unavailable());
     }
     Ok(())
@@ -710,5 +869,118 @@ fn map_sqlite_error(error: RusqliteError) -> NativeStorageError {
             "Native SQLite could not complete the operation.",
             false,
         ),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{
+        fs,
+        path::{Path, PathBuf},
+        process,
+        time::{SystemTime, UNIX_EPOCH},
+    };
+
+    use super::{NativeStorageLayout, NativeStorageService};
+
+    const SYNTHETIC_ATTACHMENT_SHA256: &str =
+        "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+
+    struct TestRoot(PathBuf);
+
+    impl TestRoot {
+        fn new(label: &str) -> Self {
+            let nonce = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("the system clock must follow the Unix epoch")
+                .as_nanos();
+            Self(std::env::temp_dir().join(format!(
+                "coredrill-native-path-{label}-{}-{nonce}",
+                process::id()
+            )))
+        }
+
+        fn path(&self) -> &Path {
+            &self.0
+        }
+    }
+
+    impl Drop for TestRoot {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+
+    #[test]
+    fn initializes_canonical_app_data_layout_and_content_addressed_attachment_path() {
+        let test_root = TestRoot::new("layout");
+        let requested_root = test_root.path().join("missing").join("app-data");
+        let layout = NativeStorageLayout::initialize(requested_root.clone())
+            .expect("a missing absolute app-data root must be initialized");
+
+        assert_eq!(
+            layout.app_data_root(),
+            fs::canonicalize(requested_root)
+                .expect("the initialized app-data root must canonicalize")
+        );
+        assert_eq!(
+            layout.database_root(),
+            fs::canonicalize(layout.app_data_root().join("databases"))
+                .expect("the database directory must canonicalize")
+        );
+        assert_eq!(
+            layout.attachment_root(),
+            fs::canonicalize(layout.app_data_root().join("attachments").join("sha256"))
+                .expect("the attachment directory must canonicalize")
+        );
+
+        let attachment_path = layout
+            .prepare_attachment_path(SYNTHETIC_ATTACHMENT_SHA256)
+            .expect("a lowercase SHA-256 digest must map to a confined path");
+        assert_eq!(
+            attachment_path,
+            layout
+                .attachment_root()
+                .join("01")
+                .join("23")
+                .join(SYNTHETIC_ATTACHMENT_SHA256)
+        );
+        fs::write(&attachment_path, b"synthetic attachment")
+            .expect("the prepared attachment path must be writable");
+        assert!(
+            fs::canonicalize(&attachment_path)
+                .expect("the synthetic attachment must canonicalize")
+                .starts_with(layout.attachment_root())
+        );
+    }
+
+    #[test]
+    fn rejects_relative_unusable_and_path_shaped_attachment_inputs() {
+        let relative = NativeStorageService::new(PathBuf::from("relative-app-data"))
+            .err()
+            .expect("a relative app-data root must fail closed");
+        assert_eq!(relative.code, "storage_unavailable");
+
+        let test_root = TestRoot::new("unusable");
+        fs::create_dir_all(test_root.path()).expect("the test parent must be created");
+        let file_root = test_root.path().join("not-a-directory");
+        fs::write(&file_root, b"not a directory").expect("the test file must be created");
+        let unusable = NativeStorageService::new(file_root)
+            .err()
+            .expect("an app-data path occupied by a file must fail closed");
+        assert_eq!(unusable.code, "storage_unavailable");
+
+        let layout = NativeStorageLayout::initialize(test_root.path().join("valid"))
+            .expect("the valid test root must initialize");
+        for digest in [
+            "../outside",
+            "ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789",
+            "0123456789abcdef",
+        ] {
+            let error = layout
+                .prepare_attachment_path(digest)
+                .expect_err("noncanonical attachment identifiers must fail closed");
+            assert_eq!(error.code, "invalid_request");
+        }
     }
 }

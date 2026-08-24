@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
 import { once } from "node:events";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, realpath, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import { spawn, spawnSync, type ChildProcessWithoutNullStreams } from "node:child_process";
 
 import {
   applySqlMigrations,
@@ -101,6 +101,10 @@ class ProbeTransport implements NativeStorageTransport {
     });
   }
 
+  public storageRoot(): string {
+    return this.root;
+  }
+
   public async dispose(): Promise<void> {
     if (!this.closed) {
       this.child.stdin.end();
@@ -168,6 +172,13 @@ const migrations = () =>
     },
   ]);
 
+const runProbe = (root: string, input = "") =>
+  spawnSync(probeExecutable, [root], {
+    encoding: "utf8",
+    input,
+    windowsHide: true,
+  });
+
 const nativeAdapter: DatabaseContractAdapter = {
   name: "native-rusqlite-candidate",
   createIsolatedDatabase: async () =>
@@ -208,6 +219,27 @@ afterAll(async () => {
 });
 
 describe("native SQLite repository and migration contracts", () => {
+  it("initializes canonical database and content-addressed attachment roots", async () => {
+    const database = await openNativeSqliteDatabase({
+      databaseName: nextDatabaseName(),
+      transport,
+    });
+    try {
+      const canonicalRoot = await realpath(transport.storageRoot());
+      const databaseRoot = await realpath(path.join(transport.storageRoot(), "databases"));
+      const attachmentRoot = await realpath(
+        path.join(transport.storageRoot(), "attachments", "sha256"),
+      );
+
+      expect(path.dirname(databaseRoot)).toBe(canonicalRoot);
+      expect(path.dirname(path.dirname(attachmentRoot))).toBe(canonicalRoot);
+      expect((await stat(databaseRoot)).isDirectory()).toBe(true);
+      expect((await stat(attachmentRoot)).isDirectory()).toBe(true);
+    } finally {
+      await database.delete();
+    }
+  });
+
   it("passes the shared transaction semantics suite", async () => {
     await expect(
       runDatabaseContractSuite(nativeAdapter, createTransactionSemanticsSuite(entryProbe)),
@@ -288,6 +320,12 @@ describe("native SQLite repository and migration contracts", () => {
     );
     await first.close();
 
+    const databasePath = path.join(transport.storageRoot(), "databases", databaseName);
+    expect((await stat(databasePath)).isFile()).toBe(true);
+    expect(path.dirname(await realpath(databasePath))).toBe(
+      await realpath(path.join(transport.storageRoot(), "databases")),
+    );
+
     const reopened = await openNativeSqliteDatabase({ databaseName, transport });
     await expect(
       reopened.query<VaultRow>(
@@ -329,5 +367,81 @@ describe("native SQLite repository and migration contracts", () => {
       code: "invalid_request",
       retryable: false,
     });
+  });
+
+  it("fails closed when the app-data root is relative or occupied by a file", async () => {
+    const relative = runProbe("relative-app-data");
+    expect(relative.error).toBeUndefined();
+    expect(relative.status).toBe(2);
+
+    const testParent = await mkdtemp(path.join(tmpdir(), "coredrill-native-unusable-"));
+    try {
+      const fileRoot = path.join(testParent, "not-a-directory");
+      await writeFile(fileRoot, "synthetic unusable root", "utf8");
+      const unusable = runProbe(fileRoot);
+      expect(unusable.error).toBeUndefined();
+      expect(unusable.status).toBe(2);
+    } finally {
+      await rm(testParent, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects external symlinks or Windows junctions at every managed root", async () => {
+    for (const managedPath of [["databases"], ["attachments"], ["attachments", "sha256"]]) {
+      const testParent = await mkdtemp(path.join(tmpdir(), "coredrill-native-link-"));
+      try {
+        const appDataRoot = path.join(testParent, "app-data");
+        const externalRoot = path.join(testParent, "external");
+        const linkedPath = path.join(appDataRoot, ...managedPath);
+        await mkdir(path.dirname(linkedPath), { recursive: true });
+        await mkdir(externalRoot, { recursive: true });
+        await symlink(externalRoot, linkedPath, process.platform === "win32" ? "junction" : "dir");
+
+        const linked = runProbe(appDataRoot);
+        expect(linked.error).toBeUndefined();
+        expect(linked.status).toBe(2);
+        expect(await realpath(linkedPath)).toBe(await realpath(externalRoot));
+      } finally {
+        await rm(testParent, { recursive: true, force: true });
+      }
+    }
+  });
+
+  it("rejects a final database-path reparse point before SQLite opens it", async () => {
+    const testParent = await mkdtemp(path.join(tmpdir(), "coredrill-native-database-link-"));
+    try {
+      const appDataRoot = path.join(testParent, "app-data");
+      const initialized = runProbe(appDataRoot);
+      expect(initialized.error).toBeUndefined();
+      expect(initialized.status).toBe(0);
+
+      const externalRoot = path.join(testParent, "external-database-target");
+      const linkedDatabase = path.join(appDataRoot, "databases", "linked.sqlite3");
+      await mkdir(externalRoot, { recursive: true });
+      await symlink(
+        externalRoot,
+        linkedDatabase,
+        process.platform === "win32" ? "junction" : "dir",
+      );
+
+      const request = JSON.stringify({
+        protocolVersion: 1,
+        requestId: "path-link",
+        operation: { type: "open", databaseName: "linked.sqlite3" },
+      });
+      const linked = runProbe(appDataRoot, `${request}\n`);
+      expect(linked.error).toBeUndefined();
+      expect(linked.status).toBe(0);
+      expect(JSON.parse(linked.stdout) as ProbeEnvelope).toMatchObject({
+        ok: false,
+        error: {
+          code: "storage_unavailable",
+          message: "Native storage is unavailable.",
+          retryable: false,
+        },
+      });
+    } finally {
+      await rm(testParent, { recursive: true, force: true });
+    }
   });
 });

@@ -1,22 +1,22 @@
 # Native SQLite/Tauri verification
 
 - Date: 2026-08-24
-- Checklist scope: `NAT-001`, `NAT-002`, `NAT-003`
+- Checklist scope: `NAT-001`, `NAT-002`, `NAT-003`, `NAT-004`
 - Packages: `@coredrill/desktop`, `@coredrill/storage-native`, `@coredrill/storage-core`, `@coredrill/web`
 - Locally proven target: Windows x86-64 with Rust 1.98.0, Tauri 2.11.3, Node.js 24.19.0, and pnpm 11.22.0
-- Decision changes at this checkpoint: none; D-022 remains Provisional and Q-003 remains open until `NAT-004` through `NAT-008`
+- Decision changes at this checkpoint: none; D-022 remains Provisional and Q-003 remains open until `NAT-005` through `NAT-008`
 
 ## Outcome
 
-`NAT-001` through `NAT-003` pass their local and hosted proof gates. The shared Vite frontend builds as `coredrill.exe` in a Tauri 2 shell with a strict content security policy, a local-window capability, and one generated permission for one versioned native-storage command. A narrow `rusqlite` command layer is the provisional native-adapter candidate because it can preserve the existing callback transaction and migration contracts without broadening the privileged surface. The exact same storage-core transaction suite and a shared migration/repository suite pass against a real Rust process and bundled native SQLite.
+`NAT-001` through `NAT-004` pass their local proof gates; `NAT-001` through `NAT-003` also pass immutable hosted proof, and the NAT-004 hosted run is recorded below once its implementation commit completes. The shared Vite frontend builds as `coredrill.exe` in a Tauri 2 shell with a strict content security policy, a local-window capability, and one generated permission for one versioned native-storage command. A narrow `rusqlite` command layer is the provisional native-adapter candidate because it preserves the existing callback transaction and migration contracts without broadening the privileged surface. The exact same storage-core transaction suite and a shared migration/repository suite pass against a real Rust process and bundled native SQLite. Tauri's exact platform application-data resolver now feeds a canonical Rust layout for databases and content-addressed attachments, with fail-closed link and unusable-root behavior.
 
-This checkpoint does not accept Tauri or the native adapter. OS app-data/path tests, secure storage, native export/restore, installable packaging, cross-platform evidence, and the final D-022/Q-003 decision remain `NAT-004` through `NAT-008`. The shell adds no account, hosted database, telemetry, scraper, AI/provider call, updater, filesystem plugin, or product feature.
+This checkpoint does not accept Tauri or the native adapter. Secure storage, native export/restore, installable packaging, cross-platform evidence, and the final D-022/Q-003 decision remain `NAT-005` through `NAT-008`. The shell adds no account, hosted database, telemetry, scraper, AI/provider call, updater, filesystem plugin, or product feature.
 
 ## NAT-001 desktop shell proof
 
 The desktop package pins the release-age-reviewed Tauri CLI and builds the existing `@coredrill/web` production output. `tauri.conf.json` uses `../../web/dist`, disables the global Tauri object, freezes the JavaScript prototype, applies a production CSP without `unsafe-inline` or `unsafe-eval`, and leaves bundling inactive for this smoke slice.
 
-The `main` capability is local, applies only to the bundled `main` window on desktop platforms, and grants only `allow-native-storage-invoke`. `build.rs` generates that permission from an explicit one-command app manifest. The Rust entry point manages one native service rooted under Tauri's application-data `vaults` directory and registers one invoke handler. All operation selection remains behind that single protocol command rather than exposing arbitrary filesystem or plugin permissions.
+The `main` capability is local, applies only to the bundled `main` window on desktop platforms, and grants only `allow-native-storage-invoke`. `build.rs` generates that permission from an explicit one-command app manifest. The Rust entry point forwards Tauri's application-data root into one native service and registers one invoke handler. All operation selection remains behind that single protocol command rather than exposing arbitrary filesystem or plugin permissions.
 
 The Windows release smoke command completed with:
 
@@ -30,25 +30,25 @@ The checked-in ICO is an intentionally neutral, reproducibly generated build res
 
 ## NAT-002 native adapter decision matrix
 
-| Requirement                            | Official Tauri SQL plugin                                                                                     | Narrow `rusqlite` command layer                                                                                            | Checkpoint result                        |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| Tauri ownership/maintenance            | Official plugin in the Tauri plugins workspace                                                                | `rusqlite` is a focused SQLite binding maintained outside Tauri                                                            | Both credible                            |
-| Callback transaction on one connection | The reviewed JavaScript API documents load/select/execute/close; open issue #886 requests transaction support | The service owns one connection per opaque session and implements begin/commit/rollback for the existing callback contract | `rusqlite` fits the current contract     |
-| Shared reviewed migrations             | Plugin supports configured migrations, creating a second migration mechanism to reconcile                     | Executes the existing `migrations/*.sql` through storage-core's checksum ledger                                            | `rusqlite` avoids migration divergence   |
-| Bound values and statement separation  | Parameter binding is supported through SQLx                                                                   | Tagged, size-bounded values are converted to `rusqlite` values; query rejects writes and execute rejects reads             | Both viable; narrow layer is proven      |
-| SQLite build/features                  | Selected by the plugin's SQLx stack                                                                           | Exact `rusqlite` 0.40.1 with default features disabled and bundled SQLite only                                             | `rusqlite` is more explicit              |
-| IPC/capability surface                 | Plugin permissions and SQL API must be reviewed as a package capability                                       | One allowlisted command, strict tagged protocol, opaque sessions, bounded SQL/results, stable redacted errors              | `rusqlite` is narrower in this spike     |
-| App-data/path control                  | Plugin database URLs/configuration must be constrained and platform-tested                                    | Rust service accepts only reviewed `.sqlite3` leaf names and canonicalizes its root                                        | Candidate only; `NAT-004` still required |
-| Backup/atomic replace/file picker      | No reviewed high-level API establishes the complete requirement                                               | Not implemented in this slice; `exportPortable()` fails with an explicit capability error                                  | Neither passes `NAT-006` yet             |
-| Maintenance burden                     | Less application-owned Rust, but plugin/API behavior and duplicate migration concerns remain                  | More application-owned protocol/Rust code and cross-platform testing                                                       | Material tradeoff retained for `NAT-008` |
+| Requirement                            | Official Tauri SQL plugin                                                                                     | Narrow `rusqlite` command layer                                                                                                                            | Checkpoint result                        |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| Tauri ownership/maintenance            | Official plugin in the Tauri plugins workspace                                                                | `rusqlite` is a focused SQLite binding maintained outside Tauri                                                                                            | Both credible                            |
+| Callback transaction on one connection | The reviewed JavaScript API documents load/select/execute/close; open issue #886 requests transaction support | The service owns one connection per opaque session and implements begin/commit/rollback for the existing callback contract                                 | `rusqlite` fits the current contract     |
+| Shared reviewed migrations             | Plugin supports configured migrations, creating a second migration mechanism to reconcile                     | Executes the existing `migrations/*.sql` through storage-core's checksum ledger                                                                            | `rusqlite` avoids migration divergence   |
+| Bound values and statement separation  | Parameter binding is supported through SQLx                                                                   | Tagged, size-bounded values are converted to `rusqlite` values; query rejects writes and execute rejects reads                                             | Both viable; narrow layer is proven      |
+| SQLite build/features                  | Selected by the plugin's SQLx stack                                                                           | Exact `rusqlite` 0.40.1 with default features disabled and bundled SQLite only                                                                             | `rusqlite` is more explicit              |
+| IPC/capability surface                 | Plugin permissions and SQL API must be reviewed as a package capability                                       | One allowlisted command, strict tagged protocol, opaque sessions, bounded SQL/results, stable redacted errors                                              | `rusqlite` is narrower in this spike     |
+| App-data/path control                  | Plugin database URLs/configuration must be constrained and platform-tested                                    | Exact Tauri app-data resolution, canonical managed roots, lowercase SHA-256 attachment paths, Windows-junction rejection, and SQLite `NOFOLLOW` are proven | `rusqlite` passes `NAT-004`              |
+| Backup/atomic replace/file picker      | No reviewed high-level API establishes the complete requirement                                               | Not implemented in this slice; `exportPortable()` fails with an explicit capability error                                                                  | Neither passes `NAT-006` yet             |
+| Maintenance burden                     | Less application-owned Rust, but plugin/API behavior and duplicate migration concerns remain                  | More application-owned protocol/Rust code and cross-platform testing                                                                                       | Material tradeoff retained for `NAT-008` |
 
-The provisional result is to carry the narrow `rusqlite` adapter through `NAT-004` to `NAT-007`. This is implementation evidence, not an Accepted decision. If export, secure-store, packaging, or cross-platform work reveals a material disadvantage, the official plugin remains a live alternative for the final ADR.
+The provisional result is to carry the narrow `rusqlite` adapter through `NAT-005` to `NAT-007`. This is implementation evidence, not an Accepted decision. If export, secure-store, packaging, or cross-platform work reveals a material disadvantage, the official plugin remains a live alternative for the final ADR.
 
 ## NAT-003 shared contract proof
 
 The TypeScript adapter implements the existing asynchronous `DatabasePort`; it does not expose Rust, Tauri, or SQLite types to storage-core. Each operation receives a version, bounded request ID, tagged operation, opaque session ID, and separately tagged values. The Rust boundary denies unknown envelope fields, validates database/session names and sizes, serializes connection access, enables foreign keys and `trusted_schema = OFF`, uses WAL, and returns stable content-free errors.
 
-`packages/storage-native/test/native-database.test.ts` starts the exact Rust service as a JSON-lines probe in a verified OS temporary directory. The probe does not log requests or values. Five tests prove:
+`packages/storage-native/test/native-database.test.ts` starts the exact Rust service as a JSON-lines probe in a verified OS temporary directory. The probe does not log requests or values. The five original contract cases prove:
 
 1. the reusable storage-core callback transaction suite, including commit, rollback, return values, and nested-transaction rejection;
 2. the shared `0001_vault.sql` migration and checksum ledger plus repository reads/writes with a hostile bound string;
@@ -56,18 +56,48 @@ The TypeScript adapter implements the existing asynchronous `DatabasePort`; it d
 4. query/execute separation and an explicit not-yet-supported portable-export capability;
 5. rejection of path-shaped database names before privileged work.
 
-The focused run reported:
+The NAT-004 path cases described below expand this file to nine real-process tests. The focused run reported:
 
 ```text
 Test Files  1 passed (1)
-Tests       5 passed (5)
+Tests       9 passed (9)
+```
+
+## NAT-004 OS app-data and path-confinement proof
+
+The production setup calls pinned Tauri 2.11.3's `app.path().app_data_dir()` and passes that value unchanged to `NativeStorageService`. A Tauri mock-runtime platform test loads the checked-in `app.coredrill.desktop` identifier, calls the same resolver helper used by production, and proves on Windows that the result is absolute and equals Tauri's platform data directory joined to that identifier. It does not write to the owner's real app-data directory.
+
+The service creates and canonicalizes this fixed internal layout:
+
+```text
+<Tauri app-data>/
+  databases/<validated-leaf>.sqlite3
+  attachments/sha256/<hex[0:2]>/<hex[2:4]>/<64-char-lowercase-sha256>
+```
+
+Database names remain validated lowercase leaf names; attachment identities accept only a complete lowercase SHA-256 digest. The browser/UI cannot supply an arbitrary attachment path, and absolute storage paths are neither returned over IPC nor logged. Managed directory paths are re-canonicalized against their recorded canonical parents before use. Existing database/attachment leaves reject links or external canonical targets, and SQLite opens with `SQLITE_OPEN_NOFOLLOW` in addition to the existing bound-query and connection hardening. Attachment manifest/content IPC is deliberately not introduced by this path-only gate.
+
+Executable proof covers:
+
+1. two Rust tests create a previously missing nested app-data root, verify canonical `databases` and `attachments/sha256` directories, write a synthetic content-addressed attachment only inside its two-level shard, and reject relative roots, file-occupied roots, traversal-shaped/uppercase/short hashes;
+2. nine real-process tests verify the existing SQLite contracts plus physical database placement under `databases`, relative/unusable-root rejection, external directory-link rejection at `databases`, `attachments`, and `attachments/sha256`, and a final `linked.sqlite3` reparse point rejected with a stable redacted `storage_unavailable` error before SQLite opens it;
+3. one all-feature pinned-Tauri platform test verifies the configured application-data resolution on Windows;
+4. all-target/all-feature Clippy passes with warnings denied, so the platform test and production Tauri setup compile together.
+
+Local focused results:
+
+```text
+cargo test --locked --no-default-features --lib: 2 passed
+vitest native real-process suite: 9 passed
+cargo test --locked --all-features --lib tauri_app_data_path_...: 1 passed, 2 filtered out
+cargo clippy --locked --all-targets --all-features -- -D warnings: no issues
 ```
 
 ## Dependency, license, and advisory review
 
 `JW-DI-001` v1.5.0 binds 18 direct npm dependencies to `pnpm-lock.yaml` and five direct crates to `Cargo.lock`. The npm license policy passes 309 package records; the Cargo metadata policy passes 419 registry crates. pnpm reports zero advisories at every severity.
 
-`cargo audit` 0.22.2 scans 420 locked packages and reports zero vulnerabilities. It also reports 15 informational warnings: 14 unmaintained transitive crates and one glib 0.18.5 unsoundness advisory in Tauri/Wry's cross-platform GTK3 graph. The Windows target does not compile the GTK3 path, but the finding is neither hidden nor globally ignored; it remains a maintenance/cross-platform review item for `NAT-004` and `NAT-008`.
+`cargo audit` 0.22.2 scans 420 locked packages and reports zero vulnerabilities. It also reports 15 informational warnings: 14 unmaintained transitive crates and one glib 0.18.5 unsoundness advisory in Tauri/Wry's cross-platform GTK3 graph. The Windows target does not compile the GTK3 path, but the finding is neither hidden nor globally ignored; it remains a maintenance/cross-platform review item for `NAT-008`.
 
 ## Reproducible verification
 
@@ -75,13 +105,14 @@ Run with the repository's pinned toolchains:
 
 | Command                                                | Result                                                                                    |
 | ------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
-| `pnpm test:storage-native`                             | Passed the five real-process native storage tests                                         |
+| `pnpm test:storage-native`                             | Passed two Rust layout tests and nine real-process native storage/path tests              |
+| `pnpm --filter @coredrill/desktop test:platform`       | Passed the pinned-Tauri app-data resolver test on Windows                                 |
 | `pnpm --filter @coredrill/desktop build:desktop`       | Built the shared Vite frontend and `coredrill.exe`                                        |
 | `pnpm check:foundation-records`                        | Passed 18 direct npm dependencies, 3 toolchains, and the exact Cargo manifest/lock record |
 | `pnpm check:licenses`                                  | Passed 309 npm package records and 419 Cargo crate records                                |
 | `cargo audit --file apps/desktop/src-tauri/Cargo.lock` | Zero vulnerabilities; 15 reviewed informational warnings                                  |
 
-The complete repository `pnpm verify` gate passed: 25/25 typecheck tasks, 21/21 lint tasks, 16 portable unit-test files and 94 tests, 99.02% statements/95.29% branches/100% functions/99.19% lines, 21/21 builds, four browser storage E2E tests, five separate native storage tests, schema drift checks, both license policies, secret scanning, npm/RustSec vulnerability checks, and Changesets status. A release-mode build after dependency minimization and result-bound hardening produced `coredrill.exe` in 20.27 seconds.
+The complete NAT-004 repository `pnpm verify` gate passed: 25/25 typecheck tasks, 21/21 lint tasks, 16 portable unit-test files and 94 tests, 99.02% statements/95.29% branches/100% functions/99.19% lines, 21/21 builds, four browser storage E2E tests, two Rust native-layout tests plus nine real-process native storage/path tests, schema drift checks, both license policies, secret scanning, npm/RustSec vulnerability checks, and Changesets status. The separate all-feature Tauri platform test and all-target Clippy gate also pass. A release-mode build after dependency minimization and result-bound hardening produced `coredrill.exe` in 20.27 seconds.
 
 Hosted clean-checkout proof for implementation commit `7fe612d14e9d704a9cc86c4e59daf6a57795d4da` passed [Foundation CI run 32721800309](https://github.com/seabAu/Coredrill/actions/runs/32721800309):
 
@@ -105,7 +136,6 @@ The hosted Firefox jobs retain a non-failing GitHub annotation because the check
 
 ## Remaining work
 
-- `NAT-004`: platform-test the real Tauri app-data root, canonicalization, symlink/reparse-point behavior, attachment paths, and missing/unwritable storage.
 - `NAT-005`: select and prove OS secure storage with redacted create/read/delete failure tests.
 - `NAT-006`: implement native picker-driven checksummed export/restore with temporary validation, atomic replacement, and recovery.
 - `NAT-007`: build an installable first-OS artifact and measure size, startup, and memory.
