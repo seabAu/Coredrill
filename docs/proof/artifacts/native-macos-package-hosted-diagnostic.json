@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "proofId": "NAT008-CROSS-PLATFORM-PACKAGE",
+  "matrixId": "JW-TM-001",
+  "matrixVersion": "1.2.0",
+  "executionTargetId": "DESK-MAC",
+  "targetConformant": false,
+  "targetLimitation": "Hosted package evidence is not signing/notarization or reference-hardware release acceptance.",
+  "commitSha": "0a1c8bd11eacac1a103c3cb1b6a574c1919f8d1d",
+  "dirtyWorktreeAtStart": false,
+  "fixture": {
+    "id": "NAT007-EMPTY-SHELL",
+    "version": 1,
+    "seed": "coredrill-native-empty-shell-v1",
+    "sha256": "a81fa89661b5152097084929381742c7121c952422e3a5fd9265b103e32d5e35",
+    "containsUserData": false
+  },
+  "environment": {
+    "platform": "darwin",
+    "architecture": "arm64",
+    "uname": "Darwin 25.5.0 arm64",
+    "platformDetails": "ProductName:\t\tmacOS\nProductVersion:\t\t26.5.2\nBuildVersion:\t\t25F84"
+  },
+  "package": {
+    "format": "macos-app",
+    "artifactPath": "apps/desktop/src-tauri/target/release/bundle/macos/Coredrill.app",
+    "artifactBytes": 13473166,
+    "artifactEntryCount": 4,
+    "artifactSha256": "8903a4c9e80c4756bfc9426bd72764ce2b8450ab70bd3d1f65e6bc40a9ec96d5",
+    "absoluteSymlinkCount": 0,
+    "relativeSymlinkCount": 0,
+    "executableBytes": 13436256,
+    "executableSha256": "8b85baaa8d183873d0b2ebbddbcee0f18df5f047c7821fcbd943dab470ac7cbf",
+    "bundleIdentifier": "app.coredrill.desktop",
+    "bundleVersion": "0.0.0",
+    "signatureStatus": "ad-hoc-verified",
+    "nativeStorageProbeExcluded": true,
+    "fiveSecondLaunchAlive": true
+  },
+  "completedAt": "2026-08-24T15:45:37.077Z",
+  "reviewer": "automated-phase-0-cross-platform-diagnostic"
+}

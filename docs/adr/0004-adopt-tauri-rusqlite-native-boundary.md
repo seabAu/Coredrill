@@ -12,7 +12,7 @@ D-022 provisionally selected Tauri 2, while Q-003 left the native SQLite adapter
 
 `NAT-001` through `NAT-007` proved the Windows path: one capability-gated Tauri shell over the shared Vite frontend; strict versioned native database, secret, and archive commands; the shared callback-transaction and migration/repository suites against bundled native SQLite; canonical app-data paths; content-addressed attachments; Windows Credential Manager; picker-owned checksummed database recovery with atomic replacement and rollback; and an isolated current-user NSIS install/launch/uninstall lifecycle with startup and process-tree memory diagnostics.
 
-`NAT-008` added exact target-confined providers for the macOS login Keychain and FreeDesktop Secret Service. On commit `a1cafce553750820afebd6a01c1079110280e818`, [Foundation CI run 32743465914](https://github.com/seabAu/Coredrill/actions/runs/32743465914) passed the aggregate repository gate, all exact browser lanes, full-history secret scanning, the Windows package regression, and real macOS 26 ARM64 and Ubuntu 26.04 x64 native jobs. Both new targets passed the shared native SQLite contracts, a redacted store/retrieve-inside-Rust/delete lifecycle, full production-boundary lint, package construction, probe exclusion, and a five-second launch from the retained package.
+`NAT-008` added exact target-confined providers for the macOS login Keychain and FreeDesktop Secret Service. On commit `0a1c8bd11eacac1a103c3cb1b6a574c1919f8d1d`, [Foundation CI run 32746186411](https://github.com/seabAu/Coredrill/actions/runs/32746186411) passed the aggregate repository gate, all exact browser lanes, full-history secret scanning, the Windows package regression, and real macOS 26 ARM64 and Ubuntu 26.04 x64 native jobs. Both new targets passed the shared native SQLite contracts, a redacted store/retrieve-inside-Rust/delete lifecycle, full production-boundary lint, package construction, probe exclusion, and a five-second launch from the retained package. Sanitized raw manifests retain platform/kernel/version data without ephemeral runner hostnames.
 
 The dependency review is not equally favorable on every target. The 499-package Cargo lockfile has zero known vulnerabilities, but RustSec reports 14 unmaintained transitive packages plus `RUSTSEC-2024-0429` unsoundness in `glib 0.18.5`. Windows and macOS do not compile that GTK3 path. Linux does.
 
@@ -72,7 +72,7 @@ No source-policy decision changes.
 
 - Design/goal/decision-register changes: promote D-022, retain D-024, resolve Q-003, record the Linux fallback/risk, and update runtime, technology, security, application-boundary, and ADR indexes.
 - Contracts/migrations: none.
-- Checklist IDs: close `NAT-008` only after the sanitized hosted manifests are retained and linked.
+- Checklist IDs: `NAT-008` closed after the sanitized hosted manifests were retained byte-for-byte and linked.
 - Automated/manual proof: complete local `pnpm verify`; exact Windows/macOS/Linux native CI jobs; redacted secure-store lifecycles; Rust formatting/Clippy/tests; Cargo license/RustSec review; package build, extraction/signature inspection, probe exclusion, five-second launch, and immutable artifacts.
 
 ## Revisit trigger

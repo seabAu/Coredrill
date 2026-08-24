@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "proofId": "NAT008-CROSS-PLATFORM-PACKAGE",
+  "matrixId": "JW-TM-001",
+  "matrixVersion": "1.2.0",
+  "executionTargetId": "DESK-LINUX",
+  "targetConformant": false,
+  "targetLimitation": "Hosted package evidence is not signing/notarization or reference-hardware release acceptance.",
+  "commitSha": "0a1c8bd11eacac1a103c3cb1b6a574c1919f8d1d",
+  "dirtyWorktreeAtStart": false,
+  "fixture": {
+    "id": "NAT007-EMPTY-SHELL",
+    "version": 1,
+    "seed": "coredrill-native-empty-shell-v1",
+    "sha256": "a81fa89661b5152097084929381742c7121c952422e3a5fd9265b103e32d5e35",
+    "containsUserData": false
+  },
+  "environment": {
+    "platform": "linux",
+    "architecture": "x64",
+    "uname": "Linux 7.0.0-1011-azure x86_64",
+    "platformDetails": "PRETTY_NAME=\"Ubuntu 26.04 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"26.04\"\nVERSION=\"26.04 LTS (Resolute Raccoon)\"\nVERSION_CODENAME=resolute\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nBUG_REPORT_URL=\"https://bugs.launchpad.net/ubuntu/\"\nPRIVACY_POLICY_URL=\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"\nUBUNTU_CODENAME=resolute\nLOGO=ubuntu-logo"
+  },
+  "package": {
+    "format": "linux-appimage",
+    "artifactPath": "apps/desktop/src-tauri/target/release/bundle/appimage/Coredrill_0.0.0_amd64.AppImage",
+    "artifactBytes": 84273656,
+    "artifactSha256": "85b318955ae770bd74483bf1ee9c52c2c48a6c86bd1d79a3ed64310fa5809cd7",
+    "extractedBytes": 270805647,
+    "extractedEntryCount": 316,
+    "extractedTreeSha256": "d2a8e52279bae2c901b72d477b11d82f2c167dd63280542292e282d5b5c3e7f6",
+    "absoluteSymlinkCount": 1,
+    "relativeSymlinkCount": 18,
+    "relativeSymlinksConfined": true,
+    "nativeStorageProbeExcluded": true,
+    "fiveSecondLaunchAlive": true
+  },
+  "completedAt": "2026-08-24T15:49:05.999Z",
+  "reviewer": "automated-phase-0-cross-platform-diagnostic"
+}

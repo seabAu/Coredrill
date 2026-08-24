@@ -35,18 +35,18 @@ Focused cross-platform policy gates also passed: all-feature production Clippy, 
 
 ## Hosted clean-commit proof
 
-[Foundation CI run 32743465914](https://github.com/seabAu/Coredrill/actions/runs/32743465914) passed on immutable commit `a1cafce553750820afebd6a01c1079110280e818`:
+[Foundation CI run 32746186411](https://github.com/seabAu/Coredrill/actions/runs/32746186411) passed on immutable commit `0a1c8bd11eacac1a103c3cb1b6a574c1919f8d1d`:
 
-| Job                                                                                                                 |        Result | Evidence                                                                                              |
-| ------------------------------------------------------------------------------------------------------------------- | ------------: | ----------------------------------------------------------------------------------------------------- |
-| [Aggregate build/static/tests/policy](https://github.com/seabAu/Coredrill/actions/runs/32743465914/job/97483399190) | Pass in 6m34s | Complete repository gate and retained license reports                                                 |
-| [macOS 26 ARM64](https://github.com/seabAu/Coredrill/actions/runs/32743465914/job/97483399597)                      | Pass in 6m21s | Native SQLite, Keychain, lint, app build, ad-hoc signature, probe exclusion, launch, upload           |
-| [Ubuntu 26.04 x64](https://github.com/seabAu/Coredrill/actions/runs/32743465914/job/97483399564)                    | Pass in 9m27s | Native SQLite, Secret Service, lint, AppImage, extraction/link proof, probe exclusion, launch, upload |
-| [Windows package regression](https://github.com/seabAu/Coredrill/actions/runs/32743465914/job/97483399297)          |   Pass in 12m | Existing app-data, Credential Manager, recovery, NSIS, installed lifecycle, resource measurement      |
-| Exact Chrome 152/151 and Firefox 154/153                                                                            |          Pass | Browser SQLite/OPFS lifecycle remained green                                                          |
-| Full-history secret scan                                                                                            |          Pass | Checksum-pinned scanner over full repository history                                                  |
+| Job                                                                                                                 |         Result | Evidence                                                                                              |
+| ------------------------------------------------------------------------------------------------------------------- | -------------: | ----------------------------------------------------------------------------------------------------- |
+| [Aggregate build/static/tests/policy](https://github.com/seabAu/Coredrill/actions/runs/32746186411/job/97492167361) |  Pass in 5m43s | Complete repository gate and retained license reports                                                 |
+| [macOS 26 ARM64](https://github.com/seabAu/Coredrill/actions/runs/32746186411/job/97492167565)                      |  Pass in 6m15s | Native SQLite, Keychain, lint, app build, ad-hoc signature, probe exclusion, launch, upload           |
+| [Ubuntu 26.04 x64](https://github.com/seabAu/Coredrill/actions/runs/32746186411/job/97492167549)                    |  Pass in 9m43s | Native SQLite, Secret Service, lint, AppImage, extraction/link proof, probe exclusion, launch, upload |
+| [Windows package regression](https://github.com/seabAu/Coredrill/actions/runs/32746186411/job/97492167843)          | Pass in 12m14s | Existing app-data, Credential Manager, recovery, NSIS, installed lifecycle, resource measurement      |
+| Exact Chrome 152/151 and Firefox 154/153                                                                            |           Pass | Browser SQLite/OPFS lifecycle remained green                                                          |
+| Full-history secret scan                                                                                            |           Pass | Checksum-pinned scanner over full repository history                                                  |
 
-Both cross-platform jobs checked out a clean `a1cafce...` worktree and used only synthetic fixture `NAT007-EMPTY-SHELL` with SHA-256 `a81fa89661b5152097084929381742c7121c952422e3a5fd9265b103e32d5e35`.
+Both cross-platform jobs checked out a clean `0a1c8bd...` worktree and used only synthetic fixture `NAT007-EMPTY-SHELL` with SHA-256 `a81fa89661b5152097084929381742c7121c952422e3a5fd9265b103e32d5e35`.
 
 ## Retained package evidence
 
@@ -58,18 +58,20 @@ Both cross-platform jobs checked out a clean `a1cafce...` worktree and used only
 - Executable: 13,436,256 bytes, SHA-256 `8b85baaa8d183873d0b2ebbddbcee0f18df5f047c7821fcbd943dab470ac7cbf`; the downloaded retained executable matched this digest.
 - Signature: verifiable ad-hoc signature. This is not Developer ID signing or notarization.
 - Proof: storage probe excluded; packaged executable remained alive for five seconds.
-- Artifact: [`coredrill-macos-app-a1cafce...`](https://github.com/seabAu/Coredrill/actions/runs/32743465914/artifacts/9526336212), 13,476,416-byte archive, digest `sha256:dfcd7e6a98d94b179c77783df8be1c3f414cf7fc4a157c1856bc50f87d82742c`, expires 2026-09-23.
+- Artifact: [`coredrill-macos-app-0a1c8bd...`](https://github.com/seabAu/Coredrill/actions/runs/32746186411/artifacts/9527372579), 13,476,242-byte archive, digest `sha256:2e6ccd8b46c7a1cefced0dc59a0407c6e8fe4583b2f448c378924cb23000d367`, expires 2026-09-23.
+- Durable raw manifest: [`native-macos-package-hosted-diagnostic.json`](artifacts/native-macos-package-hosted-diagnostic.json), byte-for-byte matched to the downloaded hosted manifest. Its `uname` is limited to `Darwin 25.5.0 arm64`.
 
 ### Linux diagnostic
 
 - Platform: Ubuntu 26.04 LTS, x64 hosted runner.
-- AppImage: 84,273,656 bytes, SHA-256 `922370fa6550d777145171b92fb9aeea1f79a9cf7535141a5eab5e7e496a301f`; the downloaded retained AppImage matched this digest.
+- AppImage: 84,273,656 bytes, SHA-256 `85b318955ae770bd74483bf1ee9c52c2c48a6c86bd1d79a3ed64310fa5809cd7`; the downloaded retained AppImage matched this digest.
 - Extracted tree: 270,805,647 bytes, 316 entries, SHA-256 `d2a8e52279bae2c901b72d477b11d82f2c167dd63280542292e282d5b5c3e7f6`.
 - Links: one absolute system link and 18 relative links; every relative link remained confined.
 - Proof: storage probe excluded; extracted `AppRun` realpath remained inside the package and stayed alive for five seconds.
-- Artifact: [`coredrill-linux-appimage-a1cafce...`](https://github.com/seabAu/Coredrill/actions/runs/32743465914/artifacts/9526461540), 84,276,163-byte archive, digest `sha256:9d3860fc4d1ffad2f088d6fa4c9c11ad6625eac4c6e7ba55f5b7a95ac35b6e25`, expires 2026-09-23.
+- Artifact: [`coredrill-linux-appimage-0a1c8bd...`](https://github.com/seabAu/Coredrill/actions/runs/32746186411/artifacts/9527509533), 84,276,087-byte archive, digest `sha256:935ebd917a8e0112994f63ef2f87e04ea0e44ec6542ee92af0ce3091598c3092`, expires 2026-09-23.
+- Durable raw manifest: [`native-linux-package-hosted-diagnostic.json`](artifacts/native-linux-package-hosted-diagnostic.json), byte-for-byte matched to the downloaded hosted manifest. Its `uname` is limited to `Linux 7.0.0-1011-azure x86_64`.
 
-The first retained manifests used `uname -a`, which unnecessarily included an ephemeral hosted-runner name. No user or workstation data was involved. The proof harness now records only `uname -srm`; checklist closure waits for the sanitized rerun and durable repository copies.
+The proof harness records `uname -srm`, not `uname -a`; neither durable manifest contains an ephemeral runner hostname, user data, or workstation data. Local SHA-256 checks independently matched the downloaded macOS executable and Linux AppImage to their manifest values. The Windows regression artifact from the same green run is [`coredrill-windows-nsis-0a1c8bd...`](https://github.com/seabAu/Coredrill/actions/runs/32746186411/artifacts/9527606157), a 3,024,493-byte archive with digest `sha256:aa75e5bb12fcf72c6da48c235a605fde1e634a6097afcb79701bc7ca15847d85`.
 
 ## Dependency and support decision
 

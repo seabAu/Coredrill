@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-24  
 Current milestone: Phase 0 — foundations and risk retirement  
-Current work item: `NAT-008` — cross-platform evidence and evidence-backed native-adapter decision
-Next recommended slice: `EXT-001` through `EXT-003` — least-privilege extension shell, user-action capture, and bounded outbox contract
+Current work item: `EXT-001` through `EXT-003` — least-privilege extension shell, user-action capture, and bounded outbox contract
+Next recommended slice: `EXT-004` through `EXT-006` — idempotent transfer, Firefox/manual fallback, and hostile-message/replay tests
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `EXT-001` through `EXT-003` — least-privilege extensio
 | Field | Value |
 |---|---|
 | Milestone | Phase 0 |
-| Item range | `NAT-008` |
+| Item range | `EXT-001` through `EXT-003` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-24 |
-| Expected proof | Cross-platform secure-store/package evidence and ADR-backed D-022/D-024/Q-003 decision |
+| Expected proof | Chromium side-panel and popup-fallback builds, exact least-privilege manifest, user-action capture fixture, and bounded checksummed outbox contract tests |
 | Blocker | None for this slice; the independent `FND-001` private-reporting-route blocker remains open below |
-| Next handoff | Continue with `EXT-001` through `EXT-003` after the native adapter/packaging decision; close `FND-001` independently when the owner publishes both private reporting routes |
+| Next handoff | Continue with `EXT-004` through `EXT-006` after the extension shell/capture/outbox contract; close `FND-001` independently when the owner publishes both private reporting routes |
 
 ## Milestone status
 
@@ -107,7 +107,7 @@ Next recommended slice: `EXT-001` through `EXT-003` — least-privilege extensio
 - [x] **NAT-005** Store/delete a test provider secret through OS secure storage without logging it. — Proof: [redacted Windows Credential Manager lifecycle and clean hosted checkout](../../proof/native-secure-storage-verification.md#redacted-integration-proof)
 - [x] **NAT-006** Export/restore with native file picker and atomic replacement behavior. — Proof: [picker-owned checksummed archive, corruption rejection, atomic replacement, recovery, and clean hosted checkout](../../proof/native-archive-verification.md#end-to-end-failure-and-recovery-proof)
 - [x] **NAT-007** Build installable artifact for the first target OS and record size/startup/memory. — Proof: [clean-commit NSIS artifact, installed lifecycle, and raw size/startup/memory manifests](../../proof/native-windows-package-verification.md#clean-commit-artifact-and-benchmark)
-- [ ] **NAT-008** Decide native adapter and update D-022/D-024/Q-003. — Proof: _ADR/update_
+- [x] **NAT-008** Decide native adapter and update D-022/D-024/Q-003. — Proof: [ADR-backed cross-platform dependency, secure-store, package, sanitized-manifest, and fallback decision](../../proof/native-cross-platform-verification.md#hosted-clean-commit-proof)
 
 ## Extension spike
 
@@ -523,6 +523,7 @@ This phase is deliberately deferred. Re-open only after `GATE-6`, demonstrated m
 | Date | ADR | Checklist IDs added/changed | Goal/design documents updated | Summary |
 |---|---|---|---|---|
 | 2026-08-24 | [`ADR-0002`](../../adr/0002-adopt-coredrill-identity-and-apache-license.md) | `FND-001`, `FND-006`, `DEP-001`; `Q-001`/`Q-013` narrowed | `README.md`, decision register, design-kit identity/path, package scope, governance/proof records | Adopt Coredrill and Apache-2.0 without changing product architecture; retain public-name clearance, business-model, and private-reporting gates. |
+| 2026-08-24 | [`ADR-0004`](../../adr/0004-adopt-tauri-rusqlite-native-boundary.md) | `NAT-001` through `NAT-008`; D-022 accepted, D-024 retained, Q-003 resolved | Decision register, runtime architecture, technology stack, security/testing, application-boundary, and proof records | Accept the narrow Tauri 2/`rusqlite` native boundary for Windows/macOS; keep Linux native diagnostic with the local browser app and portable export as its supported fallback. |
 
 ## Proof index
 
@@ -530,7 +531,7 @@ Keep proof close to each checkbox. For large milestone reports, also index them 
 
 | Gate | Commit/tag | Test/report/artifact links | Reviewed by/date |
 |---|---|---|---|
-| `GATE-0` | `f8d9a18` | [Foundation](../../proof/foundation-verification.md), [dependency/reference baselines](../../proof/foundation-baselines-verification.md), [identity/license/hosting follow-up](../../proof/identity-license-hosting-verification.md), and [hosted Foundation CI](https://github.com/seabAu/Coredrill/actions/runs/32694914029) | Automated local and hosted gates / 2026-08-24 |
+| `GATE-0` | `0a1c8bd` | [Foundation](../../proof/foundation-verification.md), [dependency/reference baselines](../../proof/foundation-baselines-verification.md), [identity/license/hosting follow-up](../../proof/identity-license-hosting-verification.md), [cross-platform native decision/proof](../../proof/native-cross-platform-verification.md), and [hosted Foundation CI](https://github.com/seabAu/Coredrill/actions/runs/32746186411) | Automated local and hosted gates / 2026-08-24 |
 | `GATE-1` | — | — | — |
 | `GATE-2` | — | — | — |
 | `GATE-3` | — | — | — |
