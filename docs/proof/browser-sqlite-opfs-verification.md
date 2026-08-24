@@ -4,11 +4,12 @@
 - Checklist scope: `STG-001`, `STG-002`, `STG-003`
 - Packages: `@coredrill/storage-browser`, `@coredrill/storage-core`, `@coredrill/web`
 - Browser locally proven: Microsoft Edge 151.0.4129.101 on Windows
+- Hosted browser path: Playwright `chrome` channel on GitHub `ubuntu-latest`
 - Decision changes: none; D-024 and D-026 are implemented, D-025 remains Provisional
 
 ## Outcome
 
-`STG-001` through `STG-003` are proven locally. Coredrill now has a minimal end-to-end browser storage path that runs official SQLite WebAssembly in a dedicated Worker, persists through `opfs-sahpool`, applies checksum-bound shared SQL migrations transactionally, survives close/reopen, exports checksummed SQLite bytes, restores them into a clean browser context, and deletes the restored database.
+`STG-001` through `STG-003` are proven locally and by hosted CI. Coredrill now has a minimal end-to-end browser storage path that runs official SQLite WebAssembly in a dedicated Worker, persists through `opfs-sahpool`, applies checksum-bound shared SQL migrations transactionally, survives close/reopen, exports checksummed SQLite bytes, restores them into a clean browser context, and deletes the restored database.
 
 The proof uses only local browser storage and self-hosted build assets. It adds no account, network service, AI/provider call, telemetry sink, scraper, extension permission, native adapter, product record repository, or product UI. SQLite remains durable truth, and the harness remains useful with AI disabled.
 
@@ -61,7 +62,7 @@ Run with pinned Node.js 24.19.0 and pnpm 11.22.0:
 | `pnpm test:storage-browser` within `verify` | 1 Edge E2E test passed; exact `STG_PROOF` shown above                                                                                                                                                          |
 | Dependency/policy checks within `verify`    | 15 direct dependencies, 307 license records, secret scan passed, and zero known vulnerabilities at every audit severity                                                                                        |
 
-Hosted CI evidence will be attached to this record after the implementation commit is pushed and the exact Foundation workflow completes.
+Implementation commit [`03842f4111f0c7efde4c00cbc67a6693d4ee21ca`](https://github.com/seabAu/Coredrill/commit/03842f4111f0c7efde4c00cbc67a6693d4ee21ca) passed hosted [Foundation CI run `32707257074`](https://github.com/seabAu/Coredrill/actions/runs/32707257074) in 2m05s. The hosted Linux/Chrome path passed all 89 unit tests, the complete policy/security/dependency gate, and the browser E2E test in 4.2s with the same 40,960-byte SHA-256 and structured `STG_PROOF` shown above. The full-history Gitleaks job also passed.
 
 ## Dependency and boundary review
 
