@@ -59,6 +59,7 @@ jobs:
           name: coredrill-chromium-extension-${{ github.sha }}
           path: apps/extension/.output/chrome-mv3
           if-no-files-found: error
+          include-hidden-files: true
           retention-days: 30
           compression-level: 0
 
@@ -109,6 +110,7 @@ jobs:
             apps/extension/.output/firefox-mv3
             test-results/extension-transfer.json
           if-no-files-found: error
+          include-hidden-files: true
           retention-days: 30
           compression-level: 0
 
