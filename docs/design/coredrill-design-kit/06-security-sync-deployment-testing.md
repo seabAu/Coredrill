@@ -36,6 +36,8 @@ The redactor is fail-closed and never returns rejected values. Product telemetry
 
 Chrome recommends minimal permissions, strict externally-connectable origins, and CSP: [extension security guidance](https://developer.chrome.com/docs/extensions/develop/security-privacy/stay-secure).
 
+The Phase 0 transfer proof requires sender origin and URL to agree with the single reserved HTTPS app origin, a top-level ordinary tab, strict request/response contracts, bounded messages, and an exact extension ID on receipt. SQLite commits the complete validated envelope before acknowledgement. A dropped acknowledgement retries the same item; exact duplicates are acknowledged idempotently, while ID/hash/nonce/sequence collisions fail as replay conflicts. Wrong origins, child/opaque frames, extension/native senders, oversized/extra-field messages, wrong IDs, changed checksums, expired captures, and acknowledgement replays are rejected. Firefox adds no content script or externally-connectable match and uses explicit checksummed JSON export/import.
+
 ### Local fetch/SSRF
 
 Any URL fetcher enforces scheme/port, DNS and redirect revalidation, private/link-local/metadata IP blocks, size/time/type limits, and approved connector domains. Browser extension does not expose a general fetch oracle to pages.

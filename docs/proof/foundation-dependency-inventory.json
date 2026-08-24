@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "inventoryId": "JW-DI-001",
-  "version": "1.9.0",
-  "reviewedAt": "2026-08-24T16:35:13Z",
+  "version": "1.10.0",
+  "reviewedAt": "2026-08-24T17:51:49Z",
   "scope": {
     "included": [
       "Pinned Node.js, pnpm, and Rust foundation toolchains",
@@ -17,7 +17,7 @@
   },
   "lockfile": {
     "path": "pnpm-lock.yaml",
-    "sha256": "4ad7db6c33b07978bbe42e58f1d04855e11cdc8d8f16604bf498b45103be94aa"
+    "sha256": "58340bbd70a44324afa62d80e902cffb10254a54b940055b2eb3893a4ec79d11"
   },
   "toolchains": [
     {
@@ -677,8 +677,8 @@
   "advisoryReview": {
     "command": "pnpm audit --json",
     "source": "https://pnpm.io/cli/audit",
-    "reviewedAt": "2026-08-24T16:35:13Z",
-    "lockfileSha256": "4ad7db6c33b07978bbe42e58f1d04855e11cdc8d8f16604bf498b45103be94aa",
+    "reviewedAt": "2026-08-24T17:51:49Z",
+    "lockfileSha256": "58340bbd70a44324afa62d80e902cffb10254a54b940055b2eb3893a4ec79d11",
     "resolvedDependencyCount": 459,
     "optionalDependencyCount": 47,
     "vulnerabilities": {
@@ -691,8 +691,8 @@
   },
   "licenseReview": {
     "command": "pnpm check:licenses",
-    "reviewedAt": "2026-08-24T16:35:13Z",
-    "lockfileSha256": "4ad7db6c33b07978bbe42e58f1d04855e11cdc8d8f16604bf498b45103be94aa",
+    "reviewedAt": "2026-08-24T17:51:49Z",
+    "lockfileSha256": "58340bbd70a44324afa62d80e902cffb10254a54b940055b2eb3893a4ec79d11",
     "resolvedPackageRecords": 348,
     "result": "pass",
     "note": "License records and advisory dependency counts use different tool scopes and are not expected to match."

@@ -62,7 +62,10 @@ const probeExecutable = path.join(
     ? "coredrill-native-storage-probe.exe"
     : "coredrill-native-storage-probe",
 );
-const migrationPath = path.join(repositoryRoot, "migrations", "0001_vault.sql");
+const migrationPaths = [
+  path.join(repositoryRoot, "migrations", "0001_vault.sql"),
+  path.join(repositoryRoot, "migrations", "0002_capture_inbox.sql"),
+] as const;
 const APPLIED_AT = "2026-08-24T12:00:00.000Z";
 
 class ProbeTransport implements NativeStorageTransport {
@@ -153,8 +156,8 @@ class ProbeTransport implements NativeStorageTransport {
 
 let transport: ProbeTransport;
 let databaseSequence = 1;
-let migrationSql: string;
-let migrationSha256: string;
+let migrationSql: readonly string[];
+let migrationSha256: readonly string[];
 
 const nextDatabaseName = (): string => {
   const name = `native-contract-${String(databaseSequence)}.sqlite3`;
@@ -167,8 +170,14 @@ const migrations = () =>
     {
       version: 1,
       name: "vault",
-      sha256: migrationSha256,
-      sql: migrationSql,
+      sha256: migrationSha256[0] as string,
+      sql: migrationSql[0] as string,
+    },
+    {
+      version: 2,
+      name: "capture-inbox",
+      sha256: migrationSha256[1] as string,
+      sql: migrationSql[1] as string,
     },
   ]);
 
@@ -210,8 +219,10 @@ const entryProbe: TransactionContractProbe<readonly string[]> = {
 beforeAll(async () => {
   const root = await mkdtemp(path.join(tmpdir(), "coredrill-native-"));
   transport = new ProbeTransport(probeExecutable, root);
-  migrationSql = await readFile(migrationPath, "utf8");
-  migrationSha256 = createHash("sha256").update(migrationSql).digest("hex");
+  migrationSql = await Promise.all(
+    migrationPaths.map((migrationPath) => readFile(migrationPath, "utf8")),
+  );
+  migrationSha256 = migrationSql.map((sql) => createHash("sha256").update(sql).digest("hex"));
 });
 
 afterAll(async () => {
@@ -256,11 +267,11 @@ describe("native SQLite repository and migration contracts", () => {
         name: "applies the shared migration and reopens its ledger",
         run: async (database) => {
           await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
-            schemaVersion: 1,
-            appliedVersions: [1],
+            schemaVersion: 2,
+            appliedVersions: [1, 2],
           });
           await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
-            schemaVersion: 1,
+            schemaVersion: 2,
             appliedVersions: [],
           });
         },
@@ -338,7 +349,7 @@ describe("native SQLite repository and migration contracts", () => {
       adapterName: "native-rusqlite-candidate",
       health: "ready",
       persistence: "durable",
-      schemaVersion: 1,
+      schemaVersion: 2,
     });
     await expect(reopened.delete()).resolves.toBe(true);
   });

@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { captureActivePage } from "../src/capture-active-page";
 import { isExtensionResponse, parseExtensionRequest } from "../src/messages";
+import { COREDRILL_PHASE0_APP_ORIGIN, isTrustedHostedAppSender } from "../src/transfer-policy";
 import fixture from "./fixtures/job-posting.capture.json" with { type: "json" };
 
 const originalGlobals = new Map<string, PropertyDescriptor | undefined>();
@@ -102,6 +103,9 @@ describe("extension message boundary", () => {
       type: "capture.queue.v1",
       snapshot: fixture,
     });
+    expect(parseExtensionRequest({ type: "outbox.export.v1" })).toEqual({
+      type: "outbox.export.v1",
+    });
   });
 
   it("rejects response impostors and unexpected properties", () => {
@@ -124,5 +128,40 @@ describe("extension message boundary", () => {
       }),
     ).toBe(false);
     expect(isExtensionResponse({ success: true, type: "capture.preview.v1" })).toBe(false);
+    expect(
+      isExtensionResponse({
+        success: true,
+        type: "outbox.export.v1",
+        filename: "coredrill-capture-outbox-20260824T180000Z.json",
+        json: "{}",
+        bytes: 2,
+      }),
+    ).toBe(true);
+  });
+
+  it("accepts only the exact top-level non-incognito hosted-app sender", () => {
+    const trusted = {
+      origin: COREDRILL_PHASE0_APP_ORIGIN,
+      url: `${COREDRILL_PHASE0_APP_ORIGIN}/inbox`,
+      frameId: 0,
+      tab: { incognito: false },
+    };
+    expect(isTrustedHostedAppSender(trusted)).toBe(true);
+    expect(isTrustedHostedAppSender({ ...trusted, origin: "https://attacker.example" })).toBe(
+      false,
+    );
+    expect(isTrustedHostedAppSender({ ...trusted, url: "https://attacker.example/frame" })).toBe(
+      false,
+    );
+    expect(isTrustedHostedAppSender({ ...trusted, frameId: 1 })).toBe(false);
+    expect(isTrustedHostedAppSender({ ...trusted, id: "spoofed-extension" })).toBe(false);
+    expect(isTrustedHostedAppSender({ ...trusted, tab: { incognito: true } })).toBe(false);
+    expect(
+      isTrustedHostedAppSender({
+        ...trusted,
+        origin: "null",
+        url: "about:blank",
+      }),
+    ).toBe(false);
   });
 });

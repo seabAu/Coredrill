@@ -12,8 +12,9 @@ Numbered forward SQL migrations in this directory are the reviewed source shared
 
 ## Current migrations
 
-| Version | File             | Purpose                                | SHA-256                                                            |
-| ------- | ---------------- | -------------------------------------- | ------------------------------------------------------------------ |
-| 1       | `0001_vault.sql` | Minimal strict local-vault root record | `a458377c8c59701e9be97a093afe63203d9dfc1b9cdcbd323ab5a6379fa1822d` |
+| Version | File                     | Purpose                                      | SHA-256                                                            |
+| ------- | ------------------------ | -------------------------------------------- | ------------------------------------------------------------------ |
+| 1       | `0001_vault.sql`         | Minimal strict local-vault root record       | `a458377c8c59701e9be97a093afe63203d9dfc1b9cdcbd323ab5a6379fa1822d` |
+| 2       | `0002_capture_inbox.sql` | Durable replay-identifiable capture receipts | `b6a44b450f90d40f3b90f6562a8d26964e5e0e9af5d1c308173897414f280925` |
 
-The Phase 0 schema is deliberately minimal. Job, company, application, evidence, document, provenance, and attachment tables remain owned by their later checklist slices.
+The Phase 0 schema is deliberately minimal. The capture inbox stores the validated source envelope before the extension receives an acknowledgement; it is not yet a reviewed job record. Job, company, application, evidence, document, provenance, and attachment tables remain owned by their later checklist slices.

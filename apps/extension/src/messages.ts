@@ -1,9 +1,11 @@
 import { safeParsePageCaptureSnapshot, type PageCaptureSnapshot } from "@coredrill/capture-core";
+import { TRANSFER_LIMITS } from "@coredrill/extension-bridge";
 
 export type ExtensionRequest =
   | { readonly type: "capture.active-tab.v1" }
   | { readonly type: "capture.queue.v1"; readonly snapshot: unknown }
-  | { readonly type: "outbox.status.v1" };
+  | { readonly type: "outbox.status.v1" }
+  | { readonly type: "outbox.export.v1" };
 
 export type ExtensionResponse =
   | {
@@ -24,6 +26,13 @@ export type ExtensionResponse =
       readonly outboxCount: number;
       readonly outboxBytes: number;
       readonly earliestExpiry?: string;
+    }
+  | {
+      readonly success: true;
+      readonly type: "outbox.export.v1";
+      readonly filename: string;
+      readonly json: string;
+      readonly bytes: number;
     }
   | {
       readonly success: false;
@@ -57,7 +66,9 @@ function isInstant(value: unknown): value is string {
 export function parseExtensionRequest(input: unknown): ExtensionRequest | undefined {
   if (!isRecord(input) || typeof input["type"] !== "string") return undefined;
   if (
-    (input["type"] === "capture.active-tab.v1" || input["type"] === "outbox.status.v1") &&
+    (input["type"] === "capture.active-tab.v1" ||
+      input["type"] === "outbox.status.v1" ||
+      input["type"] === "outbox.export.v1") &&
     Object.keys(input).length === 1
   ) {
     return { type: input["type"] };
@@ -117,6 +128,19 @@ export function isExtensionResponse(input: unknown): input is ExtensionResponse 
       isCount(input["outboxBytes"]) &&
       (input["earliestExpiry"] === undefined || isInstant(input["earliestExpiry"]))
     );
+  }
+  if (input["type"] === "outbox.export.v1") {
+    if (
+      !hasExactKeys(input, ["success", "type", "filename", "json", "bytes"]) ||
+      typeof input["filename"] !== "string" ||
+      !/^coredrill-capture-outbox-\d{8}T\d{6}Z\.json$/u.test(input["filename"]) ||
+      typeof input["json"] !== "string" ||
+      !isCount(input["bytes"]) ||
+      input["bytes"] > TRANSFER_LIMITS.maxExportBytes
+    ) {
+      return false;
+    }
+    return new TextEncoder().encode(input["json"]).byteLength === input["bytes"];
   }
   return false;
 }

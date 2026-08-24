@@ -163,6 +163,8 @@ Security requirements:
 - no AI/provider keys in the extension;
 - `activeTab` and `scripting` only, with source-specific host access as optional permission.
 
+The Phase 0 `EXT-004` through `EXT-006` implementation proves this boundary without selecting a public product domain. Chromium's production test artifact permits only the reserved `https://app.coredrill.test` origin and requires matching sender origin, URL origin, top-level frame, ordinary tab, and non-incognito context. Pull increments the stored attempt before returning an offer; the web receiver revalidates the exact extension ID, request, envelope, checksum, expiry, nonce, and sequence, commits migration-0002 `capture_inbox` data to SQLite, and only then acknowledges. Exact retries deduplicate; conflicting replay identifiers fail closed. Firefox has no external origin or content script and uses a bounded checksummed JSON export/import fallback with the same durable inbox rules. The reserved test origin must be replaced by the selected isolated public app origin and reproven before release.
+
 ## Application use cases
 
 Commands are explicit and transactional:

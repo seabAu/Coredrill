@@ -6,7 +6,9 @@
   "description": "User-invoked, least-privilege Coredrill browser capture surface.",
   "license": "Apache-2.0",
   "scripts": {
-    "build": "wxt build -b chrome --mv3",
+    "build": "pnpm build:chrome && pnpm build:firefox",
+    "build:chrome": "wxt build -b chrome --mv3",
+    "build:firefox": "wxt build -b firefox --mv3",
     "typecheck": "wxt prepare && tsc --noEmit --pretty false",
     "lint": "wxt prepare && eslint entrypoints src wxt.config.ts --max-warnings 0"
   },

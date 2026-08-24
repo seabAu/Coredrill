@@ -84,6 +84,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@coredrill/extension-bridge':
+        specifier: workspace:*
+        version: link:../../packages/extension-bridge
       '@coredrill/storage-browser':
         specifier: workspace:*
         version: link:../../packages/storage-browser

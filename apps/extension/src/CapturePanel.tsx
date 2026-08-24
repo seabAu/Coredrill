@@ -86,6 +86,27 @@ export function CapturePanel(): React.JSX.Element {
     setBusy(false);
   };
 
+  const exportOutbox = async (): Promise<void> => {
+    setBusy(true);
+    setError(undefined);
+    setNotice(undefined);
+    const response = await sendRequest({ type: "outbox.export.v1" });
+    if (response.success && response.type === "outbox.export.v1") {
+      const url = URL.createObjectURL(
+        new Blob([response.json], { type: "application/json;charset=utf-8" }),
+      );
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = response.filename;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      setNotice("Export created. Captures remain queued until Coredrill acknowledges them.");
+    } else if (!response.success) {
+      setError(response.message);
+    }
+    setBusy(false);
+  };
+
   return (
     <main className="panel-shell">
       <header>
@@ -104,6 +125,15 @@ export function CapturePanel(): React.JSX.Element {
           <span>Earliest expiry {new Date(outbox.earliestExpiry).toLocaleDateString()}</span>
         )}
       </section>
+
+      <button
+        className="secondary"
+        type="button"
+        disabled={busy || outbox.count === 0}
+        onClick={() => void exportOutbox()}
+      >
+        Export queued captures (.json)
+      </button>
 
       <button className="primary" type="button" disabled={busy} onClick={() => void capture()}>
         {busy ? "Working…" : "Capture active job page"}

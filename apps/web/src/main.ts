@@ -15,6 +15,8 @@ import {
 } from "@coredrill/storage-core";
 
 import initialMigrationSql from "../../../migrations/0001_vault.sql?raw";
+import captureInboxMigrationSql from "../../../migrations/0002_capture_inbox.sql?raw";
+import { createExtensionInbox, type ExtensionInboxApi } from "./extension-transfer.js";
 import {
   runStorageBenchmark,
   type StorageBenchmarkInput,
@@ -78,6 +80,7 @@ export interface CoredrillStorageSpikeApi {
 
 declare global {
   var coredrillStorageSpike: CoredrillStorageSpikeApi;
+  var coredrillExtensionInbox: ExtensionInboxApi;
 }
 
 let database: BrowserSqliteDatabase | undefined;
@@ -99,6 +102,12 @@ const migrations = async () =>
       name: "vault",
       sha256: await sha256Text(initialMigrationSql),
       sql: initialMigrationSql,
+    },
+    {
+      version: 2,
+      name: "capture-inbox",
+      sha256: await sha256Text(captureInboxMigrationSql),
+      sql: captureInboxMigrationSql,
     },
   ]);
 
@@ -239,3 +248,8 @@ const api: CoredrillStorageSpikeApi = {
 };
 
 globalThis.coredrillStorageSpike = Object.freeze(api);
+globalThis.coredrillExtensionInbox = createExtensionInbox(async () => {
+  const client = await getDatabase();
+  await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
+  return client;
+});

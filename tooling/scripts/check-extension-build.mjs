@@ -3,8 +3,7 @@ import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-const expectedPermissions = ["activeTab", "scripting", "sidePanel", "storage"];
-const expectedManifestKeys = [
+const commonManifestKeys = [
   "action",
   "background",
   "content_security_policy",
@@ -16,9 +15,9 @@ const expectedManifestKeys = [
   "optional_host_permissions",
   "optional_permissions",
   "permissions",
-  "side_panel",
   "version",
 ];
+const phase0AppOriginPattern = "https://app.coredrill.test/*";
 
 function compareText(left, right) {
   return left < right ? -1 : left > right ? 1 : 0;
@@ -58,7 +57,24 @@ async function fileRecord(root, relativePath) {
   };
 }
 
-export async function inspectExtensionBuild(buildRoot) {
+export async function inspectExtensionBuild(buildRoot, requestedTarget) {
+  const target =
+    requestedTarget ??
+    (path.basename(buildRoot).startsWith("firefox-") ? "firefox-mv3" : "chrome-mv3");
+  assert(
+    target === "chrome-mv3" || target === "firefox-mv3",
+    "Extension inspector target is unsupported.",
+  );
+  const isFirefox = target === "firefox-mv3";
+  const expectedPermissions = isFirefox
+    ? ["activeTab", "scripting", "storage"]
+    : ["activeTab", "scripting", "sidePanel", "storage"];
+  const expectedManifestKeys = [
+    ...commonManifestKeys,
+    ...(isFirefox
+      ? ["browser_specific_settings", "sidebar_action"]
+      : ["externally_connectable", "side_panel"]),
+  ];
   const manifestPath = path.join(buildRoot, "manifest.json");
   const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
   assert(
@@ -76,32 +92,71 @@ export async function inspectExtensionBuild(buildRoot) {
   for (const key of ["host_permissions", "optional_permissions", "optional_host_permissions"]) {
     assert(Array.isArray(manifest[key]) && manifest[key].length === 0, `${key} must remain empty.`);
   }
-  assert(
-    exactKeys(manifest.background, ["service_worker"]) &&
-      manifest.background.service_worker === "background.js",
-    "Manifest must contain only the reviewed service worker.",
-  );
+  if (isFirefox) {
+    assert(
+      exactKeys(manifest.background, ["scripts"]) &&
+        JSON.stringify(manifest.background.scripts) === JSON.stringify(["background.js"]),
+      "Firefox manifest must contain only the reviewed background script.",
+    );
+  } else {
+    assert(
+      exactKeys(manifest.background, ["service_worker"]) &&
+        manifest.background.service_worker === "background.js",
+      "Chromium manifest must contain only the reviewed service worker.",
+    );
+  }
   assert(
     exactKeys(manifest.action, ["default_popup", "default_title"]) &&
       manifest.action.default_popup === "popup.html",
     "Popup fallback entrypoint is missing or changed.",
   );
-  assert(
-    exactKeys(manifest.side_panel, ["default_path"]) &&
-      manifest.side_panel.default_path === "sidepanel.html",
-    "Chromium side-panel entrypoint is missing or changed.",
-  );
+  if (isFirefox) {
+    assert(
+      exactKeys(manifest.sidebar_action, ["default_panel", "default_title"]) &&
+        manifest.sidebar_action.default_panel === "sidepanel.html",
+      "Firefox sidebar entrypoint is missing or changed.",
+    );
+    assert(
+      exactKeys(manifest.browser_specific_settings, ["gecko"]) &&
+        exactKeys(manifest.browser_specific_settings.gecko, [
+          "data_collection_permissions",
+          "id",
+        ]) &&
+        manifest.browser_specific_settings.gecko.id === "capture@coredrill.local" &&
+        exactKeys(manifest.browser_specific_settings.gecko.data_collection_permissions, [
+          "required",
+        ]) &&
+        JSON.stringify(
+          manifest.browser_specific_settings.gecko.data_collection_permissions.required,
+        ) === JSON.stringify(["none"]),
+      "Firefox identity or no-data-collection declaration drifted.",
+    );
+  } else {
+    assert(
+      exactKeys(manifest.side_panel, ["default_path"]) &&
+        manifest.side_panel.default_path === "sidepanel.html",
+      "Chromium side-panel entrypoint is missing or changed.",
+    );
+    assert(
+      exactKeys(manifest.externally_connectable, ["matches"]) &&
+        JSON.stringify(manifest.externally_connectable.matches) ===
+          JSON.stringify([phase0AppOriginPattern]),
+      "Chromium external messaging must name only the exact Phase 0 app origin.",
+    );
+  }
   assert(
     exactKeys(manifest.content_security_policy, ["extension_pages"]) &&
       manifest.content_security_policy.extension_pages === "script-src 'self'; object-src 'self';",
     "Extension CSP is not the exact self-only policy.",
   );
-  for (const forbiddenKey of [
-    "content_scripts",
-    "externally_connectable",
-    "web_accessible_resources",
-  ]) {
+  for (const forbiddenKey of ["content_scripts", "web_accessible_resources"]) {
     assert(!(forbiddenKey in manifest), `Manifest must not include ${forbiddenKey}.`);
+  }
+  if (isFirefox) {
+    assert(
+      !("externally_connectable" in manifest),
+      "Firefox must use the reviewed manual fallback without an external-message match.",
+    );
   }
 
   const files = await listFiles(buildRoot);
@@ -124,14 +179,19 @@ export async function inspectExtensionBuild(buildRoot) {
 
   return {
     schemaVersion: 1,
-    target: "chrome-mv3",
+    target,
     permissions: expectedPermissions,
     hostPermissions: [],
     entrypoints: {
-      background: manifest.background.service_worker,
+      background: isFirefox ? manifest.background.scripts[0] : manifest.background.service_worker,
       popup: manifest.action.default_popup,
-      sidePanel: manifest.side_panel.default_path,
+      sidePanel: isFirefox
+        ? manifest.sidebar_action.default_panel
+        : manifest.side_panel.default_path,
     },
+    transfer: isFirefox
+      ? { mode: "manual-json-export-import", allowedOrigins: [] }
+      : { mode: "external-message", allowedOrigins: [phase0AppOriginPattern] },
     contentSecurityPolicy: manifest.content_security_policy.extension_pages,
     files: await Promise.all(files.map((relativePath) => fileRecord(buildRoot, relativePath))),
   };
@@ -139,11 +199,21 @@ export async function inspectExtensionBuild(buildRoot) {
 
 async function runCli() {
   const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-  const buildRoot = path.resolve(
-    process.argv[2] ?? path.join(repositoryRoot, "apps", "extension", ".output", "chrome-mv3"),
+  if (process.argv[2] !== undefined) {
+    const buildRoot = path.resolve(process.argv[2]);
+    const result = await inspectExtensionBuild(buildRoot, process.argv[3]);
+    console.log(JSON.stringify(result, null, 2));
+    return;
+  }
+  const results = await Promise.all(
+    ["chrome-mv3", "firefox-mv3"].map((target) =>
+      inspectExtensionBuild(
+        path.join(repositoryRoot, "apps", "extension", ".output", target),
+        target,
+      ),
+    ),
   );
-  const result = await inspectExtensionBuild(buildRoot);
-  console.log(JSON.stringify(result, null, 2));
+  console.log(JSON.stringify({ schemaVersion: 1, results }, null, 2));
 }
 
 const invokedPath = process.argv[1] ? pathToFileURL(path.resolve(process.argv[1])).href : undefined;

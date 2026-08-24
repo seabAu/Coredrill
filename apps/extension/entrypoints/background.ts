@@ -1,8 +1,14 @@
 import { buildCaptureEnvelopeV1, safeParsePageCaptureSnapshot } from "@coredrill/capture-core";
 import {
+  acknowledgeOutboxTransfer,
   createEmptyOutboxState,
+  createOutboxExport,
+  parseExternalTransferRequest,
+  prepareNextOutboxTransfer,
   queueCaptureEnvelope,
   safeParseOutboxState,
+  transferErrorResponse,
+  type ExternalTransferResponseV1,
   type OutboxStateV1,
 } from "@coredrill/extension-bridge";
 import { browser, type Browser } from "wxt/browser";
@@ -10,6 +16,7 @@ import { defineBackground } from "wxt/utils/define-background";
 
 import { captureActivePage } from "../src/capture-active-page";
 import { errorResponse, parseExtensionRequest, type ExtensionResponse } from "../src/messages";
+import { isTrustedHostedAppSender } from "../src/transfer-policy";
 
 const STORAGE_KEY = "coredrill.extension.state.v1";
 const STORED_STATE_SPEC_VERSION = 1 as const;
@@ -198,9 +205,83 @@ async function outboxStatus(): Promise<ExtensionResponse> {
   };
 }
 
-function serializeQueueOperation(
-  operation: () => Promise<ExtensionResponse>,
-): Promise<ExtensionResponse> {
+async function exportOutbox(): Promise<ExtensionResponse> {
+  const loaded = await readStoredState();
+  if (!loaded.success) return loaded.response;
+  const now = new Date();
+  const exported = await createOutboxExport(loaded.state.outbox, now);
+  if (!exported.success) return errorResponse(exported.code, exported.issue);
+  const nextState: StoredExtensionStateV1 = {
+    specVersion: STORED_STATE_SPEC_VERSION,
+    nextSequence: loaded.state.nextSequence,
+    outbox: { specVersion: exported.data.specVersion, items: exported.data.items },
+  };
+  try {
+    await browser.storage.local.set({ [STORAGE_KEY]: nextState });
+  } catch {
+    return errorResponse("storage_failed", "Expired captures could not be removed before export.");
+  }
+  const json = JSON.stringify(exported.data);
+  return {
+    success: true,
+    type: "outbox.export.v1",
+    filename: `coredrill-capture-outbox-${now
+      .toISOString()
+      .replaceAll(/[-:]/gu, "")
+      .replace(/\.\d{3}Z$/u, "Z")}.json`,
+    json,
+    bytes: new TextEncoder().encode(json).byteLength,
+  };
+}
+
+async function handleExternalMessage(
+  input: unknown,
+  sender: Browser.runtime.MessageSender,
+): Promise<ExternalTransferResponseV1> {
+  if (!isTrustedHostedAppSender(sender)) {
+    return transferErrorResponse(
+      "untrusted_sender",
+      "Only the exact Coredrill app origin may use this boundary.",
+    );
+  }
+  const request = parseExternalTransferRequest(input);
+  if (request === undefined) {
+    return transferErrorResponse("message_invalid", "Transfer message contract is invalid.");
+  }
+  const loaded = await readStoredState();
+  if (!loaded.success) {
+    return transferErrorResponse(
+      loaded.response.success ? "storage_corrupt" : loaded.response.code,
+      "The extension outbox is unavailable.",
+      request.requestId,
+    );
+  }
+  const result =
+    request.type === "capture.transfer.pull.v1"
+      ? await prepareNextOutboxTransfer(loaded.state.outbox, request)
+      : await acknowledgeOutboxTransfer(loaded.state.outbox, request);
+  if (!result.success) {
+    return transferErrorResponse(result.code, result.issue, request.requestId);
+  }
+  try {
+    await browser.storage.local.set({
+      [STORAGE_KEY]: {
+        specVersion: STORED_STATE_SPEC_VERSION,
+        nextSequence: loaded.state.nextSequence,
+        outbox: result.state,
+      } satisfies StoredExtensionStateV1,
+    });
+  } catch {
+    return transferErrorResponse(
+      "storage_failed",
+      "The transfer state was not changed because browser storage rejected the write.",
+      request.requestId,
+    );
+  }
+  return result.response;
+}
+
+function serializeQueueOperation<Result>(operation: () => Promise<Result>): Promise<Result> {
   const result = queueTail.then(operation, operation);
   queueTail = result.then(
     () => undefined,
@@ -230,6 +311,8 @@ async function handleMessage(
       return serializeQueueOperation(() => queueSnapshot(request.snapshot));
     case "outbox.status.v1":
       return serializeQueueOperation(outboxStatus);
+    case "outbox.export.v1":
+      return serializeQueueOperation(exportOutbox);
   }
 }
 
@@ -242,6 +325,22 @@ export default defineBackground(() => {
       () => {
         sendResponse(
           errorResponse("internal_error", "The extension boundary failed without storing data."),
+        );
+      },
+    );
+    return true;
+  });
+  browser.runtime.onMessageExternal.addListener((message, sender, sendResponse) => {
+    void serializeQueueOperation(() => handleExternalMessage(message, sender)).then(
+      (response) => {
+        sendResponse(response);
+      },
+      () => {
+        sendResponse(
+          transferErrorResponse(
+            "internal_error",
+            "The transfer boundary failed without acknowledging data.",
+          ),
         );
       },
     );
