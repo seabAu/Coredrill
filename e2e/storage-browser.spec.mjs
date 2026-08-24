@@ -41,18 +41,27 @@ test("opens official SQLite in a Worker, persists transactions, and restores a c
   const logs = [];
   const sourceContext = await browser.newContext();
   const sourcePage = await openHarness(sourceContext, logs);
+  const browserVersion = browser.version();
+  const expectedBrowserVersion = process.env["COREDRILL_EXPECTED_BROWSER_VERSION"];
+  if (expectedBrowserVersion !== undefined) expect(browserVersion).toBe(expectedBrowserVersion);
 
   await callHarness(sourcePage, "delete");
   const opened = await callHarness(sourcePage, "openAndMigrate");
   expect(opened.appliedVersions).toEqual([1]);
   expect(opened.diagnostics).toMatchObject({
     adapterName: "official-sqlite-wasm-opfs-sahpool",
-    health: "ready",
-    persistence: "durable",
     schemaVersion: 1,
   });
+  expect(["ready", "degraded"]).toContain(opened.diagnostics.health);
+  expect(["best-effort", "durable"]).toContain(opened.diagnostics.persistence);
   expect(opened.diagnostics.details).toEqual(
-    expect.arrayContaining(["vfs:opfs-sahpool", "foreign-keys:on", "thread:dedicated-worker"]),
+    expect.arrayContaining([
+      "vfs:opfs-sahpool",
+      "foreign-keys:on",
+      "thread:dedicated-worker",
+      expect.stringMatching(/^storage-persistence:/u),
+      expect.stringMatching(/^storage-quota:/u),
+    ]),
   );
 
   await callHarness(sourcePage, "writeVault", committedVault);
@@ -114,8 +123,10 @@ test("opens official SQLite in a Worker, persists transactions, and restores a c
   console.info(
     `STG_PROOF ${JSON.stringify({
       sqlite: opened.diagnostics.details.find((detail) => detail.startsWith("sqlite-version:")),
+      browser: browserVersion,
       vfs: "opfs-sahpool",
       worker: "dedicated-worker",
+      persistence: opened.diagnostics.persistence,
       schemaVersion: portable.schemaVersion,
       byteLength: portable.byteLength,
       sha256: portable.sha256,

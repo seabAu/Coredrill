@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "fixtureId": "JW-STG-DATA-001",
+  "seed": "coredrill-storage-benchmark-v1",
+  "descriptionBytesPerRecord": 320,
+  "profiles": [
+    {
+      "id": "DATA-SMOKE",
+      "records": 100
+    },
+    {
+      "id": "DATA-REFERENCE",
+      "records": 2000
+    },
+    {
+      "id": "DATA-STRESS",
+      "records": 10000
+    }
+  ],
+  "privacy": "Deterministic synthetic data only; no production career content."
+}

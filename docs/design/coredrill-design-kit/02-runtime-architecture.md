@@ -125,6 +125,8 @@ The Phase 0 `STG-001`–`STG-003` implementation now proves the first vertical s
 
 The browser coordinator serializes public operations so the Phase 0 path has one writer per Worker. Restore verifies byte length and SHA-256 before replacement, reopens the imported database, and requires both `PRAGMA integrity_check = 'ok'` and the expected `user_version`. The automated Edge proof covers migration, commit, rollback, close/reopen durability, clean-context restore, corruption rejection, byte-for-byte re-export, and delete. It does not yet prove multi-tab coordination, quota/private-mode behavior, browser compatibility, or final VFS selection; those remain `STG-004`–`STG-008`, and D-025 remains Provisional.
 
+The `STG-004`–`STG-008` candidate hardening adds three boundaries before that decision is promoted. First, the main-thread coordinator inspects OPFS, persistent-storage grant, quota state, and whether an expected database existed; it reports stable warnings and never equates a successful OPFS open with a persistence grant. Persistence requests are explicit user actions, not an open side effect. Second, an origin-wide exclusive Web Lock is acquired before the Worker installs the SAH pool, so another tab receives a typed retryable handoff rather than racing a second connection. Third, restore validates a temporary imported database before replacing the target and attempts recovery from the original bytes if final replacement fails. Exact hosted browser lanes and ADR-0003 remain the final promotion gate.
+
 ### Native adapter
 
 - Tauri commands or its reviewed SQL plugin expose parameterized SQLite operations.

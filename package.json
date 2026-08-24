@@ -19,6 +19,7 @@
     "test:unit": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:storage-browser": "playwright test --config=playwright.storage.config.mjs",
+    "test:storage-firefox-webdriver": "node tooling/scripts/run-storage-firefox-webdriver.mjs",
     "test:boundaries": "vitest run tooling/tests/import-boundaries.test.mjs",
     "check:boundaries": "node tooling/architecture/check-boundaries.mjs",
     "check:foundation-records": "node tooling/scripts/check-foundation-records.mjs",

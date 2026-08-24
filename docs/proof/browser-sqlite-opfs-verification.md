@@ -9,7 +9,7 @@
 
 ## Outcome
 
-`STG-001` through `STG-003` are proven locally and by hosted CI. Coredrill now has a minimal end-to-end browser storage path that runs official SQLite WebAssembly in a dedicated Worker, persists through `opfs-sahpool`, applies checksum-bound shared SQL migrations transactionally, survives close/reopen, exports checksummed SQLite bytes, restores them into a clean browser context, and deletes the restored database.
+`STG-001` through `STG-003` are proven locally and by hosted CI. Coredrill now has a minimal end-to-end browser storage path that runs official SQLite WebAssembly in a dedicated Worker, stores through `opfs-sahpool`, applies checksum-bound shared SQL migrations transactionally, survives close/reopen, exports checksummed SQLite bytes, restores them into a clean browser context, and deletes the restored database. The later STG-005 hardening correctly distinguishes an OPFS-backed database from a browser persistence grant; ungranted profiles are `best-effort`, not `durable`.
 
 The proof uses only local browser storage and self-hosted build assets. It adds no account, network service, AI/provider call, telemetry sink, scraper, extension permission, native adapter, product record repository, or product UI. SQLite remains durable truth, and the harness remains useful with AI disabled.
 

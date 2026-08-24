@@ -1,7 +1,7 @@
 # Coredrill reference test matrix
 
 Matrix ID: `JW-TM-001`  
-Version: `1.0.0`  
+Version: `1.1.0`
 Effective: 2026-08-24  
 Machine-readable authority: [`reference-test-matrix.v1.json`](reference-test-matrix.v1.json)
 
@@ -9,14 +9,14 @@ This matrix establishes Phase 0 test targets. A row is **not** a support promise
 
 ## Hardware and platform targets
 
-| ID               | Role                                         | Exact initial target                                                                                                                     | Current evidence                                              |
-| ---------------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| `HW-WIN-REF`     | Primary web/desktop/performance gate         | Intel Core i5-12400, 8 GiB dual-channel DDR4-3200, Samsung 970 EVO Plus 500 GB, UHD 730, 1920×1080 at 100%, Windows 11 25H2, AC/Balanced | Planned; not executed                                         |
-| `HW-MAC-REF`     | Safari/VoiceOver/macOS gate                  | Mac mini (M1, 2020), 8 GiB unified memory, 256 GB internal SSD, 1440×900 logical or higher, AC with Low Power Mode off                   | Unavailable; not executed                                     |
-| `HW-IOS-REF`     | Installed iOS PWA/local-vault/share gate     | iPhone 11 (2019), 64 GB, A13 Bionic, 1792×828 display, iOS 26.6.1, battery ≥50% with Low Power Mode off                                  | Unavailable; not executed                                     |
-| `HW-ANDROID-REF` | Installed Android PWA/local-vault/share gate | Google Pixel 9, 128 GB, Tensor G4, 12 GB RAM, 2424×1080 display, Android 17, battery ≥50% with Battery Saver off                         | Unavailable; not executed                                     |
-| `HW-STRESS`      | Capacity investigation only                  | 8+ cores, 16+ GiB RAM, SSD                                                                                                               | Planned; never substitutes for reference performance          |
-| `HW-LOCAL-DIAG`  | Fast local feedback                          | Windows 10 build 19045, Core Ultra 9 285K, 63.5 GiB RAM, Edge 151, Firefox 154                                                           | Available, diagnostic-only; Windows 10 is past normal support |
+| ID               | Role                                         | Exact initial target                                                                                                                     | Current evidence                                                                                      |
+| ---------------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `HW-WIN-REF`     | Primary web/desktop/performance gate         | Intel Core i5-12400, 8 GiB dual-channel DDR4-3200, Samsung 970 EVO Plus 500 GB, UHD 730, 1920×1080 at 100%, Windows 11 25H2, AC/Balanced | Planned; not executed                                                                                 |
+| `HW-MAC-REF`     | Safari/VoiceOver/macOS gate                  | Mac mini (M1, 2020), 8 GiB unified memory, 256 GB internal SSD, 1440×900 logical or higher, AC with Low Power Mode off                   | Unavailable; not executed                                                                             |
+| `HW-IOS-REF`     | Installed iOS PWA/local-vault/share gate     | iPhone 11 (2019), 64 GB, A13 Bionic, 1792×828 display, iOS 26.6.1, battery ≥50% with Low Power Mode off                                  | Unavailable; not executed                                                                             |
+| `HW-ANDROID-REF` | Installed Android PWA/local-vault/share gate | Google Pixel 9, 128 GB, Tensor G4, 12 GB RAM, 2424×1080 display, Android 17, battery ≥50% with Battery Saver off                         | Unavailable; not executed                                                                             |
+| `HW-STRESS`      | Capacity investigation only                  | 8+ cores, 16+ GiB RAM, SSD                                                                                                               | Planned; never substitutes for reference performance                                                  |
+| `HW-LOCAL-DIAG`  | Fast local feedback                          | Windows 10 build 19045, Core Ultra 9 285K, 63.5 GiB RAM, Edge 151, Firefox 154                                                           | Edge/Firefox storage and diagnostic benchmarks passed; never substitutes for a release/reference gate |
 
 The required desktop web matrix is current and previous stable Chrome/Chromium (`152.0.7977.54`/`151`), Edge (`151.0.4129.101`/`150.0.4078.144`), Firefox (`154.0`/`153.0`), and Safari. Safari `26.6.1` is bound to macOS Sequoia `15.7.9`; the historical Safari `18.6` previous-major row is bound to an isolated macOS Sonoma `14.7.7` snapshot. macOS Tahoe `26.6.2` remains the current desktop/WebKit compatibility row, but its result must record the bundled Safari/WebKit patch instead of assuming `26.6.1`. Historical browser rows use an isolated profile, local origin, and synthetic data. If the Safari 18.6 runner cannot be provisioned, `STG-004` must record the exact limitation and manual or desktop fallback rather than reporting a pass.
 
@@ -49,6 +49,12 @@ Interaction benchmarks discard five warmups and record at least 50 measured iter
 
 Cold startup, create/migrate/query/search, import/export/restore, bundle size, JavaScript heap/desktop RSS, and database/attachment size are record-only until their owning Phase 0 spike establishes a defensible budget.
 
+## Browser-storage execution evidence
+
+The `STG-004`–`STG-008` candidate evidence is recorded in [the platform verification report](../proof/browser-storage-platform-verification.md). Local diagnostic execution passes Edge `151.0.4129.101` and real branded Firefox `154.0`; the raw 100/2,000/10,000-record Edge measurements are in [`storage-benchmark-edge-151.json`](../proof/artifacts/storage-benchmark-edge-151.json). Exact hosted Chrome 152/151 and Firefox 154/153 jobs are pending the implementation push.
+
+Safari/macOS and both physical mobile rows remain unavailable and unexecuted. Playwright WebKit or viewport emulation does not satisfy them. ADR-0003 therefore proposes an explicit unsupported fallback: block browser-vault creation and direct the user to a supported Chromium/Firefox desktop browser or the future native app with portable export/restore. No IndexedDB, memory, or simulated-Safari pass substitutes for SQLite/OPFS evidence.
+
 ## Versioning and review
 
 - Patch: correct source or patch-version metadata without changing coverage or a budget.
@@ -59,6 +65,7 @@ Review the matrix when a browser major stabilizes, an OS branch enters/leaves se
 
 ## Revision history
 
-| Version | Date       | Change                                                                                                                                |
-| ------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `1.0.0` | 2026-08-24 | Established reproducible desktop/mobile reference targets and explicitly separated planned, available, executed, and verified states. |
+| Version | Date       | Change                                                                                                                                        |
+| ------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `1.1.0` | 2026-08-24 | Bound local Edge/Firefox storage execution and diagnostic benchmark evidence; recorded exact pending hosted lanes and Safari/mobile fallback. |
+| `1.0.0` | 2026-08-24 | Established reproducible desktop/mobile reference targets and explicitly separated planned, available, executed, and verified states.         |

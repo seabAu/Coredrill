@@ -15,12 +15,30 @@ import {
   type BrowserStorageOpenResult,
   type BrowserStorageOperation,
   type BrowserStorageRequest,
-  type BrowserStorageResponse,
   type BrowserStorageRestoreResult,
 } from "./protocol.js";
+import { deserializeBrowserStorageError } from "./errors.js";
+import {
+  inspectBrowserStorageEnvironment,
+  withBrowserStorageWarning,
+  type BrowserStorageEnvironment,
+  type BrowserStorageManager,
+} from "./storage-environment.js";
+import {
+  acquireBrowserVaultLease,
+  type BrowserLockManager,
+  type BrowserVaultLease,
+} from "./vault-lock.js";
 
 export interface BrowserSqliteOptions {
   readonly databaseName: string;
+  readonly coordinateTabs?: boolean;
+  readonly expectedExisting?: boolean;
+  readonly lockManager?: BrowserLockManager;
+  readonly lowQuotaBytes?: number;
+  readonly lowQuotaRatio?: number;
+  readonly requestPersistentStorage?: boolean;
+  readonly storageManager?: BrowserStorageManager;
   readonly workerFactory?: () => Worker;
 }
 
@@ -50,6 +68,8 @@ export class BrowserSqliteDatabase implements DatabasePort {
 
   private constructor(
     private readonly databaseName: string,
+    private environment: BrowserStorageEnvironment,
+    private readonly lease: BrowserVaultLease | undefined,
     workerFactory: () => Worker,
   ) {
     this.worker = workerFactory();
@@ -57,16 +77,28 @@ export class BrowserSqliteDatabase implements DatabasePort {
       this.handleResponse(event.data);
     });
     this.worker.addEventListener("error", () => {
-      this.rejectAll(new Error("The dedicated SQLite Worker failed."));
+      this.failWorker(new Error("The dedicated SQLite Worker failed."));
     });
     this.worker.addEventListener("messageerror", () => {
-      this.rejectAll(new Error("The dedicated SQLite Worker returned an unreadable response."));
+      this.failWorker(new Error("The dedicated SQLite Worker returned an unreadable response."));
     });
   }
 
   public static async open(options: BrowserSqliteOptions): Promise<BrowserSqliteDatabase> {
+    let environment = await inspectBrowserStorageEnvironment({
+      ...(options.lowQuotaBytes === undefined ? {} : { lowQuotaBytes: options.lowQuotaBytes }),
+      ...(options.lowQuotaRatio === undefined ? {} : { lowQuotaRatio: options.lowQuotaRatio }),
+      requestPersistence: options.requestPersistentStorage ?? false,
+      ...(options.storageManager === undefined ? {} : { storageManager: options.storageManager }),
+    });
+    const lease =
+      options.coordinateTabs === false
+        ? undefined
+        : await acquireBrowserVaultLease(options.lockManager);
     const database = new BrowserSqliteDatabase(
       options.databaseName,
+      environment,
+      lease,
       options.workerFactory ??
         (() =>
           new Worker(new URL("./sqlite-worker.js", import.meta.url), {
@@ -74,10 +106,19 @@ export class BrowserSqliteDatabase implements DatabasePort {
             type: "module",
           })),
     );
-    await database.request<BrowserStorageOpenResult>("open", {
-      databaseName: options.databaseName,
-    });
-    return database;
+    try {
+      const opened = await database.request<BrowserStorageOpenResult>("open", {
+        databaseName: options.databaseName,
+      });
+      if (options.expectedExisting === true && !opened.existedBeforeOpen) {
+        environment = withBrowserStorageWarning(environment, "expected-database-missing");
+        database.environment = environment;
+      }
+      return database;
+    } catch (error) {
+      database.shutdown();
+      throw error;
+    }
   }
 
   public query<Row extends QueryRow = QueryRow>(statement: SqlStatement): Promise<readonly Row[]> {
@@ -141,9 +182,23 @@ export class BrowserSqliteDatabase implements DatabasePort {
   }
 
   public diagnostics(): Promise<StorageDiagnostics> {
-    return this.queue.run(async () =>
-      Object.freeze(await this.request<StorageDiagnostics>("diagnostics")),
-    );
+    return this.queue.run(async () => {
+      const workerDiagnostics = await this.request<StorageDiagnostics>("diagnostics");
+      const warningDetails = this.environment.warnings.map(
+        (warning) => `storage-warning:${warning}`,
+      );
+      return Object.freeze({
+        ...workerDiagnostics,
+        health: warningDetails.length === 0 ? workerDiagnostics.health : "degraded",
+        persistence: this.environment.persistence === "granted" ? "durable" : "best-effort",
+        details: Object.freeze([
+          ...workerDiagnostics.details,
+          `storage-persistence:${this.environment.persistence}`,
+          `storage-quota:${this.environment.quota}`,
+          ...warningDetails,
+        ]),
+      });
+    });
   }
 
   public delete(): Promise<boolean> {
@@ -185,7 +240,12 @@ export class BrowserSqliteDatabase implements DatabasePort {
         },
         reject,
       });
-      this.worker.postMessage(request);
+      try {
+        this.worker.postMessage(request);
+      } catch (error) {
+        this.pending.delete(id);
+        reject(error instanceof Error ? error : new Error("The SQLite Worker request failed."));
+      }
     });
   }
 
@@ -198,15 +258,7 @@ export class BrowserSqliteDatabase implements DatabasePort {
     if (pending === undefined) return;
     this.pending.delete(value.id);
     if (value.ok) pending.resolve(value.result);
-    else pending.reject(this.deserializeError(value));
-  }
-
-  private deserializeError(
-    response: Extract<BrowserStorageResponse, { readonly ok: false }>,
-  ): Error {
-    const error = new Error(response.error.message);
-    error.name = response.error.name;
-    return error;
+    else pending.reject(deserializeBrowserStorageError(value.error));
   }
 
   private rejectAll(error: Error): void {
@@ -214,10 +266,17 @@ export class BrowserSqliteDatabase implements DatabasePort {
     this.pending.clear();
   }
 
+  private failWorker(error: Error): void {
+    this.rejectAll(error);
+    this.shutdown();
+  }
+
   private shutdown(): void {
+    if (this.closed) return;
     this.closed = true;
     this.worker.terminate();
     this.rejectAll(new Error("The browser database client was closed."));
+    this.lease?.release();
   }
 }
 

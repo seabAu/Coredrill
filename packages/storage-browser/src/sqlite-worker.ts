@@ -103,6 +103,7 @@ const openDatabase = async (name: string): Promise<BrowserStorageOpenResult> => 
     return describeOpenDatabase();
   }
 
+  const existedBeforeOpen = requirePool().getFileNames().includes(name);
   databaseName = name;
   database = new (requirePool().OpfsSAHPoolDb)(name);
   database.exec("PRAGMA foreign_keys = ON");
@@ -111,17 +112,24 @@ const openDatabase = async (name: string): Promise<BrowserStorageOpenResult> => 
     database = undefined;
     throw new Error("SQLite foreign-key enforcement could not be enabled.");
   }
-  return describeOpenDatabase();
+  const integrity = database.selectValue("PRAGMA quick_check");
+  if (integrity !== "ok") {
+    database.close();
+    database = undefined;
+    throw new Error("SQLite quick_check rejected the browser database.");
+  }
+  return describeOpenDatabase(existedBeforeOpen);
 };
 
-const describeOpenDatabase = (): BrowserStorageOpenResult => {
+const describeOpenDatabase = (existedBeforeOpen = true): BrowserStorageOpenResult => {
   const db = requireDatabase();
   if (db.dbVfsName() !== "opfs-sahpool") throw new Error("Database did not open on opfs-sahpool.");
   return Object.freeze({
     databaseName: databaseName ?? "",
+    existedBeforeOpen,
     sqliteVersion: requireSQLite().version.libVersion,
     vfs: "opfs-sahpool",
-    persistent: true,
+    opfs: true,
     thread: "dedicated-worker",
   });
 };
@@ -188,14 +196,44 @@ const restorePortable = async (
   const actualSha256 = await sha256(portable.bytes);
   if (actualSha256 !== portable.sha256) throw new Error("Portable database checksum mismatch.");
 
+  const activePool = requirePool();
+  const restoreName = name.replace(/\.sqlite3$/u, ".restore.sqlite3");
+  const originalBytes = activePool.getFileNames().includes(name)
+    ? await activePool.exportFile(name)
+    : undefined;
   closeDatabase();
-  await requirePool().importDb(name, portable.bytes.slice());
-  await openDatabase(name);
-  const integrity = requireDatabase().selectValue("PRAGMA integrity_check");
-  const schemaVersion = requireDatabase().selectValue("PRAGMA user_version");
-  if (integrity !== "ok") throw new Error("Restored database failed SQLite integrity_check.");
-  if (schemaVersion !== portable.schemaVersion) {
-    throw new Error("Restored database schema version does not match its export.");
+  activePool.unlink(restoreName);
+  try {
+    await activePool.importDb(restoreName, portable.bytes.slice());
+    const candidate = new activePool.OpfsSAHPoolDb(restoreName);
+    try {
+      const integrity = candidate.selectValue("PRAGMA integrity_check");
+      const schemaVersion = candidate.selectValue("PRAGMA user_version");
+      if (integrity !== "ok") {
+        throw new Error("Restored database failed SQLite integrity_check.");
+      }
+      if (schemaVersion !== portable.schemaVersion) {
+        throw new Error("Restored database schema version does not match its export.");
+      }
+    } finally {
+      candidate.close();
+    }
+  } catch (error) {
+    activePool.unlink(restoreName);
+    await openDatabase(name);
+    throw error;
+  }
+
+  const validatedBytes = await activePool.exportFile(restoreName);
+  activePool.unlink(restoreName);
+  try {
+    await activePool.importDb(name, validatedBytes);
+    await openDatabase(name);
+  } catch (error) {
+    closeDatabase();
+    if (originalBytes !== undefined) await activePool.importDb(name, originalBytes);
+    await openDatabase(name);
+    throw error;
   }
   return Object.freeze({
     byteLength: portable.byteLength,
@@ -220,7 +258,7 @@ const diagnostics = (): StorageDiagnostics => {
   return Object.freeze({
     adapterName: "official-sqlite-wasm-opfs-sahpool",
     health: "ready",
-    persistence: "durable",
+    persistence: "best-effort",
     readOnly: false,
     schemaVersion,
     details: Object.freeze([
@@ -272,10 +310,19 @@ const handleRequest = async (
   }
 };
 
-const serializeError = (error: unknown): { readonly name: string; readonly message: string } =>
-  error instanceof Error
-    ? Object.freeze({ name: error.name, message: error.message })
-    : Object.freeze({ name: "Error", message: "Unknown browser storage failure." });
+const serializeError = (
+  error: unknown,
+): { readonly name: string; readonly message: string; readonly resultCode?: number } => {
+  if (!(error instanceof Error)) {
+    return Object.freeze({ name: "Error", message: "Unknown browser storage failure." });
+  }
+  const resultCode: unknown = Reflect.get(error, "resultCode");
+  return Object.freeze({
+    name: error.name,
+    message: error.message,
+    ...(typeof resultCode === "number" && Number.isSafeInteger(resultCode) ? { resultCode } : {}),
+  });
+};
 
 scope.addEventListener("message", (event) => {
   const request = event.data;

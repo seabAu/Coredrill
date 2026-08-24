@@ -1,4 +1,10 @@
-import { openBrowserSqliteDatabase, type BrowserSqliteDatabase } from "@coredrill/storage-browser";
+import {
+  BrowserSqliteBusyError,
+  BrowserStorageUnavailableError,
+  BrowserVaultBusyError,
+  openBrowserSqliteDatabase,
+  type BrowserSqliteDatabase,
+} from "@coredrill/storage-browser";
 import {
   applySqlMigrations,
   defineSqlMigrations,
@@ -9,6 +15,11 @@ import {
 } from "@coredrill/storage-core";
 
 import initialMigrationSql from "../../../migrations/0001_vault.sql?raw";
+import {
+  runStorageBenchmark,
+  type StorageBenchmarkInput,
+  type StorageBenchmarkResult,
+} from "./storage-benchmark.js";
 
 const DATABASE_NAME = "/coredrill-phase0.sqlite3";
 const MIGRATION_APPLIED_AT = "2026-08-24T08:00:00.000Z";
@@ -40,8 +51,20 @@ interface OpenMigrationProof {
   readonly diagnostics: StorageDiagnostics;
 }
 
+interface OpenOptions {
+  readonly expectedExisting?: boolean;
+}
+
+interface OpenAttempt {
+  readonly code?: "sqlite_busy" | "storage_unavailable" | "vault_busy";
+  readonly message?: string;
+  readonly opened: boolean;
+  readonly proof?: OpenMigrationProof;
+}
+
 export interface CoredrillStorageSpikeApi {
-  openAndMigrate(): Promise<OpenMigrationProof>;
+  openAndMigrate(options?: OpenOptions): Promise<OpenMigrationProof>;
+  tryOpenAndMigrate(options?: OpenOptions): Promise<OpenAttempt>;
   writeVault(input: VaultInput): Promise<void>;
   proveRollback(input: VaultInput): Promise<boolean>;
   listVaults(): Promise<readonly VaultRow[]>;
@@ -50,6 +73,7 @@ export interface CoredrillStorageSpikeApi {
   diagnostics(): Promise<StorageDiagnostics>;
   close(): Promise<void>;
   delete(): Promise<boolean>;
+  runBenchmark(input: StorageBenchmarkInput): Promise<StorageBenchmarkResult>;
 }
 
 declare global {
@@ -57,6 +81,11 @@ declare global {
 }
 
 let database: BrowserSqliteDatabase | undefined;
+const statusElement = document.querySelector<HTMLElement>("#status");
+
+const setStatus = (message: string): void => {
+  if (statusElement !== null) statusElement.textContent = message;
+};
 
 const sha256Text = async (value: string): Promise<string> => {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
@@ -73,8 +102,12 @@ const migrations = async () =>
     },
   ]);
 
-const getDatabase = async (): Promise<BrowserSqliteDatabase> => {
-  database ??= await openBrowserSqliteDatabase({ databaseName: DATABASE_NAME });
+const getDatabase = async (options: OpenOptions = {}): Promise<BrowserSqliteDatabase> => {
+  database ??= await openBrowserSqliteDatabase({
+    databaseName: DATABASE_NAME,
+    expectedExisting: options.expectedExisting ?? false,
+    requestPersistentStorage: false,
+  });
   return database;
 };
 
@@ -109,12 +142,36 @@ const toPortableDatabase = (portable: PortableDatabaseJson): PortableDatabase =>
 });
 
 const api: CoredrillStorageSpikeApi = {
-  openAndMigrate: async () => {
-    const client = await getDatabase();
+  openAndMigrate: async (options = {}) => {
+    const client = await getDatabase(options);
     const result = await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
     const diagnostics = await client.diagnostics();
     logOpenProof(diagnostics);
+    setStatus(
+      diagnostics.health === "ready"
+        ? "Vault ready"
+        : "Vault ready with storage warnings; export a backup before relying on this profile.",
+    );
     return Object.freeze({ appliedVersions: result.appliedVersions, diagnostics });
+  },
+  tryOpenAndMigrate: async (options = {}) => {
+    try {
+      return Object.freeze({ opened: true, proof: await api.openAndMigrate(options) });
+    } catch (error) {
+      if (
+        error instanceof BrowserVaultBusyError ||
+        error instanceof BrowserStorageUnavailableError ||
+        error instanceof BrowserSqliteBusyError
+      ) {
+        setStatus(error.message);
+        return Object.freeze({
+          opened: false,
+          code: error.code,
+          message: error.message,
+        });
+      }
+      throw error;
+    }
   },
   writeVault: async (input) => {
     const client = await getDatabase();
@@ -178,6 +235,7 @@ const api: CoredrillStorageSpikeApi = {
     database = undefined;
     return deleted;
   },
+  runBenchmark: (input) => runStorageBenchmark(input),
 };
 
 globalThis.coredrillStorageSpike = Object.freeze(api);

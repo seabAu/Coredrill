@@ -6,13 +6,14 @@ import type {
   StorageDiagnostics,
 } from "@coredrill/storage-core";
 
-export const BROWSER_STORAGE_PROTOCOL_VERSION = 1 as const;
+export const BROWSER_STORAGE_PROTOCOL_VERSION = 2 as const;
 
 export interface BrowserStorageOpenResult {
   readonly databaseName: string;
+  readonly existedBeforeOpen: boolean;
   readonly sqliteVersion: string;
   readonly vfs: "opfs-sahpool";
-  readonly persistent: true;
+  readonly opfs: true;
   readonly thread: "dedicated-worker";
 }
 
@@ -52,6 +53,7 @@ export interface BrowserStorageRequest {
 export interface BrowserStorageError {
   readonly name: string;
   readonly message: string;
+  readonly resultCode?: number;
 }
 
 export interface BrowserStorageSuccessResponse {
@@ -113,5 +115,13 @@ export const isBrowserStorageResponse = (value: unknown): value is BrowserStorag
   ) {
     return false;
   }
-  return value["ok"] ? "result" in value : isRecord(value["error"]);
+  if (value["ok"]) return "result" in value;
+  if (!isRecord(value["error"])) return false;
+  const resultCode = value["error"]["resultCode"];
+  return (
+    typeof value["error"]["name"] === "string" &&
+    typeof value["error"]["message"] === "string" &&
+    (resultCode === undefined ||
+      (typeof resultCode === "number" && Number.isSafeInteger(resultCode)))
+  );
 };

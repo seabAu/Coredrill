@@ -17,5 +17,6 @@ ADRs record material choices and preserve why they changed. The [design decision
 | [0000](0000-template.md)                                    | Template | Required ADR fields                                                                     |
 | [0001](0001-adopt-design-baseline.md)                       | Accepted | Repository adoption of every decision marked Accepted on 2026-08-21                     |
 | [0002](0002-adopt-coredrill-identity-and-apache-license.md) | Accepted | `D-054`, `D-055`, the license portion of `Q-013`, and working-name selection in `Q-001` |
+| [0003](0003-adopt-browser-storage-support-floor.md)         | Proposed | `D-025`, `Q-002`, and `STG-004` through `STG-008`; pending exact hosted browser lanes   |
 
-Provisional decisions `D-010`, `D-012`, `D-015`, `D-022`, `D-023`, `D-025`, and `D-027` retain their named Phase 0/usability gates. Deferred `D-052` does not authorize a sync service or account dependency.
+Provisional decisions `D-010`, `D-012`, `D-015`, `D-022`, `D-023`, `D-025`, and `D-027` retain their named Phase 0/usability gates. ADR-0003 is the Proposed evidence-backed resolution for D-025 and does not promote it until the exact hosted browser lanes pass. Deferred `D-052` does not authorize a sync service or account dependency.

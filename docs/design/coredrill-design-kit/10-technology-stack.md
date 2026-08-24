@@ -91,6 +91,8 @@ SQLite is the source of truth. TanStack Query caches query results; Zustand stor
 
 The Phase 0 proof harness uses Vite 8.1.0 and Playwright 1.61.1, both exact-reviewed development dependencies rather than product runtime services. On Edge 151 it opens SQLite 3.53.0 with `opfs-sahpool` in a dedicated Worker and proves transactional migration, durability, checksummed export, clean-context restore, and delete. Browser support, failure/locking behavior, benchmarks, and the final VFS decision remain explicit `STG-004`–`STG-008` gates; this evidence does not promote D-025 from Provisional.
 
+The support-floor candidate adds exact Chrome 152/151 Playwright lanes, real branded Firefox 154/153 WebDriver lanes, Edge 151 failure/contention/benchmark evidence, and an immutable-pinned browser-install CI matrix. Playwright's patched Firefox/WebKit builds are not reported as branded Firefox/Safari evidence. Safari/macOS and mobile device rows remain unsupported until executed. No npm runtime dependency is added for WebDriver; the Node harness speaks the local W3C WebDriver protocol to Mozilla geckodriver.
+
 ### Desktop
 
 - Native SQLite through a narrow reviewed Tauri adapter. Evaluate the official SQL plugin versus a small `rusqlite` command layer during Phase 0.

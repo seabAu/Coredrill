@@ -1,0 +1,246 @@
+{
+  "schemaVersion": 1,
+  "matrixId": "JW-TM-001",
+  "matrixVersion": "1.1.0",
+  "commitSha": "c4750806591ba73695e53af30f82ab7d8d5d0ae2",
+  "dirtyWorktree": true,
+  "lockfileSha256": "358dfdbcc831d663582256deee57e5d3c64815bdc979405b3770327e26df23f4",
+  "hardwareTargetId": "HW-LOCAL-DIAG",
+  "operatingSystemTargetId": "OS-WIN10-LOCAL",
+  "reviewer": "Codex",
+  "browser": "151.0.4129.101",
+  "engine": "chromium",
+  "headless": true,
+  "appBuild": {
+    "sqlite": "3.53.0",
+    "sqlitePackage": "3.53.0-build1",
+    "vite": "8.1.0"
+  },
+  "fixture": {
+    "schemaVersion": 1,
+    "fixtureId": "JW-STG-DATA-001",
+    "seed": "coredrill-storage-benchmark-v1",
+    "descriptionBytesPerRecord": 320,
+    "profiles": [
+      {
+        "id": "DATA-SMOKE",
+        "records": 100
+      },
+      {
+        "id": "DATA-REFERENCE",
+        "records": 2000
+      },
+      {
+        "id": "DATA-STRESS",
+        "records": 10000
+      }
+    ],
+    "privacy": "Deterministic synthetic data only; no production career content."
+  },
+  "results": [
+    {
+      "byteLength": 65536,
+      "completedAt": "2026-08-24T09:11:18.880Z",
+      "fixtureId": "JW-STG-DATA-001",
+      "fixtureSha256": "ae02c976348602197946abc5cf1443c0f92784cffdd786501c2385027fd6a263",
+      "metrics": {
+        "create": {
+          "failures": 0,
+          "maximumMs": 65.8,
+          "p50Ms": 65.8,
+          "p95Ms": 65.8,
+          "rawMs": [65.8]
+        },
+        "export": {
+          "failures": 0,
+          "maximumMs": 1.1,
+          "p50Ms": 0.9,
+          "p95Ms": 1.1,
+          "rawMs": [1.1, 1.1, 0.9, 0.7, 0.7]
+        },
+        "import": {
+          "failures": 0,
+          "maximumMs": 11.7,
+          "p50Ms": 11.7,
+          "p95Ms": 11.7,
+          "rawMs": [11.7]
+        },
+        "migrate": {
+          "failures": 0,
+          "maximumMs": 7.7,
+          "p50Ms": 7.7,
+          "p95Ms": 7.7,
+          "rawMs": [7.7]
+        },
+        "restore": {
+          "failures": 0,
+          "maximumMs": 9.7,
+          "p50Ms": 8.3,
+          "p95Ms": 9.7,
+          "rawMs": [9.7, 8.3, 7.8]
+        },
+        "search": {
+          "failures": 0,
+          "maximumMs": 1.1,
+          "p50Ms": 0.4,
+          "p95Ms": 0.7,
+          "rawMs": [
+            0.3, 0.5, 0.7, 0.9, 0.4, 0.5, 0.3, 0.3, 0.1, 1.1, 0.5, 0.7, 0.6, 0.4, 0.4, 0.4, 0.5,
+            0.4, 0.4, 0.4, 0.3, 0.4, 0.6, 0.5, 0.4, 0.4, 0.2, 0.4, 0.3, 0.3, 0.4, 0.5, 0.2, 0.3,
+            0.4, 0.5, 0.7, 0.3, 0.5, 0.3, 0.3, 0.3, 0.4, 0.4, 0.3, 0.3, 0.3, 0.3, 0.3, 0.4
+          ]
+        },
+        "startup": {
+          "failures": 0,
+          "maximumMs": 75.7,
+          "p50Ms": 68.9,
+          "p95Ms": 73.7,
+          "rawMs": [
+            67.8, 71.6, 73.7, 68.5, 69, 68.3, 69.8, 68.9, 67.6, 69.1, 69.5, 72.6, 69.6, 67.7, 68.2,
+            68.7, 67.6, 73.4, 75.7, 68.3
+          ]
+        }
+      },
+      "profileId": "DATA-SMOKE",
+      "records": 100,
+      "seed": "coredrill-storage-benchmark-v1",
+      "startedAt": "2026-08-24T09:11:17.027Z"
+    },
+    {
+      "byteLength": 876544,
+      "completedAt": "2026-08-24T09:11:21.101Z",
+      "fixtureId": "JW-STG-DATA-001",
+      "fixtureSha256": "7b05296a57408ce51689ed37cbcc2bfe8c3fc16ffdd621546ec66db41af01ad0",
+      "metrics": {
+        "create": {
+          "failures": 0,
+          "maximumMs": 68.2,
+          "p50Ms": 68.2,
+          "p95Ms": 68.2,
+          "rawMs": [68.2]
+        },
+        "export": {
+          "failures": 0,
+          "maximumMs": 5.2,
+          "p50Ms": 4.4,
+          "p95Ms": 5.2,
+          "rawMs": [5.2, 4.4, 3.8, 4.8, 4]
+        },
+        "import": {
+          "failures": 0,
+          "maximumMs": 58.5,
+          "p50Ms": 58.5,
+          "p95Ms": 58.5,
+          "rawMs": [58.5]
+        },
+        "migrate": {
+          "failures": 0,
+          "maximumMs": 7.2,
+          "p50Ms": 7.2,
+          "p95Ms": 7.2,
+          "rawMs": [7.2]
+        },
+        "restore": {
+          "failures": 0,
+          "maximumMs": 49.7,
+          "p50Ms": 48.8,
+          "p95Ms": 49.7,
+          "rawMs": [47.6, 49.7, 48.8]
+        },
+        "search": {
+          "failures": 0,
+          "maximumMs": 3.1,
+          "p50Ms": 0.4,
+          "p95Ms": 0.7,
+          "rawMs": [
+            0.4, 0.3, 0.4, 0.4, 0.5, 0.3, 0.5, 0.5, 0.4, 0.5, 0.5, 0.4, 0.4, 0.3, 0.3, 0.4, 0.7,
+            0.4, 0.4, 0.3, 0.4, 0.5, 0.4, 0.4, 0.4, 0.5, 0.3, 0.4, 0.7, 0.4, 0.7, 0.5, 0.7, 0.4,
+            0.6, 0.3, 0.4, 0.4, 0.5, 0.3, 0.4, 3.1, 0.5, 0.4, 0.4, 0.4, 0.4, 0.3, 0.3, 0.4
+          ]
+        },
+        "startup": {
+          "failures": 0,
+          "maximumMs": 89.8,
+          "p50Ms": 84.3,
+          "p95Ms": 86.9,
+          "rawMs": [
+            85.8, 86, 89.8, 82.5, 80.1, 84.6, 85.5, 83.8, 86.9, 85.3, 85.7, 84.3, 86.5, 83.9, 81.3,
+            79.7, 86.1, 83.3, 82.6, 81.4
+          ]
+        }
+      },
+      "profileId": "DATA-REFERENCE",
+      "records": 2000,
+      "seed": "coredrill-storage-benchmark-v1",
+      "startedAt": "2026-08-24T09:11:18.890Z"
+    },
+    {
+      "byteLength": 4259840,
+      "completedAt": "2026-08-24T09:11:25.213Z",
+      "fixtureId": "JW-STG-DATA-001",
+      "fixtureSha256": "79538844b480897e918f1525c6afa775d8b6c7dc0dbfa3761b5533219380f9a5",
+      "metrics": {
+        "create": {
+          "failures": 0,
+          "maximumMs": 65.3,
+          "p50Ms": 65.3,
+          "p95Ms": 65.3,
+          "rawMs": [65.3]
+        },
+        "export": {
+          "failures": 0,
+          "maximumMs": 18,
+          "p50Ms": 16.9,
+          "p95Ms": 18,
+          "rawMs": [18, 16.7, 16.9, 17.1, 16.4]
+        },
+        "import": {
+          "failures": 0,
+          "maximumMs": 216.4,
+          "p50Ms": 216.4,
+          "p95Ms": 216.4,
+          "rawMs": [216.4]
+        },
+        "migrate": {
+          "failures": 0,
+          "maximumMs": 7.2,
+          "p50Ms": 7.2,
+          "p95Ms": 7.2,
+          "rawMs": [7.2]
+        },
+        "restore": {
+          "failures": 0,
+          "maximumMs": 190.9,
+          "p50Ms": 190.9,
+          "p95Ms": 190.9,
+          "rawMs": [188.2, 190.9, 190.9]
+        },
+        "search": {
+          "failures": 0,
+          "maximumMs": 1.1,
+          "p50Ms": 0.5,
+          "p95Ms": 0.7,
+          "rawMs": [
+            0.7, 0.4, 0.7, 0.4, 0.4, 0.5, 0.7, 0.9, 0.5, 0.5, 0.4, 0.6, 0.4, 0.5, 0.3, 0.5, 0.4,
+            0.5, 0.4, 0.6, 0.5, 0.4, 0.4, 0.4, 0.5, 0.4, 0.3, 0.4, 0.3, 0.5, 1.1, 0.6, 0.6, 0.4,
+            0.5, 0.5, 0.6, 0.4, 0.4, 0.4, 0.4, 0.6, 0.4, 0.5, 0.5, 0.5, 0.4, 0.6, 0.4, 0.3
+          ]
+        },
+        "startup": {
+          "failures": 0,
+          "maximumMs": 160.3,
+          "p50Ms": 140.2,
+          "p95Ms": 154.9,
+          "rawMs": [
+            143.1, 137.5, 160.3, 154.9, 139.8, 140, 139.5, 139.3, 145.9, 151.9, 137, 140.3, 142.1,
+            138.4, 140.3, 135.9, 142.3, 138.9, 140.2, 140.7
+          ]
+        }
+      },
+      "profileId": "DATA-STRESS",
+      "records": 10000,
+      "seed": "coredrill-storage-benchmark-v1",
+      "startedAt": "2026-08-24T09:11:21.106Z"
+    }
+  ]
+}
