@@ -77,7 +77,7 @@ The complete repository `pnpm verify` gate also passed: 25/25 typecheck tasks, 2
 
 `JW-DI-001` v1.7.0 binds all 12 direct Cargo declarations to lock SHA-256 `1d1b889b68954bcb38b97ae8e334e944cef3fec13de594daccfc1e24a208dfb8`. The slice adds exact `sha2` 0.11.0, optional `tauri-plugin-dialog` 2.7.1, rusqlite's existing backup feature, and target-only direct `windows-sys` 0.61.2 features for atomic replacement. License policy passes all 442 registry crates. RustSec scans 443 locked packages with zero vulnerabilities; the same 14 unmaintained and one GTK/glib unsoundness warning remain explicit cross-platform evidence for `NAT-008`.
 
-The clean hosted-checkout run for the implementation commit will be recorded here after push.
+Implementation commit [`faddbcf17448cbf8086268310b0c88e237d1dde0`](https://github.com/seabAu/Coredrill/commit/faddbcf17448cbf8086268310b0c88e237d1dde0) passed [Foundation CI run 32733226898](https://github.com/seabAu/Coredrill/actions/runs/32733226898) from a clean hosted checkout. The [Windows native/Tauri job](https://github.com/seabAu/Coredrill/actions/runs/32733226898/job/97450005294) passed the shared native contracts, Tauri app-data proof, redacted OS secret lifecycle, picker-owned archive recovery, all-target Clippy, and release Tauri build. The [Linux quality job](https://github.com/seabAu/Coredrill/actions/runs/32733226898/job/97450005194) passed the complete repository gate and both reviewed license inventories. Both pinned Chrome and Firefox version lanes and the full-history secret scan also passed.
 
 ## Reproducible verification
 

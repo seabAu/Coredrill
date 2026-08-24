@@ -4,13 +4,13 @@
 - Checklist scope: `NAT-001`, `NAT-002`, `NAT-003`, `NAT-004`
 - Packages: `@coredrill/desktop`, `@coredrill/storage-native`, `@coredrill/storage-core`, `@coredrill/web`
 - Locally proven target: Windows x86-64 with Rust 1.98.0, Tauri 2.11.3, Node.js 24.19.0, and pnpm 11.22.0
-- Decision changes at this checkpoint: none; D-022 remains Provisional and Q-003 remains open until `NAT-006` through `NAT-008`
+- Decision changes at this checkpoint: none; D-022 remains Provisional and Q-003 remains open through `NAT-008`
 
 ## Outcome
 
 `NAT-001` through `NAT-004` pass their local and immutable hosted proof gates. The shared Vite frontend builds as `coredrill.exe` in a Tauri 2 shell with a strict content security policy, a local-window capability, and generated permissions for narrow versioned native commands. A narrow `rusqlite` command layer is the provisional native-adapter candidate because it preserves the existing callback transaction and migration contracts without broadening the privileged surface. The exact same storage-core transaction suite and a shared migration/repository suite pass against a real Rust process and bundled native SQLite. Tauri's exact platform application-data resolver now feeds a canonical Rust layout for databases and content-addressed attachments, with fail-closed link and unusable-root behavior.
 
-This checkpoint does not accept Tauri or the native adapter. [OS secure storage is now proven separately](native-secure-storage-verification.md); native export/restore, installable packaging, cross-platform evidence, and the final D-022/Q-003 decision remain `NAT-006` through `NAT-008`. The shell adds no account, hosted database, telemetry, scraper, AI/provider call, updater, filesystem plugin, or product feature.
+This checkpoint does not accept Tauri or the native adapter. [OS secure storage](native-secure-storage-verification.md) and [native export/restore recovery](native-archive-verification.md) are now proven separately. Installable packaging, cross-platform evidence, and the final D-022/Q-003 decision remain `NAT-007` and `NAT-008`. The shell adds no account, hosted database, telemetry, scraper, AI/provider call, updater, filesystem plugin, or product feature.
 
 ## NAT-001 desktop shell proof
 
@@ -139,6 +139,5 @@ The hosted Firefox jobs retain a non-failing GitHub annotation because the check
 
 ## Remaining work
 
-- `NAT-006`: implement native picker-driven checksummed export/restore with temporary validation, atomic replacement, and recovery.
 - `NAT-007`: build an installable first-OS artifact and measure size, startup, and memory.
 - `NAT-008`: synthesize all evidence, resolve the cross-platform Cargo warnings, and update D-022/D-024/Q-003 through an ADR or documented fallback.

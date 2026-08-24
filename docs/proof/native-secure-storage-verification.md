@@ -84,6 +84,5 @@ Implementation commit [`f8c22eb995f09b5226fc3f46313df9b1e82d4b46`](https://githu
 
 ## Remaining native slice
 
-- `NAT-006`: picker-driven checksummed export/restore with temporary validation, atomic replacement, and recovery.
 - `NAT-007`: installable first-OS artifact with measured size, startup, and memory.
 - `NAT-008`: cross-platform secure-store/package evidence and the final D-022/D-024/Q-003 ADR decision.
