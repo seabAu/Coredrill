@@ -67,4 +67,4 @@ The complete aggregate repository gate also passes: 28 type/build prerequisite t
 
 ## Decision status and remaining extension work
 
-This slice implements accepted `D-032` without changing it. `D-023` remains Provisional and `Q-005` remains open because the current evidence proves only the Chromium shell, user-action capture, and local outbox. `EXT-004` through `EXT-008` still own app-origin transfer/acknowledgement, Firefox and manual fallback, hostile-message/replay/origin tests, final bundle/secret review, and the WXT/side-panel architecture decision. No ADR is required for this partial gate.
+This slice implemented accepted `D-032` without changing it. At this partial gate, `D-023` remained Provisional and `Q-005` remained open because the evidence proved only the Chromium shell, user-action capture, and local outbox. Subsequent `EXT-004` through `EXT-008` completed transfer/acknowledgement, Firefox fallback, hostile-input, package, and architecture proof; [ADR-0005](../adr/0005-adopt-wxt-multisurface-extension-baseline.md) now accepts `D-023` and resolves `Q-005`.

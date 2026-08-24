@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "checklistIds": ["EXT-007", "EXT-008"],
+  "status": "passed",
+  "implementationCommit": "6a3e8112630c1e8c7d3b0226daed97a91ae86242",
+  "proofCommit": "57bab5b6a6e88f49fc6f2a9b563b6a87300c471c",
+  "workflowRun": {
+    "id": 32764058550,
+    "url": "https://github.com/seabAu/Coredrill/actions/runs/32764058550",
+    "attempt": 1,
+    "headSha": "57bab5b6a6e88f49fc6f2a9b563b6a87300c471c",
+    "createdAt": "2026-08-24T18:43:53Z",
+    "startedAt": "2026-08-24T18:43:53Z",
+    "completedAt": "2026-08-24T18:56:41Z",
+    "conclusion": "success",
+    "allRequiredJobsPassed": true
+  },
+  "extensionJob": {
+    "id": 97549537669,
+    "url": "https://github.com/seabAu/Coredrill/actions/runs/32764058550/job/97549537669",
+    "name": "Extension transfer / Chromium and Firefox fallback",
+    "startedAt": "2026-08-24T18:44:28Z",
+    "completedAt": "2026-08-24T18:47:06Z",
+    "conclusion": "success",
+    "packageInspection": "passed",
+    "sourceRebuild": "passed",
+    "browserE2e": "passed",
+    "artifactUpload": "passed"
+  },
+  "artifact": {
+    "id": 9533863643,
+    "name": "coredrill-extension-transfer-57bab5b6a6e88f49fc6f2a9b563b6a87300c471c",
+    "sizeBytes": 1132250,
+    "digest": "sha256:0a5b1b41be45c3bea84d374962c33ef0527bc81890aefcbd8b1ab3386aec127a",
+    "createdAt": "2026-08-24T18:47:03Z",
+    "updatedAt": "2026-08-24T18:47:03Z",
+    "expiresAt": "2026-09-23T18:47:01Z",
+    "expired": false,
+    "downloadedAndIndependentlyReviewed": true,
+    "retainedFiles": {
+      "chromiumProductionFiles": 8,
+      "firefoxProductionFiles": 8,
+      "storePackages": 2,
+      "sourceReviewPackages": 1,
+      "browserReports": 1
+    }
+  },
+  "storePackages": [
+    {
+      "target": "chrome-mv3",
+      "path": "apps/extension/.output/coredrillextension-0.0.0-chrome.zip",
+      "bytes": 116602,
+      "sha256": "cf560272dd92b92d6547d68b6deaa554f06e084c1f852d1f69b1a61e04bf4f99",
+      "files": 8,
+      "byteIdenticalToLocalPackage": true,
+      "productionInspectionPassed": true,
+      "remoteAssets": 0,
+      "remoteImports": 0,
+      "evalCalls": 0,
+      "secretFindings": 0
+    },
+    {
+      "target": "firefox-mv3",
+      "path": "apps/extension/.output/coredrillextension-0.0.0-firefox.zip",
+      "bytes": 116620,
+      "sha256": "689a2f923d73e69bf90723f28d8b97c25a0c5b1f16a8f3e5f5ff1e190eefcd50",
+      "files": 8,
+      "byteIdenticalToLocalPackage": true,
+      "productionInspectionPassed": true,
+      "remoteAssets": 0,
+      "remoteImports": 0,
+      "evalCalls": 0,
+      "secretFindings": 0
+    }
+  ],
+  "sourceReviewPackage": {
+    "path": "apps/extension/.output/coredrillextension-0.0.0-sources.zip",
+    "bytes": 100447,
+    "sha256": "aea8caddc639796ebca2222ce1214aa884640caf96892ef197f42a26e54bb7b5",
+    "files": 45,
+    "byteIdenticalToLocalPackage": true,
+    "exactAllowlistPassed": true,
+    "unsafePaths": 0,
+    "secretFindings": 0,
+    "frozenLockfileOfflineRebuild": "passed",
+    "rebuiltFirefoxDirectoryByteIdentical": true,
+    "rebuiltStorePackageByteIdentical": true,
+    "rebuiltSourcePackageByteIdentical": true
+  },
+  "browserProof": {
+    "report": "test-results/extension-transfer.json",
+    "expected": 2,
+    "unexpected": 0,
+    "flaky": 0,
+    "chromium": {
+      "version": "149.0.7827.55",
+      "extensionId": "menfhkckmahcgfjcmpfklpjnamkmlaml",
+      "durableBeforeAck": true,
+      "retryAttempt": 2,
+      "wrongOriginRejected": true,
+      "oversizedRejected": true,
+      "wrongIdRejected": true,
+      "replayRejected": true
+    },
+    "firefox": {
+      "version": "151.0",
+      "extensionId": "capture@coredrill.local",
+      "transferMode": "manual-json-export-import",
+      "checksumRejected": true,
+      "idempotent": true,
+      "durableSchemaVersion": 2
+    }
+  }
+}

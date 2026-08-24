@@ -1,6 +1,6 @@
 # ADR-0005 — Adopt the WXT multi-surface extension baseline
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-08-24
 - **Owners:** Project owner
 - **Decision register IDs:** `D-023`, `Q-005`
@@ -36,7 +36,7 @@ WXT `0.20.27` was rejected because its obsolete runner subtree failed the depend
 
 ## Decision and rationale
 
-Adopt option 1 after the clean-commit hosted package and rebuild lane passes and its immutable artifact is independently reviewed.
+Adopt option 1. Clean-commit [Foundation CI run 32764058550](https://github.com/seabAu/Coredrill/actions/runs/32764058550) passed the complete package/rebuild lane and repository matrix, and its immutable artifact was independently downloaded and reviewed.
 
 WXT `0.21.4` becomes the accepted extension build and packaging baseline. Chromium uses the side panel as its primary surface; Firefox uses its sidebar; both retain the popup as a compact fallback. The extension remains Manifest V3 and shares capture, contract, and transfer code without importing application UI or storage internals.
 
@@ -62,10 +62,10 @@ The extension never receives provider secrets or full-vault access. User-confirm
 
 ## Documents, contracts, checklist IDs, and tests to update
 
-- Design/goal/decision-register changes: promote `D-023`, resolve `Q-005`, update the extension stack evidence, ADR index, and living checklist after hosted proof.
+- Design/goal/decision-register changes: promoted `D-023`, resolved `Q-005`, and updated the extension stack evidence, ADR index, and living checklist after hosted proof.
 - Contracts/migrations: none.
-- Checklist IDs: close `EXT-007` and `EXT-008` after immutable hosted artifact review.
-- Automated/manual proof: workspace aggregate gate; exact unpacked and store-ZIP inspectors; remote-code and secret scans; clean frozen-lockfile offline Firefox source rebuild; Chromium/Firefox transfer E2E; full-history secret scan; immutable artifact download and hash review.
+- Checklist IDs: `EXT-007` and `EXT-008` closed after immutable hosted artifact review.
+- Automated/manual proof: complete workspace aggregate gate; exact unpacked and store-ZIP inspectors; remote-code and secret scans; clean frozen-lockfile offline Firefox source rebuild; Chromium/Firefox transfer E2E; full-history secret scan; immutable artifact download and hash review. See [extension production-package verification](../proof/extension-production-package-verification.md).
 
 ## Revisit trigger
 

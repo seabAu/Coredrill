@@ -134,12 +134,12 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
 
 ### D-023 — WXT extension
 
-- **Status:** Provisional
-- **Decision:** WXT builds the Manifest V3 extension and browser targets.
+- **Status:** Accepted
+- **Decision:** WXT `0.21.4` builds the Manifest V3 targets. Chromium uses a side panel as its primary surface and exact-origin pull/ack transfer; Firefox uses a sidebar and checksummed manual export/import; both retain the popup fallback and exact inspected store packages.
 - **Why:** Entry-point/manifest tooling and shared TypeScript/React support.
-- **Gate:** Chromium side panel, Firefox fallback, permissions, bundle/CSP, and store packaging.
+- **Gate:** Revisit only if a supported browser/store requirement cannot preserve the exact permission, CSP, transfer, or reproducible-package boundary, or measured accessibility/usability evidence rejects the primary/fallback surface split.
 - **Fallback:** Browser-specific hand-authored manifests around the same capture packages.
-- **Phase 0 evidence (2026-08-24):** `EXT-001` through `EXT-006` prove exact Chromium/Firefox WXT `0.21.4` MV3 side-panel/sidebar and popup builds, user-action capture, bounded checksummed outbox, durable SQLite-before-ack transfer, attempt-2 idempotent retry, Firefox checksummed JSON fallback, and hostile sender/message/oversize/wrong-origin-or-ID/expiry/replay rejection locally and on clean-commit hosted CI. Chromium has one reserved Phase 0 HTTPS external origin; Firefox has none and declares no data collection. The dependency gate rejected WXT `0.20.27` rather than suppressing its obsolete vulnerable runner subtree. Status remains Provisional pending `EXT-007` final store-package/secret review and `EXT-008`. See [capture/outbox verification](../../proof/extension-capture-outbox-verification.md) and [transfer/fallback/security verification](../../proof/extension-transfer-fallback-security-verification.md).
+- **Phase 0 evidence (2026-08-24):** `EXT-001` through `EXT-008` prove exact Chromium/Firefox WXT `0.21.4` MV3 side-panel/sidebar and popup builds, user-action capture, bounded checksummed outbox, durable SQLite-before-ack transfer, attempt-2 idempotent retry, Firefox checksummed JSON fallback, and hostile sender/message/oversize/wrong-origin-or-ID/expiry/replay rejection. Both unpacked builds and byte-identical store ZIPs pass exact manifest/file/CSP, remote-code, and secret inspection. The 45-file Firefox source-review ZIP rebuilds the exact production directory, store ZIP, and source ZIP from a frozen lockfile. Clean-commit [Foundation CI run 32764058550](https://github.com/seabAu/Coredrill/actions/runs/32764058550) passed every required job, and the downloaded artifact matched all local package hashes. Chromium has one reserved Phase 0 HTTPS external origin; Firefox has none and declares no data collection. The dependency gate rejected WXT `0.20.27` rather than suppressing its obsolete vulnerable runner subtree. See [ADR-0005](../../adr/0005-adopt-wxt-multisurface-extension-baseline.md), [capture/outbox verification](../../proof/extension-capture-outbox-verification.md), [transfer/fallback/security verification](../../proof/extension-transfer-fallback-security-verification.md), and [production-package verification](../../proof/extension-production-package-verification.md).
 
 ### D-024 — SQLite in every full app mode
 
@@ -290,6 +290,7 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
 | ----- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
 | Q-002 | Browser support floor | [ADR-0003](../../adr/0003-adopt-browser-storage-support-floor.md) accepts current/previous Chromium-family and Firefox desktop after exact hosted lifecycle proof, with Safari/mobile and missing-capability browsers explicitly unsupported until their real rows pass; portable export is the fallback. | 2026-08-24 |
 | Q-003 | Native SQLite adapter  | [ADR-0004](../../adr/0004-adopt-tauri-rusqlite-native-boundary.md) accepts the narrow first-party `rusqlite` command layer after shared-contract, confinement, recovery, secure-store, package, and cross-platform dependency proof. The official Tauri SQL plugin is not selected. Linux native remains diagnostic; the local browser app plus portable export is its supported fallback. | 2026-08-24 |
+| Q-005 | Side panel vs popup fallback | [ADR-0005](../../adr/0005-adopt-wxt-multisurface-extension-baseline.md) accepts Chromium side panel and Firefox sidebar as the primary surfaces, retains a popup fallback on both targets, and keeps checksummed manual export/import as Firefox's supported transfer fallback after exact package and real-browser proof. | 2026-08-24 |
 
 ## Open questions and required evidence
 
@@ -297,7 +298,6 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
 |---|---|---|---|
 | Q-001 | Coredrill public-identity clearance | Trademark, domain, and marketplace checks for the selected working name; repository availability is proven | Before public landing/store listing |
 | Q-004 | Tiptap suitability | Round-trip/accessibility/export spike | Phase 0 |
-| Q-005 | Side panel vs popup fallback | Chromium/Firefox usability and APIs | Phase 0/2 |
 | Q-006 | Exact default pipeline stages | Five-user terminology/usability test | Before Phase 1 UI lock |
 | Q-007 | Browser vault lock/encryption | Threat model and recovery design | Before claiming encrypted browser vault |
 | Q-008 | Local model support floor | Evaluation on realistic consumer hardware | Phase 4 |

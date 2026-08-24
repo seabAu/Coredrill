@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-24  
 Current milestone: Phase 0 — foundations and risk retirement  
-Current work item: `EXT-007` through `EXT-008` — final production/store-package review and extension architecture decision
-Next recommended slice: `EDT-001` through `EDT-003` — restricted editor schema, round-trip sanitation/stress, and representative imports
+Current work item: `EDT-001` through `EDT-003` — restricted editor schema, round-trip sanitation/stress, and representative imports
+Next recommended slice: `EDT-004` through `EDT-006` — accessible exports, assistive-technology smoke proof, and editor architecture decision
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `EDT-001` through `EDT-003` — restricted editor schema
 | Field | Value |
 |---|---|
 | Milestone | Phase 0 |
-| Item range | `EXT-007` through `EXT-008` |
+| Item range | `EDT-001` through `EDT-003` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-24 |
-| Expected proof | Exact manifest/bundle/store-ZIP/Firefox-source-ZIP review, secret/remote-code scan, clean source rebuild, and ADR-backed WXT plus side-panel/popup/sidebar decision |
+| Expected proof | Versioned restricted Tiptap schema and fixtures; edit/undo/paste sanitation and 100-page stress report; representative DOCX/PDF/text import goldens with source mapping and actionable failure messages |
 | Blocker | None for this slice; the independent `FND-001` private-reporting-route blocker remains open below |
-| Next handoff | Continue with `EDT-001` through `EDT-003` after the extension architecture gate; close `FND-001` independently when the owner publishes both private reporting routes |
+| Next handoff | Continue with `EDT-004` through `EDT-006` after the import/schema slice; close `FND-001` independently when the owner publishes both private reporting routes |
 
 ## Milestone status
 
@@ -117,8 +117,8 @@ Next recommended slice: `EDT-001` through `EDT-003` — restricted editor schema
 - [x] **EXT-004** Transfer idempotently to a hosted app origin with acknowledgement and retry. — Proof: [clean-commit hosted SQLite-before-ack, acknowledgement-loss, attempt-2 retry, and exact deduplication E2E](../../proof/extension-transfer-fallback-security-verification.md#hosted-clean-commit-proof)
 - [x] **EXT-005** Prove Firefox fallback/manual export path. — Proof: [hosted Firefox checksummed JSON import, corrupt-checksum rejection, and idempotent duplicate report](../../proof/extension-transfer-fallback-security-verification.md#hosted-clean-commit-proof)
 - [x] **EXT-006** Test malicious page messages, oversized input, replay, wrong origin/ID, and expired capture. — Proof: [focused security suite plus hostile live-boundary cases](../../proof/extension-transfer-fallback-security-verification.md#security-and-compatibility-tests)
-- [ ] **EXT-007** Inspect production manifest/bundle for permissions, CSP, remote code, and secret leakage. — Proof: _review report_
-- [ ] **EXT-008** Decide WXT/side-panel baseline and update D-023/Q-005. — Proof: _ADR/update_
+- [x] **EXT-007** Inspect production manifest/bundle for permissions, CSP, remote code, and secret leakage. — Proof: [exact unpacked/store-ZIP inspection, remote-code/secret scans, clean source rebuild, and downloaded immutable artifact review](../../proof/extension-production-package-verification.md#hosted-clean-commit-proof)
+- [x] **EXT-008** Decide WXT/side-panel baseline and update D-023/Q-005. — Proof: [accepted WXT multi-surface baseline and resolved side-panel/sidebar/popup decision](../../adr/0005-adopt-wxt-multisurface-extension-baseline.md)
 
 ## Editor/export spike
 

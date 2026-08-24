@@ -86,4 +86,4 @@ Hosted Chromium `149.0.7827.55` proved durable-before-ack storage, attempt-2 ret
 
 ## Decision status
 
-This slice implements the transfer/fallback/security portion of provisional `D-023` without changing an Accepted decision. `D-023` and `Q-005` remain open until `EXT-007` completes the final store-package/secret review and `EXT-008` records the WXT/side-panel decision. No ADR is required for this partial gate.
+This slice implemented the transfer/fallback/security portion of provisional `D-023` without changing an Accepted decision at that partial gate. Subsequent `EXT-007` package/security proof and `EXT-008` architecture closure passed; [ADR-0005](../adr/0005-adopt-wxt-multisurface-extension-baseline.md) now accepts `D-023` and resolves `Q-005`.

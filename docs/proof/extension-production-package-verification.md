@@ -2,13 +2,13 @@
 
 Date: 2026-08-24
 Scope: `EXT-007` through `EXT-008`
-Status: local implementation and clean source-rebuild proof complete; clean-commit hosted proof pending
+Status: complete — local implementation, clean source rebuild, clean-commit hosted matrix, and downloaded immutable artifact review passed
 
 ## Outcome
 
 Coredrill now produces independently inspected Chromium and Firefox Manifest V3 store ZIPs plus a Firefox source-review ZIP. The package gate compares every store archive to its inspected unpacked production directory, rejects unsafe or unexpected archive paths, scans the complete production bundles for remote code and likely secrets, constrains the source-review archive to an exact repository allowlist, and rebuilds the Firefox package from a clean source extraction with the frozen lockfile in offline mode.
 
-The proposed architecture decision is [ADR-0005](../adr/0005-adopt-wxt-multisurface-extension-baseline.md). `D-023`, `Q-005`, `EXT-007`, and `EXT-008` remain open until a clean commit passes the hosted lane and the downloaded immutable artifact matches this local proof.
+The accepted architecture decision is [ADR-0005](../adr/0005-adopt-wxt-multisurface-extension-baseline.md). `D-023` is Accepted, `Q-005` is resolved, and `EXT-007`/`EXT-008` are complete after the clean commit passed the hosted lane and the downloaded immutable artifact matched this local proof.
 
 ## Production manifest and bundle review
 
@@ -74,7 +74,7 @@ The proof harness extracts the source ZIP to a new temporary root, runs the pinn
 
 WXT `0.21.4` prints cosmetic `ENOENT` source-list warnings because its reporter attempts to stat repository-root source paths relative to the extension package. This does not alter the archive. The independent exact-file inspector and clean rebuild are the acceptance controls; either fails on an actually missing file.
 
-## CI and artifact contract
+## Hosted clean-commit proof
 
 The aggregate `pnpm verify` gate now includes unpacked production and store/source package inspection. The dedicated extension job additionally performs the clean source rebuild before rerunning the real Chromium transfer and Firefox fallback E2E tests. Its immutable artifact retains:
 
@@ -83,8 +83,23 @@ The aggregate `pnpm verify` gate now includes unpacked production and store/sour
 - the Firefox source-review ZIP; and
 - the browser E2E JSON result.
 
-Hosted run, job, artifact identity, artifact digest, downloaded-file hashes, and clean-source rebuild results will be recorded here and in a machine-readable artifact record after the clean commit passes.
+Implementation commit `6a3e8112630c1e8c7d3b0226daed97a91ae86242` added the package commands, allowlists, inspectors, clean rebuild, proof proposal, and CI lane. Fix commit `57bab5b6a6e88f49fc6f2a9b563b6a87300c471c` selected the platform-native ZIP reader after GNU `tar` correctly rejected ZIP input in the first hosted attempt; the inspection contract and generated packages did not change.
 
-## Decision status
+[Foundation CI run 32764058550](https://github.com/seabAu/Coredrill/actions/runs/32764058550) ran from `2026-08-24T18:43:53Z` through `2026-08-24T18:56:41Z` on the fix commit and passed every required job. The aggregate foundation gate passed in 7m34s; exact Chrome `152.0.7977.54` and `151.0.7922.138` lanes and Firefox `154.0` and `153.0` lanes passed; the full-history Gitleaks scan passed; and Windows, macOS, and diagnostic Linux native package regressions all passed.
 
-No Accepted decision changes in this implementation commit. ADR-0005 is Proposed. `D-023` remains Provisional and `Q-005` remains open until clean-commit hosted proof and immutable artifact review complete `EXT-007`; the same closure change can then accept the ADR, promote `D-023`, resolve `Q-005`, and close `EXT-008`.
+The dedicated [extension job 97549537669](https://github.com/seabAu/Coredrill/actions/runs/32764058550/job/97549537669) passed in 2m38s. It installed the exact graph and pinned browsers, built and inspected both unpacked production targets and store ZIPs on Ubuntu, rebuilt Firefox from the source-review ZIP with the frozen lockfile, passed 2/2 real-browser tests, and uploaded the immutable proof artifact.
+
+- artifact ID: `9533863643`;
+- artifact name: `coredrill-extension-transfer-57bab5b6a6e88f49fc6f2a9b563b6a87300c471c`;
+- artifact size: `1132250` bytes;
+- artifact digest: `sha256:0a5b1b41be45c3bea84d374962c33ef0527bc81890aefcbd8b1ab3386aec127a`;
+- created: `2026-08-24T18:47:03Z`; expires: `2026-09-23T18:47:01Z`;
+- retained contents: both complete eight-file production directories, both store ZIPs, the 45-file Firefox source-review ZIP, and the Playwright JSON report.
+
+The artifact was downloaded after upload and independently re-inspected. Both production directories retained their exact permissions, transfer modes, self-only CSP, local entrypoints, eight-file hashes, and zero remote/eval/secret findings. All three hosted package hashes matched the local hashes above exactly. The source ZIP contained exactly the reviewed 45-file allowlist. Its hosted clean rebuild had already reproduced the Firefox production directory, store ZIP, and source ZIP byte for byte.
+
+The retained browser report is bound to commit `57bab5b6a6e88f49fc6f2a9b563b6a87300c471c` and run `32764058550`. Chromium `149.0.7827.55` proved durable-before-ack receipt, attempt-2 retry, and wrong-origin/oversize/wrong-ID/replay rejection. Firefox `151.0` proved checksummed manual import, corrupt-checksum rejection, idempotent duplicate handling, and SQLite schema version 2. The durable machine record is [extension-production-packages.json](artifacts/extension-production-packages.json).
+
+## Decision closure
+
+ADR-0005 is Accepted. `D-023` is promoted to Accepted with WXT `0.21.4`, Chromium side panel, Firefox sidebar, popup fallback on both targets, exact-origin Chromium pull/ack transfer, checksummed Firefox manual fallback, and exact reproducible store/source packages. `Q-005` is resolved and `EXT-007`/`EXT-008` are complete. Public identity clearance, owner-selected production origin, store submission, credentials, listing copy, signing, and release distribution remain separate gates.
