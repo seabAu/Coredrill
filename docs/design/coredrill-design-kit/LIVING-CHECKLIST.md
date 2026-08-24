@@ -4,7 +4,7 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-24  
 Current milestone: Phase 0 — foundations and risk retirement  
-Current work item: Coredrill identity, Apache-2.0, and hosted Foundation CI are proven; `FND-001` remains open only for its durable private conduct route  
+Current work item: Coredrill identity, Apache-2.0, and hosted Foundation CI are proven; `FND-001` remains open only for durable private conduct and vulnerability-reporting routes  
 Next recommended slice: `DOM-001` through `DOM-002` — foundational value objects, status semantic categories, and validated custom-stage transitions
 
 ## How to use this file
@@ -28,8 +28,8 @@ Next recommended slice: `DOM-001` through `DOM-002` — foundational value objec
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-24 |
 | Expected proof | [Identity, license, remote integration, local gate, and green hosted Foundation CI](../../proof/identity-license-hosting-verification.md) |
-| Blocker | `FND-001` remains open because the durable private conduct-reporting route is still unspecified; repository visibility and private vulnerability reporting do not substitute for it |
-| Next handoff | Begin `DOM-001` through `DOM-002`; close `FND-001` independently when the owner publishes the conduct route |
+| Blocker | `FND-001` remains open because durable private conduct and vulnerability-reporting routes are unspecified; the public Security page currently exposes neither a private vulnerability entry point nor a durable conduct channel |
+| Next handoff | Begin `DOM-001` through `DOM-002`; close `FND-001` independently when the owner publishes both private reporting routes |
 
 ## Milestone status
 
@@ -64,7 +64,7 @@ Next recommended slice: `DOM-001` through `DOM-002` — foundational value objec
 
 ## Repository and governance
 
-- [ ] **FND-001** Create repository, license, `README.md`, `AGENTS.md`, `SECURITY.md`, `CONTRIBUTING.md`, code of conduct, and support policy. — Proof: [Coredrill identity and Apache-2.0 proven; durable private conduct route remains blocked](../../proof/identity-license-hosting-verification.md#outcome)
+- [ ] **FND-001** Create repository, license, `README.md`, `AGENTS.md`, `SECURITY.md`, `CONTRIBUTING.md`, code of conduct, and support policy. — Proof: [Coredrill identity and Apache-2.0 proven; durable private conduct and vulnerability routes remain blocked](../../proof/identity-license-hosting-verification.md#outcome)
 - [x] **FND-002** Configure pnpm workspaces, Turborepo, committed lockfile, and toolchain-version files. — Proof: [frozen clean-clone install/build](../../proof/foundation-verification.md#clean-clone-proof)
 - [x] **FND-003** Create the approved `apps/`, `packages/`, `migrations/`, `fixtures/`, and `docs/` skeleton without placeholder runtime coupling. — Proof: [tree and 19-policy architecture check](../../proof/foundation-verification.md#reviewed-repository-evidence)
 - [x] **FND-004** Configure TypeScript strict project references and import-boundary rules. — Proof: [19-project typecheck and intentional violation tests](../../proof/foundation-verification.md#local-gate-results)
@@ -515,7 +515,7 @@ This phase is deliberately deferred. Re-open only after `GATE-6`, demonstrated m
 |---|---|---|---|---|---|
 | 2026-08-21 | `FND-001` | `Q-013` left the public license unresolved, and no durable private conduct/security reporting address was supplied. | Reviewed the goal, decision register, and every governance path; installed a restrictive temporary notice and kept external contributions closed. | Superseded by the 2026-08-24 follow-up below. | Superseded |
 | 2026-08-21 | `FND-006` | No GitHub remote existed, so the required green workflow URL could not be produced locally. | Configured commit-pinned jobs, ran the full local equivalent, and verified a frozen isolated-clone install/build. | Superseded by the 2026-08-24 follow-up below. | Superseded |
-| 2026-08-24 | `FND-001` | Apache-2.0 and the Coredrill identity are proven, but no durable private conduct-reporting route is published. | Added `ADR-0002`, `D-054`, `D-055`, canonical license text, package metadata checks, governance wording, and full local proof. | Owner: publish a repository-specific private conduct route before external contribution intake. | Open |
+| 2026-08-24 | `FND-001` | Apache-2.0 and the Coredrill identity are proven, but no durable private conduct or vulnerability-reporting route is published. | Added `ADR-0002`, `D-054`, `D-055`, canonical license text, package metadata checks, governance wording, full local proof, and a public Security-page inspection. | Owner: publish repository-specific private conduct and vulnerability routes before external contribution intake/public distribution. | Open |
 | 2026-08-24 | `FND-006` | The remote was attached, but no green hosted Foundation CI URL had been recorded. | Integrated both histories at `f8d9a18`; [Foundation CI run #1](https://github.com/seabAu/Coredrill/actions/runs/32694914029) completed successfully, including the full-history secret scan. | None; retain the URL as proof and keep future `main` runs green. | Resolved |
 
 ## Accepted scope changes
