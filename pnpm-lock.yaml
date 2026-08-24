@@ -73,7 +73,11 @@ importers:
 
   packages/labor-data: {}
 
-  packages/observability: {}
+  packages/observability:
+    dependencies:
+      '@coredrill/contracts':
+        specifier: workspace:*
+        version: link:../contracts
 
   packages/prompt-engine: {}
 

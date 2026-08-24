@@ -8,6 +8,8 @@ export default defineConfig({
       include: [
         "packages/contracts/src/**/*.ts",
         "packages/domain/src/**/*.ts",
+        "packages/application/src/**/*.ts",
+        "packages/observability/src/**/*.ts",
         "packages/storage-core/src/**/*.ts",
         "tooling/architecture/check-boundaries.mjs",
       ],

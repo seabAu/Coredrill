@@ -11,6 +11,12 @@
 
 Local storage is not an access-control boundary against someone with device/browser-profile access. Browser OPFS is origin-private, not independently encrypted. Explain this clearly.
 
+### Local diagnostic contract
+
+The versioned local diagnostic event contains only operational category/name/code, severity/outcome, application version, timing, optional operation UUID, reviewed scalar attributes, and the count of rejected attributes. `delivery` is fixed to `local`. Event names, codes, attribute keys, and string tokens are explicit allowlists; numbers must be finite/bounded; arbitrary strings, nested objects, arrays, and unreviewed fields are discarded before schema validation. Private/content-bearing fields such as resumes, prompts/responses, answers, names, contact data, URLs, notes, raw HTML/text, credentials, cookies, tokens, and secrets are forbidden.
+
+The redactor is fail-closed and never returns rejected values. Product telemetry is a different future contract: it remains off unless the user opts in and every event receives the separate disclosure and privacy review required by D-053.
+
 ## Threat model and controls
 
 ### Hostile captured content / prompt injection
@@ -185,4 +191,3 @@ Use the eval suite in document 05 for every prompt/model/template change. Mock p
 - No schema release ships without web/native migration and restore tests.
 - No extension release ships with blanket host permissions merely for future capability.
 - No sync beta ships before key recovery, device removal, conflicts, deletion, and server metadata are documented/tested.
-

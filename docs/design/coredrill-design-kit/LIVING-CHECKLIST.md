@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-24  
 Current milestone: Phase 0 — foundations and risk retirement  
-Current work item: `DOM-007` through `DOM-009` — remaining ports, application conventions, and privacy-safe diagnostics
-Next recommended slice: `STG-001` through `STG-003` — browser SQLite/OPFS open, transaction, durability, export, and restore spike after the remaining domain contracts are proven
+Current work item: `STG-001` through `STG-003` — browser SQLite/OPFS open, transaction, durability, export, and restore spike
+Next recommended slice: `STG-004` through `STG-008` — browser compatibility, failure/locking matrices, benchmarks, and VFS decision after the core storage journey is proven
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `STG-001` through `STG-003` — browser SQLite/OPFS open
 | Field | Value |
 |---|---|
 | Milestone | Phase 0 |
-| Item range | `DOM-007` through `DOM-009` |
+| Item range | `STG-001` through `STG-003` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-24 |
-| Expected proof | Reviewed remaining port APIs, an application command/query/result/error example with tests, and a privacy-safe diagnostic schema with forbidden-field/redaction tests |
+| Expected proof | Official SQLite WASM Worker/OPFS spike code and automated open/migrate/transact/reload/export/delete/restore proof with checksum |
 | Blocker | None for this slice; the independent `FND-001` private-reporting-route blocker remains open below |
-| Next handoff | Begin `STG-001` through `STG-003` after this slice is proven; close `FND-001` independently when the owner publishes both private reporting routes |
+| Next handoff | Begin `STG-004` through `STG-008` after the core storage journey is proven; close `FND-001` independently when the owner publishes both private reporting routes |
 
 ## Milestone status
 
@@ -83,9 +83,9 @@ Next recommended slice: `STG-001` through `STG-003` — browser SQLite/OPFS open
 - [x] **DOM-004** Define field candidate/provenance/conflict/user-confirmation contracts. — Proof: [contract examples and tests](../../proof/capture-provenance-contracts-verification.md#dom-004-evidence-contract-proof)
 - [x] **DOM-005** Define portable-archive manifest and checksum contract. — Proof: [generated schema, complete sample, and invalid-invariant tests](../../proof/archive-database-contracts-verification.md#dom-005-portable-archive-proof)
 - [x] **DOM-006** Define `DatabasePort`, repository contracts, and transaction semantics. — Proof: [adapter-neutral isolated contract harness and broken-adapter tests](../../proof/archive-database-contracts-verification.md#dom-006-database-contract-proof)
-- [ ] **DOM-007** Define `ExtractionPort`, `AiPort`, `LaborDataPort`, `DocumentPort`, and deferred `SyncPort`. — Proof: _public API review_
-- [ ] **DOM-008** Define application command/query/result/error conventions. — Proof: _example use case + tests_
-- [ ] **DOM-009** Define privacy-safe diagnostic event schema with forbidden-field tests. — Proof: _schema + redaction test_
+- [x] **DOM-007** Define `ExtractionPort`, `AiPort`, `LaborDataPort`, `DocumentPort`, and deferred `SyncPort`. — Proof: [public API inventory and executable synthetic adapters](../../proof/remaining-domain-contracts-verification.md#dom-007-provider-neutral-port-proof)
+- [x] **DOM-008** Define application command/query/result/error conventions. — Proof: [command and view-query examples with typed result/error tests](../../proof/remaining-domain-contracts-verification.md#dom-008-application-operation-proof)
+- [x] **DOM-009** Define privacy-safe diagnostic event schema with forbidden-field tests. — Proof: [generated schema, allowlist, redaction, and sentinel tests](../../proof/remaining-domain-contracts-verification.md#dom-009-diagnostic-event-proof)
 
 ## Browser SQLite/OPFS spike
 

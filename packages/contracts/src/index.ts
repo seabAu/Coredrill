@@ -47,4 +47,25 @@ export {
   type PortableDataEntryV1,
   type PortableDatabaseEntryV1,
 } from "./portable-archive.js";
+export {
+  DIAGNOSTIC_ATTRIBUTE_KEYS,
+  DIAGNOSTIC_ATTRIBUTE_TOKENS,
+  DIAGNOSTIC_CATEGORIES,
+  DIAGNOSTIC_CODES,
+  DIAGNOSTIC_EVENT_SPEC_VERSION,
+  DIAGNOSTIC_EVENT_V1_SCHEMA_ID,
+  DIAGNOSTIC_EVENT_NAMES,
+  DIAGNOSTIC_OUTCOMES,
+  DIAGNOSTIC_SEVERITIES,
+  FORBIDDEN_DIAGNOSTIC_FIELD_PARTS,
+  diagnosticAttributeKeySchema,
+  diagnosticAttributeValueSchema,
+  diagnosticEventV1JsonSchema,
+  diagnosticEventV1Schema,
+  type DiagnosticAttributeValue,
+  type DiagnosticCategory,
+  type DiagnosticEventV1,
+  type DiagnosticOutcome,
+  type DiagnosticSeverity,
+} from "./diagnostic-event.js";
 export { jsonValueSchema, type JsonValue } from "./primitives.js";

@@ -161,25 +161,32 @@ Commands are explicit and transactional:
 
 Queries return view DTOs and never leak adapter rows directly into UI components.
 
+Application operations use stable PascalCase names ending in `Command` or `Query` and return a discriminated `ApplicationResult<T>` rather than adapter rows or provider exceptions. Commands declare their transactional requirement; queries declare read-only behavior. Failures use a small stable error-code vocabulary plus safe user-facing text. Diagnostic events record only the stable operation/error code, never the free-text message or input DTO.
+
 ## Extraction port
 
 ```ts
-interface Extractor {
+interface ExtractionPort<Payload, Candidate> {
   readonly id: string;
   readonly version: string;
-  supports(input: CaptureInput): SupportScore;
-  extract(input: CaptureInput, ctx: ExtractionContext): Promise<ExtractionResult>;
+  supports(input: ExtractionInput<Payload>): ExtractionSupport;
+  extract(
+    input: ExtractionInput<Payload>,
+    ctx: PortRequestContext,
+  ): Promise<ExtractionResult<Candidate>>;
 }
 ```
 
-The registry executes permitted deterministic extractors, preserves candidates/conflicts, and produces field-level provenance. LLM normalization is a separate, opt-in postprocessor and cannot erase source candidates.
+The generic parameters bind an already validated boundary payload and its versioned candidate contract without making the domain import serialized-contract runtime code. The registry executes permitted deterministic extractors, preserves candidates/conflicts, and produces field-level provenance. It never fetches an arbitrary URL on behalf of the payload. LLM normalization is a separate, opt-in postprocessor and cannot erase source candidates.
 
 ## AI port
 
 ```ts
 interface AiPort {
   capabilities(): Promise<ModelCapabilities>;
-  generateStructured<T>(request: StructuredGeneration<T>): Promise<GenerationResult<T>>;
+  generateStructured<Output, Schema, ContextManifest>(
+    request: StructuredGenerationRequest<Schema, ContextManifest>,
+  ): Promise<GenerationResult<Output>>;
   embed?(request: EmbeddingRequest): Promise<EmbeddingResult>;
 }
 ```
@@ -192,6 +199,16 @@ Adapters:
 - Future hosted adapter — authenticated, metered, privacy/retention contract.
 
 The prompt engine builds a provider-neutral context plan. Provider SDK objects never enter domain records.
+
+## Labor-data and document ports
+
+`LaborDataPort` searches occupation mappings and retrieves occupation/geography statistics. Every result carries provider, dataset/release, retrieval time, source URL, and license URL. Salary statistics stay occupation-wide and return the warning needed to prevent an employer-specific label.
+
+`DocumentPort` performs local PDF/DOCX/Markdown/plain-text import and PDF/DOCX/Markdown/plain-text export. Imported evidence is explicitly a proposal until user confirmation. Export accepts an immutable document-version ID and canonical structured blocks, then returns bytes, media type, extension, checksum, and content-free warning codes. The port does not own document version history or mutate an accepted version.
+
+## Deferred sync port
+
+The baseline `SyncPort` exposes capability discovery only and returns the fixed `deferred`/`not-available-in-baseline` state. It has no push, pull, cursor, server, or account API. Those methods require the later E2EE, conflict, tombstone, attachment, compaction, device-removal, and key-recovery ADR required by D-052.
 
 ## Search
 

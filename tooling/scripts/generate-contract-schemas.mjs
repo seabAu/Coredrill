@@ -18,6 +18,10 @@ const generatedSchemas = [
       "packages/contracts/schemas/portable-archive-manifest.v1.schema.json",
     ),
   },
+  {
+    exportName: "diagnosticEventV1JsonSchema",
+    path: path.join(repositoryRoot, "packages/contracts/schemas/diagnostic-event.v1.schema.json"),
+  },
 ];
 
 async function generatedSchemaText(schema, schemaPath) {
