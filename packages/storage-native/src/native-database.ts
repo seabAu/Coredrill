@@ -20,13 +20,25 @@ import {
   type NativeStorageResponseData,
   type NativeStorageTransport,
 } from "./protocol.js";
+import {
+  deserializeNativeArchiveError,
+  NATIVE_ARCHIVE_PROTOCOL_VERSION,
+  parseNativeArchiveResponse,
+  type NativeArchiveOperation,
+  type NativeArchiveOutcome,
+  type NativeArchiveResponseData,
+  type NativeArchiveTransport,
+} from "./archive-protocol.js";
 
 export interface OpenNativeSqliteOptions {
   readonly databaseName: string;
   readonly transport: NativeStorageTransport;
+  readonly archiveTransport?: NativeArchiveTransport;
 }
 
 export interface NativeSqliteDatabase extends DatabasePort {
+  exportRecoveryArchive(): Promise<NativeArchiveOutcome>;
+  restoreRecoveryArchive(): Promise<NativeArchiveOutcome>;
   close(): Promise<void>;
   delete(): Promise<boolean>;
 }
@@ -45,6 +57,13 @@ const expectData = <Type extends NativeStorageResponseData["type"]>(
   return data as Extract<NativeStorageResponseData, { readonly type: Type }>;
 };
 
+const supportsNativeArchive = (
+  transport: NativeStorageTransport,
+): transport is NativeStorageTransport & NativeArchiveTransport => {
+  const candidate = transport as NativeStorageTransport & Partial<NativeArchiveTransport>;
+  return typeof candidate.invokeArchive === "function";
+};
+
 class NativeSqliteDatabaseAdapter implements NativeSqliteDatabase {
   private closed = false;
   private requestSequence = 1;
@@ -53,6 +72,7 @@ class NativeSqliteDatabaseAdapter implements NativeSqliteDatabase {
   public constructor(
     private readonly transport: NativeStorageTransport,
     private readonly sessionId: string,
+    private readonly archiveTransport?: NativeArchiveTransport,
   ) {}
 
   public query<Row extends QueryRow = QueryRow>(statement: SqlStatement): Promise<readonly Row[]> {
@@ -108,6 +128,16 @@ class NativeSqliteDatabaseAdapter implements NativeSqliteDatabase {
     return Promise.reject(new NativeStorageCapabilityError("portable-export"));
   }
 
+  public exportRecoveryArchive(): Promise<NativeArchiveOutcome> {
+    return this.runExclusive(() => this.sendArchive({ type: "export", sessionId: this.sessionId }));
+  }
+
+  public restoreRecoveryArchive(): Promise<NativeArchiveOutcome> {
+    return this.runExclusive(() =>
+      this.sendArchive({ type: "restore", sessionId: this.sessionId }),
+    );
+  }
+
   public diagnostics(): Promise<StorageDiagnostics> {
     return this.runExclusive(async () => {
       const result = expectData(
@@ -124,7 +154,9 @@ class NativeSqliteDatabaseAdapter implements NativeSqliteDatabase {
         details: Object.freeze([
           `sqlite-${result.sqliteVersion}`,
           ready ? "foreign-keys-enabled" : "foreign-keys-disabled",
-          "portable-export-pending-nat-006",
+          this.archiveTransport === undefined
+            ? "native-recovery-archive-unavailable"
+            : "native-recovery-archive-picker",
         ]),
       });
     });
@@ -217,6 +249,48 @@ class NativeSqliteDatabaseAdapter implements NativeSqliteDatabase {
     }
   }
 
+  private async sendArchive(operation: NativeArchiveOperation): Promise<NativeArchiveOutcome> {
+    this.assertOpen();
+    if (this.archiveTransport === undefined) {
+      throw new NativeStorageCapabilityError("native-recovery-archive");
+    }
+    const requestId = `native-archive-${String(this.requestSequence)}`;
+    this.requestSequence += 1;
+    let data: NativeArchiveResponseData;
+    try {
+      const response = await this.archiveTransport.invokeArchive({
+        protocolVersion: NATIVE_ARCHIVE_PROTOCOL_VERSION,
+        requestId,
+        operation,
+      });
+      data = parseNativeArchiveResponse(response, requestId).data;
+    } catch (error) {
+      const protocolError =
+        error instanceof NativeStorageProtocolError ? error : deserializeNativeArchiveError(error);
+      if (protocolError.code === "archive_recovery_failed") this.closed = true;
+      throw protocolError;
+    }
+    if (data.type === "cancelled") {
+      if (data.operation !== operation.type) {
+        throw new NativeStorageProtocolError(
+          "invalid_response",
+          "The native archive boundary returned a mismatched cancellation.",
+          false,
+        );
+      }
+      return Object.freeze({ status: "cancelled" });
+    }
+    const expected = operation.type === "export" ? "exported" : "restored";
+    if (data.type !== expected) {
+      throw new NativeStorageProtocolError(
+        "invalid_response",
+        `Native archive returned ${data.type} while ${expected} was required.`,
+        false,
+      );
+    }
+    return Object.freeze({ status: "completed", archive: data.archive });
+  }
+
   private runExclusive<Result>(work: () => Promise<Result>, allowClosed = false): Promise<Result> {
     const previous = this.queue;
     let release: (() => void) | undefined;
@@ -265,5 +339,10 @@ export const openNativeSqliteDatabase = async (
     throw deserializeNativeStorageError(error);
   }
   const opened = expectData(parseNativeStorageResponse(rawResponse, requestId).data, "opened");
-  return new NativeSqliteDatabaseAdapter(options.transport, opened.sessionId);
+  return new NativeSqliteDatabaseAdapter(
+    options.transport,
+    opened.sessionId,
+    options.archiveTransport ??
+      (supportsNativeArchive(options.transport) ? options.transport : undefined),
+  );
 };

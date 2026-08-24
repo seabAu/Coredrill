@@ -49,9 +49,24 @@ describe("foundation dependency and test records", () => {
     expect(state.cargoDirectDependencies).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
+          dependencyType: "dependencies",
+          name: "sha2",
+          version: "0.11.0",
+        }),
+        expect.objectContaining({
+          dependencyType: "dependencies",
+          name: "tauri-plugin-dialog",
+          version: "2.7.1",
+        }),
+        expect.objectContaining({
           dependencyType: "target.'cfg(target_os = \"windows\")'.dependencies",
           name: "windows-native-keyring-store",
           version: "1.1.0",
+        }),
+        expect.objectContaining({
+          dependencyType: "target.'cfg(target_os = \"windows\")'.dependencies",
+          name: "windows-sys",
+          version: "0.61.2",
         }),
         expect.objectContaining({
           dependencyType: "target.'cfg(target_os = \"windows\")'.dev-dependencies",

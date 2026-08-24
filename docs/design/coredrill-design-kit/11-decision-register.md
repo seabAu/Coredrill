@@ -130,7 +130,7 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
 - **Why:** Small system-webview distribution and Rust capability boundary.
 - **Gate:** Phase 0 native SQLite, secure store, packaging, updater, CSP, and platform tests.
 - **Fallback:** Electron only if a documented blocking WebView/packaging issue cannot be isolated; a local web kit remains another fallback.
-- **Phase 0 evidence (2026-08-24):** `NAT-001` through `NAT-005` build the shared Vite frontend as a Windows `coredrill.exe` under exact native command permissions, pass the shared migration/transaction suite through a narrow `rusqlite` candidate, platform-test canonical database/content-addressed-attachment roots under Tauri's exact OS app-data resolver, and pass a redacted Windows Credential Manager provider-secret lifecycle without secret-read IPC. D-022 remains Provisional until native export/restore, installable packaging/resource evidence, cross-platform secure storage, and final-adapter evidence closes `NAT-006` through `NAT-008`; see [native verification](../../proof/native-sqlite-tauri-verification.md) and [secure-storage verification](../../proof/native-secure-storage-verification.md).
+- **Phase 0 evidence (2026-08-24):** `NAT-001` through `NAT-006` build the shared Vite frontend as a Windows `coredrill.exe` under exact native command permissions, pass the shared migration/transaction suite through a narrow `rusqlite` candidate, platform-test canonical database/content-addressed-attachment roots under Tauri's exact OS app-data resolver, pass a redacted Windows Credential Manager provider-secret lifecycle without secret-read IPC, and prove picker-owned checksummed database recovery with atomic replacement and rollback. D-022 remains Provisional until installable packaging/resource evidence, cross-platform secure storage/package evidence, and the final-adapter decision close `NAT-007` and `NAT-008`; see [native verification](../../proof/native-sqlite-tauri-verification.md), [secure-storage verification](../../proof/native-secure-storage-verification.md), and [native archive verification](../../proof/native-archive-verification.md).
 
 ### D-023 — WXT extension
 
@@ -252,6 +252,7 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
 - **Decision:** Versioned archive with database/data, attachments, manifest, checksums, and schema version; human-readable JSON/CSV export also exists.
 - **Why:** Ownership, recovery, migration, and eventual sync independence.
 - **Revisit when:** Format versions evolve compatibly.
+- **Phase 0 evidence (2026-08-24):** `NAT-006` proves a versioned checksummed database-only recovery artifact through a Rust-owned native picker, including atomic replacement and rollback. It is intentionally not labeled the D-051 portable archive because attachments, manifest assembly, encryption metadata where applicable, and JSON/CSV exports remain BKP-001 and later delivery work; see [native archive verification](../../proof/native-archive-verification.md).
 
 ### D-052 — Future sync is opt-in and encrypted
 
@@ -292,7 +293,7 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
 | ID | Question | Needed evidence | Deadline/gate |
 |---|---|---|---|
 | Q-001 | Coredrill public-identity clearance | Trademark, domain, and marketplace checks for the selected working name; repository availability is proven | Before public landing/store listing |
-| Q-003 | Native SQLite adapter | `NAT-002` provisionally favors a narrow `rusqlite` command layer for shared callback transactions/migrations and the smallest proven IPC surface; `NAT-004` passes app-data/path confinement and `NAT-005` passes the redacted Windows secure-store lifecycle, while export/restore, packaging/resources, cross-platform risk, and final ADR evidence remain `NAT-006`–`NAT-008` | Phase 0 |
+| Q-003 | Native SQLite adapter | `NAT-002` provisionally favors a narrow `rusqlite` command layer for shared callback transactions/migrations and the smallest proven IPC surface; `NAT-004` passes app-data/path confinement, `NAT-005` passes the redacted Windows secure-store lifecycle, and `NAT-006` passes picker-owned atomic export/restore recovery, while packaging/resources, cross-platform risk, and final ADR evidence remain `NAT-007`–`NAT-008` | Phase 0 |
 | Q-004 | Tiptap suitability | Round-trip/accessibility/export spike | Phase 0 |
 | Q-005 | Side panel vs popup fallback | Chromium/Firefox usability and APIs | Phase 0/2 |
 | Q-006 | Exact default pipeline stages | Five-user terminology/usability test | Before Phase 1 UI lock |

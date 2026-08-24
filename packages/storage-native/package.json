@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Reserved native SQLite adapter boundary behind Tauri capabilities.",
+  "description": "Native SQLite and picker-owned recovery adapter behind Tauri capabilities.",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

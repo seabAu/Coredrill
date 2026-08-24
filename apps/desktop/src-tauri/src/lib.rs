@@ -1,9 +1,15 @@
+#[cfg(any(feature = "desktop-shell", test))]
+pub mod native_archive;
 pub mod native_secrets;
 pub mod native_storage;
 
 #[cfg(feature = "desktop-shell")]
 use std::sync::Arc;
 
+#[cfg(feature = "desktop-shell")]
+use native_archive::{
+    NativeArchiveError, NativeArchiveOperation, NativeArchiveRequest, NativeArchiveResponse,
+};
 #[cfg(feature = "desktop-shell")]
 use native_secrets::{
     NativeSecretError, NativeSecretRequest, NativeSecretResponse, NativeSecretService,
@@ -14,12 +20,44 @@ use native_storage::{
 };
 #[cfg(feature = "desktop-shell")]
 use tauri::{Manager, Runtime};
+#[cfg(feature = "desktop-shell")]
+use tauri_plugin_dialog::DialogExt;
 
 #[cfg(feature = "desktop-shell")]
 struct NativeStorageState(Arc<NativeStorageService>);
 
 #[cfg(feature = "desktop-shell")]
 struct NativeSecretState(Arc<NativeSecretService>);
+
+#[cfg(feature = "desktop-shell")]
+#[tauri::command]
+async fn native_archive_invoke(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, NativeStorageState>,
+    request: NativeArchiveRequest,
+) -> Result<NativeArchiveResponse, NativeArchiveError> {
+    let service = Arc::clone(&state.0);
+    tauri::async_runtime::spawn_blocking(move || {
+        service.validate_archive_picker_request(&request)?;
+        let picker = app
+            .dialog()
+            .file()
+            .add_filter("Coredrill database recovery", &["coredrill-db"]);
+        let selected = match &request.operation {
+            NativeArchiveOperation::Export { .. } => picker
+                .set_file_name("coredrill-recovery.coredrill-db")
+                .blocking_save_file(),
+            NativeArchiveOperation::Restore { .. } => picker.blocking_pick_file(),
+        };
+        let selected_path = selected
+            .map(|path| path.into_path())
+            .transpose()
+            .map_err(|_| NativeArchiveError::invalid_request())?;
+        service.invoke_archive_with_selected_path(request, selected_path)
+    })
+    .await
+    .map_err(|_| NativeArchiveError::invalid_request())?
+}
 
 #[cfg(feature = "desktop-shell")]
 #[tauri::command]
@@ -56,6 +94,7 @@ fn native_storage_app_data_root<R: Runtime>(
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let storage_root = native_storage_app_data_root(app)?;
             let service = NativeStorageService::new(storage_root)
@@ -66,7 +105,8 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             native_storage_invoke,
-            native_secret_invoke
+            native_secret_invoke,
+            native_archive_invoke
         ])
         .run(tauri::generate_context!())
         .expect("Coredrill desktop runtime failed");

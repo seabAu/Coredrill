@@ -99,6 +99,9 @@ jobs:
       - name: Prove redacted OS secure storage
         run: pnpm test:secure-storage
 
+      - name: Prove picker-owned native archive recovery
+        run: pnpm test:native-archive
+
       - name: Lint complete Tauri boundary
         run: pnpm --filter @coredrill/desktop lint:desktop
 

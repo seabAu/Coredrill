@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "inventoryId": "JW-DI-001",
-  "version": "1.6.0",
-  "reviewedAt": "2026-08-24T12:13:04Z",
+  "version": "1.7.0",
+  "reviewedAt": "2026-08-24T12:55:00Z",
   "scope": {
     "included": [
       "Pinned Node.js, pnpm, and Rust foundation toolchains",
@@ -353,7 +353,7 @@
     "manifest": "apps/desktop/src-tauri/Cargo.toml",
     "lockfile": {
       "path": "apps/desktop/src-tauri/Cargo.lock",
-      "sha256": "e9178e0b238e62e423f98eeb41d3f1825450e96b753c94b17588e6fe1ae687db"
+      "sha256": "1d1b889b68954bcb38b97ae8e334e944cef3fec13de594daccfc1e24a208dfb8"
     },
     "directDependencies": [
       {
@@ -396,7 +396,7 @@
         "repository": "https://github.com/rusqlite/rusqlite",
         "metadataSource": "https://crates.io/crates/rusqlite/0.40.1",
         "knownAdvisories": [],
-        "selectionNote": "0.40.1 was published 2026-06-06T06:22:04.508972Z, includes the upstream tainted-SAVEPOINT-name injection fix, and is enabled only with bundled SQLite; 0.40.2 was published 2026-08-08T14:21:52.570893Z and remains inside the review window."
+        "selectionNote": "0.40.1 was published 2026-06-06T06:22:04.508972Z, includes the upstream tainted-SAVEPOINT-name injection fix, and is enabled only with bundled SQLite plus its official online-backup API; 0.40.2 was published 2026-08-08T14:21:52.570893Z and remains inside the review window."
       },
       {
         "manifest": "apps/desktop/src-tauri/Cargo.toml",
@@ -429,6 +429,20 @@
       {
         "manifest": "apps/desktop/src-tauri/Cargo.toml",
         "dependencyType": "dependencies",
+        "name": "sha2",
+        "version": "0.11.0",
+        "upstreamLatest": "0.11.0",
+        "selectionStatus": "current",
+        "license": "MIT OR Apache-2.0",
+        "maintainers": ["The RustCrypto Project Developers"],
+        "repository": "https://github.com/RustCrypto/hashes",
+        "metadataSource": "https://crates.io/crates/sha2/0.11.0",
+        "knownAdvisories": [],
+        "selectionNote": "Current RustCrypto SHA-256 implementation, published 2026-03-25, selected without default features to stream a digest over database-recovery artifacts rather than loading databases into memory."
+      },
+      {
+        "manifest": "apps/desktop/src-tauri/Cargo.toml",
+        "dependencyType": "dependencies",
         "name": "tauri",
         "version": "2.11.3",
         "upstreamLatest": "2.11.5",
@@ -439,6 +453,20 @@
         "metadataSource": "https://crates.io/crates/tauri/2.11.3",
         "knownAdvisories": [],
         "selectionNote": "2.11.3 was published 2026-06-17T13:46:40.835406Z and is optional outside the desktop shell; 2.11.5 was published 2026-07-01T13:56:38.810372Z and remains inside the review window. Default Tauri features are disabled, with only wry selected."
+      },
+      {
+        "manifest": "apps/desktop/src-tauri/Cargo.toml",
+        "dependencyType": "dependencies",
+        "name": "tauri-plugin-dialog",
+        "version": "2.7.1",
+        "upstreamLatest": "2.7.2",
+        "selectionStatus": "release-age-approved",
+        "license": "Apache-2.0 OR MIT",
+        "maintainers": ["Tauri Programme within Commons Conservancy", "Tauri contributors"],
+        "repository": "https://github.com/tauri-apps/plugins-workspace",
+        "metadataSource": "https://crates.io/crates/tauri-plugin-dialog/2.7.1",
+        "knownAdvisories": [],
+        "selectionNote": "2.7.1 was published 2026-05-02 and supplies the official Rust blocking file-picker API on a worker thread. It is optional with the desktop-shell feature, and its JavaScript commands receive no WebView capability. 2.7.2 was published 2026-07-18 and remains inside the review window; its Android theming change is irrelevant to the first Windows proof."
       },
       {
         "manifest": "apps/desktop/src-tauri/Cargo.toml",
@@ -470,6 +498,20 @@
       },
       {
         "manifest": "apps/desktop/src-tauri/Cargo.toml",
+        "dependencyType": "target.'cfg(target_os = \"windows\")'.dependencies",
+        "name": "windows-sys",
+        "version": "0.61.2",
+        "upstreamLatest": "0.61.2",
+        "selectionStatus": "current",
+        "license": "MIT OR Apache-2.0",
+        "maintainers": ["Microsoft", "windows-rs contributors"],
+        "repository": "https://github.com/microsoft/windows-rs",
+        "metadataSource": "https://crates.io/crates/windows-sys/0.61.2",
+        "knownAdvisories": [],
+        "selectionNote": "Current low-level Windows bindings, already present transitively and now declared directly with only Foundation/FileSystem features so Coredrill can call MoveFileExW with replace-existing and write-through flags for same-volume atomic recovery."
+      },
+      {
+        "manifest": "apps/desktop/src-tauri/Cargo.toml",
         "dependencyType": "target.'cfg(target_os = \"windows\")'.dev-dependencies",
         "name": "tauri",
         "version": "2.11.3",
@@ -487,9 +529,9 @@
       "command": "cargo audit --file apps/desktop/src-tauri/Cargo.lock",
       "toolVersion": "0.22.2",
       "source": "https://rustsec.org/",
-      "reviewedAt": "2026-08-24T12:13:04Z",
-      "lockfileSha256": "e9178e0b238e62e423f98eeb41d3f1825450e96b753c94b17588e6fe1ae687db",
-      "dependencyCount": 423,
+      "reviewedAt": "2026-08-24T12:55:00Z",
+      "lockfileSha256": "1d1b889b68954bcb38b97ae8e334e944cef3fec13de594daccfc1e24a208dfb8",
+      "dependencyCount": 443,
       "vulnerabilities": 0,
       "unmaintainedWarnings": 14,
       "unsoundWarnings": 1,
@@ -510,13 +552,13 @@
         "RUSTSEC-2025-0098",
         "RUSTSEC-2025-0100"
       ],
-      "reviewNote": "RustSec reports no vulnerability. The informational warnings are transitive Tauri/Wry cross-platform lock entries: GTK3/unic/proc-macro maintenance warnings plus glib 0.18.5 unsoundness. Windows does not compile the GTK3 path; this remains an explicit NAT-004/NAT-008 cross-platform review risk rather than a suppressed finding."
+      "reviewNote": "RustSec reports no vulnerability. The informational warnings are transitive Tauri/Wry cross-platform lock entries: GTK3/unic/proc-macro maintenance warnings plus glib 0.18.5 unsoundness. Windows does not compile the GTK3 path; this remains an explicit NAT-008 cross-platform review risk rather than a suppressed finding."
     },
     "licenseReview": {
       "command": "pnpm check:licenses",
-      "reviewedAt": "2026-08-24T12:13:04Z",
-      "lockfileSha256": "e9178e0b238e62e423f98eeb41d3f1825450e96b753c94b17588e6fe1ae687db",
-      "resolvedPackageRecords": 422,
+      "reviewedAt": "2026-08-24T12:55:00Z",
+      "lockfileSha256": "1d1b889b68954bcb38b97ae8e334e944cef3fec13de594daccfc1e24a208dfb8",
+      "resolvedPackageRecords": 442,
       "result": "pass"
     }
   },

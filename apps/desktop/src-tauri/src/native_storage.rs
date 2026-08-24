@@ -180,20 +180,20 @@ impl NativeStorageError {
     }
 }
 
-struct NativeSession {
-    connection: Connection,
-    database_path: PathBuf,
-    transaction_active: bool,
+pub(crate) struct NativeSession {
+    pub(crate) connection: Connection,
+    pub(crate) database_path: PathBuf,
+    pub(crate) transaction_active: bool,
 }
 
-struct NativeStorageState {
-    next_session: u64,
-    sessions: HashMap<String, NativeSession>,
+pub(crate) struct NativeStorageState {
+    pub(crate) next_session: u64,
+    pub(crate) sessions: HashMap<String, NativeSession>,
 }
 
 pub struct NativeStorageService {
-    layout: NativeStorageLayout,
-    state: Mutex<NativeStorageState>,
+    pub(crate) layout: NativeStorageLayout,
+    pub(crate) state: Mutex<NativeStorageState>,
 }
 
 #[derive(Clone, Debug)]
@@ -275,7 +275,10 @@ impl NativeStorageLayout {
         Ok(database_path)
     }
 
-    fn verify_database_path(&self, database_path: &Path) -> Result<(), NativeStorageError> {
+    pub(crate) fn verify_database_path(
+        &self,
+        database_path: &Path,
+    ) -> Result<(), NativeStorageError> {
         let database_name = database_path
             .file_name()
             .and_then(|name| name.to_str())
@@ -333,22 +336,7 @@ impl NativeStorageService {
         validate_database_name(&database_name)?;
         let database_path = self.layout.database_path(&database_name)?;
 
-        let connection = Connection::open_with_flags(
-            &database_path,
-            OpenFlags::SQLITE_OPEN_READ_WRITE
-                | OpenFlags::SQLITE_OPEN_CREATE
-                | OpenFlags::SQLITE_OPEN_NO_MUTEX
-                | OpenFlags::SQLITE_OPEN_NOFOLLOW,
-        )
-        .map_err(map_sqlite_error)?;
-        connection
-            .busy_timeout(Duration::from_secs(5))
-            .map_err(map_sqlite_error)?;
-        connection
-            .execute_batch(
-                "PRAGMA foreign_keys = ON; PRAGMA trusted_schema = OFF; PRAGMA journal_mode = WAL;",
-            )
-            .map_err(map_sqlite_error)?;
+        let connection = open_database_connection(&database_path, true)?;
 
         let mut state = self
             .state
@@ -631,7 +619,7 @@ fn validate_sha256(sha256: &str) -> Result<(), NativeStorageError> {
     Ok(())
 }
 
-fn validate_session_id(session_id: &str) -> Result<(), NativeStorageError> {
+pub(crate) fn validate_session_id(session_id: &str) -> Result<(), NativeStorageError> {
     let suffix = session_id.strip_prefix("native-session-");
     if suffix.is_none_or(str::is_empty)
         || !suffix
@@ -825,7 +813,29 @@ fn reject_link_or_external_path(
     Ok(())
 }
 
-fn remove_database_files(database_path: &Path) -> Result<bool, NativeStorageError> {
+pub(crate) fn open_database_connection(
+    database_path: &Path,
+    create: bool,
+) -> Result<Connection, NativeStorageError> {
+    let mut flags = OpenFlags::SQLITE_OPEN_READ_WRITE
+        | OpenFlags::SQLITE_OPEN_NO_MUTEX
+        | OpenFlags::SQLITE_OPEN_NOFOLLOW;
+    if create {
+        flags |= OpenFlags::SQLITE_OPEN_CREATE;
+    }
+    let connection = Connection::open_with_flags(database_path, flags).map_err(map_sqlite_error)?;
+    connection
+        .busy_timeout(Duration::from_secs(5))
+        .map_err(map_sqlite_error)?;
+    connection
+        .execute_batch(
+            "PRAGMA foreign_keys = ON; PRAGMA trusted_schema = OFF; PRAGMA journal_mode = WAL;",
+        )
+        .map_err(map_sqlite_error)?;
+    Ok(connection)
+}
+
+pub(crate) fn remove_database_files(database_path: &Path) -> Result<bool, NativeStorageError> {
     let mut deleted = false;
     for path in [
         database_path.to_path_buf(),

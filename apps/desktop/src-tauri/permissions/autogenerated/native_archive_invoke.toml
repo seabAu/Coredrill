@@ -1,0 +1,5 @@
+# Generated permission for Coredrill's narrow picker-owned recovery archive command.
+[[permission]]
+identifier = "allow-native-archive-invoke"
+description = "Allows the bundled Coredrill window to request a native-picker export or restore without receiving a filesystem path."
+commands.allow = ["native_archive_invoke"]

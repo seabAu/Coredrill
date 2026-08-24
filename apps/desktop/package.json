@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Provisional Tauri 2 shell and thin native storage boundary.",
+  "description": "Provisional Tauri 2 shell and thin native services boundary.",
   "scripts": {
     "build": "pnpm run build:native-probe",
     "build:desktop": "pnpm --filter @coredrill/web build && tauri build --no-bundle",

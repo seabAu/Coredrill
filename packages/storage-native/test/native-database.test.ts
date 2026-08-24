@@ -357,6 +357,12 @@ describe("native SQLite repository and migration contracts", () => {
       code: "invalid_statement",
     });
     await expect(database.exportPortable()).rejects.toBeInstanceOf(NativeStorageCapabilityError);
+    await expect(database.exportRecoveryArchive()).rejects.toBeInstanceOf(
+      NativeStorageCapabilityError,
+    );
+    await expect(database.restoreRecoveryArchive()).rejects.toBeInstanceOf(
+      NativeStorageCapabilityError,
+    );
     await database.delete();
   });
 
