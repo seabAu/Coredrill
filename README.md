@@ -65,4 +65,4 @@ Do not place real resumes, application answers, provider keys, cookies, tokens, 
 
 Coredrill is licensed under the [Apache License 2.0](LICENSE). The separate sustainability and business-model decision remains open under `Q-013`; it must preserve the free local core and complete export path.
 
-External contributions remain closed during the private foundation phase until the owner publishes contribution and private conduct-reporting routes. See [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+External contributions remain closed during the pre-release foundation phase until the owner publishes contribution and private conduct-reporting routes. See [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).

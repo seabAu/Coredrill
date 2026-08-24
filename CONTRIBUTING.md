@@ -1,6 +1,6 @@
 # Contributing
 
-Coredrill is in a private, pre-release foundation phase. The code is licensed under Apache-2.0, but external contributions are not accepted until the owner publishes contribution and private conduct-reporting routes. The workflow below governs owner-authorized work in the meantime.
+Coredrill is in a public, pre-release foundation repository. The code is licensed under Apache-2.0, but external contributions are not accepted until the owner publishes contribution and private conduct-reporting routes. The workflow below governs owner-authorized work in the meantime.
 
 ## Before starting
 
