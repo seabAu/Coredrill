@@ -148,11 +148,10 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
 
 ### D-025 — Browser `opfs-sahpool` single-writer baseline
 
-- **Status:** Provisional
-- **Decision:** Start with a dedicated Worker and `opfs-sahpool`; coordinate one writer and make other tabs read-only/handoff.
-- **Why:** SQLite documents broad support, high performance, and no COOP/COEP requirement, with the known single-connection trade-off.
-- **Gate:** Browser matrix, crash, quota, private mode, tab contention, export/restore.
-- **Revisit when:** Multi-tab editing becomes a validated user requirement and `opfs-wl` compatibility is proven.
+- **Status:** Accepted
+- **Decision:** Use official SQLite WASM in a dedicated Worker with `opfs-sahpool` and an origin-wide exclusive Web Lock. Support current/previous Chromium-family and Firefox desktop generations that pass the real lifecycle lanes; block unsupported Safari/mobile or missing-capability browsers with a supported-browser/future-native and portable-export fallback. Label storage `durable` only after a persistence grant and otherwise report honest best-effort/degraded diagnostics.
+- **Why:** The failure, contention, crash/reload, export/restore, and deterministic benchmark matrix passed locally, and exact Chrome 152/151 plus branded Firefox 154/153 lifecycle lanes passed in [Foundation CI run 32712600336](https://github.com/seabAu/Coredrill/actions/runs/32712600336). SQLite documents broad support, high performance, and no COOP/COEP requirement, with the known single-connection trade-off; real Safari/mobile runners remain unavailable and are not simulated.
+- **Revisit when:** Real Safari/macOS or mobile rows pass; multi-tab editing becomes a validated requirement; Web Locks/`opfs-sahpool` compatibility changes; or another VFS proves materially better without weakening offline deployment, portability, recovery, or support.
 
 ### D-026 — No full ORM
 
@@ -280,12 +279,17 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
 - **Why:** The owner selected a permissive, established license with explicit patent terms; resolving source permissions does not require prematurely choosing a commercial model.
 - **Revisit when:** Legal review identifies a concrete incompatibility or a future distribution includes material with different license obligations that must be isolated and documented.
 
+## Resolved questions
+
+| ID    | Question              | Resolution                                                                                                                                                                                                                                                                                     | Resolved   |
+| ----- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| Q-002 | Browser support floor | [ADR-0003](../../adr/0003-adopt-browser-storage-support-floor.md) accepts current/previous Chromium-family and Firefox desktop after exact hosted lifecycle proof, with Safari/mobile and missing-capability browsers explicitly unsupported until their real rows pass; portable export is the fallback. | 2026-08-24 |
+
 ## Open questions and required evidence
 
 | ID | Question | Needed evidence | Deadline/gate |
 |---|---|---|---|
 | Q-001 | Coredrill public-identity clearance | Trademark, domain, and marketplace checks for the selected working name; repository availability is proven | Before public landing/store listing |
-| Q-002 | Browser support floor | OPFS/Worker/export/restore test matrix | Phase 0 |
 | Q-003 | Native SQLite adapter | Plugin vs `rusqlite` comparison | Phase 0 |
 | Q-004 | Tiptap suitability | Round-trip/accessibility/export spike | Phase 0 |
 | Q-005 | Side panel vs popup fallback | Chromium/Firefox usability and APIs | Phase 0/2 |

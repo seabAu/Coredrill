@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
   "matrixId": "JW-TM-001",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "effectiveDate": "2026-08-24",
-  "lastReviewedAt": "2026-08-24T09:05:00Z",
+  "lastReviewedAt": "2026-08-24T09:48:27Z",
   "purpose": "Phase 0 reference targets for repeatable compatibility, accessibility, offline, and performance evidence",
   "supportPolicy": {
     "status": "test-targets-not-support-commitment",
-    "note": "A listed target is not supported or verified until its checklist gate has execution evidence. Public OS/browser support remains provisional until STG-004 and the STG-008 decision record."
+    "note": "ADR-0003 accepts current/previous Chromium-family and Firefox desktop generations after exact hosted lifecycle evidence. A listed target is not verified merely by appearing here; Safari/mobile and other unavailable rows remain explicitly unsupported until their real required evidence passes."
   },
   "statusDefinitions": {
     "targetPriority": {
@@ -630,10 +630,19 @@
     "raw artifact paths, summary statistics, failures, and reviewer"
   ],
   "storageSpikeEvidence": {
-    "status": "local-candidate-hosted-exact-versions-pending",
+    "status": "accepted-hosted-exact-versions-passed",
     "decisionAdr": "docs/adr/0003-adopt-browser-storage-support-floor.md",
+    "decisionStatus": "accepted",
     "proof": "docs/proof/browser-storage-platform-verification.md",
     "rawDiagnosticBenchmark": "docs/proof/artifacts/storage-benchmark-edge-151.json",
+    "implementationCommit": "0271aaa65b793e530b092e0ce35c59f9ff6b7728",
+    "hostedRun": "https://github.com/seabAu/Coredrill/actions/runs/32712600336",
+    "hostedExactJobs": {
+      "chrome152": "https://github.com/seabAu/Coredrill/actions/runs/32712600336/job/97387099639",
+      "chrome151": "https://github.com/seabAu/Coredrill/actions/runs/32712600336/job/97387099608",
+      "firefox154": "https://github.com/seabAu/Coredrill/actions/runs/32712600336/job/97387099780",
+      "firefox153": "https://github.com/seabAu/Coredrill/actions/runs/32712600336/job/97387099358"
+    },
     "unavailableRequiredRows": ["WEB-SAF-N", "WEB-SAF-N1", "MOBILE-IOS-PWA", "MOBILE-ANDROID-PWA"],
     "fallback": "Block browser-vault creation and use a supported Chromium/Firefox desktop browser or future native app with portable export/restore."
   },

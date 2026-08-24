@@ -1,6 +1,6 @@
 # ADR-0003 — Adopt the browser-storage support floor
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-08-24
 - **Owners:** Project owner
 - **Decision register IDs:** `D-025`, `Q-002`
@@ -33,9 +33,9 @@ The required macOS/Safari and mobile-device runners are unavailable. Playwright 
 
 ## Decision and rationale
 
-Adopt option 3 after the exact hosted Chrome `152`/`151` and Firefox `154`/`153` lanes pass. Until those results are attached, this ADR remains Proposed and D-025 remains Provisional.
+Adopt option 3. Exact hosted Chrome `152.0.7977.54`/`151.0.7922.138` and Firefox `154.0`/`153.0` lifecycle lanes passed on commit `0271aaa65b793e530b092e0ce35c59f9ff6b7728` in [Foundation CI run 32712600336](https://github.com/seabAu/Coredrill/actions/runs/32712600336). The aggregate gate and full-history secret scan passed in the same run, so D-025 is promoted to Accepted and Q-002 is resolved by this support floor and fallback.
 
-The intended v1 support floor is current and previous stable Chromium-family and Firefox desktop generations that pass the official SQLite Worker/`opfs-sahpool` open, migrate, close/reopen, export, delete, and restore lifecycle. Edge current remains an additional branded diagnostic. Safari desktop, iOS PWA, Android PWA, and any browser missing OPFS, dedicated Workers, Web Locks, or the required SQLite VFS remain unsupported until their real required rows pass.
+The v1 support floor is current and previous stable Chromium-family and Firefox desktop generations that pass the official SQLite Worker/`opfs-sahpool` open, migrate, close/reopen, export, delete, and restore lifecycle. Edge current remains an additional branded diagnostic. Safari desktop, iOS PWA, Android PWA, and any browser missing OPFS, dedicated Workers, Web Locks, or the required SQLite VFS remain unsupported until their real required rows pass.
 
 One tab owns the vault through an origin-wide exclusive Web Lock. A second writer receives a retryable `vault_busy` result and a “vault open in another tab” handoff message. Abrupt page loss releases the browser-owned lease; the contender retries and verifies the existing database. SQLite result code 5/locked errors map to a separate retryable `sqlite_busy` error.
 

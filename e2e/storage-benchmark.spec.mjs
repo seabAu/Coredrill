@@ -47,7 +47,7 @@ test("benchmarks create, migrate, import, search, export, restore, and startup",
   const report = {
     schemaVersion: 1,
     matrixId: "JW-TM-001",
-    matrixVersion: "1.1.0",
+    matrixVersion: "1.2.0",
     commitSha: process.env["COREDRILL_COMMIT_SHA"] ?? "unbound-local-run",
     dirtyWorktree: process.env["COREDRILL_DIRTY_WORKTREE"] === "true",
     lockfileSha256: process.env["COREDRILL_LOCKFILE_SHA256"] ?? "unbound-local-run",

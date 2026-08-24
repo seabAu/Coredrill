@@ -1,11 +1,11 @@
 # Coredrill reference test matrix
 
 Matrix ID: `JW-TM-001`  
-Version: `1.1.0`
+Version: `1.2.0`
 Effective: 2026-08-24  
 Machine-readable authority: [`reference-test-matrix.v1.json`](reference-test-matrix.v1.json)
 
-This matrix establishes Phase 0 test targets. A row is **not** a support promise or a passing test until a result manifest binds execution to the exact commit, lockfile, fixture set, hardware, OS, browser/webview, and assistive-technology versions. Public OS/browser support remains provisional until `STG-004` supplies execution evidence and `STG-008` records the decision.
+This matrix establishes Phase 0 test targets. A row is **not** a support promise or a passing test until a result manifest binds execution to the exact commit, lockfile, fixture set, hardware, OS, browser/webview, and assistive-technology versions. Accepted ADR-0003 supports current/previous Chromium-family and Firefox desktop generations after exact hosted lifecycle evidence; Safari/mobile and any other unavailable rows remain explicitly unsupported until their real required evidence passes.
 
 ## Hardware and platform targets
 
@@ -51,9 +51,9 @@ Cold startup, create/migrate/query/search, import/export/restore, bundle size, J
 
 ## Browser-storage execution evidence
 
-The `STG-004`–`STG-008` candidate evidence is recorded in [the platform verification report](../proof/browser-storage-platform-verification.md). Local diagnostic execution passes Edge `151.0.4129.101` and real branded Firefox `154.0`; the raw 100/2,000/10,000-record Edge measurements are in [`storage-benchmark-edge-151.json`](../proof/artifacts/storage-benchmark-edge-151.json). Exact hosted Chrome 152/151 and Firefox 154/153 jobs are pending the implementation push.
+The accepted `STG-004`–`STG-008` evidence is recorded in [the platform verification report](../proof/browser-storage-platform-verification.md). Local diagnostic execution passes Edge `151.0.4129.101` and real branded Firefox `154.0`; the clean-commit 100/2,000/10,000-record Edge measurements are in [`storage-benchmark-edge-151.json`](../proof/artifacts/storage-benchmark-edge-151.json). Exact hosted Chrome `152.0.7977.54`/`151.0.7922.138` and Firefox `154.0`/`153.0` lifecycle jobs passed in [Foundation CI run 32712600336](https://github.com/seabAu/Coredrill/actions/runs/32712600336).
 
-Safari/macOS and both physical mobile rows remain unavailable and unexecuted. Playwright WebKit or viewport emulation does not satisfy them. ADR-0003 therefore proposes an explicit unsupported fallback: block browser-vault creation and direct the user to a supported Chromium/Firefox desktop browser or the future native app with portable export/restore. No IndexedDB, memory, or simulated-Safari pass substitutes for SQLite/OPFS evidence.
+Safari/macOS and both physical mobile rows remain unavailable and unexecuted. Playwright WebKit or viewport emulation does not satisfy them. Accepted ADR-0003 therefore defines an explicit unsupported fallback: block browser-vault creation and direct the user to a supported Chromium/Firefox desktop browser or the future native app with portable export/restore. No IndexedDB, memory, or simulated-Safari pass substitutes for SQLite/OPFS evidence.
 
 ## Versioning and review
 
@@ -65,7 +65,8 @@ Review the matrix when a browser major stabilizes, an OS branch enters/leaves se
 
 ## Revision history
 
-| Version | Date       | Change                                                                                                                                        |
-| ------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `1.1.0` | 2026-08-24 | Bound local Edge/Firefox storage execution and diagnostic benchmark evidence; recorded exact pending hosted lanes and Safari/mobile fallback. |
-| `1.0.0` | 2026-08-24 | Established reproducible desktop/mobile reference targets and explicitly separated planned, available, executed, and verified states.         |
+| Version | Date       | Change                                                                                                                                                  |
+| ------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `1.2.0` | 2026-08-24 | Bound clean diagnostic benchmarks and green exact hosted Chrome/Firefox results; recorded the accepted support floor and unavailable-platform fallback. |
+| `1.1.0` | 2026-08-24 | Bound local Edge/Firefox storage execution and diagnostic benchmark evidence; recorded exact pending hosted lanes and Safari/mobile fallback.           |
+| `1.0.0` | 2026-08-24 | Established reproducible desktop/mobile reference targets and explicitly separated planned, available, executed, and verified states.                   |

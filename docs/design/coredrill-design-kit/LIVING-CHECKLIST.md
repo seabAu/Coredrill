@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-24  
 Current milestone: Phase 0 — foundations and risk retirement  
-Current work item: `STG-004` through `STG-008` — browser compatibility, failure/locking matrices, benchmarks, and evidence-backed VFS decision
-Next recommended slice: `NAT-001` through `NAT-003` — Tauri shell, native-adapter comparison, and shared storage-contract proof after the browser decision is recorded
+Current work item: `NAT-001` through `NAT-003` — Tauri shell, native-adapter comparison, and shared storage-contract proof
+Next recommended slice: `NAT-004` through `NAT-008` — app-data/secure-storage/export packaging proof and evidence-backed native-adapter decision
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `NAT-001` through `NAT-003` — Tauri shell, native-adap
 | Field | Value |
 |---|---|
 | Milestone | Phase 0 |
-| Item range | `STG-004` through `STG-008` |
+| Item range | `NAT-001` through `NAT-003` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-24 |
-| Expected proof | Current/previous browser matrix with explicit fallbacks; private/persistence/quota/corruption failure matrix; second-tab/crash/`SQLITE_BUSY` proof; reference-data benchmarks; accepted VFS/browser-support decision update |
+| Expected proof | Tauri 2 desktop smoke build with a strict capability allowlist and shared frontend; official SQL-plugin versus narrow-`rusqlite` decision matrix; the shared repository/migration contract suite green against native SQLite |
 | Blocker | None for this slice; the independent `FND-001` private-reporting-route blocker remains open below |
-| Next handoff | Begin `NAT-001` through `NAT-003` after D-025/Q-002 are updated from the completed browser evidence; close `FND-001` independently when the owner publishes both private reporting routes |
+| Next handoff | Continue with `NAT-004` through `NAT-008` after the adapter comparison and shared contract proof; close `FND-001` independently when the owner publishes both private reporting routes |
 
 ## Milestone status
 
@@ -92,11 +92,11 @@ Next recommended slice: `NAT-001` through `NAT-003` — Tauri shell, native-adap
 - [x] **STG-001** Run official SQLite WASM in a dedicated Worker and open an `opfs-sahpool` database. — Proof: [official adapter diagnostics and browser log](../../proof/browser-sqlite-opfs-verification.md#stg-001-official-sqlite-workeropfs-proof)
 - [x] **STG-002** Apply shared migration, transact, query, close, reopen, and verify durability. — Proof: [shared migration and automated durability/rollback test](../../proof/browser-sqlite-opfs-verification.md#stg-002-migration-transaction-and-durability-proof)
 - [x] **STG-003** Export a portable database/archive and restore it into a clean origin/profile. — Proof: [checksum, corruption rejection, clean-context restore, and delete E2E](../../proof/browser-sqlite-opfs-verification.md#stg-003-portable-database-restore-proof)
-- [ ] **STG-004** Test Chromium, Firefox, and Safari current/previous stable support or document exact unsupported fallbacks. — Proof: _matrix report_
-- [ ] **STG-005** Test private browsing, denied persistence, quota pressure, storage eviction diagnostics, and corrupted database behavior. — Proof: _failure matrix_
-- [ ] **STG-006** Test second-tab contention, read-only/handoff UX, crash/reload, and `SQLITE_BUSY` recovery. — Proof: _multi-context test_
-- [ ] **STG-007** Measure create/migrate/search/import/export/startup on reference data sizes. — Proof: _benchmark report_
-- [ ] **STG-008** Decide VFS/browser support and update D-025/Q-002. — Proof: _accepted ADR/update_
+- [x] **STG-004** Test Chromium, Firefox, and Safari current/previous stable support or document exact unsupported fallbacks. — Proof: [exact Chrome/Firefox jobs plus explicit unavailable Safari/mobile fallback](../../proof/browser-storage-platform-verification.md#stg-004-compatibility-evidence)
+- [x] **STG-005** Test private browsing, denied persistence, quota pressure, storage eviction diagnostics, and corrupted database behavior. — Proof: [deterministic failure matrix and fail-safe corrupt restore](../../proof/browser-storage-platform-verification.md#stg-005-failure-matrix)
+- [x] **STG-006** Test second-tab contention, read-only/handoff UX, crash/reload, and `SQLITE_BUSY` recovery. — Proof: [multi-context Web Lock handoff, abrupt reload, and typed busy recovery](../../proof/browser-storage-platform-verification.md#stg-006-contention-and-crash-proof)
+- [x] **STG-007** Measure create/migrate/search/import/export/startup on reference data sizes. — Proof: [clean-commit 100/2,000/10,000-record benchmark and raw artifact](../../proof/browser-storage-platform-verification.md#stg-007-diagnostic-benchmark)
+- [x] **STG-008** Decide VFS/browser support and update D-025/Q-002. — Proof: [accepted ADR-0003 and decision-register promotion](../../proof/browser-storage-platform-verification.md#stg-008-accepted-decision)
 
 ## Tauri/native spike
 

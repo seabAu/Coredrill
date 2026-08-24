@@ -3,23 +3,23 @@
 - Date: 2026-08-24
 - Checklist scope: `STG-004`, `STG-005`, `STG-006`, `STG-007`, `STG-008`
 - Packages: `@coredrill/storage-browser`, `@coredrill/web`
-- Decision record: [ADR-0003](../adr/0003-adopt-browser-storage-support-floor.md) (Proposed pending exact hosted lanes)
-- Accepted-decision changes: none at this checkpoint; D-025 remains Provisional
+- Decision record: [ADR-0003](../adr/0003-adopt-browser-storage-support-floor.md) (Accepted)
+- Accepted-decision changes: D-025 promoted from Provisional to Accepted; Q-002 resolved
 
 ## Outcome
 
-The local hardening evidence is green. Edge 151 passes lifecycle, persistence/quota/eviction diagnostics, corrupt-restore preservation, second-tab handoff, abrupt reload recovery, and deterministic storage benchmarks. Real branded Firefox 154 passes the full lifecycle through Mozilla geckodriver. Exact hosted Chrome 152/151 and Firefox 154/153 jobs are committed but remain pending until the implementation checkpoint is pushed. Safari/macOS and mobile device rows remain unavailable and are not simulated.
+The browser-storage gate is green. Edge 151 passes lifecycle, persistence/quota/eviction diagnostics, corrupt-restore preservation, second-tab handoff, abrupt reload recovery, and deterministic storage benchmarks. Real branded Firefox 154 passes the full lifecycle locally through Mozilla geckodriver. Exact hosted Chrome `152.0.7977.54`/`151.0.7922.138` and Firefox `154.0`/`153.0` jobs passed on commit `0271aaa65b793e530b092e0ce35c59f9ff6b7728` in [Foundation CI run 32712600336](https://github.com/seabAu/Coredrill/actions/runs/32712600336), together with the aggregate gate and full-history secret scan. Safari/macOS and mobile device rows remain unavailable and are not simulated; the accepted decision records their exact unsupported fallback.
 
 ## STG-004 compatibility evidence
 
-| Target                    | Environment                                                                      | Result at implementation checkpoint | Evidence/fallback                                                                                                                          |
-| ------------------------- | -------------------------------------------------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| Chromium current/previous | Exact Chrome for Testing `152.0.7977.54` and `151.0.7922.138` on `ubuntu-latest` | Pending hosted CI                   | Immutable-pinned setup action and exact-version assertion; lifecycle-only job                                                              |
-| Edge current              | Edge `151.0.4129.101`, Windows 10 diagnostic host                                | Passed                              | Four-spec Playwright suite; diagnostic, not Windows 11 release evidence                                                                    |
-| Firefox current           | Branded Firefox `154.0`, Windows 10 diagnostic host, geckodriver `0.37.1`        | Passed                              | WebDriver lifecycle reports SQLite 3.53.0, Worker, `opfs-sahpool`, reopen, export, delete, restore                                         |
-| Firefox current/previous  | Exact branded Firefox `154.0` and `153.0` on `ubuntu-latest`                     | Pending hosted CI                   | Mozilla binaries plus geckodriver; exact-version assertion; no Playwright Firefox substitution                                             |
-| Safari current/previous   | Safari `26.6.1`/`18.6` on the required macOS rows                                | Unavailable, not executed           | Block browser vault; use supported Chromium/Firefox or future native app and portable export. Playwright WebKit is not reported as Safari. |
-| iOS/Android PWA           | Required physical-device rows                                                    | Unavailable, not executed           | No mobile support claim; use supported desktop browser/native path and portable transfer                                                   |
+| Target                    | Environment                                                                      | Result at implementation checkpoint | Evidence/fallback                                                                                                                                                                                                                                                  |
+| ------------------------- | -------------------------------------------------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Chromium current/previous | Exact Chrome for Testing `152.0.7977.54` and `151.0.7922.138` on `ubuntu-latest` | Passed hosted CI                    | [Chrome 152 job](https://github.com/seabAu/Coredrill/actions/runs/32712600336/job/97387099639) and [Chrome 151 job](https://github.com/seabAu/Coredrill/actions/runs/32712600336/job/97387099608); immutable setup pin and exact assertion                         |
+| Edge current              | Edge `151.0.4129.101`, Windows 10 diagnostic host                                | Passed                              | Four-spec Playwright suite; diagnostic, not Windows 11 release evidence                                                                                                                                                                                            |
+| Firefox current           | Branded Firefox `154.0`, Windows 10 diagnostic host, geckodriver `0.37.1`        | Passed                              | WebDriver lifecycle reports SQLite 3.53.0, Worker, `opfs-sahpool`, reopen, export, delete, restore                                                                                                                                                                 |
+| Firefox current/previous  | Exact branded Firefox `154.0` and `153.0` on `ubuntu-latest`                     | Passed hosted CI                    | [Firefox 154 job](https://github.com/seabAu/Coredrill/actions/runs/32712600336/job/97387099780) and [Firefox 153 job](https://github.com/seabAu/Coredrill/actions/runs/32712600336/job/97387099358); Mozilla binaries, exact assertion, no Playwright substitution |
+| Safari current/previous   | Safari `26.6.1`/`18.6` on the required macOS rows                                | Unavailable, not executed           | Block browser vault; use supported Chromium/Firefox or future native app and portable export. Playwright WebKit is not reported as Safari.                                                                                                                         |
+| iOS/Android PWA           | Required physical-device rows                                                    | Unavailable, not executed           | No mobile support claim; use supported desktop browser/native path and portable transfer                                                                                                                                                                           |
 
 The local Firefox result is:
 
@@ -56,17 +56,17 @@ The benchmark uses deterministic synthetic fixture `JW-STG-DATA-001` with seed `
 
 | Profile          | Records | Database bytes | Import ms | Search p95 ms | Export p95 ms | Restore p95 ms | Startup p95 ms |
 | ---------------- | ------: | -------------: | --------: | ------------: | ------------: | -------------: | -------------: |
-| `DATA-SMOKE`     |     100 |         65,536 |      11.7 |           0.7 |           1.1 |            9.7 |           73.7 |
-| `DATA-REFERENCE` |   2,000 |        876,544 |      58.5 |           0.7 |           5.2 |           49.7 |           86.9 |
-| `DATA-STRESS`    |  10,000 |      4,259,840 |     216.4 |           0.7 |          18.0 |          190.9 |          154.9 |
+| `DATA-SMOKE`     |     100 |         65,536 |      17.8 |           2.3 |           4.2 |            9.9 |           79.1 |
+| `DATA-REFERENCE` |   2,000 |        876,544 |      56.7 |           0.7 |           6.2 |           92.3 |          120.1 |
+| `DATA-STRESS`    |  10,000 |      4,259,840 |     317.0 |           0.7 |          17.9 |          213.2 |          158.2 |
 
-Raw measurements and per-profile fixture hashes are in [`storage-benchmark-edge-151.json`](artifacts/storage-benchmark-edge-151.json). The artifact is currently bound to base commit `c475080`, the exact lockfile hash, `HW-LOCAL-DIAG`, `OS-WIN10-LOCAL`, and a dirty implementation worktree. It will be regenerated from the clean implementation checkpoint before final proof. These diagnostic-host figures are record-only and do not validate the Windows 11/i5 reference budget.
+Raw measurements and per-profile fixture hashes are in [`storage-benchmark-edge-151.json`](artifacts/storage-benchmark-edge-151.json). The artifact records matrix version `1.1.0`, the version active at its clean implementation commit; current matrix `1.2.0` adds the resulting hosted/decision fields without changing the fixture or budget. It is bound to clean commit `0271aaa65b793e530b092e0ce35c59f9ff6b7728` with `dirtyWorktree: false`, lockfile SHA-256 `358dfdbcc831d663582256deee57e5d3c64815bdc979405b3770327e26df23f4`, `HW-LOCAL-DIAG`, `OS-WIN10-LOCAL`, and reviewer `Codex`. These diagnostic-host figures are record-only and do not validate the Windows 11/i5 reference budget.
 
-## STG-008 decision candidate
+## STG-008 accepted decision
 
-[ADR-0003](../adr/0003-adopt-browser-storage-support-floor.md) proposes retaining official SQLite 3.53.0 `opfs-sahpool` in a dedicated Worker with an origin-wide Web Lock, current/previous Chromium and Firefox desktop support, best-effort labeling unless persistence is granted, explicit degraded warnings, and no Safari/mobile claim until their real runners pass. Unsupported browsers are blocked from creating a vault and directed to a supported desktop browser or future native app with portable export/restore; no in-memory/IndexedDB semantic substitute is introduced.
+[ADR-0003](../adr/0003-adopt-browser-storage-support-floor.md) accepts official SQLite 3.53.0 `opfs-sahpool` in a dedicated Worker with an origin-wide Web Lock, current/previous Chromium and Firefox desktop support, best-effort labeling unless persistence is granted, explicit degraded warnings, and no Safari/mobile claim until their real runners pass. Unsupported browsers are blocked from creating a vault and directed to a supported desktop browser or future native app with portable export/restore; no in-memory/IndexedDB semantic substitute is introduced.
 
-D-025 and Q-002 remain unchanged until the hosted exact-version lanes pass. No Accepted decision has changed yet.
+D-025 is Accepted and Q-002 is resolved. This promotes the provisional browser-storage decision without changing D-024's accepted canonical SQLite semantics.
 
 ## Local verification at the implementation checkpoint
 
@@ -78,11 +78,11 @@ D-025 and Q-002 remain unchanged until the hosted exact-version lanes pass. No A
 | Edge E2E                    | 4 specs passed: lifecycle, failure matrix, contention/crash, and benchmark                                          |
 | Firefox 154 WebDriver       | Full branded-browser lifecycle passed with SQLite 3.53.0 and `opfs-sahpool`                                         |
 | Supply-chain/policy checks  | 307 packages license-checked; secret scan passed; zero production vulnerabilities                                   |
-| Hosted exact Chrome/Firefox | Pending implementation push                                                                                         |
+| Hosted exact Chrome/Firefox | Passed all four exact lanes in [run 32712600336](https://github.com/seabAu/Coredrill/actions/runs/32712600336)      |
 
 ## Boundaries and remaining proof
 
 - The benchmark schema is a throwaway storage-capacity fixture, not the Phase 1 product job schema or an ORM.
 - The quota and persistence denial responses are deterministic browser-API simulations; actual browser estimates and private policies vary and are reported separately.
 - Safari, iOS, Android, Windows 11 reference hardware, and previous Edge are not claimed as passed.
-- Final completion requires exact hosted version-lane results, clean-commit benchmark regeneration, ADR/decision-register promotion, checklist links, and a final hosted proof checkpoint.
+- The supported browser floor is complete; unavailable Safari/mobile and Windows 11 reference-hardware rows remain explicit future evidence, not claimed passes.

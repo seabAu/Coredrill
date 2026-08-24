@@ -5,11 +5,13 @@
 - Packages: `@coredrill/storage-browser`, `@coredrill/storage-core`, `@coredrill/web`
 - Browser locally proven: Microsoft Edge 151.0.4129.101 on Windows
 - Hosted browser path: Playwright `chrome` channel on GitHub `ubuntu-latest`
-- Decision changes: none; D-024 and D-026 are implemented, D-025 remains Provisional
+- Decision changes at this checkpoint: none; D-024 and D-026 are implemented, and D-025 was still Provisional
 
 ## Outcome
 
 `STG-001` through `STG-003` are proven locally and by hosted CI. Coredrill now has a minimal end-to-end browser storage path that runs official SQLite WebAssembly in a dedicated Worker, stores through `opfs-sahpool`, applies checksum-bound shared SQL migrations transactionally, survives close/reopen, exports checksummed SQLite bytes, restores them into a clean browser context, and deletes the restored database. The later STG-005 hardening correctly distinguishes an OPFS-backed database from a browser persistence grant; ungranted profiles are `best-effort`, not `durable`.
+
+Follow-up: [`STG-004` through `STG-008`](browser-storage-platform-verification.md) later passed and accepted D-025/ADR-0003. The statements below preserve this earlier checkpoint's remaining-work boundary.
 
 The proof uses only local browser storage and self-hosted build assets. It adds no account, network service, AI/provider call, telemetry sink, scraper, extension permission, native adapter, product record repository, or product UI. SQLite remains durable truth, and the harness remains useful with AI disabled.
 
@@ -80,11 +82,11 @@ The storage-browser package depends only on the adapter-neutral storage-core con
 - `docs/proof/foundation-dependency-inventory.json` — exact dependency, license, maintainer, advisory, and lockfile record.
 - `.changeset/browser-storage-spike.md` — compatibility and release record.
 
-## Remaining work and boundaries
+## Remaining work and boundaries at this checkpoint
 
 - `STG-004` must prove current/previous Chromium, Firefox, and Safari support or record exact unsupported fallbacks. This report makes only the local Edge claim above.
 - `STG-005` must cover private browsing, persistence denial, quota/eviction diagnostics, and corrupted database behavior.
 - `STG-006` must cover second-tab contention, controlled handoff/read-only behavior, crash/reload, and `SQLITE_BUSY` recovery.
 - `STG-007` must benchmark the reference datasets and hardware matrix.
-- `STG-008` must synthesize that evidence into the final VFS/browser-support decision and update D-025/Q-002. D-025 remains Provisional until then.
+- At this checkpoint, `STG-008` still had to synthesize that evidence into the final VFS/browser-support decision and update D-025/Q-002; D-025 remained Provisional until the linked follow-up proof.
 - `FND-001` remains independently blocked on durable private conduct and vulnerability-reporting routes.

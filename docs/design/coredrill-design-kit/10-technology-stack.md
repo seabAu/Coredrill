@@ -84,14 +84,14 @@ SQLite is the source of truth. TanStack Query caches query results; Zustand stor
 
 - Official `@sqlite.org/sqlite-wasm` 3.53.0-build1, pinned in the reviewed lockfile and dependency inventory.
 - Dedicated database Worker; no synchronous database work on UI thread.
-- Initial VFS: `opfs-sahpool` for a single-writer model because SQLite documents broad support and no COOP/COEP requirement.
-- One coordinator per vault. Secondary tabs are read-only or show a controlled handoff until multi-tab tests justify another VFS.
-- `navigator.storage.persist()` request where supported, quota diagnostics, private-mode detection, and visible backup reminders.
+- Accepted browser VFS: `opfs-sahpool` for a single-writer model because SQLite documents broad support and no COOP/COEP requirement.
+- One coordinator per vault under an origin-wide Web Lock. Secondary tabs receive a controlled typed handoff until a validated multi-tab requirement and compatibility evidence justify another VFS.
+- Explicit-user-action `navigator.storage.persist()` request where supported, observable persistence/quota/missing-database diagnostics without private-mode fingerprinting, and visible backup/recovery guidance.
 - Service worker caches application assets; it does not copy or sync the vault.
 
-The Phase 0 proof harness uses Vite 8.1.0 and Playwright 1.61.1, both exact-reviewed development dependencies rather than product runtime services. On Edge 151 it opens SQLite 3.53.0 with `opfs-sahpool` in a dedicated Worker and proves transactional migration, durability, checksummed export, clean-context restore, and delete. Browser support, failure/locking behavior, benchmarks, and the final VFS decision remain explicit `STG-004`–`STG-008` gates; this evidence does not promote D-025 from Provisional.
+The Phase 0 proof harness uses Vite 8.1.0 and Playwright 1.61.1, both exact-reviewed development dependencies rather than product runtime services. On Edge 151 it opens SQLite 3.53.0 with `opfs-sahpool` in a dedicated Worker and proves transactional migration, durability, checksummed export, clean-context restore, delete, persistence/quota/missing-data diagnostics, corrupt-restore preservation, tab contention/handoff, abrupt reload recovery, and deterministic 100/2,000/10,000-record benchmarks. `STG-004`–`STG-008` are complete and D-025 is Accepted through [ADR-0003](../../adr/0003-adopt-browser-storage-support-floor.md).
 
-The support-floor candidate adds exact Chrome 152/151 Playwright lanes, real branded Firefox 154/153 WebDriver lanes, Edge 151 failure/contention/benchmark evidence, and an immutable-pinned browser-install CI matrix. Playwright's patched Firefox/WebKit builds are not reported as branded Firefox/Safari evidence. Safari/macOS and mobile device rows remain unsupported until executed. No npm runtime dependency is added for WebDriver; the Node harness speaks the local W3C WebDriver protocol to Mozilla geckodriver.
+The accepted support floor includes exact Chrome `152.0.7977.54`/`151.0.7922.138` Playwright lanes, real branded Firefox `154.0`/`153.0` WebDriver lanes, Edge 151 failure/contention/benchmark evidence, and an immutable-pinned browser-install CI matrix. All exact lanes passed on commit `0271aaa65b793e530b092e0ce35c59f9ff6b7728` in [Foundation CI run 32712600336](https://github.com/seabAu/Coredrill/actions/runs/32712600336). Playwright's patched Firefox/WebKit builds are not reported as branded Firefox/Safari evidence. Safari/macOS and mobile device rows remain unsupported until executed. No npm runtime dependency is added for WebDriver; the Node harness speaks the local W3C WebDriver protocol to Mozilla geckodriver.
 
 ### Desktop
 
