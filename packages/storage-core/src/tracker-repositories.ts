@@ -134,6 +134,8 @@ interface JobRow extends QueryRow {
   readonly remote_region_json: string | null;
   readonly date_posted: string | null;
   readonly valid_through: string | null;
+  readonly current_status_id: string | null;
+  readonly next_action_at: string | null;
   readonly archived_at: string | null;
   readonly created_at: string;
   readonly updated_at: string;
@@ -383,6 +385,8 @@ const mapJob = (row: JobRow): JobRecord =>
     remoteRegion: row.remote_region_json === null ? null : parseJson(row.remote_region_json),
     datePosted: row.date_posted === null ? null : dateOnly(row.date_posted),
     validThrough: row.valid_through === null ? null : dateOnly(row.valid_through),
+    currentStatusId: optionalEntityId("status_definition", row.current_status_id),
+    nextActionAt: optionalInstant(row.next_action_at),
     archivedAt: optionalInstant(row.archived_at),
     createdAt: instant(row.created_at),
     updatedAt: instant(row.updated_at),
@@ -736,8 +740,8 @@ export class JobRepository {
         `INSERT INTO job(
            id, company_id, title, normalized_title, description_text, employment_type,
            workplace_type, seniority, location_id, remote_region_json, date_posted,
-           valid_through, archived_at, created_at, updated_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           valid_through, current_status_id, next_action_at, archived_at, created_at, updated_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           entityId("job", record.id),
           record.companyId === null ? null : entityId("company", record.companyId),
@@ -753,6 +757,10 @@ export class JobRepository {
             : serializeJson(record.remoteRegion, "Remote region", 262_144),
           record.datePosted === null ? null : dateOnly(record.datePosted),
           record.validThrough === null ? null : dateOnly(record.validThrough),
+          record.currentStatusId === null
+            ? null
+            : entityId("status_definition", record.currentStatusId),
+          record.nextActionAt === null ? null : instant(record.nextActionAt),
           record.archivedAt === null ? null : instant(record.archivedAt),
           instant(record.createdAt),
           instant(record.updatedAt),
@@ -767,7 +775,8 @@ export class JobRepository {
       this.session,
       `SELECT id, company_id, title, normalized_title, description_text, employment_type,
               workplace_type, seniority, location_id, remote_region_json, date_posted,
-              valid_through, archived_at, created_at, updated_at, row_version
+              valid_through, current_status_id, next_action_at, archived_at, created_at,
+              updated_at, row_version
        FROM job WHERE id = ?`,
       entityId("job", id),
       mapJob,

@@ -27,5 +27,14 @@ Numbered forward SQL migrations in this directory are the reviewed source shared
 | 11      | `0011_company_alias.sql`            | Provenance-backed company aliases                           | `cd483c992a86de871b87cc01961d903089e7b15c769957e9c53a6e9877393149` |
 | 12      | `0012_contact_point_provenance.sql` | Hashed contact-field provenance links                       | `6bbe74d3ed2e879905032ca717b7cbdad5f836fdbdc7498c29b1edd9f06c61e1` |
 | 13      | `0013_field_value.sql`              | Candidate history, user confirmation, and supersession      | `76daa7c3e899d5c8238611c25e714257340cf2965dc920b5f4cac5d47dfdacd1` |
+| 14      | `0014_status_definition.sql`        | Custom stages mapped to stable reporting categories         | `480c766905306953b0ac2e64b37538456d9e8193d46ad356bf68636025539a1b` |
+| 15      | `0015_job_current_status.sql`       | Nullable current-stage projection on jobs                   | `48f3ec97fa43afc2553c5e599f1a4956236c52793957542dc730a00ea5adf685` |
+| 16      | `0016_job_next_action.sql`          | Nullable next-action time projection on jobs                | `853dfbbc3c5edc2b851581e4f1164c542e5cbe2d06f888e44f9539ff6c9de557` |
+| 17      | `0017_application.sql`              | Explicit application attempts and selected-document links   | `2af15e2eb7cda5a5d098ed79430b1d169e2c5e5ee5d8f1c4609e0291b0b97a28` |
+| 18      | `0018_status_event.sql`             | Append-only application and job stage history               | `d587d4ad15c95a6be314db5b9a157b39a1f68ee9b4bdcfa5b7e99e9c019cb1b7` |
+| 19      | `0019_interaction.sql`              | Job/contact interaction timeline records                    | `c40fea3c5ff0f7158550d6b959b891cddf1786f388b83ddc4a3747211e8fe09e` |
+| 20      | `0020_next_action.sql`              | Action state and due-time records                           | `60618614c34d8da45ae56a7c48a22ada6289e917f5c7e12f320226294f6443b4` |
+| 21      | `0021_interview.sql`                | Time-zone-aware interview records                           | `8be74d8642e0e3569cb850fdfaf9008dcc732dff9ce2c4cf48f8dbd7a0e67397` |
+| 22      | `0022_reminder.sql`                 | Local reminder state and firing timestamps                  | `8733bd0e014116147c0fa9fdb1d1b88a971ca486ab67bccc31f4593ef7feb29f` |
 
-The Phase 0 tables remain compatible and continue to store the durable capture envelope before acknowledgement. Versions 3–13 begin the Phase 1 tracker model without promoting an Inbox receipt into a reviewed job: settings, companies, contacts, jobs, sources, snapshots, provenance, and field candidates are separate reviewed records. Pipeline/application history, documents, broader indexes/FTS, tombstones, and attachments remain owned by their later checklist slices.
+The Phase 0 tables remain compatible and continue to store the durable capture envelope before acknowledgement. Versions 3–22 implement the reviewed tracker and pipeline persistence without promoting an Inbox receipt into a job or seeding provisional display-stage vocabulary. Document records, broader indexes/FTS, tombstones, and attachments remain owned by later checklist slices.

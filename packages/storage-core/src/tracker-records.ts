@@ -78,6 +78,8 @@ export interface JobRecord {
   readonly remoteRegion: JsonValue | null;
   readonly datePosted: DateOnly | null;
   readonly validThrough: DateOnly | null;
+  readonly currentStatusId: EntityId<"status_definition"> | null;
+  readonly nextActionAt: Instant | null;
   readonly archivedAt: Instant | null;
   readonly createdAt: Instant;
   readonly updatedAt: Instant;

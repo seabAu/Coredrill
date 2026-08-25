@@ -117,6 +117,8 @@ const createSourceAggregate = async (database: DatabasePort): Promise<void> => {
       remoteRegion: { countries: ["US"] },
       datePosted: dateOnly("2026-08-20"),
       validThrough: dateOnly("2026-09-30"),
+      currentStatusId: null,
+      nextActionAt: null,
       archivedAt: null,
       createdAt: CREATED_AT,
       updatedAt: CREATED_AT,

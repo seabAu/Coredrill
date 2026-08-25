@@ -7,6 +7,7 @@ import {
 } from "@coredrill/storage-browser";
 import {
   applySqlMigrations,
+  createPipelineRepositoryContractSuite,
   createTrackerRepositoryContractSuite,
   defineSqlMigrations,
   runDatabaseContractSuite,
@@ -31,6 +32,15 @@ import provenanceMigrationSql from "../../../migrations/0010_provenance.sql?raw"
 import companyAliasMigrationSql from "../../../migrations/0011_company_alias.sql?raw";
 import contactPointProvenanceMigrationSql from "../../../migrations/0012_contact_point_provenance.sql?raw";
 import fieldValueMigrationSql from "../../../migrations/0013_field_value.sql?raw";
+import statusDefinitionMigrationSql from "../../../migrations/0014_status_definition.sql?raw";
+import jobCurrentStatusMigrationSql from "../../../migrations/0015_job_current_status.sql?raw";
+import jobNextActionMigrationSql from "../../../migrations/0016_job_next_action.sql?raw";
+import applicationMigrationSql from "../../../migrations/0017_application.sql?raw";
+import statusEventMigrationSql from "../../../migrations/0018_status_event.sql?raw";
+import interactionMigrationSql from "../../../migrations/0019_interaction.sql?raw";
+import nextActionMigrationSql from "../../../migrations/0020_next_action.sql?raw";
+import interviewMigrationSql from "../../../migrations/0021_interview.sql?raw";
+import reminderMigrationSql from "../../../migrations/0022_reminder.sql?raw";
 import { createExtensionInbox, type ExtensionInboxApi } from "./extension-transfer.js";
 import {
   runStorageBenchmark,
@@ -91,6 +101,7 @@ export interface CoredrillStorageSpikeApi {
   close(): Promise<void>;
   delete(): Promise<boolean>;
   runBenchmark(input: StorageBenchmarkInput): Promise<StorageBenchmarkResult>;
+  runPipelineRepositoryContracts(): Promise<DatabaseContractRunResult>;
   runTrackerRepositoryContracts(): Promise<DatabaseContractRunResult>;
 }
 
@@ -190,6 +201,60 @@ const migrations = async () =>
       name: "field-value",
       sha256: await sha256Text(fieldValueMigrationSql),
       sql: fieldValueMigrationSql,
+    },
+    {
+      version: 14,
+      name: "status-definition",
+      sha256: await sha256Text(statusDefinitionMigrationSql),
+      sql: statusDefinitionMigrationSql,
+    },
+    {
+      version: 15,
+      name: "job-current-status",
+      sha256: await sha256Text(jobCurrentStatusMigrationSql),
+      sql: jobCurrentStatusMigrationSql,
+    },
+    {
+      version: 16,
+      name: "job-next-action",
+      sha256: await sha256Text(jobNextActionMigrationSql),
+      sql: jobNextActionMigrationSql,
+    },
+    {
+      version: 17,
+      name: "application",
+      sha256: await sha256Text(applicationMigrationSql),
+      sql: applicationMigrationSql,
+    },
+    {
+      version: 18,
+      name: "status-event",
+      sha256: await sha256Text(statusEventMigrationSql),
+      sql: statusEventMigrationSql,
+    },
+    {
+      version: 19,
+      name: "interaction",
+      sha256: await sha256Text(interactionMigrationSql),
+      sql: interactionMigrationSql,
+    },
+    {
+      version: 20,
+      name: "next-action",
+      sha256: await sha256Text(nextActionMigrationSql),
+      sql: nextActionMigrationSql,
+    },
+    {
+      version: 21,
+      name: "interview",
+      sha256: await sha256Text(interviewMigrationSql),
+      sql: interviewMigrationSql,
+    },
+    {
+      version: 22,
+      name: "reminder",
+      sha256: await sha256Text(reminderMigrationSql),
+      sql: reminderMigrationSql,
     },
   ]);
 
@@ -327,6 +392,33 @@ const api: CoredrillStorageSpikeApi = {
     return deleted;
   },
   runBenchmark: (input) => runStorageBenchmark(input),
+  runPipelineRepositoryContracts: async () => {
+    await api.close();
+    let sequence = 1;
+    const adapter = {
+      name: "official-sqlite-wasm-opfs-sahpool",
+      createIsolatedDatabase: async () => {
+        const client = await openBrowserSqliteDatabase({
+          databaseName: `/coredrill-pipeline-contract-${String(sequence)}.sqlite3`,
+          requestPersistentStorage: false,
+        });
+        sequence += 1;
+        return client;
+      },
+      disposeIsolatedDatabase: async (client: DatabasePort) => {
+        await (client as BrowserSqliteDatabase).delete();
+      },
+    };
+    const reviewedMigrations = await migrations();
+    return runDatabaseContractSuite(
+      adapter,
+      createPipelineRepositoryContractSuite({
+        migrate: async (client) => {
+          await applySqlMigrations(client, reviewedMigrations, MIGRATION_APPLIED_AT);
+        },
+      }),
+    );
+  },
   runTrackerRepositoryContracts: async () => {
     await api.close();
     let sequence = 1;

@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   applySqlMigrations,
+  createPipelineRepositoryContractSuite,
   createTrackerRepositoryContractSuite,
   defineSqlMigrations,
   runDatabaseContractSuite,
@@ -36,6 +37,15 @@ const migrationDefinitions = [
   ["0011_company_alias.sql", "company-alias"],
   ["0012_contact_point_provenance.sql", "contact-point-provenance"],
   ["0013_field_value.sql", "field-value"],
+  ["0014_status_definition.sql", "status-definition"],
+  ["0015_job_current_status.sql", "job-current-status"],
+  ["0016_job_next_action.sql", "job-next-action"],
+  ["0017_application.sql", "application"],
+  ["0018_status_event.sql", "status-event"],
+  ["0019_interaction.sql", "interaction"],
+  ["0020_next_action.sql", "next-action"],
+  ["0021_interview.sql", "interview"],
+  ["0022_reminder.sql", "reminder"],
 ] as const;
 
 const migrations = defineSqlMigrations(
@@ -139,6 +149,24 @@ describe("Phase 1 tracker repository contracts", () => {
         "persists company contact job source snapshot and provenance with bound values",
         "retains field candidates and requires explicit confirmed replacement",
         "enforces foreign keys and rolls back an invalid aggregate",
+      ],
+    });
+  });
+
+  it("passes pipeline projections and history in fast in-memory SQLite", async () => {
+    const suite = createPipelineRepositoryContractSuite({
+      migrate: async (database) => {
+        await applySqlMigrations(database, migrations, APPLIED_AT);
+      },
+    });
+
+    await expect(runDatabaseContractSuite(adapter, suite)).resolves.toEqual({
+      adapterName: "node-sqlite-unit-contract",
+      suiteName: "phase-1-pipeline-repositories",
+      completedCases: [
+        "stores custom stages without selecting default display vocabulary",
+        "changes job and application status with atomic append-only history",
+        "persists interactions actions interviews and local reminders transactionally",
       ],
     });
   });

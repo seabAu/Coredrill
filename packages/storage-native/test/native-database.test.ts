@@ -7,6 +7,7 @@ import { spawn, spawnSync, type ChildProcessWithoutNullStreams } from "node:chil
 
 import {
   applySqlMigrations,
+  createPipelineRepositoryContractSuite,
   createTrackerRepositoryContractSuite,
   createTransactionSemanticsSuite,
   defineDatabaseContractSuite,
@@ -77,6 +78,15 @@ const migrationDefinitions = [
   ["0011_company_alias.sql", "company-alias"],
   ["0012_contact_point_provenance.sql", "contact-point-provenance"],
   ["0013_field_value.sql", "field-value"],
+  ["0014_status_definition.sql", "status-definition"],
+  ["0015_job_current_status.sql", "job-current-status"],
+  ["0016_job_next_action.sql", "job-next-action"],
+  ["0017_application.sql", "application"],
+  ["0018_status_event.sql", "status-event"],
+  ["0019_interaction.sql", "interaction"],
+  ["0020_next_action.sql", "next-action"],
+  ["0021_interview.sql", "interview"],
+  ["0022_reminder.sql", "reminder"],
 ] as const;
 const migrationPaths = migrationDefinitions.map(([fileName]) =>
   path.join(repositoryRoot, "migrations", fileName),
@@ -276,11 +286,13 @@ describe("native SQLite repository and migration contracts", () => {
         name: "applies the shared migration and reopens its ledger",
         run: async (database) => {
           await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
-            schemaVersion: 13,
-            appliedVersions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
+            schemaVersion: 22,
+            appliedVersions: [
+              1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
+            ],
           });
           await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
-            schemaVersion: 13,
+            schemaVersion: 22,
             appliedVersions: [],
           });
         },
@@ -341,6 +353,23 @@ describe("native SQLite repository and migration contracts", () => {
     });
   });
 
+  it("passes the shared Phase 1 pipeline repository suite", async () => {
+    const suite = createPipelineRepositoryContractSuite({
+      migrate: async (database) => {
+        await applySqlMigrations(database, migrations(), APPLIED_AT);
+      },
+    });
+    await expect(runDatabaseContractSuite(nativeAdapter, suite)).resolves.toEqual({
+      adapterName: "native-rusqlite-candidate",
+      suiteName: "phase-1-pipeline-repositories",
+      completedCases: [
+        "stores custom stages without selecting default display vocabulary",
+        "changes job and application status with atomic append-only history",
+        "persists interactions actions interviews and local reminders transactionally",
+      ],
+    });
+  });
+
   it("persists the migrated vault across native close and reopen", async () => {
     const databaseName = nextDatabaseName();
     const first = await openNativeSqliteDatabase({ databaseName, transport });
@@ -376,7 +405,7 @@ describe("native SQLite repository and migration contracts", () => {
       adapterName: "native-rusqlite-candidate",
       health: "ready",
       persistence: "durable",
-      schemaVersion: 13,
+      schemaVersion: 22,
     });
     await expect(reopened.delete()).resolves.toBe(true);
   });

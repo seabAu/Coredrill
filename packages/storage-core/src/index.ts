@@ -11,6 +11,44 @@ export {
   type TransactionContractProbe,
 } from "./contract-harness.js";
 export {
+  createPipelineRepositoryContractSuite,
+  type PipelineRepositoryContractSetup,
+} from "./pipeline-contract-harness.js";
+export {
+  ApplicationRepository,
+  InteractionRepository,
+  InterviewRepository,
+  NextActionRepository,
+  PipelineRepositoryConflictError,
+  ReminderRepository,
+  StatusDefinitionRepository,
+  StatusEventRepository,
+  changePipelineStatus,
+  completeNextAction,
+  createPipelineRepositories,
+  setNextAction,
+  type NewApplication,
+  type NewInteraction,
+  type NewInterview,
+  type NewNextAction,
+  type NewReminder,
+  type NewStatusDefinition,
+  type PipelineRepositories,
+  type PipelineRepositoryConflictCode,
+} from "./pipeline-repositories.js";
+export type {
+  ApplicationRecord,
+  InteractionDirection,
+  InteractionRecord,
+  InterviewRecord,
+  NextActionRecord,
+  NextActionState,
+  ReminderRecord,
+  ReminderState,
+  StatusDefinitionRecord,
+  StatusEventRecord,
+} from "./pipeline-records.js";
+export {
   createTrackerRepositoryContractSuite,
   type TrackerRepositoryContractSetup,
 } from "./tracker-contract-harness.js";
