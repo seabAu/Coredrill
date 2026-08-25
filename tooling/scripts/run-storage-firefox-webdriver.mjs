@@ -164,13 +164,12 @@ try {
   if (
     proof?.rows !== 1 ||
     proof.restoredRows !== 1 ||
-    proof.schemaVersion !== 2 ||
+    proof.schemaVersion !== 13 ||
     proof.vfs !== true ||
     proof.worker !== true ||
     !Array.isArray(proof.appliedVersions) ||
-    proof.appliedVersions.length !== 2 ||
-    proof.appliedVersions[0] !== 1 ||
-    proof.appliedVersions[1] !== 2 ||
+    proof.appliedVersions.length !== 13 ||
+    proof.appliedVersions.some((version, index) => version !== index + 1) ||
     !Array.isArray(proof.reopenedVersions) ||
     proof.reopenedVersions.length !== 0 ||
     typeof proof.sha256 !== "string" ||
