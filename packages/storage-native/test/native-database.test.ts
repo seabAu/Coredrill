@@ -9,6 +9,7 @@ import {
   applySqlMigrations,
   createPipelineRepositoryContractSuite,
   createTrackerRepositoryContractSuite,
+  createViewRepositoryContractSuite,
   createTransactionSemanticsSuite,
   defineDatabaseContractSuite,
   defineSqlMigrations,
@@ -87,6 +88,9 @@ const migrationDefinitions = [
   ["0020_next_action.sql", "next-action"],
   ["0021_interview.sql", "interview"],
   ["0022_reminder.sql", "reminder"],
+  ["0023_tag.sql", "tag"],
+  ["0024_job_tag.sql", "job-tag"],
+  ["0025_saved_view.sql", "saved-view"],
 ] as const;
 const migrationPaths = migrationDefinitions.map(([fileName]) =>
   path.join(repositoryRoot, "migrations", fileName),
@@ -286,13 +290,14 @@ describe("native SQLite repository and migration contracts", () => {
         name: "applies the shared migration and reopens its ledger",
         run: async (database) => {
           await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
-            schemaVersion: 22,
+            schemaVersion: 25,
             appliedVersions: [
-              1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
+              1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+              25,
             ],
           });
           await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
-            schemaVersion: 22,
+            schemaVersion: 25,
             appliedVersions: [],
           });
         },
@@ -370,6 +375,22 @@ describe("native SQLite repository and migration contracts", () => {
     });
   });
 
+  it("passes the shared Phase 1 tag and saved-view repository suite", async () => {
+    const suite = createViewRepositoryContractSuite({
+      migrate: async (database) => {
+        await applySqlMigrations(database, migrations(), APPLIED_AT);
+      },
+    });
+    await expect(runDatabaseContractSuite(nativeAdapter, suite)).resolves.toEqual({
+      adapterName: "native-rusqlite-candidate",
+      suiteName: "phase-1-view-repositories",
+      completedCases: [
+        "assigns active tags idempotently and enforces job relationships",
+        "round-trips versioned saved views with optimistic updates",
+      ],
+    });
+  });
+
   it("persists the migrated vault across native close and reopen", async () => {
     const databaseName = nextDatabaseName();
     const first = await openNativeSqliteDatabase({ databaseName, transport });
@@ -405,7 +426,7 @@ describe("native SQLite repository and migration contracts", () => {
       adapterName: "native-rusqlite-candidate",
       health: "ready",
       persistence: "durable",
-      schemaVersion: 22,
+      schemaVersion: 25,
     });
     await expect(reopened.delete()).resolves.toBe(true);
   });

@@ -173,7 +173,21 @@ importers:
 
   packages/prompt-engine: {}
 
-  packages/search-filter: {}
+  packages/search-filter:
+    dependencies:
+      '@coredrill/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@coredrill/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@coredrill/storage-core':
+        specifier: workspace:*
+        version: link:../storage-core
+    devDependencies:
+      fast-check:
+        specifier: 4.9.0
+        version: 4.9.0
 
   packages/source-policy: {}
 

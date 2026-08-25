@@ -15,7 +15,15 @@
   ],
   "scripts": {
     "build": "tsc -b",
-    "typecheck": "tsc -p tsconfig.json --noEmit --pretty false --tsBuildInfoFile .turbo/typecheck.tsbuildinfo",
+    "typecheck": "tsc -p tsconfig.json --noEmit --pretty false --tsBuildInfoFile .turbo/typecheck.tsbuildinfo && tsc -p tsconfig.test.json --noEmit --pretty false --tsBuildInfoFile .turbo/typecheck-test.tsbuildinfo",
     "lint": "eslint src --max-warnings 0"
+  },
+  "dependencies": {
+    "@coredrill/contracts": "workspace:*",
+    "@coredrill/domain": "workspace:*",
+    "@coredrill/storage-core": "workspace:*"
+  },
+  "devDependencies": {
+    "fast-check": "4.9.0"
   }
 }

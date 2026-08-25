@@ -164,11 +164,11 @@ try {
   if (
     proof?.rows !== 1 ||
     proof.restoredRows !== 1 ||
-    proof.schemaVersion !== 22 ||
+    proof.schemaVersion !== 25 ||
     proof.vfs !== true ||
     proof.worker !== true ||
     !Array.isArray(proof.appliedVersions) ||
-    proof.appliedVersions.length !== 22 ||
+    proof.appliedVersions.length !== 25 ||
     proof.appliedVersions.some((version, index) => version !== index + 1) ||
     !Array.isArray(proof.reopenedVersions) ||
     proof.reopenedVersions.length !== 0 ||

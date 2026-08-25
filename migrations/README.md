@@ -36,5 +36,8 @@ Numbered forward SQL migrations in this directory are the reviewed source shared
 | 20      | `0020_next_action.sql`              | Action state and due-time records                           | `60618614c34d8da45ae56a7c48a22ada6289e917f5c7e12f320226294f6443b4` |
 | 21      | `0021_interview.sql`                | Time-zone-aware interview records                           | `8be74d8642e0e3569cb850fdfaf9008dcc732dff9ce2c4cf48f8dbd7a0e67397` |
 | 22      | `0022_reminder.sql`                 | Local reminder state and firing timestamps                  | `8733bd0e014116147c0fa9fdb1d1b88a971ca486ab67bccc31f4593ef7feb29f` |
+| 23      | `0023_tag.sql`                      | User-defined tag records                                    | `e7534c2ac9c5ed2b711e8dc891a0594ade74d83256a95d19e14aa41bfe879a18` |
+| 24      | `0024_job_tag.sql`                  | Idempotent job-to-tag assignments                           | `08f1e67e45e3e2d71ec13dad486bd17697084f50750c7306e177907eec28ede8` |
+| 25      | `0025_saved_view.sql`               | Versioned job-filter views and UI settings                  | `1a743c44b57c4739938427e098fdf95869ba13d73372bfa41fb4ee8c1e96d165` |
 
-The Phase 0 tables remain compatible and continue to store the durable capture envelope before acknowledgement. Versions 3–22 implement the reviewed tracker and pipeline persistence without promoting an Inbox receipt into a job or seeding provisional display-stage vocabulary. Document records, broader indexes/FTS, tombstones, and attachments remain owned by later checklist slices.
+The Phase 0 tables remain compatible and continue to store the durable capture envelope before acknowledgement. Versions 3–25 implement the reviewed tracker, pipeline, tag, and saved-view persistence without promoting an Inbox receipt into a job or seeding provisional display-stage or saved-view vocabulary. Document records, broader indexes/FTS, tombstones, and attachments remain owned by later checklist slices.

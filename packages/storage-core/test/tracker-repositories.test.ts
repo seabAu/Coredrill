@@ -9,6 +9,7 @@ import {
   applySqlMigrations,
   createPipelineRepositoryContractSuite,
   createTrackerRepositoryContractSuite,
+  createViewRepositoryContractSuite,
   defineSqlMigrations,
   runDatabaseContractSuite,
   type DatabaseContractAdapter,
@@ -46,6 +47,9 @@ const migrationDefinitions = [
   ["0020_next_action.sql", "next-action"],
   ["0021_interview.sql", "interview"],
   ["0022_reminder.sql", "reminder"],
+  ["0023_tag.sql", "tag"],
+  ["0024_job_tag.sql", "job-tag"],
+  ["0025_saved_view.sql", "saved-view"],
 ] as const;
 
 const migrations = defineSqlMigrations(
@@ -167,6 +171,23 @@ describe("Phase 1 tracker repository contracts", () => {
         "stores custom stages without selecting default display vocabulary",
         "changes job and application status with atomic append-only history",
         "persists interactions actions interviews and local reminders transactionally",
+      ],
+    });
+  });
+
+  it("passes tag and saved-view contracts in fast in-memory SQLite", async () => {
+    const suite = createViewRepositoryContractSuite({
+      migrate: async (database) => {
+        await applySqlMigrations(database, migrations, APPLIED_AT);
+      },
+    });
+
+    await expect(runDatabaseContractSuite(adapter, suite)).resolves.toEqual({
+      adapterName: "node-sqlite-unit-contract",
+      suiteName: "phase-1-view-repositories",
+      completedCases: [
+        "assigns active tags idempotently and enforces job relationships",
+        "round-trips versioned saved views with optimistic updates",
       ],
     });
   });

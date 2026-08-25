@@ -117,3 +117,19 @@ export type {
   SourceSnapshotRecord,
   VaultRecord,
 } from "./tracker-records.js";
+export {
+  createViewRepositoryContractSuite,
+  type ViewRepositoryContractSetup,
+} from "./view-contract-harness.js";
+export {
+  SavedViewRepository,
+  TagRepository,
+  ViewRepositoryConflictError,
+  createViewRepositories,
+  type NewSavedView,
+  type NewTag,
+  type SavedViewUpdate,
+  type ViewRepositories,
+  type ViewRepositoryConflictCode,
+} from "./view-repositories.js";
+export type { SavedViewRecord, SavedViewScope, TagRecord } from "./view-records.js";

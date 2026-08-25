@@ -40,3 +40,24 @@ test("runs the Phase 1 pipeline repository contracts in browser SQLite", async (
     ],
   });
 });
+
+test("runs the Phase 1 tag and saved-view repository contracts in browser SQLite", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.getByRole("status")).toHaveText("Harness ready");
+  await page.waitForFunction(() => globalThis.coredrillStorageSpike !== undefined);
+
+  const result = await page.evaluate(() =>
+    globalThis.coredrillStorageSpike.runViewRepositoryContracts(),
+  );
+
+  expect(result).toEqual({
+    adapterName: "official-sqlite-wasm-opfs-sahpool",
+    suiteName: "phase-1-view-repositories",
+    completedCases: [
+      "assigns active tags idempotently and enforces job relationships",
+      "round-trips versioned saved views with optimistic updates",
+    ],
+  });
+});

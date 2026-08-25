@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "inventoryId": "JW-DI-001",
-  "version": "1.13.0",
-  "reviewedAt": "2026-08-25T12:39:26Z",
+  "version": "1.14.0",
+  "reviewedAt": "2026-08-25T14:13:09Z",
   "scope": {
     "included": [
       "Pinned Node.js, pnpm, and Rust foundation toolchains",
@@ -17,7 +17,7 @@
   },
   "lockfile": {
     "path": "pnpm-lock.yaml",
-    "sha256": "446a16450701024d746081734224b3007940975511c7ab6a7a4a0b4dc6ebdf31"
+    "sha256": "9917fef25bd914c0a53fcee7c59d80d55cbe46cf32e369d775b210b33bffc4e6"
   },
   "toolchains": [
     {
@@ -521,6 +521,20 @@
       "selectionNote": "The documents package uses the same exact Zod version as contracts for strict IR, source-map, import-proposal, and JSON Schema validation."
     },
     {
+      "manifest": "packages/search-filter/package.json",
+      "dependencyType": "devDependencies",
+      "name": "fast-check",
+      "version": "4.9.0",
+      "upstreamLatest": "4.9.0",
+      "selectionStatus": "current",
+      "license": "MIT",
+      "maintainers": ["ndubien"],
+      "repository": "https://github.com/dubzzz/fast-check",
+      "metadataSource": "https://registry.npmjs.org/fast-check/4.9.0",
+      "knownAdvisories": [],
+      "selectionNote": "The search-filter package uses the already reviewed root property-testing dependency to prove AST round trips, typed rejection, limits, and SQL parameter binding."
+    },
+    {
       "manifest": "packages/storage-browser/package.json",
       "dependencyType": "dependencies",
       "name": "@sqlite.org/sqlite-wasm",
@@ -802,8 +816,8 @@
   "advisoryReview": {
     "command": "pnpm audit --json",
     "source": "https://pnpm.io/cli/audit",
-    "reviewedAt": "2026-08-25T12:39:26Z",
-    "lockfileSha256": "446a16450701024d746081734224b3007940975511c7ab6a7a4a0b4dc6ebdf31",
+    "reviewedAt": "2026-08-25T14:13:09Z",
+    "lockfileSha256": "9917fef25bd914c0a53fcee7c59d80d55cbe46cf32e369d775b210b33bffc4e6",
     "resolvedDependencyCount": 548,
     "optionalDependencyCount": 59,
     "vulnerabilities": {
@@ -816,8 +830,8 @@
   },
   "licenseReview": {
     "command": "pnpm check:licenses",
-    "reviewedAt": "2026-08-25T12:39:26Z",
-    "lockfileSha256": "446a16450701024d746081734224b3007940975511c7ab6a7a4a0b4dc6ebdf31",
+    "reviewedAt": "2026-08-25T14:13:09Z",
+    "lockfileSha256": "9917fef25bd914c0a53fcee7c59d80d55cbe46cf32e369d775b210b33bffc4e6",
     "resolvedPackageRecords": 351,
     "result": "pass",
     "note": "License records and advisory dependency counts use different tool scopes and are not expected to match."

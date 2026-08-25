@@ -9,6 +9,7 @@ import {
   applySqlMigrations,
   createPipelineRepositoryContractSuite,
   createTrackerRepositoryContractSuite,
+  createViewRepositoryContractSuite,
   defineSqlMigrations,
   runDatabaseContractSuite,
   sqlStatement,
@@ -41,6 +42,9 @@ import interactionMigrationSql from "../../../migrations/0019_interaction.sql?ra
 import nextActionMigrationSql from "../../../migrations/0020_next_action.sql?raw";
 import interviewMigrationSql from "../../../migrations/0021_interview.sql?raw";
 import reminderMigrationSql from "../../../migrations/0022_reminder.sql?raw";
+import tagMigrationSql from "../../../migrations/0023_tag.sql?raw";
+import jobTagMigrationSql from "../../../migrations/0024_job_tag.sql?raw";
+import savedViewMigrationSql from "../../../migrations/0025_saved_view.sql?raw";
 import { createExtensionInbox, type ExtensionInboxApi } from "./extension-transfer.js";
 import {
   runStorageBenchmark,
@@ -103,6 +107,7 @@ export interface CoredrillStorageSpikeApi {
   runBenchmark(input: StorageBenchmarkInput): Promise<StorageBenchmarkResult>;
   runPipelineRepositoryContracts(): Promise<DatabaseContractRunResult>;
   runTrackerRepositoryContracts(): Promise<DatabaseContractRunResult>;
+  runViewRepositoryContracts(): Promise<DatabaseContractRunResult>;
 }
 
 declare global {
@@ -255,6 +260,24 @@ const migrations = async () =>
       name: "reminder",
       sha256: await sha256Text(reminderMigrationSql),
       sql: reminderMigrationSql,
+    },
+    {
+      version: 23,
+      name: "tag",
+      sha256: await sha256Text(tagMigrationSql),
+      sql: tagMigrationSql,
+    },
+    {
+      version: 24,
+      name: "job-tag",
+      sha256: await sha256Text(jobTagMigrationSql),
+      sql: jobTagMigrationSql,
+    },
+    {
+      version: 25,
+      name: "saved-view",
+      sha256: await sha256Text(savedViewMigrationSql),
+      sql: savedViewMigrationSql,
     },
   ]);
 
@@ -440,6 +463,34 @@ const api: CoredrillStorageSpikeApi = {
     return runDatabaseContractSuite(
       adapter,
       createTrackerRepositoryContractSuite({
+        migrate: async (client) => {
+          await applySqlMigrations(client, reviewedMigrations, MIGRATION_APPLIED_AT);
+        },
+      }),
+    );
+  },
+  runViewRepositoryContracts: async () => {
+    await api.close();
+    let sequence = 1;
+    const adapter = {
+      name: "official-sqlite-wasm-opfs-sahpool",
+      createIsolatedDatabase: async () => {
+        const client = await openBrowserSqliteDatabase({
+          databaseName: `/coredrill-view-contract-${String(sequence)}.sqlite3`,
+          expectedExisting: false,
+          requestPersistentStorage: false,
+        });
+        sequence += 1;
+        return client;
+      },
+      disposeIsolatedDatabase: async (client: DatabasePort) => {
+        await (client as BrowserSqliteDatabase).delete();
+      },
+    };
+    const reviewedMigrations = await migrations();
+    return runDatabaseContractSuite(
+      adapter,
+      createViewRepositoryContractSuite({
         migrate: async (client) => {
           await applySqlMigrations(client, reviewedMigrations, MIGRATION_APPLIED_AT);
         },
