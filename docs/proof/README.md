@@ -19,3 +19,6 @@ Checklist proof records command, tool version, date, exit status, and artifact p
 - [`DB-001` through `DB-002` tracker schema and repository verification](phase-1-tracker-foundations-verification.md)
 - [`DB-003` pipeline persistence and transaction verification](phase-1-pipeline-persistence-verification.md)
 - [`DB-004` filter, tag, and saved-view verification](phase-1-filter-views-verification.md)
+- [`DB-005` document, version, and attachment-manifest verification](phase-1-document-manifest-verification.md)
+- [`DB-006` audit, local identity, upgrade, and integrity verification](phase-1-audit-integrity-verification.md)
+- [`DB-007` indexed lexical search, FTS5 detection/fallback, and benchmark verification](phase-1-job-search-verification.md)

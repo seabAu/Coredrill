@@ -1,0 +1,212 @@
+{
+  "schemaVersion": 1,
+  "matrixId": "JW-DB-SEARCH-001",
+  "matrixVersion": "1.0.0",
+  "commitSha": "968c0abb020a07777dbcd20508ecb3b99fded79a",
+  "dirtyWorktree": false,
+  "lockfileSha256": "9917fef25bd914c0a53fcee7c59d80d55cbe46cf32e369d775b210b33bffc4e6",
+  "hardwareTargetId": "HW-LOCAL-DIAG",
+  "operatingSystemTargetId": "OS-WIN10-LOCAL",
+  "reviewer": "Codex",
+  "browser": "151.0.4129.107",
+  "engine": "chromium",
+  "headless": true,
+  "appBuild": {
+    "schemaVersion": 84,
+    "sqlite": "3.53.0",
+    "sqlitePackage": "3.53.0-build1",
+    "vite": "8.2.2"
+  },
+  "fixture": {
+    "schemaVersion": 1,
+    "fixtureId": "JW-STG-DATA-001",
+    "seed": "coredrill-storage-benchmark-v1",
+    "descriptionBytesPerRecord": 320,
+    "profiles": [
+      {
+        "id": "DATA-SMOKE",
+        "records": 100
+      },
+      {
+        "id": "DATA-REFERENCE",
+        "records": 2000
+      },
+      {
+        "id": "DATA-STRESS",
+        "records": 10000
+      }
+    ],
+    "privacy": "Deterministic synthetic data only; no production career content."
+  },
+  "results": [
+    {
+      "byteLength": 999424,
+      "completedAt": "2026-08-25T16:29:07.556Z",
+      "fixtureId": "JW-STG-DATA-001",
+      "fixtureSha256": "ae02c976348602197946abc5cf1443c0f92784cffdd786501c2385027fd6a263",
+      "metrics": {
+        "fallbackSearch": {
+          "failures": 0,
+          "maximumMs": 2,
+          "p50Ms": 1,
+          "p95Ms": 1.7,
+          "rawMs": [
+            0.7, 0.9, 0.8, 1.5, 1.3, 1.2, 1.7, 1.3, 0.9, 1.1, 1, 1.1, 1.1, 1, 0.7, 1, 0.7, 1.1, 1.1,
+            1, 0.9, 0.9, 0.8, 2, 1.4, 1.1, 1.1, 1.1, 1, 0.6, 0.8, 0.7, 0.7, 1.1, 1, 1.5, 1, 0.9,
+            0.9, 1.3, 1.4, 1.1, 1, 1.5, 1.7, 0.9, 0.9, 0.9, 1, 0.8
+          ]
+        },
+        "ftsInitialize": {
+          "failures": 0,
+          "maximumMs": 18.9,
+          "p50Ms": 18.9,
+          "p95Ms": 18.9,
+          "rawMs": [18.9]
+        },
+        "ftsSearch": {
+          "failures": 0,
+          "maximumMs": 2.9,
+          "p50Ms": 1.9,
+          "p95Ms": 2.7,
+          "rawMs": [
+            2.4, 2.9, 2.6, 1.7, 2.5, 2.6, 2.2, 1.9, 1.5, 1.6, 1.8, 2.2, 2, 2.3, 2.7, 1.9, 1.8, 1.4,
+            1.9, 1.8, 1.5, 2.2, 2.1, 1.9, 2.6, 1.4, 1.8, 1.6, 1.2, 1.3, 1.5, 1.9, 1.5, 1.7, 2, 2.9,
+            2.2, 1.5, 1.3, 1.4, 2.2, 1.8, 1.3, 2.2, 2.1, 1.6, 2.7, 1.5, 2.4, 1.8
+          ]
+        },
+        "import": {
+          "failures": 0,
+          "maximumMs": 21.9,
+          "p50Ms": 21.9,
+          "p95Ms": 21.9,
+          "rawMs": [21.9]
+        },
+        "migrate": {
+          "failures": 0,
+          "maximumMs": 101.2,
+          "p50Ms": 101.2,
+          "p95Ms": 101.2,
+          "rawMs": [101.2]
+        }
+      },
+      "profileId": "DATA-SMOKE",
+      "records": 100,
+      "searchModes": ["fts5", "normalized-token"],
+      "seed": "coredrill-storage-benchmark-v1",
+      "startedAt": "2026-08-25T16:29:06.862Z"
+    },
+    {
+      "byteLength": 2686976,
+      "completedAt": "2026-08-25T16:29:08.372Z",
+      "fixtureId": "JW-STG-DATA-001",
+      "fixtureSha256": "7b05296a57408ce51689ed37cbcc2bfe8c3fc16ffdd621546ec66db41af01ad0",
+      "metrics": {
+        "fallbackSearch": {
+          "failures": 0,
+          "maximumMs": 6.1,
+          "p50Ms": 4.6,
+          "p95Ms": 5.8,
+          "rawMs": [
+            5.6, 5.3, 4.6, 5.2, 5, 4.2, 4.7, 5.5, 4.9, 4.4, 5.1, 5, 4.2, 4.7, 5, 5.1, 4.3, 4.6, 5.1,
+            4.4, 4.4, 4.3, 4.6, 4.3, 4.4, 6, 4.2, 4.3, 4.6, 6.1, 4.3, 4.6, 5, 5.4, 4.7, 4.6, 5.4,
+            4.7, 4.1, 4.5, 4.7, 4.2, 3.9, 4.4, 5, 4, 4.2, 5.8, 4.8, 4.6
+          ]
+        },
+        "ftsInitialize": {
+          "failures": 0,
+          "maximumMs": 33,
+          "p50Ms": 33,
+          "p95Ms": 33,
+          "rawMs": [33]
+        },
+        "ftsSearch": {
+          "failures": 0,
+          "maximumMs": 3,
+          "p50Ms": 1.8,
+          "p95Ms": 2.9,
+          "rawMs": [
+            2.4, 1.8, 1.4, 2, 1.8, 2, 2.2, 2.8, 2, 2, 1.4, 1.4, 2.1, 1.6, 1.6, 2, 2.9, 2.9, 1.6,
+            1.4, 1.9, 1.5, 1.9, 1.9, 2.3, 1.7, 1.9, 1.4, 1.5, 1.6, 1.9, 1.9, 2.5, 2.2, 2.6, 1.5,
+            1.3, 1.7, 2, 1.8, 1.7, 3, 1.5, 1.8, 1.6, 1.5, 1.6, 1.8, 1.7, 1.7
+          ]
+        },
+        "import": {
+          "failures": 0,
+          "maximumMs": 123.8,
+          "p50Ms": 123.8,
+          "p95Ms": 123.8,
+          "rawMs": [123.8]
+        },
+        "migrate": {
+          "failures": 0,
+          "maximumMs": 90.1,
+          "p50Ms": 90.1,
+          "p95Ms": 90.1,
+          "rawMs": [90.1]
+        }
+      },
+      "profileId": "DATA-REFERENCE",
+      "records": 2000,
+      "searchModes": ["fts5", "normalized-token"],
+      "seed": "coredrill-storage-benchmark-v1",
+      "startedAt": "2026-08-25T16:29:07.568Z"
+    },
+    {
+      "byteLength": 9674752,
+      "completedAt": "2026-08-25T16:29:10.602Z",
+      "fixtureId": "JW-STG-DATA-001",
+      "fixtureSha256": "79538844b480897e918f1525c6afa775d8b6c7dc0dbfa3761b5533219380f9a5",
+      "metrics": {
+        "fallbackSearch": {
+          "failures": 0,
+          "maximumMs": 23.3,
+          "p50Ms": 18.9,
+          "p95Ms": 21.7,
+          "rawMs": [
+            18.6, 18.7, 17.9, 19.8, 18.9, 21.3, 18.7, 23.3, 19.7, 17.7, 18.6, 19.9, 18.6, 17.5,
+            20.8, 17.5, 21.1, 17.1, 17.2, 17.7, 18.4, 19.4, 18.4, 19.1, 19.5, 20.1, 19.1, 16.7,
+            19.3, 17.8, 20.4, 19.1, 22.1, 18.8, 20.9, 18.8, 18.8, 19.3, 18.9, 19.9, 20.3, 19.8,
+            18.5, 18, 18.6, 17.7, 20.3, 19, 21.7, 18.2
+          ]
+        },
+        "ftsInitialize": {
+          "failures": 0,
+          "maximumMs": 74.5,
+          "p50Ms": 74.5,
+          "p95Ms": 74.5,
+          "rawMs": [74.5]
+        },
+        "ftsSearch": {
+          "failures": 0,
+          "maximumMs": 3.4,
+          "p50Ms": 2.3,
+          "p95Ms": 3.1,
+          "rawMs": [
+            3.1, 2.1, 2.3, 2.3, 2.5, 2.3, 2.3, 2.7, 1.7, 2.1, 1.9, 2, 2.5, 2.5, 2.5, 1.9, 1.7, 2.4,
+            2, 2.6, 2.5, 2.7, 2.6, 1.9, 1.9, 2.1, 2.2, 2.5, 2.5, 2.9, 2.3, 1.7, 2.1, 2.6, 2.3, 2.7,
+            3.1, 2.7, 1.8, 2, 2.5, 2.4, 2.7, 3.4, 2.5, 1.6, 1.5, 2.1, 2.2, 2.7
+          ]
+        },
+        "import": {
+          "failures": 0,
+          "maximumMs": 597.2,
+          "p50Ms": 597.2,
+          "p95Ms": 597.2,
+          "rawMs": [597.2]
+        },
+        "migrate": {
+          "failures": 0,
+          "maximumMs": 95.4,
+          "p50Ms": 95.4,
+          "p95Ms": 95.4,
+          "rawMs": [95.4]
+        }
+      },
+      "profileId": "DATA-STRESS",
+      "records": 10000,
+      "searchModes": ["fts5", "normalized-token"],
+      "seed": "coredrill-storage-benchmark-v1",
+      "startedAt": "2026-08-25T16:29:08.379Z"
+    }
+  ]
+}

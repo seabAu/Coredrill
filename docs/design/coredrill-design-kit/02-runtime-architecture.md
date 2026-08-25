@@ -234,6 +234,8 @@ The baseline `SyncPort` exposes capability discovery only and returns the fixed 
 - Phase 1 retrieval is lexical plus structured tags/relations.
 - Embeddings are optional phase 2. At personal scale, store vectors with model/version and calculate similarity locally; do not introduce a server/vector database prematurely.
 
+Phase 1 implements this boundary with migration-owned regular indexes, a normal content view, stable search identities, and a durable content-revision signal. The search repository performs an actual temporary-virtual-table probe before it creates a rebuildable external-content FTS5 artifact; numbered migrations and durable triggers never require the module. A failed probe, initialization, or query degrades to the same bounded all-token contract through escaped parameter-bound normalized-token predicates. Browser SQLite/OPFS and native rusqlite run the shared accelerated and forced-fallback contracts; the [DB-007 verification report](../../proof/phase-1-job-search-verification.md) records query-plan assertions and clean reference/stress benchmarks.
+
 ## COMPOSR relationship
 
 Define an exportable contract:

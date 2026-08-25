@@ -114,6 +114,8 @@ NAT-007 uses Tauri's built-in NSIS bundler for an English, current-user Windows 
 - FTS5 feature detection with a normalized-token fallback.
 - All destructive schema changes require a backup-compatible migration and downgrade/export story.
 
+Phase 1 uses handwritten migration-owned indexes plus a regular search-content view and revision signal. The repository verifies FTS5 by creating a temporary virtual table, treats the external-content index as rebuildable acceleration rather than durable truth, and falls back on escaped parameter-bound normalized-token predicates after probe, initialization, or query failure. The same accelerated/fallback contract runs through browser SQLite/OPFS and native rusqlite; see the [DB-007 query and benchmark report](../../proof/phase-1-job-search-verification.md).
+
 ## 7. Extension stack and boundary
 
 - WXT with React for side panel/popup/options UI.
