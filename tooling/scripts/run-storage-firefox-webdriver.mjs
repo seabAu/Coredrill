@@ -1,12 +1,26 @@
 /* global AbortSignal, fetch, setTimeout */
 
 import { spawn } from "node:child_process";
+import { readdir } from "node:fs/promises";
 
 const firefoxPath = process.env["COREDRILL_FIREFOX_PATH"];
 const expectedVersion = process.env["COREDRILL_EXPECTED_BROWSER_VERSION"];
 const geckodriverPath = process.env["COREDRILL_GECKODRIVER_PATH"] ?? "geckodriver";
 const appUrl = "http://127.0.0.1:4175";
 const webdriverUrl = "http://127.0.0.1:4445";
+const migrationVersions = (await readdir(new URL("../../migrations/", import.meta.url)))
+  .map((fileName) => /^(\d{4})_[a-z0-9_]+\.sql$/u.exec(fileName)?.[1])
+  .filter((value) => value !== undefined)
+  .map(Number)
+  .sort((left, right) => left - right);
+if (
+  migrationVersions.length === 0 ||
+  migrationVersions.some((version, index) => version !== index + 1)
+) {
+  throw new Error("Reviewed SQL migration filenames must be a contiguous positive sequence.");
+}
+const expectedSchemaVersion = migrationVersions.at(-1);
+if (expectedSchemaVersion === undefined) throw new Error("No reviewed SQL migrations were found.");
 
 if (firefoxPath === undefined || firefoxPath.trim().length === 0) {
   throw new Error("COREDRILL_FIREFOX_PATH must name the reviewed Firefox binary.");
@@ -164,11 +178,11 @@ try {
   if (
     proof?.rows !== 1 ||
     proof.restoredRows !== 1 ||
-    proof.schemaVersion !== 25 ||
+    proof.schemaVersion !== expectedSchemaVersion ||
     proof.vfs !== true ||
     proof.worker !== true ||
     !Array.isArray(proof.appliedVersions) ||
-    proof.appliedVersions.length !== 25 ||
+    proof.appliedVersions.length !== expectedSchemaVersion ||
     proof.appliedVersions.some((version, index) => version !== index + 1) ||
     !Array.isArray(proof.reopenedVersions) ||
     proof.reopenedVersions.length !== 0 ||
