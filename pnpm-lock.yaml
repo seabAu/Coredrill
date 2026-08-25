@@ -186,7 +186,14 @@ importers:
         specifier: 3.53.0-build1
         version: 3.53.0-build1
 
-  packages/storage-core: {}
+  packages/storage-core:
+    dependencies:
+      '@coredrill/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@coredrill/domain':
+        specifier: workspace:*
+        version: link:../domain
 
   packages/storage-native:
     dependencies:

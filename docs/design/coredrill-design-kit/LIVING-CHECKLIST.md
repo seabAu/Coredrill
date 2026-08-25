@@ -2,10 +2,10 @@
 
 This file is the single progress ledger. `GOAL.md` defines the outcome; numbered design documents define behavior; `11-decision-register.md` defines accepted choices. This checklist records what is actually proven.
 
-Last design update: 2026-08-24  
-Current milestone: Phase 0 — foundations and risk retirement  
-Current work item: `UXR-004` through `UXR-006` — five-user validation of storage/onboarding, capture triage, Pipeline discovery, job context, and submitted-document retrieval
-Next recommended slice: `UXR-007` through `UXR-008` — Evidence/AI-destination comprehension and Phase 0 interface-decision updates
+Last design update: 2026-08-25
+Current milestone: Phase 1 — local tracker and recovery loop (`GATE-0` human validation remains blocked)
+Current work item: `DB-003` — pipeline, application, status-history, interaction, next-action, interview, and reminder persistence
+Next recommended slice: `DB-004` — tags, saved views, versioned filter AST, and safe SQL compilation
 
 ## How to use this file
 
@@ -23,20 +23,20 @@ Next recommended slice: `UXR-007` through `UXR-008` — Evidence/AI-destination 
 
 | Field | Value |
 |---|---|
-| Milestone | Phase 0 |
-| Item range | `UXR-004` through `UXR-006` |
+| Milestone | Phase 1, with the independent Phase 0 human-validation gate retained below |
+| Item range | `DB-003` |
 | Branch/worktree | `main` / repository root |
-| Started | 2026-08-24 |
-| Expected proof | At least five anonymized participant sessions, including keyboard-heavy and nontechnical coverage, with task outcomes, language/accessibility findings, and prioritized changes |
-| Blocker | Owner must recruit or authorize access to five representative participants; the independent `FND-001` private-reporting-route blocker also remains open below |
-| Next handoff | Run the checked-in moderated script against the disposable prototype, synthesize anonymized findings, then complete `UXR-004` through `UXR-008`; close `FND-001` independently when both private reporting routes are published |
+| Started | 2026-08-25 |
+| Expected proof | Shared forward migrations plus focused status/application/interaction/next-action/interview/reminder repositories, with transactional status-history and rollback tests against browser and native SQLite |
+| Blocker | None for this slice. `UXR-004` through `UXR-008` still require the owner-authorized participant study before the Phase 1 UI lock; `FND-001` remains independently blocked. |
+| Next handoff | Complete `DB-003` without selecting the open `Q-006` default display-stage vocabulary, then continue to `DB-004` without claiming `GATE-0` or locking provisional interface language. |
 
 ## Milestone status
 
 | Phase | Outcome | Status | Gate |
 |---|---|---|---|
-| 0 | Repository, UX prototypes, and risky platform assumptions proven | In progress | `GATE-0` |
-| 1 | Complete local tracker and recovery loop | Not started | `GATE-1` |
+| 0 | Repository, UX prototypes, and risky platform assumptions proven | Blocked on representative human validation | `GATE-0` |
+| 1 | Complete local tracker and recovery loop | In progress | `GATE-1` |
 | 2 | Safe capture, review, and approved extraction | Not started | `GATE-2` |
 | 3 | Career evidence and versioned documents | Not started | `GATE-3` |
 | 4 | Optional evidence-grounded AI assistance | Not started | `GATE-4` |
@@ -150,8 +150,8 @@ Next recommended slice: `UXR-007` through `UXR-008` — Evidence/AI-destination 
 
 ## Database and repositories
 
-- [ ] **DB-001** Implement initial schema and migration ledger for vault/settings. — Proof: _migration + adapter tests_
-- [ ] **DB-002** Implement companies, contacts, jobs, job sources/snapshots, field candidates, and provenance. — Proof: _migration + repository tests_
+- [x] **DB-001** Implement initial schema and migration ledger for vault/settings. — Proof: [shared schema and adapter verification](../../proof/phase-1-tracker-foundations-verification.md)
+- [x] **DB-002** Implement companies, contacts, jobs, job sources/snapshots, field candidates, and provenance. — Proof: [shared schema and repository verification](../../proof/phase-1-tracker-foundations-verification.md)
 - [ ] **DB-003** Implement stages, applications/status history, interactions, next actions, interviews, and reminders. — Proof: _transaction tests_
 - [ ] **DB-004** Implement tags, saved views, filter AST serialization, and safe SQL compiler. — Proof: _property tests_
 - [ ] **DB-005** Implement documents/versions/attachments manifest skeleton without AI dependency. — Proof: _repository tests_

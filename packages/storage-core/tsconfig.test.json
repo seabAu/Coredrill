@@ -1,7 +1,8 @@
 {
   "extends": "../../tooling/typescript/base.json",
   "compilerOptions": {
-    "rootDir": "."
+    "rootDir": ".",
+    "types": ["node", "vitest/globals"]
   },
   "include": ["src/**/*.ts", "test/**/*.ts"]
 }

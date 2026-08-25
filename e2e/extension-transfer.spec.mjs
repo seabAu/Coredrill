@@ -102,8 +102,8 @@ test("durably stores before acknowledgement and safely retries the exact Chromiu
     );
     await callStorage(app, "delete");
     await expect(callStorage(app, "openAndMigrate")).resolves.toMatchObject({
-      appliedVersions: [1, 2],
-      diagnostics: { schemaVersion: 2 },
+      appliedVersions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
+      diagnostics: { schemaVersion: 13 },
     });
 
     const first = await callInbox(app, "pullAndStore", extensionId, { acknowledge: false });

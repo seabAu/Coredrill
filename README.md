@@ -3,7 +3,7 @@
 Coredrill is a standalone, local-first workspace for capturing job opportunities, managing an application pipeline, grounding application materials in truthful career evidence, and making explainable decisions about where to focus.
 
 > [!IMPORTANT]
-> This repository is in Phase 0. It contains governance/build foundations and isolated browser/native storage risk-spike adapters only. It does not yet contain a usable product, product record repositories, capture extension, AI integration, or hosted service.
+> This repository is in Phase 1 engineering. It contains the governed foundation, browser and native SQLite adapters, the user-triggered capture extension, the local document-editor spike, and the first shared tracker repositories. It does not yet contain a usable end-to-end application, the complete application pipeline, AI integration, or a hosted service.
 
 ## Product promise
 
@@ -39,7 +39,7 @@ docs/          ADRs, design authority, policies, and runbooks
 tooling/       Repository checks and shared configuration
 ```
 
-Reserved Phase 0 directories document intended ownership only. Implemented spike directories carry explicit proof boundaries; their presence does not make a provisional runtime choice Accepted.
+Reserved directories document intended ownership only. Implemented spike and foundation directories carry explicit proof boundaries; their presence does not make a provisional runtime choice Accepted.
 
 ## Development
 

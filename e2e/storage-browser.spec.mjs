@@ -47,10 +47,10 @@ test("opens official SQLite in a Worker, persists transactions, and restores a c
 
   await callHarness(sourcePage, "delete");
   const opened = await callHarness(sourcePage, "openAndMigrate");
-  expect(opened.appliedVersions).toEqual([1, 2]);
+  expect(opened.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]);
   expect(opened.diagnostics).toMatchObject({
     adapterName: "official-sqlite-wasm-opfs-sahpool",
-    schemaVersion: 2,
+    schemaVersion: 13,
   });
   expect(["ready", "degraded"]).toContain(opened.diagnostics.health);
   expect(["best-effort", "durable"]).toContain(opened.diagnostics.persistence);
@@ -82,7 +82,7 @@ test("opens official SQLite in a Worker, persists transactions, and restores a c
   ]);
 
   const portable = await callHarness(sourcePage, "exportPortable");
-  expect(portable.schemaVersion).toBe(2);
+  expect(portable.schemaVersion).toBe(13);
   expect(portable.byteLength).toBeGreaterThan(0);
   expect(portable.sha256).toMatch(/^[a-f0-9]{64}$/u);
   await callHarness(sourcePage, "close");

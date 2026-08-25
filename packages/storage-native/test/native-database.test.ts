@@ -7,6 +7,7 @@ import { spawn, spawnSync, type ChildProcessWithoutNullStreams } from "node:chil
 
 import {
   applySqlMigrations,
+  createTrackerRepositoryContractSuite,
   createTransactionSemanticsSuite,
   defineDatabaseContractSuite,
   defineSqlMigrations,
@@ -62,10 +63,24 @@ const probeExecutable = path.join(
     ? "coredrill-native-storage-probe.exe"
     : "coredrill-native-storage-probe",
 );
-const migrationPaths = [
-  path.join(repositoryRoot, "migrations", "0001_vault.sql"),
-  path.join(repositoryRoot, "migrations", "0002_capture_inbox.sql"),
+const migrationDefinitions = [
+  ["0001_vault.sql", "vault"],
+  ["0002_capture_inbox.sql", "capture-inbox"],
+  ["0003_app_setting.sql", "app-setting"],
+  ["0004_location.sql", "location"],
+  ["0005_company.sql", "company"],
+  ["0006_contact.sql", "contact"],
+  ["0007_job.sql", "job"],
+  ["0008_job_source.sql", "job-source"],
+  ["0009_source_snapshot.sql", "source-snapshot"],
+  ["0010_provenance.sql", "provenance"],
+  ["0011_company_alias.sql", "company-alias"],
+  ["0012_contact_point_provenance.sql", "contact-point-provenance"],
+  ["0013_field_value.sql", "field-value"],
 ] as const;
+const migrationPaths = migrationDefinitions.map(([fileName]) =>
+  path.join(repositoryRoot, "migrations", fileName),
+);
 const APPLIED_AT = "2026-08-24T12:00:00.000Z";
 
 class ProbeTransport implements NativeStorageTransport {
@@ -166,20 +181,14 @@ const nextDatabaseName = (): string => {
 };
 
 const migrations = () =>
-  defineSqlMigrations([
-    {
-      version: 1,
-      name: "vault",
-      sha256: migrationSha256[0] as string,
-      sql: migrationSql[0] as string,
-    },
-    {
-      version: 2,
-      name: "capture-inbox",
-      sha256: migrationSha256[1] as string,
-      sql: migrationSql[1] as string,
-    },
-  ]);
+  defineSqlMigrations(
+    migrationDefinitions.map(([, name], index) => ({
+      version: index + 1,
+      name,
+      sha256: migrationSha256[index] as string,
+      sql: migrationSql[index] as string,
+    })),
+  );
 
 const runProbe = (root: string, input = "") =>
   spawnSync(probeExecutable, [root], {
@@ -267,11 +276,11 @@ describe("native SQLite repository and migration contracts", () => {
         name: "applies the shared migration and reopens its ledger",
         run: async (database) => {
           await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
-            schemaVersion: 2,
-            appliedVersions: [1, 2],
+            schemaVersion: 13,
+            appliedVersions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
           });
           await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
-            schemaVersion: 2,
+            schemaVersion: 13,
             appliedVersions: [],
           });
         },
@@ -314,6 +323,24 @@ describe("native SQLite repository and migration contracts", () => {
     });
   });
 
+  it("passes the shared Phase 1 tracker repository suite", async () => {
+    const suite = createTrackerRepositoryContractSuite({
+      migrate: async (database) => {
+        await applySqlMigrations(database, migrations(), APPLIED_AT);
+      },
+    });
+    await expect(runDatabaseContractSuite(nativeAdapter, suite)).resolves.toEqual({
+      adapterName: "native-rusqlite-candidate",
+      suiteName: "phase-1-tracker-repositories",
+      completedCases: [
+        "migrates vault settings and preserves typed JSON",
+        "persists company contact job source snapshot and provenance with bound values",
+        "retains field candidates and requires explicit confirmed replacement",
+        "enforces foreign keys and rolls back an invalid aggregate",
+      ],
+    });
+  });
+
   it("persists the migrated vault across native close and reopen", async () => {
     const databaseName = nextDatabaseName();
     const first = await openNativeSqliteDatabase({ databaseName, transport });
@@ -349,7 +376,7 @@ describe("native SQLite repository and migration contracts", () => {
       adapterName: "native-rusqlite-candidate",
       health: "ready",
       persistence: "durable",
-      schemaVersion: 2,
+      schemaVersion: 13,
     });
     await expect(reopened.delete()).resolves.toBe(true);
   });
