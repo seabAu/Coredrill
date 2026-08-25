@@ -163,9 +163,7 @@ try {
   const restored = await executeHarness("listVaults");
   await executeHarness("delete");
   const repositoryContracts = await executeHarness("runPhase1RepositoryContracts");
-  const repositoryCases = Object.values(repositoryContracts.manifest.components).flatMap(
-    ({ cases }) => Object.values(cases),
-  );
+  const repositoryCases = repositoryContracts.manifest.caseNames;
 
   const proof = {
     appliedVersions: opened.appliedVersions,

@@ -20,9 +20,7 @@ test("runs the versioned Phase 1 repository contract manifest in browser SQLite"
     "document",
     "jobSearch",
   ]);
-  const reviewedCases = Object.values(proof.manifest.components).flatMap(({ cases }) =>
-    Object.values(cases),
-  );
+  const reviewedCases = proof.manifest.caseNames;
   expect(reviewedCases).toHaveLength(15);
   expect(proof.run).toEqual({
     adapterName: "official-sqlite-wasm-opfs-sahpool",
