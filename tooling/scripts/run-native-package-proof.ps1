@@ -315,7 +315,8 @@ try {
     $installedAppSha256 = Get-Sha256 -Path $appPath
     $installedAppSignatureStatus = [string](Get-AuthenticodeSignature -LiteralPath $appPath).Status
 
-    $coldStartTimeoutMilliseconds = [Math]::Max(30000, $ReadyTimeoutMilliseconds)
+    $minimumColdStartTimeoutMilliseconds = if ($env:GITHUB_ACTIONS -eq "true") { 60000 } else { 30000 }
+    $coldStartTimeoutMilliseconds = [Math]::Max($minimumColdStartTimeoutMilliseconds, $ReadyTimeoutMilliseconds)
     for ($index = 0; $index -lt $WarmupRuns; $index += 1) {
         $warmupTimeoutMilliseconds = if ($index -eq 0) { $coldStartTimeoutMilliseconds } else { $ReadyTimeoutMilliseconds }
         $run = Invoke-StartupRun -ExecutablePath $appPath -TimeoutMilliseconds $warmupTimeoutMilliseconds
