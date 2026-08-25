@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-24  
 Current milestone: Phase 0 — foundations and risk retirement  
-Current work item: `UXR-001` through `UXR-003` — low-fidelity desktop/mobile prototypes, neutral sample vault, and scripted usability tasks
-Next recommended slice: `UXR-004` through `UXR-006` — five-user validation, vocabulary/accessibility synthesis, and Phase 0 decision updates
+Current work item: `UXR-004` through `UXR-006` — five-user validation of storage/onboarding, capture triage, Pipeline discovery, job context, and submitted-document retrieval
+Next recommended slice: `UXR-007` through `UXR-008` — Evidence/AI-destination comprehension and Phase 0 interface-decision updates
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `UXR-004` through `UXR-006` — five-user validation, vo
 | Field | Value |
 |---|---|
 | Milestone | Phase 0 |
-| Item range | `UXR-001` through `UXR-003` |
+| Item range | `UXR-004` through `UXR-006` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-24 |
-| Expected proof | Low-fidelity desktop/mobile prototypes; neutral synthetic sample vault; scripted desktop and mobile usability tasks |
-| Blocker | None for this slice; the independent `FND-001` private-reporting-route blocker remains open below |
-| Next handoff | Continue with `UXR-001` through `UXR-003` after the export/accessibility/decision slice; close `FND-001` independently when the owner publishes both private reporting routes |
+| Expected proof | At least five anonymized participant sessions, including keyboard-heavy and nontechnical coverage, with task outcomes, language/accessibility findings, and prioritized changes |
+| Blocker | Owner must recruit or authorize access to five representative participants; the independent `FND-001` private-reporting-route blocker also remains open below |
+| Next handoff | Run the checked-in moderated script against the disposable prototype, synthesize anonymized findings, then complete `UXR-004` through `UXR-008`; close `FND-001` independently when both private reporting routes are published |
 
 ## Milestone status
 
@@ -131,9 +131,9 @@ Next recommended slice: `UXR-004` through `UXR-006` — five-user validation, vo
 
 ## UX prototype and validation
 
-- [ ] **UXR-001** Create low-fidelity shell, Home, Pipeline Board/Table, Inbox review, job workspace, and document studio prototypes. — Proof: _prototype link/artifacts_
-- [ ] **UXR-002** Create mobile quick-add, Pipeline, job detail, and network-preflight prototypes. — Proof: _prototype artifacts_
-- [ ] **UXR-003** Prepare neutral sample vault and ten scripted usability tasks from the interface spec. — Proof: _script + data_
+- [x] **UXR-001** Create low-fidelity shell, Home, Pipeline Board/Table, Inbox review, job workspace, and document studio prototypes. — Proof: [runnable low-fidelity prototype](../../../prototypes/phase-0/README.md) and [browser/visual verification](../../proof/ux-prototype-preparation-verification.md)
+- [x] **UXR-002** Create mobile quick-add, Pipeline, job detail, and network-preflight prototypes. — Proof: [same responsive prototype and local-only fixture](../../../prototypes/phase-0/README.md) with [mobile interaction/visual proof](../../proof/ux-prototype-preparation-verification.md#browser-interaction-and-visual-smoke)
+- [x] **UXR-003** Prepare neutral sample vault and ten scripted usability tasks from the interface spec. — Proof: [versioned synthetic disposable vault](../../../prototypes/phase-0/sample-vault.v1.json) and [moderated ten-task study script](../../../prototypes/phase-0/usability-study-script.md)
 - [ ] **UXR-004** Test with at least five representative users including keyboard-heavy and nontechnical participants. — Proof: _anonymized findings_
 - [ ] **UXR-005** Validate storage-location comprehension and quick-start versus guided onboarding. — Proof: _results_
 - [ ] **UXR-006** Validate capture triage, Board/Table discovery, job-detail context, and exact submitted-document retrieval. — Proof: _results_
@@ -517,6 +517,7 @@ This phase is deliberately deferred. Re-open only after `GATE-6`, demonstrated m
 | 2026-08-21 | `FND-006` | No GitHub remote existed, so the required green workflow URL could not be produced locally. | Configured commit-pinned jobs, ran the full local equivalent, and verified a frozen isolated-clone install/build. | Superseded by the 2026-08-24 follow-up below. | Superseded |
 | 2026-08-24 | `FND-001` | Apache-2.0 and the Coredrill identity are proven, but no durable private conduct or vulnerability-reporting route is published. | Added `ADR-0002`, `D-054`, `D-055`, canonical license text, package metadata checks, governance wording, full local proof, and a public Security-page inspection. | Owner: publish repository-specific private conduct and vulnerability routes before external contribution intake/public distribution. | Open |
 | 2026-08-24 | `FND-006` | The remote was attached, but no green hosted Foundation CI URL had been recorded. | Integrated both histories at `f8d9a18`; [Foundation CI run #1](https://github.com/seabAu/Coredrill/actions/runs/32694914029) completed successfully, including the full-history secret scan. | None; retain the URL as proof and keep future `main` runs green. | Resolved |
+| 2026-08-24 | `UXR-004` through `UXR-008` | The remaining Phase 0 UX gate requires at least five representative human sessions, including keyboard-heavy and nontechnical participants; Codex cannot manufacture participant evidence. | Built and browser-tested the disposable desktop/mobile prototypes, synthetic vault, ten-task moderated script, observation rubric, privacy rule, and stop/synthesis criteria. | Owner: recruit the required participants or authorize access to an appropriate research cohort; then run/anonymize the study and return findings for synthesis and decision updates. | Open |
 
 ## Accepted scope changes
 

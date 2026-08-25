@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <title>Coredrill Phase 0 UX prototype</title>
+    <link rel="stylesheet" href="prototype.css" />
+  </head>
+  <body>
+    <header class="research-bar">
+      <div>
+        <strong>Phase 0 prototype</strong>
+        <span>Fictional data · no changes saved · no network requests</span>
+      </div>
+      <fieldset class="segmented" aria-label="Prototype device">
+        <legend class="sr-only">Prototype device</legend>
+        <button type="button" data-device="desktop" aria-pressed="true">Desktop</button>
+        <button type="button" data-device="mobile" aria-pressed="false">Mobile</button>
+      </fieldset>
+    </header>
+
+    <main class="prototype-frame" data-device-frame="desktop">
+      <aside class="desktop-rail" aria-label="Primary navigation">
+        <div class="brand">Coredrill <small>Sample job search</small></div>
+        <nav id="desktop-nav"></nav>
+        <div class="vault-card">
+          <strong>Browser vault</strong>
+          <span>This browser only</span>
+          <button type="button" data-screen="settings">Backup due</button>
+        </div>
+      </aside>
+
+      <section class="workspace">
+        <header class="utility-bar">
+          <label>Search <input type="search" placeholder="Jobs, documents, companies" /></label>
+          <span class="local-badge">Local · offline ready</span>
+          <button type="button" data-action="open-add">+ Add</button>
+        </header>
+        <div id="desktop-screen" class="screen" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <main class="prototype-frame mobile-frame" data-device-frame="mobile" hidden>
+      <section class="mobile-device">
+        <header class="mobile-header">
+          <div><strong>Coredrill</strong><span>Sample job search · this phone only</span></div>
+          <span class="local-badge">Local</span>
+        </header>
+        <div id="mobile-screen" class="screen" aria-live="polite"></div>
+        <nav id="mobile-nav" class="mobile-nav" aria-label="Mobile navigation"></nav>
+      </section>
+    </main>
+
+    <div id="prototype-status" class="status-region" role="status" aria-live="polite"></div>
+    <script type="module" src="prototype.js"></script>
+  </body>
+</html>

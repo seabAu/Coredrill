@@ -14,3 +14,5 @@ Checklist proof records command, tool version, date, exit status, and artifact p
 - [`EXT-001` through `EXT-003` extension capture/outbox verification](extension-capture-outbox-verification.md)
 - [`EXT-004` through `EXT-006` extension transfer/fallback/security verification](extension-transfer-fallback-security-verification.md)
 - [`EXT-007` through `EXT-008` extension production-package and architecture-decision verification](extension-production-package-verification.md)
+- [`EDT-001` through `EDT-006` local editor, import, and accessible-export verification](document-editor-export-verification.md)
+- [`UXR-001` through `UXR-003` low-fidelity prototype and research-preparation verification](ux-prototype-preparation-verification.md)

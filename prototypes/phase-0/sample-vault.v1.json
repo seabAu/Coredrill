@@ -1,0 +1,125 @@
+{
+  "schemaVersion": 1,
+  "fixtureId": "UXR-SAMPLE-VAULT-001",
+  "synthetic": true,
+  "disposable": true,
+  "notice": "All people, employers, roles, events, URLs, and documents are fictional test data.",
+  "vault": {
+    "name": "Sample job search",
+    "type": "browser-local",
+    "storageLabel": "This browser only",
+    "health": "backup-due",
+    "networkMode": "offline-ready"
+  },
+  "profile": {
+    "displayName": "Taylor Morgan",
+    "evidenceItems": [
+      {
+        "id": "evidence-1",
+        "label": "Led an accessible workflow redesign",
+        "state": "user-confirmed"
+      },
+      {
+        "id": "evidence-2",
+        "label": "Built a TypeScript reporting tool",
+        "state": "source-backed"
+      }
+    ]
+  },
+  "jobs": [
+    {
+      "id": "job-northstar",
+      "title": "Product Engineer",
+      "company": "Northstar Civic Tools",
+      "stage": "Preparing",
+      "location": "Remote · United States",
+      "salary": "$128k–$152k disclosed",
+      "nextAction": "Tailor resume",
+      "nextActionDate": "2026-08-26",
+      "lastActivity": "Captured today",
+      "sourceUrl": "https://jobs.northstar.example/product-engineer",
+      "sourceState": "review-needed",
+      "evidenceCoverage": {
+        "strength": 3,
+        "partial": 2,
+        "gap": 1,
+        "unknown": 1
+      }
+    },
+    {
+      "id": "job-juniper",
+      "title": "Frontend Platform Developer",
+      "company": "Juniper Works",
+      "stage": "Applied",
+      "location": "Hybrid · Philadelphia, PA",
+      "salary": "Unknown",
+      "nextAction": "Follow up",
+      "nextActionDate": "2026-08-27",
+      "lastActivity": "Applied 3 days ago",
+      "sourceUrl": "https://careers.juniper.example/frontend-platform",
+      "sourceState": "confirmed",
+      "evidenceCoverage": {
+        "strength": 4,
+        "partial": 1,
+        "gap": 0,
+        "unknown": 2
+      }
+    },
+    {
+      "id": "job-harborline",
+      "title": "Design Systems Engineer",
+      "company": "Harborline Research",
+      "stage": "Interviewing",
+      "location": "Remote · Eastern time",
+      "salary": "$70–$82 hourly disclosed",
+      "nextAction": "Prepare examples",
+      "nextActionDate": "2026-08-25",
+      "lastActivity": "Interview tomorrow",
+      "sourceUrl": "https://work.harborline.example/design-systems",
+      "sourceState": "confirmed",
+      "evidenceCoverage": {
+        "strength": 5,
+        "partial": 1,
+        "gap": 1,
+        "unknown": 0
+      }
+    }
+  ],
+  "captureInbox": [
+    {
+      "id": "capture-1",
+      "company": "Northstar Civic Tools",
+      "capturedTitle": "Senior Product Engineer",
+      "existingTitle": "Product Engineer",
+      "capturedSalary": "$130k–$160k",
+      "listingSalary": "$128k–$152k",
+      "sourceMethod": "JobPosting JSON-LD and visible page text",
+      "confidence": "partial",
+      "status": "needs-review"
+    }
+  ],
+  "documents": [
+    {
+      "id": "document-1",
+      "name": "Product engineer resume",
+      "kind": "resume",
+      "currentVersion": 4,
+      "submittedSnapshots": [
+        {
+          "jobId": "job-juniper",
+          "version": 3,
+          "submittedAt": "2026-08-21T14:30:00Z",
+          "fileName": "Taylor-Morgan_Juniper-Works_Resume.pdf",
+          "sha256": "synthetic-7d9d7bb220ab2e88"
+        }
+      ]
+    }
+  ],
+  "networkPreflight": {
+    "mode": "direct-byok-demo",
+    "destination": "api.provider.example",
+    "sends": ["Selected job requirements", "Two selected evidence items"],
+    "doesNotSend": ["Full vault", "Other jobs", "Contacts", "Submitted documents"],
+    "requiresConfirmation": true
+  }
+}
