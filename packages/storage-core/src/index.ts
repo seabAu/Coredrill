@@ -100,6 +100,15 @@ export {
   type JobSearchContractSetup,
 } from "./job-search-contract-harness.js";
 export {
+  createPhase1RepositoryContractSuite,
+  type Phase1RepositoryContractSetup,
+} from "./phase-1-repository-contract-harness.js";
+export {
+  PHASE_1_REPOSITORY_CONTRACT_CASE_NAMES,
+  PHASE_1_REPOSITORY_CONTRACT_MANIFEST,
+  type Phase1RepositoryContractManifest,
+} from "./repository-contract-manifest.js";
+export {
   JOB_SEARCH_LIMITS,
   JobSearchRepository,
   normalizeJobSearchTokens,

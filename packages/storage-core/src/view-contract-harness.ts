@@ -7,6 +7,7 @@ import {
   type DatabaseContractSuite,
 } from "./contract-harness.js";
 import type { DatabasePort } from "./database-port.js";
+import { PHASE_1_REPOSITORY_CONTRACT_MANIFEST } from "./repository-contract-manifest.js";
 import { createTrackerRepositories } from "./tracker-repositories.js";
 import { ViewRepositoryConflictError, createViewRepositories } from "./view-repositories.js";
 
@@ -101,9 +102,9 @@ const createJob = async (database: DatabasePort): Promise<void> => {
 export const createViewRepositoryContractSuite = (
   setup: ViewRepositoryContractSetup,
 ): DatabaseContractSuite =>
-  defineDatabaseContractSuite("phase-1-view-repositories", [
+  defineDatabaseContractSuite(PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components.view.suiteName, [
     {
-      name: "assigns active tags idempotently and enforces job relationships",
+      name: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components.view.cases.assignTags,
       run: async (database) => {
         await setup.migrate(database);
         await createJob(database);
@@ -158,7 +159,7 @@ export const createViewRepositoryContractSuite = (
       },
     },
     {
-      name: "round-trips versioned saved views with optimistic updates",
+      name: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components.view.cases.roundTripSavedViews,
       run: async (database) => {
         await setup.migrate(database);
         const savedViews = createViewRepositories(database).savedViews;

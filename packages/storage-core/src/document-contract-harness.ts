@@ -7,6 +7,7 @@ import {
   type DatabaseContractSuite,
 } from "./contract-harness.js";
 import { sqlStatement, type DatabasePort, type QueryRow } from "./database-port.js";
+import { PHASE_1_REPOSITORY_CONTRACT_MANIFEST } from "./repository-contract-manifest.js";
 import {
   DocumentRepositoryConflictError,
   createDocumentRepositories,
@@ -142,9 +143,9 @@ const createJob = async (database: DatabasePort): Promise<void> => {
 export const createDocumentRepositoryContractSuite = (
   setup: DocumentRepositoryContractSetup,
 ): DatabaseContractSuite =>
-  defineDatabaseContractSuite("phase-1-document-repositories", [
+  defineDatabaseContractSuite(PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components.document.suiteName, [
     {
-      name: "persists canonical IR versions with explicit immutable lineage",
+      name: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components.document.cases.persistVersions,
       run: async (database) => {
         await setup.migrate(database);
         await createDocuments(database);
@@ -238,7 +239,7 @@ export const createDocumentRepositoryContractSuite = (
       },
     },
     {
-      name: "links jobs and content-addressed attachment manifests without storing bytes",
+      name: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components.document.cases.linkAttachments,
       run: async (database) => {
         await setup.migrate(database);
         await createDocuments(database);

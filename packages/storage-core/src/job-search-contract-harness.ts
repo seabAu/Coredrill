@@ -7,6 +7,7 @@ import {
 } from "./contract-harness.js";
 import { sqlStatement, type DatabasePort } from "./database-port.js";
 import { openJobSearchRepository } from "./job-search.js";
+import { PHASE_1_REPOSITORY_CONTRACT_MANIFEST } from "./repository-contract-manifest.js";
 import { createTrackerRepositories } from "./tracker-repositories.js";
 
 export interface JobSearchContractSetup {
@@ -132,9 +133,9 @@ const assertSearchBehavior = async (
 export const createJobSearchContractSuite = (
   setup: JobSearchContractSetup,
 ): DatabaseContractSuite =>
-  defineDatabaseContractSuite("phase-1-job-search", [
+  defineDatabaseContractSuite(PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components.jobSearch.suiteName, [
     {
-      name: "detects FTS5 and refreshes the accelerated lexical index",
+      name: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components.jobSearch.cases.accelerateWithFts5,
       run: async (database) => {
         await setup.migrate(database);
         await seedSearchRecords(database);
@@ -146,7 +147,7 @@ export const createJobSearchContractSuite = (
       },
     },
     {
-      name: "keeps normalized-token search functional with FTS5 disabled",
+      name: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components.jobSearch.cases.preserveFallback,
       run: async (database) => {
         await setup.migrate(database);
         await seedSearchRecords(database);

@@ -7,14 +7,12 @@ import { describe, expect, it } from "vitest";
 
 import {
   applySqlMigrations,
-  createDocumentRepositoryContractSuite,
-  createJobSearchContractSuite,
-  createPipelineRepositoryContractSuite,
-  createTrackerRepositoryContractSuite,
-  createViewRepositoryContractSuite,
+  createPhase1RepositoryContractSuite,
   defineSqlMigrations,
   normalizeJobSearchTokens,
   openJobSearchRepository,
+  PHASE_1_REPOSITORY_CONTRACT_CASE_NAMES,
+  PHASE_1_REPOSITORY_CONTRACT_MANIFEST,
   runDatabaseContractSuite,
   sqlStatement,
   type DatabaseContractAdapter,
@@ -311,81 +309,8 @@ describe("Phase 1 tracker repository contracts", () => {
     }
   });
 
-  it("passes the same migration and repository cases in fast in-memory SQLite", async () => {
-    const suite = createTrackerRepositoryContractSuite({
-      migrate: async (database) => {
-        await applySqlMigrations(database, migrations, APPLIED_AT);
-      },
-    });
-
-    await expect(runDatabaseContractSuite(adapter, suite)).resolves.toEqual({
-      adapterName: "node-sqlite-unit-contract",
-      suiteName: "phase-1-tracker-repositories",
-      completedCases: [
-        "migrates vault settings and preserves typed JSON",
-        "persists company contact job source snapshot and provenance with bound values",
-        "retains field candidates and requires explicit confirmed replacement",
-        "enforces foreign keys and rolls back an invalid aggregate",
-        "persists a stable local device identity with monotonic audit fields",
-        "enforces document selection lineage and append-only integrity in SQLite",
-      ],
-    });
-  });
-
-  it("passes pipeline projections and history in fast in-memory SQLite", async () => {
-    const suite = createPipelineRepositoryContractSuite({
-      migrate: async (database) => {
-        await applySqlMigrations(database, migrations, APPLIED_AT);
-      },
-    });
-
-    await expect(runDatabaseContractSuite(adapter, suite)).resolves.toEqual({
-      adapterName: "node-sqlite-unit-contract",
-      suiteName: "phase-1-pipeline-repositories",
-      completedCases: [
-        "stores custom stages without selecting default display vocabulary",
-        "changes job and application status with atomic append-only history",
-        "persists interactions actions interviews and local reminders transactionally",
-      ],
-    });
-  });
-
-  it("passes tag and saved-view contracts in fast in-memory SQLite", async () => {
-    const suite = createViewRepositoryContractSuite({
-      migrate: async (database) => {
-        await applySqlMigrations(database, migrations, APPLIED_AT);
-      },
-    });
-
-    await expect(runDatabaseContractSuite(adapter, suite)).resolves.toEqual({
-      adapterName: "node-sqlite-unit-contract",
-      suiteName: "phase-1-view-repositories",
-      completedCases: [
-        "assigns active tags idempotently and enforces job relationships",
-        "round-trips versioned saved views with optimistic updates",
-      ],
-    });
-  });
-
-  it("passes document version and attachment-manifest contracts in fast in-memory SQLite", async () => {
-    const suite = createDocumentRepositoryContractSuite({
-      migrate: async (database) => {
-        await applySqlMigrations(database, migrations, APPLIED_AT);
-      },
-    });
-
-    await expect(runDatabaseContractSuite(adapter, suite)).resolves.toEqual({
-      adapterName: "node-sqlite-unit-contract",
-      suiteName: "phase-1-document-repositories",
-      completedCases: [
-        "persists canonical IR versions with explicit immutable lineage",
-        "links jobs and content-addressed attachment manifests without storing bytes",
-      ],
-    });
-  });
-
-  it("passes accelerated and fallback job-search contracts in fast in-memory SQLite", async () => {
-    const suite = createJobSearchContractSuite({
+  it("passes the versioned Phase 1 repository contract manifest in fast SQLite", async () => {
+    const suite = createPhase1RepositoryContractSuite({
       expectedFts5: true,
       migrate: async (database) => {
         await applySqlMigrations(database, migrations, APPLIED_AT);
@@ -394,11 +319,8 @@ describe("Phase 1 tracker repository contracts", () => {
 
     await expect(runDatabaseContractSuite(adapter, suite)).resolves.toEqual({
       adapterName: "node-sqlite-unit-contract",
-      suiteName: "phase-1-job-search",
-      completedCases: [
-        "detects FTS5 and refreshes the accelerated lexical index",
-        "keeps normalized-token search functional with FTS5 disabled",
-      ],
+      suiteName: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.suiteName,
+      completedCases: PHASE_1_REPOSITORY_CONTRACT_CASE_NAMES,
     });
   });
 });

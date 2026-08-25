@@ -7,16 +7,14 @@ import {
 } from "@coredrill/storage-browser";
 import {
   applySqlMigrations,
-  createDocumentRepositoryContractSuite,
-  createJobSearchContractSuite,
-  createPipelineRepositoryContractSuite,
-  createTrackerRepositoryContractSuite,
-  createViewRepositoryContractSuite,
+  createPhase1RepositoryContractSuite,
   defineSqlMigrations,
+  PHASE_1_REPOSITORY_CONTRACT_MANIFEST,
   runDatabaseContractSuite,
   sqlStatement,
   type DatabaseContractRunResult,
   type DatabasePort,
+  type Phase1RepositoryContractManifest,
   type PortableDatabase,
   type QueryRow,
   type StorageDiagnostics,
@@ -123,6 +121,11 @@ interface OpenAttempt {
   readonly proof?: OpenMigrationProof;
 }
 
+interface Phase1RepositoryContractProof {
+  readonly manifest: Phase1RepositoryContractManifest;
+  readonly run: DatabaseContractRunResult;
+}
+
 export interface CoredrillStorageSpikeApi {
   openAndMigrate(options?: OpenOptions): Promise<OpenMigrationProof>;
   tryOpenAndMigrate(options?: OpenOptions): Promise<OpenAttempt>;
@@ -136,11 +139,7 @@ export interface CoredrillStorageSpikeApi {
   delete(): Promise<boolean>;
   runBenchmark(input: StorageBenchmarkInput): Promise<StorageBenchmarkResult>;
   runJobSearchBenchmark(input: StorageBenchmarkInput): Promise<JobSearchBenchmarkResult>;
-  runDocumentRepositoryContracts(): Promise<DatabaseContractRunResult>;
-  runJobSearchContracts(): Promise<DatabaseContractRunResult>;
-  runPipelineRepositoryContracts(): Promise<DatabaseContractRunResult>;
-  runTrackerRepositoryContracts(): Promise<DatabaseContractRunResult>;
-  runViewRepositoryContracts(): Promise<DatabaseContractRunResult>;
+  runPhase1RepositoryContracts(): Promise<Phase1RepositoryContractProof>;
 }
 
 declare global {
@@ -496,6 +495,25 @@ const toPortableDatabase = (portable: PortableDatabaseJson): PortableDatabase =>
   bytes: base64ToBytes(portable.bytesBase64),
 });
 
+const createBrowserContractAdapter = () => {
+  let sequence = 1;
+  return {
+    name: "official-sqlite-wasm-opfs-sahpool",
+    createIsolatedDatabase: async () => {
+      const client = await openBrowserSqliteDatabase({
+        databaseName: `/coredrill-phase-1-contract-${String(sequence)}.sqlite3`,
+        expectedExisting: false,
+        requestPersistentStorage: false,
+      });
+      sequence += 1;
+      return client;
+    },
+    disposeIsolatedDatabase: async (client: DatabasePort) => {
+      await (client as BrowserSqliteDatabase).delete();
+    },
+  };
+};
+
 const api: CoredrillStorageSpikeApi = {
   openAndMigrate: async (options = {}) => {
     const client = await getDatabase(options);
@@ -592,144 +610,22 @@ const api: CoredrillStorageSpikeApi = {
   },
   runBenchmark: (input) => runStorageBenchmark(input),
   runJobSearchBenchmark: async (input) => runJobSearchBenchmark(input, await migrations()),
-  runDocumentRepositoryContracts: async () => {
+  runPhase1RepositoryContracts: async () => {
     await api.close();
-    let sequence = 1;
-    const adapter = {
-      name: "official-sqlite-wasm-opfs-sahpool",
-      createIsolatedDatabase: async () => {
-        const client = await openBrowserSqliteDatabase({
-          databaseName: `/coredrill-document-contract-${String(sequence)}.sqlite3`,
-          expectedExisting: false,
-          requestPersistentStorage: false,
-        });
-        sequence += 1;
-        return client;
-      },
-      disposeIsolatedDatabase: async (client: DatabasePort) => {
-        await (client as BrowserSqliteDatabase).delete();
-      },
-    };
     const reviewedMigrations = await migrations();
-    return runDatabaseContractSuite(
-      adapter,
-      createDocumentRepositoryContractSuite({
-        migrate: async (client) => {
-          await applySqlMigrations(client, reviewedMigrations, MIGRATION_APPLIED_AT);
-        },
-      }),
-    );
-  },
-  runJobSearchContracts: async () => {
-    await api.close();
-    let sequence = 1;
-    const adapter = {
-      name: "official-sqlite-wasm-opfs-sahpool",
-      createIsolatedDatabase: async () => {
-        const client = await openBrowserSqliteDatabase({
-          databaseName: `/coredrill-search-contract-${String(sequence)}.sqlite3`,
-          expectedExisting: false,
-          requestPersistentStorage: false,
-        });
-        sequence += 1;
-        return client;
-      },
-      disposeIsolatedDatabase: async (client: DatabasePort) => {
-        await (client as BrowserSqliteDatabase).delete();
-      },
-    };
-    const reviewedMigrations = await migrations();
-    return runDatabaseContractSuite(
-      adapter,
-      createJobSearchContractSuite({
+    const run = await runDatabaseContractSuite(
+      createBrowserContractAdapter(),
+      createPhase1RepositoryContractSuite({
         expectedFts5: true,
         migrate: async (client) => {
           await applySqlMigrations(client, reviewedMigrations, MIGRATION_APPLIED_AT);
         },
       }),
     );
-  },
-  runPipelineRepositoryContracts: async () => {
-    await api.close();
-    let sequence = 1;
-    const adapter = {
-      name: "official-sqlite-wasm-opfs-sahpool",
-      createIsolatedDatabase: async () => {
-        const client = await openBrowserSqliteDatabase({
-          databaseName: `/coredrill-pipeline-contract-${String(sequence)}.sqlite3`,
-          requestPersistentStorage: false,
-        });
-        sequence += 1;
-        return client;
-      },
-      disposeIsolatedDatabase: async (client: DatabasePort) => {
-        await (client as BrowserSqliteDatabase).delete();
-      },
-    };
-    const reviewedMigrations = await migrations();
-    return runDatabaseContractSuite(
-      adapter,
-      createPipelineRepositoryContractSuite({
-        migrate: async (client) => {
-          await applySqlMigrations(client, reviewedMigrations, MIGRATION_APPLIED_AT);
-        },
-      }),
-    );
-  },
-  runTrackerRepositoryContracts: async () => {
-    await api.close();
-    let sequence = 1;
-    const adapter = {
-      name: "official-sqlite-wasm-opfs-sahpool",
-      createIsolatedDatabase: async () => {
-        const client = await openBrowserSqliteDatabase({
-          databaseName: `/coredrill-tracker-contract-${String(sequence)}.sqlite3`,
-          requestPersistentStorage: false,
-        });
-        sequence += 1;
-        return client;
-      },
-      disposeIsolatedDatabase: async (client: DatabasePort) => {
-        await (client as BrowserSqliteDatabase).delete();
-      },
-    };
-    const reviewedMigrations = await migrations();
-    return runDatabaseContractSuite(
-      adapter,
-      createTrackerRepositoryContractSuite({
-        migrate: async (client) => {
-          await applySqlMigrations(client, reviewedMigrations, MIGRATION_APPLIED_AT);
-        },
-      }),
-    );
-  },
-  runViewRepositoryContracts: async () => {
-    await api.close();
-    let sequence = 1;
-    const adapter = {
-      name: "official-sqlite-wasm-opfs-sahpool",
-      createIsolatedDatabase: async () => {
-        const client = await openBrowserSqliteDatabase({
-          databaseName: `/coredrill-view-contract-${String(sequence)}.sqlite3`,
-          expectedExisting: false,
-          requestPersistentStorage: false,
-        });
-        sequence += 1;
-        return client;
-      },
-      disposeIsolatedDatabase: async (client: DatabasePort) => {
-        await (client as BrowserSqliteDatabase).delete();
-      },
-    };
-    const reviewedMigrations = await migrations();
-    return runDatabaseContractSuite(
-      adapter,
-      createViewRepositoryContractSuite({
-        migrate: async (client) => {
-          await applySqlMigrations(client, reviewedMigrations, MIGRATION_APPLIED_AT);
-        },
-      }),
-    );
+    return Object.freeze({
+      manifest: PHASE_1_REPOSITORY_CONTRACT_MANIFEST,
+      run,
+    });
   },
 };
 

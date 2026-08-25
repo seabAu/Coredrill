@@ -9,6 +9,7 @@ import {
 import { sqlStatement, type DatabasePort, type QueryRow } from "./database-port.js";
 import { createDocumentRepositories } from "./document-repositories.js";
 import { createPipelineRepositories } from "./pipeline-repositories.js";
+import { PHASE_1_REPOSITORY_CONTRACT_MANIFEST } from "./repository-contract-manifest.js";
 import {
   TrackerRepositoryConflictError,
   createTrackerRepositories,
@@ -235,9 +236,9 @@ const appendFieldValues = async (database: DatabasePort): Promise<void> => {
 export const createTrackerRepositoryContractSuite = (
   setup: TrackerRepositoryContractSetup,
 ): DatabaseContractSuite =>
-  defineDatabaseContractSuite("phase-1-tracker-repositories", [
+  defineDatabaseContractSuite(PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components.tracker.suiteName, [
     {
-      name: "migrates vault settings and preserves typed JSON",
+      name: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components.tracker.cases.migrateVaultSettings,
       run: async (database) => {
         await setup.migrate(database);
         const repositories = createTrackerRepositories(database);
@@ -278,7 +279,7 @@ export const createTrackerRepositoryContractSuite = (
       },
     },
     {
-      name: "persists company contact job source snapshot and provenance with bound values",
+      name: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components.tracker.cases.persistSourceAggregate,
       run: async (database) => {
         await setup.migrate(database);
         await createSourceAggregate(database);
@@ -309,7 +310,7 @@ export const createTrackerRepositoryContractSuite = (
       },
     },
     {
-      name: "retains field candidates and requires explicit confirmed replacement",
+      name: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components.tracker.cases.retainFieldCandidates,
       run: async (database) => {
         await setup.migrate(database);
         await createSourceAggregate(database);
@@ -359,7 +360,7 @@ export const createTrackerRepositoryContractSuite = (
       },
     },
     {
-      name: "enforces foreign keys and rolls back an invalid aggregate",
+      name: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components.tracker.cases.rollbackInvalidAggregate,
       run: async (database) => {
         await setup.migrate(database);
         const repositories = createTrackerRepositories(database);
@@ -393,7 +394,7 @@ export const createTrackerRepositoryContractSuite = (
       },
     },
     {
-      name: "persists a stable local device identity with monotonic audit fields",
+      name: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components.tracker.cases.persistLocalDevice,
       run: async (database) => {
         await setup.migrate(database);
         const devices = createTrackerRepositories(database).devices;
@@ -503,7 +504,7 @@ export const createTrackerRepositoryContractSuite = (
       },
     },
     {
-      name: "enforces document selection lineage and append-only integrity in SQLite",
+      name: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components.tracker.cases.enforceDocumentIntegrity,
       run: async (database) => {
         await setup.migrate(database);
         await createSourceAggregate(database);

@@ -6,6 +6,7 @@ import {
   type DatabaseContractSuite,
 } from "./contract-harness.js";
 import type { DatabasePort } from "./database-port.js";
+import { PHASE_1_REPOSITORY_CONTRACT_MANIFEST } from "./repository-contract-manifest.js";
 import {
   PipelineRepositoryConflictError,
   changePipelineStatus,
@@ -143,9 +144,9 @@ const createPipelineAggregate = async (database: DatabasePort): Promise<void> =>
 export const createPipelineRepositoryContractSuite = (
   setup: PipelineRepositoryContractSetup,
 ): DatabaseContractSuite =>
-  defineDatabaseContractSuite("phase-1-pipeline-repositories", [
+  defineDatabaseContractSuite(PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components.pipeline.suiteName, [
     {
-      name: "stores custom stages without selecting default display vocabulary",
+      name: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components.pipeline.cases.persistCustomStages,
       run: async (database) => {
         await setup.migrate(database);
         await createPipelineAggregate(database);
@@ -178,7 +179,7 @@ export const createPipelineRepositoryContractSuite = (
       },
     },
     {
-      name: "changes job and application status with atomic append-only history",
+      name: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components.pipeline.cases.changeStatus,
       run: async (database) => {
         await setup.migrate(database);
         await createPipelineAggregate(database);
@@ -265,7 +266,7 @@ export const createPipelineRepositoryContractSuite = (
       },
     },
     {
-      name: "persists interactions actions interviews and local reminders transactionally",
+      name: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components.pipeline.cases.persistScheduling,
       run: async (database) => {
         await setup.migrate(database);
         await createPipelineAggregate(database);

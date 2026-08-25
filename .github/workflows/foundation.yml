@@ -150,7 +150,7 @@ jobs:
       - name: Install exact dependency graph
         run: pnpm install --frozen-lockfile
 
-      - name: Prove native SQLite contracts
+      - name: Prove identical Phase 1 repository manifest and native SQLite contracts
         run: pnpm test:storage-native
 
       - name: Prove Tauri app-data resolution
@@ -214,7 +214,7 @@ jobs:
       - name: Install exact dependency graph
         run: pnpm install --frozen-lockfile
 
-      - name: Prove native SQLite contracts
+      - name: Prove identical Phase 1 repository manifest and native SQLite contracts
         run: pnpm test:storage-native
 
       - name: Prove redacted macOS Keychain lifecycle
@@ -290,7 +290,7 @@ jobs:
       - name: Install exact dependency graph
         run: pnpm install --frozen-lockfile
 
-      - name: Prove native SQLite contracts
+      - name: Prove identical Phase 1 repository manifest and native SQLite contracts
         run: pnpm test:storage-native
 
       - name: Prove redacted FreeDesktop Secret Service lifecycle
@@ -356,6 +356,13 @@ jobs:
           COREDRILL_TEST_MATCH: storage-browser.spec.mjs
         run: pnpm test:storage-browser
 
+      - name: Prove identical Phase 1 repository manifest in browser SQLite
+        env:
+          COREDRILL_BROWSER_EXECUTABLE_PATH: ${{ steps.chrome.outputs.chrome-path }}
+          COREDRILL_EXPECTED_BROWSER_VERSION: ${{ matrix.chrome }}
+          COREDRILL_TEST_MATCH: storage-tracker-repositories.spec.mjs
+        run: pnpm test:storage-browser
+
       - name: Prove local document editing and imports
         env:
           COREDRILL_BROWSER_EXECUTABLE_PATH: ${{ steps.chrome.outputs.chrome-path }}
@@ -408,7 +415,7 @@ jobs:
         with:
           geckodriver-version: "0.37.1"
 
-      - name: Prove SQLite/OPFS lifecycle
+      - name: Prove SQLite/OPFS lifecycle and identical Phase 1 repository manifest
         env:
           COREDRILL_EXPECTED_BROWSER_VERSION: ${{ matrix.firefox }}
           COREDRILL_FIREFOX_PATH: ${{ steps.firefox.outputs.firefox-path }}

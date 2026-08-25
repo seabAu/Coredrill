@@ -162,6 +162,10 @@ try {
   await executeHarness("restorePortable", portable);
   const restored = await executeHarness("listVaults");
   await executeHarness("delete");
+  const repositoryContracts = await executeHarness("runPhase1RepositoryContracts");
+  const repositoryCases = Object.values(repositoryContracts.manifest.components).flatMap(
+    ({ cases }) => Object.values(cases),
+  );
 
   const proof = {
     appliedVersions: opened.appliedVersions,
@@ -169,6 +173,9 @@ try {
     reopenedVersions: reopened.appliedVersions,
     restoredRows: restored.length,
     rows: rows.length,
+    repositoryContractCases: repositoryCases.length,
+    repositoryContractSuite: repositoryContracts.run.suiteName,
+    repositoryContractVersion: repositoryContracts.manifest.schemaVersion,
     schemaVersion: portable.schemaVersion,
     sha256: portable.sha256,
     sqlite: opened.diagnostics.details.find((detail) => detail.startsWith("sqlite-version:")),
@@ -178,6 +185,14 @@ try {
   if (
     proof?.rows !== 1 ||
     proof.restoredRows !== 1 ||
+    proof.repositoryContractCases !== 15 ||
+    proof.repositoryContractSuite !== repositoryContracts.manifest.suiteName ||
+    proof.repositoryContractVersion !== 1 ||
+    !Array.isArray(repositoryContracts.run.completedCases) ||
+    repositoryContracts.run.completedCases.length !== repositoryCases.length ||
+    repositoryContracts.run.completedCases.some(
+      (caseName, index) => caseName !== repositoryCases[index],
+    ) ||
     proof.schemaVersion !== expectedSchemaVersion ||
     proof.vfs !== true ||
     proof.worker !== true ||
