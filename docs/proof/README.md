@@ -18,3 +18,4 @@ Checklist proof records command, tool version, date, exit status, and artifact p
 - [`UXR-001` through `UXR-003` low-fidelity prototype and research-preparation verification](ux-prototype-preparation-verification.md)
 - [`DB-001` through `DB-002` tracker schema and repository verification](phase-1-tracker-foundations-verification.md)
 - [`DB-003` pipeline persistence and transaction verification](phase-1-pipeline-persistence-verification.md)
+- [`DB-004` filter, tag, and saved-view verification](phase-1-filter-views-verification.md)
