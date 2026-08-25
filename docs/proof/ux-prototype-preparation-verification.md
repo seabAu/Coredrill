@@ -59,6 +59,14 @@ because CSS overrode `hidden`, and the mobile preflight label collided with its 
 The final pass showed one visible device shell, a clear desktop hierarchy, and an
 unclipped mobile confirmation/action layout. Browser error/warning logs were empty.
 
+## Hosted verification
+
+Commit `7cb9f768b5e056a1bd33d5039a08b037e06890e9` passed the complete hosted
+[Foundation CI run](https://github.com/seabAu/Coredrill/actions/runs/32844411040).
+The successful run covered the aggregate build, static, test, and policy gate; the
+full-history secret scan; both pinned Chrome and Firefox version lanes; extension
+transfer packaging; and installable Windows, macOS, and Linux application proof.
+
 ## Next gate and owner action
 
 `UXR-004` through `UXR-006` require at least five representative human sessions; one
