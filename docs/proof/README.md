@@ -17,3 +17,4 @@ Checklist proof records command, tool version, date, exit status, and artifact p
 - [`EDT-001` through `EDT-006` local editor, import, and accessible-export verification](document-editor-export-verification.md)
 - [`UXR-001` through `UXR-003` low-fidelity prototype and research-preparation verification](ux-prototype-preparation-verification.md)
 - [`DB-001` through `DB-002` tracker schema and repository verification](phase-1-tracker-foundations-verification.md)
+- [`DB-003` pipeline persistence and transaction verification](phase-1-pipeline-persistence-verification.md)

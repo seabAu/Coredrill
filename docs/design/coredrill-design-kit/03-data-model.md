@@ -86,9 +86,13 @@ Seed categories: `viewed`, `saved`, `preparing`, `applied`, `response`, `intervi
 
 `interaction(id, job_id, contact_id, type, occurred_at, direction, summary, next_action_at)`
 
+`next_action(id, job_id, application_id, interaction_id, title, due_at, timezone, state, completed_at)`
+
 `interview(id, application_id, stage_name, starts_at, timezone, duration_minutes, location_or_url, contact_ids_json, preparation_notes, outcome)`
 
 `application(id, job_id, applied_at, channel, current_status_id, selected_resume_version_id, selected_cover_letter_version_id, notes)`
+
+`reminder(id, job_id, next_action_id, interview_id, remind_at, timezone, state, note, fired_at)`
 
 One job may have multiple applications only when the user explicitly creates them; otherwise enforce one active application per job.
 
@@ -176,9 +180,9 @@ Validate maximum depth/count and field/operator compatibility. Compile to parame
 - Older clients fail safely on newer schema; they never attempt a downgrade write.
 - Every release tests fresh install, each supported upgrade path, failed migration rollback, export/restore, and cross-adapter logical equivalence.
 
-The first shared migration, `migrations/0001_vault.sql`, creates the strict vault root. `migrations/0002_capture_inbox.sql` adds the durable extension receipt needed to commit a validated source envelope before acknowledgement; it records envelope ID, content hash, checksum, sender ID/sequence/nonce, timestamps, receipt path, and complete envelope JSON, but does not promote the capture into a reviewed job record. Phase 1 migrations `0003` through `0013` add settings, locations, companies, contacts, jobs, job sources, immutable source snapshots, provenance, company aliases, contact-point provenance, and retained field-value candidates. User confirmation metadata is all-or-none, and a confirmed field candidate can be superseded only through the focused explicit replacement transaction.
+The first shared migration, `migrations/0001_vault.sql`, creates the strict vault root. `migrations/0002_capture_inbox.sql` adds the durable extension receipt needed to commit a validated source envelope before acknowledgement; it records envelope ID, content hash, checksum, sender ID/sequence/nonce, timestamps, receipt path, and complete envelope JSON, but does not promote the capture into a reviewed job record. Phase 1 migrations `0003` through `0013` add settings, locations, companies, contacts, jobs, job sources, immutable source snapshots, provenance, company aliases, contact-point provenance, and retained field-value candidates. User confirmation metadata is all-or-none, and a confirmed field candidate can be superseded only through the focused explicit replacement transaction. Migrations `0014` through `0022` add custom status definitions, job status/next-action projections, explicit application attempts, append-only status events, interactions, next actions, interviews, and local reminders. They do not seed provisional display-stage vocabulary; application document-version references remain nullable validated IDs until the document tables arrive in `DB-005`.
 
-The storage-core migration runner validates contiguous positive versions, stable kebab-case names, lowercase SHA-256 checksums, and nonempty SQL. It creates a strict `coredrill_schema_migration(version, name, sha256, applied_at)` ledger, verifies every previously applied row against reviewed source, applies new SQL and `PRAGMA user_version` in one adapter transaction, and fails closed on source drift. A shared repository contract suite applies all migrations and exercises parameter binding, foreign-key rollback, candidate retention, and explicit confirmed replacement against browser and native SQLite. The schema remains incomplete until the later Phase 1 repository slices add pipeline, application, document, audit/tombstone, index, and FTS structures with their own compatibility proof.
+The storage-core migration runner validates contiguous positive versions, stable kebab-case names, lowercase SHA-256 checksums, and nonempty SQL. It creates a strict `coredrill_schema_migration(version, name, sha256, applied_at)` ledger, verifies every previously applied row against reviewed source, applies new SQL and `PRAGMA user_version` in one adapter transaction, and fails closed on source drift. Shared repository contract suites apply all migrations and exercise parameter binding, foreign-key rollback, candidate retention, explicit confirmed replacement, status-history rollback, explicit terminal-stage reopen, additional-application authorization, and next-action projection consistency against browser and native SQLite. The schema remains incomplete until later Phase 1 slices add tags/saved views, documents, audit/tombstone constraints, indexes, and FTS structures with their own compatibility proof.
 
 ## Future sync readiness
 

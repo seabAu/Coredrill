@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-25
 Current milestone: Phase 1 — local tracker and recovery loop (`GATE-0` human validation remains blocked)
-Current work item: `DB-003` — pipeline, application, status-history, interaction, next-action, interview, and reminder persistence
-Next recommended slice: `DB-004` — tags, saved views, versioned filter AST, and safe SQL compilation
+Current work item: `DB-004` — tags, saved views, versioned filter AST, and safe SQL compilation
+Next recommended slice: `DB-005` — documents, versions, and attachment-manifest persistence without an AI dependency
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `DB-004` — tags, saved views, versioned filter AST, an
 | Field | Value |
 |---|---|
 | Milestone | Phase 1, with the independent Phase 0 human-validation gate retained below |
-| Item range | `DB-003` |
+| Item range | `DB-004` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-25 |
-| Expected proof | Shared forward migrations plus focused status/application/interaction/next-action/interview/reminder repositories, with transactional status-history and rollback tests against browser and native SQLite |
+| Expected proof | Strict tag and saved-view migrations plus versioned filter-AST validation/serialization and allowlisted parameterized SQL compilation, with property/fuzz tests |
 | Blocker | None for this slice. `UXR-004` through `UXR-008` still require the owner-authorized participant study before the Phase 1 UI lock; `FND-001` remains independently blocked. |
-| Next handoff | Complete `DB-003` without selecting the open `Q-006` default display-stage vocabulary, then continue to `DB-004` without claiming `GATE-0` or locking provisional interface language. |
+| Next handoff | Complete `DB-004` without coupling saved filters to the open `Q-006` default display-stage vocabulary, then continue to `DB-005` without claiming `GATE-0` or locking provisional interface language. |
 
 ## Milestone status
 
@@ -152,7 +152,7 @@ Next recommended slice: `DB-004` — tags, saved views, versioned filter AST, an
 
 - [x] **DB-001** Implement initial schema and migration ledger for vault/settings. — Proof: [shared schema and adapter verification](../../proof/phase-1-tracker-foundations-verification.md)
 - [x] **DB-002** Implement companies, contacts, jobs, job sources/snapshots, field candidates, and provenance. — Proof: [shared schema and repository verification](../../proof/phase-1-tracker-foundations-verification.md)
-- [ ] **DB-003** Implement stages, applications/status history, interactions, next actions, interviews, and reminders. — Proof: _transaction tests_
+- [x] **DB-003** Implement stages, applications/status history, interactions, next actions, interviews, and reminders. — Proof: [shared pipeline persistence and transaction verification](../../proof/phase-1-pipeline-persistence-verification.md)
 - [ ] **DB-004** Implement tags, saved views, filter AST serialization, and safe SQL compiler. — Proof: _property tests_
 - [ ] **DB-005** Implement documents/versions/attachments manifest skeleton without AI dependency. — Proof: _repository tests_
 - [ ] **DB-006** Implement audit timestamps, tombstones/future-sync IDs, and integrity constraints. — Proof: _constraint/property tests_
