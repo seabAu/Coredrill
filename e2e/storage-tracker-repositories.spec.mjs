@@ -61,3 +61,22 @@ test("runs the Phase 1 tag and saved-view repository contracts in browser SQLite
     ],
   });
 });
+
+test("runs the Phase 1 document repository contracts in browser SQLite", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("status")).toHaveText("Harness ready");
+  await page.waitForFunction(() => globalThis.coredrillStorageSpike !== undefined);
+
+  const result = await page.evaluate(() =>
+    globalThis.coredrillStorageSpike.runDocumentRepositoryContracts(),
+  );
+
+  expect(result).toEqual({
+    adapterName: "official-sqlite-wasm-opfs-sahpool",
+    suiteName: "phase-1-document-repositories",
+    completedCases: [
+      "persists canonical IR versions with explicit immutable lineage",
+      "links jobs and content-addressed attachment manifests without storing bytes",
+    ],
+  });
+});

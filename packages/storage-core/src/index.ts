@@ -15,6 +15,30 @@ export {
   type PipelineRepositoryContractSetup,
 } from "./pipeline-contract-harness.js";
 export {
+  createDocumentRepositoryContractSuite,
+  type DocumentRepositoryContractSetup,
+} from "./document-contract-harness.js";
+export {
+  AttachmentManifestRepository,
+  DocumentRepository,
+  DocumentRepositoryConflictError,
+  DocumentVersionRepository,
+  createDocumentRepositories,
+  type DocumentRepositories,
+  type DocumentRepositoryConflictCode,
+  type NewAttachmentManifest,
+  type NewDocument,
+  type NewDocumentVersion,
+  type NewDocumentVersionAttachment,
+} from "./document-repositories.js";
+export type {
+  AttachmentManifestRecord,
+  DocumentKind,
+  DocumentRecord,
+  DocumentVersionAttachmentRecord,
+  DocumentVersionRecord,
+} from "./document-records.js";
+export {
   ApplicationRepository,
   InteractionRepository,
   InterviewRepository,

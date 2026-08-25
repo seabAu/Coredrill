@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   applySqlMigrations,
+  createDocumentRepositoryContractSuite,
   createPipelineRepositoryContractSuite,
   createTrackerRepositoryContractSuite,
   createViewRepositoryContractSuite,
@@ -50,6 +51,12 @@ const migrationDefinitions = [
   ["0023_tag.sql", "tag"],
   ["0024_job_tag.sql", "job-tag"],
   ["0025_saved_view.sql", "saved-view"],
+  ["0026_document.sql", "document"],
+  ["0027_document_version.sql", "document-version"],
+  ["0028_document_job_link.sql", "document-job-link"],
+  ["0029_attachment_manifest.sql", "attachment-manifest"],
+  ["0030_document_version_attachment.sql", "document-version-attachment"],
+  ["0031_document_style_example.sql", "document-style-example"],
 ] as const;
 
 const migrations = defineSqlMigrations(
@@ -188,6 +195,23 @@ describe("Phase 1 tracker repository contracts", () => {
       completedCases: [
         "assigns active tags idempotently and enforces job relationships",
         "round-trips versioned saved views with optimistic updates",
+      ],
+    });
+  });
+
+  it("passes document version and attachment-manifest contracts in fast in-memory SQLite", async () => {
+    const suite = createDocumentRepositoryContractSuite({
+      migrate: async (database) => {
+        await applySqlMigrations(database, migrations, APPLIED_AT);
+      },
+    });
+
+    await expect(runDatabaseContractSuite(adapter, suite)).resolves.toEqual({
+      adapterName: "node-sqlite-unit-contract",
+      suiteName: "phase-1-document-repositories",
+      completedCases: [
+        "persists canonical IR versions with explicit immutable lineage",
+        "links jobs and content-addressed attachment manifests without storing bytes",
       ],
     });
   });
