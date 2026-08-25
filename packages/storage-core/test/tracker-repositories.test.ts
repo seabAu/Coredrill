@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import path from "node:path";
 
@@ -8,10 +8,13 @@ import { describe, expect, it } from "vitest";
 import {
   applySqlMigrations,
   createDocumentRepositoryContractSuite,
+  createJobSearchContractSuite,
   createPipelineRepositoryContractSuite,
   createTrackerRepositoryContractSuite,
   createViewRepositoryContractSuite,
   defineSqlMigrations,
+  normalizeJobSearchTokens,
+  openJobSearchRepository,
   runDatabaseContractSuite,
   sqlStatement,
   type DatabaseContractAdapter,
@@ -26,7 +29,7 @@ import {
 
 const repositoryRoot = path.resolve(import.meta.dirname, "..", "..", "..");
 const APPLIED_AT = "2026-08-25T12:00:00.000Z";
-const migrationDefinitions = [
+const legacyMigrationDefinitions = [
   ["0001_vault.sql", "vault"],
   ["0002_capture_inbox.sql", "capture-inbox"],
   ["0003_app_setting.sql", "app-setting"],
@@ -73,6 +76,14 @@ const migrationDefinitions = [
   ["0044_interaction_update_guard.sql", "interaction-update-guard"],
   ["0045_attachment_manifest_update_guard.sql", "attachment-manifest-update-guard"],
 ] as const;
+const migrationDefinitions = [
+  ...legacyMigrationDefinitions,
+  ...readdirSync(path.join(repositoryRoot, "migrations"))
+    .filter((fileName) => /^\d{4}_[a-z0-9_]+\.sql$/u.test(fileName))
+    .filter((fileName) => Number(fileName.slice(0, 4)) > 45)
+    .sort()
+    .map((fileName) => [fileName, fileName.slice(5, -4).replaceAll("_", "-")] as const),
+];
 
 const migrations = defineSqlMigrations(
   migrationDefinitions.map(([fileName, name], index) => {
@@ -160,6 +171,114 @@ const adapter: DatabaseContractAdapter = {
 };
 
 describe("Phase 1 tracker repository contracts", () => {
+  it("normalizes bounded lexical tokens without admitting FTS query syntax", () => {
+    expect(normalizeJobSearchTokens("  Ｐｌａｔｆｏｒｍ platform OR notes:* --  ")).toEqual([
+      "platform",
+      "or",
+      "notes",
+    ]);
+    expect(normalizeJobSearchTokens("!!!")).toEqual([]);
+    expect(() =>
+      normalizeJobSearchTokens(Array.from({ length: 17 }, (_, index) => `token${index}`).join(" ")),
+    ).toThrow(TypeError);
+    expect(() => normalizeJobSearchTokens("x".repeat(513))).toThrow(TypeError);
+    expect(() => normalizeJobSearchTokens("x".repeat(65))).toThrow(TypeError);
+    expect(() => normalizeJobSearchTokens("safe\u0000unsafe")).toThrow(TypeError);
+  });
+
+  it("uses the reviewed indexes for representative active, source, timeline, and document queries", async () => {
+    const database = new NodeSqliteTestDatabase();
+    try {
+      await applySqlMigrations(database, migrations, APPLIED_AT);
+      const plans = await Promise.all([
+        database.query<{ readonly detail: string }>(
+          sqlStatement(
+            `EXPLAIN QUERY PLAN
+             SELECT id FROM job
+             WHERE archived_at IS NULL AND company_id = ?
+             ORDER BY updated_at DESC, id`,
+            ["0198e105-0000-7000-8000-000000000003"],
+          ),
+        ),
+        database.query<{ readonly detail: string }>(
+          sqlStatement("EXPLAIN QUERY PLAN SELECT job_id FROM job_source WHERE canonical_url = ?", [
+            "https://example.invalid/jobs/1",
+          ]),
+        ),
+        database.query<{ readonly detail: string }>(
+          sqlStatement(
+            `EXPLAIN QUERY PLAN
+             SELECT id FROM status_event WHERE job_id = ? ORDER BY occurred_at, id`,
+            ["0198e105-0000-7000-8000-000000000001"],
+          ),
+        ),
+        database.query<{ readonly detail: string }>(
+          sqlStatement(
+            `EXPLAIN QUERY PLAN
+             SELECT id FROM document
+             WHERE archived_at IS NULL ORDER BY updated_at DESC, id`,
+          ),
+        ),
+      ]);
+      const details = plans.flat().map((row) => row.detail);
+      for (const indexName of [
+        "job_company_active_idx",
+        "job_source_canonical_url_idx",
+        "status_event_timeline_idx",
+        "document_active_updated_idx",
+      ]) {
+        expect(details.some((detail) => detail.includes(indexName))).toBe(true);
+      }
+    } finally {
+      database.close();
+    }
+  });
+
+  it("detects a missing FTS5 module and searches through the functional fallback", async () => {
+    const database = new NodeSqliteTestDatabase();
+    try {
+      await applySqlMigrations(database, migrations, APPLIED_AT);
+      await database.execute(
+        sqlStatement(
+          `INSERT INTO job(
+             id, title, normalized_title, description_text, created_at, updated_at
+           ) VALUES (?, ?, ?, ?, ?, ?)`,
+          [
+            "0198e105-0000-7000-8000-000000000099",
+            "Fallback Systems Engineer",
+            "fallback systems engineer",
+            "Maintains offline lexical retrieval.",
+            "2026-08-25T17:00:00.000Z",
+            "2026-08-25T17:00:00.000Z",
+          ],
+        ),
+      );
+      const withoutFts: DatabasePort = {
+        diagnostics: () => database.diagnostics(),
+        execute: (statement) => {
+          if (statement.sql.includes("coredrill_fts5_probe")) {
+            throw new Error("no such module: fts5");
+          }
+          return database.execute(statement);
+        },
+        exportPortable: () => database.exportPortable(),
+        query: (statement) => database.query(statement),
+        transaction: (work) => database.transaction(work),
+      };
+      const search = await openJobSearchRepository(withoutFts);
+      expect(search.capability).toEqual({
+        mode: "normalized-token",
+        runtimeProbe: "temporary-virtual-table",
+        fallbackReason: "module-unavailable",
+      });
+      await expect(search.search({ query: "offline retrieval" })).resolves.toMatchObject({
+        results: [{ jobId: "0198e105-0000-7000-8000-000000000099" }],
+      });
+    } finally {
+      database.close();
+    }
+  });
+
   it("rolls back the DB-006 upgrade when historical audit data is invalid", async () => {
     const database = new NodeSqliteTestDatabase();
     try {
@@ -261,6 +380,24 @@ describe("Phase 1 tracker repository contracts", () => {
       completedCases: [
         "persists canonical IR versions with explicit immutable lineage",
         "links jobs and content-addressed attachment manifests without storing bytes",
+      ],
+    });
+  });
+
+  it("passes accelerated and fallback job-search contracts in fast in-memory SQLite", async () => {
+    const suite = createJobSearchContractSuite({
+      expectedFts5: true,
+      migrate: async (database) => {
+        await applySqlMigrations(database, migrations, APPLIED_AT);
+      },
+    });
+
+    await expect(runDatabaseContractSuite(adapter, suite)).resolves.toEqual({
+      adapterName: "node-sqlite-unit-contract",
+      suiteName: "phase-1-job-search",
+      completedCases: [
+        "detects FTS5 and refreshes the accelerated lexical index",
+        "keeps normalized-token search functional with FTS5 disabled",
       ],
     });
   });

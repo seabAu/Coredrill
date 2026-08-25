@@ -82,3 +82,22 @@ test("runs the Phase 1 document repository contracts in browser SQLite", async (
     ],
   });
 });
+
+test("runs accelerated and fallback job-search contracts in browser SQLite", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("status")).toHaveText("Harness ready");
+  await page.waitForFunction(() => globalThis.coredrillStorageSpike !== undefined);
+
+  const result = await page.evaluate(() =>
+    globalThis.coredrillStorageSpike.runJobSearchContracts(),
+  );
+
+  expect(result).toEqual({
+    adapterName: "official-sqlite-wasm-opfs-sahpool",
+    suiteName: "phase-1-job-search",
+    completedCases: [
+      "detects FTS5 and refreshes the accelerated lexical index",
+      "keeps normalized-token search functional with FTS5 disabled",
+    ],
+  });
+});

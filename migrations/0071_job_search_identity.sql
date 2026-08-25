@@ -1,0 +1,4 @@
+CREATE TABLE job_search_identity (
+  search_id INTEGER PRIMARY KEY NOT NULL,
+  job_id TEXT NOT NULL UNIQUE REFERENCES job(id) ON DELETE CASCADE
+) STRICT;

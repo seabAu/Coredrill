@@ -40,6 +40,7 @@
     "check:licenses": "node tooling/scripts/check-licenses.mjs && node tooling/scripts/check-rust-licenses.mjs",
     "report:licenses": "pnpm licenses list --json",
     "report:licenses:rust": "node tooling/scripts/check-rust-licenses.mjs --json",
+    "report:migrations": "node tooling/scripts/report-migration-inventory.mjs",
     "check:secrets": "node tooling/scripts/check-secrets.mjs",
     "check:policy": "pnpm check:boundaries && pnpm check:foundation-records && pnpm check:licenses && pnpm check:secrets",
     "audit:dependencies": "pnpm audit --audit-level=low && cargo audit --file apps/desktop/src-tauri/Cargo.lock",

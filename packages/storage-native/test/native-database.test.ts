@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { once } from "node:events";
+import { readdirSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, realpath, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -8,6 +9,7 @@ import { spawn, spawnSync, type ChildProcessWithoutNullStreams } from "node:chil
 import {
   applySqlMigrations,
   createDocumentRepositoryContractSuite,
+  createJobSearchContractSuite,
   createPipelineRepositoryContractSuite,
   createTrackerRepositoryContractSuite,
   createViewRepositoryContractSuite,
@@ -66,7 +68,7 @@ const probeExecutable = path.join(
     ? "coredrill-native-storage-probe.exe"
     : "coredrill-native-storage-probe",
 );
-const migrationDefinitions = [
+const legacyMigrationDefinitions = [
   ["0001_vault.sql", "vault"],
   ["0002_capture_inbox.sql", "capture-inbox"],
   ["0003_app_setting.sql", "app-setting"],
@@ -113,6 +115,14 @@ const migrationDefinitions = [
   ["0044_interaction_update_guard.sql", "interaction-update-guard"],
   ["0045_attachment_manifest_update_guard.sql", "attachment-manifest-update-guard"],
 ] as const;
+const migrationDefinitions = [
+  ...legacyMigrationDefinitions,
+  ...readdirSync(path.join(repositoryRoot, "migrations"))
+    .filter((fileName) => /^\d{4}_[a-z0-9_]+\.sql$/u.test(fileName))
+    .filter((fileName) => Number(fileName.slice(0, 4)) > 45)
+    .sort()
+    .map((fileName) => [fileName, fileName.slice(5, -4).replaceAll("_", "-")] as const),
+];
 const migrationPaths = migrationDefinitions.map(([fileName]) =>
   path.join(repositoryRoot, "migrations", fileName),
 );
@@ -311,14 +321,11 @@ describe("native SQLite repository and migration contracts", () => {
         name: "applies the shared migration and reopens its ledger",
         run: async (database) => {
           await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
-            schemaVersion: 45,
-            appliedVersions: [
-              1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
-              25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45,
-            ],
+            schemaVersion: 84,
+            appliedVersions: Array.from({ length: 84 }, (_, index) => index + 1),
           });
           await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
-            schemaVersion: 45,
+            schemaVersion: 84,
             appliedVersions: [],
           });
         },
@@ -430,6 +437,23 @@ describe("native SQLite repository and migration contracts", () => {
     });
   });
 
+  it("passes the shared accelerated and fallback job-search suite", async () => {
+    const suite = createJobSearchContractSuite({
+      expectedFts5: true,
+      migrate: async (database) => {
+        await applySqlMigrations(database, migrations(), APPLIED_AT);
+      },
+    });
+    await expect(runDatabaseContractSuite(nativeAdapter, suite)).resolves.toEqual({
+      adapterName: "native-rusqlite-candidate",
+      suiteName: "phase-1-job-search",
+      completedCases: [
+        "detects FTS5 and refreshes the accelerated lexical index",
+        "keeps normalized-token search functional with FTS5 disabled",
+      ],
+    });
+  });
+
   it("persists the migrated vault across native close and reopen", async () => {
     const databaseName = nextDatabaseName();
     const first = await openNativeSqliteDatabase({ databaseName, transport });
@@ -465,7 +489,7 @@ describe("native SQLite repository and migration contracts", () => {
       adapterName: "native-rusqlite-candidate",
       health: "ready",
       persistence: "durable",
-      schemaVersion: 45,
+      schemaVersion: 84,
     });
     await expect(reopened.delete()).resolves.toBe(true);
   });

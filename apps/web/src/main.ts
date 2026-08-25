@@ -8,6 +8,7 @@ import {
 import {
   applySqlMigrations,
   createDocumentRepositoryContractSuite,
+  createJobSearchContractSuite,
   createPipelineRepositoryContractSuite,
   createTrackerRepositoryContractSuite,
   createViewRepositoryContractSuite,
@@ -68,13 +69,21 @@ import interactionUpdateGuardMigrationSql from "../../../migrations/0044_interac
 import attachmentManifestUpdateGuardMigrationSql from "../../../migrations/0045_attachment_manifest_update_guard.sql?raw";
 import { createExtensionInbox, type ExtensionInboxApi } from "./extension-transfer.js";
 import {
+  runJobSearchBenchmark,
   runStorageBenchmark,
+  type JobSearchBenchmarkResult,
   type StorageBenchmarkInput,
   type StorageBenchmarkResult,
 } from "./storage-benchmark.js";
 
 const DATABASE_NAME = "/coredrill-phase0.sqlite3";
 const MIGRATION_APPLIED_AT = "2026-08-24T08:00:00.000Z";
+const ADDITIONAL_MIGRATION_PATH = /\/(?<version>\d{4})_(?<name>[a-z0-9_]+)\.sql$/u;
+const additionalMigrationSources = import.meta.glob("../../../migrations/*.sql", {
+  eager: true,
+  import: "default",
+  query: "?raw",
+}) as Readonly<Record<string, string>>;
 
 interface VaultRow extends QueryRow {
   readonly id: string;
@@ -126,7 +135,9 @@ export interface CoredrillStorageSpikeApi {
   close(): Promise<void>;
   delete(): Promise<boolean>;
   runBenchmark(input: StorageBenchmarkInput): Promise<StorageBenchmarkResult>;
+  runJobSearchBenchmark(input: StorageBenchmarkInput): Promise<JobSearchBenchmarkResult>;
   runDocumentRepositoryContracts(): Promise<DatabaseContractRunResult>;
+  runJobSearchContracts(): Promise<DatabaseContractRunResult>;
   runPipelineRepositoryContracts(): Promise<DatabaseContractRunResult>;
   runTrackerRepositoryContracts(): Promise<DatabaseContractRunResult>;
   runViewRepositoryContracts(): Promise<DatabaseContractRunResult>;
@@ -148,6 +159,28 @@ const sha256Text = async (value: string): Promise<string> => {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 };
+
+const additionalMigrations = async () =>
+  Promise.all(
+    Object.entries(additionalMigrationSources)
+      .map(([sourcePath, sql]) => {
+        const match = ADDITIONAL_MIGRATION_PATH.exec(sourcePath.replaceAll("\\", "/"));
+        if (match?.groups === undefined) {
+          throw new Error(`Migration source path ${sourcePath} is invalid.`);
+        }
+        return {
+          version: Number(match.groups["version"]),
+          name: match.groups["name"]?.replaceAll("_", "-") ?? "",
+          sql,
+        };
+      })
+      .filter((migration) => migration.version > 45)
+      .sort((left, right) => left.version - right.version)
+      .map(async (migration) => ({
+        ...migration,
+        sha256: await sha256Text(migration.sql),
+      })),
+  );
 
 const migrations = async () =>
   defineSqlMigrations([
@@ -421,6 +454,7 @@ const migrations = async () =>
       sha256: await sha256Text(attachmentManifestUpdateGuardMigrationSql),
       sql: attachmentManifestUpdateGuardMigrationSql,
     },
+    ...(await additionalMigrations()),
   ]);
 
 const getDatabase = async (options: OpenOptions = {}): Promise<BrowserSqliteDatabase> => {
@@ -557,6 +591,7 @@ const api: CoredrillStorageSpikeApi = {
     return deleted;
   },
   runBenchmark: (input) => runStorageBenchmark(input),
+  runJobSearchBenchmark: async (input) => runJobSearchBenchmark(input, await migrations()),
   runDocumentRepositoryContracts: async () => {
     await api.close();
     let sequence = 1;
@@ -579,6 +614,35 @@ const api: CoredrillStorageSpikeApi = {
     return runDatabaseContractSuite(
       adapter,
       createDocumentRepositoryContractSuite({
+        migrate: async (client) => {
+          await applySqlMigrations(client, reviewedMigrations, MIGRATION_APPLIED_AT);
+        },
+      }),
+    );
+  },
+  runJobSearchContracts: async () => {
+    await api.close();
+    let sequence = 1;
+    const adapter = {
+      name: "official-sqlite-wasm-opfs-sahpool",
+      createIsolatedDatabase: async () => {
+        const client = await openBrowserSqliteDatabase({
+          databaseName: `/coredrill-search-contract-${String(sequence)}.sqlite3`,
+          expectedExisting: false,
+          requestPersistentStorage: false,
+        });
+        sequence += 1;
+        return client;
+      },
+      disposeIsolatedDatabase: async (client: DatabasePort) => {
+        await (client as BrowserSqliteDatabase).delete();
+      },
+    };
+    const reviewedMigrations = await migrations();
+    return runDatabaseContractSuite(
+      adapter,
+      createJobSearchContractSuite({
+        expectedFts5: true,
         migrate: async (client) => {
           await applySqlMigrations(client, reviewedMigrations, MIGRATION_APPLIED_AT);
         },

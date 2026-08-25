@@ -96,6 +96,23 @@ export {
   type StoragePersistence,
 } from "./database-port.js";
 export {
+  createJobSearchContractSuite,
+  type JobSearchContractSetup,
+} from "./job-search-contract-harness.js";
+export {
+  JOB_SEARCH_LIMITS,
+  JobSearchRepository,
+  normalizeJobSearchTokens,
+  openJobSearchRepository,
+  type JobSearchCapability,
+  type JobSearchFallbackReason,
+  type JobSearchInput,
+  type JobSearchMode,
+  type JobSearchResponse,
+  type JobSearchResult,
+  type OpenJobSearchOptions,
+} from "./job-search.js";
+export {
   applySqlMigrations,
   defineSqlMigrations,
   type MigrationResult,

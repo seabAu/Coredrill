@@ -1,5 +1,10 @@
 import { openBrowserSqliteDatabase } from "@coredrill/storage-browser";
-import { sqlStatement } from "@coredrill/storage-core";
+import {
+  applySqlMigrations,
+  openJobSearchRepository,
+  sqlStatement,
+  type SqlMigration,
+} from "@coredrill/storage-core";
 
 const BENCHMARK_DATABASE_NAME = "/coredrill-benchmark.sqlite3";
 const SEARCH_WARMUPS = 5;
@@ -48,6 +53,25 @@ export interface StorageBenchmarkResult {
   }>;
   readonly profileId: string;
   readonly records: number;
+  readonly seed: string;
+  readonly startedAt: string;
+}
+
+export interface JobSearchBenchmarkResult {
+  readonly byteLength: number;
+  readonly completedAt: string;
+  readonly fixtureId: string;
+  readonly fixtureSha256: string;
+  readonly metrics: Readonly<{
+    fallbackSearch: BenchmarkMetric;
+    ftsInitialize: BenchmarkMetric;
+    ftsSearch: BenchmarkMetric;
+    import: BenchmarkMetric;
+    migrate: BenchmarkMetric;
+  }>;
+  readonly profileId: string;
+  readonly records: number;
+  readonly searchModes: readonly ["fts5", "normalized-token"];
   readonly seed: string;
   readonly startedAt: string;
 }
@@ -238,6 +262,126 @@ export const runStorageBenchmark = async (
     }),
     profileId: input.profileId,
     records: input.records,
+    seed: input.seed,
+    startedAt,
+  });
+};
+
+const jobId = (index: number): string =>
+  `0198e106-0000-7000-8000-${String(index).padStart(12, "0")}`;
+
+const insertSearchBatch = async (
+  database: Awaited<ReturnType<typeof openBrowserSqliteDatabase>>,
+  rows: readonly BenchmarkRow[],
+): Promise<void> => {
+  await database.transaction(async (transaction) => {
+    for (let offset = 0; offset < rows.length; offset += INSERT_BATCH_SIZE) {
+      const batch = rows.slice(offset, offset + INSERT_BATCH_SIZE);
+      const placeholders = batch.map(() => "(?, ?, ?, ?, ?, ?, ?)").join(", ");
+      await transaction.execute(
+        sqlStatement(
+          `INSERT INTO job(
+             id, company_id, title, normalized_title, description_text, created_at, updated_at
+           ) VALUES ${placeholders}`,
+          batch.flatMap((row) => [
+            jobId(row.id),
+            null,
+            row.title,
+            row.normalizedTitle,
+            "Synthetic benchmark description for lexical measurement.".padEnd(
+              row.description.length,
+              "x",
+            ),
+            "2026-08-25T18:00:00.000Z",
+            "2026-08-25T18:00:00.000Z",
+          ]),
+        ),
+      );
+    }
+  });
+};
+
+const measureJobSearch = async (
+  database: Awaited<ReturnType<typeof openBrowserSqliteDatabase>>,
+  disableFts5: boolean,
+  records: number,
+): Promise<{
+  readonly initializeMs: number;
+  readonly mode: "fts5" | "normalized-token";
+  readonly searchRaw: readonly number[];
+}> => {
+  const [search, initializeMs] = await measured(() =>
+    openJobSearchRepository(database, { disableFts5 }),
+  );
+  const searchRaw: number[] = [];
+  for (let run = 0; run < SEARCH_WARMUPS + SEARCH_RUNS; run += 1) {
+    const token = ((run * 37) % Math.min(records, 256)) + 1;
+    const [response, searchMs] = await measured(() =>
+      search.search({ query: `software ${String(token).padStart(3, "0")}` }),
+    );
+    if (
+      response.results.length === 0 ||
+      response.results.some((result) => !result.title.endsWith(String(token).padStart(3, "0")))
+    ) {
+      throw new Error("Job-search benchmark returned an incorrect result set.");
+    }
+    if (run >= SEARCH_WARMUPS) searchRaw.push(searchMs);
+  }
+  return Object.freeze({
+    initializeMs,
+    mode: search.capability.mode,
+    searchRaw: Object.freeze(searchRaw),
+  });
+};
+
+export const runJobSearchBenchmark = async (
+  input: StorageBenchmarkInput,
+  migrations: readonly SqlMigration[],
+): Promise<JobSearchBenchmarkResult> => {
+  const startedAt = new Date().toISOString();
+  const rows = createRows(input);
+  const fixtureSha256 = await sha256Text(
+    rows
+      .map((row) =>
+        [row.id, row.title, row.normalizedTitle, row.description].map(String).join("\u001f"),
+      )
+      .join("\n"),
+  );
+  const databaseName = `/coredrill-job-search-benchmark-${input.profileId.toLowerCase()}.sqlite3`;
+  let database = await openBrowserSqliteDatabase({ databaseName });
+  await database.delete();
+  database = await openBrowserSqliteDatabase({ databaseName });
+
+  const [, migrateMs] = await measured(() =>
+    applySqlMigrations(database, migrations, "2026-08-25T18:00:00.000Z"),
+  );
+  const [, importMs] = await measured(() => insertSearchBatch(database, rows));
+  const accelerated = await measureJobSearch(database, false, input.records);
+  if (accelerated.mode !== "fts5") {
+    throw new Error("The selected browser SQLite build did not provide the reviewed FTS5 path.");
+  }
+  const fallback = await measureJobSearch(database, true, input.records);
+  if (fallback.mode !== "normalized-token") {
+    throw new Error("The reviewed normalized-token fallback was not selected.");
+  }
+  const portable = await database.exportPortable();
+  await database.delete();
+
+  return Object.freeze({
+    byteLength: portable.byteLength,
+    completedAt: new Date().toISOString(),
+    fixtureId: input.fixtureId,
+    fixtureSha256,
+    metrics: Object.freeze({
+      fallbackSearch: metric(fallback.searchRaw),
+      ftsInitialize: metric([accelerated.initializeMs]),
+      ftsSearch: metric(accelerated.searchRaw),
+      import: metric([importMs]),
+      migrate: metric([migrateMs]),
+    }),
+    profileId: input.profileId,
+    records: input.records,
+    searchModes: Object.freeze(["fts5", "normalized-token"] as const),
     seed: input.seed,
     startedAt,
   });
