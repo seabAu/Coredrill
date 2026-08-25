@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-25
 Current milestone: Phase 1 — local tracker and recovery loop (`GATE-0` human validation remains blocked)
-Current work item: `DB-005` — documents, versions, and attachment-manifest persistence without an AI dependency
-Next recommended slice: `DB-006` — audit timestamps, tombstones/future-sync IDs, and integrity constraints
+Current work item: `DB-006` — audit timestamps, local soft-archive/future-sync identity readiness, and integrity constraints
+Next recommended slice: `DB-007` — indexes and FTS5 capability detection/fallback
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `DB-006` — audit timestamps, tombstones/future-sync ID
 | Field | Value |
 |---|---|
 | Milestone | Phase 1, with the independent Phase 0 human-validation gate retained below |
-| Item range | `DB-005` |
+| Item range | `DB-006` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-25 |
-| Expected proof | Strict document, document-version, and attachment-manifest migrations plus repositories that remain useful with AI disabled, with shared browser/native repository tests |
+| Expected proof | Monotonic audit/property tests, stable local-device identity, local soft-archive coverage, fail-closed upgrade validation, and shared browser/native SQLite constraint contracts without speculative sync machinery |
 | Blocker | None for this slice. `UXR-004` through `UXR-008` still require the owner-authorized participant study before the Phase 1 UI lock; `FND-001` remains independently blocked. |
-| Next handoff | Complete `DB-005` without adding generation/provider behavior or reopening the accepted local-file and document decisions, then continue to `DB-006` without claiming `GATE-0` or locking provisional interface language. |
+| Next handoff | Complete `DB-006` without adding sync operations, accounts, a CRDT, or final multi-device tombstone semantics, then continue to `DB-007` without claiming `GATE-0` or locking provisional interface language. |
 
 ## Milestone status
 
@@ -154,7 +154,7 @@ Next recommended slice: `DB-006` — audit timestamps, tombstones/future-sync ID
 - [x] **DB-002** Implement companies, contacts, jobs, job sources/snapshots, field candidates, and provenance. — Proof: [shared schema and repository verification](../../proof/phase-1-tracker-foundations-verification.md)
 - [x] **DB-003** Implement stages, applications/status history, interactions, next actions, interviews, and reminders. — Proof: [shared pipeline persistence and transaction verification](../../proof/phase-1-pipeline-persistence-verification.md)
 - [x] **DB-004** Implement tags, saved views, filter AST serialization, and safe SQL compiler. — Proof: [shared filter, tag, and saved-view verification](../../proof/phase-1-filter-views-verification.md)
-- [ ] **DB-005** Implement documents/versions/attachments manifest skeleton without AI dependency. — Proof: _repository tests_
+- [x] **DB-005** Implement documents/versions/attachments manifest skeleton without AI dependency. — Proof: [shared document, version, and attachment-manifest verification](../../proof/phase-1-document-manifest-verification.md)
 - [ ] **DB-006** Implement audit timestamps, tombstones/future-sync IDs, and integrity constraints. — Proof: _constraint/property tests_
 - [ ] **DB-007** Implement indexes and FTS5 capability detection/fallback. — Proof: _query/benchmark report_
 - [ ] **DB-008** Run identical repository contract suite in browser and native CI jobs. — Proof: _CI links_
