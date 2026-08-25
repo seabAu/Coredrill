@@ -1,3 +1,4 @@
+import type { JsonValue } from "@coredrill/contracts";
 import { confidence, dateOnly, entityId, instant, webUrl } from "@coredrill/domain";
 
 import {
@@ -6,6 +7,8 @@ import {
   type DatabaseContractSuite,
 } from "./contract-harness.js";
 import { sqlStatement, type DatabasePort, type QueryRow } from "./database-port.js";
+import { createDocumentRepositories } from "./document-repositories.js";
+import { createPipelineRepositories } from "./pipeline-repositories.js";
 import {
   TrackerRepositoryConflictError,
   createTrackerRepositories,
@@ -34,6 +37,18 @@ const IDS = Object.freeze({
   replacementFieldValue: entityId("field-value", "0198e102-0000-7000-8000-00000000000b"),
   firstConfirmation: entityId("field-confirmation", "0198e102-0000-7000-8000-00000000000c"),
   replacementConfirmation: entityId("field-confirmation", "0198e102-0000-7000-8000-00000000000d"),
+  device: entityId("device", "0198e102-0000-7000-8000-00000000000f"),
+  otherDevice: entityId("device", "0198e102-0000-7000-8000-000000000010"),
+  status: entityId("status_definition", "0198e102-0000-7000-8000-000000000011"),
+  application: entityId("application", "0198e102-0000-7000-8000-000000000012"),
+  invalidApplication: entityId("application", "0198e102-0000-7000-8000-000000000013"),
+  interaction: entityId("interaction", "0198e102-0000-7000-8000-000000000014"),
+  statusEvent: entityId("status-event", "0198e102-0000-7000-8000-000000000015"),
+  resumeDocument: entityId("document", "0198e102-0000-7000-8000-000000000016"),
+  otherDocument: entityId("document", "0198e102-0000-7000-8000-000000000017"),
+  resumeVersion: entityId("document-version", "0198e102-0000-7000-8000-000000000018"),
+  otherVersion: entityId("document-version", "0198e102-0000-7000-8000-000000000019"),
+  invalidVersion: entityId("document-version", "0198e102-0000-7000-8000-00000000001a"),
 });
 
 const CREATED_AT = instant("2026-08-25T12:00:00.000Z");
@@ -42,6 +57,12 @@ const REPLACED_AT = instant("2026-08-25T12:10:00.000Z");
 const CONTENT_HASH = "a".repeat(64);
 const VALUE_HASH = "b".repeat(64);
 const REPLACEMENT_HASH = "c".repeat(64);
+const ATTACHMENT_HASH = "d".repeat(64);
+const INVALID_VERSION_HASH = "e".repeat(64);
+const SYNTHETIC_IR: JsonValue = {
+  specVersion: 1,
+  document: { type: "doc", content: [] },
+};
 
 const assertContract = (condition: boolean, message: string): void => {
   if (!condition) throw new DatabaseContractViolation(message);
@@ -369,6 +390,324 @@ export const createTrackerRepositoryContractSuite = (
           sqlStatement("SELECT count(*) AS total FROM job_source"),
         );
         assertContract(rows[0]?.total === 0, "Rejected aggregate left a partial source row.");
+      },
+    },
+    {
+      name: "persists a stable local device identity with monotonic audit fields",
+      run: async (database) => {
+        await setup.migrate(database);
+        const devices = createTrackerRepositories(database).devices;
+        const registered = await devices.register({
+          id: IDS.device,
+          label: "Synthetic browser profile",
+          platform: "web.chromium",
+          createdAt: CREATED_AT,
+          updatedAt: CREATED_AT,
+          lastSeenAt: CREATED_AT,
+        });
+        const touched = await devices.touch(IDS.device, UPDATED_AT, UPDATED_AT, 1);
+        assertContract(
+          registered.rowVersion === 1 &&
+            touched.rowVersion === 2 &&
+            touched.lastSeenAt === UPDATED_AT,
+          "Local device identity or audit advancement did not persist.",
+        );
+        await expectRepositoryFailure(
+          () => devices.touch(IDS.device, REPLACED_AT, REPLACED_AT, 1),
+          (error) =>
+            error instanceof TrackerRepositoryConflictError &&
+            error.code === "optimistic_write_conflict",
+          "A stale device heartbeat overwrote a newer audit version.",
+        );
+        await expectRepositoryFailure(
+          () =>
+            devices.register({
+              id: IDS.otherDevice,
+              label: "Backward synthetic device",
+              platform: "native.windows",
+              createdAt: UPDATED_AT,
+              updatedAt: CREATED_AT,
+              lastSeenAt: UPDATED_AT,
+            }),
+          (error) => error instanceof TypeError,
+          "A device accepted a backward audit timeline.",
+        );
+        await expectRepositoryFailure(
+          () =>
+            database.execute(
+              sqlStatement(
+                `INSERT INTO device(id, label, platform, created_at, updated_at, last_seen_at)
+                 VALUES (?, ?, ?, ?, ?, ?)`,
+                [
+                  "0198e102-0000-4000-8000-0000000000ff",
+                  "Wrong UUID version",
+                  "web.chromium",
+                  CREATED_AT,
+                  CREATED_AT,
+                  CREATED_AT,
+                ],
+              ),
+            ),
+          () => true,
+          "The device table accepted a non-UUIDv7 identity.",
+        );
+
+        interface TableInfoRow extends QueryRow {
+          readonly name: string;
+        }
+        for (const table of [
+          "application",
+          "company",
+          "contact",
+          "device",
+          "document",
+          "field_value",
+          "interaction",
+          "interview",
+          "job",
+          "job_source",
+          "location",
+          "next_action",
+          "reminder",
+          "saved_view",
+          "status_definition",
+          "tag",
+        ]) {
+          const columns = await database.query<TableInfoRow>(
+            sqlStatement(`PRAGMA table_info(${table})`),
+          );
+          const names = new Set(columns.map(({ name }) => name));
+          assertContract(
+            names.has("created_at") && names.has("updated_at") && names.has("row_version"),
+            `${table} is missing required audit/future-conflict columns.`,
+          );
+        }
+        for (const table of [
+          "application",
+          "company",
+          "contact",
+          "document",
+          "job",
+          "saved_view",
+          "status_definition",
+          "tag",
+        ]) {
+          const columns = await database.query<TableInfoRow>(
+            sqlStatement(`PRAGMA table_info(${table})`),
+          );
+          assertContract(
+            columns.some(({ name }) => name === "archived_at"),
+            `${table} is missing its local soft-archive marker.`,
+          );
+        }
+      },
+    },
+    {
+      name: "enforces document selection lineage and append-only integrity in SQLite",
+      run: async (database) => {
+        await setup.migrate(database);
+        await createSourceAggregate(database);
+        const pipeline = createPipelineRepositories(database);
+        const documents = createDocumentRepositories(database);
+        await pipeline.statusDefinitions.create({
+          id: IDS.status,
+          name: "Synthetic saved",
+          category: "saved",
+          color: null,
+          isSystem: false,
+          sortOrder: 0,
+          terminal: false,
+          archivedAt: null,
+          createdAt: CREATED_AT,
+          updatedAt: CREATED_AT,
+        });
+        await documents.documents.create({
+          id: IDS.resumeDocument,
+          kind: "resume",
+          title: "Synthetic resume",
+          source: "user",
+          archivedAt: null,
+          createdAt: CREATED_AT,
+          updatedAt: CREATED_AT,
+        });
+        await documents.documents.create({
+          id: IDS.otherDocument,
+          kind: "other",
+          title: "Synthetic other document",
+          source: "user",
+          archivedAt: null,
+          createdAt: CREATED_AT,
+          updatedAt: CREATED_AT,
+        });
+        await documents.versions.create({
+          id: IDS.resumeVersion,
+          documentId: IDS.resumeDocument,
+          versionNumber: 1,
+          contentIrVersion: 1,
+          contentIr: SYNTHETIC_IR,
+          contentPlain: "Synthetic resume",
+          templateId: null,
+          createdBy: "user",
+          createdAt: CREATED_AT,
+          parentVersionId: null,
+          contentHash: CONTENT_HASH,
+          label: null,
+        });
+        await documents.versions.create({
+          id: IDS.otherVersion,
+          documentId: IDS.otherDocument,
+          versionNumber: 1,
+          contentIrVersion: 1,
+          contentIr: SYNTHETIC_IR,
+          contentPlain: "Synthetic other document",
+          templateId: null,
+          createdBy: "user",
+          createdAt: CREATED_AT,
+          parentVersionId: null,
+          contentHash: VALUE_HASH,
+          label: null,
+        });
+        await pipeline.applications.create({
+          id: IDS.application,
+          jobId: IDS.job,
+          appliedAt: null,
+          channel: null,
+          currentStatusId: IDS.status,
+          selectedResumeVersionId: IDS.resumeVersion,
+          selectedCoverLetterVersionId: null,
+          notes: "",
+          archivedAt: null,
+          createdAt: CREATED_AT,
+          updatedAt: CREATED_AT,
+        });
+        await expectRepositoryFailure(
+          () =>
+            pipeline.applications.create(
+              {
+                id: IDS.invalidApplication,
+                jobId: IDS.job,
+                appliedAt: null,
+                channel: null,
+                currentStatusId: IDS.status,
+                selectedResumeVersionId: IDS.otherVersion,
+                selectedCoverLetterVersionId: null,
+                notes: "",
+                archivedAt: null,
+                createdAt: UPDATED_AT,
+                updatedAt: UPDATED_AT,
+              },
+              { allowAdditionalAttempt: true },
+            ),
+          () => true,
+          "An application selected a non-resume document as its resume.",
+        );
+        await expectRepositoryFailure(
+          () =>
+            database.execute(
+              sqlStatement(
+                `INSERT INTO document_version(
+                   id, document_id, version_number, content_ir_version, content_ir_json,
+                   content_plain, template_id, created_by, created_at, parent_version_id,
+                   content_hash, label
+                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [
+                  IDS.invalidVersion,
+                  IDS.otherDocument,
+                  2,
+                  1,
+                  JSON.stringify(SYNTHETIC_IR),
+                  "Invalid lineage",
+                  null,
+                  "user",
+                  UPDATED_AT,
+                  IDS.resumeVersion,
+                  INVALID_VERSION_HASH,
+                  null,
+                ],
+              ),
+            ),
+          () => true,
+          "SQLite accepted a cross-document version parent.",
+        );
+        await expectRepositoryFailure(
+          () =>
+            database.execute(
+              sqlStatement("UPDATE document_version SET label = ? WHERE id = ?", [
+                "Mutation",
+                IDS.resumeVersion,
+              ]),
+            ),
+          () => true,
+          "SQLite mutated immutable document-version content.",
+        );
+        await expectRepositoryFailure(
+          () =>
+            database.execute(
+              sqlStatement("DELETE FROM document_version WHERE id = ?", [IDS.resumeVersion]),
+            ),
+          () => true,
+          "SQLite deleted a document version selected by an application.",
+        );
+        await expectRepositoryFailure(
+          () =>
+            database.execute(
+              sqlStatement("UPDATE document SET kind = 'other' WHERE id = ?", [IDS.resumeDocument]),
+            ),
+          () => true,
+          "SQLite invalidated a selected resume by changing its document kind.",
+        );
+
+        await pipeline.interactions.append({
+          id: IDS.interaction,
+          jobId: IDS.job,
+          contactId: null,
+          type: "note",
+          occurredAt: CREATED_AT,
+          direction: "unknown",
+          summary: "Synthetic interaction",
+          nextActionAt: null,
+          createdAt: CREATED_AT,
+          updatedAt: CREATED_AT,
+        });
+        await database.execute(
+          sqlStatement(
+            `INSERT INTO status_event(
+               id, job_id, application_id, from_status_id, to_status_id, occurred_at, note,
+               created_at
+             ) VALUES (?, ?, ?, NULL, ?, ?, NULL, ?)`,
+            [IDS.statusEvent, IDS.job, IDS.application, IDS.status, CREATED_AT, CREATED_AT],
+          ),
+        );
+        await documents.attachments.register({
+          contentId: ATTACHMENT_HASH,
+          sha256: ATTACHMENT_HASH,
+          mediaType: "application/pdf",
+          byteLength: 2048,
+          createdAt: CREATED_AT,
+        });
+        for (const statement of [
+          sqlStatement("UPDATE source_snapshot SET raw_text = ? WHERE id = ?", [
+            "Mutation",
+            IDS.snapshot,
+          ]),
+          sqlStatement("UPDATE status_event SET note = ? WHERE id = ?", [
+            "Mutation",
+            IDS.statusEvent,
+          ]),
+          sqlStatement("UPDATE interaction SET summary = ? WHERE id = ?", [
+            "Mutation",
+            IDS.interaction,
+          ]),
+          sqlStatement("UPDATE attachment_manifest SET byte_length = 2049 WHERE content_id = ?", [
+            ATTACHMENT_HASH,
+          ]),
+        ]) {
+          await expectRepositoryFailure(
+            () => database.execute(statement),
+            () => true,
+            "SQLite mutated an append-only or content-addressed record.",
+          );
+        }
       },
     },
   ]);

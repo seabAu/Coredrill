@@ -98,6 +98,20 @@ const migrationDefinitions = [
   ["0029_attachment_manifest.sql", "attachment-manifest"],
   ["0030_document_version_attachment.sql", "document-version-attachment"],
   ["0031_document_style_example.sql", "document-style-example"],
+  ["0032_device.sql", "device"],
+  ["0033_integrity_probe.sql", "integrity-probe"],
+  ["0034_validate_existing_integrity.sql", "validate-existing-integrity"],
+  ["0035_drop_integrity_probe.sql", "drop-integrity-probe"],
+  ["0036_application_document_insert_guard.sql", "application-document-insert-guard"],
+  ["0037_application_document_update_guard.sql", "application-document-update-guard"],
+  ["0038_document_kind_update_guard.sql", "document-kind-update-guard"],
+  ["0039_document_version_lineage_guard.sql", "document-version-lineage-guard"],
+  ["0040_document_version_update_guard.sql", "document-version-update-guard"],
+  ["0041_document_version_delete_guard.sql", "document-version-delete-guard"],
+  ["0042_source_snapshot_update_guard.sql", "source-snapshot-update-guard"],
+  ["0043_status_event_update_guard.sql", "status-event-update-guard"],
+  ["0044_interaction_update_guard.sql", "interaction-update-guard"],
+  ["0045_attachment_manifest_update_guard.sql", "attachment-manifest-update-guard"],
 ] as const;
 const migrationPaths = migrationDefinitions.map(([fileName]) =>
   path.join(repositoryRoot, "migrations", fileName),
@@ -297,14 +311,14 @@ describe("native SQLite repository and migration contracts", () => {
         name: "applies the shared migration and reopens its ledger",
         run: async (database) => {
           await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
-            schemaVersion: 31,
+            schemaVersion: 45,
             appliedVersions: [
               1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
-              25, 26, 27, 28, 29, 30, 31,
+              25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45,
             ],
           });
           await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
-            schemaVersion: 31,
+            schemaVersion: 45,
             appliedVersions: [],
           });
         },
@@ -361,6 +375,8 @@ describe("native SQLite repository and migration contracts", () => {
         "persists company contact job source snapshot and provenance with bound values",
         "retains field candidates and requires explicit confirmed replacement",
         "enforces foreign keys and rolls back an invalid aggregate",
+        "persists a stable local device identity with monotonic audit fields",
+        "enforces document selection lineage and append-only integrity in SQLite",
       ],
     });
   });
@@ -449,7 +465,7 @@ describe("native SQLite repository and migration contracts", () => {
       adapterName: "native-rusqlite-candidate",
       health: "ready",
       persistence: "durable",
-      schemaVersion: 31,
+      schemaVersion: 45,
     });
     await expect(reopened.delete()).resolves.toBe(true);
   });

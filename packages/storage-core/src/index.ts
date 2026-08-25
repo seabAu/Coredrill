@@ -1,5 +1,10 @@
 /** Storage ports, shared repository contracts, and migration coordination. */
 export {
+  advancingAuditTimestamp,
+  auditTimestamps,
+  type AuditTimestamps,
+} from "./audit-integrity.js";
+export {
   createTransactionSemanticsSuite,
   DatabaseContractViolation,
   defineDatabaseContractSuite,
@@ -100,6 +105,7 @@ export {
   AppSettingRepository,
   CompanyRepository,
   ContactRepository,
+  DeviceRepository,
   FieldValueRepository,
   JobRepository,
   JobSourceRepository,
@@ -115,6 +121,7 @@ export {
   type NewCompanyAlias,
   type NewContact,
   type NewContactPointProvenance,
+  type NewDevice,
   type NewFieldValue,
   type NewJob,
   type NewJobSource,
@@ -130,6 +137,7 @@ export type {
   CompanyRecord,
   ContactPointProvenanceRecord,
   ContactRecord,
+  DeviceRecord,
   FieldConfirmationRecord,
   FieldValueRecord,
   JobRecord,

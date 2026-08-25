@@ -13,6 +13,7 @@ import {
   createViewRepositoryContractSuite,
   defineSqlMigrations,
   runDatabaseContractSuite,
+  sqlStatement,
   type DatabaseContractAdapter,
   type DatabasePort,
   type DatabaseTransaction,
@@ -57,6 +58,20 @@ const migrationDefinitions = [
   ["0029_attachment_manifest.sql", "attachment-manifest"],
   ["0030_document_version_attachment.sql", "document-version-attachment"],
   ["0031_document_style_example.sql", "document-style-example"],
+  ["0032_device.sql", "device"],
+  ["0033_integrity_probe.sql", "integrity-probe"],
+  ["0034_validate_existing_integrity.sql", "validate-existing-integrity"],
+  ["0035_drop_integrity_probe.sql", "drop-integrity-probe"],
+  ["0036_application_document_insert_guard.sql", "application-document-insert-guard"],
+  ["0037_application_document_update_guard.sql", "application-document-update-guard"],
+  ["0038_document_kind_update_guard.sql", "document-kind-update-guard"],
+  ["0039_document_version_lineage_guard.sql", "document-version-lineage-guard"],
+  ["0040_document_version_update_guard.sql", "document-version-update-guard"],
+  ["0041_document_version_delete_guard.sql", "document-version-delete-guard"],
+  ["0042_source_snapshot_update_guard.sql", "source-snapshot-update-guard"],
+  ["0043_status_event_update_guard.sql", "status-event-update-guard"],
+  ["0044_interaction_update_guard.sql", "interaction-update-guard"],
+  ["0045_attachment_manifest_update_guard.sql", "attachment-manifest-update-guard"],
 ] as const;
 
 const migrations = defineSqlMigrations(
@@ -145,6 +160,38 @@ const adapter: DatabaseContractAdapter = {
 };
 
 describe("Phase 1 tracker repository contracts", () => {
+  it("rolls back the DB-006 upgrade when historical audit data is invalid", async () => {
+    const database = new NodeSqliteTestDatabase();
+    try {
+      await applySqlMigrations(database, migrations.slice(0, 31), APPLIED_AT);
+      await database.execute(
+        sqlStatement(
+          `INSERT INTO location(id, label, created_at, updated_at)
+           VALUES (?, ?, ?, ?)`,
+          [
+            "0198e102-0000-7000-8000-0000000000ff",
+            "Historical invalid audit row",
+            "2026-08-25T12:01:00.000Z",
+            "2026-08-25T12:00:00.000Z",
+          ],
+        ),
+      );
+
+      await expect(applySqlMigrations(database, migrations, APPLIED_AT)).rejects.toThrow();
+      await expect(database.diagnostics()).resolves.toMatchObject({ schemaVersion: 31 });
+      await expect(
+        database.query(
+          sqlStatement(
+            `SELECT name FROM sqlite_master
+             WHERE name IN ('device', 'coredrill_integrity_probe')`,
+          ),
+        ),
+      ).resolves.toEqual([]);
+    } finally {
+      database.close();
+    }
+  });
+
   it("passes the same migration and repository cases in fast in-memory SQLite", async () => {
     const suite = createTrackerRepositoryContractSuite({
       migrate: async (database) => {
@@ -160,6 +207,8 @@ describe("Phase 1 tracker repository contracts", () => {
         "persists company contact job source snapshot and provenance with bound values",
         "retains field candidates and requires explicit confirmed replacement",
         "enforces foreign keys and rolls back an invalid aggregate",
+        "persists a stable local device identity with monotonic audit fields",
+        "enforces document selection lineage and append-only integrity in SQLite",
       ],
     });
   });

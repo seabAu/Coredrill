@@ -17,6 +17,8 @@ test("runs the Phase 1 tracker repository contracts in browser SQLite", async ({
       "persists company contact job source snapshot and provenance with bound values",
       "retains field candidates and requires explicit confirmed replacement",
       "enforces foreign keys and rolls back an invalid aggregate",
+      "persists a stable local device identity with monotonic audit fields",
+      "enforces document selection lineage and append-only integrity in SQLite",
     ],
   });
 });

@@ -16,6 +16,16 @@ export interface AppSettingRecord {
   readonly rowVersion: number;
 }
 
+export interface DeviceRecord {
+  readonly id: EntityId<"device">;
+  readonly label: string;
+  readonly platform: string;
+  readonly createdAt: Instant;
+  readonly updatedAt: Instant;
+  readonly lastSeenAt: Instant;
+  readonly rowVersion: number;
+}
+
 export type LocationPrecision =
   "country" | "exact" | "locality" | "postal_code" | "region" | "unknown";
 

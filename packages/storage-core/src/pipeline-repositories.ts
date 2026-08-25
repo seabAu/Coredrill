@@ -15,6 +15,7 @@ import {
   type DatabaseSession,
   type QueryRow,
 } from "./database-port.js";
+import { auditTimestamps } from "./audit-integrity.js";
 import type {
   ApplicationRecord,
   InteractionDirection,
@@ -398,6 +399,7 @@ export class StatusDefinitionRepository {
       terminal: record.terminal,
       isSystem: record.isSystem,
     });
+    const audit = auditTimestamps(record.createdAt, record.updatedAt, record.archivedAt);
     const result = await this.session.execute(
       sqlStatement(
         `INSERT INTO status_definition(
@@ -412,9 +414,9 @@ export class StatusDefinitionRepository {
           stage.isSystem ? 1 : 0,
           stage.sortOrder,
           stage.terminal ? 1 : 0,
-          record.archivedAt === null ? null : instant(record.archivedAt),
-          instant(record.createdAt),
-          instant(record.updatedAt),
+          audit.archivedAt,
+          audit.createdAt,
+          audit.updatedAt,
         ],
       ),
     );
@@ -446,6 +448,7 @@ export class ApplicationRepository {
     options: CreateApplicationOptions = {},
   ): Promise<void> {
     const jobId = entityId("job", record.jobId);
+    const audit = auditTimestamps(record.createdAt, record.updatedAt, record.archivedAt);
     const existing = await this.session.query<CountRow>(
       sqlStatement(
         "SELECT count(*) AS total FROM application WHERE job_id = ? AND archived_at IS NULL",
@@ -476,9 +479,9 @@ export class ApplicationRepository {
             ? null
             : entityId("document-version", record.selectedCoverLetterVersionId),
           boundedText(record.notes, "Application notes", 200_000),
-          record.archivedAt === null ? null : instant(record.archivedAt),
-          instant(record.createdAt),
-          instant(record.updatedAt),
+          audit.archivedAt,
+          audit.createdAt,
+          audit.updatedAt,
         ],
       ),
     );
@@ -522,6 +525,7 @@ export class InteractionRepository {
     if (!INTERACTION_DIRECTIONS.has(record.direction)) {
       throw new TypeError("Interaction direction is invalid.");
     }
+    const audit = auditTimestamps(record.createdAt, record.updatedAt);
     const result = await this.session.execute(
       sqlStatement(
         `INSERT INTO interaction(
@@ -537,8 +541,8 @@ export class InteractionRepository {
           record.direction,
           boundedText(record.summary, "Interaction summary", 200_000),
           record.nextActionAt === null ? null : instant(record.nextActionAt),
-          instant(record.createdAt),
-          instant(record.updatedAt),
+          audit.createdAt,
+          audit.updatedAt,
         ],
       ),
     );
@@ -581,6 +585,7 @@ export class InterviewRepository {
     if (!Number.isSafeInteger(record.durationMinutes) || record.durationMinutes < 1) {
       throw new TypeError("Interview duration must be a positive whole number of minutes.");
     }
+    const audit = auditTimestamps(record.createdAt, record.updatedAt);
     const result = await this.session.execute(
       sqlStatement(
         `INSERT INTO interview(
@@ -598,8 +603,8 @@ export class InterviewRepository {
           serializeContactIds(record.contactIds),
           boundedText(record.preparationNotes, "Interview preparation notes", 200_000),
           optionalText(record.outcome, "Interview outcome", 200_000),
-          instant(record.createdAt),
-          instant(record.updatedAt),
+          audit.createdAt,
+          audit.updatedAt,
         ],
       ),
     );
@@ -625,6 +630,7 @@ export class ReminderRepository {
 
   public async create(record: NewReminder): Promise<void> {
     if (!REMINDER_STATES.has(record.state)) throw new TypeError("Reminder state is invalid.");
+    const audit = auditTimestamps(record.createdAt, record.updatedAt);
     const firedAt = record.firedAt === null ? null : instant(record.firedAt);
     if ((record.state === "fired") !== (firedAt !== null)) {
       throw new TypeError("A fired reminder requires exactly one fired timestamp.");
@@ -645,8 +651,8 @@ export class ReminderRepository {
           record.state,
           optionalText(record.note, "Reminder note", 200_000),
           firedAt,
-          instant(record.createdAt),
-          instant(record.updatedAt),
+          audit.createdAt,
+          audit.updatedAt,
         ],
       ),
     );
@@ -841,6 +847,7 @@ export const setNextAction = async (
   if (record.state !== "pending" || record.completedAt !== null) {
     throw new TypeError("A new next action must be pending and incomplete.");
   }
+  const audit = auditTimestamps(record.createdAt, record.updatedAt);
   await database.transaction(async (transaction) => {
     const jobId = entityId("job", record.jobId);
     const jobRows = await transaction.query<JobProjectionRow>(
@@ -886,8 +893,8 @@ export const setNextAction = async (
           boundedText(record.title, "Next-action title", 512, true),
           dueAt,
           record.timeZone === null ? null : timeZone(record.timeZone),
-          instant(record.createdAt),
-          instant(record.updatedAt),
+          audit.createdAt,
+          audit.updatedAt,
         ],
       ),
     );
@@ -897,7 +904,7 @@ export const setNextAction = async (
         `UPDATE job
          SET next_action_at = ?, updated_at = ?, row_version = row_version + 1
          WHERE id = ?`,
-        [dueAt, instant(record.updatedAt), jobId],
+        [dueAt, audit.updatedAt, jobId],
       ),
     );
     assertOneRow(updated.rowsAffected, "projection");

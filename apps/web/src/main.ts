@@ -52,6 +52,20 @@ import documentJobLinkMigrationSql from "../../../migrations/0028_document_job_l
 import attachmentManifestMigrationSql from "../../../migrations/0029_attachment_manifest.sql?raw";
 import documentVersionAttachmentMigrationSql from "../../../migrations/0030_document_version_attachment.sql?raw";
 import documentStyleExampleMigrationSql from "../../../migrations/0031_document_style_example.sql?raw";
+import deviceMigrationSql from "../../../migrations/0032_device.sql?raw";
+import integrityProbeMigrationSql from "../../../migrations/0033_integrity_probe.sql?raw";
+import validateExistingIntegrityMigrationSql from "../../../migrations/0034_validate_existing_integrity.sql?raw";
+import dropIntegrityProbeMigrationSql from "../../../migrations/0035_drop_integrity_probe.sql?raw";
+import applicationDocumentInsertGuardMigrationSql from "../../../migrations/0036_application_document_insert_guard.sql?raw";
+import applicationDocumentUpdateGuardMigrationSql from "../../../migrations/0037_application_document_update_guard.sql?raw";
+import documentKindUpdateGuardMigrationSql from "../../../migrations/0038_document_kind_update_guard.sql?raw";
+import documentVersionLineageGuardMigrationSql from "../../../migrations/0039_document_version_lineage_guard.sql?raw";
+import documentVersionUpdateGuardMigrationSql from "../../../migrations/0040_document_version_update_guard.sql?raw";
+import documentVersionDeleteGuardMigrationSql from "../../../migrations/0041_document_version_delete_guard.sql?raw";
+import sourceSnapshotUpdateGuardMigrationSql from "../../../migrations/0042_source_snapshot_update_guard.sql?raw";
+import statusEventUpdateGuardMigrationSql from "../../../migrations/0043_status_event_update_guard.sql?raw";
+import interactionUpdateGuardMigrationSql from "../../../migrations/0044_interaction_update_guard.sql?raw";
+import attachmentManifestUpdateGuardMigrationSql from "../../../migrations/0045_attachment_manifest_update_guard.sql?raw";
 import { createExtensionInbox, type ExtensionInboxApi } from "./extension-transfer.js";
 import {
   runStorageBenchmark,
@@ -322,6 +336,90 @@ const migrations = async () =>
       name: "document-style-example",
       sha256: await sha256Text(documentStyleExampleMigrationSql),
       sql: documentStyleExampleMigrationSql,
+    },
+    {
+      version: 32,
+      name: "device",
+      sha256: await sha256Text(deviceMigrationSql),
+      sql: deviceMigrationSql,
+    },
+    {
+      version: 33,
+      name: "integrity-probe",
+      sha256: await sha256Text(integrityProbeMigrationSql),
+      sql: integrityProbeMigrationSql,
+    },
+    {
+      version: 34,
+      name: "validate-existing-integrity",
+      sha256: await sha256Text(validateExistingIntegrityMigrationSql),
+      sql: validateExistingIntegrityMigrationSql,
+    },
+    {
+      version: 35,
+      name: "drop-integrity-probe",
+      sha256: await sha256Text(dropIntegrityProbeMigrationSql),
+      sql: dropIntegrityProbeMigrationSql,
+    },
+    {
+      version: 36,
+      name: "application-document-insert-guard",
+      sha256: await sha256Text(applicationDocumentInsertGuardMigrationSql),
+      sql: applicationDocumentInsertGuardMigrationSql,
+    },
+    {
+      version: 37,
+      name: "application-document-update-guard",
+      sha256: await sha256Text(applicationDocumentUpdateGuardMigrationSql),
+      sql: applicationDocumentUpdateGuardMigrationSql,
+    },
+    {
+      version: 38,
+      name: "document-kind-update-guard",
+      sha256: await sha256Text(documentKindUpdateGuardMigrationSql),
+      sql: documentKindUpdateGuardMigrationSql,
+    },
+    {
+      version: 39,
+      name: "document-version-lineage-guard",
+      sha256: await sha256Text(documentVersionLineageGuardMigrationSql),
+      sql: documentVersionLineageGuardMigrationSql,
+    },
+    {
+      version: 40,
+      name: "document-version-update-guard",
+      sha256: await sha256Text(documentVersionUpdateGuardMigrationSql),
+      sql: documentVersionUpdateGuardMigrationSql,
+    },
+    {
+      version: 41,
+      name: "document-version-delete-guard",
+      sha256: await sha256Text(documentVersionDeleteGuardMigrationSql),
+      sql: documentVersionDeleteGuardMigrationSql,
+    },
+    {
+      version: 42,
+      name: "source-snapshot-update-guard",
+      sha256: await sha256Text(sourceSnapshotUpdateGuardMigrationSql),
+      sql: sourceSnapshotUpdateGuardMigrationSql,
+    },
+    {
+      version: 43,
+      name: "status-event-update-guard",
+      sha256: await sha256Text(statusEventUpdateGuardMigrationSql),
+      sql: statusEventUpdateGuardMigrationSql,
+    },
+    {
+      version: 44,
+      name: "interaction-update-guard",
+      sha256: await sha256Text(interactionUpdateGuardMigrationSql),
+      sql: interactionUpdateGuardMigrationSql,
+    },
+    {
+      version: 45,
+      name: "attachment-manifest-update-guard",
+      sha256: await sha256Text(attachmentManifestUpdateGuardMigrationSql),
+      sql: attachmentManifestUpdateGuardMigrationSql,
     },
   ]);
 

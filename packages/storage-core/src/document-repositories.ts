@@ -1,6 +1,7 @@
 import type { JsonValue } from "@coredrill/contracts";
 import { entityId, instant, type EntityId, type Instant } from "@coredrill/domain";
 
+import { auditTimestamps } from "./audit-integrity.js";
 import { sqlStatement, type DatabaseSession, type QueryRow } from "./database-port.js";
 import type {
   AttachmentManifestRecord,
@@ -276,6 +277,7 @@ export class DocumentRepository {
   public constructor(private readonly session: DatabaseSession) {}
 
   public async create(record: NewDocument): Promise<void> {
+    const audit = auditTimestamps(record.createdAt, record.updatedAt, record.archivedAt);
     const result = await this.session.execute(
       sqlStatement(
         `INSERT INTO document(id, kind, title, source, archived_at, created_at, updated_at)
@@ -285,9 +287,9 @@ export class DocumentRepository {
           documentKind(record.kind),
           boundedText(record.title, "Document title", 512, true),
           safeIdentifier(record.source, "Document source"),
-          record.archivedAt === null ? null : instant(record.archivedAt),
-          instant(record.createdAt),
-          instant(record.updatedAt),
+          audit.archivedAt,
+          audit.createdAt,
+          audit.updatedAt,
         ],
       ),
     );

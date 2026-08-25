@@ -1,6 +1,7 @@
 import type { JsonValue } from "@coredrill/contracts";
 import { entityId, instant, type EntityId, type Instant } from "@coredrill/domain";
 
+import { advancingAuditTimestamp, auditTimestamps } from "./audit-integrity.js";
 import { sqlStatement, type DatabaseSession, type QueryRow } from "./database-port.js";
 import type { SavedViewRecord, SavedViewScope, TagRecord } from "./view-records.js";
 
@@ -171,6 +172,7 @@ export class TagRepository {
   public constructor(private readonly session: DatabaseSession) {}
 
   public async create(record: NewTag): Promise<void> {
+    const audit = auditTimestamps(record.createdAt, record.updatedAt, record.archivedAt);
     const result = await this.session.execute(
       sqlStatement(
         `INSERT INTO tag(id, name, color, archived_at, created_at, updated_at)
@@ -179,9 +181,9 @@ export class TagRepository {
           entityId("tag", record.id),
           boundedText(record.name, "Tag name", 80, true),
           optionalText(record.color, "Tag color", 64),
-          record.archivedAt === null ? null : instant(record.archivedAt),
-          instant(record.createdAt),
-          instant(record.updatedAt),
+          audit.archivedAt,
+          audit.createdAt,
+          audit.updatedAt,
         ],
       ),
     );
@@ -260,6 +262,7 @@ export class SavedViewRepository {
 
   public async create(record: NewSavedView): Promise<void> {
     const version = filterAstVersion(record.filterAst, record.filterAstVersion);
+    const audit = auditTimestamps(record.createdAt, record.updatedAt, record.archivedAt);
     const result = await this.session.execute(
       sqlStatement(
         `INSERT INTO saved_view(
@@ -274,9 +277,9 @@ export class SavedViewRepository {
           serializeJson(record.filterAst, "Filter AST"),
           serializeJson(record.uiSettings, "Saved-view UI settings"),
           record.isSystem ? 1 : 0,
-          record.archivedAt === null ? null : instant(record.archivedAt),
-          instant(record.createdAt),
-          instant(record.updatedAt),
+          audit.archivedAt,
+          audit.createdAt,
+          audit.updatedAt,
         ],
       ),
     );
@@ -315,6 +318,13 @@ export class SavedViewRepository {
   ): Promise<SavedViewRecord> {
     const id = entityId("saved-view", record.id);
     const version = filterAstVersion(record.filterAst, record.filterAstVersion);
+    const existing = await this.findById(id);
+    if (existing === undefined) throw new ViewRepositoryConflictError("record_not_found");
+    if (existing.rowVersion !== positiveInteger(expectedRowVersion, "Expected row version")) {
+      throw new ViewRepositoryConflictError("row_version_conflict");
+    }
+    const audit = auditTimestamps(existing.createdAt, record.updatedAt, record.archivedAt);
+    advancingAuditTimestamp(existing.updatedAt, audit.updatedAt, "Saved-view updated timestamp");
     const result = await this.session.execute(
       sqlStatement(
         `UPDATE saved_view
@@ -326,10 +336,10 @@ export class SavedViewRepository {
           version,
           serializeJson(record.filterAst, "Filter AST"),
           serializeJson(record.uiSettings, "Saved-view UI settings"),
-          record.archivedAt === null ? null : instant(record.archivedAt),
-          instant(record.updatedAt),
+          audit.archivedAt,
+          audit.updatedAt,
           id,
-          positiveInteger(expectedRowVersion, "Expected row version"),
+          expectedRowVersion,
         ],
       ),
     );

@@ -15,12 +15,14 @@ import {
   type DatabaseSession,
   type QueryRow,
 } from "./database-port.js";
+import { advancingAuditTimestamp, auditTimestamps } from "./audit-integrity.js";
 import type {
   AppSettingRecord,
   CompanyAliasRecord,
   CompanyRecord,
   ContactPointProvenanceRecord,
   ContactRecord,
+  DeviceRecord,
   FieldConfirmationRecord,
   FieldValueRecord,
   JobRecord,
@@ -34,6 +36,7 @@ import type {
 } from "./tracker-records.js";
 
 export type NewAppSetting = Omit<AppSettingRecord, "rowVersion">;
+export type NewDevice = Omit<DeviceRecord, "rowVersion">;
 export type NewLocation = Omit<LocationRecord, "rowVersion">;
 export type NewCompany = Omit<CompanyRecord, "rowVersion">;
 export type NewContact = Omit<ContactRecord, "rowVersion">;
@@ -46,17 +49,24 @@ export type NewCompanyAlias = Omit<CompanyAliasRecord, "rowVersion">;
 export type NewContactPointProvenance = Omit<ContactPointProvenanceRecord, "rowVersion">;
 
 export type TrackerRepositoryConflictCode =
-  "confirmed_field_value_requires_explicit_replacement" | "field_value_not_replaceable";
+  | "confirmed_field_value_requires_explicit_replacement"
+  | "device_not_found"
+  | "field_value_not_replaceable"
+  | "optimistic_write_conflict";
+
+const TRACKER_CONFLICT_MESSAGES: Readonly<Record<TrackerRepositoryConflictCode, string>> = {
+  confirmed_field_value_requires_explicit_replacement:
+    "A user-confirmed field value requires an explicit confirmed replacement.",
+  device_not_found: "The local device identity does not exist.",
+  field_value_not_replaceable: "The field value cannot be replaced in its current state.",
+  optimistic_write_conflict: "The stored record changed before this update could be applied.",
+};
 
 export class TrackerRepositoryConflictError extends Error {
   public override readonly name = "TrackerRepositoryConflictError";
 
   public constructor(public readonly code: TrackerRepositoryConflictCode) {
-    super(
-      code === "confirmed_field_value_requires_explicit_replacement"
-        ? "A user-confirmed field value requires an explicit confirmed replacement."
-        : "The field value cannot be replaced in its current state.",
-    );
+    super(TRACKER_CONFLICT_MESSAGES[code]);
   }
 }
 
@@ -72,6 +82,16 @@ interface AppSettingRow extends QueryRow {
   readonly key: string;
   readonly json_value: string;
   readonly updated_at: string;
+  readonly row_version: number;
+}
+
+interface DeviceRow extends QueryRow {
+  readonly id: string;
+  readonly label: string;
+  readonly platform: string;
+  readonly created_at: string;
+  readonly updated_at: string;
+  readonly last_seen_at: string;
   readonly row_version: number;
 }
 
@@ -314,6 +334,17 @@ const mapSetting = (row: AppSettingRow): AppSettingRecord =>
     key: safeIdentifier(row.key, "Stored setting key"),
     value: parseJson(row.json_value),
     updatedAt: instant(row.updated_at),
+    rowVersion: rowVersion(row.row_version),
+  });
+
+const mapDevice = (row: DeviceRow): DeviceRecord =>
+  Object.freeze({
+    id: entityId("device", row.id),
+    label: requiredText(row.label, "Stored device label", 256),
+    platform: safeIdentifier(row.platform, "Stored device platform"),
+    createdAt: instant(row.created_at),
+    updatedAt: instant(row.updated_at),
+    lastSeenAt: instant(row.last_seen_at),
     rowVersion: rowVersion(row.row_version),
   });
 
@@ -568,6 +599,83 @@ export class AppSettingRepository {
   }
 }
 
+export class DeviceRepository {
+  public constructor(private readonly session: DatabaseSession) {}
+
+  public async register(record: NewDevice): Promise<DeviceRecord> {
+    const audit = auditTimestamps(record.createdAt, record.updatedAt);
+    const lastSeenAt = advancingAuditTimestamp(
+      audit.updatedAt,
+      record.lastSeenAt,
+      "Device last-seen timestamp",
+    );
+    const result = await this.session.execute(
+      sqlStatement(
+        `INSERT INTO device(id, label, platform, created_at, updated_at, last_seen_at)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          entityId("device", record.id),
+          requiredText(record.label, "Device label", 256),
+          safeIdentifier(record.platform, "Device platform"),
+          audit.createdAt,
+          audit.updatedAt,
+          lastSeenAt,
+        ],
+      ),
+    );
+    assertOneRow(result.rowsAffected, "Device registration");
+    const stored = await this.findById(record.id);
+    if (stored === undefined) throw new TrackerRepositoryConflictError("device_not_found");
+    return stored;
+  }
+
+  public async findById(id: EntityId<"device">): Promise<DeviceRecord | undefined> {
+    const rows = await this.session.query<DeviceRow>(
+      sqlStatement(
+        `SELECT id, label, platform, created_at, updated_at, last_seen_at, row_version
+         FROM device WHERE id = ?`,
+        [entityId("device", id)],
+      ),
+    );
+    return rows[0] === undefined ? undefined : mapDevice(rows[0]);
+  }
+
+  public async touch(
+    id: EntityId<"device">,
+    lastSeenAtInput: Instant,
+    updatedAtInput: Instant,
+    expectedRowVersion: number,
+  ): Promise<DeviceRecord> {
+    const stored = await this.findById(id);
+    if (stored === undefined) throw new TrackerRepositoryConflictError("device_not_found");
+    const updatedAt = advancingAuditTimestamp(
+      stored.updatedAt,
+      updatedAtInput,
+      "Device updated timestamp",
+    );
+    const lastSeenAt = advancingAuditTimestamp(
+      stored.lastSeenAt,
+      lastSeenAtInput,
+      "Device last-seen timestamp",
+    );
+    advancingAuditTimestamp(updatedAt, lastSeenAt, "Device last-seen timestamp");
+    const result = await this.session.execute(
+      sqlStatement(
+        `UPDATE device
+         SET updated_at = ?, last_seen_at = ?, row_version = row_version + 1
+         WHERE id = ? AND row_version = ?`,
+        [updatedAt, lastSeenAt, entityId("device", id), rowVersion(expectedRowVersion)],
+      ),
+    );
+    if (result.rowsAffected !== 1) {
+      throw new TrackerRepositoryConflictError("optimistic_write_conflict");
+    }
+    const updated = await this.findById(id);
+    if (updated === undefined) throw new TrackerRepositoryConflictError("device_not_found");
+    return updated;
+  }
+}
+
 export class LocationRepository {
   public constructor(private readonly session: DatabaseSession) {}
 
@@ -575,6 +683,7 @@ export class LocationRepository {
     if (record.precision !== null && !LOCATION_PRECISIONS.has(record.precision)) {
       throw new TypeError("Location precision is invalid.");
     }
+    const audit = auditTimestamps(record.createdAt, record.updatedAt);
     const result = await this.session.execute(
       sqlStatement(
         `INSERT INTO location(
@@ -592,8 +701,8 @@ export class LocationRepository {
           record.longitude,
           record.precision,
           record.source,
-          instant(record.createdAt),
-          instant(record.updatedAt),
+          audit.createdAt,
+          audit.updatedAt,
         ],
       ),
     );
@@ -617,6 +726,7 @@ export class CompanyRepository {
   public constructor(private readonly session: DatabaseSession) {}
 
   public async create(record: NewCompany): Promise<void> {
+    const audit = auditTimestamps(record.createdAt, record.updatedAt, record.archivedAt);
     const result = await this.session.execute(
       sqlStatement(
         `INSERT INTO company(
@@ -630,9 +740,9 @@ export class CompanyRepository {
           optionalText(record.domain, "Company domain", 253),
           record.locationId === null ? null : entityId("location", record.locationId),
           record.notes,
-          record.archivedAt === null ? null : instant(record.archivedAt),
-          instant(record.createdAt),
-          instant(record.updatedAt),
+          audit.archivedAt,
+          audit.createdAt,
+          audit.updatedAt,
         ],
       ),
     );
@@ -673,6 +783,7 @@ export class ContactRepository {
   public constructor(private readonly session: DatabaseSession) {}
 
   public async create(record: NewContact): Promise<void> {
+    const audit = auditTimestamps(record.createdAt, record.updatedAt, record.archivedAt);
     const result = await this.session.execute(
       sqlStatement(
         `INSERT INTO contact(
@@ -690,9 +801,9 @@ export class ContactRepository {
           record.confidence === null ? null : confidence(record.confidence),
           record.userConfirmed ? 1 : 0,
           record.notes,
-          record.archivedAt === null ? null : instant(record.archivedAt),
-          instant(record.createdAt),
-          instant(record.updatedAt),
+          audit.archivedAt,
+          audit.createdAt,
+          audit.updatedAt,
         ],
       ),
     );
@@ -735,6 +846,7 @@ export class JobRepository {
   public constructor(private readonly session: DatabaseSession) {}
 
   public async create(record: NewJob): Promise<void> {
+    const audit = auditTimestamps(record.createdAt, record.updatedAt, record.archivedAt);
     const result = await this.session.execute(
       sqlStatement(
         `INSERT INTO job(
@@ -761,9 +873,9 @@ export class JobRepository {
             ? null
             : entityId("status_definition", record.currentStatusId),
           record.nextActionAt === null ? null : instant(record.nextActionAt),
-          record.archivedAt === null ? null : instant(record.archivedAt),
-          instant(record.createdAt),
-          instant(record.updatedAt),
+          audit.archivedAt,
+          audit.createdAt,
+          audit.updatedAt,
         ],
       ),
     );
@@ -789,6 +901,13 @@ export class JobSourceRepository {
   public constructor(private readonly session: DatabaseSession) {}
 
   public async create(record: NewJobSource): Promise<void> {
+    const audit = auditTimestamps(record.createdAt, record.updatedAt);
+    const firstSeenAt = instant(record.firstSeenAt);
+    const lastSeenAt = advancingAuditTimestamp(
+      firstSeenAt,
+      record.lastSeenAt,
+      "Job source last-seen timestamp",
+    );
     const result = await this.session.execute(
       sqlStatement(
         `INSERT INTO job_source(
@@ -802,12 +921,12 @@ export class JobSourceRepository {
           optionalText(record.externalId, "External source ID", 1024),
           record.canonicalUrl === null ? null : webUrl(record.canonicalUrl),
           record.applyUrl === null ? null : webUrl(record.applyUrl),
-          instant(record.firstSeenAt),
-          instant(record.lastSeenAt),
+          firstSeenAt,
+          lastSeenAt,
           record.contentHash === null ? null : sha256(record.contentHash, "Source content hash"),
           record.primary ? 1 : 0,
-          instant(record.createdAt),
-          instant(record.updatedAt),
+          audit.createdAt,
+          audit.updatedAt,
         ],
       ),
     );
@@ -928,6 +1047,7 @@ export class FieldValueRepository {
 
   public async append(record: NewFieldValue): Promise<void> {
     const confirmation = confirmationColumns(record.userConfirmation);
+    const audit = auditTimestamps(record.createdAt, record.updatedAt);
     const result = await this.session.execute(
       sqlStatement(
         `INSERT INTO field_value(
@@ -946,8 +1066,8 @@ export class FieldValueRepository {
             : serializeJson(record.rawValue, "Raw field value", 1_000_000),
           entityId("provenance", record.provenanceId),
           ...confirmation,
-          instant(record.createdAt),
-          instant(record.updatedAt),
+          audit.createdAt,
+          audit.updatedAt,
         ],
       ),
     );
@@ -1131,6 +1251,7 @@ export const replaceConfirmedFieldValue = async (
 export interface TrackerRepositories {
   readonly vaults: VaultRepository;
   readonly settings: AppSettingRepository;
+  readonly devices: DeviceRepository;
   readonly locations: LocationRepository;
   readonly companies: CompanyRepository;
   readonly contacts: ContactRepository;
@@ -1144,6 +1265,7 @@ export const createTrackerRepositories = (session: DatabaseSession): TrackerRepo
   Object.freeze({
     vaults: new VaultRepository(session),
     settings: new AppSettingRepository(session),
+    devices: new DeviceRepository(session),
     locations: new LocationRepository(session),
     companies: new CompanyRepository(session),
     contacts: new ContactRepository(session),
