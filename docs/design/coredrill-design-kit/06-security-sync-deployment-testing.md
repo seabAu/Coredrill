@@ -17,6 +17,8 @@ The versioned local diagnostic event contains only operational category/name/cod
 
 The redactor is fail-closed and never returns rejected values. Product telemetry is a different future contract: it remains off unless the user opts in and every event receives the separate disclosure and privacy review required by D-053.
 
+The `APP-001` vault application boundary applies the same fail-closed rule before diagnostics reach a UI. It copies only reviewed health/persistence tokens, a bounded positive schema version, the read-only flag, and unique allowlisted issue codes; adapter name/details and arbitrary strings never survive. Typed lifecycle failures map to stable content-free application errors, while unknown adapter exceptions collapse without returning paths, SQL, or user content. Durable diagnostic logging and support-bundle export remain reserved for `APP-008`. See [vault application verification](../../proof/phase-1-vault-application-verification.md).
+
 ## Threat model and controls
 
 ### Hostile captured content / prompt injection

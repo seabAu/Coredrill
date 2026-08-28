@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-28
 Current milestone: Phase 1 — local tracker and recovery loop (`GATE-0` human validation remains blocked)
-Current work item: `APP-001` — vault create/open/diagnostics command flow
-Next recommended slice: `APP-002` — manual `CreateJob` and transactional `ChangeStatus`
+Current work item: `APP-002` — manual `CreateJob` and transactional `ChangeStatus`
+Next recommended slice: `APP-003` — next actions, reminders, interviews, and interactions
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `APP-002` — manual `CreateJob` and transactional `Chan
 | Field | Value |
 |---|---|
 | Milestone | Phase 1, with the independent Phase 0 human-validation gate retained below |
-| Item range | `APP-001` |
+| Item range | `APP-002` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-28 |
-| Expected proof | Use-case tests for accountless vault create/open and redacted diagnostics across success, degraded, and safe-failure paths, without an AI or network dependency |
+| Expected proof | Use-case tests for manual `CreateJob` and atomic `ChangeStatus`, including a durable status event, projection rollback, and stable content-free failures without a source, AI, or network dependency |
 | Blocker | None for this slice. `UXR-004` through `UXR-008` still require the owner-authorized participant study before the Phase 1 UI lock; `FND-001` remains independently blocked. |
-| Next handoff | Implement and prove `APP-001`, then continue to `APP-002` without claiming `GATE-0` or locking provisional interface language. |
+| Next handoff | Implement and prove `APP-002`, then continue to `APP-003` without claiming `GATE-0` or locking provisional interface language. |
 
 ## Milestone status
 
@@ -161,7 +161,7 @@ Next recommended slice: `APP-002` — manual `CreateJob` and transactional `Chan
 
 ## Application services
 
-- [ ] **APP-001** Implement vault create/open/diagnostics command flow. — Proof: _use-case tests_
+- [x] **APP-001** Implement vault create/open/diagnostics command flow. — Proof: [accountless vault lifecycle and redacted diagnostics use-case verification](../../proof/phase-1-vault-application-verification.md)
 - [ ] **APP-002** Implement manual `CreateJob` and transactional `ChangeStatus` with timeline event. — Proof: _use-case tests_
 - [ ] **APP-003** Implement `SetNextAction`, reminders, interviews, and interactions. — Proof: _clock/time-zone tests_
 - [ ] **APP-004** Implement company/contact relationship commands with provenance rules. — Proof: _tests_

@@ -113,6 +113,8 @@ interface DatabasePort extends DatabaseSession {
 
 `DB-008` freezes the current Phase 1 inventory as `phase-1-repository-contracts-v1`: five component suites and 15 explicitly ordered cases. The aggregate factory rejects component suite/name/order drift before execution, and the manifest carries its ordered case list across browser automation protocols without relying on JSON object-member order. Fast Node SQLite, official SQLite WASM/OPFS, and native rusqlite execute that same aggregate; exact Chrome 151/152, Firefox 153/154, Windows, macOS, and diagnostic Ubuntu lanes provide hosted proof. See [repository-contract CI parity verification](../../proof/phase-1-repository-contract-ci-verification.md).
 
+`APP-001` adds adapter-neutral vault lifecycle orchestration in `@coredrill/application`. `CreateVaultCommand` and `OpenVaultCommand` validate caller input before the port, bind local UUIDv7 identities and operation instants to the requested action, and revalidate the returned session; `GetVaultDiagnosticsQuery` exposes only reviewed health, persistence, schema, read-only, and issue-code fields. All returned values are copied and frozen, adapter details are omitted, and typed or unknown port failures become stable content-free application errors. Concrete browser/native composition remains outside the application package. See [vault application verification](../../proof/phase-1-vault-application-verification.md).
+
 `PortableDatabase` is the adapter-neutral database-byte/checksum/schema-version handoff. Archive assembly adds the versioned manifest, human-readable JSON/CSV data, attachment inventory, migration history, per-entry SHA-256 checksums, and explicit encryption state required by the portable-archive contract.
 
 ### Browser adapter
