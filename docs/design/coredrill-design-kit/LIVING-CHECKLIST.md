@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-28
 Current milestone: Phase 1 — local tracker and recovery loop (`GATE-0` human validation remains blocked)
-Current work item: `APP-003` — next actions, reminders, interviews, and interactions
-Next recommended slice: `APP-004` — company/contact relationship commands with provenance rules
+Current work item: `APP-004` — company/contact relationship commands with provenance rules
+Next recommended slice: `APP-005` — Pipeline queries, counts, groups, pagination, and job workspace DTO
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `APP-004` — company/contact relationship commands with
 | Field | Value |
 |---|---|
 | Milestone | Phase 1, with the independent Phase 0 human-validation gate retained below |
-| Item range | `APP-003` |
+| Item range | `APP-004` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-28 |
-| Expected proof | Clock and time-zone tests for `SetNextAction`, local reminders, interviews, and interactions, including linkage, scheduling validation, stable content-free failures, and no network scheduler dependency |
+| Expected proof | Use-case tests for company/contact relationship commands, including manual versus source-backed fields, explicit provenance linkage, user-confirmed value protection, and no guessed contact data or outreach |
 | Blocker | None for this slice. `UXR-004` through `UXR-008` still require the owner-authorized participant study before the Phase 1 UI lock; `FND-001` remains independently blocked. |
-| Next handoff | Implement and prove `APP-003`, then continue to `APP-004` without claiming `GATE-0` or locking provisional interface language. |
+| Next handoff | Implement and prove `APP-004`, then continue to `APP-005` without claiming `GATE-0` or locking provisional interface language. |
 
 ## Milestone status
 
@@ -163,7 +163,7 @@ Next recommended slice: `APP-004` — company/contact relationship commands with
 
 - [x] **APP-001** Implement vault create/open/diagnostics command flow. — Proof: [accountless vault lifecycle and redacted diagnostics use-case verification](../../proof/phase-1-vault-application-verification.md)
 - [x] **APP-002** Implement manual `CreateJob` and transactional `ChangeStatus` with timeline event. — Proof: [manual job creation and atomic status-change application verification](../../proof/phase-1-manual-job-pipeline-application-verification.md)
-- [ ] **APP-003** Implement `SetNextAction`, reminders, interviews, and interactions. — Proof: _clock/time-zone tests_
+- [x] **APP-003** Implement `SetNextAction`, reminders, interviews, and interactions. — Proof: [next-action, interaction, interview, and local-reminder application verification](../../proof/phase-1-job-activity-application-verification.md)
 - [ ] **APP-004** Implement company/contact relationship commands with provenance rules. — Proof: _tests_
 - [ ] **APP-005** Implement Pipeline queries, counts, board groups, table pagination, and job workspace DTO. — Proof: _query tests_
 - [ ] **APP-006** Implement validated filter/sort/group/saved-view commands. — Proof: _AST fuzz/property tests_

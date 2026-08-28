@@ -194,6 +194,8 @@ The storage-core migration runner validates contiguous positive versions, stable
 
 The `APP-002` application boundary creates a manual job with a null current-status projection and changes status only through a single port action required to update the job and optional application projections while appending the timeline event in one transaction. This preserves the existing repository rollback guarantees without selecting a default display-stage name. See [manual job pipeline application verification](../../proof/phase-1-manual-job-pipeline-application-verification.md).
 
+The `APP-003` application boundary creates pending incomplete next actions, append-only non-future interaction history, future interview schedules, and future pending local reminders. Scheduled records retain a UTC instant plus a validated canonical IANA time zone; unscheduled next actions retain neither. Operation context, not caller data, supplies creation/update audit time, and all returned activity records are revalidated against the initiating command. See [job activity application verification](../../proof/phase-1-job-activity-application-verification.md).
+
 ## Future sync readiness
 
 Reserve `row_version`, `updated_at`, stable entity IDs, and one local device identity now; add an append-only `sync_op` table only when sync is implemented. Existing `archived_at` fields are the local soft-delete representation, not a claim that multi-device tombstone retention or conflict semantics have been selected. Do not burden v1 with a speculative CRDT. The later sync ADR must define per-entity conflict rules, tombstones, attachment handling, encryption, compaction, cryptographic device authorization/removal, and any server cursor before a server endpoint exists.

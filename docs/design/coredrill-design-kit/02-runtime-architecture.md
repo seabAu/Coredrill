@@ -117,6 +117,8 @@ interface DatabasePort extends DatabaseSession {
 
 `APP-002` adds adapter-neutral manual `CreateJob` and `ChangeStatus` operations in the same package. Manual creation validates before generating local identity/time values and persists neutral projections without inventing source or provenance state. Status change makes one port call whose contract requires every projection update and the append-only event to commit atomically; the existing storage-core `changePipelineStatus` transaction is the matching durable seam. Returned jobs/events are revalidated, copied, and frozen, while typed or unknown port failures become stable content-free application errors. New manual jobs have no current status, so this slice does not resolve or silently preempt `Q-006`. Concrete browser/native composition remains outside the package. See [manual job pipeline application verification](../../proof/phase-1-manual-job-pipeline-application-verification.md).
 
+`APP-003` adds adapter-neutral `SetNextAction`, `RecordInteraction`, `ScheduleInterview`, and `ScheduleReminder` operations. Application context supplies immutable local identity/audit time; interactions cannot be future-dated, while newly scheduled interviews and reminders must be future instants with recognized canonical IANA zones. A scheduled next action retains UTC plus its explicit IANA interpretation, while an unscheduled action invents neither. Returned records are revalidated, copied, and frozen, and the local activity port has no network or outreach capability. Existing storage-core activity repositories remain the durable seam, including the atomic next-action/job-projection transaction. See [job activity application verification](../../proof/phase-1-job-activity-application-verification.md).
+
 `PortableDatabase` is the adapter-neutral database-byte/checksum/schema-version handoff. Archive assembly adds the versioned manifest, human-readable JSON/CSV data, attachment inventory, migration history, per-entry SHA-256 checksums, and explicit encryption state required by the portable-archive contract.
 
 ### Browser adapter
@@ -176,7 +178,7 @@ The Phase 0 `EXT-004` through `EXT-006` implementation proves this boundary with
 Commands are explicit and transactional:
 
 - `CaptureJob`, `ReviewCapture`, `MergeCapture`, `CreateJob`, `ChangeStatus`.
-- `RecordInteraction`, `ScheduleInterview`, `SetNextAction`.
+- `RecordInteraction`, `ScheduleInterview`, `ScheduleReminder`, `SetNextAction`.
 - `ImportCareerDocument`, `ConfirmEvidence`, `MatchJobToProfile`.
 - `DraftCoverLetter`, `DraftApplicationAnswer`, `AcceptDocumentVersion`.
 - `RefreshSalaryEstimate`, `ImportConnectorResults`.
