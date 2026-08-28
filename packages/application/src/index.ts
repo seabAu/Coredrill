@@ -18,6 +18,21 @@ export {
   type ApplicationResult,
 } from "./result.js";
 export {
+  JOB_PIPELINE_ERROR_CODES,
+  JobPipelineError,
+  createJobPipelineOperations,
+  type ChangeStatusInput,
+  type ChangeStatusPortInput,
+  type CreateJobInput,
+  type CreateManualJobPortInput,
+  type CreatedJobDto,
+  type JobPipelineErrorCode,
+  type JobPipelineOperationDependencies,
+  type JobPipelineOperations,
+  type JobPipelinePort,
+  type StatusEventDto,
+} from "./job-pipeline.js";
+export {
   VAULT_DIAGNOSTIC_ISSUE_CODES,
   VAULT_LIFECYCLE_ERROR_CODES,
   VAULT_STORAGE_HEALTH_VALUES,
