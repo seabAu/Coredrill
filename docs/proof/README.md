@@ -24,3 +24,4 @@ Checklist proof records command, tool version, date, exit status, and artifact p
 - [`DB-007` indexed lexical search, FTS5 detection/fallback, and benchmark verification](phase-1-job-search-verification.md)
 - [`DB-008` versioned repository-contract inventory and browser/native CI parity verification](phase-1-repository-contract-ci-verification.md)
 - [`APP-001` vault create/open/diagnostics application verification](phase-1-vault-application-verification.md)
+- [`APP-002` manual job creation and atomic status-change application verification](phase-1-manual-job-pipeline-application-verification.md)
