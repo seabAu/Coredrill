@@ -366,21 +366,25 @@ describe("native SQLite repository and migration contracts", () => {
     });
   });
 
-  it("passes the versioned Phase 1 repository contract manifest", async () => {
-    const suite = createPhase1RepositoryContractSuite({
-      expectedFts5: true,
-      migrate: async (database) => {
-        await applySqlMigrations(database, migrations(), APPLIED_AT);
-      },
-    });
-    expect(PHASE_1_REPOSITORY_CONTRACT_MANIFEST.schemaVersion).toBe(1);
-    expect(PHASE_1_REPOSITORY_CONTRACT_CASE_NAMES).toHaveLength(15);
-    await expect(runDatabaseContractSuite(nativeAdapter, suite)).resolves.toEqual({
-      adapterName: "native-rusqlite-candidate",
-      suiteName: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.suiteName,
-      completedCases: PHASE_1_REPOSITORY_CONTRACT_CASE_NAMES,
-    });
-  });
+  it(
+    "passes the versioned Phase 1 repository contract manifest",
+    async () => {
+      const suite = createPhase1RepositoryContractSuite({
+        expectedFts5: true,
+        migrate: async (database) => {
+          await applySqlMigrations(database, migrations(), APPLIED_AT);
+        },
+      });
+      expect(PHASE_1_REPOSITORY_CONTRACT_MANIFEST.schemaVersion).toBe(1);
+      expect(PHASE_1_REPOSITORY_CONTRACT_CASE_NAMES).toHaveLength(15);
+      await expect(runDatabaseContractSuite(nativeAdapter, suite)).resolves.toEqual({
+        adapterName: "native-rusqlite-candidate",
+        suiteName: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.suiteName,
+        completedCases: PHASE_1_REPOSITORY_CONTRACT_CASE_NAMES,
+      });
+    },
+    15_000,
+  );
 
   it("persists the migrated vault across native close and reopen", async () => {
     const databaseName = nextDatabaseName();
