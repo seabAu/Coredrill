@@ -85,7 +85,7 @@ The dependency graph and lockfile did not change. npm audit found no known vulne
 ## Boundaries and remaining work
 
 - Current search covers fields that exist in schema version 84. Requirements and career-evidence content join the same reviewed search boundary only after their owning persistence slices exist; this slice does not pre-create speculative tables.
-- `DB-008` remains open for a dedicated, versioned proof that browser and native CI execute one identical complete repository-contract inventory.
+- `DB-008` now supplies the dedicated [versioned proof](phase-1-repository-contract-ci-verification.md) that browser and native CI execute one identical complete repository-contract inventory.
 - Application-service orchestration and scoped/global search UI remain owned by `APP-*` and `UI-011`; this slice exposes repositories and diagnostics only.
 - No embeddings, vector store, network service, account, AI provider, crawler, browser surveillance, auto-apply, automated outreach, or generated evidence was introduced.
 - `Q-006` remains open; no default display-stage or saved-view terminology was chosen or locked.

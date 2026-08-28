@@ -111,6 +111,8 @@ interface DatabasePort extends DatabaseSession {
 
 `SqlStatement` contains SQL plus bound parameters; repositories never concatenate user values. The transaction callback receives a deliberately narrowed session, so it cannot recursively open a transaction or perform export/diagnostic work. The adapter commits only when the callback fulfills, rolls back when it rejects, and preserves the callback's original error. Browser and native adapters must pass the same isolated database/repository contract suites, including the shared commit/rollback semantics suite.
 
+`DB-008` freezes the current Phase 1 inventory as `phase-1-repository-contracts-v1`: five component suites and 15 explicitly ordered cases. The aggregate factory rejects component suite/name/order drift before execution, and the manifest carries its ordered case list across browser automation protocols without relying on JSON object-member order. Fast Node SQLite, official SQLite WASM/OPFS, and native rusqlite execute that same aggregate; exact Chrome 151/152, Firefox 153/154, Windows, macOS, and diagnostic Ubuntu lanes provide hosted proof. See [repository-contract CI parity verification](../../proof/phase-1-repository-contract-ci-verification.md).
+
 `PortableDatabase` is the adapter-neutral database-byte/checksum/schema-version handoff. Archive assembly adds the versioned manifest, human-readable JSON/CSV data, attachment inventory, migration history, per-entry SHA-256 checksums, and explicit encryption state required by the portable-archive contract.
 
 ### Browser adapter

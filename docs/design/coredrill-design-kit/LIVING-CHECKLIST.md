@@ -2,10 +2,10 @@
 
 This file is the single progress ledger. `GOAL.md` defines the outcome; numbered design documents define behavior; `11-decision-register.md` defines accepted choices. This checklist records what is actually proven.
 
-Last design update: 2026-08-25
+Last design update: 2026-08-28
 Current milestone: Phase 1 — local tracker and recovery loop (`GATE-0` human validation remains blocked)
-Current work item: `DB-008` — dedicated identical browser/native repository contract CI review
-Next recommended slice: `APP-001` — vault create/open/diagnostics command flow
+Current work item: `APP-001` — vault create/open/diagnostics command flow
+Next recommended slice: `APP-002` — manual `CreateJob` and transactional `ChangeStatus`
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `APP-001` — vault create/open/diagnostics command flow
 | Field | Value |
 |---|---|
 | Milestone | Phase 1, with the independent Phase 0 human-validation gate retained below |
-| Item range | `DB-008` |
+| Item range | `APP-001` |
 | Branch/worktree | `main` / repository root |
-| Started | 2026-08-25 |
-| Expected proof | A versioned complete repository-contract inventory executed identically through browser SQLite/OPFS and native rusqlite in hosted CI, with auditable case parity and links |
+| Started | 2026-08-28 |
+| Expected proof | Use-case tests for accountless vault create/open and redacted diagnostics across success, degraded, and safe-failure paths, without an AI or network dependency |
 | Blocker | None for this slice. `UXR-004` through `UXR-008` still require the owner-authorized participant study before the Phase 1 UI lock; `FND-001` remains independently blocked. |
-| Next handoff | Prove one identical complete repository-contract inventory in browser and native hosted jobs, then continue to `APP-001` without claiming `GATE-0` or locking provisional interface language. |
+| Next handoff | Implement and prove `APP-001`, then continue to `APP-002` without claiming `GATE-0` or locking provisional interface language. |
 
 ## Milestone status
 
@@ -157,7 +157,7 @@ Next recommended slice: `APP-001` — vault create/open/diagnostics command flow
 - [x] **DB-005** Implement documents/versions/attachments manifest skeleton without AI dependency. — Proof: [shared document, version, and attachment-manifest verification](../../proof/phase-1-document-manifest-verification.md)
 - [x] **DB-006** Implement audit timestamps, tombstones/future-sync IDs, and integrity constraints. — Proof: [shared audit, identity, upgrade, and integrity verification](../../proof/phase-1-audit-integrity-verification.md)
 - [x] **DB-007** Implement indexes and FTS5 capability detection/fallback. — Proof: [indexed lexical search, FTS5 detection/fallback, and benchmark verification](../../proof/phase-1-job-search-verification.md)
-- [ ] **DB-008** Run identical repository contract suite in browser and native CI jobs. — Proof: _CI links_
+- [x] **DB-008** Run identical repository contract suite in browser and native CI jobs. — Proof: [versioned repository-contract inventory and browser/native CI parity verification](../../proof/phase-1-repository-contract-ci-verification.md)
 
 ## Application services
 

@@ -22,3 +22,4 @@ Checklist proof records command, tool version, date, exit status, and artifact p
 - [`DB-005` document, version, and attachment-manifest verification](phase-1-document-manifest-verification.md)
 - [`DB-006` audit, local identity, upgrade, and integrity verification](phase-1-audit-integrity-verification.md)
 - [`DB-007` indexed lexical search, FTS5 detection/fallback, and benchmark verification](phase-1-job-search-verification.md)
+- [`DB-008` versioned repository-contract inventory and browser/native CI parity verification](phase-1-repository-contract-ci-verification.md)
