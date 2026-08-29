@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-29
 Current milestone: Phase 1 — local tracker and recovery loop (`GATE-0` human validation remains blocked)
-Current work item: `UI-001` — design tokens, themes, density, typography, focus, and motion foundations
-Next recommended slice: `UI-002` — responsive application shell, navigation, vault health, search, and command/add menus
+Current work item: `UI-002` — responsive application shell, navigation, vault health, search, and command/add menus
+Next recommended slice: `UI-003` — reusable loading, empty, error, destructive-confirmation, network-disclosure, and stale/conflict states
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `UI-002` — responsive application shell, navigation, v
 | Field | Value |
 |---|---|
 | Milestone | Phase 1, with the independent Phase 0 human-validation gate retained below |
-| Item range | `UI-001` |
+| Item range | `UI-002` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-29 |
-| Expected proof | Component catalog and contrast report proving tokens, themes, density, typography, icon/focus behavior, and reduced-motion handling |
+| Expected proof | Responsive and accessibility tests for the application shell, primary navigation, vault health, global search, command menu, and Add menu |
 | Blocker | None for this slice. `UXR-004` through `UXR-008` still require the owner-authorized participant study before the Phase 1 UI lock; `FND-001` remains independently blocked. |
-| Next handoff | Implement and prove `UI-001`, then continue to `UI-002` without claiming `GATE-0` or locking provisional interface language. |
+| Next handoff | Implement and prove `UI-002`, then continue to `UI-003` without claiming `GATE-0` or locking provisional interface language. |
 
 ## Milestone status
 
@@ -172,7 +172,7 @@ Next recommended slice: `UI-002` — responsive application shell, navigation, v
 
 ## Shell and core UI
 
-- [ ] **UI-001** Implement design tokens, themes, density modes, typography, icon wrapper, focus styles, and reduced motion. — Proof: _component catalog + contrast report_
+- [x] **UI-001** Implement design tokens, themes, density modes, typography, icon wrapper, focus styles, and reduced motion. — Proof: [component catalog, contrast report, accessibility checks, and hosted artifacts](../../proof/phase-1-ui-foundations-verification.md)
 - [ ] **UI-002** Implement responsive application shell, navigation, vault health, global search, command menu, and Add menu. — Proof: _responsive/a11y tests_
 - [ ] **UI-003** Implement Quick start and Guided setup with disposable demo vault. — Proof: _E2E paths_
 - [ ] **UI-004** Implement Home attention queue, due actions, recent items, and optional snapshot. — Proof: _component/E2E tests_

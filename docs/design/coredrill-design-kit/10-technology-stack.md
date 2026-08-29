@@ -64,7 +64,7 @@ Phase 0 records exact Node, pnpm, Rust, and OS build prerequisites in `.tool-ver
 | Forms | React Hook Form + Zod | Form state plus boundary validation |
 | UI primitives | Radix UI primitives with local styled wrappers | Accessibility baseline; avoid cloud/paid dependency |
 | Styling | Tailwind CSS + CSS custom-property tokens | Theme/density/responsive implementation |
-| Icons | Lucide React | One open icon language |
+| Icons | Lucide React 1.35.0 | One open icon language |
 | Editor | Tiptap open-source core 3.30.2 + selected extensions | Accepted restricted schema and versioned Coredrill IR; no cloud/collaboration dependency |
 | Charts | Recharts | Small accessible reports; always pair with data table |
 | Dates | date-fns + date-fns-tz | Explicit date-only vs instant/time-zone types in domain |
@@ -214,7 +214,7 @@ Modes:
 | E2E web | Playwright | PWA/offline/capture-import/core journey |
 | E2E desktop | Tauri WebDriver/supported harness plus smoke scripts | Packaging, native files/secrets/restore |
 | Extension | WXT test setup + Playwright persistent context | Permissions, side panel, outbox, bridge |
-| Accessibility | axe-core + manual NVDA/VoiceOver/keyboard matrix | WCAG 2.2 AA flows |
+| Accessibility | axe-core through `@axe-core/playwright` 4.13.0 + manual NVDA/VoiceOver/keyboard matrix | WCAG 2.2 AA flows |
 | Visual | Playwright screenshots | Document pagination, dense tables, themes, responsive states |
 | Security | dependency audit, secret scan, Semgrep/CodeQL as appropriate | CSP, IPC allowlist, injection, unsafe HTML |
 | AI eval | Frozen cases + deterministic validators + human rubric | Claim support, relevance, refusal, prompt injection |
