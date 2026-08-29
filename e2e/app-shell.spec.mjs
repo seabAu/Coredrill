@@ -558,6 +558,108 @@ test("a deep-linked Job tab opens full-page and keeps tab history without a serv
   await expect(page.getByTestId("pipeline-shell")).toBeVisible();
 });
 
+test("Job core tabs expose normalized facts, chronology, company context, and provenance locally", async ({
+  page,
+}, testInfo) => {
+  const externalRequests = [];
+  page.on("request", (request) => {
+    if (!request.url().startsWith("http://127.0.0.1:4178/")) externalRequests.push(request.url());
+  });
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  await openShell(page);
+  await page
+    .getByRole("navigation", { name: "Primary" })
+    .getByRole("link", { name: "Pipeline" })
+    .click();
+  await page
+    .locator('[data-board-job="board-northstar"]')
+    .getByRole("button", { name: "Product Operations Lead", exact: true })
+    .click();
+
+  const workspace = page.locator('[data-job-workspace="board-northstar"]');
+  await expect(workspace.locator('[data-job-content-tab="overview"]')).toBeVisible();
+  await expect(workspace.getByText("Normalized local record", { exact: true })).toBeVisible();
+  await expect(workspace.getByText("$120k–$145k disclosed", { exact: true })).toBeVisible();
+  await expect(workspace.getByText("Application deadline", { exact: true })).toBeVisible();
+  await expect(workspace.getByText("Review source fields", { exact: true })).toBeVisible();
+
+  const privateNote = "Private question about portfolio ownership";
+  await workspace.getByRole("textbox", { name: "Add a local note" }).fill(privateNote);
+  await workspace.getByRole("button", { name: "Add timeline note" }).click();
+  const activity = page.getByRole("status").first();
+  await expect(activity).toContainText(`${privateNote.length}-character local timeline note`);
+  await expect(activity).toContainText("No durable write occurs in this proof host");
+  await expect(activity).not.toContainText(privateNote);
+  await expect(workspace.getByRole("textbox", { name: "Add a local note" })).toHaveValue("");
+
+  await workspace.getByRole("button", { name: "Timeline", exact: true }).click();
+  await expect(page).toHaveURL(/\/jobs\/board-northstar\/timeline$/u);
+  await expect(workspace.getByText(/status and outcome history is append-only/u)).toBeVisible();
+  await expect(workspace.getByRole("list", { name: "Job timeline items" })).toBeVisible();
+  await expect(workspace.getByRole("button", { name: "Edit note" })).toHaveCount(1);
+  await expect(workspace.getByText("Immutable history event", { exact: true })).toHaveCount(2);
+  for (const action of ["Log interaction", "Schedule interview", "Add follow-up"]) {
+    await expect(workspace.getByRole("button", { name: action })).toBeVisible();
+  }
+
+  await workspace.getByRole("button", { name: "Company", exact: true }).click();
+  await expect(page).toHaveURL(/\/jobs\/board-northstar\/company$/u);
+  await expect(workspace.getByRole("heading", { name: "Northstar Health" })).toBeVisible();
+  await expect(workspace.getByText("Other active roles", { exact: true })).toBeVisible();
+  await expect(workspace.getByText(/never guesses an email address/u)).toBeVisible();
+
+  await workspace.getByRole("button", { name: "Source", exact: true }).click();
+  await expect(page).toHaveURL(/\/jobs\/board-northstar\/source$/u);
+  await expect(workspace.getByRole("region", { name: "Field provenance" })).toBeVisible();
+  await expect(workspace.getByText("Stored source record · unconfirmed").first()).toBeVisible();
+  await expect(workspace.getByText(/never silently replace user-confirmed values/u)).toBeVisible();
+  for (const action of ["View snapshot", "Compare changes", "Refresh manually"]) {
+    await expect(workspace.getByRole("button", { name: action })).toBeVisible();
+  }
+
+  await attachAxe(page, testInfo, "job-workspace-core-tabs");
+  await attachAriaSnapshot(workspace, testInfo, "job-workspace-core-tabs");
+  await attachProof(page, testInfo, "job-workspace-core-tabs");
+  expect(externalRequests).toEqual([]);
+});
+
+test("narrow Source keeps provenance and manual controls reachable without page overflow", async ({
+  page,
+}, testInfo) => {
+  const externalRequests = [];
+  page.on("request", (request) => {
+    if (!request.url().startsWith("http://127.0.0.1:4178/")) externalRequests.push(request.url());
+  });
+  await page.setViewportSize({ width: 360, height: 900 });
+  await page.emulateMedia({ forcedColors: "active", reducedMotion: "reduce" });
+  await page.goto("/jobs/board-northstar/source");
+  await page.waitForFunction(() => globalThis.coredrillAppShell !== undefined);
+
+  const workspace = page.locator('[data-job-workspace="board-northstar"]');
+  await expect(workspace).toHaveAttribute("data-workspace-mode", "full-page");
+  await expect(workspace.getByRole("button", { name: "Refresh manually" })).toBeVisible();
+  const provenance = workspace.getByRole("region", { name: "Field provenance" });
+  await expect(provenance).toBeVisible();
+  const documentDimensions = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(documentDimensions.scrollWidth).toBeLessThanOrEqual(documentDimensions.clientWidth);
+  const provenanceDimensions = await provenance.evaluate((element) => ({
+    clientWidth: element.clientWidth,
+    scrollWidth: element.scrollWidth,
+  }));
+  expect(provenanceDimensions.scrollWidth).toBeGreaterThan(provenanceDimensions.clientWidth);
+
+  await workspace.getByRole("button", { name: "Refresh manually" }).click();
+  await expect(page.getByRole("status").first()).toContainText(
+    "No durable write or external request occurred",
+  );
+  await attachAxe(page, testInfo, "job-workspace-source-mobile-forced-colors");
+  await attachProof(page, testInfo, "job-workspace-source-mobile-forced-colors");
+  expect(externalRequests).toEqual([]);
+});
+
 test("narrow Table opens full-page and restores local selection, scroll, and opener focus", async ({
   page,
 }, testInfo) => {

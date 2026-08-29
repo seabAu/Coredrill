@@ -1,6 +1,7 @@
 import {
   ApplicationShell,
   HomeDashboard,
+  JobWorkspaceContent,
   JobWorkspaceFrame,
   JOB_WORKSPACE_TABS,
   PIPELINE_VIEW_IDS,
@@ -10,11 +11,14 @@ import {
   VAULT_HEALTH_STATES,
   DEFAULT_PIPELINE_TABLE_COLUMNS,
   getRootAppearanceAttributes,
+  isJobWorkspaceContentTab,
   type DensityMode,
   type HomeDashboardActionId,
   type HomeDashboardModel,
   type HomeRecentItem,
   type JobWorkspaceActionId,
+  type JobWorkspaceContentActionRequest,
+  type JobWorkspaceContentModel,
   type JobWorkspaceFrameModel,
   type JobWorkspaceMode,
   type JobWorkspaceTabId,
@@ -686,6 +690,141 @@ const tableRowsFromBoard = (columns: readonly BoardColumn[]): readonly PipelineT
 };
 
 const STANDARD_TABLE_ROWS = tableRowsFromBoard(STANDARD_BOARD_COLUMNS);
+const STANDARD_BOARD_JOBS = Object.freeze(STANDARD_BOARD_COLUMNS.flatMap(({ items }) => items));
+
+const jobWorkspaceContentFor = (
+  job: PipelineTableJob,
+  relatedJobs: readonly PipelineTableJob[],
+): JobWorkspaceContentModel => {
+  const boardRecord = STANDARD_BOARD_JOBS.find(({ id }) => id === job.id);
+  const timelineItems: JobWorkspaceContentModel["timeline"]["items"] = Object.freeze([
+    ...(job.lastInteraction === null
+      ? []
+      : [
+          Object.freeze({
+            detail: "Recorded as local interaction context; no external activity is inferred.",
+            editable: false,
+            id: `${job.id}-last-interaction`,
+            kind: "interaction" as const,
+            occurredAtLabel: job.lastInteraction,
+            title: "Latest recorded interaction",
+          }),
+        ]),
+    ...(job.tags.includes("reviewed")
+      ? [
+          Object.freeze({
+            detail: "Reviewed the locally stored source candidates.",
+            editable: true,
+            id: `${job.id}-review-note`,
+            kind: "note" as const,
+            occurredAtLabel: "After capture",
+            title: "Source review note",
+          }),
+        ]
+      : []),
+    ...(job.appliedDate === null
+      ? []
+      : [
+          Object.freeze({
+            detail: "Application status recorded in the local pipeline fixture.",
+            editable: false,
+            id: `${job.id}-applied`,
+            kind: "status" as const,
+            occurredAtLabel: job.appliedDate,
+            title: "Marked applied",
+          }),
+        ]),
+    Object.freeze({
+      detail: `Captured from ${job.source.toLocaleLowerCase()}.`,
+      editable: false,
+      id: `${job.id}-captured`,
+      kind: "status" as const,
+      occurredAtLabel: job.capturedDate,
+      title: "Job captured",
+    }),
+  ]);
+  const isCompanySource = job.source === "Company careers page";
+  const sourceBasis = isCompanySource
+    ? "Stored source record · unconfirmed"
+    : "User-entered local record";
+
+  return Object.freeze({
+    company: Object.freeze({
+      canonicalName: job.company,
+      contactCount: 0,
+      domain: null,
+      notes: "",
+      otherActiveJobCount: relatedJobs.filter(
+        (candidate) =>
+          candidate.id !== job.id &&
+          candidate.company === job.company &&
+          candidate.status?.terminal !== true,
+      ).length,
+      outcomeCount: job.status?.terminal === true ? 1 : 0,
+      salaryObservationCount: 0,
+      websiteUrl: null,
+    }),
+    jobId: job.id,
+    overview: Object.freeze({
+      application:
+        job.appliedDate === null
+          ? null
+          : Object.freeze({
+              appliedAtLabel: job.appliedDate,
+              channel: null,
+              notes: "",
+            }),
+      datePosted: null,
+      descriptionText:
+        "Synthetic local proof record. Production content will come from the validated Job workspace read model.",
+      disclosedCompensation: job.disclosedSalary,
+      employmentType: null,
+      locationLabel: job.location,
+      nextAction:
+        job.nextActionDate === null
+          ? null
+          : Object.freeze({
+              dueAtLabel: `Due ${job.nextActionDate}`,
+              timeZone: null,
+              title: boardRecord?.nextAction ?? "Review local job details",
+            }),
+      notes: "",
+      seniority: null,
+      tags: job.tags,
+      validThrough: null,
+      workplaceType: job.workMode,
+    }),
+    source: Object.freeze({
+      applyUrl: isCompanySource ? `https://careers.example.test/jobs/${job.id}` : null,
+      canonicalUrl: isCompanySource ? `https://careers.example.test/jobs/${job.id}` : null,
+      comparisonLabel: "No newer snapshot is available for comparison.",
+      extractionLabel: isCompanySource
+        ? "Stored candidates await user confirmation."
+        : "No extraction was run for this manual entry.",
+      firstSeenAtLabel: job.capturedDate,
+      freshnessLabel: `Captured ${job.capturedDate} · no automatic refresh`,
+      id: `source-${job.id}`,
+      lastSeenAtLabel: job.capturedDate,
+      provenance: Object.freeze([
+        Object.freeze({ basis: sourceBasis, field: "Title", value: job.title }),
+        Object.freeze({ basis: sourceBasis, field: "Company", value: job.company }),
+        Object.freeze({ basis: sourceBasis, field: "Source", value: job.source }),
+      ]),
+      refreshPolicy: "Manual, user-invoked refresh only; connector policy must permit the source.",
+      snapshotLabel: isCompanySource
+        ? "One sanitized local snapshot is represented by this fixture."
+        : "Manual entry has no captured HTML snapshot.",
+    }),
+    timeline: Object.freeze({
+      itemCount: timelineItems.length,
+      items: timelineItems,
+      lastInteractionAtLabel: job.lastInteraction,
+      pendingReminderCount: job.nextActionDate === null ? 0 : 1,
+      upcomingInterviewCount: job.status?.id === "interviewing" ? 1 : 0,
+    }),
+  });
+};
+
 const LARGE_TABLE_ROWS = Object.freeze([
   ...STANDARD_TABLE_ROWS,
   ...Array.from({ length: 1_992 }, (_, index) => {
@@ -853,6 +992,8 @@ const AppShellCatalog = () => {
           status: workspaceJob.status?.name ?? "Unassigned",
           title: workspaceJob.title,
         });
+  const workspaceContentModel =
+    workspaceJob === undefined ? null : jobWorkspaceContentFor(workspaceJob, tableRows);
   const page =
     workspaceRoute?.mode === "full-page" && workspaceModel !== null
       ? Object.freeze({ eyebrow: "Local job workspace", title: workspaceModel.title })
@@ -1096,6 +1237,22 @@ const AppShellCatalog = () => {
       return;
     }
     setLastActivity(`Job workspace action selected: ${action}. No external request was made.`);
+  };
+
+  const recordWorkspaceContentAction = (request: JobWorkspaceContentActionRequest): void => {
+    if (request.id === "open-timeline") {
+      changeWorkspaceTab("timeline");
+      return;
+    }
+    if (request.id === "add-timeline-note") {
+      setLastActivity(
+        `Prepared a ${String(request.value.length)}-character local timeline note. No durable write occurs in this proof host.`,
+      );
+      return;
+    }
+    setLastActivity(
+      `Job content action selected: ${request.id}. No durable write or external request occurred.`,
+    );
   };
 
   const navigateDestination = (destination: ShellDestinationId): void => {
@@ -1397,7 +1554,15 @@ const AppShellCatalog = () => {
               onAction={recordWorkspaceAction}
               onRequestClose={closeWorkspace}
               onTabChange={changeWorkspaceTab}
-            />
+            >
+              {workspaceContentModel !== null && isJobWorkspaceContentTab(workspaceRoute.tab) ? (
+                <JobWorkspaceContent
+                  activeTab={workspaceRoute.tab}
+                  model={workspaceContentModel}
+                  onAction={recordWorkspaceContentAction}
+                />
+              ) : undefined}
+            </JobWorkspaceFrame>
           ) : (
             <div
               className={
@@ -1518,7 +1683,16 @@ const AppShellCatalog = () => {
                   onContextualWidthChange={setWorkspaceWidth}
                   onRequestClose={closeWorkspace}
                   onTabChange={changeWorkspaceTab}
-                />
+                >
+                  {workspaceContentModel !== null &&
+                  isJobWorkspaceContentTab(workspaceRoute.tab) ? (
+                    <JobWorkspaceContent
+                      activeTab={workspaceRoute.tab}
+                      model={workspaceContentModel}
+                      onAction={recordWorkspaceContentAction}
+                    />
+                  ) : undefined}
+                </JobWorkspaceFrame>
               ) : null}
             </div>
           )
