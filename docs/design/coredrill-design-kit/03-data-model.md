@@ -94,6 +94,10 @@ Seed categories: `viewed`, `saved`, `preparing`, `applied`, `response`, `intervi
 
 `reminder(id, job_id, next_action_id, interview_id, remind_at, timezone, state, note, fired_at)`
 
+`mutation_undo_token(id, kind, job_id, status_application_id, status_event_id, previous_status_id, expected_status_id, expected_application_row_version, next_action_id, expected_next_action_row_version, previous_next_action_at, expected_next_action_at, expected_job_row_version, created_at, consumed_at)`
+
+Undo tokens are durable, immutable audit records except for one fresh-to-consumed transition. They retain exact row-version and projection preconditions rather than private display content. A status undo restores maintained projections and keeps the referenced append-only status event. A next-action undo dismisses its referenced action and linked pending reminders instead of deleting them. Replay and any mismatch caused by a later edit fail without partial writes.
+
 One job may have multiple applications only when the user explicitly creates them; otherwise enforce one active application per job.
 
 ### Documents and generation

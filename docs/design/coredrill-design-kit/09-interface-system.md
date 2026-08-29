@@ -103,7 +103,7 @@ Opening a job from a wide Pipeline route uses a side workspace while preserving 
 - Health state: healthy, backup due, storage risk, offline, migration required.
 - Network state is shown only when relevant; it must not imply offline means broken.
 - Extension outbox badge appears when captures are queued or need repair.
-- An undo region receives reversible status/card edits for at least 10 seconds.
+- An undo region receives reversible status/card edits for at least 10 seconds. The durable token does not expire merely because the affordance closes; a later recovery surface may consume it only while its exact post-edit preconditions still match.
 
 ## 4. Visual language
 
@@ -191,7 +191,7 @@ Card minimum:
 - age/last activity;
 - warning badges for unreviewed source, missing document, or unsupported claim.
 
-Dragging changes status after an accessible confirmation announcement and writes a timeline event. Keyboard move is available. Undo restores both status and event. Columns virtualize when large and collapse when empty if the user chooses.
+Dragging changes status after an accessible confirmation announcement and writes a timeline event. Keyboard move is available. Undo restores the status projections while retaining the original event as append-only history; the consumed undo token records that reversal. Columns virtualize when large and collapse when empty if the user chooses.
 
 ### Table
 
@@ -442,7 +442,7 @@ At every width, source/provenance and data-destination controls remain reachable
 ## 13. Loading, optimistic updates, and errors
 
 - Local scalar edits may be optimistic if an undo and durable failure recovery exist.
-- Status moves write status and timeline event in one transaction.
+- Status moves write status, timeline event, and a fresh durable undo token in one transaction. Undo restores projections and consumes the token without rewriting the event.
 - Imports, generation, extraction, restore, and migrations show explicit progress and cancellation semantics.
 - Skeletons are used only for expected short loads; longer work shows named stages.
 - Errors preserve user text and include Retry, Copy diagnostics, Export fallback, or Manual path as applicable.
