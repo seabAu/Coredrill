@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-29
 Current milestone: Phase 1 — local tracker and recovery loop (`GATE-0` human validation remains blocked)
-Current work item: `UI-006` — accessible Board with drag, keyboard move, semantic stages, undo, and virtualization
-Next recommended slice: `UI-007` — virtualized Table with pinned/configurable columns and safe inline editing
+Current work item: `UI-007` — virtualized Table with pinned/configurable columns and safe inline editing
+Next recommended slice: `UI-008` — contextual/full-page Job workspace with route/back/refresh/scroll restoration
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `UI-007` — virtualized Table with pinned/configurable 
 | Field | Value |
 |---|---|
 | Milestone | Phase 1, with the independent Phase 0 human-validation gate retained below |
-| Item range | `UI-006` |
+| Item range | `UI-007` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-29 |
-| Expected proof | Component, keyboard/screen-reader-facing, and E2E coverage for contextual cards, semantic-category metadata, pointer and keyboard moves, confirmation announcements, fail-closed reopen, undo intent, large-column virtualization, and responsive accessibility |
+| Expected proof | Component, E2E, accessibility, and performance coverage for a virtualized Table over the shared Pipeline scope, pinned/configurable columns, safe inline editing, large datasets, and responsive overflow |
 | Blocker | None for this slice. `UXR-004` through `UXR-008` still require the owner-authorized participant study before the Phase 1 UI lock; `FND-001` remains independently blocked. |
-| Next handoff | Implement and prove `UI-006`, then continue to `UI-007` without claiming `GATE-0` or resolving `Q-006` without participant evidence. |
+| Next handoff | Implement and prove `UI-007`, then continue to `UI-008` without claiming `GATE-0` or resolving `Q-006` without participant evidence. |
 
 ## Milestone status
 
@@ -177,7 +177,7 @@ Next recommended slice: `UI-007` — virtualized Table with pinned/configurable 
 - [x] **UI-003** Implement Quick start and Guided setup with disposable demo vault. — Proof: [local-first paths, deferral, accessibility, and demo-vault isolation verification](../../proof/phase-1-onboarding-verification.md)
 - [x] **UI-004** Implement Home attention queue, due actions, recent items, and optional snapshot. — Proof: [ordered local attention queue, empty state, accessibility, and hosted artifact verification](../../proof/phase-1-home-attention-queue-verification.md)
 - [x] **UI-005** Implement Pipeline header, view switch, filter chips, saved views, and selection/bulk-action shell. — Proof: [peer-view invariance, local controls, selection-only bulk actions, accessibility, and hosted artifact verification](../../proof/phase-1-pipeline-control-surface-verification.md)
-- [ ] **UI-006** Implement accessible Board with drag, keyboard move, semantic stages, undo, and virtualization. — Proof: _keyboard/screen-reader/E2E report_
+- [x] **UI-006** Implement accessible Board with drag, keyboard move, semantic stages, undo, and virtualization. — Proof: [semantic stages, contextual cards, pointer and keyboard moves, fail-closed reopen, undo, virtualization, accessibility, and hosted artifact verification](../../proof/phase-1-pipeline-board-verification.md)
 - [ ] **UI-007** Implement virtualized Table with pinned/configurable columns and safe inline editing. — Proof: _E2E/performance test_
 - [ ] **UI-008** Implement contextual/full-page Job workspace with route/back/refresh/scroll restoration. — Proof: _navigation tests_
 - [ ] **UI-009** Implement Overview, Timeline, Company, and Source skeleton tabs. — Proof: _component/E2E tests_
