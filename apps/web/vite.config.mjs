@@ -9,6 +9,7 @@ export default defineConfig({
       input: {
         appShell: fileURLToPath(new URL("./app-shell.html", import.meta.url)),
         documents: fileURLToPath(new URL("./document-spike.html", import.meta.url)),
+        onboarding: fileURLToPath(new URL("./onboarding.html", import.meta.url)),
         storage: fileURLToPath(new URL("./index.html", import.meta.url)),
         uiFoundations: fileURLToPath(new URL("./ui-foundations.html", import.meta.url)),
       },

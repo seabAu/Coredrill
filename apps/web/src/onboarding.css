@@ -1,0 +1,8 @@
+@import "tailwindcss";
+@import "@coredrill/ui/styles.css";
+@source "../../../packages/ui/src";
+@source "./onboarding.tsx";
+
+body {
+  min-width: 20rem;
+}

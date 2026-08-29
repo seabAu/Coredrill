@@ -378,6 +378,11 @@ jobs:
           COREDRILL_BROWSER_EXECUTABLE_PATH: ${{ steps.chrome.outputs.chrome-path }}
         run: pnpm test:app-shell
 
+      - name: Prove first-run paths and disposable demo isolation
+        env:
+          COREDRILL_BROWSER_EXECUTABLE_PATH: ${{ steps.chrome.outputs.chrome-path }}
+        run: pnpm test:onboarding
+
       - name: Upload document editor, import, and export proof
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -408,6 +413,17 @@ jobs:
           path: |
             test-results/app-shell.json
             test-results/app-shell/**
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Upload first-run and disposable demo-vault proof
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coredrill-onboarding-chrome-${{ matrix.chrome }}-${{ github.sha }}
+          path: |
+            test-results/onboarding.json
+            test-results/onboarding/**
           if-no-files-found: error
           retention-days: 30
           compression-level: 0
