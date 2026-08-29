@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-29
 Current milestone: Phase 1 — local tracker and recovery loop (`GATE-0` human validation remains blocked)
-Current work item: `APP-008` — privacy-safe local diagnostics and support bundle
-Next recommended slice: `UI-001` — design tokens, themes, density, typography, focus, and motion foundations
+Current work item: `UI-001` — design tokens, themes, density, typography, focus, and motion foundations
+Next recommended slice: `UI-002` — responsive application shell, navigation, vault health, search, and command/add menus
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `UI-001` — design tokens, themes, density, typography,
 | Field | Value |
 |---|---|
 | Milestone | Phase 1, with the independent Phase 0 human-validation gate retained below |
-| Item range | `APP-008` |
+| Item range | `UI-001` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-29 |
-| Expected proof | Privacy tests proving bounded local diagnostics and a user-copyable support bundle redact private content, paths, and secrets |
+| Expected proof | Component catalog and contrast report proving tokens, themes, density, typography, icon/focus behavior, and reduced-motion handling |
 | Blocker | None for this slice. `UXR-004` through `UXR-008` still require the owner-authorized participant study before the Phase 1 UI lock; `FND-001` remains independently blocked. |
-| Next handoff | Implement and prove `APP-008`, then continue to `UI-001` without claiming `GATE-0` or locking provisional interface language. |
+| Next handoff | Implement and prove `UI-001`, then continue to `UI-002` without claiming `GATE-0` or locking provisional interface language. |
 
 ## Milestone status
 
@@ -168,7 +168,7 @@ Next recommended slice: `UI-001` — design tokens, themes, density, typography,
 - [x] **APP-005** Implement Pipeline queries, counts, board groups, table pagination, and job workspace DTO. — Proof: [Pipeline counts, board groups, shared pagination, and job-workspace application verification](../../proof/phase-1-pipeline-query-application-verification.md)
 - [x] **APP-006** Implement validated filter/sort/group/saved-view commands. — Proof: [validated filter, sort, group, and saved job-view application verification](../../proof/phase-1-saved-job-view-application-verification.md)
 - [x] **APP-007** Implement undo token for status/next-action edits with durable consistency. — Proof: [durable, single-use status and next-action mutation-undo verification](../../proof/phase-1-mutation-undo-application-verification.md)
-- [ ] **APP-008** Implement local diagnostic log and user-copyable redacted support bundle. — Proof: _privacy tests_
+- [x] **APP-008** Implement local diagnostic log and user-copyable redacted support bundle. — Proof: [privacy-safe local diagnostic log and support-bundle verification](../../proof/phase-1-local-diagnostic-support-bundle-verification.md)
 
 ## Shell and core UI
 

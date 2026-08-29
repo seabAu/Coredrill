@@ -332,6 +332,8 @@ Last verified backup: 4 days ago
 
 Network-enabled settings show default-off toggles, exact data categories, destination, credential location, last use, and disable/delete controls.
 
+Diagnostics explicitly says that events stay local and contain only reviewed operational fields. Copy support bundle is a user-initiated action that copies versioned pretty JSON for at most the newest 200 events; the surface previews event count, application version, generation time, and the no-automatic-send guarantee. It never offers raw logs, paths, free-text exception messages, or job/applicant content. Any future telemetry control is separate, default off, and must not be implied by local bundle copy.
+
 ## 6. First-run design
 
 Offer two tracks rather than one mandatory wizard.
@@ -445,7 +447,7 @@ At every width, source/provenance and data-destination controls remain reachable
 - Status moves write status, timeline event, and a fresh durable undo token in one transaction. Undo restores projections and consumes the token without rewriting the event.
 - Imports, generation, extraction, restore, and migrations show explicit progress and cancellation semantics.
 - Skeletons are used only for expected short loads; longer work shows named stages.
-- Errors preserve user text and include Retry, Copy diagnostics, Export fallback, or Manual path as applicable.
+- Errors preserve user text and include Retry, Copy diagnostics, Export fallback, or Manual path as applicable. Copy diagnostics uses only the bounded redacted support-bundle contract and never copies error free text, paths, or user content.
 - Background work persists resumable checkpoints when possible.
 - Toasts never carry the only copy of important information; failures also enter Home/diagnostics.
 

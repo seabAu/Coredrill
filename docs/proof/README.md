@@ -30,3 +30,4 @@ Checklist proof records command, tool version, date, exit status, and artifact p
 - [`APP-005` Pipeline counts, board groups, pagination, and job-workspace query verification](phase-1-pipeline-query-application-verification.md)
 - [`APP-006` validated filter, sort, group, and saved job-view command verification](phase-1-saved-job-view-application-verification.md)
 - [`APP-007` durable status and next-action mutation-undo verification](phase-1-mutation-undo-application-verification.md)
+- [`APP-008` privacy-safe local diagnostic log and support-bundle verification](phase-1-local-diagnostic-support-bundle-verification.md)
