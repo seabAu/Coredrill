@@ -139,6 +139,108 @@ test("empty Home offers three non-account paths without inventing goals", async 
   await expect(page.getByRole("status")).toContainText("Home action selected: add-job");
 });
 
+test("Phase 1 state catalog distinguishes every local state and exposes bounded recovery", async ({
+  page,
+}, testInfo) => {
+  const externalRequests = [];
+  page.on("request", (request) => {
+    if (!request.url().startsWith("http://127.0.0.1:4178/")) externalRequests.push(request.url());
+  });
+  await page.setViewportSize({ width: 1180, height: 900 });
+
+  const states = [
+    ["loading", "Opening your local workspace", "Cancel and return"],
+    ["empty", "No opportunities are in this vault yet", "Add a job"],
+    ["partial", "Most of this view is available", "Retry missing details"],
+    ["error", "This view could not finish loading", "Retry local load"],
+    ["offline", "You are offline — local work is available", "Continue locally"],
+    ["permission-denied", "File access was not granted", "Choose a file again"],
+  ];
+
+  for (const [kind, heading, primaryAction] of states) {
+    await openShell(page, { workspaceState: kind });
+    const state = page.getByTestId("phase-one-workspace-state");
+    await expect(state).toHaveAttribute("data-workspace-state", kind);
+    await expect(state.getByRole("heading", { name: heading })).toBeVisible();
+    await expect(state.getByRole("note")).toBeVisible();
+    await expect(state.getByRole("button", { name: primaryAction })).toBeVisible();
+    expect(
+      (await page.evaluate(() => globalThis.coredrillAppShell?.getState()))?.workspaceState,
+    ).toBe(kind);
+    await attachAxe(page, testInfo, `phase-one-state-${kind}`);
+
+    await state.getByRole("button", { name: primaryAction }).click();
+    await expect(page.getByRole("status")).toContainText("Existing work remains local");
+    await expect(page.getByRole("status")).toContainText("no external request was made");
+  }
+
+  await openShell(page, { workspaceState: "loading" });
+  await expect(page.getByTestId("phase-one-workspace-state")).toHaveAttribute("aria-busy", "true");
+  await expect(
+    page.getByRole("progressbar", { name: "Reading local job records" }),
+  ).toHaveAttribute("value", "2");
+
+  await openShell(page, { workspaceState: "partial" });
+  await expect(page.getByRole("heading", { name: "Available now" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Unavailable right now" })).toBeVisible();
+  await expect(
+    page.getByText("Your current filters, selection, and unsaved note remain in place."),
+  ).toBeVisible();
+
+  await openShell(page, { workspaceState: "error" });
+  await expect(page.getByRole("button", { name: "Copy redacted diagnostics" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Open export fallback" })).toBeVisible();
+  await expect(page.getByText(/No raw error text, path, or record content/)).toBeVisible();
+  await attachProof(page, testInfo, "phase-one-state-error-recovery");
+
+  await openShell(page, { workspaceState: "offline" });
+  await expect(page.getByRole("button", { name: /Offline · local work available/ })).toBeVisible();
+  await expect(
+    page.getByText(/Only actions that explicitly need a network will wait/),
+  ).toBeVisible();
+
+  await openShell(page, { workspaceState: "permission-denied" });
+  await expect(page.getByText("Exact access", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Read the single tracker file you choose in the system picker."),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Continue manually" })).toBeVisible();
+  expect(externalRequests).toEqual([]);
+});
+
+test("offline and permission recovery reflow at 320 CSS pixels in forced colors", async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  await openShell(page, { workspaceState: "offline" });
+
+  const offline = page.getByTestId("phase-one-workspace-state");
+  await expect(offline.getByRole("button", { name: "Continue locally" })).toBeVisible();
+  expect(
+    await page.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+    })),
+  ).toEqual({ clientWidth: 320, scrollWidth: 320 });
+  await attachAxe(page, testInfo, "phase-one-state-offline-320");
+  await attachProof(page, testInfo, "phase-one-state-offline-320");
+
+  await page.emulateMedia({ forcedColors: "active", reducedMotion: "reduce" });
+  await openShell(page, { workspaceState: "permission-denied" });
+  const manual = page.getByRole("button", { name: "Continue manually" });
+  await manual.focus();
+  await expect(manual).toBeFocused();
+  expect((await manual.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+  expect(
+    await page.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+    })),
+  ).toEqual({ clientWidth: 320, scrollWidth: 320 });
+  await attachAxe(page, testInfo, "phase-one-state-permission-forced-colors-320");
+  await attachProof(page, testInfo, "phase-one-state-permission-forced-colors-320");
+});
+
 test("Pipeline switches peer presentations while saved views, filters, search, and scope stay local", async ({
   page,
 }, testInfo) => {

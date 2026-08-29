@@ -5,7 +5,10 @@ import {
   JobWorkspaceFrame,
   JOB_WORKSPACE_TABS,
   NetworkWorkspace,
+  PHASE_ONE_WORKSPACE_STATE_CATALOG,
+  PHASE_ONE_WORKSPACE_STATE_KINDS,
   PIPELINE_VIEW_IDS,
+  PhaseOneWorkspaceState,
   PipelineBoard,
   PipelineShell,
   PipelineTable,
@@ -42,6 +45,8 @@ import {
   type PipelineShellActionId,
   type PipelineShellModel,
   type PipelineViewId,
+  type PhaseOneWorkspaceStateAction,
+  type PhaseOneWorkspaceStateKind,
   type ShellActionId,
   type ShellDestinationId,
   type ThemePreference,
@@ -74,6 +79,7 @@ interface AppShellCatalogState {
   readonly tableEditCount: number;
   readonly workspaceJobId: string | null;
   readonly workspaceMode: JobWorkspaceMode | null;
+  readonly workspaceState: PhaseOneWorkspaceStateKind | null;
   readonly workspaceTab: JobWorkspaceTabId | null;
   readonly theme: ThemePreference;
   readonly vaultHealth: VaultHealthState;
@@ -592,6 +598,7 @@ const readAppearance = (): {
   readonly tableMode: "large" | "standard";
   readonly theme: ThemePreference;
   readonly vaultHealth: VaultHealthState;
+  readonly workspaceState: PhaseOneWorkspaceStateKind | null;
 } => {
   const parameters = new URLSearchParams(window.location.search);
   const requestedBoard = parameters.get("board");
@@ -601,6 +608,7 @@ const readAppearance = (): {
   const requestedTable = parameters.get("table");
   const requestedTheme = parameters.get("theme");
   const requestedHealth = parameters.get("health");
+  const requestedWorkspaceState = parameters.get("workspaceState");
   return {
     boardMode: requestedBoard === "large" ? "large" : "standard",
     density: requestedDensity === "compact" ? "compact" : "comfortable",
@@ -613,6 +621,11 @@ const readAppearance = (): {
     vaultHealth: VAULT_HEALTH_STATES.includes(requestedHealth as VaultHealthState)
       ? (requestedHealth as VaultHealthState)
       : "healthy",
+    workspaceState: PHASE_ONE_WORKSPACE_STATE_KINDS.includes(
+      requestedWorkspaceState as PhaseOneWorkspaceStateKind,
+    )
+      ? (requestedWorkspaceState as PhaseOneWorkspaceStateKind)
+      : null,
   };
 };
 
@@ -1261,7 +1274,9 @@ const AppShellCatalog = () => {
   const [workspaceRoute, setWorkspaceRoute] = useState<JobRouteState | null>(initialJobRoute);
   const [workspaceWidth, setWorkspaceWidth] = useState(640);
   const [lastActivity, setLastActivity] = useState(
-    "Shell ready. All displayed records are synthetic.",
+    appearance.workspaceState === null
+      ? "Shell ready. All displayed records are synthetic."
+      : `State proof ready: ${appearance.workspaceState}. All displayed records are synthetic.`,
   );
   const homeModel: HomeDashboardModel =
     appearance.homeMode === "empty"
@@ -1393,6 +1408,7 @@ const AppShellCatalog = () => {
           vaultHealth: appearance.vaultHealth,
           workspaceJobId: workspaceRoute?.jobId ?? null,
           workspaceMode: workspaceRoute?.mode ?? null,
+          workspaceState: appearance.workspaceState,
           workspaceTab: workspaceRoute?.tab ?? null,
         }),
     });
@@ -1437,6 +1453,12 @@ const AppShellCatalog = () => {
   const recordPipelineBulkAction = (action: PipelineBulkActionId): void => {
     setLastActivity(
       `Bulk action prepared for ${String(pipelineSelectedCount)} local jobs: ${action}. No records changed.`,
+    );
+  };
+
+  const recordWorkspaceStateAction = (action: PhaseOneWorkspaceStateAction): void => {
+    setLastActivity(
+      `State recovery selected: ${action.id}. Existing work remains local; no external request was made.`,
     );
   };
 
@@ -1981,7 +2003,11 @@ const AppShellCatalog = () => {
       onSearchResult={openGlobalSearchResult}
       outboxCount={2}
       searchResults={SEARCH_RESULTS}
-      vault={{ health: appearance.vaultHealth, kind: "browser", name: "Job search 2026" }}
+      vault={{
+        health: appearance.workspaceState === "offline" ? "offline" : appearance.vaultHealth,
+        kind: "browser",
+        name: "Job search 2026",
+      }}
     >
       <div className="mx-auto grid max-w-[90rem] gap-5">
         <header className="flex flex-wrap items-end justify-between gap-4">
@@ -1998,7 +2024,12 @@ const AppShellCatalog = () => {
           </p>
         </header>
 
-        {activeDestination === "home" ? (
+        {appearance.workspaceState !== null ? (
+          <PhaseOneWorkspaceState
+            model={PHASE_ONE_WORKSPACE_STATE_CATALOG[appearance.workspaceState]}
+            onAction={recordWorkspaceStateAction}
+          />
+        ) : activeDestination === "home" ? (
           <HomeDashboard
             model={homeModel}
             onAction={recordHomeAction}
