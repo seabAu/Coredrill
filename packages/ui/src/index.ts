@@ -5,3 +5,4 @@ export * from "./first-run.js";
 export * from "./foundations.js";
 export * from "./home-dashboard.js";
 export * from "./icon.js";
+export * from "./pipeline-shell.js";

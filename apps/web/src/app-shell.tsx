@@ -1,6 +1,7 @@
 import {
   ApplicationShell,
   HomeDashboard,
+  PipelineShell,
   VAULT_HEALTH_STATES,
   getRootAppearanceAttributes,
   type DensityMode,
@@ -8,6 +9,12 @@ import {
   type HomeDashboardModel,
   type HomeRecentItem,
   type LocalSearchResult,
+  type PipelineBulkActionId,
+  type PipelineFilterChip,
+  type PipelineSavedView,
+  type PipelineShellActionId,
+  type PipelineShellModel,
+  type PipelineViewId,
   type ShellActionId,
   type ShellDestinationId,
   type ThemePreference,
@@ -24,6 +31,11 @@ interface AppShellCatalogState {
   readonly homeMode: HomeDashboardModel["state"];
   readonly homeSnapshotVisible: boolean;
   readonly lastActivity: string;
+  readonly pipelineFilterCount: number;
+  readonly pipelineSavedViewId: string;
+  readonly pipelineSearchQuery: string;
+  readonly pipelineSelectedCount: number;
+  readonly pipelineView: PipelineViewId;
   readonly theme: ThemePreference;
   readonly vaultHealth: VaultHealthState;
 }
@@ -70,17 +82,20 @@ const SEARCH_RESULTS = Object.freeze([
 const readAppearance = (): {
   readonly density: DensityMode;
   readonly homeMode: HomeDashboardModel["state"];
+  readonly pipelineSelectionCount: number;
   readonly theme: ThemePreference;
   readonly vaultHealth: VaultHealthState;
 } => {
   const parameters = new URLSearchParams(window.location.search);
   const requestedDensity = parameters.get("density");
   const requestedHome = parameters.get("home");
+  const requestedPipeline = parameters.get("pipeline");
   const requestedTheme = parameters.get("theme");
   const requestedHealth = parameters.get("health");
   return {
     density: requestedDensity === "compact" ? "compact" : "comfortable",
     homeMode: requestedHome === "empty" ? "empty" : "ready",
+    pipelineSelectionCount: requestedPipeline === "selected" ? 2 : 0,
     theme: requestedTheme === "dark" || requestedTheme === "system" ? requestedTheme : "light",
     vaultHealth: VAULT_HEALTH_STATES.includes(requestedHealth as VaultHealthState)
       ? (requestedHealth as VaultHealthState)
@@ -230,10 +245,29 @@ const READY_HOME_MODEL = Object.freeze({
 
 const EMPTY_HOME_MODEL = Object.freeze({ state: "empty" } as const satisfies HomeDashboardModel);
 
+const PIPELINE_SAVED_VIEWS = Object.freeze([
+  { id: "all-opportunities", label: "All opportunities" },
+  { id: "active-search", label: "Active search" },
+  { id: "interview-prep", label: "Interview prep" },
+] as const satisfies readonly PipelineSavedView[]);
+
+const INITIAL_PIPELINE_FILTERS = Object.freeze([
+  { id: "active-status", label: "Status · Active" },
+  { id: "priority-high", label: "Priority · High" },
+] as const satisfies readonly PipelineFilterChip[]);
+
 const AppShellCatalog = () => {
   const appearance = useMemo(readAppearance, []);
   const [activeDestination, setActiveDestination] = useState<ShellDestinationId>("home");
   const [homeSnapshotVisible, setHomeSnapshotVisible] = useState(true);
+  const [pipelineFilters, setPipelineFilters] =
+    useState<readonly PipelineFilterChip[]>(INITIAL_PIPELINE_FILTERS);
+  const [pipelineSavedViewId, setPipelineSavedViewId] = useState("active-search");
+  const [pipelineSearchQuery, setPipelineSearchQuery] = useState("");
+  const [pipelineSelectedCount, setPipelineSelectedCount] = useState(
+    appearance.pipelineSelectionCount,
+  );
+  const [pipelineView, setPipelineView] = useState<PipelineViewId>("board");
   const [lastActivity, setLastActivity] = useState(
     "Shell ready. All displayed records are synthetic.",
   );
@@ -244,6 +278,18 @@ const AppShellCatalog = () => {
       : homeSnapshotVisible
         ? READY_HOME_MODEL
         : Object.freeze({ ...READY_HOME_MODEL, snapshot: null });
+  const pipelineModel: PipelineShellModel = Object.freeze({
+    activeSavedViewId: pipelineSavedViewId,
+    activeView: pipelineView,
+    filters: pipelineFilters,
+    inboxCount: 3,
+    matchingCount: 8,
+    savedViews: PIPELINE_SAVED_VIEWS,
+    searchQuery: pipelineSearchQuery,
+    selectedCount: pipelineSelectedCount,
+    sortLabel: "Recently updated",
+    totalCount: 12,
+  });
 
   useEffect(() => {
     const root = document.documentElement;
@@ -269,11 +315,26 @@ const AppShellCatalog = () => {
           homeMode: appearance.homeMode,
           homeSnapshotVisible,
           lastActivity,
+          pipelineFilterCount: pipelineFilters.length,
+          pipelineSavedViewId,
+          pipelineSearchQuery,
+          pipelineSelectedCount,
+          pipelineView,
           theme: appearance.theme,
           vaultHealth: appearance.vaultHealth,
         }),
     });
-  }, [activeDestination, appearance, homeSnapshotVisible, lastActivity]);
+  }, [
+    activeDestination,
+    appearance,
+    homeSnapshotVisible,
+    lastActivity,
+    pipelineFilters.length,
+    pipelineSavedViewId,
+    pipelineSearchQuery,
+    pipelineSelectedCount,
+    pipelineView,
+  ]);
 
   const recordAction = (action: ShellActionId): void => {
     setLastActivity(`Action selected: ${action}. No external request was made.`);
@@ -285,6 +346,16 @@ const AppShellCatalog = () => {
 
   const openRecent = (item: HomeRecentItem): void => {
     setLastActivity(`Opened recent local ${item.kind}: ${item.title}.`);
+  };
+
+  const recordPipelineAction = (action: PipelineShellActionId): void => {
+    setLastActivity(`Pipeline control selected: ${action}. No external request was made.`);
+  };
+
+  const recordPipelineBulkAction = (action: PipelineBulkActionId): void => {
+    setLastActivity(
+      `Bulk action prepared for ${String(pipelineSelectedCount)} local jobs: ${action}. No records changed.`,
+    );
   };
 
   return (
@@ -329,6 +400,42 @@ const AppShellCatalog = () => {
               );
             }}
             onNavigateRecent={openRecent}
+          />
+        ) : activeDestination === "pipeline" ? (
+          <PipelineShell
+            model={pipelineModel}
+            onAction={recordPipelineAction}
+            onBulkAction={recordPipelineBulkAction}
+            onClearFilters={() => {
+              setPipelineFilters(Object.freeze([]));
+              setLastActivity("Cleared the visible Pipeline filters locally.");
+            }}
+            onClearSelection={() => {
+              setPipelineSelectedCount(0);
+              setLastActivity("Cleared the local Pipeline selection.");
+            }}
+            onRemoveFilter={(filter) => {
+              setPipelineFilters((current) =>
+                Object.freeze(current.filter(({ id }) => id !== filter.id)),
+              );
+              setLastActivity(`Removed local filter: ${filter.label}.`);
+            }}
+            onSavedViewChange={(savedView) => {
+              setPipelineSavedViewId(savedView.id);
+              setLastActivity(`Opened saved local view: ${savedView.label}.`);
+            }}
+            onSearchQueryChange={(query) => {
+              setPipelineSearchQuery(query);
+              setLastActivity(
+                query === "" ? "Cleared Pipeline search." : `Searched local jobs: ${query}.`,
+              );
+            }}
+            onViewChange={(view) => {
+              setPipelineView(view);
+              setLastActivity(
+                `Changed Pipeline presentation to ${view}. The record set remains unchanged.`,
+              );
+            }}
           />
         ) : (
           <section className="cd-shell-page-card min-h-72" aria-labelledby="destination-heading">

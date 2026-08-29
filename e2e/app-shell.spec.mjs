@@ -129,6 +129,98 @@ test("empty Home offers three non-account paths without inventing goals", async 
   await expect(page.getByRole("status")).toContainText("Home action selected: add-job");
 });
 
+test("Pipeline switches peer presentations while saved views, filters, search, and scope stay local", async ({
+  page,
+}, testInfo) => {
+  const externalRequests = [];
+  page.on("request", (request) => {
+    if (!request.url().startsWith("http://127.0.0.1:4178/")) externalRequests.push(request.url());
+  });
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await openShell(page);
+  await page
+    .getByRole("navigation", { name: "Primary" })
+    .getByRole("link", { name: "Pipeline" })
+    .click();
+
+  const pipeline = page.getByTestId("pipeline-shell");
+  await expect(pipeline).toBeVisible();
+  await expect(pipeline.getByRole("button", { name: "Inbox 3" })).toBeVisible();
+  await expect(pipeline.getByRole("button", { name: "Board" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(pipeline.getByText(/8 matching of 12/)).toBeVisible();
+
+  await pipeline.getByRole("button", { name: "Table" }).click();
+  await expect(pipeline.locator('[data-pipeline-view="table"]')).toBeVisible();
+  await expect(pipeline.getByText(/8 matching of 12/)).toBeVisible();
+  expect((await page.evaluate(() => globalThis.coredrillAppShell?.getState()))?.pipelineView).toBe(
+    "table",
+  );
+
+  await pipeline.getByRole("combobox", { name: "Saved view" }).selectOption("interview-prep");
+  expect(
+    (await page.evaluate(() => globalThis.coredrillAppShell?.getState()))?.pipelineSavedViewId,
+  ).toBe("interview-prep");
+
+  await pipeline.getByRole("searchbox", { name: "Search jobs" }).fill("Northstar");
+  expect(
+    (await page.evaluate(() => globalThis.coredrillAppShell?.getState()))?.pipelineSearchQuery,
+  ).toBe("Northstar");
+
+  await pipeline.getByRole("button", { name: /Remove filter Status/ }).click();
+  expect(
+    (await page.evaluate(() => globalThis.coredrillAppShell?.getState()))?.pipelineFilterCount,
+  ).toBe(1);
+  await pipeline.getByRole("button", { name: "Filter", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("open-filters");
+  await pipeline.getByRole("button", { name: "Sort · Recently updated" }).click();
+  await expect(page.getByRole("status")).toContainText("open-sort");
+  await pipeline.getByRole("button", { name: "More Pipeline actions" }).click();
+  await expect(page.getByRole("status")).toContainText("open-more");
+
+  await attachAxe(page, testInfo, "pipeline-peer-views-and-filters");
+  await attachProof(page, testInfo, "pipeline-peer-views-and-filters");
+  expect(externalRequests).toEqual([]);
+});
+
+test("Pipeline selection exposes a non-mutating bulk shell and reflows at 320 pixels", async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.emulateMedia({ forcedColors: "active", reducedMotion: "reduce" });
+  await openShell(page, { pipeline: "selected" });
+  await page
+    .getByRole("navigation", { name: "Mobile" })
+    .getByRole("link", { name: "Pipeline" })
+    .click();
+
+  const pipeline = page.getByTestId("pipeline-shell");
+  const bulk = pipeline.getByRole("region", { name: "Bulk actions" });
+  await expect(bulk).toContainText("2 jobs selected");
+  for (const name of ["Change status", "Add tags", "Archive", "Clear selection"]) {
+    await expect(bulk.getByRole("button", { name })).toBeVisible();
+  }
+  await attachAxe(page, testInfo, "pipeline-mobile-selected-forced-colors-320");
+  await attachProof(page, testInfo, "pipeline-mobile-selected-forced-colors-320");
+  await bulk.getByRole("button", { name: "Change status" }).click();
+  await expect(page.getByRole("status")).toContainText("No records changed");
+  await bulk.getByRole("button", { name: "Clear selection" }).click();
+  await expect(bulk).toBeHidden();
+  expect(
+    (await page.evaluate(() => globalThis.coredrillAppShell?.getState()))?.pipelineSelectedCount,
+  ).toBe(0);
+
+  await pipeline.getByRole("button", { name: "Table" }).click();
+  const dimensions = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
+  await attachAxe(page, testInfo, "pipeline-mobile-after-clear");
+});
+
 test("search, command, and Add surfaces restore focus and stay local", async ({ page }) => {
   const externalRequests = [];
   page.on("request", (request) => {
