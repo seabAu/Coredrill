@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-29
 Current milestone: Phase 1 — local tracker and recovery loop (`GATE-0` human validation remains blocked)
-Current work item: `UI-010` — Network companies/contacts/interactions views
-Next recommended slice: `UI-011` — scoped and global local search with result keyboard navigation
+Current work item: `UI-011` — scoped and global local search with result keyboard navigation
+Next recommended slice: `UI-012` — Phase 1 loading/empty/partial/error/offline/permission states
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `UI-011` — scoped and global local search with result 
 | Field | Value |
 |---|---|
 | Milestone | Phase 1, with the independent Phase 0 human-validation gate retained below |
-| Item range | `UI-010` |
+| Item range | `UI-011` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-29 |
-| Expected proof | Component and browser coverage for local Network company, contact, and interaction views with safe relationship navigation, no guessed contact data, and no automated outreach |
+| Expected proof | Component and browser coverage for scoped and global local search, keyboard result navigation, stable destination routing, explicit result scope, and no external search request |
 | Blocker | None for this slice. `UXR-004` through `UXR-008` still require the owner-authorized participant study before the Phase 1 UI lock; `FND-001` remains independently blocked. |
-| Next handoff | Implement and prove `UI-010`, then continue to `UI-011` without claiming `GATE-0` or resolving `Q-006` without participant evidence. |
+| Next handoff | Implement and prove `UI-011`, then continue to `UI-012` without claiming `GATE-0` or resolving `Q-006` without participant evidence. |
 
 ## Milestone status
 
@@ -181,7 +181,7 @@ Next recommended slice: `UI-011` — scoped and global local search with result 
 - [x] **UI-007** Implement virtualized Table with pinned/configurable columns and safe inline editing. — Proof: [semantic Table, per-view columns, bounded version-aware edits, 2,000-row performance, accessibility, and hosted artifact verification](../../proof/phase-1-pipeline-table-verification.md)
 - [x] **UI-008** Implement contextual/full-page Job workspace with route/back/refresh/scroll restoration. — Proof: [stable route, shared frame, exact Pipeline restoration, responsive, refresh/deep-link, accessibility, and hosted artifact verification](../../proof/phase-1-job-workspace-navigation-verification.md)
 - [x] **UI-009** Implement Overview, Timeline, Company, and Source skeleton tabs. — Proof: [Overview facts/actions, semantic timeline, company context, source provenance/freshness, accessibility, local-only and hosted artifact verification](../../proof/phase-1-job-workspace-core-tabs-verification.md)
-- [ ] **UI-010** Implement Network companies/contacts/interactions views. — Proof: _E2E tests_
+- [x] **UI-010** Implement Network companies/contacts/interactions views. — Proof: [company relationships, provenance-bound contacts, append-only interaction log, reminder controls, responsive accessibility, local-only and hosted artifact verification](../../proof/phase-1-network-workspace-verification.md)
 - [ ] **UI-011** Implement scoped and global local search with result keyboard navigation. — Proof: _search tests_
 - [ ] **UI-012** Implement all Phase 1 loading/empty/partial/error/offline/permission states. — Proof: _state catalog_
 
