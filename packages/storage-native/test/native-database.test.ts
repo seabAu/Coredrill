@@ -319,11 +319,11 @@ describe("native SQLite repository and migration contracts", () => {
         name: "applies the shared migration and reopens its ledger",
         run: async (database) => {
           await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
-            schemaVersion: 84,
-            appliedVersions: Array.from({ length: 84 }, (_, index) => index + 1),
+            schemaVersion: 87,
+            appliedVersions: Array.from({ length: 87 }, (_, index) => index + 1),
           });
           await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
-            schemaVersion: 84,
+            schemaVersion: 87,
             appliedVersions: [],
           });
         },
@@ -373,8 +373,8 @@ describe("native SQLite repository and migration contracts", () => {
         await applySqlMigrations(database, migrations(), APPLIED_AT);
       },
     });
-    expect(PHASE_1_REPOSITORY_CONTRACT_MANIFEST.schemaVersion).toBe(1);
-    expect(PHASE_1_REPOSITORY_CONTRACT_CASE_NAMES).toHaveLength(15);
+    expect(PHASE_1_REPOSITORY_CONTRACT_MANIFEST.schemaVersion).toBe(2);
+    expect(PHASE_1_REPOSITORY_CONTRACT_CASE_NAMES).toHaveLength(17);
     await expect(runDatabaseContractSuite(nativeAdapter, suite)).resolves.toEqual({
       adapterName: "native-rusqlite-candidate",
       suiteName: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.suiteName,
@@ -417,7 +417,7 @@ describe("native SQLite repository and migration contracts", () => {
       adapterName: "native-rusqlite-candidate",
       health: "ready",
       persistence: "durable",
-      schemaVersion: 84,
+      schemaVersion: 87,
     });
     await expect(reopened.delete()).resolves.toBe(true);
   });

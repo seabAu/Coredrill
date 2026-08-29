@@ -12,6 +12,7 @@ import {
   type JobActivityPort,
   type NextActionDto,
   type ReminderDto,
+  type UndoableNextActionDto,
 } from "../src/index.js";
 
 const JOB_ID = entityId("job", "0198e203-0000-7000-8000-000000000001");
@@ -21,6 +22,7 @@ const INTERACTION_ID = entityId("interaction", "0198e203-0000-7000-8000-00000000
 const NEXT_ACTION_ID = entityId("next-action", "0198e203-0000-7000-8000-000000000005");
 const INTERVIEW_ID = entityId("interview", "0198e203-0000-7000-8000-000000000006");
 const REMINDER_ID = entityId("reminder", "0198e203-0000-7000-8000-000000000007");
+const UNDO_TOKEN_ID = entityId("mutation-undo-token", "0198e203-0000-7000-8000-000000000009");
 const NOW = instant("2026-08-28T18:00:00.000Z");
 const PAST = instant("2026-08-28T17:00:00.000Z");
 const REMIND_AT = instant("2026-08-28T18:30:00.000Z");
@@ -44,6 +46,20 @@ const nextAction = (): NextActionDto => ({
   createdAt: NOW,
   updatedAt: NOW,
   rowVersion: 1,
+});
+
+const undoToken = () => ({
+  id: UNDO_TOKEN_ID,
+  kind: "next_action_set" as const,
+  jobId: JOB_ID,
+  createdAt: NOW,
+  consumedAt: null,
+  rowVersion: 1,
+});
+
+const nextActionChange = (): UndoableNextActionDto => ({
+  nextAction: nextAction(),
+  undoToken: undoToken(),
 });
 
 const interaction = (): InteractionDto => ({
@@ -92,7 +108,7 @@ const reminder = (): ReminderDto => ({
 });
 
 const activityPort = (): JobActivityPort => ({
-  setNextAction: vi.fn(async () => nextAction()),
+  setNextAction: vi.fn(async () => nextActionChange()),
   recordInteraction: vi.fn(async () => interaction()),
   scheduleInterview: vi.fn(async () => interview()),
   scheduleReminder: vi.fn(async () => reminder()),
@@ -103,6 +119,7 @@ const operationsFor = (activity: JobActivityPort) =>
     activity,
     createInteractionId: () => INTERACTION_ID,
     createNextActionId: () => NEXT_ACTION_ID,
+    createUndoTokenId: () => UNDO_TOKEN_ID,
     createInterviewId: () => INTERVIEW_ID,
     createReminderId: () => REMINDER_ID,
   });
@@ -129,9 +146,10 @@ describe("job activity application operations", () => {
       context,
     );
 
-    expect(result).toEqual({ ok: true, value: nextAction() });
+    expect(result).toEqual({ ok: true, value: nextActionChange() });
     expect(activity.setNextAction).toHaveBeenCalledWith({
       id: NEXT_ACTION_ID,
+      undoTokenId: UNDO_TOKEN_ID,
       jobId: JOB_ID,
       applicationId: APPLICATION_ID,
       interactionId: INTERACTION_ID,
@@ -145,19 +163,22 @@ describe("job activity application operations", () => {
     });
     if (result.ok) expect(Object.isFrozen(result.value)).toBe(true);
     expectTypeOf(setNextActionCommand.execute).returns.toEqualTypeOf<
-      Promise<ApplicationResult<NextActionDto>>
+      Promise<ApplicationResult<UndoableNextActionDto>>
     >();
   });
 
   it("supports an unscheduled next action without inventing a time zone", async () => {
     const activity = activityPort();
     vi.mocked(activity.setNextAction).mockResolvedValueOnce({
-      ...nextAction(),
-      applicationId: null,
-      interactionId: null,
-      title: "Research the team",
-      dueAt: null,
-      timeZone: null,
+      nextAction: {
+        ...nextAction(),
+        applicationId: null,
+        interactionId: null,
+        title: "Research the team",
+        dueAt: null,
+        timeZone: null,
+      },
+      undoToken: undoToken(),
     });
     const { setNextActionCommand } = operationsFor(activity);
 
@@ -166,12 +187,15 @@ describe("job activity application operations", () => {
     ).resolves.toEqual({
       ok: true,
       value: {
-        ...nextAction(),
-        applicationId: null,
-        interactionId: null,
-        title: "Research the team",
-        dueAt: null,
-        timeZone: null,
+        nextAction: {
+          ...nextAction(),
+          applicationId: null,
+          interactionId: null,
+          title: "Research the team",
+          dueAt: null,
+          timeZone: null,
+        },
+        undoToken: undoToken(),
       },
     });
   });
@@ -192,6 +216,7 @@ describe("job activity application operations", () => {
       activity,
       createInteractionId: () => INTERACTION_ID,
       createNextActionId,
+      createUndoTokenId: () => UNDO_TOKEN_ID,
       createInterviewId: () => INTERVIEW_ID,
       createReminderId: () => REMINDER_ID,
     });
@@ -560,8 +585,11 @@ describe("job activity application operations", () => {
       const activity = activityPort();
       if (operation === "setNextAction") {
         vi.mocked(activity.setNextAction).mockResolvedValueOnce({
-          ...nextAction(),
-          jobId: entityId("job", "0198e203-0000-7000-8000-000000000099"),
+          nextAction: {
+            ...nextAction(),
+            jobId: entityId("job", "0198e203-0000-7000-8000-000000000099"),
+          },
+          undoToken: undoToken(),
         });
         await expect(
           operationsFor(activity).setNextActionCommand.execute(

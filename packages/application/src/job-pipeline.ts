@@ -10,6 +10,7 @@ import {
 } from "@coredrill/domain";
 
 import { defineCommand, type ApplicationCommand } from "./operation.js";
+import { copyFreshMutationUndoToken, type MutationUndoTokenDto } from "./mutation-undo.js";
 import {
   applicationFailure,
   applicationSuccess,
@@ -39,6 +40,11 @@ export interface StatusEventDto {
   readonly rowVersion: number;
 }
 
+export interface UndoableStatusChangeDto {
+  readonly statusEvent: StatusEventDto;
+  readonly undoToken: MutationUndoTokenDto;
+}
+
 export interface CreateManualJobPortInput {
   readonly id: EntityId<"job">;
   readonly companyId: EntityId<"company"> | null;
@@ -61,6 +67,7 @@ export interface CreateManualJobPortInput {
 
 export interface ChangeStatusPortInput {
   readonly eventId: EntityId<"status-event">;
+  readonly undoTokenId: EntityId<"mutation-undo-token">;
   readonly jobId: EntityId<"job">;
   readonly applicationId: EntityId<"application"> | null;
   readonly toStatusId: StatusDefinitionId;
@@ -75,7 +82,7 @@ export interface ChangeStatusPortInput {
  */
 export interface JobPipelinePort {
   createManualJob(input: CreateManualJobPortInput): Promise<CreatedJobDto>;
-  changeStatus(input: ChangeStatusPortInput): Promise<StatusEventDto>;
+  changeStatus(input: ChangeStatusPortInput): Promise<UndoableStatusChangeDto>;
 }
 
 export const JOB_PIPELINE_ERROR_CODES = [
@@ -130,11 +137,12 @@ export interface JobPipelineOperationDependencies {
   readonly pipeline: JobPipelinePort;
   readonly createJobId: () => EntityId<"job">;
   readonly createStatusEventId: () => EntityId<"status-event">;
+  readonly createUndoTokenId: () => EntityId<"mutation-undo-token">;
 }
 
 export interface JobPipelineOperations {
   readonly createJobCommand: ApplicationCommand<CreateJobInput, CreatedJobDto>;
-  readonly changeStatusCommand: ApplicationCommand<ChangeStatusInput, StatusEventDto>;
+  readonly changeStatusCommand: ApplicationCommand<ChangeStatusInput, UndoableStatusChangeDto>;
 }
 
 const VALID_JOB_TITLE_ERROR: ApplicationError = Object.freeze({
@@ -351,6 +359,23 @@ const copyStatusEvent = (value: unknown, expected: ExpectedStatusEvent): StatusE
   return copied;
 };
 
+const copyUndoableStatusChange = (
+  value: unknown,
+  expected: ExpectedStatusEvent,
+  undoTokenId: EntityId<"mutation-undo-token">,
+): UndoableStatusChangeDto => {
+  if (!isRecord(value)) throw new TypeError("Invalid undoable status-change result.");
+  return Object.freeze({
+    statusEvent: copyStatusEvent(value["statusEvent"], expected),
+    undoToken: copyFreshMutationUndoToken(value["undoToken"], {
+      id: undoTokenId,
+      kind: "status_change",
+      jobId: expected.jobId,
+      createdAt: expected.occurredAt,
+    }),
+  });
+};
+
 const failureFrom = <Value>(error: unknown): ApplicationResult<Value> =>
   applicationFailure(
     error instanceof JobPipelineError ? PIPELINE_ERRORS[error.code] : UNKNOWN_PIPELINE_ERROR,
@@ -366,7 +391,8 @@ export const createJobPipelineOperations = (
     typeof untrustedDependencies["pipeline"]["createManualJob"] !== "function" ||
     typeof untrustedDependencies["pipeline"]["changeStatus"] !== "function" ||
     typeof untrustedDependencies["createJobId"] !== "function" ||
-    typeof untrustedDependencies["createStatusEventId"] !== "function"
+    typeof untrustedDependencies["createStatusEventId"] !== "function" ||
+    typeof untrustedDependencies["createUndoTokenId"] !== "function"
   ) {
     throw new TypeError("Job pipeline operations require a complete local persistence port.");
   }
@@ -435,13 +461,13 @@ export const createJobPipelineOperations = (
     },
   );
 
-  const changeStatusCommand = defineCommand<ChangeStatusInput, StatusEventDto>(
+  const changeStatusCommand = defineCommand<ChangeStatusInput, UndoableStatusChangeDto>(
     "ChangeStatusCommand",
     async (input, operationContext) => {
       const untrustedInput = input as unknown;
       if (!isRecord(untrustedInput)) return applicationFailure(VALID_STATUS_CHANGE_ERROR);
 
-      let parsed: Omit<ChangeStatusPortInput, "eventId" | "occurredAt">;
+      let parsed: Omit<ChangeStatusPortInput, "eventId" | "occurredAt" | "undoTokenId">;
       try {
         const allowReopen = untrustedInput["allowReopen"];
         if (allowReopen !== undefined && typeof allowReopen !== "boolean") {
@@ -460,6 +486,7 @@ export const createJobPipelineOperations = (
 
       try {
         const eventId = entityId("status-event", dependencies.createStatusEventId());
+        const undoTokenId = entityId("mutation-undo-token", dependencies.createUndoTokenId());
         const occurredAt = instant(operationContext.initiatedAt);
         const expected: ExpectedStatusEvent = {
           id: eventId,
@@ -470,13 +497,19 @@ export const createJobPipelineOperations = (
           note: parsed.note,
         };
         return applicationSuccess(
-          copyStatusEvent(
-            await dependencies.pipeline.changeStatus({ eventId, ...parsed, occurredAt }),
+          copyUndoableStatusChange(
+            await dependencies.pipeline.changeStatus({
+              eventId,
+              undoTokenId,
+              ...parsed,
+              occurredAt,
+            }),
             expected,
+            undoTokenId,
           ),
         );
       } catch (error) {
-        return failureFrom<StatusEventDto>(error);
+        return failureFrom<UndoableStatusChangeDto>(error);
       }
     },
   );

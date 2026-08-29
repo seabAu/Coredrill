@@ -9,6 +9,7 @@ import {
 } from "@coredrill/domain";
 
 import { defineCommand, type ApplicationCommand } from "./operation.js";
+import { copyFreshMutationUndoToken, type MutationUndoTokenDto } from "./mutation-undo.js";
 import {
   applicationFailure,
   applicationSuccess,
@@ -33,6 +34,11 @@ export interface NextActionDto {
   readonly createdAt: Instant;
   readonly updatedAt: Instant;
   readonly rowVersion: number;
+}
+
+export interface UndoableNextActionDto {
+  readonly nextAction: NextActionDto;
+  readonly undoToken: MutationUndoTokenDto;
 }
 
 export interface InteractionDto {
@@ -82,6 +88,7 @@ export interface ReminderDto {
 
 export interface SetNextActionPortInput {
   readonly id: EntityId<"next-action">;
+  readonly undoTokenId: EntityId<"mutation-undo-token">;
   readonly jobId: EntityId<"job">;
   readonly applicationId: EntityId<"application"> | null;
   readonly interactionId: EntityId<"interaction"> | null;
@@ -138,7 +145,7 @@ export interface ScheduleReminderPortInput {
 
 /** Runtime-owned local persistence boundary. It stores schedules; it does not contact a server. */
 export interface JobActivityPort {
-  setNextAction(input: SetNextActionPortInput): Promise<NextActionDto>;
+  setNextAction(input: SetNextActionPortInput): Promise<UndoableNextActionDto>;
   recordInteraction(input: RecordInteractionPortInput): Promise<InteractionDto>;
   scheduleInterview(input: ScheduleInterviewPortInput): Promise<InterviewDto>;
   scheduleReminder(input: ScheduleReminderPortInput): Promise<ReminderDto>;
@@ -212,13 +219,14 @@ export interface ScheduleReminderInput {
 export interface JobActivityOperationDependencies {
   readonly activity: JobActivityPort;
   readonly createNextActionId: () => EntityId<"next-action">;
+  readonly createUndoTokenId: () => EntityId<"mutation-undo-token">;
   readonly createInteractionId: () => EntityId<"interaction">;
   readonly createInterviewId: () => EntityId<"interview">;
   readonly createReminderId: () => EntityId<"reminder">;
 }
 
 export interface JobActivityOperations {
-  readonly setNextActionCommand: ApplicationCommand<SetNextActionInput, NextActionDto>;
+  readonly setNextActionCommand: ApplicationCommand<SetNextActionInput, UndoableNextActionDto>;
   readonly recordInteractionCommand: ApplicationCommand<RecordInteractionInput, InteractionDto>;
   readonly scheduleInterviewCommand: ApplicationCommand<ScheduleInterviewInput, InterviewDto>;
   readonly scheduleReminderCommand: ApplicationCommand<ScheduleReminderInput, ReminderDto>;
@@ -459,6 +467,23 @@ const copyNextAction = (value: unknown, expected: ExpectedNextAction): NextActio
   return copied;
 };
 
+const copyUndoableNextAction = (
+  value: unknown,
+  expected: ExpectedNextAction,
+  undoTokenId: EntityId<"mutation-undo-token">,
+): UndoableNextActionDto => {
+  if (!isRecord(value)) throw new TypeError("Invalid undoable next-action result.");
+  return Object.freeze({
+    nextAction: copyNextAction(value["nextAction"], expected),
+    undoToken: copyFreshMutationUndoToken(value["undoToken"], {
+      id: undoTokenId,
+      kind: "next_action_set",
+      jobId: expected.jobId,
+      createdAt: expected.createdAt,
+    }),
+  });
+};
+
 interface ExpectedInteraction {
   readonly id: EntityId<"interaction">;
   readonly jobId: EntityId<"job">;
@@ -617,6 +642,7 @@ export const createJobActivityOperations = (
     typeof untrustedDependencies["activity"]["scheduleInterview"] !== "function" ||
     typeof untrustedDependencies["activity"]["scheduleReminder"] !== "function" ||
     typeof untrustedDependencies["createNextActionId"] !== "function" ||
+    typeof untrustedDependencies["createUndoTokenId"] !== "function" ||
     typeof untrustedDependencies["createInteractionId"] !== "function" ||
     typeof untrustedDependencies["createInterviewId"] !== "function" ||
     typeof untrustedDependencies["createReminderId"] !== "function"
@@ -624,13 +650,13 @@ export const createJobActivityOperations = (
     throw new TypeError("Job activity operations require a complete local persistence port.");
   }
 
-  const setNextActionCommand = defineCommand<SetNextActionInput, NextActionDto>(
+  const setNextActionCommand = defineCommand<SetNextActionInput, UndoableNextActionDto>(
     "SetNextActionCommand",
     async (input, operationContext) => {
       const untrustedInput = input as unknown;
       if (!isRecord(untrustedInput)) return applicationFailure(VALID_NEXT_ACTION_ERROR);
 
-      let parsed: Omit<SetNextActionPortInput, "id" | "createdAt" | "updatedAt">;
+      let parsed: Omit<SetNextActionPortInput, "id" | "createdAt" | "undoTokenId" | "updatedAt">;
       try {
         const hasDueAt = untrustedInput["dueAt"] !== undefined && untrustedInput["dueAt"] !== null;
         const hasTimeZone =
@@ -652,20 +678,23 @@ export const createJobActivityOperations = (
 
       try {
         const id = entityId("next-action", dependencies.createNextActionId());
+        const undoTokenId = entityId("mutation-undo-token", dependencies.createUndoTokenId());
         const createdAt = instant(operationContext.initiatedAt);
         return applicationSuccess(
-          copyNextAction(
+          copyUndoableNextAction(
             await dependencies.activity.setNextAction({
               id,
+              undoTokenId,
               ...parsed,
               createdAt,
               updatedAt: createdAt,
             }),
             { id, ...parsed, createdAt },
+            undoTokenId,
           ),
         );
       } catch (error) {
-        return failureFrom<NextActionDto>(error);
+        return failureFrom<UndoableNextActionDto>(error);
       }
     },
   );

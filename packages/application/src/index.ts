@@ -31,6 +31,7 @@ export {
   type JobPipelineOperations,
   type JobPipelinePort,
   type StatusEventDto,
+  type UndoableStatusChangeDto,
 } from "./job-pipeline.js";
 export {
   JOB_ACTIVITY_ERROR_CODES,
@@ -55,7 +56,21 @@ export {
   type ScheduleReminderPortInput,
   type SetNextActionInput,
   type SetNextActionPortInput,
+  type UndoableNextActionDto,
 } from "./job-activity.js";
+export {
+  MUTATION_UNDO_ERROR_CODES,
+  MutationUndoError,
+  createMutationUndoOperations,
+  type ConsumeMutationUndoTokenInput,
+  type ConsumeMutationUndoTokenPortInput,
+  type MutationUndoErrorCode,
+  type MutationUndoKind,
+  type MutationUndoOperationDependencies,
+  type MutationUndoOperations,
+  type MutationUndoPort,
+  type MutationUndoTokenDto,
+} from "./mutation-undo.js";
 export {
   COMPANY_CONTACT_ERROR_CODES,
   CONTACT_PROVENANCE_FIELDS,

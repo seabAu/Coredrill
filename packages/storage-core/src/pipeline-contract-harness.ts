@@ -5,12 +5,13 @@ import {
   defineDatabaseContractSuite,
   type DatabaseContractSuite,
 } from "./contract-harness.js";
-import type { DatabasePort } from "./database-port.js";
+import { sqlStatement, type DatabasePort } from "./database-port.js";
 import { PHASE_1_REPOSITORY_CONTRACT_MANIFEST } from "./repository-contract-manifest.js";
 import {
   PipelineRepositoryConflictError,
   changePipelineStatus,
   completeNextAction,
+  consumeMutationUndoToken,
   createPipelineRepositories,
   setNextAction,
 } from "./pipeline-repositories.js";
@@ -34,6 +35,15 @@ const IDS = Object.freeze({
   nextAction: entityId("next-action", "0198e103-0000-7000-8000-00000000000b"),
   interview: entityId("interview", "0198e103-0000-7000-8000-00000000000c"),
   reminder: entityId("reminder", "0198e103-0000-7000-8000-00000000000d"),
+  appliedUndo: entityId("mutation-undo-token", "0198e103-0000-7000-8000-00000000000e"),
+  rejectedUndo: entityId("mutation-undo-token", "0198e103-0000-7000-8000-00000000000f"),
+  reopenedUndo: entityId("mutation-undo-token", "0198e103-0000-7000-8000-000000000010"),
+  nextActionUndo: entityId("mutation-undo-token", "0198e103-0000-7000-8000-000000000011"),
+  replacementAction: entityId("next-action", "0198e103-0000-7000-8000-000000000012"),
+  replacementActionUndo: entityId("mutation-undo-token", "0198e103-0000-7000-8000-000000000013"),
+  replacementReminder: entityId("reminder", "0198e103-0000-7000-8000-000000000014"),
+  staleAction: entityId("next-action", "0198e103-0000-7000-8000-000000000015"),
+  staleActionUndo: entityId("mutation-undo-token", "0198e103-0000-7000-8000-000000000016"),
 });
 
 const CREATED_AT = instant("2026-08-25T14:00:00.000Z");
@@ -43,6 +53,7 @@ const REOPENED_AT = instant("2026-08-25T14:15:00.000Z");
 const ACTION_DUE_AT = instant("2026-08-27T13:00:00.000Z");
 const INTERVIEW_AT = instant("2026-08-28T15:00:00.000Z");
 const REMINDER_AT = instant("2026-08-28T13:00:00.000Z");
+const FINAL_UNDO_AT = instant("2026-08-29T16:00:00.000Z");
 const EASTERN = timeZone("America/New_York");
 
 const assertContract = (condition: boolean, message: string): void => {
@@ -185,6 +196,7 @@ export const createPipelineRepositoryContractSuite = (
         await createPipelineAggregate(database);
         await changePipelineStatus(database, {
           eventId: IDS.appliedEvent,
+          undoTokenId: IDS.appliedUndo,
           jobId: IDS.job,
           applicationId: IDS.application,
           toStatusId: IDS.applied,
@@ -193,6 +205,7 @@ export const createPipelineRepositoryContractSuite = (
         });
         await changePipelineStatus(database, {
           eventId: IDS.rejectedEvent,
+          undoTokenId: IDS.rejectedUndo,
           jobId: IDS.job,
           applicationId: IDS.application,
           toStatusId: IDS.rejected,
@@ -204,6 +217,7 @@ export const createPipelineRepositoryContractSuite = (
           () =>
             changePipelineStatus(database, {
               eventId: IDS.reopenedEvent,
+              undoTokenId: IDS.reopenedUndo,
               jobId: IDS.job,
               applicationId: IDS.application,
               toStatusId: IDS.applied,
@@ -220,6 +234,7 @@ export const createPipelineRepositoryContractSuite = (
           () =>
             changePipelineStatus(database, {
               eventId: IDS.appliedEvent,
+              undoTokenId: IDS.reopenedUndo,
               jobId: IDS.job,
               applicationId: IDS.application,
               toStatusId: IDS.applied,
@@ -247,6 +262,7 @@ export const createPipelineRepositoryContractSuite = (
 
         await changePipelineStatus(database, {
           eventId: IDS.reopenedEvent,
+          undoTokenId: IDS.reopenedUndo,
           jobId: IDS.job,
           applicationId: IDS.application,
           toStatusId: IDS.applied,
@@ -283,19 +299,23 @@ export const createPipelineRepositoryContractSuite = (
           createdAt: APPLIED_AT,
           updatedAt: APPLIED_AT,
         });
-        await setNextAction(database, {
-          id: IDS.nextAction,
-          jobId: IDS.job,
-          applicationId: IDS.application,
-          interactionId: IDS.interaction,
-          title: "Send a concise synthetic follow-up",
-          dueAt: ACTION_DUE_AT,
-          timeZone: EASTERN,
-          state: "pending",
-          completedAt: null,
-          createdAt: APPLIED_AT,
-          updatedAt: APPLIED_AT,
-        });
+        await setNextAction(
+          database,
+          {
+            id: IDS.nextAction,
+            jobId: IDS.job,
+            applicationId: IDS.application,
+            interactionId: IDS.interaction,
+            title: "Send a concise synthetic follow-up",
+            dueAt: ACTION_DUE_AT,
+            timeZone: EASTERN,
+            state: "pending",
+            completedAt: null,
+            createdAt: APPLIED_AT,
+            updatedAt: APPLIED_AT,
+          },
+          IDS.nextActionUndo,
+        );
         await repositories.interviews.create({
           id: IDS.interview,
           applicationId: IDS.application,
@@ -348,6 +368,233 @@ export const createPipelineRepositoryContractSuite = (
         assertContract(
           completed?.state === "completed" && jobAfterCompletion?.nextActionAt === null,
           "Completing the action did not refresh the job projection.",
+        );
+      },
+    },
+    {
+      name: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components.pipeline.cases.undoStatusChange,
+      run: async (database) => {
+        await setup.migrate(database);
+        await createPipelineAggregate(database);
+        const repositories = createPipelineRepositories(database);
+
+        const reversible = await changePipelineStatus(database, {
+          eventId: IDS.appliedEvent,
+          undoTokenId: IDS.appliedUndo,
+          jobId: IDS.job,
+          applicationId: IDS.application,
+          toStatusId: IDS.applied,
+          occurredAt: APPLIED_AT,
+          note: "Synthetic reversible submission.",
+        });
+        assertContract(
+          reversible.undoToken.kind === "status_change" &&
+            reversible.undoToken.consumedAt === null &&
+            reversible.undoToken.statusEventId === IDS.appliedEvent,
+          "Status edit did not return its fresh durable undo token.",
+        );
+
+        const consumed = await consumeMutationUndoToken(database, {
+          id: IDS.appliedUndo,
+          consumedAt: REJECTED_AT,
+        });
+        const restoredJob = await createTrackerRepositories(database).jobs.findById(IDS.job);
+        const restoredApplication = await repositories.applications.findById(IDS.application);
+        const retainedEvents = await repositories.statusEvents.listForJob(IDS.job);
+        assertContract(
+          consumed.consumedAt === REJECTED_AT && consumed.rowVersion === 2,
+          "Status undo token did not complete its single consume transition.",
+        );
+        assertContract(
+          restoredJob?.currentStatusId === IDS.saved &&
+            restoredApplication?.currentStatusId === IDS.saved,
+          "Status undo did not restore both projections.",
+        );
+        assertContract(
+          retainedEvents.length === 1 && retainedEvents[0]?.id === IDS.appliedEvent,
+          "Status undo rewrote append-only history.",
+        );
+        await expectFailure(
+          () =>
+            consumeMutationUndoToken(database, {
+              id: IDS.appliedUndo,
+              consumedAt: REOPENED_AT,
+            }),
+          (error) =>
+            error instanceof PipelineRepositoryConflictError &&
+            error.code === "undo_token_already_consumed",
+          "A consumed status undo token was replayed.",
+        );
+
+        await changePipelineStatus(database, {
+          eventId: IDS.rejectedEvent,
+          undoTokenId: IDS.rejectedUndo,
+          jobId: IDS.job,
+          applicationId: IDS.application,
+          toStatusId: IDS.applied,
+          occurredAt: REOPENED_AT,
+          note: null,
+        });
+        await changePipelineStatus(database, {
+          eventId: IDS.reopenedEvent,
+          undoTokenId: IDS.reopenedUndo,
+          jobId: IDS.job,
+          applicationId: IDS.application,
+          toStatusId: IDS.rejected,
+          occurredAt: FINAL_UNDO_AT,
+          note: null,
+        });
+        await expectFailure(
+          () =>
+            consumeMutationUndoToken(database, {
+              id: IDS.rejectedUndo,
+              consumedAt: FINAL_UNDO_AT,
+            }),
+          (error) =>
+            error instanceof PipelineRepositoryConflictError &&
+            error.code === "undo_target_changed",
+          "A stale status undo token overwrote a later edit.",
+        );
+        const staleToken = await repositories.undoTokens.findById(IDS.rejectedUndo);
+        const finalApplication = await repositories.applications.findById(IDS.application);
+        assertContract(
+          staleToken?.consumedAt === null && finalApplication?.currentStatusId === IDS.rejected,
+          "Rejected stale status undo did not roll back atomically.",
+        );
+
+        await expectFailure(
+          () =>
+            database.execute(
+              sqlStatement("DELETE FROM mutation_undo_token WHERE id = ?", [IDS.appliedUndo]),
+            ),
+          () => true,
+          "A durable undo audit record was deleted.",
+        );
+      },
+    },
+    {
+      name: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components.pipeline.cases.undoNextAction,
+      run: async (database) => {
+        await setup.migrate(database);
+        await createPipelineAggregate(database);
+        const repositories = createPipelineRepositories(database);
+        await setNextAction(
+          database,
+          {
+            id: IDS.nextAction,
+            jobId: IDS.job,
+            applicationId: IDS.application,
+            interactionId: null,
+            title: "Preserved earlier action",
+            dueAt: ACTION_DUE_AT,
+            timeZone: EASTERN,
+            state: "pending",
+            completedAt: null,
+            createdAt: APPLIED_AT,
+            updatedAt: APPLIED_AT,
+          },
+          IDS.nextActionUndo,
+        );
+        const replacement = await setNextAction(
+          database,
+          {
+            id: IDS.replacementAction,
+            jobId: IDS.job,
+            applicationId: IDS.application,
+            interactionId: null,
+            title: "Reversible replacement action",
+            dueAt: INTERVIEW_AT,
+            timeZone: EASTERN,
+            state: "pending",
+            completedAt: null,
+            createdAt: REJECTED_AT,
+            updatedAt: REJECTED_AT,
+          },
+          IDS.replacementActionUndo,
+        );
+        assertContract(
+          replacement.undoToken.previousNextActionAt === ACTION_DUE_AT &&
+            replacement.undoToken.expectedNextActionAt === INTERVIEW_AT,
+          "Next-action undo token did not retain both projection values.",
+        );
+        await repositories.reminders.create({
+          id: IDS.replacementReminder,
+          jobId: IDS.job,
+          nextActionId: IDS.replacementAction,
+          interviewId: null,
+          remindAt: REMINDER_AT,
+          timeZone: EASTERN,
+          state: "pending",
+          note: null,
+          firedAt: null,
+          createdAt: REJECTED_AT,
+          updatedAt: REJECTED_AT,
+        });
+
+        await consumeMutationUndoToken(database, {
+          id: IDS.replacementActionUndo,
+          consumedAt: REOPENED_AT,
+        });
+        const restoredJob = await createTrackerRepositories(database).jobs.findById(IDS.job);
+        const dismissedAction = await repositories.nextActions.findById(IDS.replacementAction);
+        const dismissedReminder = await repositories.reminders.findById(IDS.replacementReminder);
+        assertContract(
+          restoredJob?.nextActionAt === ACTION_DUE_AT && dismissedAction?.state === "dismissed",
+          "Next-action undo did not restore the prior projection and dismiss its record.",
+        );
+        assertContract(
+          dismissedReminder?.state === "dismissed",
+          "Next-action undo left a live linked reminder.",
+        );
+        await expectFailure(
+          () =>
+            consumeMutationUndoToken(database, {
+              id: IDS.replacementActionUndo,
+              consumedAt: FINAL_UNDO_AT,
+            }),
+          (error) =>
+            error instanceof PipelineRepositoryConflictError &&
+            error.code === "undo_token_already_consumed",
+          "A consumed next-action undo token was replayed.",
+        );
+
+        await setNextAction(
+          database,
+          {
+            id: IDS.staleAction,
+            jobId: IDS.job,
+            applicationId: null,
+            interactionId: null,
+            title: "Action changed after token creation",
+            dueAt: INTERVIEW_AT,
+            timeZone: EASTERN,
+            state: "pending",
+            completedAt: null,
+            createdAt: REOPENED_AT,
+            updatedAt: REOPENED_AT,
+          },
+          IDS.staleActionUndo,
+        );
+        await completeNextAction(database, IDS.staleAction, FINAL_UNDO_AT);
+        await expectFailure(
+          () =>
+            consumeMutationUndoToken(database, {
+              id: IDS.staleActionUndo,
+              consumedAt: FINAL_UNDO_AT,
+            }),
+          (error) =>
+            error instanceof PipelineRepositoryConflictError &&
+            error.code === "undo_target_changed",
+          "A stale next-action undo token overwrote a later edit.",
+        );
+        const staleToken = await repositories.undoTokens.findById(IDS.staleActionUndo);
+        const completedAction = await repositories.nextActions.findById(IDS.staleAction);
+        const finalJob = await createTrackerRepositories(database).jobs.findById(IDS.job);
+        assertContract(
+          staleToken?.consumedAt === null &&
+            completedAction?.state === "completed" &&
+            finalJob?.nextActionAt === ACTION_DUE_AT,
+          "Rejected stale next-action undo did not roll back atomically.",
         );
       },
     },

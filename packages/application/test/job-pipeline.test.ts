@@ -10,6 +10,7 @@ import {
   type CreatedJobDto,
   type JobPipelinePort,
   type StatusEventDto,
+  type UndoableStatusChangeDto,
 } from "../src/index.js";
 
 const JOB_ID = entityId("job", "0198e202-0000-7000-8000-000000000001");
@@ -19,6 +20,7 @@ const APPLICATION_ID = entityId("application", "0198e202-0000-7000-8000-00000000
 const FROM_STATUS_ID = entityId("status_definition", "0198e202-0000-7000-8000-000000000005");
 const TO_STATUS_ID = entityId("status_definition", "0198e202-0000-7000-8000-000000000006");
 const EVENT_ID = entityId("status-event", "0198e202-0000-7000-8000-000000000007");
+const UNDO_TOKEN_ID = entityId("mutation-undo-token", "0198e202-0000-7000-8000-000000000009");
 const CREATED_AT = instant("2026-08-28T18:00:00.000Z");
 const CHANGED_AT = instant("2026-08-28T19:00:00.000Z");
 const DATE_POSTED = dateOnly("2026-08-20");
@@ -50,9 +52,23 @@ const statusEvent = (): StatusEventDto => ({
   rowVersion: 1,
 });
 
+const undoToken = () => ({
+  id: UNDO_TOKEN_ID,
+  kind: "status_change" as const,
+  jobId: JOB_ID,
+  createdAt: CHANGED_AT,
+  consumedAt: null,
+  rowVersion: 1,
+});
+
+const statusChange = (): UndoableStatusChangeDto => ({
+  statusEvent: statusEvent(),
+  undoToken: undoToken(),
+});
+
 const pipelinePort = (): JobPipelinePort => ({
   createManualJob: vi.fn(async () => createdJob()),
-  changeStatus: vi.fn(async () => statusEvent()),
+  changeStatus: vi.fn(async () => statusChange()),
 });
 
 describe("manual job and pipeline application operations", () => {
@@ -62,6 +78,7 @@ describe("manual job and pipeline application operations", () => {
       pipeline,
       createJobId: () => JOB_ID,
       createStatusEventId: () => EVENT_ID,
+      createUndoTokenId: () => UNDO_TOKEN_ID,
     });
 
     expect(operations.createJobCommand).toMatchObject({
@@ -125,6 +142,7 @@ describe("manual job and pipeline application operations", () => {
       pipeline,
       createJobId: () => JOB_ID,
       createStatusEventId: () => EVENT_ID,
+      createUndoTokenId: () => UNDO_TOKEN_ID,
     });
 
     await expect(createJobCommand.execute({ title: "Product Engineer" }, context)).resolves.toEqual(
@@ -166,6 +184,7 @@ describe("manual job and pipeline application operations", () => {
       pipeline,
       createJobId,
       createStatusEventId: () => EVENT_ID,
+      createUndoTokenId: () => UNDO_TOKEN_ID,
     });
 
     await expect(createJobCommand.execute({ title }, context)).resolves.toEqual({
@@ -193,6 +212,7 @@ describe("manual job and pipeline application operations", () => {
       pipeline,
       createJobId: () => JOB_ID,
       createStatusEventId: () => EVENT_ID,
+      createUndoTokenId: () => UNDO_TOKEN_ID,
     });
 
     const result = await createJobCommand.execute(input, context);
@@ -210,6 +230,7 @@ describe("manual job and pipeline application operations", () => {
       pipeline,
       createJobId: () => JOB_ID,
       createStatusEventId: () => EVENT_ID,
+      createUndoTokenId: () => UNDO_TOKEN_ID,
     });
     const changedContext = { ...context, initiatedAt: CHANGED_AT };
 
@@ -229,10 +250,11 @@ describe("manual job and pipeline application operations", () => {
       changedContext,
     );
 
-    expect(result).toEqual({ ok: true, value: statusEvent() });
+    expect(result).toEqual({ ok: true, value: statusChange() });
     expect(pipeline.changeStatus).toHaveBeenCalledTimes(1);
     expect(pipeline.changeStatus).toHaveBeenCalledWith({
       eventId: EVENT_ID,
+      undoTokenId: UNDO_TOKEN_ID,
       jobId: JOB_ID,
       applicationId: APPLICATION_ID,
       toStatusId: TO_STATUS_ID,
@@ -242,21 +264,21 @@ describe("manual job and pipeline application operations", () => {
     });
     if (result.ok) expect(Object.isFrozen(result.value)).toBe(true);
     expectTypeOf(changeStatusCommand.execute).returns.toEqualTypeOf<
-      Promise<ApplicationResult<StatusEventDto>>
+      Promise<ApplicationResult<UndoableStatusChangeDto>>
     >();
   });
 
   it("uses explicit null and false defaults for a job-only status change", async () => {
     const pipeline = pipelinePort();
     vi.mocked(pipeline.changeStatus).mockResolvedValueOnce({
-      ...statusEvent(),
-      applicationId: null,
-      note: null,
+      statusEvent: { ...statusEvent(), applicationId: null, note: null },
+      undoToken: undoToken(),
     });
     const { changeStatusCommand } = createJobPipelineOperations({
       pipeline,
       createJobId: () => JOB_ID,
       createStatusEventId: () => EVENT_ID,
+      createUndoTokenId: () => UNDO_TOKEN_ID,
     });
 
     await expect(
@@ -266,10 +288,14 @@ describe("manual job and pipeline application operations", () => {
       ),
     ).resolves.toEqual({
       ok: true,
-      value: { ...statusEvent(), applicationId: null, note: null },
+      value: {
+        statusEvent: { ...statusEvent(), applicationId: null, note: null },
+        undoToken: undoToken(),
+      },
     });
     expect(pipeline.changeStatus).toHaveBeenCalledWith({
       eventId: EVENT_ID,
+      undoTokenId: UNDO_TOKEN_ID,
       jobId: JOB_ID,
       applicationId: null,
       toStatusId: TO_STATUS_ID,
@@ -288,10 +314,12 @@ describe("manual job and pipeline application operations", () => {
   ] as const)("rejects invalid change-status %s", async (input, _label) => {
     const pipeline = pipelinePort();
     const createStatusEventId = vi.fn(() => EVENT_ID);
+    const createUndoTokenId = vi.fn(() => UNDO_TOKEN_ID);
     const { changeStatusCommand } = createJobPipelineOperations({
       pipeline,
       createJobId: () => JOB_ID,
       createStatusEventId,
+      createUndoTokenId,
     });
 
     const result = await changeStatusCommand.execute(input as never, context);
@@ -300,6 +328,7 @@ describe("manual job and pipeline application operations", () => {
       expect(result.error).toMatchObject({ code: "validation", retryable: false });
     }
     expect(createStatusEventId).not.toHaveBeenCalled();
+    expect(createUndoTokenId).not.toHaveBeenCalled();
     expect(pipeline.changeStatus).not.toHaveBeenCalled();
   });
 
@@ -328,6 +357,7 @@ describe("manual job and pipeline application operations", () => {
         pipeline,
         createJobId: () => JOB_ID,
         createStatusEventId: () => EVENT_ID,
+        createUndoTokenId: () => UNDO_TOKEN_ID,
       });
 
       await expect(
@@ -351,6 +381,7 @@ describe("manual job and pipeline application operations", () => {
       pipeline,
       createJobId: () => JOB_ID,
       createStatusEventId: () => EVENT_ID,
+      createUndoTokenId: () => UNDO_TOKEN_ID,
     });
 
     const result = await createJobCommand.execute({ title: "Role" }, context);
@@ -377,6 +408,7 @@ describe("manual job and pipeline application operations", () => {
       pipeline,
       createJobId: () => JOB_ID,
       createStatusEventId: () => EVENT_ID,
+      createUndoTokenId: () => UNDO_TOKEN_ID,
     });
 
     await expect(createJobCommand.execute({ title: createdJob().title }, context)).resolves.toEqual(
@@ -394,13 +426,14 @@ describe("manual job and pipeline application operations", () => {
   it("fails closed when an atomic status result does not match the requested event", async () => {
     const pipeline = pipelinePort();
     vi.mocked(pipeline.changeStatus).mockResolvedValueOnce({
-      ...statusEvent(),
-      toStatusId: FROM_STATUS_ID,
+      statusEvent: { ...statusEvent(), toStatusId: FROM_STATUS_ID },
+      undoToken: undoToken(),
     });
     const { changeStatusCommand } = createJobPipelineOperations({
       pipeline,
       createJobId: () => JOB_ID,
       createStatusEventId: () => EVENT_ID,
+      createUndoTokenId: () => UNDO_TOKEN_ID,
     });
 
     await expect(

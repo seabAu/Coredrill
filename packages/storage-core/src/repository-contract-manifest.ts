@@ -27,6 +27,10 @@ const PHASE_1_REPOSITORY_CONTRACT_COMPONENTS = Object.freeze({
     changeStatus: "changes job and application status with atomic append-only history",
     persistScheduling:
       "persists interactions actions interviews and local reminders transactionally",
+    undoStatusChange:
+      "consumes a durable status undo token once without rewriting append-only history",
+    undoNextAction:
+      "consumes a durable next-action undo token once and restores scheduling consistency",
   }),
   view: component("phase-1-view-repositories", {
     assignTags: "assigns active tags idempotently and enforces job relationships",
@@ -49,8 +53,8 @@ const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
 );
 
 export const PHASE_1_REPOSITORY_CONTRACT_MANIFEST = Object.freeze({
-  schemaVersion: 1 as const,
-  suiteName: "phase-1-repository-contracts-v1",
+  schemaVersion: 2 as const,
+  suiteName: "phase-1-repository-contracts-v2",
   components: PHASE_1_REPOSITORY_CONTRACT_COMPONENTS,
   caseNames: PHASE_1_REPOSITORY_CONTRACT_CASES,
 });

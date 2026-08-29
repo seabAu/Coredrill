@@ -47,6 +47,32 @@ export interface StatusEventRecord {
   readonly rowVersion: number;
 }
 
+export type MutationUndoKind = "next_action_set" | "status_change";
+
+export interface MutationUndoTokenRecord {
+  readonly id: EntityId<"mutation-undo-token">;
+  readonly kind: MutationUndoKind;
+  readonly jobId: EntityId<"job">;
+  readonly statusApplicationId: EntityId<"application"> | null;
+  readonly statusEventId: EntityId<"status-event"> | null;
+  readonly previousStatusId: StatusDefinitionId | null;
+  readonly expectedStatusId: StatusDefinitionId | null;
+  readonly expectedApplicationRowVersion: number | null;
+  readonly nextActionId: EntityId<"next-action"> | null;
+  readonly expectedNextActionRowVersion: number | null;
+  readonly previousNextActionAt: Instant | null;
+  readonly expectedNextActionAt: Instant | null;
+  readonly expectedJobRowVersion: number;
+  readonly createdAt: Instant;
+  readonly consumedAt: Instant | null;
+  readonly rowVersion: number;
+}
+
+export interface UndoableStatusChangeRecord {
+  readonly statusEvent: StatusEventRecord;
+  readonly undoToken: MutationUndoTokenRecord;
+}
+
 export type InteractionDirection = "inbound" | "mutual" | "outbound" | "unknown";
 
 export interface InteractionRecord {
@@ -78,6 +104,11 @@ export interface NextActionRecord {
   readonly createdAt: Instant;
   readonly updatedAt: Instant;
   readonly rowVersion: number;
+}
+
+export interface UndoableNextActionRecord {
+  readonly nextAction: NextActionRecord;
+  readonly undoToken: MutationUndoTokenRecord;
 }
 
 export interface InterviewRecord {

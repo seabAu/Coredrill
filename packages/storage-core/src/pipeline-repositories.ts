@@ -1,4 +1,5 @@
 import {
+  compareInstant,
   createStatusStage,
   entityId,
   evaluateStatusTransition,
@@ -21,12 +22,16 @@ import type {
   InteractionDirection,
   InteractionRecord,
   InterviewRecord,
+  MutationUndoKind,
+  MutationUndoTokenRecord,
   NextActionRecord,
   NextActionState,
   ReminderRecord,
   ReminderState,
   StatusDefinitionRecord,
   StatusEventRecord,
+  UndoableNextActionRecord,
+  UndoableStatusChangeRecord,
 } from "./pipeline-records.js";
 
 export type NewStatusDefinition = Omit<StatusDefinitionRecord, "rowVersion">;
@@ -42,7 +47,9 @@ export type PipelineRepositoryConflictCode =
   | "pipeline_projection_conflict"
   | "pipeline_record_not_found"
   | "reopen_requires_explicit_confirmation"
-  | "same_status";
+  | "same_status"
+  | "undo_target_changed"
+  | "undo_token_already_consumed";
 
 const CONFLICT_MESSAGES: Readonly<Record<PipelineRepositoryConflictCode, string>> = Object.freeze({
   additional_application_requires_explicit_authorization:
@@ -53,6 +60,8 @@ const CONFLICT_MESSAGES: Readonly<Record<PipelineRepositoryConflictCode, string>
   reopen_requires_explicit_confirmation:
     "Leaving a terminal stage requires explicit reopen confirmation.",
   same_status: "A status change must select a different stage.",
+  undo_target_changed: "The reversible edit changed after its undo token was created.",
+  undo_token_already_consumed: "The undo token was already consumed.",
 });
 
 export class PipelineRepositoryConflictError extends Error {
@@ -164,9 +173,29 @@ interface ReminderRow extends QueryRow {
   readonly row_version: number;
 }
 
+interface MutationUndoTokenRow extends QueryRow {
+  readonly id: string;
+  readonly kind: string;
+  readonly job_id: string;
+  readonly status_application_id: string | null;
+  readonly status_event_id: string | null;
+  readonly previous_status_id: string | null;
+  readonly expected_status_id: string | null;
+  readonly expected_application_row_version: number | null;
+  readonly next_action_id: string | null;
+  readonly expected_next_action_row_version: number | null;
+  readonly previous_next_action_at: string | null;
+  readonly expected_next_action_at: string | null;
+  readonly expected_job_row_version: number;
+  readonly created_at: string;
+  readonly consumed_at: string | null;
+  readonly row_version: number;
+}
+
 interface JobProjectionRow extends QueryRow {
   readonly current_status_id: string | null;
   readonly next_action_at: string | null;
+  readonly row_version: number;
 }
 
 interface CountRow extends QueryRow {
@@ -182,6 +211,7 @@ const INTERACTION_DIRECTIONS = new Set<InteractionDirection>([
 ]);
 const NEXT_ACTION_STATES = new Set<NextActionState>(["completed", "dismissed", "pending"]);
 const REMINDER_STATES = new Set<ReminderState>(["dismissed", "fired", "pending"]);
+const MUTATION_UNDO_KINDS = new Set<MutationUndoKind>(["next_action_set", "status_change"]);
 
 const boundedText = (
   value: string,
@@ -386,6 +416,37 @@ const mapReminder = (row: ReminderRow): ReminderRecord => {
     rowVersion: rowVersion(row.row_version),
   });
 };
+
+const nullableRowVersion = (value: number | null): number | null =>
+  value === null ? null : rowVersion(value);
+
+const mapMutationUndoToken = (row: MutationUndoTokenRow): MutationUndoTokenRecord => {
+  const kind = row.kind as MutationUndoKind;
+  if (!MUTATION_UNDO_KINDS.has(kind)) throw new Error("Stored undo-token kind is invalid.");
+  return Object.freeze({
+    id: entityId("mutation-undo-token", row.id),
+    kind,
+    jobId: entityId("job", row.job_id),
+    statusApplicationId: optionalEntityId("application", row.status_application_id),
+    statusEventId: optionalEntityId("status-event", row.status_event_id),
+    previousStatusId: optionalEntityId("status_definition", row.previous_status_id),
+    expectedStatusId: optionalEntityId("status_definition", row.expected_status_id),
+    expectedApplicationRowVersion: nullableRowVersion(row.expected_application_row_version),
+    nextActionId: optionalEntityId("next-action", row.next_action_id),
+    expectedNextActionRowVersion: nullableRowVersion(row.expected_next_action_row_version),
+    previousNextActionAt: optionalInstant(row.previous_next_action_at),
+    expectedNextActionAt: optionalInstant(row.expected_next_action_at),
+    expectedJobRowVersion: rowVersion(row.expected_job_row_version),
+    createdAt: instant(row.created_at),
+    consumedAt: optionalInstant(row.consumed_at),
+    rowVersion: rowVersion(row.row_version),
+  });
+};
+
+const UNDO_TOKEN_COLUMNS = `id, kind, job_id, status_application_id, status_event_id,
+  previous_status_id, expected_status_id, expected_application_row_version, next_action_id,
+  expected_next_action_row_version, previous_next_action_at, expected_next_action_at,
+  expected_job_row_version, created_at, consumed_at, row_version`;
 
 export class StatusDefinitionRepository {
   public constructor(private readonly session: DatabaseSession) {}
@@ -686,6 +747,23 @@ export class ReminderRepository {
   }
 }
 
+export class MutationUndoTokenRepository {
+  public constructor(private readonly session: DatabaseSession) {}
+
+  public async findById(
+    id: EntityId<"mutation-undo-token">,
+  ): Promise<MutationUndoTokenRecord | undefined> {
+    const rows = await this.session.query<MutationUndoTokenRow>(
+      sqlStatement(
+        `SELECT ${UNDO_TOKEN_COLUMNS}
+         FROM mutation_undo_token WHERE id = ?`,
+        [entityId("mutation-undo-token", id)],
+      ),
+    );
+    return rows[0] === undefined ? undefined : mapMutationUndoToken(rows[0]);
+  }
+}
+
 export interface PipelineRepositories {
   readonly applications: ApplicationRepository;
   readonly interactions: InteractionRepository;
@@ -694,6 +772,7 @@ export interface PipelineRepositories {
   readonly reminders: ReminderRepository;
   readonly statusDefinitions: StatusDefinitionRepository;
   readonly statusEvents: StatusEventRepository;
+  readonly undoTokens: MutationUndoTokenRepository;
 }
 
 export const createPipelineRepositories = (session: DatabaseSession): PipelineRepositories =>
@@ -705,10 +784,12 @@ export const createPipelineRepositories = (session: DatabaseSession): PipelineRe
     reminders: new ReminderRepository(session),
     statusDefinitions: new StatusDefinitionRepository(session),
     statusEvents: new StatusEventRepository(session),
+    undoTokens: new MutationUndoTokenRepository(session),
   });
 
 export interface ChangePipelineStatusInput {
   readonly eventId: EntityId<"status-event">;
+  readonly undoTokenId: EntityId<"mutation-undo-token">;
   readonly jobId: EntityId<"job">;
   readonly applicationId: EntityId<"application"> | null;
   readonly toStatusId: StatusDefinitionId;
@@ -720,18 +801,22 @@ export interface ChangePipelineStatusInput {
 export const changePipelineStatus = async (
   database: DatabasePort,
   input: ChangePipelineStatusInput,
-): Promise<StatusEventRecord> =>
+): Promise<UndoableStatusChangeRecord> =>
   database.transaction(async (transaction) => {
     const jobId = entityId("job", input.jobId);
     const jobRows = await transaction.query<JobProjectionRow>(
-      sqlStatement("SELECT current_status_id, next_action_at FROM job WHERE id = ?", [jobId]),
+      sqlStatement("SELECT current_status_id, next_action_at, row_version FROM job WHERE id = ?", [
+        jobId,
+      ]),
     );
     const job = jobRows[0];
     if (job === undefined) {
       throw new PipelineRepositoryConflictError("pipeline_record_not_found");
     }
 
+    const jobRowVersion = rowVersion(job.row_version);
     let fromStatusId = optionalEntityId("status_definition", job.current_status_id);
+    let applicationRowVersion: number | null = null;
     if (input.applicationId !== null) {
       const applicationRows = await transaction.query<ApplicationRow>(
         sqlStatement(
@@ -751,6 +836,7 @@ export const changePipelineStatus = async (
         throw new PipelineRepositoryConflictError("pipeline_projection_conflict");
       }
       fromStatusId = applicationStatusId;
+      applicationRowVersion = rowVersion(application.row_version);
     }
 
     const repositories = createPipelineRepositories(transaction);
@@ -782,8 +868,8 @@ export const changePipelineStatus = async (
       sqlStatement(
         `UPDATE job
          SET current_status_id = ?, updated_at = ?, row_version = row_version + 1
-         WHERE id = ? AND current_status_id IS ?`,
-        [target.id, occurredAt, jobId, fromStatusId],
+         WHERE id = ? AND current_status_id IS ? AND row_version = ?`,
+        [target.id, occurredAt, jobId, fromStatusId, jobRowVersion],
       ),
     );
     assertOneRow(updatedJob.rowsAffected, "projection");
@@ -793,13 +879,14 @@ export const changePipelineStatus = async (
         sqlStatement(
           `UPDATE application
            SET current_status_id = ?, updated_at = ?, row_version = row_version + 1
-           WHERE id = ? AND job_id = ? AND current_status_id IS ?`,
+           WHERE id = ? AND job_id = ? AND current_status_id IS ? AND row_version = ?`,
           [
             target.id,
             occurredAt,
             entityId("application", input.applicationId),
             jobId,
             fromStatusId,
+            applicationRowVersion,
           ],
         ),
       );
@@ -827,7 +914,7 @@ export const changePipelineStatus = async (
       ),
     );
     assertOneRow(inserted.rowsAffected, "create");
-    return Object.freeze({
+    const statusEvent: StatusEventRecord = Object.freeze({
       id: eventId,
       jobId,
       applicationId: input.applicationId,
@@ -838,24 +925,72 @@ export const changePipelineStatus = async (
       createdAt: occurredAt,
       rowVersion: 1,
     });
+    const undoTokenId = entityId("mutation-undo-token", input.undoTokenId);
+    const insertedUndoToken = await transaction.execute(
+      sqlStatement(
+        `INSERT INTO mutation_undo_token(
+           id, kind, job_id, status_application_id, status_event_id, previous_status_id,
+           expected_status_id, expected_application_row_version, expected_job_row_version,
+           created_at
+         ) VALUES (?, 'status_change', ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          undoTokenId,
+          jobId,
+          input.applicationId === null ? null : entityId("application", input.applicationId),
+          eventId,
+          fromStatusId,
+          target.id,
+          applicationRowVersion === null ? null : applicationRowVersion + 1,
+          jobRowVersion + 1,
+          occurredAt,
+        ],
+      ),
+    );
+    assertOneRow(insertedUndoToken.rowsAffected, "create");
+    const undoToken: MutationUndoTokenRecord = Object.freeze({
+      id: undoTokenId,
+      kind: "status_change",
+      jobId,
+      statusApplicationId: input.applicationId,
+      statusEventId: eventId,
+      previousStatusId: fromStatusId,
+      expectedStatusId: target.id,
+      expectedApplicationRowVersion:
+        applicationRowVersion === null ? null : applicationRowVersion + 1,
+      nextActionId: null,
+      expectedNextActionRowVersion: null,
+      previousNextActionAt: null,
+      expectedNextActionAt: null,
+      expectedJobRowVersion: jobRowVersion + 1,
+      createdAt: occurredAt,
+      consumedAt: null,
+      rowVersion: 1,
+    });
+    return Object.freeze({ statusEvent, undoToken });
   });
 
 export const setNextAction = async (
   database: DatabasePort,
   record: NewNextAction,
-): Promise<void> => {
+  undoTokenIdInput: EntityId<"mutation-undo-token">,
+): Promise<UndoableNextActionRecord> => {
   if (record.state !== "pending" || record.completedAt !== null) {
     throw new TypeError("A new next action must be pending and incomplete.");
   }
   const audit = auditTimestamps(record.createdAt, record.updatedAt);
-  await database.transaction(async (transaction) => {
+  return database.transaction(async (transaction) => {
     const jobId = entityId("job", record.jobId);
     const jobRows = await transaction.query<JobProjectionRow>(
-      sqlStatement("SELECT current_status_id, next_action_at FROM job WHERE id = ?", [jobId]),
+      sqlStatement("SELECT current_status_id, next_action_at, row_version FROM job WHERE id = ?", [
+        jobId,
+      ]),
     );
-    if (jobRows[0] === undefined) {
+    const job = jobRows[0];
+    if (job === undefined) {
       throw new PipelineRepositoryConflictError("pipeline_record_not_found");
     }
+    const jobRowVersion = rowVersion(job.row_version);
+    const previousNextActionAt = optionalInstant(job.next_action_at);
     if (record.applicationId !== null) {
       const rows = await transaction.query<CountRow>(
         sqlStatement("SELECT count(*) AS total FROM application WHERE id = ? AND job_id = ?", [
@@ -879,6 +1014,9 @@ export const setNextAction = async (
       }
     }
     const dueAt = record.dueAt === null ? null : instant(record.dueAt);
+    const title = boundedText(record.title, "Next-action title", 512, true);
+    const zone = record.timeZone === null ? null : timeZone(record.timeZone);
+    const nextActionId = entityId("next-action", record.id);
     const inserted = await transaction.execute(
       sqlStatement(
         `INSERT INTO next_action(
@@ -886,13 +1024,13 @@ export const setNextAction = async (
            completed_at, created_at, updated_at
          ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', NULL, ?, ?)`,
         [
-          entityId("next-action", record.id),
+          nextActionId,
           jobId,
           record.applicationId === null ? null : entityId("application", record.applicationId),
           record.interactionId === null ? null : entityId("interaction", record.interactionId),
-          boundedText(record.title, "Next-action title", 512, true),
+          title,
           dueAt,
-          record.timeZone === null ? null : timeZone(record.timeZone),
+          zone,
           audit.createdAt,
           audit.updatedAt,
         ],
@@ -903,13 +1041,189 @@ export const setNextAction = async (
       sqlStatement(
         `UPDATE job
          SET next_action_at = ?, updated_at = ?, row_version = row_version + 1
-         WHERE id = ?`,
-        [dueAt, audit.updatedAt, jobId],
+         WHERE id = ? AND next_action_at IS ? AND row_version = ?`,
+        [dueAt, audit.updatedAt, jobId, previousNextActionAt, jobRowVersion],
       ),
     );
     assertOneRow(updated.rowsAffected, "projection");
+    const undoTokenId = entityId("mutation-undo-token", undoTokenIdInput);
+    const insertedUndoToken = await transaction.execute(
+      sqlStatement(
+        `INSERT INTO mutation_undo_token(
+           id, kind, job_id, next_action_id, expected_next_action_row_version,
+           previous_next_action_at, expected_next_action_at, expected_job_row_version, created_at
+         ) VALUES (?, 'next_action_set', ?, ?, 1, ?, ?, ?, ?)`,
+        [
+          undoTokenId,
+          jobId,
+          nextActionId,
+          previousNextActionAt,
+          dueAt,
+          jobRowVersion + 1,
+          audit.createdAt,
+        ],
+      ),
+    );
+    assertOneRow(insertedUndoToken.rowsAffected, "create");
+    const nextAction: NextActionRecord = Object.freeze({
+      id: nextActionId,
+      jobId,
+      applicationId: record.applicationId,
+      interactionId: record.interactionId,
+      title,
+      dueAt,
+      timeZone: zone,
+      state: "pending",
+      completedAt: null,
+      createdAt: audit.createdAt,
+      updatedAt: audit.updatedAt,
+      rowVersion: 1,
+    });
+    const undoToken: MutationUndoTokenRecord = Object.freeze({
+      id: undoTokenId,
+      kind: "next_action_set",
+      jobId,
+      statusApplicationId: null,
+      statusEventId: null,
+      previousStatusId: null,
+      expectedStatusId: null,
+      expectedApplicationRowVersion: null,
+      nextActionId,
+      expectedNextActionRowVersion: 1,
+      previousNextActionAt,
+      expectedNextActionAt: dueAt,
+      expectedJobRowVersion: jobRowVersion + 1,
+      createdAt: audit.createdAt,
+      consumedAt: null,
+      rowVersion: 1,
+    });
+    return Object.freeze({ nextAction, undoToken });
   });
 };
+
+export interface ConsumeMutationUndoTokenInput {
+  readonly id: EntityId<"mutation-undo-token">;
+  readonly consumedAt: Instant;
+}
+
+export const consumeMutationUndoToken = async (
+  database: DatabasePort,
+  input: ConsumeMutationUndoTokenInput,
+): Promise<MutationUndoTokenRecord> =>
+  database.transaction(async (transaction) => {
+    const repositories = createPipelineRepositories(transaction);
+    const token = await repositories.undoTokens.findById(input.id);
+    if (token === undefined) {
+      throw new PipelineRepositoryConflictError("pipeline_record_not_found");
+    }
+    if (token.consumedAt !== null) {
+      throw new PipelineRepositoryConflictError("undo_token_already_consumed");
+    }
+    const consumedAt = instant(input.consumedAt);
+    if (compareInstant(consumedAt, token.createdAt) < 0) {
+      throw new TypeError("An undo token cannot be consumed before it was created.");
+    }
+
+    if (token.kind === "status_change") {
+      if (token.expectedStatusId === null || token.statusEventId === null) {
+        throw new Error("Stored status undo token is incomplete.");
+      }
+      const restoredJob = await transaction.execute(
+        sqlStatement(
+          `UPDATE job
+           SET current_status_id = ?, updated_at = ?, row_version = row_version + 1
+           WHERE id = ? AND current_status_id IS ? AND row_version = ?`,
+          [
+            token.previousStatusId,
+            consumedAt,
+            token.jobId,
+            token.expectedStatusId,
+            token.expectedJobRowVersion,
+          ],
+        ),
+      );
+      if (restoredJob.rowsAffected !== 1) {
+        throw new PipelineRepositoryConflictError("undo_target_changed");
+      }
+      if (token.statusApplicationId !== null) {
+        if (token.previousStatusId === null || token.expectedApplicationRowVersion === null) {
+          throw new Error("Stored application status undo token is incomplete.");
+        }
+        const restoredApplication = await transaction.execute(
+          sqlStatement(
+            `UPDATE application
+             SET current_status_id = ?, updated_at = ?, row_version = row_version + 1
+             WHERE id = ? AND job_id = ? AND current_status_id IS ? AND row_version = ?`,
+            [
+              token.previousStatusId,
+              consumedAt,
+              token.statusApplicationId,
+              token.jobId,
+              token.expectedStatusId,
+              token.expectedApplicationRowVersion,
+            ],
+          ),
+        );
+        if (restoredApplication.rowsAffected !== 1) {
+          throw new PipelineRepositoryConflictError("undo_target_changed");
+        }
+      }
+    } else {
+      if (token.nextActionId === null || token.expectedNextActionRowVersion === null) {
+        throw new Error("Stored next-action undo token is incomplete.");
+      }
+      const dismissedAction = await transaction.execute(
+        sqlStatement(
+          `UPDATE next_action
+           SET state = 'dismissed', completed_at = NULL, updated_at = ?,
+               row_version = row_version + 1
+           WHERE id = ? AND job_id = ? AND state = 'pending' AND row_version = ?`,
+          [consumedAt, token.nextActionId, token.jobId, token.expectedNextActionRowVersion],
+        ),
+      );
+      if (dismissedAction.rowsAffected !== 1) {
+        throw new PipelineRepositoryConflictError("undo_target_changed");
+      }
+      await transaction.execute(
+        sqlStatement(
+          `UPDATE reminder
+           SET state = 'dismissed', fired_at = NULL, updated_at = ?, row_version = row_version + 1
+           WHERE next_action_id = ? AND state = 'pending'`,
+          [consumedAt, token.nextActionId],
+        ),
+      );
+      const restoredJob = await transaction.execute(
+        sqlStatement(
+          `UPDATE job
+           SET next_action_at = ?, updated_at = ?, row_version = row_version + 1
+           WHERE id = ? AND next_action_at IS ? AND row_version = ?`,
+          [
+            token.previousNextActionAt,
+            consumedAt,
+            token.jobId,
+            token.expectedNextActionAt,
+            token.expectedJobRowVersion,
+          ],
+        ),
+      );
+      if (restoredJob.rowsAffected !== 1) {
+        throw new PipelineRepositoryConflictError("undo_target_changed");
+      }
+    }
+
+    const consumed = await transaction.execute(
+      sqlStatement(
+        `UPDATE mutation_undo_token
+         SET consumed_at = ?, row_version = row_version + 1
+         WHERE id = ? AND consumed_at IS NULL AND row_version = ?`,
+        [consumedAt, token.id, token.rowVersion],
+      ),
+    );
+    if (consumed.rowsAffected !== 1) {
+      throw new PipelineRepositoryConflictError("undo_token_already_consumed");
+    }
+    return Object.freeze({ ...token, consumedAt, rowVersion: token.rowVersion + 1 });
+  });
 
 export const completeNextAction = async (
   database: DatabasePort,
