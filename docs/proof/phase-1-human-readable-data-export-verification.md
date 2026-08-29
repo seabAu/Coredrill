@@ -91,26 +91,26 @@ Chrome 152.0.4191.53 storage suite passed all six scenarios and emitted:
 Hosted Foundation CI repeated the real-database projection in every supported
 browser lane:
 
-| Browser | Job | Result |
-| --- | ---: | --- |
-| Chrome 151.0.7922.138 | [`99173641235`](https://github.com/seabAu/Coredrill/actions/runs/33280074760/job/99173641235) | Passed SQLite/OPFS and the 29-dataset/58-file production projection. |
-| Chrome 152.0.7977.54 | [`99173641220`](https://github.com/seabAu/Coredrill/actions/runs/33280074760/job/99173641220) | Passed SQLite/OPFS and the 29-dataset/58-file production projection. |
-| Firefox 153.0 | [`99173641228`](https://github.com/seabAu/Coredrill/actions/runs/33280074760/job/99173641228) | Passed the exact schema/count assertion through the production bundle. |
-| Firefox 154.0 | [`99173641209`](https://github.com/seabAu/Coredrill/actions/runs/33280074760/job/99173641209) | Passed the exact schema/count assertion through the production bundle. |
+| Browser               |                                                                                           Job | Result                                                                 |
+| --------------------- | --------------------------------------------------------------------------------------------: | ---------------------------------------------------------------------- |
+| Chrome 151.0.7922.138 | [`99173641235`](https://github.com/seabAu/Coredrill/actions/runs/33280074760/job/99173641235) | Passed SQLite/OPFS and the 29-dataset/58-file production projection.   |
+| Chrome 152.0.7977.54  | [`99173641220`](https://github.com/seabAu/Coredrill/actions/runs/33280074760/job/99173641220) | Passed SQLite/OPFS and the 29-dataset/58-file production projection.   |
+| Firefox 153.0         | [`99173641228`](https://github.com/seabAu/Coredrill/actions/runs/33280074760/job/99173641228) | Passed the exact schema/count assertion through the production bundle. |
+| Firefox 154.0         | [`99173641209`](https://github.com/seabAu/Coredrill/actions/runs/33280074760/job/99173641209) | Passed the exact schema/count assertion through the production bundle. |
 
 ## Reproducible verification
 
 Run with pinned Node.js 24.19.0, pnpm 11.22.0, Rust 1.98.0, and the repository
 lockfile:
 
-| Command | Result |
-| --- | --- |
-| `pnpm exec vitest run packages/contracts/test/portable-data-export.test.ts packages/storage-core/test/portable-data-export.test.ts` | Passed 2 files and 13 focused tests. |
-| `pnpm check:contract-schemas` | All six generated contract/document schemas matched their executable source, including `portable-data-export.v1.schema.json`. |
-| `pnpm test:storage-browser` | Passed 6 real Chrome storage scenarios; `STG_PROOF` recorded schema 92, 29 datasets, and 58 files. |
-| `pnpm test:coverage` | Passed 53 files and 487 tests at 83.53% statements, 74.61% branches, 82.07% functions, and 86.06% lines overall; `portable-data-export.ts` reached 91.03% statements, 82.82% branches, 100% functions, and 93.44% lines. |
-| `pnpm verify` | Passed with exit code 0 across formatting, boundaries, dependency records, typecheck, lint, unit/coverage, all 22 builds, UI/browser/extension/document/native proof, schemas, licenses, secret scans, audits, and Changesets. |
-| [Foundation CI run 33280074760](https://github.com/seabAu/Coredrill/actions/runs/33280074760) | Passed on attempt 1 for implementation commit `27954e7`; all policy, browser, extension, and Windows/macOS/Ubuntu native lanes completed successfully. |
+| Command                                                                                                                             | Result                                                                                                                                                                                                                         |
+| ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm exec vitest run packages/contracts/test/portable-data-export.test.ts packages/storage-core/test/portable-data-export.test.ts` | Passed 2 files and 13 focused tests.                                                                                                                                                                                           |
+| `pnpm check:contract-schemas`                                                                                                       | All six generated contract/document schemas matched their executable source, including `portable-data-export.v1.schema.json`.                                                                                                  |
+| `pnpm test:storage-browser`                                                                                                         | Passed 6 real Chrome storage scenarios; `STG_PROOF` recorded schema 92, 29 datasets, and 58 files.                                                                                                                             |
+| `pnpm test:coverage`                                                                                                                | Passed 53 files and 487 tests at 83.53% statements, 74.61% branches, 82.07% functions, and 86.06% lines overall; `portable-data-export.ts` reached 91.03% statements, 82.82% branches, 100% functions, and 93.44% lines.       |
+| `pnpm verify`                                                                                                                       | Passed with exit code 0 across formatting, boundaries, dependency records, typecheck, lint, unit/coverage, all 22 builds, UI/browser/extension/document/native proof, schemas, licenses, secret scans, audits, and Changesets. |
+| [Foundation CI run 33280074760](https://github.com/seabAu/Coredrill/actions/runs/33280074760)                                       | Passed on attempt 1 for implementation commit `27954e7`; all policy, browser, extension, and Windows/macOS/Ubuntu native lanes completed successfully.                                                                         |
 
 ## Dependency and policy status
 

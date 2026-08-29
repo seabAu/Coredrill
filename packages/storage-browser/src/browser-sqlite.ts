@@ -15,6 +15,7 @@ import {
   type BrowserStorageOpenResult,
   type BrowserStorageOperation,
   type BrowserStorageRequest,
+  type BrowserStorageRestoreInspectionResult,
   type BrowserStorageRestoreResult,
 } from "./protocol.js";
 import { deserializeBrowserStorageError } from "./errors.js";
@@ -170,12 +171,39 @@ export class BrowserSqliteDatabase implements DatabasePort {
     });
   }
 
-  public restorePortable(portable: PortableDatabase): Promise<BrowserStorageRestoreResult> {
+  public inspectPortable(
+    portable: PortableDatabase,
+    expectedVaultId: string,
+  ): Promise<BrowserStorageRestoreInspectionResult> {
+    return this.queue.run(async () =>
+      Object.freeze(
+        await this.request<BrowserStorageRestoreInspectionResult>("inspect_restore", {
+          databaseName: this.databaseName,
+          portable: { ...portable, bytes: portable.bytes.slice() },
+          expectedVaultId,
+        }),
+      ),
+    );
+  }
+
+  public restorePortable(
+    portable: PortableDatabase,
+    options: {
+      readonly expectedTargetSha256?: string;
+      readonly expectedVaultId?: string;
+    } = {},
+  ): Promise<BrowserStorageRestoreResult> {
     return this.queue.run(async () =>
       Object.freeze(
         await this.request<BrowserStorageRestoreResult>("restore", {
           databaseName: this.databaseName,
           portable: { ...portable, bytes: portable.bytes.slice() },
+          ...(options.expectedTargetSha256 === undefined
+            ? {}
+            : { expectedTargetSha256: options.expectedTargetSha256 }),
+          ...(options.expectedVaultId === undefined
+            ? {}
+            : { expectedVaultId: options.expectedVaultId }),
         }),
       ),
     );

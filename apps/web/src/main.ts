@@ -7,15 +7,22 @@ import {
 } from "@coredrill/storage-browser";
 import {
   applySqlMigrations,
+  commitPortableArchiveRestoreV1,
   createPortableDataExportV1,
+  createPortableArchiveRestorePreviewV1,
   createPhase1RepositoryContractSuite,
   defineSqlMigrations,
   PHASE_1_REPOSITORY_CONTRACT_MANIFEST,
+  PortableArchiveRestoreError,
   runDatabaseContractSuite,
   sqlStatement,
+  writePortableArchiveV1,
   type DatabaseContractRunResult,
   type DatabasePort,
   type Phase1RepositoryContractManifest,
+  type PortableArchiveRestoreCommitPayloadV1,
+  type PortableArchiveRestorePortV1,
+  type PortableArchiveRestoreTargetSnapshotV1,
   type PortableDatabase,
   type QueryRow,
   type StorageDiagnostics,
@@ -103,6 +110,13 @@ interface VaultInput {
   readonly lastOpenedAt: string;
 }
 
+interface MigrationLedgerRow extends QueryRow {
+  readonly version: number;
+  readonly name: string;
+  readonly sha256: string;
+  readonly applied_at: string;
+}
+
 interface PortableDatabaseJson {
   readonly schemaVersion: number;
   readonly byteLength: number;
@@ -146,6 +160,32 @@ interface HumanReadableExportProof {
   readonly sourceSchemaVersion: number;
 }
 
+interface PortableArchiveRestoreProofInput {
+  readonly archiveId: string;
+  readonly generatedAt: string;
+  readonly vaultId: string;
+  readonly previewName: string;
+  readonly staleName: string;
+}
+
+interface PortableArchiveRestoreProof {
+  readonly archiveSha256: string;
+  readonly archiveByteLength: number;
+  readonly dataFileCount: number;
+  readonly attachmentCount: number;
+  readonly corruptionRejected: boolean;
+  readonly corruptionPreservedTarget: boolean;
+  readonly conflict: "same_vault_replace";
+  readonly requiredConfirmation: "replace_same_vault";
+  readonly previewPreservedTarget: boolean;
+  readonly staleTargetRejected: boolean;
+  readonly staleTargetPreserved: boolean;
+  readonly committed: true;
+  readonly restoredDatabaseSha256: string;
+  readonly restoredDatabaseMatchesArchive: boolean;
+  readonly restoredVaultName: string;
+}
+
 export interface CoredrillStorageSpikeApi {
   openAndMigrate(options?: OpenOptions): Promise<OpenMigrationProof>;
   tryOpenAndMigrate(options?: OpenOptions): Promise<OpenAttempt>;
@@ -162,6 +202,9 @@ export interface CoredrillStorageSpikeApi {
   runPhase1RepositoryContracts(): Promise<Phase1RepositoryContractProof>;
   runPortableArchiveWriterProof(): Promise<PortableArchiveBrowserProof>;
   exportHumanReadable(input: HumanReadableExportInput): Promise<HumanReadableExportProof>;
+  runPortableArchiveRestoreProof(
+    input: PortableArchiveRestoreProofInput,
+  ): Promise<PortableArchiveRestoreProof>;
 }
 
 declare global {
@@ -647,6 +690,192 @@ const api: CoredrillStorageSpikeApi = {
       csvFiles: bundle.dataFiles.filter((file) => file.format === "csv").length,
       rowCount: bundle.rowCount,
       sourceSchemaVersion: bundle.sourceSchemaVersion,
+    });
+  },
+  runPortableArchiveRestoreProof: async (input) => {
+    const client = await getDatabase();
+    const originalVaults = await client.query<VaultRow>(
+      sqlStatement(
+        "SELECT id, name, schema_version, created_at, last_opened_at FROM vault ORDER BY id",
+      ),
+    );
+    const originalVault = originalVaults[0];
+    if (originalVaults.length !== 1 || originalVault?.id !== input.vaultId) {
+      throw new Error("The restore proof requires exactly one matching source vault.");
+    }
+
+    const dataBundle = await createPortableDataExportV1({
+      database: client,
+      generatedAt: input.generatedAt,
+      vaultId: input.vaultId,
+    });
+    const portable = await client.exportPortable();
+    const migrationRows = await client.query<MigrationLedgerRow>(
+      sqlStatement(
+        "SELECT version, name, sha256, applied_at FROM coredrill_schema_migration ORDER BY version",
+      ),
+    );
+    const archive = await writePortableArchiveV1({
+      archiveId: input.archiveId,
+      createdAt: input.generatedAt,
+      createdByVersion: "0.0.0",
+      vault: {
+        id: input.vaultId,
+        schemaVersion: portable.schemaVersion,
+        migrationHistory: migrationRows.map((row) => ({
+          version: row.version,
+          name: row.name,
+          appliedAt: row.applied_at,
+          sha256: row.sha256,
+        })),
+      },
+      database: portable,
+      dataFiles: dataBundle.dataFiles,
+      attachments: [],
+      readAttachment: () => Promise.resolve(undefined),
+    });
+
+    const inspectTarget = async (): Promise<PortableArchiveRestoreTargetSnapshotV1> => {
+      const targetDatabase = await client.exportPortable();
+      const vaults = await client.query<VaultRow>(
+        sqlStatement(
+          "SELECT id, name, schema_version, created_at, last_opened_at FROM vault ORDER BY id",
+        ),
+      );
+      if (vaults.length === 0) {
+        return Object.freeze({
+          state: "empty" as const,
+          fingerprint: targetDatabase.sha256,
+          attachmentContentIds: Object.freeze([] as const),
+        });
+      }
+      const vault = vaults[0];
+      if (vaults.length !== 1 || vault === undefined) {
+        throw new Error("The restore proof target must contain at most one vault.");
+      }
+      return Object.freeze({
+        state: "present" as const,
+        fingerprint: targetDatabase.sha256,
+        vaultId: vault.id,
+        schemaVersion: targetDatabase.schemaVersion,
+        databaseSha256: targetDatabase.sha256,
+        attachmentContentIds: Object.freeze([]),
+      });
+    };
+
+    const restorePort: PortableArchiveRestorePortV1 = Object.freeze({
+      inspectTarget,
+      inspectDatabase: async (database: PortableDatabase) => {
+        const inspection = await client.inspectPortable(database, input.vaultId);
+        return Object.freeze({
+          integrity: inspection.integrity,
+          schemaVersion: inspection.schemaVersion,
+          vaultId: inspection.vaultId,
+        });
+      },
+      commit: async (payload: PortableArchiveRestoreCommitPayloadV1) => {
+        if (payload.attachments.length !== 0) {
+          throw new Error("The browser restore proof has no attachment payload.");
+        }
+        await client.restorePortable(payload.database, {
+          expectedTargetSha256: payload.expectedTargetFingerprint,
+          expectedVaultId: payload.vaultId,
+        });
+      },
+    });
+
+    const beforeCorruption = await client.exportPortable();
+    let corruptionRejected = false;
+    try {
+      await createPortableArchiveRestorePreviewV1({
+        archiveBytes: archive.bytes.slice(0, -17),
+        expectedSchemaVersion: dataBundle.sourceSchemaVersion,
+        port: restorePort,
+      });
+    } catch (error) {
+      corruptionRejected =
+        error instanceof PortableArchiveRestoreError && error.code === "archive_corrupt";
+      if (!corruptionRejected) throw error;
+    }
+    const afterCorruption = await client.exportPortable();
+    const corruptionPreservedTarget = afterCorruption.sha256 === beforeCorruption.sha256;
+
+    await client.execute(
+      sqlStatement("UPDATE vault SET name = ? WHERE id = ?", [input.previewName, input.vaultId]),
+    );
+    const stalePreview = await createPortableArchiveRestorePreviewV1({
+      archiveBytes: archive.bytes,
+      expectedSchemaVersion: dataBundle.sourceSchemaVersion,
+      expectedArchiveSha256: archive.sha256,
+      port: restorePort,
+    });
+    const previewVaults = await client.query<VaultRow>(
+      sqlStatement(
+        "SELECT id, name, schema_version, created_at, last_opened_at FROM vault ORDER BY id",
+      ),
+    );
+    const previewPreservedTarget = previewVaults[0]?.name === input.previewName;
+
+    await client.execute(
+      sqlStatement("UPDATE vault SET name = ? WHERE id = ?", [input.staleName, input.vaultId]),
+    );
+    let staleTargetRejected = false;
+    try {
+      await commitPortableArchiveRestoreV1({
+        preview: stalePreview,
+        confirmation: "replace_same_vault",
+      });
+    } catch (error) {
+      staleTargetRejected =
+        error instanceof PortableArchiveRestoreError && error.code === "stale_target";
+      if (!staleTargetRejected) throw error;
+    }
+    const staleVaults = await client.query<VaultRow>(
+      sqlStatement(
+        "SELECT id, name, schema_version, created_at, last_opened_at FROM vault ORDER BY id",
+      ),
+    );
+    const staleTargetPreserved = staleVaults[0]?.name === input.staleName;
+
+    const preview = await createPortableArchiveRestorePreviewV1({
+      archiveBytes: archive.bytes,
+      expectedSchemaVersion: dataBundle.sourceSchemaVersion,
+      expectedArchiveSha256: archive.sha256,
+      port: restorePort,
+    });
+    if (
+      preview.conflict !== "same_vault_replace" ||
+      preview.requiredConfirmation !== "replace_same_vault"
+    ) {
+      throw new Error("The restore proof did not produce the expected overwrite conflict.");
+    }
+    const result = await commitPortableArchiveRestoreV1({
+      preview,
+      confirmation: "replace_same_vault",
+    });
+    const restoredVaults = await client.query<VaultRow>(
+      sqlStatement(
+        "SELECT id, name, schema_version, created_at, last_opened_at FROM vault ORDER BY id",
+      ),
+    );
+    const restored = await client.exportPortable();
+
+    return Object.freeze({
+      archiveSha256: archive.sha256,
+      archiveByteLength: archive.byteLength,
+      dataFileCount: archive.manifest.dataFiles.length,
+      attachmentCount: archive.manifest.attachments.length,
+      corruptionRejected,
+      corruptionPreservedTarget,
+      conflict: preview.conflict,
+      requiredConfirmation: preview.requiredConfirmation,
+      previewPreservedTarget,
+      staleTargetRejected,
+      staleTargetPreserved,
+      committed: result.committed,
+      restoredDatabaseSha256: restored.sha256,
+      restoredDatabaseMatchesArchive: restored.sha256 === portable.sha256,
+      restoredVaultName: restoredVaults[0]?.name ?? "",
     });
   },
   runPhase1RepositoryContracts: async () => {

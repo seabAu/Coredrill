@@ -276,6 +276,15 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
   explicitly excluded from the inspectable projections. See [portable data
   export version 1](portable-data-export-v1.md) and [human-readable export
   verification](../../proof/phase-1-human-readable-data-export-verification.md).
+- **Phase 1 restore evidence (2026-08-29):** `BKP-003` implements a bounded,
+  fail-closed version-1 ZIP reader; validates the exact manifest inventory and
+  every checksum before temporary SQLite inspection; previews explicit
+  empty/identical/same-vault/different-vault conflicts without mutation; and
+  binds atomic commit to the exact database-and-attachment target snapshot.
+  Corruption, unsupported versions/schema, vault mismatch, stale preview,
+  replay, and injected commit failure preserve the old target. See [portable
+  archive restore version 1](portable-archive-restore-v1.md) and [restore
+  verification](../../proof/phase-1-portable-archive-restore-verification.md).
 
 ### D-052 — Future sync is opt-in and encrypted
 

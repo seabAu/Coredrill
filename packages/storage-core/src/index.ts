@@ -155,6 +155,25 @@ export {
   type PortableArchiveWriterInputV1,
 } from "./portable-archive-writer.js";
 export {
+  PORTABLE_ARCHIVE_RESTORE_LIMITS,
+  PortableArchiveRestoreError,
+  commitPortableArchiveRestoreV1,
+  createPortableArchiveRestorePreviewV1,
+  inspectPortableArchiveV1,
+  type InspectedPortableArchiveV1,
+  type PortableArchiveDatabaseInspectionV1,
+  type PortableArchiveRestoreAttachmentV1,
+  type PortableArchiveRestoreCommitPayloadV1,
+  type PortableArchiveRestoreCommitResultV1,
+  type PortableArchiveRestoreConfirmationV1,
+  type PortableArchiveRestoreConflictV1,
+  type PortableArchiveRestoreDataFileV1,
+  type PortableArchiveRestoreErrorCode,
+  type PortableArchiveRestorePortV1,
+  type PortableArchiveRestorePreviewV1,
+  type PortableArchiveRestoreTargetSnapshotV1,
+} from "./portable-archive-restore.js";
+export {
   PORTABLE_DATA_EXPORT_DATASETS,
   PORTABLE_DATA_EXPORT_EXCLUDED_TABLES,
   PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION,

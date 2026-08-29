@@ -115,6 +115,17 @@ apostrophe to block spreadsheet formula execution. The SQLite member remains
 the lossless restore source; see the [version-1 mapping and explicit
 exclusions](portable-data-export-v1.md).
 
+`BKP-003` adds a fail-closed reader and a two-step restore boundary. Before any
+adapter sees candidate SQLite bytes, the reader validates the bounded ZIP,
+strict version-1 manifest, exact entry inventory, safe paths, uncompressed entry
+sizes, and every recorded length and SHA-256. A temporary candidate must then
+pass full SQLite integrity, current schema, and manifest-bound single-vault
+identity checks. Preview is non-mutating and discloses explicit overwrite and
+attachment changes. Commit repeats archive validation, rejects target database
+or attachment drift since preview, and delegates only to an atomic adapter port
+that must preserve the prior usable vault on failure. Errors are typed and
+content-free. See [portable archive restore version 1](portable-archive-restore-v1.md).
+
 `NAT-007` proves a Windows current-user NSIS package from a clean commit. CI rebuilds the package, installs it only under a generated temporary root, rejects the contract-only native storage probe if bundled, launches the installed application five discarded plus 20 measured times, records package/application hashes and unsigned development status, aggregates the application/WebView2 process tree, and runs the uninstaller. Program files are removed while the platform app-data directory remains. WebView2 uses Tauri's download bootstrapper if the runtime is absent, so this Phase 0 package is not a fully offline or signed public release. The recorded Windows 10 and hosted-runner results remain nonconformant diagnostics until the Windows 11 25H2/HW-WIN-REF release matrix executes. See [native package verification](../../proof/native-windows-package-verification.md).
 
 ## Future sync architecture

@@ -131,6 +131,8 @@ interface DatabasePort extends DatabaseSession {
 
 `PortableDatabase` is the adapter-neutral database-byte/checksum/schema-version handoff. Archive assembly adds the versioned manifest, human-readable JSON/CSV data, attachment inventory, migration history, per-entry SHA-256 checksums, and explicit encryption state required by the portable-archive contract.
 
+`BKP-003` adds the corresponding restore coordinator in `@coredrill/storage-core`. Inspection accepts only the exact bounded version-1 ZIP inventory, validates the whole archive when an expected digest exists, rejects unsafe/duplicate/compressed/oversized entries, verifies every recorded length and SHA-256, and asks an adapter to inspect copied SQLite bytes only in temporary state. A preview exposes immutable archive/target summaries, explicit empty/identical/same-vault/different-vault conflict classes, the required confirmation, and attachment add/reuse/remove counts; archive bytes and the adapter capability remain private. Commit rechecks the exact target snapshot for database or attachment drift, revalidates the retained archive, and requires the adapter to atomically replace database and attachment state or preserve the old target. See [portable archive restore version 1](portable-archive-restore-v1.md).
+
 ### Browser adapter
 
 - Official SQLite WebAssembly in a dedicated Worker.
@@ -140,6 +142,8 @@ interface DatabasePort extends DatabaseSession {
 - Serve the hosted app from its own origin; changing origin creates a different inaccessible browser vault.
 
 The Phase 0 `STG-001`–`STG-003` implementation now proves the first vertical storage path. `@coredrill/storage-browser` starts the official SQLite WASM package only inside a dedicated Worker, disables unrelated browser VFSes, installs `opfs-sahpool` under a Coredrill-owned OPFS directory, and opens a reviewed absolute database filename. Its versioned internal message protocol exposes only parameterized query/execute, serialized `BEGIN IMMEDIATE` transactions, diagnostics, portable export/restore, close, and delete operations. Foreign keys are enabled and verified on every open.
+
+The version-3 browser storage protocol separates non-mutating candidate inspection from commit. Candidate bytes are imported under a temporary SAH-pool name and must pass `trusted_schema = OFF`, full integrity, exact current schema, exactly one vault row, and manifest-bound vault identity checks before the target can be considered. Restore additionally binds replacement to the target database SHA-256 observed by preview. The existing recovery snapshot remains in place until replacement, reopen, integrity, and schema validation succeed.
 
 The browser coordinator serializes public operations so the Phase 0 path has one writer per Worker. Restore verifies byte length and SHA-256 before replacement, reopens the imported database, and requires both `PRAGMA integrity_check = 'ok'` and the expected `user_version`. The automated Edge proof covers migration, commit, rollback, close/reopen durability, clean-context restore, corruption rejection, byte-for-byte re-export, and delete. The completed `STG-004`–`STG-008` proof additionally covers observable persistence/quota/missing-data diagnostics, second-tab handoff, abrupt reload recovery, corrupt-database preservation, deterministic capacity benchmarks, and exact current/previous Chrome and Firefox execution.
 

@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  BROWSER_STORAGE_PROTOCOL_VERSION,
   BrowserSqliteBusyError,
   deserializeBrowserStorageError,
   inspectBrowserStorageEnvironment,
   type BrowserStorageManager,
 } from "../src/index.js";
+import { isBrowserStorageRequest } from "../src/protocol.js";
 
 const manager = (overrides: Partial<BrowserStorageManager> = {}): BrowserStorageManager => ({
   getDirectory: async () => ({}),
@@ -77,5 +79,22 @@ describe("browser storage environment diagnostics", () => {
     expect(byCode).toBeInstanceOf(BrowserSqliteBusyError);
     expect(byCode).toMatchObject({ code: "sqlite_busy", retryable: true, resultCode: 5 });
     expect(byMessage).toBeInstanceOf(BrowserSqliteBusyError);
+  });
+
+  it("accepts the versioned non-mutating restore inspection operation", () => {
+    expect(
+      isBrowserStorageRequest({
+        version: BROWSER_STORAGE_PROTOCOL_VERSION,
+        id: "restore-preview-1",
+        operation: "inspect_restore",
+      }),
+    ).toBe(true);
+    expect(
+      isBrowserStorageRequest({
+        version: BROWSER_STORAGE_PROTOCOL_VERSION - 1,
+        id: "restore-preview-1",
+        operation: "inspect_restore",
+      }),
+    ).toBe(false);
   });
 });

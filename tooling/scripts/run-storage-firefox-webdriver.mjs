@@ -162,6 +162,13 @@ try {
     generatedAt: "2026-08-29T22:30:00.000Z",
     vaultId: "0198d9d2-c2fd-7d5c-8a0f-485258c1eb9e",
   });
+  const archiveRestore = await executeHarness("runPortableArchiveRestoreProof", {
+    archiveId: "0198d9d2-c2fd-7d5c-8a0f-485258c1ebff",
+    generatedAt: "2026-08-29T23:30:00.000Z",
+    vaultId: "0198d9d2-c2fd-7d5c-8a0f-485258c1eb9e",
+    previewName: "Firefox preview target",
+    staleName: "Firefox stale target",
+  });
   await executeHarness("delete");
   await executeHarness("restorePortable", portable);
   const restored = await executeHarness("listVaults");
@@ -179,6 +186,10 @@ try {
     portableArchiveWriterSha256: archiveWriter.sha256,
     humanReadableDataFiles: humanReadable.dataFileCount,
     humanReadableDatasets: humanReadable.datasetCount,
+    archiveRestoreConflict: archiveRestore.conflict,
+    archiveRestoreCommitted: archiveRestore.committed,
+    archiveRestoreCorruptionRejected: archiveRestore.corruptionRejected,
+    archiveRestoreStaleRejected: archiveRestore.staleTargetRejected,
     repositoryContractCases: repositoryCases.length,
     repositoryContractSuite: repositoryContracts.run.suiteName,
     repositoryContractVersion: repositoryContracts.manifest.schemaVersion,
@@ -198,6 +209,22 @@ try {
     humanReadable.jsonFiles !== 29 ||
     humanReadable.rowCount !== 1 ||
     humanReadable.sourceSchemaVersion !== expectedSchemaVersion ||
+    archiveRestore.attachmentCount !== 0 ||
+    archiveRestore.dataFileCount !== 58 ||
+    archiveRestore.corruptionRejected !== true ||
+    archiveRestore.corruptionPreservedTarget !== true ||
+    archiveRestore.conflict !== "same_vault_replace" ||
+    archiveRestore.requiredConfirmation !== "replace_same_vault" ||
+    archiveRestore.previewPreservedTarget !== true ||
+    archiveRestore.staleTargetRejected !== true ||
+    archiveRestore.staleTargetPreserved !== true ||
+    archiveRestore.committed !== true ||
+    archiveRestore.restoredDatabaseMatchesArchive !== true ||
+    archiveRestore.restoredVaultName !== "Firefox compatibility vault" ||
+    archiveRestore.restoredDatabaseSha256 !== portable.sha256 ||
+    archiveRestore.archiveByteLength <= portable.byteLength ||
+    typeof archiveRestore.archiveSha256 !== "string" ||
+    !/^[a-f0-9]{64}$/u.test(archiveRestore.archiveSha256) ||
     proof.repositoryContractSuite !== repositoryContracts.manifest.suiteName ||
     proof.repositoryContractVersion !== 3 ||
     proof.portableArchiveWriterSha256 !==

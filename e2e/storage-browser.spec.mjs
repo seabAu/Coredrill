@@ -146,6 +146,30 @@ test("opens official SQLite in a Worker, persists transactions, and restores a c
   expect(portable.schemaVersion).toBe(92);
   expect(portable.byteLength).toBeGreaterThan(0);
   expect(portable.sha256).toMatch(/^[a-f0-9]{64}$/u);
+  const archiveRestore = await callHarness(sourcePage, "runPortableArchiveRestoreProof", {
+    archiveId: "0198d9d2-c2fd-7d5c-8a0f-485258c1ebff",
+    generatedAt: "2026-08-29T23:30:00.000Z",
+    vaultId: committedVault.id,
+    previewName: "Preview target",
+    staleName: "Stale target",
+  });
+  expect(archiveRestore).toMatchObject({
+    dataFileCount: 58,
+    attachmentCount: 0,
+    corruptionRejected: true,
+    corruptionPreservedTarget: true,
+    conflict: "same_vault_replace",
+    requiredConfirmation: "replace_same_vault",
+    previewPreservedTarget: true,
+    staleTargetRejected: true,
+    staleTargetPreserved: true,
+    committed: true,
+    restoredDatabaseSha256: portable.sha256,
+    restoredDatabaseMatchesArchive: true,
+    restoredVaultName: committedVault.name,
+  });
+  expect(archiveRestore.archiveSha256).toMatch(/^[a-f0-9]{64}$/u);
+  expect(archiveRestore.archiveByteLength).toBeGreaterThan(portable.byteLength);
   await callHarness(sourcePage, "close");
   await sourceContext.close();
 
@@ -197,6 +221,10 @@ test("opens official SQLite in a Worker, persists transactions, and restores a c
       portableArchiveWriterSha256: archiveWriterProof.sha256,
       humanReadableDatasets: humanReadable.datasetCount,
       humanReadableDataFiles: humanReadable.dataFileCount,
+      archiveRestoreConflict: archiveRestore.conflict,
+      archiveRestoreCommitted: archiveRestore.committed,
+      archiveRestoreCorruptionRejected: archiveRestore.corruptionRejected,
+      archiveRestoreStaleRejected: archiveRestore.staleTargetRejected,
     })}`,
   );
 });

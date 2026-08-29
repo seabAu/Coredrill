@@ -19,6 +19,7 @@ import {
   type BrowserStorageOpenResult,
   type BrowserStorageRequest,
   type BrowserStorageResponse,
+  type BrowserStorageRestoreInspectionResult,
   type BrowserStorageRestoreResult,
   type BrowserStorageSuccessResponse,
 } from "./protocol.js";
@@ -185,36 +186,113 @@ const exportPortable = async (): Promise<PortableDatabase> => {
   };
 };
 
-const restorePortable = async (
-  name: string,
+const validatePortableEnvelope = async (
   portable: PortableDatabase | undefined,
-): Promise<BrowserStorageRestoreResult> => {
+): Promise<string> => {
   if (portable === undefined) throw new TypeError("A portable database is required for restore.");
   if (portable.byteLength !== portable.bytes.byteLength) {
     throw new Error("Portable database byte length does not match its payload.");
   }
   const actualSha256 = await sha256(portable.bytes);
   if (actualSha256 !== portable.sha256) throw new Error("Portable database checksum mismatch.");
+  return actualSha256;
+};
 
+const inspectCandidate = (
+  candidate: Database,
+  portable: PortableDatabase,
+  actualSha256: string,
+  expectedVaultId: string | undefined,
+): BrowserStorageRestoreInspectionResult | BrowserStorageRestoreResult => {
+  candidate.exec("PRAGMA trusted_schema = OFF");
+  const integrity = candidate.selectValue("PRAGMA integrity_check");
+  const schemaVersion = candidate.selectValue("PRAGMA user_version");
+  if (integrity !== "ok") throw new Error("Restored database failed SQLite integrity_check.");
+  if (schemaVersion !== portable.schemaVersion) {
+    throw new Error("Restored database schema version does not match its export.");
+  }
+  const result = Object.freeze({
+    byteLength: portable.byteLength,
+    schemaVersion: portable.schemaVersion,
+    sha256: actualSha256,
+    integrity: "ok" as const,
+  });
+  if (expectedVaultId === undefined) return result;
+
+  const vaultCount = candidate.selectValue("SELECT COUNT(*) FROM vault");
+  const vaultId = candidate.selectValue("SELECT id FROM vault ORDER BY id LIMIT 1");
+  if (vaultCount !== 1 || typeof vaultId !== "string") {
+    throw new Error("Restored database must contain exactly one vault identity.");
+  }
+  if (vaultId !== expectedVaultId) {
+    throw new Error("Restored database vault identity does not match its archive.");
+  }
+  return Object.freeze({
+    ...result,
+    vaultId,
+  });
+};
+
+const inspectPortable = async (
+  name: string,
+  portable: PortableDatabase | undefined,
+  expectedVaultId: string | undefined,
+): Promise<BrowserStorageRestoreInspectionResult> => {
+  if (portable === undefined) throw new TypeError("A portable database is required for restore.");
+  if (expectedVaultId === undefined) {
+    throw new TypeError("An expected vault identity is required for archive inspection.");
+  }
+  const actualSha256 = await validatePortableEnvelope(portable);
   const activePool = requirePool();
   const restoreName = name.replace(/\.sqlite3$/u, ".restore.sqlite3");
-  const originalBytes = activePool.getFileNames().includes(name)
-    ? await activePool.exportFile(name)
-    : undefined;
   closeDatabase();
   activePool.unlink(restoreName);
   try {
     await activePool.importDb(restoreName, portable.bytes.slice());
     const candidate = new activePool.OpfsSAHPoolDb(restoreName);
     try {
-      const integrity = candidate.selectValue("PRAGMA integrity_check");
-      const schemaVersion = candidate.selectValue("PRAGMA user_version");
-      if (integrity !== "ok") {
-        throw new Error("Restored database failed SQLite integrity_check.");
+      const inspection = inspectCandidate(candidate, portable, actualSha256, expectedVaultId);
+      if (!("vaultId" in inspection)) {
+        throw new Error("Archive inspection did not return a vault identity.");
       }
-      if (schemaVersion !== portable.schemaVersion) {
-        throw new Error("Restored database schema version does not match its export.");
-      }
+      return inspection;
+    } finally {
+      candidate.close();
+    }
+  } finally {
+    activePool.unlink(restoreName);
+    await openDatabase(name);
+  }
+};
+
+const restorePortable = async (
+  name: string,
+  portable: PortableDatabase | undefined,
+  expectedTargetSha256: string | undefined,
+  expectedVaultId: string | undefined,
+): Promise<BrowserStorageRestoreResult> => {
+  if (portable === undefined) throw new TypeError("A portable database is required for restore.");
+  const actualSha256 = await validatePortableEnvelope(portable);
+
+  const activePool = requirePool();
+  const restoreName = name.replace(/\.sqlite3$/u, ".restore.sqlite3");
+  const originalBytes = activePool.getFileNames().includes(name)
+    ? await activePool.exportFile(name)
+    : undefined;
+  if (
+    expectedTargetSha256 !== undefined &&
+    (originalBytes === undefined || (await sha256(originalBytes)) !== expectedTargetSha256)
+  ) {
+    throw new Error("The restore target changed after preview.");
+  }
+  closeDatabase();
+  activePool.unlink(restoreName);
+  let inspection: BrowserStorageRestoreResult;
+  try {
+    await activePool.importDb(restoreName, portable.bytes.slice());
+    const candidate = new activePool.OpfsSAHPoolDb(restoreName);
+    try {
+      inspection = inspectCandidate(candidate, portable, actualSha256, expectedVaultId);
     } finally {
       candidate.close();
     }
@@ -235,12 +313,7 @@ const restorePortable = async (
     await openDatabase(name);
     throw error;
   }
-  return Object.freeze({
-    byteLength: portable.byteLength,
-    schemaVersion: portable.schemaVersion,
-    sha256: actualSha256,
-    integrity: "ok",
-  });
+  return inspection;
 };
 
 const deleteDatabase = (name: string): BrowserStorageDeleteResult => {
@@ -277,6 +350,7 @@ const handleRequest = async (
   const name =
     request.operation === "open" ||
     request.operation === "delete" ||
+    request.operation === "inspect_restore" ||
     request.operation === "restore"
       ? assertDatabaseName(request.databaseName)
       : undefined;
@@ -298,8 +372,15 @@ const handleRequest = async (
       return execute({ sql: "ROLLBACK", parameters: [] });
     case "export":
       return exportPortable();
+    case "inspect_restore":
+      return inspectPortable(name ?? "", request.portable, request.expectedVaultId);
     case "restore":
-      return restorePortable(name ?? "", request.portable);
+      return restorePortable(
+        name ?? "",
+        request.portable,
+        request.expectedTargetSha256,
+        request.expectedVaultId,
+      );
     case "diagnostics":
       return diagnostics();
     case "delete":

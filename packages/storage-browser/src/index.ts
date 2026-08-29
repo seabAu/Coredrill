@@ -24,5 +24,6 @@ export {
   BROWSER_STORAGE_PROTOCOL_VERSION,
   type BrowserStorageDeleteResult,
   type BrowserStorageOpenResult,
+  type BrowserStorageRestoreInspectionResult,
   type BrowserStorageRestoreResult,
 } from "./protocol.js";

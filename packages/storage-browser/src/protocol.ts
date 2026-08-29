@@ -6,7 +6,7 @@ import type {
   StorageDiagnostics,
 } from "@coredrill/storage-core";
 
-export const BROWSER_STORAGE_PROTOCOL_VERSION = 2 as const;
+export const BROWSER_STORAGE_PROTOCOL_VERSION = 3 as const;
 
 export interface BrowserStorageOpenResult {
   readonly databaseName: string;
@@ -24,6 +24,10 @@ export interface BrowserStorageRestoreResult {
   readonly integrity: "ok";
 }
 
+export interface BrowserStorageRestoreInspectionResult extends BrowserStorageRestoreResult {
+  readonly vaultId: string;
+}
+
 export interface BrowserStorageDeleteResult {
   readonly deleted: boolean;
 }
@@ -36,6 +40,7 @@ export type BrowserStorageOperation =
   | "diagnostics"
   | "execute"
   | "export"
+  | "inspect_restore"
   | "open"
   | "query"
   | "restore"
@@ -48,6 +53,8 @@ export interface BrowserStorageRequest {
   readonly databaseName?: string;
   readonly statement?: SqlStatement;
   readonly portable?: PortableDatabase;
+  readonly expectedTargetSha256?: string;
+  readonly expectedVaultId?: string;
 }
 
 export interface BrowserStorageError {
@@ -63,6 +70,7 @@ export interface BrowserStorageSuccessResponse {
   readonly result:
     | BrowserStorageDeleteResult
     | BrowserStorageOpenResult
+    | BrowserStorageRestoreInspectionResult
     | BrowserStorageRestoreResult
     | ExecuteResult
     | PortableDatabase
@@ -98,6 +106,7 @@ export const isBrowserStorageRequest = (value: unknown): value is BrowserStorage
       "diagnostics",
       "execute",
       "export",
+      "inspect_restore",
       "open",
       "query",
       "restore",
