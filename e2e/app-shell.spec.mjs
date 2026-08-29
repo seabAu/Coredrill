@@ -259,6 +259,10 @@ test("Board cards expose semantic context, keyboard moves, durable-event intent,
   await expect(northstar.getByText(/remote · United States/)).toBeVisible();
   await expect(northstar.getByText(/Review source fields · Saved today/)).toBeVisible();
   await expect(northstar.getByText("Unreviewed source", { exact: true })).toBeVisible();
+  await expect(northstar.getByRole("list", { name: "Job warnings" })).toHaveCSS(
+    "overflow-x",
+    "hidden",
+  );
 
   await northstar
     .getByRole("combobox", { name: "Move Product Operations Lead to stage" })

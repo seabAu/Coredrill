@@ -1274,9 +1274,10 @@ textarea {
 
 .cd-board-card-warnings {
   display: flex;
+  flex-wrap: wrap;
   min-width: 0;
   gap: var(--space-1);
-  overflow-x: auto;
+  overflow: hidden;
   margin: 0;
   padding: 0;
   list-style: none;
