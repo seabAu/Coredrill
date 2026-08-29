@@ -62,8 +62,8 @@ Phase 0 records exact Node, pnpm, Rust, and OS build prerequisites in `.tool-ver
 | Tables | TanStack Table + TanStack Virtual | Dense jobs/import/evidence tables |
 | Ephemeral state | Zustand | Shell, selection, panel, density, unsaved UI preferences |
 | Forms | React Hook Form + Zod | Form state plus boundary validation |
-| UI primitives | Radix UI primitives with local styled wrappers | Accessibility baseline; avoid cloud/paid dependency |
-| Styling | Tailwind CSS + CSS custom-property tokens | Theme/density/responsive implementation |
+| UI primitives | Radix UI Dialog 1.1.23 and Dropdown Menu 2.1.24 with local styled wrappers | Accessibility baseline for the current shell surfaces; avoid cloud/paid dependency |
+| Styling | Tailwind CSS 4.3.3 + CSS custom-property tokens | Theme/density/responsive implementation |
 | Icons | Lucide React 1.35.0 | One open icon language |
 | Editor | Tiptap open-source core 3.30.2 + selected extensions | Accepted restricted schema and versioned Coredrill IR; no cloud/collaboration dependency |
 | Charts | Recharts | Small accessible reports; always pair with data table |

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "inventoryId": "JW-DI-001",
-  "version": "1.16.0",
-  "reviewedAt": "2026-08-29T12:55:00Z",
+  "version": "1.17.0",
+  "reviewedAt": "2026-08-29T15:20:03Z",
   "scope": {
     "included": [
       "Pinned Node.js, pnpm, and Rust foundation toolchains",
@@ -17,7 +17,7 @@
   },
   "lockfile": {
     "path": "pnpm-lock.yaml",
-    "sha256": "789446b93c8240d34817c8928ebb17b086aa115562a713b94e6f1cfb901106fa"
+    "sha256": "60c3e35de7f71cc0bc4bb877d35c9f0312d89e1b92d0700b752fd844a8ff293b"
   },
   "toolchains": [
     {
@@ -206,6 +206,20 @@
     {
       "manifest": "apps/web/package.json",
       "dependencyType": "devDependencies",
+      "name": "@tailwindcss/vite",
+      "version": "4.3.3",
+      "upstreamLatest": "4.3.3",
+      "selectionStatus": "current",
+      "license": "MIT",
+      "maintainers": ["reinink", "adamwathan", "malfaitrobin"],
+      "repository": "https://github.com/tailwindlabs/tailwindcss",
+      "metadataSource": "https://registry.npmjs.org/@tailwindcss%2fvite/4.3.3",
+      "knownAdvisories": [],
+      "selectionNote": "Current official Tailwind CSS Vite integration. It compiles the shell's local token-aware utility layer at build time and adds no hosted runtime or account dependency."
+    },
+    {
+      "manifest": "apps/web/package.json",
+      "dependencyType": "devDependencies",
       "name": "@types/react",
       "version": "19.2.17",
       "upstreamLatest": "19.2.18",
@@ -230,6 +244,20 @@
       "metadataSource": "https://registry.npmjs.org/@types%2freact-dom/19.2.3",
       "knownAdvisories": [],
       "selectionNote": "The selected React DOM types were published at 2025-11-12T04:37:39.524Z; current 19.2.5 was published at 2026-08-23T21:05:23.671Z and was also inside minimumReleaseAge: 1440 at review time."
+    },
+    {
+      "manifest": "apps/web/package.json",
+      "dependencyType": "devDependencies",
+      "name": "tailwindcss",
+      "version": "4.3.3",
+      "upstreamLatest": "4.3.3",
+      "selectionStatus": "current",
+      "license": "MIT",
+      "maintainers": ["malfaitrobin", "adamwathan", "reinink"],
+      "repository": "https://github.com/tailwindlabs/tailwindcss",
+      "metadataSource": "https://registry.npmjs.org/tailwindcss/4.3.3",
+      "knownAdvisories": [],
+      "selectionNote": "Current Tailwind CSS release, selected for build-time responsive composition over the accepted CSS custom-property token system; no generated styles or service are canonical application state."
     },
     {
       "manifest": "apps/web/package.json",
@@ -643,6 +671,34 @@
     {
       "manifest": "packages/ui/package.json",
       "dependencyType": "dependencies",
+      "name": "@radix-ui/react-dialog",
+      "version": "1.1.23",
+      "upstreamLatest": "1.1.23",
+      "selectionStatus": "current",
+      "license": "MIT",
+      "maintainers": ["hadihallak", "chancestrickland", "mark-workos", "npm-workos"],
+      "repository": "https://github.com/radix-ui/primitives",
+      "metadataSource": "https://registry.npmjs.org/@radix-ui%2freact-dialog/1.1.23",
+      "knownAdvisories": [],
+      "selectionNote": "Current Radix Dialog primitive supplies the accessible local search and command surfaces; Coredrill controls content, focus restoration, styling, and all data access."
+    },
+    {
+      "manifest": "packages/ui/package.json",
+      "dependencyType": "dependencies",
+      "name": "@radix-ui/react-dropdown-menu",
+      "version": "2.1.24",
+      "upstreamLatest": "2.1.24",
+      "selectionStatus": "current",
+      "license": "MIT",
+      "maintainers": ["hadihallak", "chancestrickland", "mark-workos", "npm-workos"],
+      "repository": "https://github.com/radix-ui/primitives",
+      "metadataSource": "https://registry.npmjs.org/@radix-ui%2freact-dropdown-menu/2.1.24",
+      "knownAdvisories": [],
+      "selectionNote": "Current Radix Dropdown Menu primitive supplies keyboard and focus behavior for Add and More; stable local actions and routes remain owned by Coredrill."
+    },
+    {
+      "manifest": "packages/ui/package.json",
+      "dependencyType": "dependencies",
       "name": "lucide-react",
       "version": "1.35.0",
       "upstreamLatest": "1.37.0",
@@ -970,10 +1026,10 @@
   "advisoryReview": {
     "command": "pnpm audit --json",
     "source": "https://pnpm.io/cli/audit",
-    "reviewedAt": "2026-08-29T12:55:00Z",
-    "lockfileSha256": "789446b93c8240d34817c8928ebb17b086aa115562a713b94e6f1cfb901106fa",
-    "resolvedDependencyCount": 551,
-    "optionalDependencyCount": 59,
+    "reviewedAt": "2026-08-29T15:20:03Z",
+    "lockfileSha256": "60c3e35de7f71cc0bc4bb877d35c9f0312d89e1b92d0700b752fd844a8ff293b",
+    "resolvedDependencyCount": 621,
+    "optionalDependencyCount": 82,
     "vulnerabilities": {
       "info": 0,
       "low": 0,
@@ -984,11 +1040,11 @@
   },
   "licenseReview": {
     "command": "pnpm check:licenses",
-    "reviewedAt": "2026-08-29T12:55:00Z",
-    "lockfileSha256": "789446b93c8240d34817c8928ebb17b086aa115562a713b94e6f1cfb901106fa",
-    "resolvedPackageRecords": 353,
+    "reviewedAt": "2026-08-29T15:20:03Z",
+    "lockfileSha256": "60c3e35de7f71cc0bc4bb877d35c9f0312d89e1b92d0700b752fd844a8ff293b",
+    "resolvedPackageRecords": 354,
     "result": "pass",
-    "note": "License records and advisory dependency counts use different tool scopes and are not expected to match. The UI foundation adds reviewed ISC and MPL-2.0 dependencies; the exact graph contains 551 external resolutions and 353 license records."
+    "note": "License records and advisory dependency counts use different tool scopes and are not expected to match. The application shell adds reviewed MIT Tailwind CSS and Radix UI dependencies; the exact graph contains 621 external resolutions and 354 license records."
   },
   "maintenanceWatch": [
     {

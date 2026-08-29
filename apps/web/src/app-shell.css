@@ -1,0 +1,18 @@
+@import "tailwindcss";
+@import "@coredrill/ui/styles.css";
+@source "../../../packages/ui/src";
+@source "./app-shell.tsx";
+
+@layer components {
+  .cd-shell-page-title {
+    @apply text-3xl font-bold tracking-tight;
+  }
+
+  .cd-shell-page-card {
+    @apply min-w-0 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4;
+  }
+
+  .cd-shell-page-action {
+    @apply inline-flex min-h-[var(--control-block-size)] items-center justify-center gap-2 rounded-[var(--radius-control)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 font-semibold text-[var(--color-text)];
+  }
+}
