@@ -4,6 +4,7 @@ import {
   JobWorkspaceContent,
   JobWorkspaceFrame,
   JOB_WORKSPACE_TABS,
+  NetworkWorkspace,
   PIPELINE_VIEW_IDS,
   PipelineBoard,
   PipelineShell,
@@ -23,6 +24,9 @@ import {
   type JobWorkspaceMode,
   type JobWorkspaceTabId,
   type LocalSearchResult,
+  type NetworkActionRequest,
+  type NetworkTabId,
+  type NetworkWorkspaceModel,
   type PipelineBulkActionId,
   type BoardColumn,
   type BoardJobCard,
@@ -56,6 +60,8 @@ interface AppShellCatalogState {
   readonly homeMode: HomeDashboardModel["state"];
   readonly homeSnapshotVisible: boolean;
   readonly lastActivity: string;
+  readonly networkInteractionDraftCount: number;
+  readonly networkTab: NetworkTabId;
   readonly pipelineFilterCount: number;
   readonly pipelineSavedViewId: string;
   readonly pipelineSearchQuery: string;
@@ -115,6 +121,7 @@ interface JobRouteState {
 
 type InitialLocation =
   | { readonly kind: "home" }
+  | { readonly kind: "network"; readonly tab: NetworkTabId }
   | {
       readonly kind: "pipeline";
       readonly savedViewId: string;
@@ -125,6 +132,7 @@ type InitialLocation =
 const PIPELINE_HISTORY_KIND = "coredrill-pipeline-v1";
 const JOB_HISTORY_KIND = "coredrill-job-v1";
 const JOB_ROUTE = /^\/jobs\/(?<jobId>[a-zA-Z0-9-]{1,128})\/(?<tab>[a-z-]{1,32})\/?$/u;
+const NETWORK_ROUTE = /^\/network\/(?<tab>companies|contacts|interactions)\/?$/u;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === "object" && !Array.isArray(value);
@@ -141,6 +149,11 @@ const readInitialLocation = (): InitialLocation => {
     const jobId = match.groups["jobId"];
     const tab = match.groups["tab"];
     if (jobId !== undefined && isJobWorkspaceTab(tab)) return { jobId, kind: "job", tab };
+  }
+  const networkMatch = NETWORK_ROUTE.exec(window.location.pathname);
+  const networkTab = networkMatch?.groups?.["tab"];
+  if (networkTab === "companies" || networkTab === "contacts" || networkTab === "interactions") {
+    return { kind: "network", tab: networkTab };
   }
   if (window.location.pathname === "/pipeline") {
     const parameters = new URLSearchParams(window.location.search);
@@ -269,6 +282,8 @@ const pipelineUrl = (view: PipelineViewId, savedViewId: string): string => {
 
 const jobUrl = (jobId: string, tab: JobWorkspaceTabId): string => `/jobs/${jobId}/${tab}`;
 
+const networkUrl = (tab: NetworkTabId): string => `/network/${tab}`;
+
 const navigationWasReloaded = (): boolean =>
   performance
     .getEntriesByType("navigation")
@@ -304,6 +319,222 @@ const SEARCH_RESULTS = Object.freeze([
     title: "Product leadership base",
   },
 ] as const satisfies readonly LocalSearchResult[]);
+
+const NETWORK_MODEL = Object.freeze({
+  companies: Object.freeze([
+    Object.freeze({
+      canonicalName: "Northstar Health",
+      domain: "northstar.example.test",
+      id: "company-northstar",
+      jobs: Object.freeze([
+        Object.freeze({
+          id: "board-northstar",
+          statusLabel: "Interviewing",
+          title: "Product Operations Lead",
+        }),
+        Object.freeze({
+          id: "network-northstar-program",
+          statusLabel: "Saved",
+          title: "Program Operations Manager",
+        }),
+      ]),
+      notes:
+        "Review the product operating model and recent service expansion before the next conversation.",
+      outcomes: Object.freeze([
+        Object.freeze({ count: 1, id: "northstar-outcome-interview", label: "Interview" }),
+        Object.freeze({ count: 1, id: "northstar-outcome-no-response", label: "No response" }),
+      ]),
+      publicFacts: Object.freeze([
+        Object.freeze({
+          id: "northstar-fact-sector",
+          label: "Sector",
+          sourceLabel: "Official company overview",
+          sourceUrl: "https://northstar.example.test/about",
+          value: "Healthcare operations software",
+        }),
+        Object.freeze({
+          id: "northstar-fact-work-mode",
+          label: "Published work mode",
+          sourceLabel: "Official careers page",
+          sourceUrl: "https://northstar.example.test/careers",
+          value: "Distributed within the United States",
+        }),
+      ]),
+      salaryObservations: Object.freeze([
+        Object.freeze({
+          id: "northstar-salary-product-ops",
+          rangeLabel: "$120k–$145k · annual",
+          sourceLabel: "Disclosed role range · captured 2026-08-18",
+        }),
+        Object.freeze({
+          id: "northstar-salary-program-ops",
+          rangeLabel: "$108k–$132k · annual",
+          sourceLabel: "Disclosed role range · captured 2026-08-11",
+        }),
+      ]),
+      websiteUrl: "https://northstar.example.test",
+    }),
+    Object.freeze({
+      canonicalName: "Canvas Works",
+      domain: "canvas.example.test",
+      id: "company-canvas",
+      jobs: Object.freeze([
+        Object.freeze({
+          id: "board-canvas",
+          statusLabel: "Preparing",
+          title: "Platform Engineer",
+        }),
+      ]),
+      notes: "Track the infrastructure modernization program and recruiter context.",
+      outcomes: Object.freeze([
+        Object.freeze({ count: 1, id: "canvas-outcome-screen", label: "Recruiter screen" }),
+      ]),
+      publicFacts: Object.freeze([
+        Object.freeze({
+          id: "canvas-fact-sector",
+          label: "Sector",
+          sourceLabel: "Official company overview",
+          sourceUrl: "https://canvas.example.test/about",
+          value: "Collaborative design systems",
+        }),
+      ]),
+      salaryObservations: Object.freeze([]),
+      websiteUrl: "https://canvas.example.test",
+    }),
+    Object.freeze({
+      canonicalName: "Acme Research",
+      domain: null,
+      id: "company-acme",
+      jobs: Object.freeze([
+        Object.freeze({
+          id: "board-acme",
+          statusLabel: "Saved",
+          title: "Research Operations Manager",
+        }),
+      ]),
+      notes: "Domain is intentionally unconfirmed while the source conflict is under review.",
+      outcomes: Object.freeze([]),
+      publicFacts: Object.freeze([
+        Object.freeze({
+          id: "acme-fact-location",
+          label: "Published location",
+          sourceLabel: "Captured role snapshot",
+          sourceUrl: "https://careers.example.test/acme/research-operations",
+          value: "Boston, Massachusetts",
+        }),
+      ]),
+      salaryObservations: Object.freeze([]),
+      websiteUrl: null,
+    }),
+  ]),
+  contacts: Object.freeze([
+    Object.freeze({
+      companyId: "company-northstar",
+      contactPoints: Object.freeze([
+        Object.freeze({
+          id: "contact-point-maya-profile",
+          kind: "public-profile" as const,
+          origin: "explicitly-public" as const,
+          provenanceLabel: "Public conference speaker profile",
+          sourceUrl: "https://events.example.test/speakers/maya-chen",
+          value: "events.example.test/speakers/maya-chen",
+        }),
+        Object.freeze({
+          id: "contact-point-maya-phone",
+          kind: "phone" as const,
+          origin: "user-entered" as const,
+          provenanceLabel: "Entered by you",
+          sourceUrl: null,
+          value: "+1 202-555-0147",
+        }),
+      ]),
+      id: "contact-maya",
+      identityOrigin: "explicitly-public" as const,
+      identityProvenanceLabel: "Public conference speaker profile",
+      identitySourceUrl: "https://events.example.test/speakers/maya-chen",
+      lastInteractionAtLabel: "Today · 9:40 AM",
+      name: "Maya Chen",
+      notes: "Asked for examples of cross-functional operating cadences.",
+      role: "Director, Product Operations",
+    }),
+    Object.freeze({
+      companyId: "company-northstar",
+      contactPoints: Object.freeze([]),
+      id: "contact-jonah",
+      identityOrigin: "user-entered" as const,
+      identityProvenanceLabel: "Entered by you from interview scheduling context",
+      identitySourceUrl: null,
+      lastInteractionAtLabel: null,
+      name: "Jonah Reed",
+      notes:
+        "Name and role were entered from interview scheduling context. No contact method saved.",
+      role: "Recruiting coordinator",
+    }),
+    Object.freeze({
+      companyId: "company-canvas",
+      contactPoints: Object.freeze([
+        Object.freeze({
+          id: "contact-point-leila-email",
+          kind: "email" as const,
+          origin: "licensed" as const,
+          provenanceLabel: "Licensed recruiting directory · reviewed 2026-08-22",
+          sourceUrl: "https://directory.example.test/records/leila-morgan",
+          value: "leila.morgan@example.test",
+        }),
+      ]),
+      id: "contact-leila",
+      identityOrigin: "licensed" as const,
+      identityProvenanceLabel: "Licensed recruiting directory · reviewed 2026-08-22",
+      identitySourceUrl: "https://directory.example.test/records/leila-morgan",
+      lastInteractionAtLabel: "8 days ago",
+      name: "Leila Morgan",
+      notes: "Follow-up remains optional and user-controlled.",
+      role: "Technical recruiter",
+    }),
+  ]),
+  interactions: Object.freeze([
+    Object.freeze({
+      companyId: "company-northstar",
+      contactId: "contact-maya",
+      direction: "outbound" as const,
+      id: "interaction-maya-note",
+      jobTitle: "Product Operations Lead",
+      nextActionAtLabel: "2026-09-02 · America/New_York",
+      occurredAtLabel: "Today · 9:40 AM",
+      summary: "Logged the interview question about portfolio reporting ownership.",
+      type: "note" as const,
+    }),
+    Object.freeze({
+      companyId: "company-canvas",
+      contactId: "contact-leila",
+      direction: "outbound" as const,
+      id: "interaction-leila-email",
+      jobTitle: "Platform Engineer",
+      nextActionAtLabel: "Today · 4:00 PM",
+      occurredAtLabel: "2026-08-21 · 2:15 PM",
+      summary: "Recorded that a concise availability reply was sent outside Coredrill.",
+      type: "email-logged" as const,
+    }),
+    Object.freeze({
+      companyId: "company-northstar",
+      contactId: "contact-maya",
+      direction: "inbound" as const,
+      id: "interaction-maya-call",
+      jobTitle: "Product Operations Lead",
+      nextActionAtLabel: null,
+      occurredAtLabel: "2026-08-20 · 11:00 AM",
+      summary: "Discussed the team structure and the upcoming interview sequence.",
+      type: "call" as const,
+    }),
+  ]),
+  reminder: Object.freeze({
+    companyId: "company-canvas",
+    contactId: "contact-leila",
+    dueAtLabel: "Due today · 4:00 PM",
+    id: "reminder-leila-follow-up",
+    title: "Decide whether to follow up with Leila",
+  }),
+} as const satisfies NetworkWorkspaceModel);
 
 const readAppearance = (): {
   readonly boardMode: "large" | "standard";
@@ -915,7 +1146,11 @@ const AppShellCatalog = () => {
     });
   }, [initialLocation]);
   const [activeDestination, setActiveDestination] = useState<ShellDestinationId>(
-    initialLocation.kind === "pipeline" || initialLocation.kind === "job" ? "pipeline" : "home",
+    initialLocation.kind === "pipeline" || initialLocation.kind === "job"
+      ? "pipeline"
+      : initialLocation.kind === "network"
+        ? "network"
+        : "home",
   );
   const [boardAnnouncement, setBoardAnnouncement] = useState("");
   const [boardColumns, setBoardColumns] = useState<readonly BoardColumn[]>(
@@ -924,6 +1159,10 @@ const AppShellCatalog = () => {
   const [boardTimelineEventCount, setBoardTimelineEventCount] = useState(0);
   const [boardUndo, setBoardUndo] = useState<BoardUndoRecord | null>(null);
   const [homeSnapshotVisible, setHomeSnapshotVisible] = useState(true);
+  const [networkInteractionDraftCount, setNetworkInteractionDraftCount] = useState(0);
+  const [networkTab, setNetworkTab] = useState<NetworkTabId>(
+    initialLocation.kind === "network" ? initialLocation.tab : "companies",
+  );
   const [pipelineFilters, setPipelineFilters] = useState<readonly PipelineFilterChip[]>(
     initialPipelineSnapshot?.filters ?? INITIAL_PIPELINE_FILTERS,
   );
@@ -1038,6 +1277,8 @@ const AppShellCatalog = () => {
           homeMode: appearance.homeMode,
           homeSnapshotVisible,
           lastActivity,
+          networkInteractionDraftCount,
+          networkTab,
           pipelineFilterCount: pipelineFilters.length,
           pipelineSavedViewId,
           pipelineSearchQuery,
@@ -1060,6 +1301,8 @@ const AppShellCatalog = () => {
     boardUndo,
     homeSnapshotVisible,
     lastActivity,
+    networkInteractionDraftCount,
+    networkTab,
     pipelineFilters.length,
     pipelineSavedViewId,
     pipelineSearchQuery,
@@ -1255,6 +1498,36 @@ const AppShellCatalog = () => {
     );
   };
 
+  const changeNetworkTab = (tab: NetworkTabId): void => {
+    if (tab === networkTab) return;
+    window.history.pushState(null, "", networkUrl(tab));
+    setNetworkTab(tab);
+    setLastActivity(`Opened local Network view: ${tab}.`);
+  };
+
+  const recordNetworkAction = (request: NetworkActionRequest): void => {
+    if (request.id === "log-interaction") {
+      setNetworkInteractionDraftCount((count) => count + 1);
+      setLastActivity(
+        `Prepared a ${String(request.draft.summary.length)}-character ${request.draft.type} interaction for local logging. No durable write or message send occurs in this proof host.`,
+      );
+      return;
+    }
+    if (request.id === "snooze-reminder") {
+      setLastActivity("Prepared a local reminder snooze. The relationship record was not changed.");
+      return;
+    }
+    if (request.id === "disable-reminder") {
+      setLastActivity(
+        "Prepared a local reminder opt-out. The relationship record was not changed.",
+      );
+      return;
+    }
+    setLastActivity(
+      `Network action selected: ${request.id}. No durable write, enrichment, outreach, or external request occurred.`,
+    );
+  };
+
   const navigateDestination = (destination: ShellDestinationId): void => {
     setWorkspaceRoute(null);
     setActiveDestination(destination);
@@ -1264,9 +1537,13 @@ const AppShellCatalog = () => {
         "",
         pipelineUrl(pipelineView, pipelineSavedViewId),
       );
+    } else if (destination === "network") {
+      setNetworkTab("companies");
+      window.history.pushState(null, "", networkUrl("companies"));
     } else if (
       window.location.pathname.startsWith("/jobs/") ||
-      window.location.pathname === "/pipeline"
+      window.location.pathname === "/pipeline" ||
+      window.location.pathname.startsWith("/network/")
     ) {
       window.history.pushState(null, "", "/app-shell.html");
     }
@@ -1294,7 +1571,11 @@ const AppShellCatalog = () => {
         return;
       }
       setWorkspaceRoute(null);
-      if (location.kind === "pipeline") {
+      if (location.kind === "network") {
+        setActiveDestination("network");
+        setNetworkTab(location.tab);
+        setLastActivity(`Restored local Network history at ${location.tab}.`);
+      } else if (location.kind === "pipeline") {
         setActiveDestination("pipeline");
         const snapshot = readPipelineSnapshot(event.state);
         if (snapshot === null) {
@@ -1696,6 +1977,13 @@ const AppShellCatalog = () => {
               ) : null}
             </div>
           )
+        ) : activeDestination === "network" ? (
+          <NetworkWorkspace
+            activeTab={networkTab}
+            model={NETWORK_MODEL}
+            onAction={recordNetworkAction}
+            onTabChange={changeNetworkTab}
+          />
         ) : (
           <section className="cd-shell-page-card min-h-72" aria-labelledby="destination-heading">
             <p className="m-0 text-xs font-bold uppercase tracking-wider text-[var(--color-text-subtle)]">

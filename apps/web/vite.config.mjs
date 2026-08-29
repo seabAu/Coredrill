@@ -8,7 +8,9 @@ const installAppShellHistoryFallback = (server) => {
     if (
       request.method === "GET" &&
       acceptsHtml &&
-      /^\/(?:pipeline(?:\/.*)?|jobs\/[^/]+\/[^/?#]+)(?:[?#].*)?$/u.test(request.url ?? "")
+      /^\/(?:network\/(?:companies|contacts|interactions)|pipeline(?:\/.*)?|jobs\/[^/]+\/[^/?#]+)(?:[?#].*)?$/u.test(
+        request.url ?? "",
+      )
     ) {
       request.url = "/app-shell.html";
     }

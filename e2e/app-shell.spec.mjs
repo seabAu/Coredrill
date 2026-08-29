@@ -660,6 +660,123 @@ test("narrow Source keeps provenance and manual controls reachable without page 
   expect(externalRequests).toEqual([]);
 });
 
+test("Network relates companies, provenance-bound contacts, and local interaction logs", async ({
+  page,
+}, testInfo) => {
+  const externalRequests = [];
+  page.on("request", (request) => {
+    if (!request.url().startsWith("http://127.0.0.1:4178/")) externalRequests.push(request.url());
+  });
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  await openShell(page);
+  await page
+    .getByRole("navigation", { name: "Primary" })
+    .getByRole("link", { name: "Network" })
+    .click();
+
+  const network = page.getByTestId("network-workspace");
+  await expect(page).toHaveURL(/\/network\/companies$/u);
+  await expect(network.getByRole("button", { name: "Companies" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  await expect(network.getByRole("heading", { name: "Northstar Health" })).toBeVisible();
+  await expect(network.getByRole("region", { name: "Company fact provenance" })).toBeVisible();
+  await expect(network.getByRole("heading", { name: "Salary observations" })).toBeVisible();
+  await expect(network.getByText("Outcome history", { exact: true })).toBeVisible();
+  await expect(network.getByRole("button", { name: "Open job" })).toHaveCount(2);
+
+  await network.getByRole("button", { name: "Contacts", exact: true }).click();
+  await expect(page).toHaveURL(/\/network\/contacts$/u);
+  await expect(network.getByRole("heading", { name: "Maya Chen" })).toBeVisible();
+  await expect(network.getByRole("region", { name: "Contact point provenance" })).toBeVisible();
+  await expect(network.getByText(/never guesses them/u)).toBeVisible();
+  await network.locator('[data-network-contact="contact-jonah"]').click();
+  await expect(network.getByRole("heading", { name: "Jonah Reed" })).toBeVisible();
+  await expect(network.getByText("No contact methods recorded.", { exact: true })).toBeVisible();
+
+  await network.getByRole("button", { name: "Log interaction" }).click();
+  await expect(page).toHaveURL(/\/network\/interactions$/u);
+  await expect(network.getByRole("list", { name: "Network interaction history" })).toBeVisible();
+  await expect(network.getByRole("complementary", { name: "Relationship reminder" })).toBeVisible();
+  await expect(network.getByText(/cannot send email, messages, or outreach/u)).toBeVisible();
+
+  const privateSummary = "Private follow-up context for the hiring conversation";
+  await network.getByRole("combobox", { name: "Interaction type" }).selectOption("email-logged");
+  await network
+    .getByRole("combobox", { name: "Interaction company" })
+    .selectOption("company-northstar");
+  await network.getByRole("combobox", { name: "Interaction contact" }).selectOption("contact-maya");
+  await network.getByRole("textbox", { name: "Interaction summary" }).fill(privateSummary);
+  await network.getByRole("button", { name: "Log locally" }).click();
+  const activity = page.getByRole("status").first();
+  await expect(activity).toContainText(
+    `${privateSummary.length}-character email-logged interaction for local logging`,
+  );
+  await expect(activity).toContainText("No durable write or message send occurs");
+  await expect(activity).not.toContainText(privateSummary);
+  await expect(network.getByRole("textbox", { name: "Interaction summary" })).toHaveValue("");
+  expect(
+    (await page.evaluate(() => globalThis.coredrillAppShell?.getState()))
+      ?.networkInteractionDraftCount,
+  ).toBe(1);
+
+  await network.getByRole("button", { name: "Snooze" }).click();
+  await expect(activity).toContainText("Prepared a local reminder snooze");
+  await network.getByRole("button", { name: "Turn off reminder" }).click();
+  await expect(activity).toContainText("Prepared a local reminder opt-out");
+  await attachAxe(page, testInfo, "network-interactions-local-log");
+  await attachProof(page, testInfo, "network-interactions-local-log");
+
+  await page.goBack();
+  await expect(page).toHaveURL(/\/network\/contacts$/u);
+  await expect(network.getByRole("button", { name: "Contacts" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  await attachAxe(page, testInfo, "network-companies-contacts-interactions");
+  await attachAriaSnapshot(network, testInfo, "network-companies-contacts-interactions");
+  await attachProof(page, testInfo, "network-companies-contacts-interactions");
+  expect(externalRequests).toEqual([]);
+});
+
+test("narrow Network contact provenance owns overflow and remains keyboard reachable", async ({
+  page,
+}, testInfo) => {
+  const externalRequests = [];
+  page.on("request", (request) => {
+    if (!request.url().startsWith("http://127.0.0.1:4178/")) externalRequests.push(request.url());
+  });
+  await page.setViewportSize({ width: 360, height: 900 });
+  await page.emulateMedia({ forcedColors: "active", reducedMotion: "reduce" });
+  await page.goto("/network/contacts");
+  await page.waitForFunction(() => globalThis.coredrillAppShell !== undefined);
+
+  const network = page.getByTestId("network-workspace");
+  await expect(page.getByTestId("page-title")).toHaveText("Network");
+  await expect(network.getByRole("button", { name: "Contacts" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  const provenance = network.getByRole("region", { name: "Contact point provenance" });
+  await expect(provenance).toBeVisible();
+  const documentDimensions = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(documentDimensions.scrollWidth).toBeLessThanOrEqual(documentDimensions.clientWidth);
+  const provenanceDimensions = await provenance.evaluate((element) => ({
+    clientWidth: element.clientWidth,
+    scrollWidth: element.scrollWidth,
+  }));
+  expect(provenanceDimensions.scrollWidth).toBeGreaterThan(provenanceDimensions.clientWidth);
+  await provenance.focus();
+  await expect(provenance).toBeFocused();
+  await attachAxe(page, testInfo, "network-contact-mobile-forced-colors");
+  await attachProof(page, testInfo, "network-contact-mobile-forced-colors");
+  expect(externalRequests).toEqual([]);
+});
+
 test("narrow Table opens full-page and restores local selection, scroll, and opener focus", async ({
   page,
 }, testInfo) => {
