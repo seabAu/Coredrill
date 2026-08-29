@@ -3,7 +3,9 @@ import {
   HomeDashboard,
   PipelineBoard,
   PipelineShell,
+  PipelineTable,
   VAULT_HEALTH_STATES,
+  DEFAULT_PIPELINE_TABLE_COLUMNS,
   getRootAppearanceAttributes,
   type DensityMode,
   type HomeDashboardActionId,
@@ -14,6 +16,11 @@ import {
   type BoardColumn,
   type BoardJobCard,
   type BoardMoveRequest,
+  type PipelineTableColumnConfiguration,
+  type PipelineTableEditRequest,
+  type PipelineTableEditResult,
+  type PipelineTableJob,
+  type PipelineTableStatusOption,
   type PipelineFilterChip,
   type PipelineSavedView,
   type PipelineShellActionId,
@@ -43,6 +50,8 @@ interface AppShellCatalogState {
   readonly pipelineSearchQuery: string;
   readonly pipelineSelectedCount: number;
   readonly pipelineView: PipelineViewId;
+  readonly tableColumnSaveCount: number;
+  readonly tableEditCount: number;
   readonly theme: ThemePreference;
   readonly vaultHealth: VaultHealthState;
 }
@@ -91,6 +100,9 @@ const readAppearance = (): {
   readonly density: DensityMode;
   readonly homeMode: HomeDashboardModel["state"];
   readonly pipelineSelectionCount: number;
+  readonly pipelineView: PipelineViewId;
+  readonly tableEditMode: "conflict" | "ready";
+  readonly tableMode: "large" | "standard";
   readonly theme: ThemePreference;
   readonly vaultHealth: VaultHealthState;
 } => {
@@ -99,6 +111,7 @@ const readAppearance = (): {
   const requestedDensity = parameters.get("density");
   const requestedHome = parameters.get("home");
   const requestedPipeline = parameters.get("pipeline");
+  const requestedTable = parameters.get("table");
   const requestedTheme = parameters.get("theme");
   const requestedHealth = parameters.get("health");
   return {
@@ -106,6 +119,9 @@ const readAppearance = (): {
     density: requestedDensity === "compact" ? "compact" : "comfortable",
     homeMode: requestedHome === "empty" ? "empty" : "ready",
     pipelineSelectionCount: requestedPipeline === "selected" ? 2 : 0,
+    pipelineView: requestedTable === "large" || requestedTable === "conflict" ? "table" : "board",
+    tableEditMode: requestedTable === "conflict" ? "conflict" : "ready",
+    tableMode: requestedTable === "large" ? "large" : "standard",
     theme: requestedTheme === "dark" || requestedTheme === "system" ? requestedTheme : "light",
     vaultHealth: VAULT_HEALTH_STATES.includes(requestedHealth as VaultHealthState)
       ? (requestedHealth as VaultHealthState)
@@ -422,6 +438,82 @@ const LARGE_BOARD_COLUMNS = Object.freeze([
   ...STANDARD_BOARD_COLUMNS.slice(1),
 ] as const satisfies readonly BoardColumn[]);
 
+const TABLE_STATUS_OPTIONS = Object.freeze(
+  BOARD_STAGES.map(({ id, name, terminal }) => Object.freeze({ id, name, terminal })),
+) satisfies readonly PipelineTableStatusOption[];
+
+const tableJob = (
+  job: BoardJobCard,
+  status: PipelineTableStatusOption,
+  index: number,
+): PipelineTableJob =>
+  Object.freeze({
+    appliedDate: status.id === "applied" || status.id === "interviewing" ? "2026-08-21" : null,
+    capturedDate: "2026-08-18",
+    company: job.company,
+    disclosedSalary: index % 3 === 0 ? "$120k–$145k disclosed" : null,
+    id: job.id,
+    lastInteraction: index % 2 === 0 ? job.lastActivity : null,
+    location: job.location,
+    marketBand: index % 3 === 0 ? "$118k–$151k local estimate" : null,
+    matchSummary:
+      index % 2 === 0 ? `${String(5 + (index % 3))} of 8 requirements have linked evidence` : null,
+    nextActionDate: job.nextAction === null ? null : "2026-09-03",
+    priority: job.priority,
+    rowVersion: 1,
+    source: index % 2 === 0 ? "Company careers page" : "Manual entry",
+    status,
+    tags: index % 2 === 0 ? Object.freeze(["reviewed", job.workMode]) : Object.freeze([]),
+    title: job.title,
+    workMode: job.workMode === "unspecified" ? "Work mode not set" : job.workMode,
+  });
+
+const tableRowsFromBoard = (columns: readonly BoardColumn[]): readonly PipelineTableJob[] => {
+  let index = 0;
+  return Object.freeze(
+    columns.flatMap((column) => {
+      const status = TABLE_STATUS_OPTIONS.find(({ id }) => id === column.stage.id);
+      if (status === undefined) throw new Error("Synthetic Table status fixture is missing.");
+      return column.items.map((job) => tableJob(job, status, index++));
+    }),
+  );
+};
+
+const STANDARD_TABLE_ROWS = tableRowsFromBoard(STANDARD_BOARD_COLUMNS);
+const LARGE_TABLE_ROWS = Object.freeze([
+  ...STANDARD_TABLE_ROWS,
+  ...Array.from({ length: 1_992 }, (_, index) => {
+    const fixtureNumber = index + 1;
+    const status = TABLE_STATUS_OPTIONS[fixtureNumber % TABLE_STATUS_OPTIONS.length];
+    if (status === undefined) throw new Error("Synthetic Table status fixture is missing.");
+    return tableJob(
+      boardJob(
+        `table-volume-${String(fixtureNumber).padStart(4, "0")}`,
+        `Synthetic opportunity ${String(fixtureNumber)}`,
+        `Volume company ${String(fixtureNumber)}`,
+        {
+          lastActivity: `Updated ${String((fixtureNumber % 28) + 1)} days ago`,
+          nextAction: fixtureNumber % 4 === 0 ? null : "Review local notes",
+          priority: fixtureNumber % 7 === 0 ? "high" : "normal",
+        },
+      ),
+      status,
+      fixtureNumber,
+    );
+  }),
+] as const satisfies readonly PipelineTableJob[]);
+
+const INITIAL_TABLE_CONFIGURATIONS: Readonly<
+  Record<string, readonly PipelineTableColumnConfiguration[]>
+> = Object.freeze(
+  Object.fromEntries(
+    PIPELINE_SAVED_VIEWS.map(({ id }) => [
+      id,
+      Object.freeze(DEFAULT_PIPELINE_TABLE_COLUMNS.map((column) => Object.freeze({ ...column }))),
+    ]),
+  ),
+);
+
 interface BoardUndoRecord {
   readonly fromStageId: string;
   readonly jobId: string;
@@ -472,10 +564,18 @@ const AppShellCatalog = () => {
     useState<readonly PipelineFilterChip[]>(INITIAL_PIPELINE_FILTERS);
   const [pipelineSavedViewId, setPipelineSavedViewId] = useState("active-search");
   const [pipelineSearchQuery, setPipelineSearchQuery] = useState("");
-  const [pipelineSelectedCount, setPipelineSelectedCount] = useState(
-    appearance.pipelineSelectionCount,
+  const [pipelineSelectedJobIds, setPipelineSelectedJobIds] = useState<readonly string[]>(
+    Object.freeze(
+      STANDARD_TABLE_ROWS.slice(0, appearance.pipelineSelectionCount).map(({ id }) => id),
+    ),
   );
-  const [pipelineView, setPipelineView] = useState<PipelineViewId>("board");
+  const [pipelineView, setPipelineView] = useState<PipelineViewId>(appearance.pipelineView);
+  const [tableColumnSaveCount, setTableColumnSaveCount] = useState(0);
+  const [tableConfigurations, setTableConfigurations] = useState(INITIAL_TABLE_CONFIGURATIONS);
+  const [tableEditCount, setTableEditCount] = useState(0);
+  const [tableRows, setTableRows] = useState<readonly PipelineTableJob[]>(
+    appearance.tableMode === "large" ? LARGE_TABLE_ROWS : STANDARD_TABLE_ROWS,
+  );
   const [lastActivity, setLastActivity] = useState(
     "Shell ready. All displayed records are synthetic.",
   );
@@ -487,17 +587,21 @@ const AppShellCatalog = () => {
         ? READY_HOME_MODEL
         : Object.freeze({ ...READY_HOME_MODEL, snapshot: null });
   const boardMatchingCount = boardColumns.reduce((count, column) => count + column.items.length, 0);
+  const pipelineMatchingCount = pipelineView === "table" ? tableRows.length : boardMatchingCount;
+  const pipelineSelectedCount = pipelineSelectedJobIds.length;
+  const tableConfiguration =
+    tableConfigurations[pipelineSavedViewId] ?? DEFAULT_PIPELINE_TABLE_COLUMNS;
   const pipelineModel: PipelineShellModel = Object.freeze({
     activeSavedViewId: pipelineSavedViewId,
     activeView: pipelineView,
     filters: pipelineFilters,
     inboxCount: 3,
-    matchingCount: boardMatchingCount,
+    matchingCount: pipelineMatchingCount,
     savedViews: PIPELINE_SAVED_VIEWS,
     searchQuery: pipelineSearchQuery,
     selectedCount: pipelineSelectedCount,
     sortLabel: "Recently updated",
-    totalCount: boardMatchingCount + 4,
+    totalCount: pipelineMatchingCount + 4,
   });
 
   useEffect(() => {
@@ -532,6 +636,8 @@ const AppShellCatalog = () => {
           pipelineSearchQuery,
           pipelineSelectedCount,
           pipelineView,
+          tableColumnSaveCount,
+          tableEditCount,
           theme: appearance.theme,
           vaultHealth: appearance.vaultHealth,
         }),
@@ -549,6 +655,8 @@ const AppShellCatalog = () => {
     pipelineSearchQuery,
     pipelineSelectedCount,
     pipelineView,
+    tableColumnSaveCount,
+    tableEditCount,
   ]);
 
   const recordAction = (action: ShellActionId): void => {
@@ -573,6 +681,98 @@ const AppShellCatalog = () => {
     );
   };
 
+  const requestTableEdit = (request: PipelineTableEditRequest): PipelineTableEditResult => {
+    const current = tableRows.find(({ id }) => id === request.jobId);
+    if (
+      current?.rowVersion !== request.expectedRowVersion ||
+      appearance.tableEditMode === "conflict"
+    ) {
+      const error =
+        "This job changed before the edit could commit. Review the current local value and try again.";
+      setLastActivity(error);
+      return { error, ok: false };
+    }
+
+    let updated: PipelineTableJob;
+    let message: string;
+    if (request.field === "status") {
+      const target = TABLE_STATUS_OPTIONS.find(({ id }) => id === request.value);
+      if (
+        target === undefined ||
+        target.id === current.status?.id ||
+        (current.status?.terminal === true && !target.terminal && !request.reopenConfirmed)
+      ) {
+        const error = "The requested status change was rejected without changing the local job.";
+        setLastActivity(error);
+        return { error, ok: false };
+      }
+      updated = Object.freeze({ ...current, rowVersion: current.rowVersion + 1, status: target });
+      message = `Changed ${current.title} to ${target.name}. A timeline-event and undo intent were requested locally.`;
+      const fromStageId = current.status?.id;
+      if (fromStageId !== undefined) {
+        const moved = moveBoardJob(boardColumns, {
+          fromStageId,
+          jobId: current.id,
+          method: "keyboard",
+          requiresReopenConfirmation: false,
+          toStageId: target.id,
+        });
+        if (moved !== null) {
+          setBoardColumns(moved.columns);
+          setBoardTimelineEventCount((count) => count + 1);
+          setBoardUndo({
+            fromStageId,
+            jobId: current.id,
+            title: current.title,
+            toStageId: target.id,
+          });
+        }
+      }
+    } else if (request.field === "priority") {
+      updated = Object.freeze({
+        ...current,
+        priority: request.value,
+        rowVersion: current.rowVersion + 1,
+      });
+      message = `Changed ${current.title} priority to ${request.value} locally.`;
+      setBoardColumns((columns) =>
+        Object.freeze(
+          columns.map((column) =>
+            Object.freeze({
+              ...column,
+              items: Object.freeze(
+                column.items.map((job) =>
+                  job.id === current.id ? Object.freeze({ ...job, priority: request.value }) : job,
+                ),
+              ),
+            }),
+          ),
+        ),
+      );
+    } else if (request.field === "tags") {
+      updated = Object.freeze({
+        ...current,
+        rowVersion: current.rowVersion + 1,
+        tags: Object.freeze([...request.value]),
+      });
+      message = `Changed ${current.title} tags locally.`;
+    } else {
+      updated = Object.freeze({
+        ...current,
+        nextActionDate: request.value,
+        rowVersion: current.rowVersion + 1,
+      });
+      message = `Changed ${current.title} next-action date locally.`;
+    }
+
+    setTableRows((rows) =>
+      Object.freeze(rows.map((row) => (row.id === current.id ? updated : row))),
+    );
+    setTableEditCount((count) => count + 1);
+    setLastActivity(message);
+    return { announcement: message, ok: true };
+  };
+
   const requestBoardMove = (request: BoardMoveRequest): void => {
     const sourceName = boardColumns.find(({ stage }) => stage.id === request.fromStageId)?.stage
       .name;
@@ -590,6 +790,18 @@ const AppShellCatalog = () => {
     if (result === null) return;
     const message = `Moved ${result.job.title} from ${sourceName ?? "its prior stage"} to ${targetName ?? "the selected stage"} by ${request.method}. Timeline event recorded; undo is available.`;
     setBoardColumns(result.columns);
+    const targetStatus = TABLE_STATUS_OPTIONS.find(({ id }) => id === request.toStageId);
+    if (targetStatus !== undefined) {
+      setTableRows((rows) =>
+        Object.freeze(
+          rows.map((row) =>
+            row.id === request.jobId
+              ? Object.freeze({ ...row, rowVersion: row.rowVersion + 1, status: targetStatus })
+              : row,
+          ),
+        ),
+      );
+    }
     setBoardTimelineEventCount((count) => count + 1);
     setBoardUndo({
       fromStageId: request.fromStageId,
@@ -613,6 +825,18 @@ const AppShellCatalog = () => {
     if (result === null) return;
     const message = `Restored ${boardUndo.title} to its prior stage. The original timeline event remains and a reversal was recorded.`;
     setBoardColumns(result.columns);
+    const restoredStatus = TABLE_STATUS_OPTIONS.find(({ id }) => id === boardUndo.fromStageId);
+    if (restoredStatus !== undefined) {
+      setTableRows((rows) =>
+        Object.freeze(
+          rows.map((row) =>
+            row.id === boardUndo.jobId
+              ? Object.freeze({ ...row, rowVersion: row.rowVersion + 1, status: restoredStatus })
+              : row,
+          ),
+        ),
+      );
+    }
     setBoardTimelineEventCount((count) => count + 1);
     setBoardUndo(null);
     setBoardAnnouncement(message);
@@ -672,7 +896,7 @@ const AppShellCatalog = () => {
               setLastActivity("Cleared the visible Pipeline filters locally.");
             }}
             onClearSelection={() => {
-              setPipelineSelectedCount(0);
+              setPipelineSelectedJobIds(Object.freeze([]));
               setLastActivity("Cleared the local Pipeline selection.");
             }}
             onRemoveFilter={(filter) => {
@@ -715,7 +939,41 @@ const AppShellCatalog = () => {
                       }
                 }
               />
-            ) : null}
+            ) : (
+              <PipelineTable
+                columnConfiguration={tableConfiguration}
+                onColumnConfigurationChange={(configuration) => {
+                  setTableConfigurations((current) =>
+                    Object.freeze({ ...current, [pipelineSavedViewId]: configuration }),
+                  );
+                  setTableColumnSaveCount((count) => count + 1);
+                  setLastActivity(
+                    `Saved Table columns for ${PIPELINE_SAVED_VIEWS.find(({ id }) => id === pipelineSavedViewId)?.label ?? "this local view"}.`,
+                  );
+                }}
+                onEditRequest={requestTableEdit}
+                onOpenJob={(job) => {
+                  setLastActivity(`Opened local Table job: ${job.title} at ${job.company}.`);
+                }}
+                onSelectionChange={(job, selected) => {
+                  setPipelineSelectedJobIds((current) =>
+                    selected
+                      ? Object.freeze([...new Set([...current, job.id])])
+                      : Object.freeze(current.filter((id) => id !== job.id)),
+                  );
+                  setLastActivity(
+                    `${selected ? "Selected" : "Cleared"} ${job.title} for local bulk actions.`,
+                  );
+                }}
+                rows={tableRows}
+                selectedJobIds={pipelineSelectedJobIds}
+                statusOptions={TABLE_STATUS_OPTIONS}
+                viewName={
+                  PIPELINE_SAVED_VIEWS.find(({ id }) => id === pipelineSavedViewId)?.label ??
+                  "Current view"
+                }
+              />
+            )}
           </PipelineShell>
         ) : (
           <section className="cd-shell-page-card min-h-72" aria-labelledby="destination-heading">

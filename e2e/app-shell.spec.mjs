@@ -184,11 +184,11 @@ test("Pipeline switches peer presentations while saved views, filters, search, a
     (await page.evaluate(() => globalThis.coredrillAppShell?.getState()))?.pipelineFilterCount,
   ).toBe(1);
   await pipeline.getByRole("button", { name: "Filter", exact: true }).click();
-  await expect(page.getByRole("status")).toContainText("open-filters");
+  await expect(page.getByRole("status").first()).toContainText("open-filters");
   await pipeline.getByRole("button", { name: "Sort · Recently updated" }).click();
-  await expect(page.getByRole("status")).toContainText("open-sort");
+  await expect(page.getByRole("status").first()).toContainText("open-sort");
   await pipeline.getByRole("button", { name: "More Pipeline actions" }).click();
-  await expect(page.getByRole("status")).toContainText("open-more");
+  await expect(page.getByRole("status").first()).toContainText("open-more");
 
   await attachAxe(page, testInfo, "pipeline-peer-views-and-filters");
   await attachProof(page, testInfo, "pipeline-peer-views-and-filters");
@@ -229,6 +229,187 @@ test("Pipeline selection exposes a non-mutating bulk shell and reflows at 320 pi
   }));
   expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
   await attachAxe(page, testInfo, "pipeline-mobile-after-clear");
+});
+
+test("Table keeps semantic pinned columns and remembers each saved view's configuration", async ({
+  page,
+}, testInfo) => {
+  const externalRequests = [];
+  page.on("request", (request) => {
+    if (!request.url().startsWith("http://127.0.0.1:4178/")) externalRequests.push(request.url());
+  });
+  await page.setViewportSize({ width: 1440, height: 1050 });
+  await openShell(page);
+  await page
+    .getByRole("navigation", { name: "Primary" })
+    .getByRole("link", { name: "Pipeline" })
+    .click();
+  await page.getByTestId("pipeline-shell").getByRole("button", { name: "Table" }).click();
+
+  const tableView = page.getByTestId("pipeline-table");
+  const table = tableView.getByRole("table");
+  const scrollRegion = tableView.getByRole("region", { name: "Pipeline Table for Active search" });
+  await expect(table).toBeVisible();
+  await expect(scrollRegion).toHaveAttribute("data-table-total", "8");
+  await expect(scrollRegion).toHaveAttribute("data-table-rendered", "8");
+  await expect(table.getByRole("columnheader", { name: "Title" })).toHaveCSS("position", "sticky");
+  await expect(table.getByRole("columnheader", { name: "Company" })).toHaveCSS(
+    "position",
+    "sticky",
+  );
+
+  await tableView.getByText("Columns", { exact: true }).click();
+  const statusSetting = tableView.locator('[data-column-setting="status"]');
+  await statusSetting.getByRole("checkbox", { name: "Pinned" }).check();
+  await expect(table.getByRole("columnheader", { name: "Status" })).toHaveAttribute(
+    "data-table-pinned",
+    "true",
+  );
+  await statusSetting.getByRole("spinbutton", { name: "Status width in pixels" }).fill("192");
+  await expect(table.getByRole("columnheader", { name: "Status" })).toHaveCSS("width", "192px");
+
+  const tagsSetting = tableView.locator('[data-column-setting="tags"]');
+  await tagsSetting.getByRole("button", { name: "Move Tags earlier" }).click();
+  const sourceSetting = tableView.locator('[data-column-setting="source"]');
+  await sourceSetting.getByRole("checkbox", { name: "Visible" }).uncheck();
+  await expect(table.getByRole("columnheader", { name: "Source" })).toHaveCount(0);
+
+  const pipeline = page.getByTestId("pipeline-shell");
+  await pipeline.getByRole("combobox", { name: "Saved view" }).selectOption("interview-prep");
+  await expect(table.getByRole("columnheader", { name: "Source" })).toBeVisible();
+  await expect(table.getByRole("columnheader", { name: "Status" })).toHaveAttribute(
+    "data-table-pinned",
+    "false",
+  );
+  await pipeline.getByRole("combobox", { name: "Saved view" }).selectOption("active-search");
+  await expect(table.getByRole("columnheader", { name: "Source" })).toHaveCount(0);
+  await expect(table.getByRole("columnheader", { name: "Status" })).toHaveAttribute(
+    "data-table-pinned",
+    "true",
+  );
+  expect(
+    (await page.evaluate(() => globalThis.coredrillAppShell?.getState()))?.tableColumnSaveCount,
+  ).toBeGreaterThanOrEqual(4);
+
+  await tableView.getByText("Columns", { exact: true }).click();
+  await attachAriaSnapshot(tableView, testInfo, "table-semantic-and-configurable");
+  await attachAxe(page, testInfo, "table-semantic-and-configurable");
+  await attachProof(page, testInfo, "table-semantic-and-configurable");
+  expect(externalRequests).toEqual([]);
+});
+
+test("Table validates low-risk edits, confirms reopening, and opens complex fields", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1050 });
+  await openShell(page);
+  await page
+    .getByRole("navigation", { name: "Primary" })
+    .getByRole("link", { name: "Pipeline" })
+    .click();
+  await page.getByTestId("pipeline-shell").getByRole("button", { name: "Table" }).click();
+
+  const tableView = page.getByTestId("pipeline-table");
+  const northstar = tableView.locator('[data-table-job="board-northstar"]');
+  await northstar.getByRole("button", { name: "Product Operations Lead", exact: true }).click();
+  await expect(page.getByRole("status").first()).toContainText("Opened local Table job");
+
+  await northstar
+    .getByRole("button", { name: "Edit priority for Product Operations Lead" })
+    .click();
+  await northstar.getByLabel("Priority for Product Operations Lead").selectOption("low");
+  await northstar.getByRole("button", { name: "Save" }).click();
+  await expect(northstar.getByText("low", { exact: true })).toBeVisible();
+
+  await northstar.getByRole("button", { name: "Edit tags for Product Operations Lead" }).click();
+  await northstar.getByLabel("Tags for Product Operations Lead").fill("research, Research");
+  await northstar.getByRole("button", { name: "Save" }).click();
+  await expect(northstar.getByRole("alert")).toContainText("unique comma-separated tags");
+  await northstar.getByRole("button", { name: "Cancel" }).click();
+
+  await northstar
+    .getByRole("button", { name: "Edit next action for Product Operations Lead" })
+    .click();
+  await northstar.getByLabel("Next action for Product Operations Lead").fill("2026-09-10");
+  await northstar.getByRole("button", { name: "Save" }).click();
+  await expect(northstar.getByText("2026-09-10", { exact: true })).toBeVisible();
+
+  const closed = tableView.locator('[data-table-job="board-harbor"]');
+  await closed.getByRole("button", { name: "Edit status for Product Manager" }).click();
+  await closed.getByLabel("Status for Product Manager").selectOption("saved");
+  await expect(
+    closed.getByRole("checkbox", { name: "Confirm reopening this closed job" }),
+  ).toBeVisible();
+  await closed.getByRole("button", { name: "Save" }).click();
+  await expect(closed.getByRole("alert")).toContainText("Confirm reopening");
+  await expect(closed.getByLabel("Status for Product Manager")).toHaveValue("saved");
+  await closed.getByRole("checkbox", { name: "Confirm reopening this closed job" }).check();
+  await closed.getByRole("button", { name: "Save" }).click();
+  await expect(closed.getByText("Saved", { exact: true })).toBeVisible();
+
+  const state = await page.evaluate(() => globalThis.coredrillAppShell?.getState());
+  expect(state?.tableEditCount).toBe(3);
+  expect(state?.boardTimelineEventCount).toBe(1);
+});
+
+test("Table rejects a stale row version without changing the previous value", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await openShell(page, { table: "conflict" });
+  await page
+    .getByRole("navigation", { name: "Primary" })
+    .getByRole("link", { name: "Pipeline" })
+    .click();
+
+  const row = page.getByTestId("pipeline-table").locator('[data-table-job="board-northstar"]');
+  await row.getByRole("button", { name: "Edit priority for Product Operations Lead" }).click();
+  await row.getByLabel("Priority for Product Operations Lead").selectOption("low");
+  await row.getByRole("button", { name: "Save" }).click();
+  await expect(row.getByRole("alert")).toContainText("changed before the edit could commit");
+  await expect(row.getByLabel("Priority for Product Operations Lead")).toHaveValue("low");
+  expect(
+    (await page.evaluate(() => globalThis.coredrillAppShell?.getState()))?.tableEditCount,
+  ).toBe(0);
+});
+
+test("Table windows 2,000 rows within budget and owns narrow-screen overflow", async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await openShell(page, { table: "large" });
+  await page
+    .getByRole("navigation", { name: "Primary" })
+    .getByRole("link", { name: "Pipeline" })
+    .click();
+
+  const tableView = page.getByTestId("pipeline-table");
+  const scrollRegion = tableView.getByRole("region", { name: "Pipeline Table for Active search" });
+  await expect(scrollRegion).toHaveAttribute("data-table-total", "2000");
+  await expect(scrollRegion).toHaveAttribute("data-table-rendered", "12");
+  await expect(tableView.locator('[data-table-job="table-volume-1992"]')).toHaveCount(0);
+  const start = Date.now();
+  await scrollRegion.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+    element.dispatchEvent(new Event("scroll"));
+  });
+  await expect(tableView.locator('[data-table-job="table-volume-1992"]')).toBeVisible();
+  expect(Date.now() - start).toBeLessThan(2_500);
+  await expect(scrollRegion).toHaveAttribute("data-table-rendered", "12");
+  await attachProof(page, testInfo, "table-2000-row-window");
+
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.emulateMedia({ forcedColors: "active", reducedMotion: "reduce" });
+  const documentDimensions = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(documentDimensions.scrollWidth).toBeLessThanOrEqual(documentDimensions.clientWidth);
+  const tableDimensions = await scrollRegion.evaluate((element) => ({
+    clientWidth: element.clientWidth,
+    scrollWidth: element.scrollWidth,
+  }));
+  expect(tableDimensions.scrollWidth).toBeGreaterThan(tableDimensions.clientWidth);
+  await attachAxe(page, testInfo, "table-mobile-forced-colors");
+  await attachProof(page, testInfo, "table-mobile-forced-colors");
 });
 
 test("Board cards expose semantic context, keyboard moves, durable-event intent, and undo", async ({

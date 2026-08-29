@@ -7,3 +7,4 @@ export * from "./home-dashboard.js";
 export * from "./icon.js";
 export * from "./pipeline-board.js";
 export * from "./pipeline-shell.js";
+export * from "./pipeline-table.js";
