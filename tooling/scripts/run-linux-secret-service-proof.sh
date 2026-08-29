@@ -20,7 +20,15 @@ export XDG_RUNTIME_DIR="$runtime_root"
 cleanup() {
   gnome-keyring-daemon --stop >/dev/null 2>&1 || true
   if [[ "$runtime_root" == "$runtime_base"/coredrill-nat008-keyring.* ]]; then
-    rm -rf -- "$runtime_root"
+    for attempt in 1 2 3 4 5; do
+      if rm -rf -- "$runtime_root" 2>/dev/null && [[ ! -e "$runtime_root" ]]; then
+        return
+      fi
+      sleep 0.2
+    done
+
+    echo "Failed to remove the scoped Secret Service proof directory." >&2
+    return 1
   fi
 }
 trap cleanup EXIT
