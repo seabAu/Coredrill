@@ -109,6 +109,32 @@ test("quick start creates one user job and converges on its Overview without pro
   expect(externalRequests).toEqual([]);
 });
 
+test("quick and guided tracks can both finish later and converge on Home", async ({ page }) => {
+  await openOnboarding(page);
+  await page.getByRole("button", { name: /Quick start/ }).click();
+  await page.getByRole("button", { name: "Finish later" }).click();
+  await expect(page.getByRole("heading", { name: "Your workspace is ready" })).toBeVisible();
+  expect(await getCatalogState(page)).toMatchObject({
+    activeVaultKind: "none",
+    lastCompletion: null,
+    skipped: true,
+    userVault: null,
+  });
+  await page.getByRole("link", { name: "Go to Home" }).click();
+  await expect.poll(async () => (await getCatalogState(page)).completedDestination).toBe("home");
+
+  await openOnboarding(page);
+  await page.getByRole("button", { name: /Guided setup/ }).click();
+  await page.getByRole("button", { name: "Finish later" }).click();
+  await expect(page.getByRole("heading", { name: "Your workspace is ready" })).toBeVisible();
+  expect(await getCatalogState(page)).toMatchObject({
+    activeVaultKind: "none",
+    lastCompletion: null,
+    skipped: true,
+    userVault: null,
+  });
+});
+
 test("guided setup records reviewed optional choices and converges on Home with no AI call", async ({
   page,
 }, testInfo) => {
