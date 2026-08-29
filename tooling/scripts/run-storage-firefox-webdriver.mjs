@@ -183,9 +183,9 @@ try {
   if (
     proof?.rows !== 1 ||
     proof.restoredRows !== 1 ||
-    proof.repositoryContractCases !== 15 ||
+    proof.repositoryContractCases !== 17 ||
     proof.repositoryContractSuite !== repositoryContracts.manifest.suiteName ||
-    proof.repositoryContractVersion !== 1 ||
+    proof.repositoryContractVersion !== 2 ||
     !Array.isArray(repositoryContracts.run.completedCases) ||
     repositoryContracts.run.completedCases.length !== repositoryCases.length ||
     repositoryContracts.run.completedCases.some(
