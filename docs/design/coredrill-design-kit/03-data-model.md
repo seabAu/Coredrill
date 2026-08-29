@@ -195,7 +195,11 @@ Validate maximum depth/count and field/operator compatibility. Compile to parame
 - Never rely on ORM auto-sync in production.
 - Before migration: verify schema version, create/confirm export checkpoint, test available space.
 - Migration runs in a transaction when SQLite permits; complex table rebuilds use a tested staged script.
-- Portable exports include app version, schema version, migration history, attachment checksums, and encryption metadata.
+- Portable exports include app version, schema version, migration history,
+  database/data checksums, content-addressed attachment bytes/checksums, and
+  explicit encryption metadata. The version-1 writer uses deterministic safe
+  ZIP entry paths and refuses success if any recorded attachment is missing or
+  does not match its manifest facts.
 - Older clients fail safely on newer schema; they never attempt a downgrade write.
 - Every release tests fresh install, each supported upgrade path, failed migration rollback, export/restore, and cross-adapter logical equivalence.
 

@@ -140,6 +140,21 @@ export {
   type SqlMigration,
 } from "./migrations.js";
 export {
+  PORTABLE_ARCHIVE_CONTAINER_VERSION,
+  PORTABLE_ARCHIVE_FILE_EXTENSION,
+  PORTABLE_ARCHIVE_MANIFEST_PATH,
+  PORTABLE_ARCHIVE_MEDIA_TYPE,
+  PORTABLE_ARCHIVE_WRITER_LIMITS,
+  PortableArchiveWriterError,
+  writePortableArchiveV1,
+  type PortableArchiveAttachmentReferenceV1,
+  type PortableArchiveDataFileSourceV1,
+  type PortableArchiveV1,
+  type PortableArchiveVaultV1,
+  type PortableArchiveWriterErrorCode,
+  type PortableArchiveWriterInputV1,
+} from "./portable-archive-writer.js";
+export {
   AppSettingRepository,
   CompanyRepository,
   ContactRepository,

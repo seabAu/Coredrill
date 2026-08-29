@@ -106,6 +106,29 @@ The NAT-006 recovery command uses exact optional `tauri-plugin-dialog` 2.7.1 onl
 
 NAT-007 uses Tauri's built-in NSIS bundler for an English, current-user Windows installer with downgrade blocking, the Apache-2.0 license, and `downloadBootstrapper` WebView2 provisioning. NAT-008 adds an ad-hoc-signed macOS app and diagnostic Linux AppImage, rejects the internal storage probe from all packages, smoke-launches each package, and exercises the exact target secure store. A pinned GitHub artifact action retains clean-commit packages and raw hosted manifests for 30 days; sanitized durable manifests remain in repository proof. Windows and macOS architecture targets are accepted, while Linux native remains diagnostic because its compiled GTK3 graph carries an unresolved RustSec unsoundness warning and unmaintained dependencies. Signing/notarization, provenance, updater behavior, an optional fully offline installer, and reference-hardware release checks remain later gates. See [native package verification](../../proof/native-windows-package-verification.md) and [cross-platform native verification](../../proof/native-cross-platform-verification.md).
 
+### Portable archive container
+
+The D-051 version-1 portable archive is an ordinary ZIP container following the
+[PKWARE APPNOTE](https://support.pkware.com/pkzip/appnote). `manifest.json` is
+the first entry, followed by `database.sqlite3`, sorted `data/*.json|csv`
+projections, and sorted content-addressed
+`attachments/<sha256-prefix>/<sha256>` bytes. Every payload entry is stored
+without compression and carries its SHA-256 and byte length in the validated
+manifest. ZIP modification time, operating-system metadata, and entry order are
+fixed, so identical logical input produces identical bytes across the Node and
+browser proof runtimes.
+
+`@coredrill/storage-core` owns this TypeScript writer and exact-pins
+dependency-free MIT `fflate` 0.8.3, whose
+[ZIP API](https://github.com/101arrowz/fflate#zip-archives) works in browsers and
+Node. Browser/native composition supplies validated database/data bytes and a
+content-ID attachment resolver; adapters do not create competing archive
+formats. The Phase 1 implementation is deliberately in-memory and fails before
+emitting success above 256 MiB per entry or 512 MiB total payload. A streamed
+Zip64 design and new benchmark-backed limit are required before raising that
+ceiling. The manifest records `{ "specVersion": 1, "mode": "none" }`; ZIP is a
+container, not an encryption claim.
+
 ### Query layer
 
 - Handwritten SQL migrations and focused repository queries.

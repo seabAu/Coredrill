@@ -93,6 +93,17 @@ The accepted browser-storage boundary additionally imports restore data under a 
 
 `NAT-006` proves first-OS database recovery through an official native picker called only inside Rust. The custom command receives an opaque session, never a path; the selected path never returns to the WebView, and dialog/filesystem JavaScript permissions are absent. Export snapshots WAL safely through SQLite's online-backup API, streams a version/schema/length/SHA-256 envelope, and atomically replaces a same-directory temporary file. Restore verifies the entire envelope and temporary SQLite database before closing the target, then maintains a same-volume recovery snapshot until atomic replacement, reopen, integrity, and schema checks succeed. Corrupt bytes and an injected post-replacement failure both preserve the previous usable vault. This remains database-only recovery evidence, not the full portable archive promised by D-051. See [native archive verification](../../proof/native-archive-verification.md).
 
+`BKP-001` adds the adapter-neutral D-051 writer. It rechecks exported database
+length/schema/checksum, requires every recorded content-addressed attachment to
+resolve and match its length/hash, calculates JSON/CSV checksums, validates the
+complete manifest, and only then returns deterministic ZIP bytes. Missing,
+unreadable, corrupt, oversized, duplicate, or unsafe inputs return stable typed
+errors without paths or user content and without a successful partial archive.
+The current 256 MiB entry/512 MiB aggregate ceiling bounds the in-memory writer.
+The archive declares encryption mode `none`; save/picker UX must disclose that
+actual state and must persist bytes only after writer success. Restore remains a
+separate dry-run and transactional boundary in `BKP-003`.
+
 `NAT-007` proves a Windows current-user NSIS package from a clean commit. CI rebuilds the package, installs it only under a generated temporary root, rejects the contract-only native storage probe if bundled, launches the installed application five discarded plus 20 measured times, records package/application hashes and unsigned development status, aggregates the application/WebView2 process tree, and runs the uninstaller. Program files are removed while the platform app-data directory remains. WebView2 uses Tauri's download bootstrapper if the runtime is absent, so this Phase 0 package is not a fully offline or signed public release. The recorded Windows 10 and hosted-runner results remain nonconformant diagnostics until the Windows 11 25H2/HW-WIN-REF release matrix executes. See [native package verification](../../proof/native-windows-package-verification.md).
 
 ## Future sync architecture

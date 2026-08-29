@@ -73,6 +73,10 @@ import {
   type StorageBenchmarkInput,
   type StorageBenchmarkResult,
 } from "./storage-benchmark.js";
+import {
+  runPortableArchiveWriterProof,
+  type PortableArchiveBrowserProof,
+} from "./portable-archive-proof.js";
 
 const DATABASE_NAME = "/coredrill-phase0.sqlite3";
 const MIGRATION_APPLIED_AT = "2026-08-24T08:00:00.000Z";
@@ -140,6 +144,7 @@ export interface CoredrillStorageSpikeApi {
   runBenchmark(input: StorageBenchmarkInput): Promise<StorageBenchmarkResult>;
   runJobSearchBenchmark(input: StorageBenchmarkInput): Promise<JobSearchBenchmarkResult>;
   runPhase1RepositoryContracts(): Promise<Phase1RepositoryContractProof>;
+  runPortableArchiveWriterProof(): Promise<PortableArchiveBrowserProof>;
 }
 
 declare global {
@@ -610,6 +615,7 @@ const api: CoredrillStorageSpikeApi = {
   },
   runBenchmark: (input) => runStorageBenchmark(input),
   runJobSearchBenchmark: async (input) => runJobSearchBenchmark(input, await migrations()),
+  runPortableArchiveWriterProof,
   runPhase1RepositoryContracts: async () => {
     await api.close();
     const reviewedMigrations = await migrations();

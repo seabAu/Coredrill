@@ -256,6 +256,15 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
 - **Why:** Ownership, recovery, migration, and eventual sync independence.
 - **Revisit when:** Format versions evolve compatibly.
 - **Phase 0 evidence (2026-08-24):** `NAT-006` proves a versioned checksummed database-only recovery artifact through a Rust-owned native picker, including atomic replacement and rollback. It is intentionally not labeled the D-051 portable archive because attachments, manifest assembly, encryption metadata where applicable, and JSON/CSV exports remain BKP-001 and later delivery work; see [native archive verification](../../proof/native-archive-verification.md).
+- **Phase 1 writer evidence (2026-08-29):** `BKP-001` implements one shared
+  TypeScript ZIP writer with fixed metadata/order, validated version-1 manifest,
+  database and caller-supplied data projections, content-addressed attachment
+  bytes, per-entry/whole-archive SHA-256, and explicit encryption mode `none`.
+  The committed 3,533-byte golden archive reproduces exactly in Node and the
+  browser bundle; missing/corrupt/unsafe/oversized inputs fail without a
+  successful partial result. `BKP-002` still owns production JSON/CSV projection
+  generation and `BKP-003` owns restore dry-run/commit; see [portable archive
+  writer verification](../../proof/phase-1-portable-archive-writer-verification.md).
 
 ### D-052 — Future sync is opt-in and encrypted
 

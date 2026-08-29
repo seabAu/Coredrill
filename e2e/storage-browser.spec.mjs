@@ -45,6 +45,22 @@ test("opens official SQLite in a Worker, persists transactions, and restores a c
   const expectedBrowserVersion = process.env["COREDRILL_EXPECTED_BROWSER_VERSION"];
   if (expectedBrowserVersion !== undefined) expect(browserVersion).toBe(expectedBrowserVersion);
 
+  const archiveWriterProof = await callHarness(sourcePage, "runPortableArchiveWriterProof");
+  expect(archiveWriterProof).toEqual({
+    byteLength: 3533,
+    fileName: "coredrill-20260829-019539af-8a01-7dd4-8b54-395d8f3fe501.coredrill.zip",
+    sha256: "47b18f1854ae6a608cffb4753895afc0fead06f3399818326e61142579a5fcde",
+    entryPaths: [
+      "manifest.json",
+      "database.sqlite3",
+      "data/jobs.csv",
+      "data/jobs.json",
+      "attachments/b9/b914898bf9355a7588664f9eef9f45ba4a633f923a4c462d3febe05cd2894f77",
+      "attachments/f4/f4bc78faeb42493a38532064e934426732aaef84a3836b2c331681a59854ec71",
+    ],
+    encryptionMode: "none",
+  });
+
   await callHarness(sourcePage, "delete");
   const opened = await callHarness(sourcePage, "openAndMigrate");
   expect(opened.appliedVersions).toEqual(Array.from({ length: 92 }, (_, index) => index + 1));
@@ -133,6 +149,7 @@ test("opens official SQLite in a Worker, persists transactions, and restores a c
       durableRows: durableRows.length,
       rollback: true,
       cleanProfileRestore: true,
+      portableArchiveWriterSha256: archiveWriterProof.sha256,
     })}`,
   );
 });

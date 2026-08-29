@@ -163,6 +163,7 @@ try {
   const restored = await executeHarness("listVaults");
   await executeHarness("delete");
   const repositoryContracts = await executeHarness("runPhase1RepositoryContracts");
+  const archiveWriter = await executeHarness("runPortableArchiveWriterProof");
   const repositoryCases = repositoryContracts.manifest.caseNames;
 
   const proof = {
@@ -171,6 +172,7 @@ try {
     reopenedVersions: reopened.appliedVersions,
     restoredRows: restored.length,
     rows: rows.length,
+    portableArchiveWriterSha256: archiveWriter.sha256,
     repositoryContractCases: repositoryCases.length,
     repositoryContractSuite: repositoryContracts.run.suiteName,
     repositoryContractVersion: repositoryContracts.manifest.schemaVersion,
@@ -186,6 +188,8 @@ try {
     proof.repositoryContractCases !== 18 ||
     proof.repositoryContractSuite !== repositoryContracts.manifest.suiteName ||
     proof.repositoryContractVersion !== 3 ||
+    proof.portableArchiveWriterSha256 !==
+      "47b18f1854ae6a608cffb4753895afc0fead06f3399818326e61142579a5fcde" ||
     !Array.isArray(repositoryContracts.run.completedCases) ||
     repositoryContracts.run.completedCases.length !== repositoryCases.length ||
     repositoryContracts.run.completedCases.some(

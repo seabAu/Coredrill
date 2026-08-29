@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "inventoryId": "JW-DI-001",
-  "version": "1.17.0",
-  "reviewedAt": "2026-08-29T15:20:03Z",
+  "version": "1.18.0",
+  "reviewedAt": "2026-08-29T22:01:44Z",
   "scope": {
     "included": [
       "Pinned Node.js, pnpm, and Rust foundation toolchains",
@@ -17,7 +17,7 @@
   },
   "lockfile": {
     "path": "pnpm-lock.yaml",
-    "sha256": "60c3e35de7f71cc0bc4bb877d35c9f0312d89e1b92d0700b752fd844a8ff293b"
+    "sha256": "187bd9086e029157a638b2a184ce96cdd89ac3a78a4760eb75290c6952b1b405"
   },
   "toolchains": [
     {
@@ -647,6 +647,20 @@
       "selectionNote": "The official SQLite npm subproject provides browser-side SQLite 3.53.0 WASM and the documented opfs-sahpool VFS; no wrapper, ORM, or alternative database implementation is introduced."
     },
     {
+      "manifest": "packages/storage-core/package.json",
+      "dependencyType": "dependencies",
+      "name": "fflate",
+      "version": "0.8.3",
+      "upstreamLatest": "0.8.3",
+      "selectionStatus": "current",
+      "license": "MIT",
+      "maintainers": ["101arrowz"],
+      "repository": "https://github.com/101arrowz/fflate",
+      "metadataSource": "https://registry.npmjs.org/fflate/0.8.3",
+      "knownAdvisories": [],
+      "selectionNote": "Dependency-free fflate 0.8.3 was published at 2026-05-16T00:14:03.449Z. Storage-core uses its browser/Node-compatible ZIP writer with fixed metadata and store mode for deterministic local archives; 0.8.3 includes the upstream Zip64 extra-field buffer over-read fix and adds no encryption or network behavior."
+    },
+    {
       "manifest": "packages/storage-native/package.json",
       "dependencyType": "dependencies",
       "name": "@tauri-apps/api",
@@ -1026,9 +1040,9 @@
   "advisoryReview": {
     "command": "pnpm audit --json",
     "source": "https://pnpm.io/cli/audit",
-    "reviewedAt": "2026-08-29T15:20:03Z",
-    "lockfileSha256": "60c3e35de7f71cc0bc4bb877d35c9f0312d89e1b92d0700b752fd844a8ff293b",
-    "resolvedDependencyCount": 621,
+    "reviewedAt": "2026-08-29T22:01:44Z",
+    "lockfileSha256": "187bd9086e029157a638b2a184ce96cdd89ac3a78a4760eb75290c6952b1b405",
+    "resolvedDependencyCount": 622,
     "optionalDependencyCount": 82,
     "vulnerabilities": {
       "info": 0,
@@ -1040,11 +1054,11 @@
   },
   "licenseReview": {
     "command": "pnpm check:licenses",
-    "reviewedAt": "2026-08-29T15:20:03Z",
-    "lockfileSha256": "60c3e35de7f71cc0bc4bb877d35c9f0312d89e1b92d0700b752fd844a8ff293b",
+    "reviewedAt": "2026-08-29T22:01:44Z",
+    "lockfileSha256": "187bd9086e029157a638b2a184ce96cdd89ac3a78a4760eb75290c6952b1b405",
     "resolvedPackageRecords": 354,
     "result": "pass",
-    "note": "License records and advisory dependency counts use different tool scopes and are not expected to match. The application shell adds reviewed MIT Tailwind CSS and Radix UI dependencies; the exact graph contains 621 external resolutions and 354 license records."
+    "note": "License records and advisory dependency counts use different tool scopes and are not expected to match. The application shell uses reviewed MIT Tailwind CSS and Radix UI dependencies; the archive writer adds dependency-free MIT fflate 0.8.3. The exact graph contains 622 external resolutions and 354 license records."
   },
   "maintenanceWatch": [
     {
