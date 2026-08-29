@@ -274,7 +274,8 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
   browser SQLite evidence. The SQLite database remains the lossless restore
   source; runtime, migration, derived-search, and diagnostic tables are
   explicitly excluded from the inspectable projections. See [portable data
-  export version 1](portable-data-export-v1.md).
+  export version 1](portable-data-export-v1.md) and [human-readable export
+  verification](../../proof/phase-1-human-readable-data-export-verification.md).
 
 ### D-052 — Future sync is opt-in and encrypted
 
