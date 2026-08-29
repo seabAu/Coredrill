@@ -123,6 +123,8 @@ interface DatabasePort extends DatabaseSession {
 
 `APP-005` adds adapter-neutral Pipeline counts, ordered board groups, one stable keyset paginator shared by table and board, and the detailed job-workspace DTO. Every query is bound to an application-owned snapshot instant and validates returned order, cursor, uniqueness, aggregate counts, archive/filter scope, and cross-entity relationships before exposing copied immutable data. The port is read-only and has no mutation or network capability. Concrete browser/native query composition remains outside this application slice. See [Pipeline query application verification](../../proof/phase-1-pipeline-query-application-verification.md).
 
+`APP-006` adds adapter-neutral saved job-view commands in `@coredrill/search-filter`, the package already assigned the filter AST, SQL compiler, and saved views. It reuses the shared application command/result primitives without reversing the application package dependency boundary. Create/update validate the versioned filter plus exact presentation/sort/group settings before a local port call; duplicate accepts no caller-supplied copied AST; archive is an optimistic timestamped update rather than deletion. Returned records are revalidated and deeply frozen. Concrete browser/native port composition remains outside this slice. See [saved job-view application verification](../../proof/phase-1-saved-job-view-application-verification.md).
+
 `PortableDatabase` is the adapter-neutral database-byte/checksum/schema-version handoff. Archive assembly adds the versioned manifest, human-readable JSON/CSV data, attachment inventory, migration history, per-entry SHA-256 checksums, and explicit encryption state required by the portable-archive contract.
 
 ### Browser adapter
