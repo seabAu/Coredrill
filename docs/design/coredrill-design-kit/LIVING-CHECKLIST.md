@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-29
 Current milestone: Phase 1 — local tracker and recovery loop (`GATE-0` human validation remains blocked)
-Current work item: `UI-003` — Quick start, Guided setup, and disposable demo-vault isolation
-Next recommended slice: `UI-004` — Home attention queue, due actions, recent items, and optional snapshot
+Current work item: `UI-004` — Home attention queue, due actions, recent items, and optional snapshot
+Next recommended slice: `UI-005` — Pipeline header, view switch, filters, saved views, and bulk-action shell
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `UI-004` — Home attention queue, due actions, recent i
 | Field | Value |
 |---|---|
 | Milestone | Phase 1, with the independent Phase 0 human-validation gate retained below |
-| Item range | `UI-003` |
+| Item range | `UI-004` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-29 |
-| Expected proof | E2E paths for both skippable first-run tracks, safe local defaults, first-job/review convergence, and disposable demo-vault isolation |
+| Expected proof | Component and E2E coverage for Now, Needs attention, This week, optional snapshot, recent items, empty Home, and responsive local actions |
 | Blocker | None for this slice. `UXR-004` through `UXR-008` still require the owner-authorized participant study before the Phase 1 UI lock; `FND-001` remains independently blocked. |
-| Next handoff | Implement and prove `UI-003`, then continue to `UI-004` without claiming `GATE-0` or locking provisional onboarding/interface language. |
+| Next handoff | Implement and prove `UI-004`, then continue to `UI-005` without claiming `GATE-0` or locking provisional navigation language. |
 
 ## Milestone status
 
@@ -174,7 +174,7 @@ Next recommended slice: `UI-004` — Home attention queue, due actions, recent i
 
 - [x] **UI-001** Implement design tokens, themes, density modes, typography, icon wrapper, focus styles, and reduced motion. — Proof: [component catalog, contrast report, accessibility checks, and hosted artifacts](../../proof/phase-1-ui-foundations-verification.md)
 - [x] **UI-002** Implement responsive application shell, navigation, vault health, global search, command menu, and Add menu. — Proof: [responsive application-shell, accessibility, and hosted artifact verification](../../proof/phase-1-application-shell-verification.md)
-- [ ] **UI-003** Implement Quick start and Guided setup with disposable demo vault. — Proof: _E2E paths_
+- [x] **UI-003** Implement Quick start and Guided setup with disposable demo vault. — Proof: [local-first paths, deferral, accessibility, and demo-vault isolation verification](../../proof/phase-1-onboarding-verification.md)
 - [ ] **UI-004** Implement Home attention queue, due actions, recent items, and optional snapshot. — Proof: _component/E2E tests_
 - [ ] **UI-005** Implement Pipeline header, view switch, filter chips, saved views, and selection/bulk-action shell. — Proof: _E2E tests_
 - [ ] **UI-006** Implement accessible Board with drag, keyboard move, semantic stages, undo, and virtualization. — Proof: _keyboard/screen-reader/E2E report_
