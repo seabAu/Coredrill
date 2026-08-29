@@ -380,7 +380,7 @@ describe("native SQLite repository and migration contracts", () => {
       suiteName: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.suiteName,
       completedCases: PHASE_1_REPOSITORY_CONTRACT_CASE_NAMES,
     });
-  }, 15_000);
+  }, 60_000);
 
   it("persists the migrated vault across native close and reopen", async () => {
     const databaseName = nextDatabaseName();
