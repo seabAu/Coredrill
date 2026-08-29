@@ -13,6 +13,7 @@ import {
   DEFAULT_PIPELINE_TABLE_COLUMNS,
   getRootAppearanceAttributes,
   isJobWorkspaceContentTab,
+  matchesLocalSearchQuery,
   type DensityMode,
   type HomeDashboardActionId,
   type HomeDashboardModel,
@@ -61,6 +62,8 @@ interface AppShellCatalogState {
   readonly homeSnapshotVisible: boolean;
   readonly lastActivity: string;
   readonly networkInteractionDraftCount: number;
+  readonly networkSelectedCompanyId: string | null;
+  readonly networkSelectedContactId: string | null;
   readonly networkTab: NetworkTabId;
   readonly pipelineFilterCount: number;
   readonly pipelineSavedViewId: string;
@@ -121,7 +124,15 @@ interface JobRouteState {
 
 type InitialLocation =
   | { readonly kind: "home" }
-  | { readonly kind: "network"; readonly tab: NetworkTabId }
+  | {
+      readonly kind: "network";
+      readonly recordId: string | null;
+      readonly tab: NetworkTabId;
+    }
+  | {
+      readonly destination: Exclude<ShellDestinationId, "home" | "network" | "pipeline">;
+      readonly kind: "destination";
+    }
   | {
       readonly kind: "pipeline";
       readonly savedViewId: string;
@@ -132,7 +143,8 @@ type InitialLocation =
 const PIPELINE_HISTORY_KIND = "coredrill-pipeline-v1";
 const JOB_HISTORY_KIND = "coredrill-job-v1";
 const JOB_ROUTE = /^\/jobs\/(?<jobId>[a-zA-Z0-9-]{1,128})\/(?<tab>[a-z-]{1,32})\/?$/u;
-const NETWORK_ROUTE = /^\/network\/(?<tab>companies|contacts|interactions)\/?$/u;
+const NETWORK_ROUTE =
+  /^\/network\/(?<tab>companies|contacts|interactions)(?:\/(?<recordId>[a-zA-Z0-9-]{1,128}))?\/?$/u;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === "object" && !Array.isArray(value);
@@ -153,7 +165,11 @@ const readInitialLocation = (): InitialLocation => {
   const networkMatch = NETWORK_ROUTE.exec(window.location.pathname);
   const networkTab = networkMatch?.groups?.["tab"];
   if (networkTab === "companies" || networkTab === "contacts" || networkTab === "interactions") {
-    return { kind: "network", tab: networkTab };
+    return {
+      kind: "network",
+      recordId: networkTab === "interactions" ? null : (networkMatch?.groups?.["recordId"] ?? null),
+      tab: networkTab,
+    };
   }
   if (window.location.pathname === "/pipeline") {
     const parameters = new URLSearchParams(window.location.search);
@@ -163,6 +179,18 @@ const readInitialLocation = (): InitialLocation => {
       savedViewId: parameters.get("savedView") ?? "active-search",
       view: isPipelineView(view) ? view : "board",
     };
+  }
+  if (window.location.pathname.startsWith("/documents")) {
+    return { destination: "documents", kind: "destination" };
+  }
+  if (window.location.pathname.startsWith("/profile")) {
+    return { destination: "profile", kind: "destination" };
+  }
+  if (window.location.pathname.startsWith("/insights")) {
+    return { destination: "insights", kind: "destination" };
+  }
+  if (window.location.pathname.startsWith("/settings")) {
+    return { destination: "settings", kind: "destination" };
   }
   return { kind: "home" };
 };
@@ -282,7 +310,18 @@ const pipelineUrl = (view: PipelineViewId, savedViewId: string): string => {
 
 const jobUrl = (jobId: string, tab: JobWorkspaceTabId): string => `/jobs/${jobId}/${tab}`;
 
-const networkUrl = (tab: NetworkTabId): string => `/network/${tab}`;
+const networkUrl = (tab: NetworkTabId, recordId: string | null = null): string =>
+  `/network/${tab}${recordId === null ? "" : `/${recordId}`}`;
+
+const DESTINATION_URLS: Readonly<Record<ShellDestinationId, string>> = Object.freeze({
+  documents: "/documents",
+  home: "/app-shell.html",
+  insights: "/insights/pipeline",
+  network: "/network/companies",
+  pipeline: "/pipeline?view=board",
+  profile: "/profile/basics",
+  settings: "/settings/vault-backup",
+});
 
 const navigationWasReloaded = (): boolean =>
   performance
@@ -291,29 +330,36 @@ const navigationWasReloaded = (): boolean =>
 
 const SEARCH_RESULTS = Object.freeze([
   {
-    context: "Senior Product Designer · Interviewing",
-    href: "/jobs/00000000-0000-4000-8000-000000000101/overview",
+    context: "Northstar Health · Interviewing",
+    href: "/jobs/board-northstar/overview",
     id: "search-job-northstar",
     kind: "job",
-    title: "Northstar Health",
+    title: "Product Operations Lead",
   },
   {
-    context: "Platform Engineer · Preparing",
-    href: "/jobs/00000000-0000-4000-8000-000000000102/overview",
+    context: "Canvas Works · Preparing",
+    href: "/jobs/board-canvas/overview",
     id: "search-job-canvas",
     kind: "job",
-    title: "Canvas Works",
+    title: "Platform Engineer",
   },
   {
     context: "Company · 2 saved roles",
-    href: "/network/companies/00000000-0000-4000-8000-000000000201",
+    href: "/network/companies/company-acme",
     id: "search-company-acme",
     kind: "company",
     title: "Acme Research",
   },
   {
+    context: "Northstar Health · Director, Product Operations",
+    href: "/network/contacts/contact-maya",
+    id: "search-contact-maya",
+    kind: "contact",
+    title: "Maya Chen",
+  },
+  {
     context: "Resume · Edited 2 days ago",
-    href: "/documents/00000000-0000-4000-8000-000000000301",
+    href: "/documents/document-product-base",
     id: "search-document-product",
     kind: "document",
     title: "Product leadership base",
@@ -1150,7 +1196,9 @@ const AppShellCatalog = () => {
       ? "pipeline"
       : initialLocation.kind === "network"
         ? "network"
-        : "home",
+        : initialLocation.kind === "destination"
+          ? initialLocation.destination
+          : "home",
   );
   const [boardAnnouncement, setBoardAnnouncement] = useState("");
   const [boardColumns, setBoardColumns] = useState<readonly BoardColumn[]>(
@@ -1162,6 +1210,20 @@ const AppShellCatalog = () => {
   const [networkInteractionDraftCount, setNetworkInteractionDraftCount] = useState(0);
   const [networkTab, setNetworkTab] = useState<NetworkTabId>(
     initialLocation.kind === "network" ? initialLocation.tab : "companies",
+  );
+  const [networkSelectedCompanyId, setNetworkSelectedCompanyId] = useState<string | null>(
+    initialLocation.kind === "network" &&
+      initialLocation.tab === "companies" &&
+      NETWORK_MODEL.companies.some(({ id }) => id === initialLocation.recordId)
+      ? initialLocation.recordId
+      : null,
+  );
+  const [networkSelectedContactId, setNetworkSelectedContactId] = useState<string | null>(
+    initialLocation.kind === "network" &&
+      initialLocation.tab === "contacts" &&
+      NETWORK_MODEL.contacts.some(({ id }) => id === initialLocation.recordId)
+      ? initialLocation.recordId
+      : null,
   );
   const [pipelineFilters, setPipelineFilters] = useState<readonly PipelineFilterChip[]>(
     initialPipelineSnapshot?.filters ?? INITIAL_PIPELINE_FILTERS,
@@ -1207,9 +1269,48 @@ const AppShellCatalog = () => {
       : homeSnapshotVisible
         ? READY_HOME_MODEL
         : Object.freeze({ ...READY_HOME_MODEL, snapshot: null });
-  const boardMatchingCount = boardColumns.reduce((count, column) => count + column.items.length, 0);
-  const pipelineMatchingCount = pipelineView === "table" ? tableRows.length : boardMatchingCount;
-  const pipelineSelectedCount = pipelineSelectedJobIds.length;
+  const filteredBoardColumns = useMemo(
+    () =>
+      Object.freeze(
+        boardColumns.map((column) =>
+          Object.freeze({
+            ...column,
+            items: Object.freeze(
+              column.items.filter((job) =>
+                matchesLocalSearchQuery([job.title, job.company], pipelineSearchQuery),
+              ),
+            ),
+          }),
+        ),
+      ),
+    [boardColumns, pipelineSearchQuery],
+  );
+  const filteredTableRows = useMemo(
+    () =>
+      Object.freeze(
+        tableRows.filter((job) =>
+          matchesLocalSearchQuery([job.title, job.company], pipelineSearchQuery),
+        ),
+      ),
+    [pipelineSearchQuery, tableRows],
+  );
+  const boardTotalCount = boardColumns.reduce((count, column) => count + column.items.length, 0);
+  const boardMatchingCount = filteredBoardColumns.reduce(
+    (count, column) => count + column.items.length,
+    0,
+  );
+  const visiblePipelineJobIds = new Set(
+    pipelineView === "board"
+      ? filteredBoardColumns.flatMap(({ items }) => items.map(({ id }) => id))
+      : filteredTableRows.map(({ id }) => id),
+  );
+  const visiblePipelineSelectedJobIds = pipelineSelectedJobIds.filter((id) =>
+    visiblePipelineJobIds.has(id),
+  );
+  const pipelineMatchingCount =
+    pipelineView === "board" ? boardMatchingCount : filteredTableRows.length;
+  const pipelineTotalCount = pipelineView === "board" ? boardTotalCount : tableRows.length;
+  const pipelineSelectedCount = visiblePipelineSelectedJobIds.length;
   const tableConfiguration =
     tableConfigurations[pipelineSavedViewId] ?? DEFAULT_PIPELINE_TABLE_COLUMNS;
   const workspaceJob =
@@ -1247,7 +1348,7 @@ const AppShellCatalog = () => {
     searchQuery: pipelineSearchQuery,
     selectedCount: pipelineSelectedCount,
     sortLabel: "Recently updated",
-    totalCount: pipelineMatchingCount + 4,
+    totalCount: pipelineTotalCount,
   });
 
   useEffect(() => {
@@ -1278,6 +1379,8 @@ const AppShellCatalog = () => {
           homeSnapshotVisible,
           lastActivity,
           networkInteractionDraftCount,
+          networkSelectedCompanyId,
+          networkSelectedContactId,
           networkTab,
           pipelineFilterCount: pipelineFilters.length,
           pipelineSavedViewId,
@@ -1302,6 +1405,8 @@ const AppShellCatalog = () => {
     homeSnapshotVisible,
     lastActivity,
     networkInteractionDraftCount,
+    networkSelectedCompanyId,
+    networkSelectedContactId,
     networkTab,
     pipelineFilters.length,
     pipelineSavedViewId,
@@ -1506,6 +1611,18 @@ const AppShellCatalog = () => {
   };
 
   const recordNetworkAction = (request: NetworkActionRequest): void => {
+    if (request.id === "select-company" && request.targetId !== undefined) {
+      setNetworkSelectedCompanyId(request.targetId);
+      if (networkTab === "companies") {
+        window.history.replaceState(null, "", networkUrl("companies", request.targetId));
+      }
+    }
+    if (request.id === "select-contact" && request.targetId !== undefined) {
+      setNetworkSelectedContactId(request.targetId);
+      if (networkTab === "contacts") {
+        window.history.replaceState(null, "", networkUrl("contacts", request.targetId));
+      }
+    }
     if (request.id === "log-interaction") {
       setNetworkInteractionDraftCount((count) => count + 1);
       setLastActivity(
@@ -1528,6 +1645,62 @@ const AppShellCatalog = () => {
     );
   };
 
+  const openGlobalSearchResult = (result: LocalSearchResult): void => {
+    if (result.kind === "job") {
+      const match = JOB_ROUTE.exec(result.href);
+      const jobId = match?.groups?.["jobId"];
+      const tab = match?.groups?.["tab"];
+      if (
+        jobId === undefined ||
+        !isJobWorkspaceTab(tab) ||
+        !tableRows.some(({ id }) => id === jobId)
+      ) {
+        setLastActivity("The selected local job destination is unavailable.");
+        return;
+      }
+      window.history.pushState(
+        { kind: JOB_HISTORY_KIND, mode: "full-page", snapshot: null },
+        "",
+        result.href,
+      );
+      setActiveDestination("pipeline");
+      setWorkspaceRoute({
+        jobId,
+        mode: "full-page",
+        responsiveContextual: false,
+        returnSnapshot: null,
+        tab,
+      });
+    } else if (result.kind === "company") {
+      const companyId = result.href.split("/").filter(Boolean).at(-1) ?? "";
+      if (!NETWORK_MODEL.companies.some(({ id }) => id === companyId)) {
+        setLastActivity("The selected local company destination is unavailable.");
+        return;
+      }
+      window.history.pushState(null, "", result.href);
+      setWorkspaceRoute(null);
+      setActiveDestination("network");
+      setNetworkSelectedCompanyId(companyId);
+      setNetworkTab("companies");
+    } else if (result.kind === "contact") {
+      const contactId = result.href.split("/").filter(Boolean).at(-1) ?? "";
+      if (!NETWORK_MODEL.contacts.some(({ id }) => id === contactId)) {
+        setLastActivity("The selected local contact destination is unavailable.");
+        return;
+      }
+      window.history.pushState(null, "", result.href);
+      setWorkspaceRoute(null);
+      setActiveDestination("network");
+      setNetworkSelectedContactId(contactId);
+      setNetworkTab("contacts");
+    } else {
+      window.history.pushState(null, "", result.href);
+      setWorkspaceRoute(null);
+      setActiveDestination("documents");
+    }
+    setLastActivity(`Opened local ${result.kind}: ${result.title}.`);
+  };
+
   const navigateDestination = (destination: ShellDestinationId): void => {
     setWorkspaceRoute(null);
     setActiveDestination(destination);
@@ -1538,14 +1711,12 @@ const AppShellCatalog = () => {
         pipelineUrl(pipelineView, pipelineSavedViewId),
       );
     } else if (destination === "network") {
+      setNetworkSelectedCompanyId(null);
+      setNetworkSelectedContactId(null);
       setNetworkTab("companies");
       window.history.pushState(null, "", networkUrl("companies"));
-    } else if (
-      window.location.pathname.startsWith("/jobs/") ||
-      window.location.pathname === "/pipeline" ||
-      window.location.pathname.startsWith("/network/")
-    ) {
-      window.history.pushState(null, "", "/app-shell.html");
+    } else {
+      window.history.pushState(null, "", DESTINATION_URLS[destination]);
     }
     setLastActivity(`Opened ${PAGE_COPY[destination].title} locally.`);
   };
@@ -1573,6 +1744,18 @@ const AppShellCatalog = () => {
       setWorkspaceRoute(null);
       if (location.kind === "network") {
         setActiveDestination("network");
+        setNetworkSelectedCompanyId(
+          location.tab === "companies" &&
+            NETWORK_MODEL.companies.some(({ id }) => id === location.recordId)
+            ? location.recordId
+            : null,
+        );
+        setNetworkSelectedContactId(
+          location.tab === "contacts" &&
+            NETWORK_MODEL.contacts.some(({ id }) => id === location.recordId)
+            ? location.recordId
+            : null,
+        );
         setNetworkTab(location.tab);
         setLastActivity(`Restored local Network history at ${location.tab}.`);
       } else if (location.kind === "pipeline") {
@@ -1589,6 +1772,9 @@ const AppShellCatalog = () => {
           restorePipelineSnapshot(snapshot);
         }
         setLastActivity("Restored the exact local Pipeline return context.");
+      } else if (location.kind === "destination") {
+        setActiveDestination(location.destination);
+        setLastActivity(`Restored ${PAGE_COPY[location.destination].title} locally.`);
       } else {
         setActiveDestination("home");
         setLastActivity("Returned to Home locally.");
@@ -1792,9 +1978,7 @@ const AppShellCatalog = () => {
       inboxCount={3}
       onAction={recordAction}
       onNavigate={navigateDestination}
-      onSearchResult={(result) => {
-        setLastActivity(`Opened local ${result.kind}: ${result.title}.`);
-      }}
+      onSearchResult={openGlobalSearchResult}
       outboxCount={2}
       searchResults={SEARCH_RESULTS}
       vault={{ health: appearance.vaultHealth, kind: "browser", name: "Job search 2026" }}
@@ -1904,7 +2088,7 @@ const AppShellCatalog = () => {
                 {pipelineView === "board" ? (
                   <PipelineBoard
                     announcement={boardAnnouncement}
-                    columns={boardColumns}
+                    columns={filteredBoardColumns}
                     onMoveRequest={requestBoardMove}
                     onOpenJob={(job) => {
                       openJobWorkspace(job.id, "board");
@@ -1944,8 +2128,8 @@ const AppShellCatalog = () => {
                         `${selected ? "Selected" : "Cleared"} ${job.title} for local bulk actions.`,
                       );
                     }}
-                    rows={tableRows}
-                    selectedJobIds={pipelineSelectedJobIds}
+                    rows={filteredTableRows}
+                    selectedJobIds={visiblePipelineSelectedJobIds}
                     statusOptions={TABLE_STATUS_OPTIONS}
                     viewName={
                       PIPELINE_SAVED_VIEWS.find(({ id }) => id === pipelineSavedViewId)?.label ??
@@ -1983,6 +2167,8 @@ const AppShellCatalog = () => {
             model={NETWORK_MODEL}
             onAction={recordNetworkAction}
             onTabChange={changeNetworkTab}
+            selectedCompanyId={networkSelectedCompanyId}
+            selectedContactId={networkSelectedContactId}
           />
         ) : (
           <section className="cd-shell-page-card min-h-72" aria-labelledby="destination-heading">

@@ -1,6 +1,7 @@
 import { useId, type ReactNode } from "react";
 
 import { Icon } from "./icon.js";
+import { LOCAL_SEARCH_LIMITS } from "./local-search.js";
 
 export const PIPELINE_VIEW_IDS = Object.freeze(["inbox", "board", "table", "discover"] as const);
 export type PipelineViewId = (typeof PIPELINE_VIEW_IDS)[number];
@@ -202,18 +203,22 @@ export const PipelineShell = ({
       </div>
 
       <div className="cd-pipeline-query-row">
-        <label className="cd-pipeline-search">
-          <Icon decorative name="search" size={18} />
-          <span className="cd-visually-hidden">Search jobs</span>
-          <input
-            onChange={(event) => {
-              onSearchQueryChange?.(event.target.value);
-            }}
-            placeholder="Search jobs…"
-            type="search"
-            value={model.searchQuery}
-          />
-        </label>
+        <div className="cd-pipeline-search-control">
+          <label className="cd-pipeline-search">
+            <Icon decorative name="search" size={18} />
+            <span className="cd-visually-hidden">Search jobs and companies</span>
+            <input
+              maxLength={LOCAL_SEARCH_LIMITS.maximumQueryCharacters}
+              onChange={(event) => {
+                onSearchQueryChange?.(event.target.value);
+              }}
+              placeholder="Search jobs and companies…"
+              type="search"
+              value={model.searchQuery}
+            />
+          </label>
+          <span className="cd-pipeline-search-scope">Current Pipeline · jobs and companies</span>
+        </div>
         <div aria-label="Active Pipeline filters" className="cd-pipeline-filter-list">
           {model.filters.length === 0 ? (
             <span className="cd-pipeline-no-filters">No active filters</span>
@@ -293,7 +298,7 @@ export const PipelineShell = ({
             <p className="cd-eyebrow">{activeView.label} view</p>
             <h3>{activeView.description}</h3>
           </div>
-          <p>
+          <p aria-live="polite">
             <strong>{String(model.matchingCount)}</strong> matching of {String(model.totalCount)}
           </p>
         </div>

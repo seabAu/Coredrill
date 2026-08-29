@@ -967,6 +967,17 @@ textarea {
   color: var(--color-text-muted);
 }
 
+.cd-pipeline-search-control {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.cd-pipeline-search-scope {
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-metadata);
+}
+
 .cd-pipeline-search:focus-within {
   outline: 3px solid var(--color-focus);
   outline-offset: 2px;
@@ -3394,6 +3405,19 @@ textarea {
   font-size: var(--font-size-metadata);
 }
 
+.cd-command-scope {
+  display: flex;
+  gap: var(--space-2);
+  align-items: baseline;
+  padding: var(--space-2) var(--space-1) 0;
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-metadata);
+}
+
+.cd-command-scope strong {
+  color: var(--color-text-muted);
+}
+
 .cd-command-list {
   display: grid;
   gap: var(--space-1);
@@ -3415,6 +3439,7 @@ textarea {
   color: var(--color-text);
   cursor: pointer;
   text-align: left;
+  text-decoration: none;
 }
 
 .cd-command-result:hover,

@@ -46,7 +46,9 @@ describe("PipelineShell contract", () => {
     expect(markup).toContain("Active search");
     expect(markup).toContain("Remove filter Status · Active");
     expect(markup).toContain("Remove filter Priority · High");
-    expect(markup).toContain("Search jobs…");
+    expect(markup).toContain("Search jobs and companies…");
+    expect(markup).toContain("Current Pipeline · jobs and companies");
+    expect(markup).toContain('maxLength="512"');
     expect(markup).toContain('data-pipeline-view="board"');
     expect(markup).toContain("8</strong> matching of 12");
     expect(markup).not.toContain("jobs selected");

@@ -1,4 +1,4 @@
-import { useId, useState, type SyntheticEvent } from "react";
+import { useEffect, useId, useState, type SyntheticEvent } from "react";
 
 export const NETWORK_TABS = Object.freeze(["companies", "contacts", "interactions"] as const);
 export type NetworkTabId = (typeof NETWORK_TABS)[number];
@@ -131,6 +131,8 @@ export interface NetworkWorkspaceProps {
   readonly model: NetworkWorkspaceModel;
   readonly onAction?: (request: NetworkActionRequest) => void;
   readonly onTabChange?: (tab: NetworkTabId) => void;
+  readonly selectedCompanyId?: string | null;
+  readonly selectedContactId?: string | null;
 }
 
 const CONTACT_POINT_KINDS = new Set<NetworkContactPoint["kind"]>([
@@ -272,15 +274,20 @@ export const isNetworkTab = (value: string): value is NetworkTabId =>
 const displayValue = (value: string | null): string => value ?? "Not recorded";
 
 const CompaniesPanel = ({
+  initialCompanyId,
   model,
   onAction,
   onOpenContact,
 }: {
+  readonly initialCompanyId: string | null;
   readonly model: NetworkWorkspaceModel;
   readonly onAction: NetworkWorkspaceProps["onAction"];
   readonly onOpenContact: (contactId: string) => void;
 }) => {
-  const [selectedId, setSelectedId] = useState(model.companies[0]?.id ?? null);
+  const [selectedId, setSelectedId] = useState(initialCompanyId ?? model.companies[0]?.id ?? null);
+  useEffect(() => {
+    setSelectedId(initialCompanyId ?? model.companies[0]?.id ?? null);
+  }, [initialCompanyId, model.companies]);
   const selected = model.companies.find(({ id }) => id === selectedId) ?? null;
   const contacts = model.contacts.filter(({ companyId }) => companyId === selected?.id);
   const interactionCount = model.interactions.filter(
@@ -531,6 +538,9 @@ const ContactsPanel = ({
   readonly onOpenInteractions: () => void;
 }) => {
   const [selectedId, setSelectedId] = useState(initialContactId ?? model.contacts[0]?.id ?? null);
+  useEffect(() => {
+    setSelectedId(initialContactId ?? model.contacts[0]?.id ?? null);
+  }, [initialContactId, model.contacts]);
   const selected = model.contacts.find(({ id }) => id === selectedId) ?? null;
   const company = model.companies.find(({ id }) => id === selected?.companyId);
   const interactions = model.interactions.filter(({ contactId }) => contactId === selected?.id);
@@ -898,9 +908,17 @@ export const NetworkWorkspace = ({
   model,
   onAction,
   onTabChange,
+  selectedCompanyId = null,
+  selectedContactId = null,
 }: NetworkWorkspaceProps) => {
   validateModel(model);
   if (!isNetworkTab(activeTab)) throw new RangeError("Network workspace tab is invalid.");
+  if (
+    (selectedCompanyId !== null && !model.companies.some(({ id }) => id === selectedCompanyId)) ||
+    (selectedContactId !== null && !model.contacts.some(({ id }) => id === selectedContactId))
+  ) {
+    throw new RangeError("Network workspace selection is invalid.");
+  }
   const [contactFromCompany, setContactFromCompany] = useState<string | null>(null);
 
   return (
@@ -923,6 +941,7 @@ export const NetworkWorkspace = ({
 
       {activeTab === "companies" ? (
         <CompaniesPanel
+          initialCompanyId={selectedCompanyId}
           model={model}
           onAction={onAction}
           onOpenContact={(contactId) => {
@@ -933,7 +952,7 @@ export const NetworkWorkspace = ({
         />
       ) : activeTab === "contacts" ? (
         <ContactsPanel
-          initialContactId={contactFromCompany}
+          initialContactId={selectedContactId ?? contactFromCompany}
           model={model}
           onAction={onAction}
           onOpenInteractions={() => {

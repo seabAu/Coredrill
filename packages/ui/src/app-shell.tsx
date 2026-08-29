@@ -11,6 +11,9 @@ import {
 } from "react";
 
 import { Icon, type UiIconName } from "./icon.js";
+import { LOCAL_SEARCH_LIMITS, searchLocalResults, type LocalSearchResult } from "./local-search.js";
+
+export type { LocalSearchResult } from "./local-search.js";
 
 export const PRIMARY_DESTINATION_IDS = Object.freeze([
   "home",
@@ -140,14 +143,6 @@ export interface VaultStatus {
   readonly health: VaultHealthState;
   readonly kind: VaultKind;
   readonly name: string;
-}
-
-export interface LocalSearchResult {
-  readonly context: string;
-  readonly href: string;
-  readonly id: string;
-  readonly kind: "company" | "contact" | "document" | "job";
-  readonly title: string;
 }
 
 export interface ApplicationShellProps {
@@ -354,6 +349,7 @@ export const ApplicationShell = ({
   const [searchQuery, setSearchQuery] = useState("");
   const commandTriggerRef = useRef<HTMLButtonElement>(null);
   const dialogReturnFocusRef = useRef<HTMLButtonElement | null>(null);
+  const searchListRef = useRef<HTMLDivElement>(null);
   const searchTriggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -396,11 +392,7 @@ export const ApplicationShell = ({
   }, []);
 
   const visibleSearchResults = useMemo(() => {
-    const normalized = searchQuery.trim().toLocaleLowerCase();
-    if (normalized.length === 0) return searchResults;
-    return searchResults.filter(({ context, kind, title }) =>
-      `${kind} ${title} ${context}`.toLocaleLowerCase().includes(normalized),
-    );
+    return searchLocalResults(searchResults, searchQuery);
   }, [searchQuery, searchResults]);
 
   const visibleCommands = useMemo(() => {
@@ -433,6 +425,32 @@ export const ApplicationShell = ({
     event.preventDefault();
     const offset = event.key === "ArrowDown" ? 1 : -1;
     links[(activeIndex + offset + links.length) % links.length]?.focus();
+  };
+
+  const focusSearchResult = (position: "first" | "last"): void => {
+    const links = searchListRef.current?.querySelectorAll<HTMLAnchorElement>("a[href]");
+    if (links === undefined || links.length === 0) return;
+    links[position === "first" ? 0 : links.length - 1]?.focus();
+  };
+
+  const handleSearchResultKey = (event: ReactKeyboardEvent<HTMLAnchorElement>): void => {
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+    const links = [
+      ...(searchListRef.current?.querySelectorAll<HTMLAnchorElement>("a[href]") ?? []),
+    ];
+    const currentIndex = links.indexOf(event.currentTarget);
+    if (currentIndex < 0 || links.length === 0) return;
+    event.preventDefault();
+    if (event.key === "Home") {
+      links[0]?.focus();
+      return;
+    }
+    if (event.key === "End") {
+      links.at(-1)?.focus();
+      return;
+    }
+    const offset = event.key === "ArrowDown" ? 1 : -1;
+    links[(currentIndex + offset + links.length) % links.length]?.focus();
   };
 
   const health = VAULT_HEALTH_COPY[vault.health];
@@ -682,35 +700,53 @@ export const ApplicationShell = ({
                     autoFocus
                     className="cd-command-input"
                     id="coredrill-global-search"
+                    maxLength={LOCAL_SEARCH_LIMITS.maximumQueryCharacters}
                     onChange={(event) => {
                       setSearchQuery(event.target.value);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+                      event.preventDefault();
+                      focusSearchResult(event.key === "ArrowDown" ? "first" : "last");
                     }}
                     placeholder="Company, role, contact, or document"
                     type="search"
                     value={searchQuery}
                   />
                 </div>
+                <div className="cd-command-scope">
+                  <span>Scope</span>
+                  <strong>All local records</strong>
+                </div>
                 <div aria-live="polite" className="cd-command-result-count">
                   {visibleSearchResults.length} local result
                   {visibleSearchResults.length === 1 ? "" : "s"}
                 </div>
-                <div aria-label="Local search results" className="cd-command-list">
+                <div
+                  aria-label="Local search results"
+                  className="cd-command-list"
+                  ref={searchListRef}
+                >
                   {visibleSearchResults.map((result) => (
-                    <button
+                    <a
                       className="cd-command-result"
+                      data-search-kind={result.kind}
+                      href={result.href}
                       key={result.id}
-                      onClick={() => {
+                      onClick={(event) => {
+                        if (onSearchResult === undefined) return;
+                        event.preventDefault();
                         setActiveOverlay(null);
-                        onSearchResult?.(result);
+                        onSearchResult(result);
                       }}
-                      type="button"
+                      onKeyDown={handleSearchResultKey}
                     >
                       <span>
                         <strong>{result.title}</strong>
                         <small>{result.context}</small>
                       </span>
                       <span className="cd-result-kind">{result.kind}</span>
-                    </button>
+                    </a>
                   ))}
                   {visibleSearchResults.length === 0 ? (
                     <p className="cd-command-empty">

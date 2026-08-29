@@ -160,11 +160,11 @@ test("Pipeline switches peer presentations while saved views, filters, search, a
     "aria-pressed",
     "true",
   );
-  await expect(pipeline.getByText(/8 matching of 12/)).toBeVisible();
+  await expect(pipeline.getByText(/8 matching of 8/)).toBeVisible();
 
   await pipeline.getByRole("button", { name: "Table" }).click();
   await expect(pipeline.locator('[data-pipeline-view="table"]')).toBeVisible();
-  await expect(pipeline.getByText(/8 matching of 12/)).toBeVisible();
+  await expect(pipeline.getByText(/8 matching of 8/)).toBeVisible();
   expect((await page.evaluate(() => globalThis.coredrillAppShell?.getState()))?.pipelineView).toBe(
     "table",
   );
@@ -428,7 +428,7 @@ test("wide Pipeline opens a contextual Job route and restores exact Board contex
     .click();
 
   const pipeline = page.getByTestId("pipeline-shell");
-  await pipeline.getByRole("searchbox", { name: "Search jobs" }).fill("Northstar");
+  await pipeline.getByRole("searchbox", { name: "Search jobs" }).fill("Lead");
   const savedScroll = pipeline.getByRole("list", { name: "Saved jobs" });
   const verticalScroll = await savedScroll.evaluate((element) => {
     element.scrollTop = 520;
@@ -464,9 +464,9 @@ test("wide Pipeline opens a contextual Job route and restores exact Board contex
   await page.keyboard.press("Escape");
   await expect(workspace).toHaveCount(0);
   await expect(page).toHaveURL(/\/pipeline\?savedView=active-search&view=board$/u);
-  await expect(pipeline.getByRole("searchbox", { name: "Search jobs" })).toHaveValue("Northstar");
+  await expect(pipeline.getByRole("searchbox", { name: "Search jobs" })).toHaveValue("Lead");
   await expect(pipeline.getByRole("region", { name: "Bulk actions" })).toContainText(
-    "2 jobs selected",
+    "1 job selected",
   );
   await expect(opener).toBeFocused();
   await expect
@@ -729,11 +729,12 @@ test("Network relates companies, provenance-bound contacts, and local interactio
   await attachProof(page, testInfo, "network-interactions-local-log");
 
   await page.goBack();
-  await expect(page).toHaveURL(/\/network\/contacts$/u);
+  await expect(page).toHaveURL(/\/network\/contacts\/contact-jonah$/u);
   await expect(network.getByRole("button", { name: "Contacts" })).toHaveAttribute(
     "aria-current",
     "page",
   );
+  await expect(network.getByRole("heading", { name: "Jonah Reed" })).toBeVisible();
   await attachAxe(page, testInfo, "network-companies-contacts-interactions");
   await attachAriaSnapshot(network, testInfo, "network-companies-contacts-interactions");
   await attachProof(page, testInfo, "network-companies-contacts-interactions");
@@ -966,10 +967,42 @@ test("search, command, and Add surfaces restore focus and stay local", async ({ 
   await searchTrigger.click();
   const searchInput = page.getByRole("searchbox", { name: "Search local vault" });
   await expect(searchInput).toBeFocused();
-  await searchInput.fill("Northstar");
-  await expect(page.getByRole("button", { name: /Northstar Health/ })).toBeVisible();
+  await expect(page.getByText("All local records", { exact: true })).toBeVisible();
+  await searchInput.fill("acme research");
+  const companyResult = page.getByRole("link", { name: /Acme Research/ });
+  await expect(companyResult).toHaveAttribute("href", "/network/companies/company-acme");
+  await searchInput.press("ArrowDown");
+  await expect(companyResult).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(searchTrigger).toBeFocused();
+
+  await page.keyboard.press("Control+/");
+  await searchInput.fill("northstar lead");
+  const jobResult = page.getByRole("link", { name: /Product Operations Lead/ });
+  await expect(jobResult).toHaveAttribute("href", "/jobs/board-northstar/overview");
+  await searchInput.press("ArrowDown");
+  await expect(jobResult).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/jobs\/board-northstar\/overview$/u);
+  await expect(page.getByTestId("page-title")).toHaveText("Product Operations Lead");
+
+  await page.keyboard.press("Control+/");
+  await page.getByRole("searchbox", { name: "Search local vault" }).fill("maya chen");
+  await page.getByRole("link", { name: /Maya Chen/ }).click();
+  await expect(page).toHaveURL(/\/network\/contacts\/contact-maya$/u);
+  await expect(page.getByRole("heading", { name: "Maya Chen" })).toBeVisible();
+  await page.reload();
+  await page.waitForFunction(() => globalThis.coredrillAppShell !== undefined);
+  await expect(page.getByRole("heading", { name: "Maya Chen" })).toBeVisible();
+
+  await page.keyboard.press("Control+/");
+  await page.getByRole("searchbox", { name: "Search local vault" }).fill("product leadership");
+  await page.getByRole("link", { name: /Product leadership base/ }).click();
+  await expect(page).toHaveURL(/\/documents\/document-product-base$/u);
+  await expect(page.getByTestId("page-title")).toHaveText("Documents");
+  await page.reload();
+  await page.waitForFunction(() => globalThis.coredrillAppShell !== undefined);
+  await expect(page.getByTestId("page-title")).toHaveText("Documents");
 
   const commandTrigger = page.getByRole("button", { name: "Open command menu" });
   await page.keyboard.press("Control+k");
@@ -990,6 +1023,50 @@ test("search, command, and Add surfaces restore focus and stay local", async ({ 
   await expect(page.getByRole("status")).toContainText("paste-listing");
   await expect(page.getByRole("button", { name: "Add", exact: true })).toBeFocused();
 
+  expect(externalRequests).toEqual([]);
+});
+
+test("Pipeline search filters the current jobs and companies with exact local counts", async ({
+  page,
+}, testInfo) => {
+  const externalRequests = [];
+  page.on("request", (request) => {
+    if (!request.url().startsWith("http://127.0.0.1:4178/")) externalRequests.push(request.url());
+  });
+  await openShell(page);
+  await page
+    .getByRole("navigation", { name: "Primary" })
+    .getByRole("link", { name: "Pipeline" })
+    .click();
+
+  const pipeline = page.getByTestId("pipeline-shell");
+  const search = pipeline.getByRole("searchbox", { name: "Search jobs and companies" });
+  await expect(search).toHaveAttribute("maxlength", "512");
+  await expect(pipeline.getByText("Current Pipeline · jobs and companies")).toBeVisible();
+  await search.fill("canvas engineer");
+  await expect(pipeline.getByTestId("pipeline-board")).toContainText("Platform Engineer");
+  await expect(pipeline.getByTestId("pipeline-board")).not.toContainText("Product Operations Lead");
+  await expect(pipeline.locator(".cd-pipeline-presentation-heading")).toContainText(
+    /1 matching of \d+/u,
+  );
+
+  await pipeline.getByRole("button", { name: "Table" }).click();
+  await expect(pipeline.locator('[data-table-job="board-canvas"]')).toBeVisible();
+  await expect(pipeline.locator('[data-table-job="board-northstar"]')).toHaveCount(0);
+  await expect(pipeline.locator(".cd-pipeline-presentation-heading")).toContainText(
+    /1 matching of \d+/u,
+  );
+
+  await search.fill("missing local company");
+  await expect(pipeline.locator(".cd-pipeline-presentation-heading")).toContainText(
+    /0 matching of \d+/u,
+  );
+  await expect(pipeline.locator("[data-table-job]")).toHaveCount(0);
+
+  await search.fill("");
+  await expect(pipeline.locator('[data-table-job="board-northstar"]')).toBeVisible();
+  await attachAxe(page, testInfo, "pipeline-scoped-local-search");
+  await attachProof(page, testInfo, "pipeline-scoped-local-search");
   expect(externalRequests).toEqual([]);
 });
 

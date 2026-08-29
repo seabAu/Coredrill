@@ -7,6 +7,7 @@ export * from "./home-dashboard.js";
 export * from "./icon.js";
 export * from "./job-workspace-frame.js";
 export * from "./job-workspace-content.js";
+export * from "./local-search.js";
 export * from "./network-workspace.js";
 export * from "./pipeline-board.js";
 export * from "./pipeline-shell.js";

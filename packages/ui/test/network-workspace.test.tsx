@@ -146,6 +146,26 @@ describe("NetworkWorkspace contract", () => {
     expect(markup).toContain("never guesses them");
   });
 
+  it("accepts only stable selections that exist in the local relationship model", () => {
+    const markup = renderToStaticMarkup(
+      createElement(NetworkWorkspace, {
+        activeTab: "contacts",
+        model: MODEL,
+        selectedContactId: "contact-maya",
+      }),
+    );
+    expect(markup).toContain("Maya Chen");
+    expect(() =>
+      renderToStaticMarkup(
+        createElement(NetworkWorkspace, {
+          activeTab: "companies",
+          model: MODEL,
+          selectedCompanyId: "company-missing",
+        }),
+      ),
+    ).toThrowError("Network workspace selection is invalid.");
+  });
+
   it("renders append-only history, neutral reminder controls, and a bounded log-only composer", () => {
     const markup = renderNetwork("interactions");
 
