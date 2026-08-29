@@ -1,11 +1,12 @@
 {
   "extends": "../../tooling/typescript/base.json",
   "compilerOptions": {
+    "jsx": "react-jsx",
     "rootDir": "src",
     "outDir": "dist-types",
     "tsBuildInfoFile": ".turbo/build.tsbuildinfo"
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.d.ts"],
   "references": [
     {
       "path": "../../packages/documents"
@@ -15,6 +16,9 @@
     },
     {
       "path": "../../packages/storage-core"
+    },
+    {
+      "path": "../../packages/ui"
     }
   ]
 }

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "inventoryId": "JW-DI-001",
-  "version": "1.15.0",
-  "reviewedAt": "2026-08-29T11:53:55Z",
+  "version": "1.16.0",
+  "reviewedAt": "2026-08-29T12:55:00Z",
   "scope": {
     "included": [
       "Pinned Node.js, pnpm, and Rust foundation toolchains",
@@ -17,7 +17,7 @@
   },
   "lockfile": {
     "path": "pnpm-lock.yaml",
-    "sha256": "fdf109d4827b86fbc8920b8ba7d646f05134ce54d6cf9f12ce986e80e5de6822"
+    "sha256": "789446b93c8240d34817c8928ebb17b086aa115562a713b94e6f1cfb901106fa"
   },
   "toolchains": [
     {
@@ -177,6 +177,62 @@
     },
     {
       "manifest": "apps/web/package.json",
+      "dependencyType": "dependencies",
+      "name": "react",
+      "version": "19.2.7",
+      "upstreamLatest": "19.2.8",
+      "selectionStatus": "release-age-approved",
+      "license": "MIT",
+      "maintainers": ["fb", "react-bot"],
+      "repository": "https://github.com/facebook/react",
+      "metadataSource": "https://registry.npmjs.org/react/19.2.7",
+      "knownAdvisories": [],
+      "selectionNote": "React 19.2.7 was published at 2026-06-01T18:00:48.323Z and is outside the 60-day review window; current 19.2.8 was published at 2026-07-21T15:41:28.716Z and remains inside it."
+    },
+    {
+      "manifest": "apps/web/package.json",
+      "dependencyType": "dependencies",
+      "name": "react-dom",
+      "version": "19.2.7",
+      "upstreamLatest": "19.2.8",
+      "selectionStatus": "release-age-approved",
+      "license": "MIT",
+      "maintainers": ["fb", "react-bot"],
+      "repository": "https://github.com/facebook/react",
+      "metadataSource": "https://registry.npmjs.org/react-dom/19.2.7",
+      "knownAdvisories": [],
+      "selectionNote": "React DOM 19.2.7 was published at 2026-06-01T18:01:02.438Z and is outside the 60-day review window; current 19.2.8 was published at 2026-07-21T15:41:41.267Z and remains inside it."
+    },
+    {
+      "manifest": "apps/web/package.json",
+      "dependencyType": "devDependencies",
+      "name": "@types/react",
+      "version": "19.2.17",
+      "upstreamLatest": "19.2.18",
+      "selectionStatus": "release-age-approved",
+      "license": "MIT",
+      "maintainers": ["types"],
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+      "metadataSource": "https://registry.npmjs.org/@types%2freact/19.2.17",
+      "knownAdvisories": [],
+      "selectionNote": "The selected React types were published at 2026-06-05T20:10:24.692Z and are outside the 60-day review window; current 19.2.18 was published at 2026-07-30T21:54:03.456Z."
+    },
+    {
+      "manifest": "apps/web/package.json",
+      "dependencyType": "devDependencies",
+      "name": "@types/react-dom",
+      "version": "19.2.3",
+      "upstreamLatest": "19.2.5",
+      "selectionStatus": "release-age-approved",
+      "license": "MIT",
+      "maintainers": ["types"],
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+      "metadataSource": "https://registry.npmjs.org/@types%2freact-dom/19.2.3",
+      "knownAdvisories": [],
+      "selectionNote": "The selected React DOM types were published at 2025-11-12T04:37:39.524Z; current 19.2.5 was published at 2026-08-23T21:05:23.671Z and was also inside minimumReleaseAge: 1440 at review time."
+    },
+    {
+      "manifest": "apps/web/package.json",
       "dependencyType": "devDependencies",
       "name": "vite",
       "version": "8.2.2",
@@ -188,6 +244,20 @@
       "metadataSource": "https://registry.npmjs.org/vite/8.2.2",
       "knownAdvisories": [],
       "selectionNote": "Current Vite 8.2.2 was published at 2026-08-20T04:14:39.107Z and is deliberately selected inside the 60-day review window. The prior 8.1.0 graph retained esbuild 0.27.7 after GHSA-g7r4-m6w7-qqqr; 8.2.2 removes that dependency and the complete reviewed lockfile audit is clean."
+    },
+    {
+      "manifest": "package.json",
+      "dependencyType": "devDependencies",
+      "name": "@axe-core/playwright",
+      "version": "4.13.0",
+      "upstreamLatest": "4.13.0",
+      "selectionStatus": "current",
+      "license": "MPL-2.0",
+      "maintainers": ["dqlabs", "wilcofiers", "dylanb", "npmdeque", "stephendeque"],
+      "repository": "https://github.com/dequelabs/axe-core-npm",
+      "metadataSource": "https://registry.npmjs.org/@axe-core%2fplaywright/4.13.0",
+      "knownAdvisories": [],
+      "selectionNote": "Current official axe-core Playwright integration, used only in the local component-catalog proof and paired with the exact reviewed Playwright runner."
     },
     {
       "manifest": "package.json",
@@ -569,6 +639,90 @@
       "metadataSource": "https://registry.npmjs.org/@tauri-apps%2fapi/2.11.1",
       "knownAdvisories": [],
       "selectionNote": "The native adapter imports only Tauri's official invoke API; the privileged command remains separately allowlisted and protocol validated."
+    },
+    {
+      "manifest": "packages/ui/package.json",
+      "dependencyType": "dependencies",
+      "name": "lucide-react",
+      "version": "1.35.0",
+      "upstreamLatest": "1.37.0",
+      "selectionStatus": "release-age-approved",
+      "license": "ISC",
+      "maintainers": ["ericfennis"],
+      "repository": "https://github.com/lucide-icons/lucide",
+      "metadataSource": "https://registry.npmjs.org/lucide-react/1.35.0",
+      "knownAdvisories": [],
+      "selectionNote": "Lucide React 1.35.0 was published at 2026-08-28T07:10:29.013Z and satisfied minimumReleaseAge: 1440 at selection time. Versions 1.36.0 and 1.37.0 were published on 2026-08-29 and were correctly blocked by the workspace release-age policy."
+    },
+    {
+      "manifest": "packages/ui/package.json",
+      "dependencyType": "devDependencies",
+      "name": "@types/react",
+      "version": "19.2.17",
+      "upstreamLatest": "19.2.18",
+      "selectionStatus": "release-age-approved",
+      "license": "MIT",
+      "maintainers": ["types"],
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+      "metadataSource": "https://registry.npmjs.org/@types%2freact/19.2.17",
+      "knownAdvisories": [],
+      "selectionNote": "The UI package uses the repository's reviewed React 19 type baseline for its public JSX contract and server-rendered accessibility tests."
+    },
+    {
+      "manifest": "packages/ui/package.json",
+      "dependencyType": "devDependencies",
+      "name": "@types/react-dom",
+      "version": "19.2.3",
+      "upstreamLatest": "19.2.5",
+      "selectionStatus": "release-age-approved",
+      "license": "MIT",
+      "maintainers": ["types"],
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+      "metadataSource": "https://registry.npmjs.org/@types%2freact-dom/19.2.3",
+      "knownAdvisories": [],
+      "selectionNote": "The UI package uses the repository's reviewed React DOM type baseline for deterministic icon rendering tests."
+    },
+    {
+      "manifest": "packages/ui/package.json",
+      "dependencyType": "devDependencies",
+      "name": "react",
+      "version": "19.2.7",
+      "upstreamLatest": "19.2.8",
+      "selectionStatus": "release-age-approved",
+      "license": "MIT",
+      "maintainers": ["fb", "react-bot"],
+      "repository": "https://github.com/facebook/react",
+      "metadataSource": "https://registry.npmjs.org/react/19.2.7",
+      "knownAdvisories": [],
+      "selectionNote": "The UI package's development runtime matches its exact React peer contract and the reviewed application baseline."
+    },
+    {
+      "manifest": "packages/ui/package.json",
+      "dependencyType": "devDependencies",
+      "name": "react-dom",
+      "version": "19.2.7",
+      "upstreamLatest": "19.2.8",
+      "selectionStatus": "release-age-approved",
+      "license": "MIT",
+      "maintainers": ["fb", "react-bot"],
+      "repository": "https://github.com/facebook/react",
+      "metadataSource": "https://registry.npmjs.org/react-dom/19.2.7",
+      "knownAdvisories": [],
+      "selectionNote": "The UI package uses the reviewed React DOM runtime only for deterministic server-rendered tests."
+    },
+    {
+      "manifest": "packages/ui/package.json",
+      "dependencyType": "peerDependencies",
+      "name": "react",
+      "version": "19.2.7",
+      "upstreamLatest": "19.2.8",
+      "selectionStatus": "release-age-approved",
+      "license": "MIT",
+      "maintainers": ["fb", "react-bot"],
+      "repository": "https://github.com/facebook/react",
+      "metadataSource": "https://registry.npmjs.org/react/19.2.7",
+      "knownAdvisories": [],
+      "selectionNote": "The exact peer requirement prevents an unreviewed React runtime from being silently selected for shared UI components."
     }
   ],
   "cargo": {
@@ -816,9 +970,9 @@
   "advisoryReview": {
     "command": "pnpm audit --json",
     "source": "https://pnpm.io/cli/audit",
-    "reviewedAt": "2026-08-29T11:53:55Z",
-    "lockfileSha256": "fdf109d4827b86fbc8920b8ba7d646f05134ce54d6cf9f12ce986e80e5de6822",
-    "resolvedDependencyCount": 548,
+    "reviewedAt": "2026-08-29T12:55:00Z",
+    "lockfileSha256": "789446b93c8240d34817c8928ebb17b086aa115562a713b94e6f1cfb901106fa",
+    "resolvedDependencyCount": 551,
     "optionalDependencyCount": 59,
     "vulnerabilities": {
       "info": 0,
@@ -830,11 +984,11 @@
   },
   "licenseReview": {
     "command": "pnpm check:licenses",
-    "reviewedAt": "2026-08-29T11:53:55Z",
-    "lockfileSha256": "fdf109d4827b86fbc8920b8ba7d646f05134ce54d6cf9f12ce986e80e5de6822",
-    "resolvedPackageRecords": 351,
+    "reviewedAt": "2026-08-29T12:55:00Z",
+    "lockfileSha256": "789446b93c8240d34817c8928ebb17b086aa115562a713b94e6f1cfb901106fa",
+    "resolvedPackageRecords": 353,
     "result": "pass",
-    "note": "License records and advisory dependency counts use different tool scopes and are not expected to match. This refresh changes only a workspace dependency edge; the 548-entry external resolution and 351-package license inventory are unchanged."
+    "note": "License records and advisory dependency counts use different tool scopes and are not expected to match. The UI foundation adds reviewed ISC and MPL-2.0 dependencies; the exact graph contains 551 external resolutions and 353 license records."
   },
   "maintenanceWatch": [
     {
@@ -876,6 +1030,11 @@
       "dependency": "vite",
       "reason": "Current 8.2.2 is intentionally selected inside the 60-day window because the prior 8.1.0 graph retained advisory-affected esbuild 0.27.7. Recheck the current graph and audit with WXT.",
       "nextReviewOn": "2026-08-31"
+    },
+    {
+      "dependency": "lucide-react",
+      "reason": "Selected 1.35.0 satisfies minimumReleaseAge while current 1.37.0 was published on the review date and remains blocked until it ages into policy.",
+      "nextReviewOn": "2026-08-30"
     }
   ],
   "reviewTriggers": [

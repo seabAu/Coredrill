@@ -14,6 +14,7 @@ export default defineConfig({
         "packages/observability/src/**/*.ts",
         "packages/search-filter/src/**/*.ts",
         "packages/storage-core/src/**/*.ts",
+        "packages/ui/src/**/*.{ts,tsx}",
         "tooling/architecture/check-boundaries.mjs",
       ],
       provider: "v8",
@@ -28,7 +29,7 @@ export default defineConfig({
     },
     include: [
       "apps/extension/test/**/*.test.ts",
-      "packages/**/test/**/*.test.ts",
+      "packages/**/test/**/*.test.{ts,tsx}",
       "tooling/tests/**/*.test.mjs",
     ],
     passWithNoTests: false,

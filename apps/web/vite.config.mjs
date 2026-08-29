@@ -7,6 +7,7 @@ export default defineConfig({
       input: {
         documents: fileURLToPath(new URL("./document-spike.html", import.meta.url)),
         storage: fileURLToPath(new URL("./index.html", import.meta.url)),
+        uiFoundations: fileURLToPath(new URL("./ui-foundations.html", import.meta.url)),
       },
     },
     target: "es2023",

@@ -1,0 +1,229 @@
+{
+  "artifact": "coredrill-ui-foundation-contrast-report",
+  "generatedFrom": "@coredrill/ui buildContrastReport()",
+  "specVersion": 1,
+  "standard": "WCAG 2.2 AA",
+  "minimumRatio": 3.29,
+  "cases": [
+    {
+      "id": "light-text-on-surface",
+      "theme": "light",
+      "foreground": "text",
+      "background": "surface",
+      "kind": "normal-text",
+      "requiredRatio": 4.5,
+      "ratio": 15.33,
+      "passed": true
+    },
+    {
+      "id": "light-text-muted-on-surface",
+      "theme": "light",
+      "foreground": "text-muted",
+      "background": "surface",
+      "kind": "normal-text",
+      "requiredRatio": 4.5,
+      "ratio": 6.99,
+      "passed": true
+    },
+    {
+      "id": "light-text-subtle-on-surface",
+      "theme": "light",
+      "foreground": "text-subtle",
+      "background": "surface",
+      "kind": "normal-text",
+      "requiredRatio": 4.5,
+      "ratio": 5.3,
+      "passed": true
+    },
+    {
+      "id": "light-accent-on-surface",
+      "theme": "light",
+      "foreground": "accent",
+      "background": "surface",
+      "kind": "non-text",
+      "requiredRatio": 3,
+      "ratio": 6.54,
+      "passed": true
+    },
+    {
+      "id": "light-focus-on-canvas",
+      "theme": "light",
+      "foreground": "focus",
+      "background": "canvas",
+      "kind": "non-text",
+      "requiredRatio": 3,
+      "ratio": 5.4,
+      "passed": true
+    },
+    {
+      "id": "light-border-on-surface",
+      "theme": "light",
+      "foreground": "border",
+      "background": "surface",
+      "kind": "non-text",
+      "requiredRatio": 3,
+      "ratio": 3.29,
+      "passed": true
+    },
+    {
+      "id": "light-on-accent-on-accent",
+      "theme": "light",
+      "foreground": "on-accent",
+      "background": "accent",
+      "kind": "normal-text",
+      "requiredRatio": 4.5,
+      "ratio": 6.64,
+      "passed": true
+    },
+    {
+      "id": "light-on-success-on-success",
+      "theme": "light",
+      "foreground": "on-success",
+      "background": "success",
+      "kind": "normal-text",
+      "requiredRatio": 4.5,
+      "ratio": 6.09,
+      "passed": true
+    },
+    {
+      "id": "light-on-warning-on-warning",
+      "theme": "light",
+      "foreground": "on-warning",
+      "background": "warning",
+      "kind": "normal-text",
+      "requiredRatio": 4.5,
+      "ratio": 6.59,
+      "passed": true
+    },
+    {
+      "id": "light-on-danger-on-danger",
+      "theme": "light",
+      "foreground": "on-danger",
+      "background": "danger",
+      "kind": "normal-text",
+      "requiredRatio": 4.5,
+      "ratio": 6.93,
+      "passed": true
+    },
+    {
+      "id": "light-on-info-on-info",
+      "theme": "light",
+      "foreground": "on-info",
+      "background": "info",
+      "kind": "normal-text",
+      "requiredRatio": 4.5,
+      "ratio": 6.72,
+      "passed": true
+    },
+    {
+      "id": "dark-text-on-surface",
+      "theme": "dark",
+      "foreground": "text",
+      "background": "surface",
+      "kind": "normal-text",
+      "requiredRatio": 4.5,
+      "ratio": 14.93,
+      "passed": true
+    },
+    {
+      "id": "dark-text-muted-on-surface",
+      "theme": "dark",
+      "foreground": "text-muted",
+      "background": "surface",
+      "kind": "normal-text",
+      "requiredRatio": 4.5,
+      "ratio": 9.8,
+      "passed": true
+    },
+    {
+      "id": "dark-text-subtle-on-surface",
+      "theme": "dark",
+      "foreground": "text-subtle",
+      "background": "surface",
+      "kind": "normal-text",
+      "requiredRatio": 4.5,
+      "ratio": 7.52,
+      "passed": true
+    },
+    {
+      "id": "dark-accent-on-surface",
+      "theme": "dark",
+      "foreground": "accent",
+      "background": "surface",
+      "kind": "non-text",
+      "requiredRatio": 3,
+      "ratio": 9.56,
+      "passed": true
+    },
+    {
+      "id": "dark-focus-on-canvas",
+      "theme": "dark",
+      "foreground": "focus",
+      "background": "canvas",
+      "kind": "non-text",
+      "requiredRatio": 3,
+      "ratio": 11.8,
+      "passed": true
+    },
+    {
+      "id": "dark-border-on-surface",
+      "theme": "dark",
+      "foreground": "border",
+      "background": "surface",
+      "kind": "non-text",
+      "requiredRatio": 3,
+      "ratio": 3.66,
+      "passed": true
+    },
+    {
+      "id": "dark-on-accent-on-accent",
+      "theme": "dark",
+      "foreground": "on-accent",
+      "background": "accent",
+      "kind": "normal-text",
+      "requiredRatio": 4.5,
+      "ratio": 9.27,
+      "passed": true
+    },
+    {
+      "id": "dark-on-success-on-success",
+      "theme": "dark",
+      "foreground": "on-success",
+      "background": "success",
+      "kind": "normal-text",
+      "requiredRatio": 4.5,
+      "ratio": 8.68,
+      "passed": true
+    },
+    {
+      "id": "dark-on-warning-on-warning",
+      "theme": "dark",
+      "foreground": "on-warning",
+      "background": "warning",
+      "kind": "normal-text",
+      "requiredRatio": 4.5,
+      "ratio": 9.74,
+      "passed": true
+    },
+    {
+      "id": "dark-on-danger-on-danger",
+      "theme": "dark",
+      "foreground": "on-danger",
+      "background": "danger",
+      "kind": "normal-text",
+      "requiredRatio": 4.5,
+      "ratio": 8.32,
+      "passed": true
+    },
+    {
+      "id": "dark-on-info-on-info",
+      "theme": "dark",
+      "foreground": "on-info",
+      "background": "info",
+      "kind": "normal-text",
+      "requiredRatio": 4.5,
+      "ratio": 8.88,
+      "passed": true
+    }
+  ]
+}

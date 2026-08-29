@@ -20,6 +20,7 @@
     "test:coverage": "vitest run --coverage --exclude packages/storage-native/test/native-database.test.ts",
     "test:storage-browser": "playwright test --config=playwright.storage.config.mjs",
     "test:documents-browser": "playwright test --config=playwright.documents.config.mjs",
+    "test:ui-foundations": "playwright test --config=playwright.ui-foundations.config.mjs",
     "test:storage-firefox-webdriver": "node tooling/scripts/run-storage-firefox-webdriver.mjs",
     "test:extension-transfer": "playwright test --config=playwright.extension.config.mjs",
     "test:storage-native": "pnpm --filter @coredrill/storage-core build && pnpm --filter @coredrill/desktop test:native-core && pnpm --filter @coredrill/desktop build:native-probe && vitest run packages/storage-native/test/native-database.test.ts",
@@ -36,6 +37,8 @@
     "test:extension-source-package": "node tooling/scripts/check-extension-packages.mjs --rebuild-source",
     "generate:contract-schemas": "node tooling/scripts/generate-contract-schemas.mjs",
     "check:contract-schemas": "node tooling/scripts/generate-contract-schemas.mjs --check",
+    "generate:ui-contrast-report": "node tooling/scripts/generate-ui-contrast-report.mjs",
+    "check:ui-contrast-report": "node tooling/scripts/generate-ui-contrast-report.mjs --check",
     "check:affected": "node tooling/scripts/check-affected.mjs",
     "check:licenses": "node tooling/scripts/check-licenses.mjs && node tooling/scripts/check-rust-licenses.mjs",
     "report:licenses": "pnpm licenses list --json",
@@ -46,9 +49,10 @@
     "audit:dependencies": "pnpm audit --audit-level=low && cargo audit --file apps/desktop/src-tauri/Cargo.lock",
     "changeset": "changeset",
     "changeset:status": "changeset status",
-    "verify": "pnpm format:check && pnpm check:boundaries && pnpm check:foundation-records && pnpm typecheck && pnpm lint && pnpm test:unit && pnpm test:coverage && pnpm build && pnpm check:extension-build && pnpm check:extension-packages && pnpm test:documents-browser && pnpm test:storage-browser && pnpm test:storage-native && pnpm test:secure-storage && pnpm test:native-archive && pnpm check:contract-schemas && pnpm check:licenses && pnpm check:secrets && pnpm audit:dependencies && pnpm changeset:status"
+    "verify": "pnpm format:check && pnpm check:boundaries && pnpm check:foundation-records && pnpm typecheck && pnpm lint && pnpm test:unit && pnpm test:coverage && pnpm build && pnpm check:ui-contrast-report && pnpm check:extension-build && pnpm check:extension-packages && pnpm test:ui-foundations && pnpm test:documents-browser && pnpm test:storage-browser && pnpm test:storage-native && pnpm test:secure-storage && pnpm test:native-archive && pnpm check:contract-schemas && pnpm check:licenses && pnpm check:secrets && pnpm audit:dependencies && pnpm changeset:status"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
     "@changesets/cli": "3.0.1",
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.61.1",
