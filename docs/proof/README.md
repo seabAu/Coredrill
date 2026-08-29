@@ -27,3 +27,4 @@ Checklist proof records command, tool version, date, exit status, and artifact p
 - [`APP-002` manual job creation and atomic status-change application verification](phase-1-manual-job-pipeline-application-verification.md)
 - [`APP-003` next-action, interaction, interview, and local-reminder application verification](phase-1-job-activity-application-verification.md)
 - [`APP-004` company/contact relationship and provenance application verification](phase-1-company-contact-application-verification.md)
+- [`APP-005` Pipeline counts, board groups, pagination, and job-workspace query verification](phase-1-pipeline-query-application-verification.md)

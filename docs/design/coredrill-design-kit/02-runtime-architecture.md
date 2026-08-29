@@ -121,6 +121,8 @@ interface DatabasePort extends DatabaseSession {
 
 `APP-004` adds adapter-neutral `CreateCompany` and `CreateContact` operations. Manual company origin is explicit so source-backed company fields cannot bypass the capture/evidence boundary. Manual contacts are user-confirmed without invented confidence; source-backed contacts remain unconfirmed and require one provenance reference for every populated imported field. The local port atomically receives the contact plus value-bound provenance links and exposes no enrichment, guessing, messaging, outreach, or network capability. See [company/contact application verification](../../proof/phase-1-company-contact-application-verification.md).
 
+`APP-005` adds adapter-neutral Pipeline counts, ordered board groups, one stable keyset paginator shared by table and board, and the detailed job-workspace DTO. Every query is bound to an application-owned snapshot instant and validates returned order, cursor, uniqueness, aggregate counts, archive/filter scope, and cross-entity relationships before exposing copied immutable data. The port is read-only and has no mutation or network capability. Concrete browser/native query composition remains outside this application slice. See [Pipeline query application verification](../../proof/phase-1-pipeline-query-application-verification.md).
+
 `PortableDatabase` is the adapter-neutral database-byte/checksum/schema-version handoff. Archive assembly adds the versioned manifest, human-readable JSON/CSV data, attachment inventory, migration history, per-entry SHA-256 checksums, and explicit encryption state required by the portable-archive contract.
 
 ### Browser adapter

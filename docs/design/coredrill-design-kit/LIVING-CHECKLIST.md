@@ -2,10 +2,10 @@
 
 This file is the single progress ledger. `GOAL.md` defines the outcome; numbered design documents define behavior; `11-decision-register.md` defines accepted choices. This checklist records what is actually proven.
 
-Last design update: 2026-08-28
+Last design update: 2026-08-29
 Current milestone: Phase 1 — local tracker and recovery loop (`GATE-0` human validation remains blocked)
-Current work item: `APP-005` — Pipeline queries, counts, groups, pagination, and job workspace DTO
-Next recommended slice: `APP-006` — validated filter, sort, group, and saved-view commands
+Current work item: `APP-006` — validated filter, sort, group, and saved-view commands
+Next recommended slice: `APP-007` — durable undo token for status and next-action edits
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `APP-006` — validated filter, sort, group, and saved-v
 | Field | Value |
 |---|---|
 | Milestone | Phase 1, with the independent Phase 0 human-validation gate retained below |
-| Item range | `APP-005` |
+| Item range | `APP-006` |
 | Branch/worktree | `main` / repository root |
-| Started | 2026-08-28 |
-| Expected proof | Query tests for Pipeline summary counts, ordered board groups, stable cursor pagination shared by table/board, and the detailed job-workspace DTO |
+| Started | 2026-08-29 |
+| Expected proof | AST fuzz/property tests for validated filter, sort, group, and saved-view commands |
 | Blocker | None for this slice. `UXR-004` through `UXR-008` still require the owner-authorized participant study before the Phase 1 UI lock; `FND-001` remains independently blocked. |
-| Next handoff | Implement and prove `APP-005`, then continue to `APP-006` without claiming `GATE-0` or locking provisional interface language. |
+| Next handoff | Implement and prove `APP-006`, then continue to `APP-007` without claiming `GATE-0` or locking provisional interface language. |
 
 ## Milestone status
 
@@ -165,7 +165,7 @@ Next recommended slice: `APP-006` — validated filter, sort, group, and saved-v
 - [x] **APP-002** Implement manual `CreateJob` and transactional `ChangeStatus` with timeline event. — Proof: [manual job creation and atomic status-change application verification](../../proof/phase-1-manual-job-pipeline-application-verification.md)
 - [x] **APP-003** Implement `SetNextAction`, reminders, interviews, and interactions. — Proof: [next-action, interaction, interview, and local-reminder application verification](../../proof/phase-1-job-activity-application-verification.md)
 - [x] **APP-004** Implement company/contact relationship commands with provenance rules. — Proof: [company/contact relationship and provenance application verification](../../proof/phase-1-company-contact-application-verification.md)
-- [ ] **APP-005** Implement Pipeline queries, counts, board groups, table pagination, and job workspace DTO. — Proof: _query tests_
+- [x] **APP-005** Implement Pipeline queries, counts, board groups, table pagination, and job workspace DTO. — Proof: [Pipeline counts, board groups, shared pagination, and job-workspace application verification](../../proof/phase-1-pipeline-query-application-verification.md)
 - [ ] **APP-006** Implement validated filter/sort/group/saved-view commands. — Proof: _AST fuzz/property tests_
 - [ ] **APP-007** Implement undo token for status/next-action edits with durable consistency. — Proof: _integration tests_
 - [ ] **APP-008** Implement local diagnostic log and user-copyable redacted support bundle. — Proof: _privacy tests_
