@@ -160,7 +160,7 @@ test("benchmarks production FTS5 and normalized-token job search", async ({
     engine: browser.browserType().name(),
     headless: true,
     appBuild: {
-      schemaVersion: 87,
+      schemaVersion: 92,
       sqlite: "3.53.0",
       sqlitePackage: "3.53.0-build1",
       vite: "8.2.2",

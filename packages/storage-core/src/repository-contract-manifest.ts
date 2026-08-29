@@ -44,6 +44,10 @@ const PHASE_1_REPOSITORY_CONTRACT_COMPONENTS = Object.freeze({
     accelerateWithFts5: "detects FTS5 and refreshes the accelerated lexical index",
     preserveFallback: "keeps normalized-token search functional with FTS5 disabled",
   }),
+  diagnostic: component("phase-1-diagnostic-repository", {
+    persistPrivacySafeLog:
+      "persists immutable bounded local diagnostics and rejects content-bearing attributes",
+  }),
 });
 
 const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
@@ -53,8 +57,8 @@ const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
 );
 
 export const PHASE_1_REPOSITORY_CONTRACT_MANIFEST = Object.freeze({
-  schemaVersion: 2 as const,
-  suiteName: "phase-1-repository-contracts-v2",
+  schemaVersion: 3 as const,
+  suiteName: "phase-1-repository-contracts-v3",
   components: PHASE_1_REPOSITORY_CONTRACT_COMPONENTS,
   caseNames: PHASE_1_REPOSITORY_CONTRACT_CASES,
 });

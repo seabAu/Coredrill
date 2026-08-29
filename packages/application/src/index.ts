@@ -149,3 +149,15 @@ export {
   type VaultStorageHealth,
   type VaultStoragePersistence,
 } from "./vault.js";
+export {
+  DIAGNOSTIC_LOG_ERROR_CODES,
+  DiagnosticLogError,
+  createDiagnosticOperations,
+  type CopySupportBundleInput,
+  type DiagnosticLogErrorCode,
+  type DiagnosticLogPort,
+  type DiagnosticOperationDependencies,
+  type DiagnosticOperations,
+  type RecordDiagnosticEventInput,
+  type SupportBundleCopyDto,
+} from "./diagnostics.js";

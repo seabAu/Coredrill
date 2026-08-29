@@ -25,6 +25,11 @@ const generatedSchemas = [
     source: "contracts",
   },
   {
+    exportName: "supportBundleV1JsonSchema",
+    path: path.join(repositoryRoot, "packages/contracts/schemas/support-bundle.v1.schema.json"),
+    source: "contracts",
+  },
+  {
     exportName: "documentIrV1JsonSchema",
     path: path.join(repositoryRoot, "packages/documents/schemas/document-ir.v1.schema.json"),
     source: "documents",

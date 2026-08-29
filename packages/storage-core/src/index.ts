@@ -24,6 +24,11 @@ export {
   type DocumentRepositoryContractSetup,
 } from "./document-contract-harness.js";
 export {
+  createDiagnosticRepositoryContractSuite,
+  type DiagnosticRepositoryContractSetup,
+} from "./diagnostic-contract-harness.js";
+export { DiagnosticEventRepository, LOCAL_DIAGNOSTIC_LOG_LIMITS } from "./diagnostic-repository.js";
+export {
   AttachmentManifestRepository,
   DocumentRepository,
   DocumentRepositoryConflictError,

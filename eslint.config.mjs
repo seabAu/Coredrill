@@ -19,7 +19,6 @@ const restrictedApplicationPackages = [
   "@coredrill/documents",
   "@coredrill/source-policy",
   "@coredrill/search-filter",
-  "@coredrill/observability",
   "@coredrill/test-fixtures",
 ];
 
@@ -125,7 +124,7 @@ export default tseslint.config(
         {
           paths: restrictedPaths(
             restrictedApplicationPackages,
-            "Application may depend only on domain and contracts workspace packages.",
+            "Application may depend only on domain, contracts, and observability workspace packages.",
           ),
           patterns: [
             {

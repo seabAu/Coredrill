@@ -11,17 +11,18 @@ test("runs the versioned Phase 1 repository contract manifest in browser SQLite"
     globalThis.coredrillStorageSpike.runPhase1RepositoryContracts(),
   );
 
-  expect(proof.manifest.schemaVersion).toBe(2);
-  expect(proof.manifest.suiteName).toBe("phase-1-repository-contracts-v2");
+  expect(proof.manifest.schemaVersion).toBe(3);
+  expect(proof.manifest.suiteName).toBe("phase-1-repository-contracts-v3");
   expect(Object.keys(proof.manifest.components)).toEqual([
     "tracker",
     "pipeline",
     "view",
     "document",
     "jobSearch",
+    "diagnostic",
   ]);
   const reviewedCases = proof.manifest.caseNames;
-  expect(reviewedCases).toHaveLength(17);
+  expect(reviewedCases).toHaveLength(18);
   expect(proof.run).toEqual({
     adapterName: "official-sqlite-wasm-opfs-sahpool",
     suiteName: proof.manifest.suiteName,

@@ -4,6 +4,7 @@ import { DIAGNOSTIC_ATTRIBUTE_KEYS } from "@coredrill/contracts";
 
 import {
   createLocalDiagnosticEvent,
+  createUserCopyableSupportBundle,
   redactDiagnosticAttributes,
   type LocalDiagnosticEventInput,
 } from "../src/index.js";
@@ -84,6 +85,52 @@ describe("privacy-safe local diagnostics", () => {
         { ...eventInput, delivery: "telemetry" } as unknown as LocalDiagnosticEventInput,
         {},
       ),
+    ).toThrow();
+  });
+
+  it("creates a deterministic immutable user-copyable bundle", () => {
+    const older = createLocalDiagnosticEvent(eventInput, { adapter: "browser-worker" });
+    const newer = createLocalDiagnosticEvent(
+      {
+        ...eventInput,
+        eventId: "019539af-8e03-7dd4-8b54-395d8f3fe503",
+        occurredAt: "2026-08-24T19:01:00.000Z",
+      },
+      { adapter: "sqlite-wasm" },
+    );
+
+    const result = createUserCopyableSupportBundle({
+      generatedAt: "2026-08-24T19:02:00.000Z",
+      appVersion: "0.1.0",
+      events: [older, newer],
+    });
+
+    expect(result.bundle.events.map(({ eventId }) => eventId)).toEqual([
+      newer.eventId,
+      older.eventId,
+    ]);
+    expect(JSON.parse(result.copyText)).toEqual(result.bundle);
+    expect(result.copyText.endsWith("\n")).toBe(true);
+    expect(Object.isFrozen(result)).toBe(true);
+    expect(Object.isFrozen(result.bundle)).toBe(true);
+    expect(Object.isFrozen(result.bundle.events)).toBe(true);
+  });
+
+  it("fails closed instead of copying invalid, duplicate, or content-bearing stored events", () => {
+    const event = createLocalDiagnosticEvent(eventInput, {});
+    expect(() =>
+      createUserCopyableSupportBundle({
+        generatedAt: "2026-08-24T19:02:00.000Z",
+        appVersion: "0.1.0",
+        events: [{ ...event, message: "PRIVATE_SUPPORT_SENTINEL" }],
+      }),
+    ).toThrow();
+    expect(() =>
+      createUserCopyableSupportBundle({
+        generatedAt: "2026-08-24T19:02:00.000Z",
+        appVersion: "0.1.0",
+        events: [event, event],
+      }),
     ).toThrow();
   });
 });

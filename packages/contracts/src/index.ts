@@ -68,4 +68,12 @@ export {
   type DiagnosticOutcome,
   type DiagnosticSeverity,
 } from "./diagnostic-event.js";
+export {
+  SUPPORT_BUNDLE_LIMITS,
+  SUPPORT_BUNDLE_SPEC_VERSION,
+  SUPPORT_BUNDLE_V1_SCHEMA_ID,
+  supportBundleV1JsonSchema,
+  supportBundleV1Schema,
+  type SupportBundleV1,
+} from "./support-bundle.js";
 export { jsonValueSchema, type JsonValue } from "./primitives.js";

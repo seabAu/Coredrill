@@ -1,7 +1,7 @@
 export const packageBoundaries = Object.freeze({
   domain: [],
   contracts: [],
-  application: ["contracts", "domain"],
+  application: ["contracts", "domain", "observability"],
   ui: ["application", "contracts", "domain"],
   "storage-core": ["application", "contracts", "domain"],
   "storage-browser": ["contracts", "domain", "storage-core"],

@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@coredrill/contracts": "workspace:*",
-    "@coredrill/domain": "workspace:*"
+    "@coredrill/domain": "workspace:*",
+    "@coredrill/observability": "workspace:*"
   }
 }
