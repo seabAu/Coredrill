@@ -1,8 +1,12 @@
 import {
   ApplicationShell,
+  HomeDashboard,
   VAULT_HEALTH_STATES,
   getRootAppearanceAttributes,
   type DensityMode,
+  type HomeDashboardActionId,
+  type HomeDashboardModel,
+  type HomeRecentItem,
   type LocalSearchResult,
   type ShellActionId,
   type ShellDestinationId,
@@ -17,6 +21,8 @@ import "./app-shell.css";
 interface AppShellCatalogState {
   readonly activeDestination: ShellDestinationId;
   readonly density: DensityMode;
+  readonly homeMode: HomeDashboardModel["state"];
+  readonly homeSnapshotVisible: boolean;
   readonly lastActivity: string;
   readonly theme: ThemePreference;
   readonly vaultHealth: VaultHealthState;
@@ -63,15 +69,18 @@ const SEARCH_RESULTS = Object.freeze([
 
 const readAppearance = (): {
   readonly density: DensityMode;
+  readonly homeMode: HomeDashboardModel["state"];
   readonly theme: ThemePreference;
   readonly vaultHealth: VaultHealthState;
 } => {
   const parameters = new URLSearchParams(window.location.search);
   const requestedDensity = parameters.get("density");
+  const requestedHome = parameters.get("home");
   const requestedTheme = parameters.get("theme");
   const requestedHealth = parameters.get("health");
   return {
     density: requestedDensity === "compact" ? "compact" : "comfortable",
+    homeMode: requestedHome === "empty" ? "empty" : "ready",
     theme: requestedTheme === "dark" || requestedTheme === "system" ? requestedTheme : "light",
     vaultHealth: VAULT_HEALTH_STATES.includes(requestedHealth as VaultHealthState)
       ? (requestedHealth as VaultHealthState)
@@ -91,114 +100,150 @@ const PAGE_COPY: Readonly<
   settings: { eyebrow: "Local control", title: "Settings" },
 });
 
-const HomeContent = ({ onAction }: { readonly onAction: (action: ShellActionId) => void }) => (
-  <div className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(18rem,0.6fr)]">
-    <section className="cd-shell-page-card xl:row-span-2" aria-labelledby="now-heading">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="m-0 text-xs font-bold uppercase tracking-wider text-[var(--color-text-subtle)]">
-            Now
-          </p>
-          <h2 className="mt-1 text-xl font-bold" id="now-heading">
-            Prepare for Northstar Health
-          </h2>
-          <p className="mt-2 max-w-2xl text-[var(--color-text-muted)]">
-            Interview tomorrow at 10:30 AM. Review the submitted resume and three evidence stories.
-          </p>
-        </div>
-        <span className="cd-status cd-status-warning">Tomorrow</span>
-      </div>
-      <div className="mt-5 flex flex-wrap gap-2">
-        <button
-          className="cd-button cd-button-primary"
-          onClick={() => {
-            onAction("create-follow-up");
-          }}
-          type="button"
-        >
-          Open interview plan
-        </button>
-        <button
-          className="cd-shell-page-action"
-          onClick={() => {
-            onAction("export-backup");
-          }}
-          type="button"
-        >
-          View submitted files
-        </button>
-      </div>
-    </section>
+const READY_HOME_MODEL = Object.freeze({
+  agendaSummary: "4 actions · 1 interview",
+  attention: Object.freeze([
+    {
+      action: { id: "review-captures", label: "Review captures" },
+      detail: "One title conflict and one uncertain salary range remain unconfirmed.",
+      id: "attention-captures",
+      kind: "capture-review",
+      title: "3 captures need review",
+    },
+    {
+      action: { id: "review-unsupported-claims", label: "Review claim" },
+      detail: "A draft sentence has no linked Career Profile evidence.",
+      id: "attention-claim",
+      kind: "unsupported-claim",
+      title: "One draft claim needs evidence",
+    },
+    {
+      action: { id: "retry-transfer", label: "Retry locally" },
+      detail: "The queued capture remains safely in the extension outbox.",
+      id: "attention-transfer",
+      kind: "failed-transfer",
+      title: "Extension transfer needs repair",
+    },
+    {
+      action: { id: "open-follow-up", label: "Open follow-up" },
+      detail: "Canvas Works has no interaction recorded for 8 days.",
+      id: "attention-follow-up",
+      kind: "stale-follow-up",
+      title: "Follow-up is stale",
+    },
+    {
+      action: { id: "review-backup", label: "Review backup" },
+      detail: "The last verified export is 12 days old.",
+      id: "attention-backup",
+      kind: "backup-risk",
+      title: "A fresh backup is due",
+    },
+  ]),
+  now: Object.freeze([
+    {
+      context: "Northstar Health · Interview",
+      description: "Review the submitted resume and three verified evidence stories.",
+      id: "now-interview",
+      primaryAction: { id: "open-interview-plan", label: "Open interview plan" },
+      secondaryAction: { id: "view-submitted-files", label: "View submitted files" },
+      title: "Prepare for tomorrow's conversation",
+      urgency: "upcoming",
+      when: "Tomorrow · 10:30 AM",
+    },
+    {
+      context: "Canvas Works · Follow-up",
+      description: "A concise check-in is ready to review; outreach remains manual.",
+      id: "now-follow-up",
+      primaryAction: { id: "open-follow-up", label: "Review follow-up" },
+      title: "Decide whether to follow up",
+      urgency: "today",
+      when: "Today · 4:00 PM",
+    },
+    {
+      context: "Acme Research · Deadline",
+      description: "Confirm the role details and materials before the external deadline.",
+      id: "now-deadline",
+      primaryAction: { id: "review-captures", label: "Open job" },
+      title: "Review the saved opportunity",
+      urgency: "upcoming",
+      when: "Friday",
+    },
+  ]),
+  recent: Object.freeze([
+    {
+      context: "Interviewing · opened 25 minutes ago",
+      href: "/jobs/00000000-0000-4000-8000-000000000101/overview",
+      id: "recent-northstar",
+      kind: "job",
+      title: "Northstar Health · Product Operations Lead",
+    },
+    {
+      context: "Resume · edited yesterday",
+      href: "/documents/00000000-0000-4000-8000-000000000301",
+      id: "recent-resume",
+      kind: "document",
+      title: "Product leadership base",
+    },
+  ]),
+  snapshot: Object.freeze({
+    pipeline: Object.freeze([
+      { count: 8, label: "Saved" },
+      { count: 4, label: "Preparing" },
+      { count: 6, label: "Applied" },
+      { count: 2, label: "Interviewing" },
+    ]),
+    responseTiming: "Median first response: 5 days across 4 responses.",
+    weeklyTarget: Object.freeze({ completed: 4, target: 6 }),
+  }),
+  state: "ready",
+  week: Object.freeze([
+    {
+      context: "Local capture inbox",
+      day: "Today",
+      id: "agenda-captures",
+      time: "Before 3:00 PM",
+      title: "Review 3 captures",
+    },
+    {
+      context: "Northstar Health · video call",
+      day: "Tomorrow",
+      id: "agenda-interview",
+      time: "10:30 AM",
+      title: "Product Operations interview",
+    },
+    {
+      context: "Canvas Works · manual outreach",
+      day: "Thursday",
+      id: "agenda-follow-up",
+      time: null,
+      title: "Decide on follow-up",
+    },
+    {
+      context: "Browser vault · local export",
+      day: "Friday",
+      id: "agenda-backup",
+      time: null,
+      title: "Verify a fresh backup",
+    },
+  ]),
+} as const satisfies HomeDashboardModel);
 
-    <section className="cd-shell-page-card" aria-labelledby="attention-heading">
-      <p className="m-0 text-xs font-bold uppercase tracking-wider text-[var(--color-text-subtle)]">
-        Needs attention
-      </p>
-      <h2 className="mt-1 text-lg font-bold" id="attention-heading">
-        3 captures need review
-      </h2>
-      <ul className="mt-3 grid gap-2 pl-5 text-[var(--color-text-muted)]">
-        <li>One title conflict</li>
-        <li>One salary range is uncertain</li>
-        <li>One source snapshot is stale</li>
-      </ul>
-    </section>
-
-    <section className="cd-shell-page-card" aria-labelledby="vault-card-heading">
-      <p className="m-0 text-xs font-bold uppercase tracking-wider text-[var(--color-text-subtle)]">
-        Vault
-      </p>
-      <h2 className="mt-1 text-lg font-bold" id="vault-card-heading">
-        Stored on this device
-      </h2>
-      <p className="mt-2 text-[var(--color-text-muted)]">
-        No account, remote database, or AI connection is required.
-      </p>
-    </section>
-
-    <section className="cd-shell-page-card xl:col-span-2" aria-labelledby="week-heading">
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <div>
-          <p className="m-0 text-xs font-bold uppercase tracking-wider text-[var(--color-text-subtle)]">
-            This week
-          </p>
-          <h2 className="mt-1 text-lg font-bold" id="week-heading">
-            A focused local plan
-          </h2>
-        </div>
-        <span className="text-sm text-[var(--color-text-muted)]">
-          4 next actions · 2 interviews
-        </span>
-      </div>
-      <div className="mt-4 grid gap-3 md:grid-cols-2 2xl:grid-cols-4">
-        {[
-          ["Today", "Review 3 captures"],
-          ["Tomorrow", "Northstar interview"],
-          ["Thursday", "Follow up with Canvas"],
-          ["Friday", "Verify a fresh backup"],
-        ].map(([date, task]) => (
-          <div
-            className="rounded-[var(--radius-control)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-3"
-            key={date}
-          >
-            <div className="text-xs font-bold uppercase text-[var(--color-text-subtle)]">
-              {date}
-            </div>
-            <div className="mt-1 font-semibold">{task}</div>
-          </div>
-        ))}
-      </div>
-    </section>
-  </div>
-);
+const EMPTY_HOME_MODEL = Object.freeze({ state: "empty" } as const satisfies HomeDashboardModel);
 
 const AppShellCatalog = () => {
   const appearance = useMemo(readAppearance, []);
   const [activeDestination, setActiveDestination] = useState<ShellDestinationId>("home");
+  const [homeSnapshotVisible, setHomeSnapshotVisible] = useState(true);
   const [lastActivity, setLastActivity] = useState(
     "Shell ready. All displayed records are synthetic.",
   );
   const page = PAGE_COPY[activeDestination];
+  const homeModel: HomeDashboardModel =
+    appearance.homeMode === "empty"
+      ? EMPTY_HOME_MODEL
+      : homeSnapshotVisible
+        ? READY_HOME_MODEL
+        : Object.freeze({ ...READY_HOME_MODEL, snapshot: null });
 
   useEffect(() => {
     const root = document.documentElement;
@@ -221,15 +266,25 @@ const AppShellCatalog = () => {
         Object.freeze({
           activeDestination,
           density: appearance.density,
+          homeMode: appearance.homeMode,
+          homeSnapshotVisible,
           lastActivity,
           theme: appearance.theme,
           vaultHealth: appearance.vaultHealth,
         }),
     });
-  }, [activeDestination, appearance, lastActivity]);
+  }, [activeDestination, appearance, homeSnapshotVisible, lastActivity]);
 
   const recordAction = (action: ShellActionId): void => {
     setLastActivity(`Action selected: ${action}. No external request was made.`);
+  };
+
+  const recordHomeAction = (action: HomeDashboardActionId): void => {
+    setLastActivity(`Home action selected: ${action}. No external request was made.`);
+  };
+
+  const openRecent = (item: HomeRecentItem): void => {
+    setLastActivity(`Opened recent local ${item.kind}: ${item.title}.`);
   };
 
   return (
@@ -264,7 +319,17 @@ const AppShellCatalog = () => {
         </header>
 
         {activeDestination === "home" ? (
-          <HomeContent onAction={recordAction} />
+          <HomeDashboard
+            model={homeModel}
+            onAction={recordHomeAction}
+            onDismissSnapshot={() => {
+              setHomeSnapshotVisible(false);
+              setLastActivity(
+                "Optional Home snapshot hidden. Core attention items remain visible.",
+              );
+            }}
+            onNavigateRecent={openRecent}
+          />
         ) : (
           <section className="cd-shell-page-card min-h-72" aria-labelledby="destination-heading">
             <p className="m-0 text-xs font-bold uppercase tracking-wider text-[var(--color-text-subtle)]">

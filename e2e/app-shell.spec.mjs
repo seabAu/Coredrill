@@ -67,6 +67,68 @@ test("dark compact shell and backup-due state remain accessible", async ({ page 
   await attachProof(page, testInfo, "desktop-dark-compact-backup-due");
 });
 
+test("Home orders actionable local work, limits Now, and lets users hide the snapshot", async ({
+  page,
+}, testInfo) => {
+  const externalRequests = [];
+  page.on("request", (request) => {
+    if (!request.url().startsWith("http://127.0.0.1:4178/")) externalRequests.push(request.url());
+  });
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  await openShell(page);
+
+  const sections = await page
+    .locator("[data-home-section]")
+    .evaluateAll((elements) =>
+      elements.map((element) => element.getAttribute("data-home-section")),
+    );
+  expect(sections).toEqual(["now", "attention", "week", "snapshot", "continue"]);
+  await expect(page.getByTestId("home-now-item")).toHaveCount(3);
+  await expect(page.getByRole("button", { name: "Add job", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Paste listing", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Capture URL", exact: true })).toBeVisible();
+  await expect(page.getByText("5 items", { exact: true })).toBeVisible();
+  await expect(page.getByText(/private planning aid, not a streak/)).toBeVisible();
+  await attachAxe(page, testInfo, "home-attention-queue");
+  await attachProof(page, testInfo, "home-attention-queue");
+
+  await page.getByRole("button", { name: "Hide snapshot" }).click();
+  await expect(page.locator('[data-home-section="snapshot"]')).toBeHidden();
+  const stateAfterHide = await page.evaluate(() => globalThis.coredrillAppShell?.getState());
+  expect(stateAfterHide?.homeSnapshotVisible).toBe(false);
+  await expect(page.getByRole("status")).toContainText("snapshot hidden");
+
+  await page.getByRole("link", { name: /Northstar Health · Product Operations Lead/ }).click();
+  await expect(page.getByRole("status")).toContainText("Opened recent local job");
+  expect(externalRequests).toEqual([]);
+});
+
+test("empty Home offers three non-account paths without inventing goals", async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 1000, height: 760 });
+  await openShell(page, { home: "empty" });
+
+  await expect(
+    page.getByRole("heading", { name: "Add the first opportunity when you are ready" }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Add a job" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Import existing tracker" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Explore sample data" })).toBeVisible();
+  await expect(
+    page.getByText(/No account, AI connection, or application target is required/),
+  ).toBeVisible();
+  await expect(page.locator("[data-home-section]")).toHaveCount(0);
+  expect((await page.evaluate(() => globalThis.coredrillAppShell?.getState()))?.homeMode).toBe(
+    "empty",
+  );
+  await attachAxe(page, testInfo, "home-empty");
+  await attachProof(page, testInfo, "home-empty");
+
+  await page.getByRole("button", { name: "Add a job" }).click();
+  await expect(page.getByRole("status")).toContainText("Home action selected: add-job");
+});
+
 test("search, command, and Add surfaces restore focus and stay local", async ({ page }) => {
   const externalRequests = [];
   page.on("request", (request) => {
@@ -100,7 +162,7 @@ test("search, command, and Add surfaces restore focus and stay local", async ({ 
   await expect(pasteListing).toBeFocused();
   await pasteListing.click();
   await expect(page.getByRole("status")).toContainText("paste-listing");
-  await expect(page.getByRole("button", { name: "Add" })).toBeFocused();
+  await expect(page.getByRole("button", { name: "Add", exact: true })).toBeFocused();
 
   expect(externalRequests).toEqual([]);
 });

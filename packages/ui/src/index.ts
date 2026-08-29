@@ -3,4 +3,5 @@ export * from "./app-shell.js";
 export * from "./contrast.js";
 export * from "./first-run.js";
 export * from "./foundations.js";
+export * from "./home-dashboard.js";
 export * from "./icon.js";
