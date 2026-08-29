@@ -1,0 +1,64 @@
+{
+  "specVersion": 1,
+  "dataset": "job",
+  "generatedAt": "2026-08-29T22:30:00.000Z",
+  "vaultId": "0198e102-0000-7000-8000-000000000001",
+  "sourceSchemaVersion": 92,
+  "columns": [
+    "id",
+    "company_id",
+    "title",
+    "normalized_title",
+    "description_text",
+    "employment_type",
+    "workplace_type",
+    "seniority",
+    "location_id",
+    "remote_region_json",
+    "date_posted",
+    "valid_through",
+    "current_status_id",
+    "next_action_at",
+    "archived_at",
+    "created_at",
+    "updated_at",
+    "row_version"
+  ],
+  "rowCount": 1,
+  "rows": [
+    {
+      "id": "0198e102-0000-7000-8000-000000000002",
+      "company_id": null,
+      "title": "=Platform, \"Engineer\"\nRemote",
+      "normalized_title": "platform engineer",
+      "description_text": "Résumé systems,\nwith care",
+      "employment_type": "full_time",
+      "workplace_type": "remote",
+      "seniority": null,
+      "location_id": null,
+      "remote_region_json": {
+        "regions": [
+          "Québec",
+          "New York"
+        ],
+        "remote": true
+      },
+      "date_posted": "2026-08-20",
+      "valid_through": null,
+      "current_status_id": null,
+      "next_action_at": null,
+      "archived_at": null,
+      "created_at": "2026-08-20T10:00:00.000Z",
+      "updated_at": "2026-08-21T10:00:00.000Z",
+      "row_version": 3
+    }
+  ],
+  "csv": {
+    "path": "data/job.csv",
+    "dialect": "rfc4180",
+    "charset": "utf-8",
+    "header": "present",
+    "formulaEscaping": "apostrophe-prefix",
+    "nullEncoding": "empty-unquoted"
+  }
+}

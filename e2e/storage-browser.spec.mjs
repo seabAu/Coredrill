@@ -14,6 +14,38 @@ const rolledBackVault = Object.freeze({
   lastOpenedAt: "2026-08-24T08:01:00.000Z",
 });
 
+const humanReadableDatasetNames = Object.freeze([
+  "vault",
+  "app_setting",
+  "capture_inbox",
+  "location",
+  "company",
+  "contact",
+  "job",
+  "job_source",
+  "source_snapshot",
+  "provenance",
+  "company_alias",
+  "contact_point_provenance",
+  "field_value",
+  "status_definition",
+  "application",
+  "status_event",
+  "interaction",
+  "next_action",
+  "interview",
+  "reminder",
+  "tag",
+  "job_tag",
+  "saved_view",
+  "document",
+  "document_version",
+  "document_job_link",
+  "attachment_manifest",
+  "document_version_attachment",
+  "document_style_example",
+]);
+
 const callHarness = (page, method, argument) =>
   page.evaluate(
     async ({ methodName, value }) => {
@@ -98,6 +130,19 @@ test("opens official SQLite in a Worker, persists transactions, and restores a c
   ]);
 
   const portable = await callHarness(sourcePage, "exportPortable");
+  const humanReadable = await callHarness(sourcePage, "exportHumanReadable", {
+    generatedAt: "2026-08-29T22:30:00.000Z",
+    vaultId: committedVault.id,
+  });
+  expect(humanReadable).toEqual({
+    dataFileCount: 58,
+    datasetCount: 29,
+    datasetNames: humanReadableDatasetNames,
+    jsonFiles: 29,
+    csvFiles: 29,
+    rowCount: 1,
+    sourceSchemaVersion: 92,
+  });
   expect(portable.schemaVersion).toBe(92);
   expect(portable.byteLength).toBeGreaterThan(0);
   expect(portable.sha256).toMatch(/^[a-f0-9]{64}$/u);
@@ -150,6 +195,8 @@ test("opens official SQLite in a Worker, persists transactions, and restores a c
       rollback: true,
       cleanProfileRestore: true,
       portableArchiveWriterSha256: archiveWriterProof.sha256,
+      humanReadableDatasets: humanReadable.datasetCount,
+      humanReadableDataFiles: humanReadable.dataFileCount,
     })}`,
   );
 });

@@ -1,0 +1,4 @@
+id,company_id,title,normalized_title,description_text,employment_type,workplace_type,seniority,location_id,remote_region_json,date_posted,valid_through,current_status_id,next_action_at,archived_at,created_at,updated_at,row_version
+"0198e102-0000-7000-8000-000000000002",,"'=Platform, ""Engineer""
+Remote","platform engineer","Résumé systems,
+with care","full_time","remote",,,"{""regions"":[""Québec"",""New York""],""remote"":true}","2026-08-20",,,,,"2026-08-20T10:00:00.000Z","2026-08-21T10:00:00.000Z",3

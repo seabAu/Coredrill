@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "specVersion": { "type": "number", "const": 1 },
+    "dataset": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$"
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+    },
+    "vaultId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "sourceSchemaVersion": {
+      "type": "integer",
+      "exclusiveMinimum": 0,
+      "maximum": 9007199254740991
+    },
+    "columns": {
+      "minItems": 1,
+      "maxItems": 64,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 128,
+        "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$"
+      }
+    },
+    "rowCount": { "type": "integer", "minimum": 0, "maximum": 250000 },
+    "rows": {
+      "maxItems": 250000,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "propertyNames": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$"
+        },
+        "additionalProperties": { "$ref": "#/$defs/__schema0" }
+      }
+    },
+    "csv": {
+      "type": "object",
+      "properties": {
+        "path": { "type": "string", "pattern": "^data\\/[a-z][a-z0-9_]*\\.csv$" },
+        "dialect": { "type": "string", "const": "rfc4180" },
+        "charset": { "type": "string", "const": "utf-8" },
+        "header": { "type": "string", "const": "present" },
+        "formulaEscaping": { "type": "string", "const": "apostrophe-prefix" },
+        "nullEncoding": { "type": "string", "const": "empty-unquoted" }
+      },
+      "required": ["path", "dialect", "charset", "header", "formulaEscaping", "nullEncoding"],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "specVersion",
+    "dataset",
+    "generatedAt",
+    "vaultId",
+    "sourceSchemaVersion",
+    "columns",
+    "rowCount",
+    "rows",
+    "csv"
+  ],
+  "additionalProperties": false,
+  "title": "Coredrill PortableDataExportV1",
+  "description": "One versioned human-readable Coredrill dataset with an exact paired CSV mapping.",
+  "$defs": {
+    "__schema0": {
+      "anyOf": [
+        { "type": "string" },
+        { "type": "number" },
+        { "type": "boolean" },
+        { "type": "null" },
+        { "type": "array", "items": { "$ref": "#/$defs/__schema0" } },
+        {
+          "type": "object",
+          "propertyNames": { "type": "string" },
+          "additionalProperties": { "$ref": "#/$defs/__schema0" }
+        }
+      ]
+    }
+  },
+  "$id": "https://schemas.coredrill.local/portable-data-export/v1.json"
+}

@@ -12,6 +12,7 @@
     "./schemas/capture-envelope.v1.json": "./schemas/capture-envelope.v1.schema.json",
     "./schemas/diagnostic-event.v1.json": "./schemas/diagnostic-event.v1.schema.json",
     "./schemas/portable-archive-manifest.v1.json": "./schemas/portable-archive-manifest.v1.schema.json",
+    "./schemas/portable-data-export.v1.json": "./schemas/portable-data-export.v1.schema.json",
     "./schemas/support-bundle.v1.json": "./schemas/support-bundle.v1.schema.json"
   },
   "files": [

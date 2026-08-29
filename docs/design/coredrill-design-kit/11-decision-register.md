@@ -265,6 +265,16 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
   successful partial result. `BKP-002` still owns production JSON/CSV projection
   generation and `BKP-003` owns restore dry-run/commit; see [portable archive
   writer verification](../../proof/phase-1-portable-archive-writer-verification.md).
+- **Phase 1 human-readable evidence (2026-08-29):** `BKP-002` projects all 29
+  Phase 1 canonical user-data tables into 58 paired, deterministic JSON/CSV
+  files from one schema-92 transaction. The strict version-1 JSON contract,
+  canonical nested JSON, stable ordering, provenance and relationship fields,
+  null/empty distinction, Unicode and RFC 4180 escaping, CSV formula hardening,
+  limits, and fail-closed schema/query/value paths pass shared Node and real
+  browser SQLite evidence. The SQLite database remains the lossless restore
+  source; runtime, migration, derived-search, and diagnostic tables are
+  explicitly excluded from the inspectable projections. See [portable data
+  export version 1](portable-data-export-v1.md).
 
 ### D-052 — Future sync is opt-in and encrypted
 

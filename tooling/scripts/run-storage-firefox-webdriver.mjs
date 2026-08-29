@@ -158,6 +158,10 @@ try {
   const reopened = await executeHarness("openAndMigrate", { expectedExisting: true });
   const rows = await executeHarness("listVaults");
   const portable = await executeHarness("exportPortable");
+  const humanReadable = await executeHarness("exportHumanReadable", {
+    generatedAt: "2026-08-29T22:30:00.000Z",
+    vaultId: "0198d9d2-c2fd-7d5c-8a0f-485258c1eb9e",
+  });
   await executeHarness("delete");
   await executeHarness("restorePortable", portable);
   const restored = await executeHarness("listVaults");
@@ -173,6 +177,8 @@ try {
     restoredRows: restored.length,
     rows: rows.length,
     portableArchiveWriterSha256: archiveWriter.sha256,
+    humanReadableDataFiles: humanReadable.dataFileCount,
+    humanReadableDatasets: humanReadable.datasetCount,
     repositoryContractCases: repositoryCases.length,
     repositoryContractSuite: repositoryContracts.run.suiteName,
     repositoryContractVersion: repositoryContracts.manifest.schemaVersion,
@@ -186,6 +192,12 @@ try {
     proof?.rows !== 1 ||
     proof.restoredRows !== 1 ||
     proof.repositoryContractCases !== 18 ||
+    proof.humanReadableDataFiles !== 58 ||
+    proof.humanReadableDatasets !== 29 ||
+    humanReadable.csvFiles !== 29 ||
+    humanReadable.jsonFiles !== 29 ||
+    humanReadable.rowCount !== 1 ||
+    humanReadable.sourceSchemaVersion !== expectedSchemaVersion ||
     proof.repositoryContractSuite !== repositoryContracts.manifest.suiteName ||
     proof.repositoryContractVersion !== 3 ||
     proof.portableArchiveWriterSha256 !==

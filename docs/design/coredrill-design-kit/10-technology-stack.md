@@ -129,6 +129,15 @@ Zip64 design and new benchmark-backed limit are required before raising that
 ceiling. The manifest records `{ "specVersion": 1, "mode": "none" }`; ZIP is a
 container, not an encryption claim.
 
+The `BKP-002` projection writer shares the same TypeScript storage boundary. It
+reads all 29 canonical Phase 1 user datasets in one schema-92 transaction and
+emits strict versioned JSON plus matching RFC 4180-style UTF-8 CSV. Stored JSON
+is parsed and canonicalized, booleans remain booleans, strings are quoted, null
+is empty-unquoted, and risky spreadsheet-leading characters receive a CSV-only
+apostrophe prefix. Explicit fields, orders, exclusions, and limits live in the
+[portable data export version-1 mapping](portable-data-export-v1.md). SQLite is
+still the lossless restore source.
+
 ### Query layer
 
 - Handwritten SQL migrations and focused repository queries.

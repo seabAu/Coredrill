@@ -155,6 +155,17 @@ export {
   type PortableArchiveWriterInputV1,
 } from "./portable-archive-writer.js";
 export {
+  PORTABLE_DATA_EXPORT_DATASETS,
+  PORTABLE_DATA_EXPORT_EXCLUDED_TABLES,
+  PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION,
+  PORTABLE_DATA_EXPORT_WRITER_LIMITS,
+  PortableDataExportWriterError,
+  createPortableDataExportV1,
+  type PortableDataExportBundleV1,
+  type PortableDataExportWriterErrorCode,
+  type PortableDataExportWriterInputV1,
+} from "./portable-data-export.js";
+export {
   AppSettingRepository,
   CompanyRepository,
   ContactRepository,

@@ -7,6 +7,7 @@ import {
 } from "@coredrill/storage-browser";
 import {
   applySqlMigrations,
+  createPortableDataExportV1,
   createPhase1RepositoryContractSuite,
   defineSqlMigrations,
   PHASE_1_REPOSITORY_CONTRACT_MANIFEST,
@@ -130,6 +131,21 @@ interface Phase1RepositoryContractProof {
   readonly run: DatabaseContractRunResult;
 }
 
+interface HumanReadableExportInput {
+  readonly generatedAt: string;
+  readonly vaultId: string;
+}
+
+interface HumanReadableExportProof {
+  readonly dataFileCount: number;
+  readonly datasetCount: number;
+  readonly datasetNames: readonly string[];
+  readonly jsonFiles: number;
+  readonly csvFiles: number;
+  readonly rowCount: number;
+  readonly sourceSchemaVersion: number;
+}
+
 export interface CoredrillStorageSpikeApi {
   openAndMigrate(options?: OpenOptions): Promise<OpenMigrationProof>;
   tryOpenAndMigrate(options?: OpenOptions): Promise<OpenAttempt>;
@@ -145,6 +161,7 @@ export interface CoredrillStorageSpikeApi {
   runJobSearchBenchmark(input: StorageBenchmarkInput): Promise<JobSearchBenchmarkResult>;
   runPhase1RepositoryContracts(): Promise<Phase1RepositoryContractProof>;
   runPortableArchiveWriterProof(): Promise<PortableArchiveBrowserProof>;
+  exportHumanReadable(input: HumanReadableExportInput): Promise<HumanReadableExportProof>;
 }
 
 declare global {
@@ -616,6 +633,22 @@ const api: CoredrillStorageSpikeApi = {
   runBenchmark: (input) => runStorageBenchmark(input),
   runJobSearchBenchmark: async (input) => runJobSearchBenchmark(input, await migrations()),
   runPortableArchiveWriterProof,
+  exportHumanReadable: async (input) => {
+    const bundle = await createPortableDataExportV1({
+      database: await getDatabase(),
+      generatedAt: input.generatedAt,
+      vaultId: input.vaultId,
+    });
+    return Object.freeze({
+      dataFileCount: bundle.dataFiles.length,
+      datasetCount: bundle.datasetCount,
+      datasetNames: Object.freeze(bundle.datasets.map((dataset) => dataset.dataset)),
+      jsonFiles: bundle.dataFiles.filter((file) => file.format === "json").length,
+      csvFiles: bundle.dataFiles.filter((file) => file.format === "csv").length,
+      rowCount: bundle.rowCount,
+      sourceSchemaVersion: bundle.sourceSchemaVersion,
+    });
+  },
   runPhase1RepositoryContracts: async () => {
     await api.close();
     const reviewedMigrations = await migrations();

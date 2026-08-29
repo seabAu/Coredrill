@@ -48,6 +48,15 @@ export {
   type PortableDatabaseEntryV1,
 } from "./portable-archive.js";
 export {
+  PORTABLE_DATA_EXPORT_LIMITS,
+  PORTABLE_DATA_EXPORT_SPEC_VERSION,
+  PORTABLE_DATA_EXPORT_V1_SCHEMA_ID,
+  portableDataExportV1JsonSchema,
+  portableDataExportV1Schema,
+  type PortableDataExportV1,
+  type PortableDataRowV1,
+} from "./portable-data-export.js";
+export {
   DIAGNOSTIC_ATTRIBUTE_KEYS,
   DIAGNOSTIC_ATTRIBUTE_TOKENS,
   DIAGNOSTIC_CATEGORIES,

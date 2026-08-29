@@ -52,6 +52,7 @@ Local-first does not mean “automatically encrypted” or “available on every
 - [09 — Interface, layout, and interaction system](09-interface-system.md)
 - [10 — Technology stack and engineering baseline](10-technology-stack.md)
 - [11 — Decision register](11-decision-register.md)
+- [Portable human-readable data export version 1](portable-data-export-v1.md)
 - [Living implementation checklist](LIVING-CHECKLIST.md)
 
 ## First-release scope

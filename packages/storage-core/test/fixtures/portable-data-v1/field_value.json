@@ -1,0 +1,52 @@
+{
+  "specVersion": 1,
+  "dataset": "field_value",
+  "generatedAt": "2026-08-29T22:30:00.000Z",
+  "vaultId": "0198e102-0000-7000-8000-000000000001",
+  "sourceSchemaVersion": 92,
+  "columns": [
+    "id",
+    "entity_type",
+    "entity_id",
+    "field_name",
+    "normalized_json",
+    "raw_json",
+    "provenance_id",
+    "is_user_confirmed",
+    "user_confirmation_id",
+    "confirmed_at",
+    "confirmed_value_hash",
+    "superseded_by_id",
+    "created_at",
+    "updated_at",
+    "row_version"
+  ],
+  "rowCount": 1,
+  "rows": [
+    {
+      "id": "0198e102-0000-7000-8000-000000000006",
+      "entity_type": "job",
+      "entity_id": "0198e102-0000-7000-8000-000000000002",
+      "field_name": "title",
+      "normalized_json": "Platform Engineer",
+      "raw_json": "=Platform Engineer",
+      "provenance_id": "0198e102-0000-7000-8000-000000000005",
+      "is_user_confirmed": false,
+      "user_confirmation_id": null,
+      "confirmed_at": null,
+      "confirmed_value_hash": null,
+      "superseded_by_id": null,
+      "created_at": "2026-08-20T10:00:00.000Z",
+      "updated_at": "2026-08-20T10:00:00.000Z",
+      "row_version": 1
+    }
+  ],
+  "csv": {
+    "path": "data/field_value.csv",
+    "dialect": "rfc4180",
+    "charset": "utf-8",
+    "header": "present",
+    "formulaEscaping": "apostrophe-prefix",
+    "nullEncoding": "empty-unquoted"
+  }
+}

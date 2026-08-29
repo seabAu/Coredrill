@@ -20,6 +20,13 @@ const generatedSchemas = [
     ),
   },
   {
+    exportName: "portableDataExportV1JsonSchema",
+    path: path.join(
+      repositoryRoot,
+      "packages/contracts/schemas/portable-data-export.v1.schema.json",
+    ),
+  },
+  {
     exportName: "diagnosticEventV1JsonSchema",
     path: path.join(repositoryRoot, "packages/contracts/schemas/diagnostic-event.v1.schema.json"),
     source: "contracts",

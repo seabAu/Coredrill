@@ -200,6 +200,12 @@ Validate maximum depth/count and field/operator compatibility. Compile to parame
   explicit encryption metadata. The version-1 writer uses deterministic safe
   ZIP entry paths and refuses success if any recorded attachment is missing or
   does not match its manifest facts.
+- The version-1 human-readable projection reads schema `92` once and emits all
+  29 canonical Phase 1 user datasets as paired JSON/CSV files. It retains
+  provenance, relationships, user-confirmation state, row versions, nulls, and
+  Unicode while excluding migration, device, diagnostic, derived-search, undo,
+  and SQLite-internal tables. The SQLite member remains authoritative for
+  restore. See the [exact field mapping](portable-data-export-v1.md).
 - Older clients fail safely on newer schema; they never attempt a downgrade write.
 - Every release tests fresh install, each supported upgrade path, failed migration rollback, export/restore, and cross-adapter logical equivalence.
 

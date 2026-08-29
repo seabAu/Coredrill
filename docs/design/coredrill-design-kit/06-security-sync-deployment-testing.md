@@ -104,6 +104,17 @@ The archive declares encryption mode `none`; save/picker UX must disclose that
 actual state and must persist bytes only after writer success. Restore remains a
 separate dry-run and transactional boundary in `BKP-003`.
 
+`BKP-002` adds production human-readable projections without broadening that
+trust boundary. All 29 canonical dataset reads occur inside one database
+transaction; schema/vault drift, query failure, invalid stored JSON or boolean
+state, binary/non-finite values, or size overflow returns a stable redacted
+error and no successful partial bundle. JSON preserves original strings and
+nullable fields. CSV follows reviewed escaping and CRLF rules, distinguishes
+null from empty string, and prefixes whitespace/`= + - @` string starts with an
+apostrophe to block spreadsheet formula execution. The SQLite member remains
+the lossless restore source; see the [version-1 mapping and explicit
+exclusions](portable-data-export-v1.md).
+
 `NAT-007` proves a Windows current-user NSIS package from a clean commit. CI rebuilds the package, installs it only under a generated temporary root, rejects the contract-only native storage probe if bundled, launches the installed application five discarded plus 20 measured times, records package/application hashes and unsigned development status, aggregates the application/WebView2 process tree, and runs the uninstaller. Program files are removed while the platform app-data directory remains. WebView2 uses Tauri's download bootstrapper if the runtime is absent, so this Phase 0 package is not a fully offline or signed public release. The recorded Windows 10 and hosted-runner results remain nonconformant diagnostics until the Windows 11 25H2/HW-WIN-REF release matrix executes. See [native package verification](../../proof/native-windows-package-verification.md).
 
 ## Future sync architecture
