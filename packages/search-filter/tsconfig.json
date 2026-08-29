@@ -6,5 +6,10 @@
     "tsBuildInfoFile": ".turbo/build.tsbuildinfo"
   },
   "include": ["src/**/*.ts"],
-  "references": [{ "path": "../contracts" }, { "path": "../domain" }, { "path": "../storage-core" }]
+  "references": [
+    { "path": "../application" },
+    { "path": "../contracts" },
+    { "path": "../domain" },
+    { "path": "../storage-core" }
+  ]
 }

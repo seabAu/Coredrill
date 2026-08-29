@@ -15,7 +15,7 @@ export const packageBoundaries = Object.freeze({
   "labor-data": ["contracts", "domain", "source-policy"],
   documents: ["contracts", "domain"],
   "source-policy": ["contracts", "domain"],
-  "search-filter": ["contracts", "domain", "storage-core"],
+  "search-filter": ["application", "contracts", "domain", "storage-core"],
   observability: ["contracts"],
   "test-fixtures": [],
 });

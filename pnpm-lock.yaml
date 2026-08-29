@@ -175,6 +175,9 @@ importers:
 
   packages/search-filter:
     dependencies:
+      '@coredrill/application':
+        specifier: workspace:*
+        version: link:../application
       '@coredrill/contracts':
         specifier: workspace:*
         version: link:../contracts

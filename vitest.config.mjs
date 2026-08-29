@@ -12,6 +12,7 @@ export default defineConfig({
         "packages/capture-core/src/**/*.ts",
         "packages/extension-bridge/src/**/*.ts",
         "packages/observability/src/**/*.ts",
+        "packages/search-filter/src/**/*.ts",
         "packages/storage-core/src/**/*.ts",
         "tooling/architecture/check-boundaries.mjs",
       ],

@@ -17,7 +17,7 @@
   },
   "lockfile": {
     "path": "pnpm-lock.yaml",
-    "sha256": "9917fef25bd914c0a53fcee7c59d80d55cbe46cf32e369d775b210b33bffc4e6"
+    "sha256": "e9add73f97e784b3950dcf1de207129d6781aac4d1ed832888381a6f5b6190b1"
   },
   "toolchains": [
     {
@@ -816,8 +816,8 @@
   "advisoryReview": {
     "command": "pnpm audit --json",
     "source": "https://pnpm.io/cli/audit",
-    "reviewedAt": "2026-08-25T14:13:09Z",
-    "lockfileSha256": "9917fef25bd914c0a53fcee7c59d80d55cbe46cf32e369d775b210b33bffc4e6",
+    "reviewedAt": "2026-08-29T09:55:32Z",
+    "lockfileSha256": "e9add73f97e784b3950dcf1de207129d6781aac4d1ed832888381a6f5b6190b1",
     "resolvedDependencyCount": 548,
     "optionalDependencyCount": 59,
     "vulnerabilities": {
@@ -830,8 +830,8 @@
   },
   "licenseReview": {
     "command": "pnpm check:licenses",
-    "reviewedAt": "2026-08-25T14:13:09Z",
-    "lockfileSha256": "9917fef25bd914c0a53fcee7c59d80d55cbe46cf32e369d775b210b33bffc4e6",
+    "reviewedAt": "2026-08-29T09:55:32Z",
+    "lockfileSha256": "e9add73f97e784b3950dcf1de207129d6781aac4d1ed832888381a6f5b6190b1",
     "resolvedPackageRecords": 351,
     "result": "pass",
     "note": "License records and advisory dependency counts use different tool scopes and are not expected to match."
