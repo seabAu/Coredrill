@@ -1072,6 +1072,248 @@ textarea {
   text-align: center;
 }
 
+/* Pipeline Board */
+
+.cd-board {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-3);
+}
+
+.cd-board-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.cd-board-heading h3,
+.cd-board-heading p,
+.cd-board-announcement {
+  margin: 0;
+}
+
+.cd-board-heading h3 {
+  margin-top: var(--space-1);
+  font-size: 1.125rem;
+}
+
+.cd-board-heading > p {
+  max-width: 31rem;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.cd-board-announcement {
+  min-height: 1.5rem;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.cd-board-undo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-info);
+  border-radius: var(--radius-control);
+  background: var(--color-info-soft);
+}
+
+.cd-board-columns {
+  display: grid;
+  grid-auto-columns: minmax(18rem, 21rem);
+  grid-auto-flow: column;
+  min-width: 0;
+  gap: var(--space-3);
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  padding: var(--space-1) var(--space-1) var(--space-3);
+}
+
+.cd-board-column {
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--color-surface) 72%, var(--color-canvas));
+}
+
+.cd-board-column[data-drop-active="true"] {
+  outline: 2px dashed var(--color-accent);
+  outline-offset: -4px;
+}
+
+.cd-board-column-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.cd-board-column-heading h4,
+.cd-board-column-heading small {
+  display: block;
+  margin: 0;
+}
+
+.cd-board-column-heading h4 {
+  font-size: 0.95rem;
+}
+
+.cd-board-column-heading small {
+  margin-top: var(--space-1);
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-metadata);
+  text-transform: capitalize;
+}
+
+.cd-board-column-heading > span {
+  display: grid;
+  min-width: 1.75rem;
+  min-height: 1.75rem;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--color-accent-soft);
+  color: var(--color-text);
+  font-size: var(--font-size-metadata);
+  font-weight: 800;
+}
+
+.cd-board-column-scroll {
+  height: 34rem;
+  overflow-y: auto;
+  overscroll-behavior-block: contain;
+  padding: var(--space-2);
+  scrollbar-gutter: stable;
+}
+
+.cd-board-card {
+  display: grid;
+  block-size: 12.5rem;
+  align-content: start;
+  gap: var(--space-1);
+  overflow: hidden;
+  margin-block-end: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface-raised);
+}
+
+.cd-board-card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  min-width: 0;
+  gap: var(--space-2);
+}
+
+.cd-board-card-title {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-weight: 800;
+  text-align: start;
+  cursor: pointer;
+}
+
+.cd-board-card-heading > span[data-priority] {
+  flex: 0 0 auto;
+  padding: 0.1rem var(--space-2);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text-subtle);
+  font-size: 0.675rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.cd-board-card-heading > span[data-priority="high"] {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+
+.cd-board-drag-handle {
+  flex: 0 0 auto;
+  color: var(--color-text-subtle);
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: -0.2rem;
+  line-height: 1;
+  cursor: grab;
+  touch-action: none;
+}
+
+.cd-board-drag-handle:active {
+  cursor: grabbing;
+}
+
+.cd-board-card > strong {
+  font-size: 0.875rem;
+}
+
+.cd-board-card > p {
+  overflow: hidden;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-metadata);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cd-board-card-action {
+  padding-top: var(--space-1);
+  border-top: 1px solid var(--color-border);
+}
+
+.cd-board-card-warnings {
+  display: flex;
+  min-width: 0;
+  gap: var(--space-1);
+  overflow-x: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cd-board-card-warnings li {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: var(--space-1);
+  color: var(--color-warning);
+  font-size: 0.675rem;
+  font-weight: 700;
+}
+
+.cd-board-move-control {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: auto;
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-metadata);
+  font-weight: 700;
+}
+
+.cd-board-move-control select {
+  min-width: 0;
+  min-height: 2rem;
+  padding-inline: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+
 @media (max-width: 70rem) {
   .cd-pipeline-toolbar {
     align-items: stretch;
@@ -1096,6 +1338,12 @@ textarea {
   .cd-pipeline-selection-actions {
     justify-content: flex-start;
     flex-wrap: wrap;
+  }
+
+  .cd-board-heading,
+  .cd-board-undo {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 
@@ -1141,6 +1389,10 @@ textarea {
   .cd-pipeline-presentation-heading {
     flex-direction: column;
   }
+
+  .cd-board-columns {
+    grid-auto-columns: minmax(17rem, 90vw);
+  }
 }
 
 @media (forced-colors: active) {
@@ -1149,6 +1401,15 @@ textarea {
   .cd-pipeline-filter-chip,
   .cd-pipeline-selection,
   .cd-pipeline-presentation-placeholder {
+    forced-color-adjust: auto;
+    border-color: CanvasText;
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .cd-board-column,
+  .cd-board-card,
+  .cd-board-undo {
     forced-color-adjust: auto;
     border-color: CanvasText;
     background: Canvas;

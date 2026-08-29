@@ -24,6 +24,16 @@ const attachAxe = async (page, testInfo, name) => {
   await testInfo.attach(`${name}-axe.json`, { path: axePath, contentType: "application/json" });
 };
 
+const attachAriaSnapshot = async (locator, testInfo, name) => {
+  const snapshot = await locator.ariaSnapshot();
+  const snapshotPath = testInfo.outputPath(`${name}-aria.yml`);
+  await writeFile(snapshotPath, `${snapshot}\n`, "utf8");
+  await testInfo.attach(`${name}-aria.yml`, {
+    path: snapshotPath,
+    contentType: "text/yaml",
+  });
+};
+
 test("desktop shell exposes reviewed navigation, routes, local state, and no axe violations", async ({
   page,
 }, testInfo) => {
@@ -205,7 +215,7 @@ test("Pipeline selection exposes a non-mutating bulk shell and reflows at 320 pi
   await attachAxe(page, testInfo, "pipeline-mobile-selected-forced-colors-320");
   await attachProof(page, testInfo, "pipeline-mobile-selected-forced-colors-320");
   await bulk.getByRole("button", { name: "Change status" }).click();
-  await expect(page.getByRole("status")).toContainText("No records changed");
+  await expect(page.getByText(/Bulk action prepared.*No records changed/)).toBeVisible();
   await bulk.getByRole("button", { name: "Clear selection" }).click();
   await expect(bulk).toBeHidden();
   expect(
@@ -219,6 +229,133 @@ test("Pipeline selection exposes a non-mutating bulk shell and reflows at 320 pi
   }));
   expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
   await attachAxe(page, testInfo, "pipeline-mobile-after-clear");
+});
+
+test("Board cards expose semantic context, keyboard moves, durable-event intent, and undo", async ({
+  page,
+}, testInfo) => {
+  const externalRequests = [];
+  page.on("request", (request) => {
+    if (!request.url().startsWith("http://127.0.0.1:4178/")) externalRequests.push(request.url());
+  });
+  await page.setViewportSize({ width: 1440, height: 1050 });
+  await openShell(page);
+  await page
+    .getByRole("navigation", { name: "Primary" })
+    .getByRole("link", { name: "Pipeline" })
+    .click();
+
+  const board = page.getByTestId("pipeline-board");
+  await expect(board).toBeVisible();
+  for (const stage of ["Saved", "Preparing", "Applied", "Interviewing", "Offer", "Closed"]) {
+    await expect(board.getByRole("heading", { name: stage, exact: true })).toBeVisible();
+  }
+  await expect(board.getByText("response · interview")).toBeVisible();
+  await expect(board.getByText("rejected · withdrawn · archived")).toBeVisible();
+
+  const northstar = board.locator('[data-board-job="board-northstar"]');
+  await expect(northstar.getByRole("button", { name: "Product Operations Lead" })).toBeVisible();
+  await expect(northstar.getByText("Northstar Health", { exact: true })).toBeVisible();
+  await expect(northstar.getByText(/remote · United States/)).toBeVisible();
+  await expect(northstar.getByText(/Review source fields · Saved today/)).toBeVisible();
+  await expect(northstar.getByText("Unreviewed source", { exact: true })).toBeVisible();
+
+  await northstar
+    .getByRole("combobox", { name: "Move Product Operations Lead to stage" })
+    .selectOption("preparing");
+  await expect(board.locator('[data-board-stage="preparing"]')).toContainText(
+    "Product Operations Lead",
+  );
+  await expect(board.getByRole("status")).toContainText(
+    "Timeline event recorded; undo is available",
+  );
+  let state = await page.evaluate(() => globalThis.coredrillAppShell?.getState());
+  expect(state?.boardTimelineEventCount).toBe(1);
+  expect(state?.boardUndoAvailable).toBe(true);
+
+  await board.getByRole("button", { name: "Undo move" }).click();
+  await expect(board.locator('[data-board-stage="saved"]')).toContainText(
+    "Product Operations Lead",
+  );
+  await expect(board.getByRole("status")).toContainText("original timeline event remains");
+  state = await page.evaluate(() => globalThis.coredrillAppShell?.getState());
+  expect(state?.boardTimelineEventCount).toBe(2);
+  expect(state?.boardUndoAvailable).toBe(false);
+
+  await attachAriaSnapshot(board, testInfo, "board-keyboard-and-screen-reader-facing");
+  await attachAxe(page, testInfo, "board-keyboard-move-and-undo");
+  await attachProof(page, testInfo, "board-keyboard-move-and-undo");
+  expect(externalRequests).toEqual([]);
+});
+
+test("Board supports pointer drag while terminal-stage reopen requests fail closed", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1360, height: 900 });
+  await openShell(page);
+  await page
+    .getByRole("navigation", { name: "Primary" })
+    .getByRole("link", { name: "Pipeline" })
+    .click();
+
+  const board = page.getByTestId("pipeline-board");
+  await board
+    .locator('[data-board-job="board-canvas"] [data-board-drag-handle]')
+    .dragTo(board.locator('[data-board-stage="applied"]'));
+  await expect(board.locator('[data-board-stage="applied"]')).toContainText("Platform Engineer");
+  await expect(board.getByRole("status")).toContainText("by drag");
+  expect(
+    (await page.evaluate(() => globalThis.coredrillAppShell?.getState()))?.boardTimelineEventCount,
+  ).toBe(1);
+
+  const closedJob = board.locator('[data-board-job="board-harbor"]');
+  await closedJob
+    .getByRole("combobox", { name: "Move Product Manager to stage" })
+    .selectOption("saved");
+  await expect(board.getByRole("status")).toContainText("requires explicit confirmation");
+  await expect(board.locator('[data-board-stage="closed"]')).toContainText("Product Manager");
+  expect(
+    (await page.evaluate(() => globalThis.coredrillAppShell?.getState()))?.boardTimelineEventCount,
+  ).toBe(1);
+});
+
+test("Board virtualizes a large synthetic column and keeps mobile overflow local", async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await openShell(page, { board: "large" });
+  await page
+    .getByRole("navigation", { name: "Primary" })
+    .getByRole("link", { name: "Pipeline" })
+    .click();
+
+  const board = page.getByTestId("pipeline-board");
+  const savedColumn = board.locator('[data-board-stage="saved"]');
+  const scrollRegion = savedColumn.getByRole("list", { name: "Saved jobs" });
+  await expect(scrollRegion).toHaveAttribute("data-board-total", "72");
+  await expect(scrollRegion).toHaveAttribute("data-board-rendered", "8");
+  await expect(savedColumn.locator('[data-board-job="board-volume-70"]')).toHaveCount(0);
+  await scrollRegion.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+    element.dispatchEvent(new Event("scroll"));
+  });
+  await expect(savedColumn.locator('[data-board-job="board-volume-70"]')).toBeVisible();
+  await attachProof(page, testInfo, "board-large-column-windowed");
+
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.emulateMedia({ forcedColors: "active", reducedMotion: "reduce" });
+  const dimensions = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
+  const boardDimensions = await board.locator(".cd-board-columns").evaluate((element) => ({
+    clientWidth: element.clientWidth,
+    scrollWidth: element.scrollWidth,
+  }));
+  expect(boardDimensions.scrollWidth).toBeGreaterThan(boardDimensions.clientWidth);
+  await attachAxe(page, testInfo, "board-mobile-forced-colors");
+  await attachProof(page, testInfo, "board-mobile-forced-colors");
 });
 
 test("search, command, and Add surfaces restore focus and stay local", async ({ page }) => {

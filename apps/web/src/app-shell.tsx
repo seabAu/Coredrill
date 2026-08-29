@@ -1,6 +1,7 @@
 import {
   ApplicationShell,
   HomeDashboard,
+  PipelineBoard,
   PipelineShell,
   VAULT_HEALTH_STATES,
   getRootAppearanceAttributes,
@@ -10,6 +11,9 @@ import {
   type HomeRecentItem,
   type LocalSearchResult,
   type PipelineBulkActionId,
+  type BoardColumn,
+  type BoardJobCard,
+  type BoardMoveRequest,
   type PipelineFilterChip,
   type PipelineSavedView,
   type PipelineShellActionId,
@@ -27,6 +31,9 @@ import "./app-shell.css";
 
 interface AppShellCatalogState {
   readonly activeDestination: ShellDestinationId;
+  readonly boardAnnouncement: string;
+  readonly boardTimelineEventCount: number;
+  readonly boardUndoAvailable: boolean;
   readonly density: DensityMode;
   readonly homeMode: HomeDashboardModel["state"];
   readonly homeSnapshotVisible: boolean;
@@ -80,6 +87,7 @@ const SEARCH_RESULTS = Object.freeze([
 ] as const satisfies readonly LocalSearchResult[]);
 
 const readAppearance = (): {
+  readonly boardMode: "large" | "standard";
   readonly density: DensityMode;
   readonly homeMode: HomeDashboardModel["state"];
   readonly pipelineSelectionCount: number;
@@ -87,12 +95,14 @@ const readAppearance = (): {
   readonly vaultHealth: VaultHealthState;
 } => {
   const parameters = new URLSearchParams(window.location.search);
+  const requestedBoard = parameters.get("board");
   const requestedDensity = parameters.get("density");
   const requestedHome = parameters.get("home");
   const requestedPipeline = parameters.get("pipeline");
   const requestedTheme = parameters.get("theme");
   const requestedHealth = parameters.get("health");
   return {
+    boardMode: requestedBoard === "large" ? "large" : "standard",
     density: requestedDensity === "compact" ? "compact" : "comfortable",
     homeMode: requestedHome === "empty" ? "empty" : "ready",
     pipelineSelectionCount: requestedPipeline === "selected" ? 2 : 0,
@@ -256,9 +266,207 @@ const INITIAL_PIPELINE_FILTERS = Object.freeze([
   { id: "priority-high", label: "Priority · High" },
 ] as const satisfies readonly PipelineFilterChip[]);
 
+const BOARD_STAGES = Object.freeze([
+  {
+    id: "saved",
+    name: "Saved",
+    semanticCategories: Object.freeze(["saved"] as const),
+    terminal: false,
+  },
+  {
+    id: "preparing",
+    name: "Preparing",
+    semanticCategories: Object.freeze(["preparing"] as const),
+    terminal: false,
+  },
+  {
+    id: "applied",
+    name: "Applied",
+    semanticCategories: Object.freeze(["applied"] as const),
+    terminal: false,
+  },
+  {
+    id: "interviewing",
+    name: "Interviewing",
+    semanticCategories: Object.freeze(["response", "interview"] as const),
+    terminal: false,
+  },
+  {
+    id: "offer",
+    name: "Offer",
+    semanticCategories: Object.freeze(["offer"] as const),
+    terminal: false,
+  },
+  {
+    id: "closed",
+    name: "Closed",
+    semanticCategories: Object.freeze(["rejected", "withdrawn", "archived"] as const),
+    terminal: true,
+  },
+] as const);
+
+const boardJob = (
+  id: string,
+  title: string,
+  company: string,
+  overrides: Partial<BoardJobCard> = {},
+): BoardJobCard =>
+  Object.freeze({
+    company,
+    id,
+    lastActivity: "Updated 2 days ago",
+    location: "United States",
+    nextAction: "Review role notes",
+    priority: "normal",
+    title,
+    warnings: Object.freeze([]),
+    workMode: "remote",
+    ...overrides,
+  });
+
+const STANDARD_BOARD_COLUMNS = Object.freeze([
+  {
+    items: Object.freeze([
+      boardJob("board-northstar", "Product Operations Lead", "Northstar Health", {
+        lastActivity: "Saved today",
+        nextAction: "Review source fields",
+        priority: "high",
+        warnings: Object.freeze(["unreviewed-source"]),
+      }),
+      boardJob("board-summit", "Program Manager", "Summit Labs", {
+        location: "Boston, MA",
+        nextAction: null,
+        workMode: "hybrid",
+      }),
+    ]),
+    stage: BOARD_STAGES[0],
+  },
+  {
+    items: Object.freeze([
+      boardJob("board-canvas", "Platform Engineer", "Canvas Works", {
+        location: "New York, NY",
+        nextAction: "Tailor resume",
+        priority: "high",
+        warnings: Object.freeze(["missing-document"]),
+        workMode: "hybrid",
+      }),
+    ]),
+    stage: BOARD_STAGES[1],
+  },
+  {
+    items: Object.freeze([
+      boardJob("board-arc", "Design Systems Lead", "Arc Studio", {
+        nextAction: "Follow up Friday",
+      }),
+      boardJob("board-orbit", "Operations Manager", "Orbit Foods", {
+        lastActivity: "Applied 4 days ago",
+        nextAction: null,
+        workMode: "onsite",
+      }),
+    ]),
+    stage: BOARD_STAGES[2],
+  },
+  {
+    items: Object.freeze([
+      boardJob("board-acme", "Senior Product Designer", "Acme Research", {
+        lastActivity: "Interview tomorrow",
+        location: "Philadelphia, PA",
+        nextAction: "Open interview plan",
+        priority: "high",
+        workMode: "hybrid",
+      }),
+    ]),
+    stage: BOARD_STAGES[3],
+  },
+  {
+    items: Object.freeze([
+      boardJob("board-lumen", "Product Strategy Lead", "Lumen Group", {
+        lastActivity: "Offer received today",
+        nextAction: "Review offer details",
+        priority: "high",
+      }),
+    ]),
+    stage: BOARD_STAGES[4],
+  },
+  {
+    items: Object.freeze([
+      boardJob("board-harbor", "Product Manager", "Harbor Systems", {
+        lastActivity: "Closed last week",
+        nextAction: null,
+        priority: "low",
+        workMode: "unspecified",
+      }),
+    ]),
+    stage: BOARD_STAGES[5],
+  },
+] as const satisfies readonly BoardColumn[]);
+
+const LARGE_BOARD_COLUMNS = Object.freeze([
+  {
+    items: Object.freeze([
+      ...STANDARD_BOARD_COLUMNS[0].items,
+      ...Array.from({ length: 70 }, (_, index) =>
+        boardJob(
+          `board-volume-${String(index + 1).padStart(2, "0")}`,
+          `Synthetic role ${String(index + 1)}`,
+          `Fixture company ${String(index + 1)}`,
+          {
+            lastActivity: `Updated ${String((index % 14) + 1)} days ago`,
+            nextAction: index % 3 === 0 ? "Review listing" : null,
+          },
+        ),
+      ),
+    ]),
+    stage: BOARD_STAGES[0],
+  },
+  ...STANDARD_BOARD_COLUMNS.slice(1),
+] as const satisfies readonly BoardColumn[]);
+
+interface BoardUndoRecord {
+  readonly fromStageId: string;
+  readonly jobId: string;
+  readonly title: string;
+  readonly toStageId: string;
+}
+
+const moveBoardJob = (
+  columns: readonly BoardColumn[],
+  request: BoardMoveRequest,
+): { readonly columns: readonly BoardColumn[]; readonly job: BoardJobCard } | null => {
+  const source = columns.find(({ stage }) => stage.id === request.fromStageId);
+  const target = columns.find(({ stage }) => stage.id === request.toStageId);
+  const job = source?.items.find(({ id }) => id === request.jobId);
+  if (source === undefined || target === undefined || job === undefined || source === target) {
+    return null;
+  }
+  return Object.freeze({
+    columns: Object.freeze(
+      columns.map((column) => {
+        if (column === source) {
+          return Object.freeze({
+            ...column,
+            items: Object.freeze(column.items.filter(({ id }) => id !== request.jobId)),
+          });
+        }
+        if (column === target) {
+          return Object.freeze({ ...column, items: Object.freeze([...column.items, job]) });
+        }
+        return column;
+      }),
+    ),
+    job,
+  });
+};
+
 const AppShellCatalog = () => {
   const appearance = useMemo(readAppearance, []);
   const [activeDestination, setActiveDestination] = useState<ShellDestinationId>("home");
+  const [boardAnnouncement, setBoardAnnouncement] = useState("");
+  const [boardColumns, setBoardColumns] = useState<readonly BoardColumn[]>(
+    appearance.boardMode === "large" ? LARGE_BOARD_COLUMNS : STANDARD_BOARD_COLUMNS,
+  );
+  const [boardTimelineEventCount, setBoardTimelineEventCount] = useState(0);
+  const [boardUndo, setBoardUndo] = useState<BoardUndoRecord | null>(null);
   const [homeSnapshotVisible, setHomeSnapshotVisible] = useState(true);
   const [pipelineFilters, setPipelineFilters] =
     useState<readonly PipelineFilterChip[]>(INITIAL_PIPELINE_FILTERS);
@@ -278,17 +486,18 @@ const AppShellCatalog = () => {
       : homeSnapshotVisible
         ? READY_HOME_MODEL
         : Object.freeze({ ...READY_HOME_MODEL, snapshot: null });
+  const boardMatchingCount = boardColumns.reduce((count, column) => count + column.items.length, 0);
   const pipelineModel: PipelineShellModel = Object.freeze({
     activeSavedViewId: pipelineSavedViewId,
     activeView: pipelineView,
     filters: pipelineFilters,
     inboxCount: 3,
-    matchingCount: 8,
+    matchingCount: boardMatchingCount,
     savedViews: PIPELINE_SAVED_VIEWS,
     searchQuery: pipelineSearchQuery,
     selectedCount: pipelineSelectedCount,
     sortLabel: "Recently updated",
-    totalCount: 12,
+    totalCount: boardMatchingCount + 4,
   });
 
   useEffect(() => {
@@ -311,6 +520,9 @@ const AppShellCatalog = () => {
       getState: () =>
         Object.freeze({
           activeDestination,
+          boardAnnouncement,
+          boardTimelineEventCount,
+          boardUndoAvailable: boardUndo !== null,
           density: appearance.density,
           homeMode: appearance.homeMode,
           homeSnapshotVisible,
@@ -327,6 +539,9 @@ const AppShellCatalog = () => {
   }, [
     activeDestination,
     appearance,
+    boardAnnouncement,
+    boardTimelineEventCount,
+    boardUndo,
     homeSnapshotVisible,
     lastActivity,
     pipelineFilters.length,
@@ -356,6 +571,52 @@ const AppShellCatalog = () => {
     setLastActivity(
       `Bulk action prepared for ${String(pipelineSelectedCount)} local jobs: ${action}. No records changed.`,
     );
+  };
+
+  const requestBoardMove = (request: BoardMoveRequest): void => {
+    const sourceName = boardColumns.find(({ stage }) => stage.id === request.fromStageId)?.stage
+      .name;
+    const targetName = boardColumns.find(({ stage }) => stage.id === request.toStageId)?.stage.name;
+    const jobTitle = boardColumns
+      .find(({ stage }) => stage.id === request.fromStageId)
+      ?.items.find(({ id }) => id === request.jobId)?.title;
+    if (request.requiresReopenConfirmation) {
+      const message = `Reopening ${jobTitle ?? "this job"} from ${sourceName ?? "a closed stage"} requires explicit confirmation. No move was made.`;
+      setBoardAnnouncement(message);
+      setLastActivity(message);
+      return;
+    }
+    const result = moveBoardJob(boardColumns, request);
+    if (result === null) return;
+    const message = `Moved ${result.job.title} from ${sourceName ?? "its prior stage"} to ${targetName ?? "the selected stage"} by ${request.method}. Timeline event recorded; undo is available.`;
+    setBoardColumns(result.columns);
+    setBoardTimelineEventCount((count) => count + 1);
+    setBoardUndo({
+      fromStageId: request.fromStageId,
+      jobId: request.jobId,
+      title: result.job.title,
+      toStageId: request.toStageId,
+    });
+    setBoardAnnouncement(message);
+    setLastActivity(message);
+  };
+
+  const undoBoardMove = (): void => {
+    if (boardUndo === null) return;
+    const result = moveBoardJob(boardColumns, {
+      fromStageId: boardUndo.toStageId,
+      jobId: boardUndo.jobId,
+      method: "keyboard",
+      requiresReopenConfirmation: false,
+      toStageId: boardUndo.fromStageId,
+    });
+    if (result === null) return;
+    const message = `Restored ${boardUndo.title} to its prior stage. The original timeline event remains and a reversal was recorded.`;
+    setBoardColumns(result.columns);
+    setBoardTimelineEventCount((count) => count + 1);
+    setBoardUndo(null);
+    setBoardAnnouncement(message);
+    setLastActivity(message);
   };
 
   return (
@@ -436,7 +697,26 @@ const AppShellCatalog = () => {
                 `Changed Pipeline presentation to ${view}. The record set remains unchanged.`,
               );
             }}
-          />
+          >
+            {pipelineView === "board" ? (
+              <PipelineBoard
+                announcement={boardAnnouncement}
+                columns={boardColumns}
+                onMoveRequest={requestBoardMove}
+                onOpenJob={(job) => {
+                  setLastActivity(`Opened local Board job: ${job.title} at ${job.company}.`);
+                }}
+                onUndo={undoBoardMove}
+                undo={
+                  boardUndo === null
+                    ? null
+                    : {
+                        description: `${boardUndo.title} moved. The original timeline event will remain if you undo.`,
+                      }
+                }
+              />
+            ) : null}
+          </PipelineShell>
         ) : (
           <section className="cd-shell-page-card min-h-72" aria-labelledby="destination-heading">
             <p className="m-0 text-xs font-bold uppercase tracking-wider text-[var(--color-text-subtle)]">
