@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-29
 Current milestone: Phase 1 — local tracker and recovery loop (`GATE-0` human validation remains blocked)
-Current work item: `BKP-001` — portable archive writer with manifest, data, attachments, and checksums
-Next recommended slice: `BKP-002` — human-readable JSON and CSV exports with documented field mapping
+Current work item: `BKP-002` — human-readable JSON and CSV exports with documented field mapping
+Next recommended slice: `BKP-003` — restore dry run, version/checksum validation, conflict preview, and transactional commit
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `BKP-002` — human-readable JSON and CSV exports with d
 | Field | Value |
 |---|---|
 | Milestone | Phase 1, with the independent Phase 0 human-validation gate retained below |
-| Item range | `BKP-001` |
+| Item range | `BKP-002` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-29 |
-| Expected proof | A deterministic golden archive containing a validated manifest, database/data entries, content-addressed attachment bytes, and checksums; corruption, missing-attachment, and browser/native logical-equivalence coverage |
+| Expected proof | Versioned human-readable JSON and RFC 4180-compatible CSV fixtures generated from production Phase 1 projections, with documented field mappings, provenance representation, deterministic ordering, encoding/escaping, and archive-writer integration |
 | Blocker | None for this slice. `UXR-004` through `UXR-008` still require the owner-authorized participant study before the Phase 1 UI lock; `FND-001` remains independently blocked. |
-| Next handoff | Implement and prove `BKP-001`, then continue to `BKP-002` without claiming `GATE-0` or resolving `Q-006` without participant evidence. |
+| Next handoff | Implement and prove `BKP-002`, then continue to `BKP-003` without claiming `GATE-0` or resolving `Q-006` without participant evidence. |
 
 ## Milestone status
 
@@ -187,7 +187,7 @@ Next recommended slice: `BKP-002` — human-readable JSON and CSV exports with d
 
 ## Backup, export, restore, delete
 
-- [ ] **BKP-001** Implement portable archive writer with manifest, database/data, attachments, and checksums. — Proof: _golden archive_
+- [x] **BKP-001** Implement portable archive writer with manifest, database/data, attachments, and checksums. — Proof: [deterministic golden archive, entry integrity, fail-closed validation, and hosted Chrome/Firefox reproduction](../../proof/phase-1-portable-archive-writer-verification.md)
 - [ ] **BKP-002** Implement human-readable JSON and CSV exports with documented field mapping. — Proof: _fixtures + schema docs_
 - [ ] **BKP-003** Implement restore dry run, version/checksum validation, conflict preview, and transactional commit. — Proof: _E2E + corruption tests_
 - [ ] **BKP-004** Implement desktop automatic backup rotation without deleting last known-good backup. — Proof: _filesystem tests_
