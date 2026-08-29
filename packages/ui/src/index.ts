@@ -5,6 +5,7 @@ export * from "./first-run.js";
 export * from "./foundations.js";
 export * from "./home-dashboard.js";
 export * from "./icon.js";
+export * from "./job-workspace-frame.js";
 export * from "./pipeline-board.js";
 export * from "./pipeline-shell.js";
 export * from "./pipeline-table.js";

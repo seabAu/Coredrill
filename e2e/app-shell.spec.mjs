@@ -312,7 +312,12 @@ test("Table validates low-risk edits, confirms reopening, and opens complex fiel
   const tableView = page.getByTestId("pipeline-table");
   const northstar = tableView.locator('[data-table-job="board-northstar"]');
   await northstar.getByRole("button", { name: "Product Operations Lead", exact: true }).click();
-  await expect(page.getByRole("status").first()).toContainText("Opened local Table job");
+  await expect(page.getByRole("status").first()).toContainText(
+    "Opened contextual local Job workspace",
+  );
+  await page.keyboard.press("Escape");
+  await expect(page.locator('[data-job-workspace="board-northstar"]')).toHaveCount(0);
+  await expect(tableView).toBeVisible();
 
   await northstar
     .getByRole("button", { name: "Edit priority for Product Operations Lead" })
@@ -410,6 +415,194 @@ test("Table windows 2,000 rows within budget and owns narrow-screen overflow", a
   expect(tableDimensions.scrollWidth).toBeGreaterThan(tableDimensions.clientWidth);
   await attachAxe(page, testInfo, "table-mobile-forced-colors");
   await attachProof(page, testInfo, "table-mobile-forced-colors");
+});
+
+test("wide Pipeline opens a contextual Job route and restores exact Board context and focus", async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await openShell(page, { board: "large", pipeline: "selected" });
+  await page
+    .getByRole("navigation", { name: "Primary" })
+    .getByRole("link", { name: "Pipeline" })
+    .click();
+
+  const pipeline = page.getByTestId("pipeline-shell");
+  await pipeline.getByRole("searchbox", { name: "Search jobs" }).fill("Northstar");
+  const savedScroll = pipeline.getByRole("list", { name: "Saved jobs" });
+  const verticalScroll = await savedScroll.evaluate((element) => {
+    element.scrollTop = 520;
+    element.dispatchEvent(new Event("scroll"));
+    return element.scrollTop;
+  });
+  const boardColumns = pipeline.locator(".cd-board-columns");
+  const horizontalScroll = await boardColumns.evaluate((element) => {
+    element.scrollLeft = 300;
+    return element.scrollLeft;
+  });
+  const opener = pipeline
+    .locator('[data-board-job="board-arc"]')
+    .getByRole("button", { name: "Design Systems Lead", exact: true });
+  await opener.evaluate((button) => {
+    button.click();
+  });
+
+  await expect(page).toHaveURL(/\/jobs\/board-arc\/overview$/u);
+  const workspace = page.locator('[data-job-workspace="board-arc"]');
+  await expect(workspace).toHaveAttribute("data-workspace-mode", "contextual");
+  await expect(pipeline).toBeVisible();
+  await expect(workspace.getByRole("heading", { name: "Design Systems Lead" })).toBeFocused();
+  await expect(workspace.getByText("Arc Studio", { exact: true })).toBeVisible();
+  await expect(workspace.getByRole("button", { name: "Change status" })).toBeVisible();
+  await expect(workspace.getByRole("button", { name: "Set next action" })).toBeVisible();
+  await expect(workspace.getByRole("button", { name: "Prepare application" })).toBeVisible();
+  await workspace.getByRole("slider", { name: "Job workspace width" }).fill("720");
+  await expect(workspace).toHaveCSS("width", "720px");
+  await attachAxe(page, testInfo, "job-workspace-contextual-wide");
+  await attachProof(page, testInfo, "job-workspace-contextual-wide");
+
+  await page.keyboard.press("Escape");
+  await expect(workspace).toHaveCount(0);
+  await expect(page).toHaveURL(/\/pipeline\?savedView=active-search&view=board$/u);
+  await expect(pipeline.getByRole("searchbox", { name: "Search jobs" })).toHaveValue("Northstar");
+  await expect(pipeline.getByRole("region", { name: "Bulk actions" })).toContainText(
+    "2 jobs selected",
+  );
+  await expect(opener).toBeFocused();
+  await expect
+    .poll(() => savedScroll.evaluate((element) => element.scrollTop))
+    .toBe(verticalScroll);
+  await expect
+    .poll(() => boardColumns.evaluate((element) => element.scrollLeft))
+    .toBe(horizontalScroll);
+
+  await page.goForward();
+  await expect(page).toHaveURL(/\/jobs\/board-arc\/overview$/u);
+  await expect(workspace).toHaveAttribute("data-workspace-mode", "contextual");
+  expect((await page.evaluate(() => globalThis.coredrillAppShell?.getState()))?.workspaceMode).toBe(
+    "contextual",
+  );
+  await page.setViewportSize({ width: 800, height: 900 });
+  await expect(workspace).toHaveAttribute("data-workspace-mode", "full-page");
+  await expect(pipeline).toHaveCount(0);
+  const responsiveDimensions = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(responsiveDimensions.scrollWidth).toBeLessThanOrEqual(responsiveDimensions.clientWidth);
+});
+
+test("refresh converts a contextual Job entry to the full route and Back restores Pipeline", async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await openShell(page);
+  await page
+    .getByRole("navigation", { name: "Primary" })
+    .getByRole("link", { name: "Pipeline" })
+    .click();
+  await page
+    .locator('[data-board-job="board-northstar"]')
+    .getByRole("button", { name: "Product Operations Lead", exact: true })
+    .click();
+  await expect(page.locator('[data-job-workspace="board-northstar"]')).toHaveAttribute(
+    "data-workspace-mode",
+    "contextual",
+  );
+
+  await page.reload();
+  await page.waitForFunction(() => globalThis.coredrillAppShell !== undefined);
+  const workspace = page.locator('[data-job-workspace="board-northstar"]');
+  await expect(workspace).toHaveAttribute("data-workspace-mode", "full-page");
+  await expect(page.getByTestId("pipeline-shell")).toHaveCount(0);
+  await expect(workspace.getByRole("button", { name: "Back to Pipeline" })).toBeVisible();
+  await attachAxe(page, testInfo, "job-workspace-refresh-full-page");
+  await attachProof(page, testInfo, "job-workspace-refresh-full-page");
+
+  await workspace.getByRole("button", { name: "Back to Pipeline" }).click();
+  await expect(page.getByTestId("pipeline-shell")).toBeVisible();
+  await expect(page).toHaveURL(/\/pipeline\?savedView=active-search&view=board$/u);
+  expect(
+    (await page.evaluate(() => globalThis.coredrillAppShell?.getState()))?.workspaceMode,
+  ).toBeNull();
+});
+
+test("a deep-linked Job tab opens full-page and keeps tab history without a server account", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1360, height: 900 });
+  await page.goto("/jobs/board-northstar/timeline");
+  await page.waitForFunction(() => globalThis.coredrillAppShell !== undefined);
+
+  const workspace = page.locator('[data-job-workspace="board-northstar"]');
+  await expect(workspace).toHaveAttribute("data-workspace-mode", "full-page");
+  await expect(workspace.getByRole("button", { name: "Timeline" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  await workspace.getByRole("button", { name: "Source" }).click();
+  await expect(page).toHaveURL(/\/jobs\/board-northstar\/source$/u);
+  await expect(workspace.getByRole("button", { name: "Source" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  await page.goBack();
+  await expect(page).toHaveURL(/\/jobs\/board-northstar\/timeline$/u);
+  await expect(workspace.getByRole("button", { name: "Timeline" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+
+  await workspace.getByRole("button", { name: "Back to Pipeline" }).click();
+  await expect(page).toHaveURL(/\/pipeline\?savedView=active-search&view=board$/u);
+  await expect(page.getByTestId("pipeline-shell")).toBeVisible();
+});
+
+test("narrow Table opens full-page and restores local selection, scroll, and opener focus", async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 800, height: 900 });
+  await openShell(page);
+  await page
+    .getByRole("navigation", { name: "Primary" })
+    .getByRole("link", { name: "Pipeline" })
+    .click();
+  const pipeline = page.getByTestId("pipeline-shell");
+  await pipeline.getByRole("button", { name: "Table" }).click();
+  await pipeline.getByRole("searchbox", { name: "Search jobs" }).fill("Product");
+  const row = pipeline.locator('[data-table-job="board-northstar"]');
+  await row.getByRole("checkbox", { name: "Select Product Operations Lead" }).check();
+  const tableScroll = pipeline.getByRole("region", { name: "Pipeline Table for Active search" });
+  const horizontalScroll = await tableScroll.evaluate((element) => {
+    element.scrollLeft = 700;
+    return element.scrollLeft;
+  });
+  const opener = row.getByRole("button", { name: "Product Operations Lead", exact: true });
+  await opener.evaluate((button) => {
+    button.click();
+  });
+
+  const workspace = page.locator('[data-job-workspace="board-northstar"]');
+  await expect(workspace).toHaveAttribute("data-workspace-mode", "full-page");
+  await expect(pipeline).toHaveCount(0);
+  await expect(page).toHaveURL(/\/jobs\/board-northstar\/overview$/u);
+  await workspace.getByRole("button", { name: "Back to Pipeline" }).click();
+
+  await expect(pipeline).toBeVisible();
+  await expect(pipeline.getByRole("button", { name: "Table" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(pipeline.getByRole("searchbox", { name: "Search jobs" })).toHaveValue("Product");
+  await expect(pipeline.getByRole("region", { name: "Bulk actions" })).toContainText(
+    "1 job selected",
+  );
+  await expect(opener).toBeFocused();
+  await expect
+    .poll(() => tableScroll.evaluate((element) => element.scrollLeft))
+    .toBe(horizontalScroll);
+  await attachAxe(page, testInfo, "job-workspace-narrow-return");
+  await attachProof(page, testInfo, "job-workspace-narrow-return");
 });
 
 test("Board cards expose semantic context, keyboard moves, durable-event intent, and undo", async ({

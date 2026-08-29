@@ -1,6 +1,9 @@
 import {
   ApplicationShell,
   HomeDashboard,
+  JobWorkspaceFrame,
+  JOB_WORKSPACE_TABS,
+  PIPELINE_VIEW_IDS,
   PipelineBoard,
   PipelineShell,
   PipelineTable,
@@ -11,6 +14,10 @@ import {
   type HomeDashboardActionId,
   type HomeDashboardModel,
   type HomeRecentItem,
+  type JobWorkspaceActionId,
+  type JobWorkspaceFrameModel,
+  type JobWorkspaceMode,
+  type JobWorkspaceTabId,
   type LocalSearchResult,
   type PipelineBulkActionId,
   type BoardColumn,
@@ -52,6 +59,9 @@ interface AppShellCatalogState {
   readonly pipelineView: PipelineViewId;
   readonly tableColumnSaveCount: number;
   readonly tableEditCount: number;
+  readonly workspaceJobId: string | null;
+  readonly workspaceMode: JobWorkspaceMode | null;
+  readonly workspaceTab: JobWorkspaceTabId | null;
   readonly theme: ThemePreference;
   readonly vaultHealth: VaultHealthState;
 }
@@ -63,6 +73,202 @@ interface AppShellCatalogApi {
 declare global {
   var coredrillAppShell: AppShellCatalogApi | undefined;
 }
+
+interface PipelineScrollPosition {
+  readonly left: number;
+  readonly top: number;
+}
+
+interface PipelineStageScrollPosition extends PipelineScrollPosition {
+  readonly stageId: string;
+}
+
+interface PipelineReturnFocus {
+  readonly jobId: string;
+  readonly source: "board" | "table";
+}
+
+interface PipelineNavigationSnapshot {
+  readonly boardColumnsScroll: PipelineScrollPosition | null;
+  readonly boardScroll: readonly PipelineStageScrollPosition[];
+  readonly filters: readonly PipelineFilterChip[];
+  readonly focus: PipelineReturnFocus;
+  readonly savedViewId: string;
+  readonly searchQuery: string;
+  readonly selectedJobIds: readonly string[];
+  readonly tableScroll: PipelineScrollPosition | null;
+  readonly view: PipelineViewId;
+  readonly windowScrollY: number;
+}
+
+interface JobRouteState {
+  readonly jobId: string;
+  readonly mode: JobWorkspaceMode;
+  readonly responsiveContextual: boolean;
+  readonly returnSnapshot: PipelineNavigationSnapshot | null;
+  readonly tab: JobWorkspaceTabId;
+}
+
+type InitialLocation =
+  | { readonly kind: "home" }
+  | {
+      readonly kind: "pipeline";
+      readonly savedViewId: string;
+      readonly view: PipelineViewId;
+    }
+  | { readonly jobId: string; readonly kind: "job"; readonly tab: JobWorkspaceTabId };
+
+const PIPELINE_HISTORY_KIND = "coredrill-pipeline-v1";
+const JOB_HISTORY_KIND = "coredrill-job-v1";
+const JOB_ROUTE = /^\/jobs\/(?<jobId>[a-zA-Z0-9-]{1,128})\/(?<tab>[a-z-]{1,32})\/?$/u;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === "object" && !Array.isArray(value);
+
+const isPipelineView = (value: unknown): value is PipelineViewId =>
+  typeof value === "string" && PIPELINE_VIEW_IDS.some((view) => view === value);
+
+const isJobWorkspaceTab = (value: unknown): value is JobWorkspaceTabId =>
+  typeof value === "string" && JOB_WORKSPACE_TABS.some((tab) => tab === value);
+
+const readInitialLocation = (): InitialLocation => {
+  const match = JOB_ROUTE.exec(window.location.pathname);
+  if (match?.groups !== undefined) {
+    const jobId = match.groups["jobId"];
+    const tab = match.groups["tab"];
+    if (jobId !== undefined && isJobWorkspaceTab(tab)) return { jobId, kind: "job", tab };
+  }
+  if (window.location.pathname === "/pipeline") {
+    const parameters = new URLSearchParams(window.location.search);
+    const view = parameters.get("view");
+    return {
+      kind: "pipeline",
+      savedViewId: parameters.get("savedView") ?? "active-search",
+      view: isPipelineView(view) ? view : "board",
+    };
+  }
+  return { kind: "home" };
+};
+
+const readPipelineSnapshot = (value: unknown): PipelineNavigationSnapshot | null => {
+  if (!isRecord(value) || value["kind"] !== PIPELINE_HISTORY_KIND || !isRecord(value["snapshot"])) {
+    return null;
+  }
+  const snapshot = value["snapshot"];
+  const focus = snapshot["focus"];
+  const boardColumnsScroll = snapshot["boardColumnsScroll"];
+  const tableScroll = snapshot["tableScroll"];
+  if (
+    !isPipelineView(snapshot["view"]) ||
+    typeof snapshot["savedViewId"] !== "string" ||
+    typeof snapshot["searchQuery"] !== "string" ||
+    typeof snapshot["windowScrollY"] !== "number" ||
+    !Array.isArray(snapshot["filters"]) ||
+    !Array.isArray(snapshot["selectedJobIds"]) ||
+    !Array.isArray(snapshot["boardScroll"]) ||
+    !isRecord(focus) ||
+    typeof focus["jobId"] !== "string" ||
+    (focus["source"] !== "board" && focus["source"] !== "table") ||
+    (boardColumnsScroll !== null &&
+      (!isRecord(boardColumnsScroll) ||
+        typeof boardColumnsScroll["left"] !== "number" ||
+        typeof boardColumnsScroll["top"] !== "number")) ||
+    (tableScroll !== null &&
+      (!isRecord(tableScroll) ||
+        typeof tableScroll["left"] !== "number" ||
+        typeof tableScroll["top"] !== "number"))
+  ) {
+    return null;
+  }
+  const filters = snapshot["filters"];
+  const selectedJobIds = snapshot["selectedJobIds"];
+  const boardScroll = snapshot["boardScroll"];
+  if (
+    filters.some(
+      (filter) =>
+        !isRecord(filter) ||
+        typeof filter["id"] !== "string" ||
+        typeof filter["label"] !== "string",
+    ) ||
+    selectedJobIds.some((id) => typeof id !== "string") ||
+    boardScroll.some(
+      (position) =>
+        !isRecord(position) ||
+        typeof position["stageId"] !== "string" ||
+        typeof position["left"] !== "number" ||
+        typeof position["top"] !== "number",
+    )
+  ) {
+    return null;
+  }
+  const validatedFilters = filters as readonly PipelineFilterChip[];
+  const validatedBoardScroll = boardScroll as readonly PipelineStageScrollPosition[];
+  return Object.freeze({
+    boardColumnsScroll:
+      boardColumnsScroll === null
+        ? null
+        : Object.freeze({
+            left: boardColumnsScroll["left"] as number,
+            top: boardColumnsScroll["top"] as number,
+          }),
+    boardScroll: Object.freeze(
+      validatedBoardScroll.map((position) =>
+        Object.freeze({
+          left: position.left,
+          stageId: position.stageId,
+          top: position.top,
+        }),
+      ),
+    ),
+    filters: Object.freeze(
+      validatedFilters.map((filter) => Object.freeze({ id: filter.id, label: filter.label })),
+    ),
+    focus: Object.freeze({
+      jobId: focus["jobId"],
+      source: focus["source"],
+    }),
+    savedViewId: snapshot["savedViewId"],
+    searchQuery: snapshot["searchQuery"],
+    selectedJobIds: Object.freeze(selectedJobIds as string[]),
+    tableScroll:
+      tableScroll === null
+        ? null
+        : Object.freeze({ left: tableScroll["left"] as number, top: tableScroll["top"] as number }),
+    view: snapshot["view"],
+    windowScrollY: snapshot["windowScrollY"],
+  });
+};
+
+const readJobHistoryState = (
+  value: unknown,
+): Pick<JobRouteState, "mode" | "returnSnapshot"> | null => {
+  if (
+    !isRecord(value) ||
+    value["kind"] !== JOB_HISTORY_KIND ||
+    (value["mode"] !== "contextual" && value["mode"] !== "full-page")
+  ) {
+    return null;
+  }
+  return Object.freeze({
+    mode: value["mode"],
+    returnSnapshot: readPipelineSnapshot({
+      kind: PIPELINE_HISTORY_KIND,
+      snapshot: value["snapshot"],
+    }),
+  });
+};
+
+const pipelineUrl = (view: PipelineViewId, savedViewId: string): string => {
+  const parameters = new URLSearchParams({ savedView: savedViewId, view });
+  return `/pipeline?${parameters.toString()}`;
+};
+
+const jobUrl = (jobId: string, tab: JobWorkspaceTabId): string => `/jobs/${jobId}/${tab}`;
+
+const navigationWasReloaded = (): boolean =>
+  performance
+    .getEntriesByType("navigation")
+    .some((entry) => (entry as PerformanceNavigationTiming).type === "reload");
 
 const SEARCH_RESULTS = Object.freeze([
   {
@@ -552,7 +758,26 @@ const moveBoardJob = (
 
 const AppShellCatalog = () => {
   const appearance = useMemo(readAppearance, []);
-  const [activeDestination, setActiveDestination] = useState<ShellDestinationId>("home");
+  const initialLocation = useMemo(readInitialLocation, []);
+  const initialPipelineSnapshot = useMemo(() => readPipelineSnapshot(window.history.state), []);
+  const initialJobRoute = useMemo<JobRouteState | null>(() => {
+    if (initialLocation.kind !== "job") return null;
+    const historyState = readJobHistoryState(window.history.state);
+    const contextual =
+      historyState?.mode === "contextual" &&
+      !navigationWasReloaded() &&
+      window.matchMedia("(min-width: 80rem)").matches;
+    return Object.freeze({
+      jobId: initialLocation.jobId,
+      mode: contextual ? "contextual" : "full-page",
+      responsiveContextual: contextual,
+      returnSnapshot: historyState?.returnSnapshot ?? null,
+      tab: initialLocation.tab,
+    });
+  }, [initialLocation]);
+  const [activeDestination, setActiveDestination] = useState<ShellDestinationId>(
+    initialLocation.kind === "pipeline" || initialLocation.kind === "job" ? "pipeline" : "home",
+  );
   const [boardAnnouncement, setBoardAnnouncement] = useState("");
   const [boardColumns, setBoardColumns] = useState<readonly BoardColumn[]>(
     appearance.boardMode === "large" ? LARGE_BOARD_COLUMNS : STANDARD_BOARD_COLUMNS,
@@ -560,26 +785,44 @@ const AppShellCatalog = () => {
   const [boardTimelineEventCount, setBoardTimelineEventCount] = useState(0);
   const [boardUndo, setBoardUndo] = useState<BoardUndoRecord | null>(null);
   const [homeSnapshotVisible, setHomeSnapshotVisible] = useState(true);
-  const [pipelineFilters, setPipelineFilters] =
-    useState<readonly PipelineFilterChip[]>(INITIAL_PIPELINE_FILTERS);
-  const [pipelineSavedViewId, setPipelineSavedViewId] = useState("active-search");
-  const [pipelineSearchQuery, setPipelineSearchQuery] = useState("");
-  const [pipelineSelectedJobIds, setPipelineSelectedJobIds] = useState<readonly string[]>(
-    Object.freeze(
-      STANDARD_TABLE_ROWS.slice(0, appearance.pipelineSelectionCount).map(({ id }) => id),
-    ),
+  const [pipelineFilters, setPipelineFilters] = useState<readonly PipelineFilterChip[]>(
+    initialPipelineSnapshot?.filters ?? INITIAL_PIPELINE_FILTERS,
   );
-  const [pipelineView, setPipelineView] = useState<PipelineViewId>(appearance.pipelineView);
+  const [pipelineSavedViewId, setPipelineSavedViewId] = useState(
+    PIPELINE_SAVED_VIEWS.some(
+      ({ id }) =>
+        id ===
+        (initialPipelineSnapshot?.savedViewId ??
+          (initialLocation.kind === "pipeline" ? initialLocation.savedViewId : "active-search")),
+    )
+      ? (initialPipelineSnapshot?.savedViewId ??
+          (initialLocation.kind === "pipeline" ? initialLocation.savedViewId : "active-search"))
+      : "active-search",
+  );
+  const [pipelineSearchQuery, setPipelineSearchQuery] = useState(
+    initialPipelineSnapshot?.searchQuery ?? "",
+  );
+  const [pipelineSelectedJobIds, setPipelineSelectedJobIds] = useState<readonly string[]>(
+    initialPipelineSnapshot?.selectedJobIds ??
+      Object.freeze(
+        STANDARD_TABLE_ROWS.slice(0, appearance.pipelineSelectionCount).map(({ id }) => id),
+      ),
+  );
+  const [pipelineView, setPipelineView] = useState<PipelineViewId>(
+    initialPipelineSnapshot?.view ??
+      (initialLocation.kind === "pipeline" ? initialLocation.view : appearance.pipelineView),
+  );
   const [tableColumnSaveCount, setTableColumnSaveCount] = useState(0);
   const [tableConfigurations, setTableConfigurations] = useState(INITIAL_TABLE_CONFIGURATIONS);
   const [tableEditCount, setTableEditCount] = useState(0);
   const [tableRows, setTableRows] = useState<readonly PipelineTableJob[]>(
     appearance.tableMode === "large" ? LARGE_TABLE_ROWS : STANDARD_TABLE_ROWS,
   );
+  const [workspaceRoute, setWorkspaceRoute] = useState<JobRouteState | null>(initialJobRoute);
+  const [workspaceWidth, setWorkspaceWidth] = useState(640);
   const [lastActivity, setLastActivity] = useState(
     "Shell ready. All displayed records are synthetic.",
   );
-  const page = PAGE_COPY[activeDestination];
   const homeModel: HomeDashboardModel =
     appearance.homeMode === "empty"
       ? EMPTY_HOME_MODEL
@@ -591,6 +834,29 @@ const AppShellCatalog = () => {
   const pipelineSelectedCount = pipelineSelectedJobIds.length;
   const tableConfiguration =
     tableConfigurations[pipelineSavedViewId] ?? DEFAULT_PIPELINE_TABLE_COLUMNS;
+  const workspaceJob =
+    workspaceRoute === null
+      ? undefined
+      : (tableRows.find(({ id }) => id === workspaceRoute.jobId) ??
+        STANDARD_TABLE_ROWS.find(({ id }) => id === workspaceRoute.jobId));
+  const workspaceModel: JobWorkspaceFrameModel | null =
+    workspaceJob === undefined
+      ? null
+      : Object.freeze({
+          company: workspaceJob.company,
+          id: workspaceJob.id,
+          nextAction:
+            workspaceJob.nextActionDate === null ? null : `Due ${workspaceJob.nextActionDate}`,
+          priority: workspaceJob.priority,
+          sourceFreshness: `Captured ${workspaceJob.capturedDate}`,
+          sourceLabel: workspaceJob.source,
+          status: workspaceJob.status?.name ?? "Unassigned",
+          title: workspaceJob.title,
+        });
+  const page =
+    workspaceRoute?.mode === "full-page" && workspaceModel !== null
+      ? Object.freeze({ eyebrow: "Local job workspace", title: workspaceModel.title })
+      : PAGE_COPY[activeDestination];
   const pipelineModel: PipelineShellModel = Object.freeze({
     activeSavedViewId: pipelineSavedViewId,
     activeView: pipelineView,
@@ -640,6 +906,9 @@ const AppShellCatalog = () => {
           tableEditCount,
           theme: appearance.theme,
           vaultHealth: appearance.vaultHealth,
+          workspaceJobId: workspaceRoute?.jobId ?? null,
+          workspaceMode: workspaceRoute?.mode ?? null,
+          workspaceTab: workspaceRoute?.tab ?? null,
         }),
     });
   }, [
@@ -657,6 +926,7 @@ const AppShellCatalog = () => {
     pipelineView,
     tableColumnSaveCount,
     tableEditCount,
+    workspaceRoute,
   ]);
 
   const recordAction = (action: ShellActionId): void => {
@@ -680,6 +950,241 @@ const AppShellCatalog = () => {
       `Bulk action prepared for ${String(pipelineSelectedCount)} local jobs: ${action}. No records changed.`,
     );
   };
+
+  const capturePipelineSnapshot = (focus: PipelineReturnFocus): PipelineNavigationSnapshot => {
+    const boardColumns = document.querySelector<HTMLElement>(".cd-board-columns");
+    const tableScroll = document.querySelector<HTMLElement>(".cd-table-scroll");
+    return Object.freeze({
+      boardColumnsScroll:
+        boardColumns === null
+          ? null
+          : Object.freeze({ left: boardColumns.scrollLeft, top: boardColumns.scrollTop }),
+      boardScroll: Object.freeze(
+        Array.from(document.querySelectorAll<HTMLElement>("[data-board-stage]")).flatMap(
+          (stage) => {
+            const scroll = stage.querySelector<HTMLElement>(".cd-board-column-scroll");
+            const stageId = stage.dataset["boardStage"];
+            return scroll === null || stageId === undefined
+              ? []
+              : [
+                  Object.freeze({
+                    left: scroll.scrollLeft,
+                    stageId,
+                    top: scroll.scrollTop,
+                  }),
+                ];
+          },
+        ),
+      ),
+      filters: Object.freeze(pipelineFilters.map((filter) => Object.freeze({ ...filter }))),
+      focus: Object.freeze(focus),
+      savedViewId: pipelineSavedViewId,
+      searchQuery: pipelineSearchQuery,
+      selectedJobIds: Object.freeze([...pipelineSelectedJobIds]),
+      tableScroll:
+        tableScroll === null
+          ? null
+          : Object.freeze({ left: tableScroll.scrollLeft, top: tableScroll.scrollTop }),
+      view: pipelineView,
+      windowScrollY: window.scrollY,
+    });
+  };
+
+  const restorePipelineSnapshot = (snapshot: PipelineNavigationSnapshot): void => {
+    setPipelineFilters(snapshot.filters);
+    setPipelineSavedViewId(
+      PIPELINE_SAVED_VIEWS.some(({ id }) => id === snapshot.savedViewId)
+        ? snapshot.savedViewId
+        : "active-search",
+    );
+    setPipelineSearchQuery(snapshot.searchQuery);
+    setPipelineSelectedJobIds(snapshot.selectedJobIds);
+    setPipelineView(snapshot.view);
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        const boardColumns = document.querySelector<HTMLElement>(".cd-board-columns");
+        if (boardColumns !== null && snapshot.boardColumnsScroll !== null) {
+          boardColumns.scrollTo(snapshot.boardColumnsScroll);
+        }
+        for (const position of snapshot.boardScroll) {
+          const stage = Array.from(
+            document.querySelectorAll<HTMLElement>("[data-board-stage]"),
+          ).find((candidate) => candidate.dataset["boardStage"] === position.stageId);
+          stage?.querySelector<HTMLElement>(".cd-board-column-scroll")?.scrollTo(position);
+        }
+        const tableScroll = document.querySelector<HTMLElement>(".cd-table-scroll");
+        if (tableScroll !== null && snapshot.tableScroll !== null) {
+          tableScroll.scrollTo(snapshot.tableScroll);
+        }
+        window.scrollTo({ top: snapshot.windowScrollY });
+        const recordAttribute = snapshot.focus.source === "board" ? "boardJob" : "tableJob";
+        const record = Array.from(
+          document.querySelectorAll<HTMLElement>(
+            snapshot.focus.source === "board" ? "[data-board-job]" : "[data-table-job]",
+          ),
+        ).find((candidate) => candidate.dataset[recordAttribute] === snapshot.focus.jobId);
+        record
+          ?.querySelector<HTMLElement>(
+            snapshot.focus.source === "board" ? ".cd-board-card-title" : ".cd-table-open-job",
+          )
+          ?.focus();
+      });
+    });
+  };
+
+  const openJobWorkspace = (jobId: string, source: PipelineReturnFocus["source"]): void => {
+    const snapshot = capturePipelineSnapshot({ jobId, source });
+    const mode: JobWorkspaceMode = window.matchMedia("(min-width: 80rem)").matches
+      ? "contextual"
+      : "full-page";
+    window.history.replaceState(
+      { kind: PIPELINE_HISTORY_KIND, snapshot },
+      "",
+      pipelineUrl(pipelineView, pipelineSavedViewId),
+    );
+    window.history.pushState(
+      { kind: JOB_HISTORY_KIND, mode, snapshot },
+      "",
+      jobUrl(jobId, "overview"),
+    );
+    setWorkspaceRoute({
+      jobId,
+      mode,
+      responsiveContextual: mode === "contextual",
+      returnSnapshot: snapshot,
+      tab: "overview",
+    });
+    setLastActivity(
+      `Opened ${mode === "contextual" ? "contextual" : "full-page"} local Job workspace.`,
+    );
+  };
+
+  const navigateToPipelineFallback = (): void => {
+    const url = pipelineUrl(pipelineView, pipelineSavedViewId);
+    window.history.pushState({ kind: PIPELINE_HISTORY_KIND, snapshot: null }, "", url);
+    setActiveDestination("pipeline");
+    setWorkspaceRoute(null);
+    setLastActivity("Returned to the local Pipeline.");
+  };
+
+  const closeWorkspace = (): void => {
+    if (workspaceRoute?.returnSnapshot === null || workspaceRoute === null) {
+      navigateToPipelineFallback();
+      return;
+    }
+    window.history.back();
+  };
+
+  const changeWorkspaceTab = (tab: JobWorkspaceTabId): void => {
+    if (workspaceRoute === null || tab === workspaceRoute.tab) return;
+    window.history.pushState(
+      {
+        kind: JOB_HISTORY_KIND,
+        mode: workspaceRoute.mode,
+        snapshot: workspaceRoute.returnSnapshot,
+      },
+      "",
+      jobUrl(workspaceRoute.jobId, tab),
+    );
+    setWorkspaceRoute({ ...workspaceRoute, tab });
+    setLastActivity(`Opened local Job workspace tab: ${tab}.`);
+  };
+
+  const recordWorkspaceAction = (action: JobWorkspaceActionId): void => {
+    if (action === "open-source") {
+      changeWorkspaceTab("source");
+      return;
+    }
+    setLastActivity(`Job workspace action selected: ${action}. No external request was made.`);
+  };
+
+  const navigateDestination = (destination: ShellDestinationId): void => {
+    setWorkspaceRoute(null);
+    setActiveDestination(destination);
+    if (destination === "pipeline") {
+      window.history.pushState(
+        { kind: PIPELINE_HISTORY_KIND, snapshot: null },
+        "",
+        pipelineUrl(pipelineView, pipelineSavedViewId),
+      );
+    } else if (
+      window.location.pathname.startsWith("/jobs/") ||
+      window.location.pathname === "/pipeline"
+    ) {
+      window.history.pushState(null, "", "/app-shell.html");
+    }
+    setLastActivity(`Opened ${PAGE_COPY[destination].title} locally.`);
+  };
+
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent): void => {
+      const location = readInitialLocation();
+      if (location.kind === "job") {
+        const historyState = readJobHistoryState(event.state);
+        const mode: JobWorkspaceMode =
+          historyState?.mode === "contextual" && window.matchMedia("(min-width: 80rem)").matches
+            ? "contextual"
+            : "full-page";
+        setActiveDestination("pipeline");
+        setWorkspaceRoute({
+          jobId: location.jobId,
+          mode,
+          responsiveContextual: historyState?.mode === "contextual",
+          returnSnapshot: historyState?.returnSnapshot ?? null,
+          tab: location.tab,
+        });
+        setLastActivity(`Restored local Job workspace history at ${location.tab}.`);
+        return;
+      }
+      setWorkspaceRoute(null);
+      if (location.kind === "pipeline") {
+        setActiveDestination("pipeline");
+        const snapshot = readPipelineSnapshot(event.state);
+        if (snapshot === null) {
+          setPipelineView(location.view);
+          setPipelineSavedViewId(
+            PIPELINE_SAVED_VIEWS.some(({ id }) => id === location.savedViewId)
+              ? location.savedViewId
+              : "active-search",
+          );
+        } else {
+          restorePipelineSnapshot(snapshot);
+        }
+        setLastActivity("Restored the exact local Pipeline return context.");
+      } else {
+        setActiveDestination("home");
+        setLastActivity("Returned to Home locally.");
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  });
+
+  useEffect(() => {
+    if (workspaceRoute?.mode !== "contextual") return undefined;
+    const closeOnEscape = (event: KeyboardEvent): void => {
+      if (event.key === "Escape") closeWorkspace();
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  });
+
+  useEffect(() => {
+    const widePipeline = window.matchMedia("(min-width: 80rem)");
+    const updateWorkspaceMode = (): void => {
+      if (workspaceRoute?.responsiveContextual !== true) return;
+      const mode: JobWorkspaceMode = widePipeline.matches ? "contextual" : "full-page";
+      if (mode !== workspaceRoute.mode) setWorkspaceRoute({ ...workspaceRoute, mode });
+    };
+    widePipeline.addEventListener("change", updateWorkspaceMode);
+    return () => {
+      widePipeline.removeEventListener("change", updateWorkspaceMode);
+    };
+  });
 
   const requestTableEdit = (request: PipelineTableEditRequest): PipelineTableEditResult => {
     const current = tableRows.find(({ id }) => id === request.jobId);
@@ -848,10 +1353,7 @@ const AppShellCatalog = () => {
       activeDestination={activeDestination}
       inboxCount={3}
       onAction={recordAction}
-      onNavigate={(destination) => {
-        setActiveDestination(destination);
-        setLastActivity(`Opened ${PAGE_COPY[destination].title} locally.`);
-      }}
+      onNavigate={navigateDestination}
       onSearchResult={(result) => {
         setLastActivity(`Opened local ${result.kind}: ${result.title}.`);
       }}
@@ -887,94 +1389,139 @@ const AppShellCatalog = () => {
             onNavigateRecent={openRecent}
           />
         ) : activeDestination === "pipeline" ? (
-          <PipelineShell
-            model={pipelineModel}
-            onAction={recordPipelineAction}
-            onBulkAction={recordPipelineBulkAction}
-            onClearFilters={() => {
-              setPipelineFilters(Object.freeze([]));
-              setLastActivity("Cleared the visible Pipeline filters locally.");
-            }}
-            onClearSelection={() => {
-              setPipelineSelectedJobIds(Object.freeze([]));
-              setLastActivity("Cleared the local Pipeline selection.");
-            }}
-            onRemoveFilter={(filter) => {
-              setPipelineFilters((current) =>
-                Object.freeze(current.filter(({ id }) => id !== filter.id)),
-              );
-              setLastActivity(`Removed local filter: ${filter.label}.`);
-            }}
-            onSavedViewChange={(savedView) => {
-              setPipelineSavedViewId(savedView.id);
-              setLastActivity(`Opened saved local view: ${savedView.label}.`);
-            }}
-            onSearchQueryChange={(query) => {
-              setPipelineSearchQuery(query);
-              setLastActivity(
-                query === "" ? "Cleared Pipeline search." : `Searched local jobs: ${query}.`,
-              );
-            }}
-            onViewChange={(view) => {
-              setPipelineView(view);
-              setLastActivity(
-                `Changed Pipeline presentation to ${view}. The record set remains unchanged.`,
-              );
-            }}
-          >
-            {pipelineView === "board" ? (
-              <PipelineBoard
-                announcement={boardAnnouncement}
-                columns={boardColumns}
-                onMoveRequest={requestBoardMove}
-                onOpenJob={(job) => {
-                  setLastActivity(`Opened local Board job: ${job.title} at ${job.company}.`);
+          workspaceRoute?.mode === "full-page" && workspaceModel !== null ? (
+            <JobWorkspaceFrame
+              activeTab={workspaceRoute.tab}
+              mode="full-page"
+              model={workspaceModel}
+              onAction={recordWorkspaceAction}
+              onRequestClose={closeWorkspace}
+              onTabChange={changeWorkspaceTab}
+            />
+          ) : (
+            <div
+              className={
+                workspaceRoute?.mode === "contextual" && workspaceModel !== null
+                  ? "cd-pipeline-workspace-layout"
+                  : undefined
+              }
+            >
+              <PipelineShell
+                model={pipelineModel}
+                onAction={recordPipelineAction}
+                onBulkAction={recordPipelineBulkAction}
+                onClearFilters={() => {
+                  setPipelineFilters(Object.freeze([]));
+                  setLastActivity("Cleared the visible Pipeline filters locally.");
                 }}
-                onUndo={undoBoardMove}
-                undo={
-                  boardUndo === null
-                    ? null
-                    : {
-                        description: `${boardUndo.title} moved. The original timeline event will remain if you undo.`,
-                      }
-                }
-              />
-            ) : (
-              <PipelineTable
-                columnConfiguration={tableConfiguration}
-                onColumnConfigurationChange={(configuration) => {
-                  setTableConfigurations((current) =>
-                    Object.freeze({ ...current, [pipelineSavedViewId]: configuration }),
+                onClearSelection={() => {
+                  setPipelineSelectedJobIds(Object.freeze([]));
+                  setLastActivity("Cleared the local Pipeline selection.");
+                }}
+                onRemoveFilter={(filter) => {
+                  setPipelineFilters((current) =>
+                    Object.freeze(current.filter(({ id }) => id !== filter.id)),
                   );
-                  setTableColumnSaveCount((count) => count + 1);
+                  setLastActivity(`Removed local filter: ${filter.label}.`);
+                }}
+                onSavedViewChange={(savedView) => {
+                  setPipelineSavedViewId(savedView.id);
+                  if (workspaceRoute === null) {
+                    window.history.replaceState(
+                      window.history.state,
+                      "",
+                      pipelineUrl(pipelineView, savedView.id),
+                    );
+                  }
+                  setLastActivity(`Opened saved local view: ${savedView.label}.`);
+                }}
+                onSearchQueryChange={(query) => {
+                  setPipelineSearchQuery(query);
                   setLastActivity(
-                    `Saved Table columns for ${PIPELINE_SAVED_VIEWS.find(({ id }) => id === pipelineSavedViewId)?.label ?? "this local view"}.`,
+                    query === "" ? "Cleared Pipeline search." : `Searched local jobs: ${query}.`,
                   );
                 }}
-                onEditRequest={requestTableEdit}
-                onOpenJob={(job) => {
-                  setLastActivity(`Opened local Table job: ${job.title} at ${job.company}.`);
-                }}
-                onSelectionChange={(job, selected) => {
-                  setPipelineSelectedJobIds((current) =>
-                    selected
-                      ? Object.freeze([...new Set([...current, job.id])])
-                      : Object.freeze(current.filter((id) => id !== job.id)),
-                  );
+                onViewChange={(view) => {
+                  setPipelineView(view);
+                  if (workspaceRoute === null) {
+                    window.history.replaceState(
+                      window.history.state,
+                      "",
+                      pipelineUrl(view, pipelineSavedViewId),
+                    );
+                  }
                   setLastActivity(
-                    `${selected ? "Selected" : "Cleared"} ${job.title} for local bulk actions.`,
+                    `Changed Pipeline presentation to ${view}. The record set remains unchanged.`,
                   );
                 }}
-                rows={tableRows}
-                selectedJobIds={pipelineSelectedJobIds}
-                statusOptions={TABLE_STATUS_OPTIONS}
-                viewName={
-                  PIPELINE_SAVED_VIEWS.find(({ id }) => id === pipelineSavedViewId)?.label ??
-                  "Current view"
-                }
-              />
-            )}
-          </PipelineShell>
+              >
+                {pipelineView === "board" ? (
+                  <PipelineBoard
+                    announcement={boardAnnouncement}
+                    columns={boardColumns}
+                    onMoveRequest={requestBoardMove}
+                    onOpenJob={(job) => {
+                      openJobWorkspace(job.id, "board");
+                    }}
+                    onUndo={undoBoardMove}
+                    undo={
+                      boardUndo === null
+                        ? null
+                        : {
+                            description: `${boardUndo.title} moved. The original timeline event will remain if you undo.`,
+                          }
+                    }
+                  />
+                ) : (
+                  <PipelineTable
+                    columnConfiguration={tableConfiguration}
+                    onColumnConfigurationChange={(configuration) => {
+                      setTableConfigurations((current) =>
+                        Object.freeze({ ...current, [pipelineSavedViewId]: configuration }),
+                      );
+                      setTableColumnSaveCount((count) => count + 1);
+                      setLastActivity(
+                        `Saved Table columns for ${PIPELINE_SAVED_VIEWS.find(({ id }) => id === pipelineSavedViewId)?.label ?? "this local view"}.`,
+                      );
+                    }}
+                    onEditRequest={requestTableEdit}
+                    onOpenJob={(job) => {
+                      openJobWorkspace(job.id, "table");
+                    }}
+                    onSelectionChange={(job, selected) => {
+                      setPipelineSelectedJobIds((current) =>
+                        selected
+                          ? Object.freeze([...new Set([...current, job.id])])
+                          : Object.freeze(current.filter((id) => id !== job.id)),
+                      );
+                      setLastActivity(
+                        `${selected ? "Selected" : "Cleared"} ${job.title} for local bulk actions.`,
+                      );
+                    }}
+                    rows={tableRows}
+                    selectedJobIds={pipelineSelectedJobIds}
+                    statusOptions={TABLE_STATUS_OPTIONS}
+                    viewName={
+                      PIPELINE_SAVED_VIEWS.find(({ id }) => id === pipelineSavedViewId)?.label ??
+                      "Current view"
+                    }
+                  />
+                )}
+              </PipelineShell>
+              {workspaceRoute?.mode === "contextual" && workspaceModel !== null ? (
+                <JobWorkspaceFrame
+                  activeTab={workspaceRoute.tab}
+                  contextualWidth={workspaceWidth}
+                  mode="contextual"
+                  model={workspaceModel}
+                  onAction={recordWorkspaceAction}
+                  onContextualWidthChange={setWorkspaceWidth}
+                  onRequestClose={closeWorkspace}
+                  onTabChange={changeWorkspaceTab}
+                />
+              ) : null}
+            </div>
+          )
         ) : (
           <section className="cd-shell-page-card min-h-72" aria-labelledby="destination-heading">
             <p className="m-0 text-xs font-bold uppercase tracking-wider text-[var(--color-text-subtle)]">

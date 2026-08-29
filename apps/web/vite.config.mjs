@@ -2,8 +2,28 @@ import { defineConfig } from "vite";
 import { fileURLToPath } from "node:url";
 import tailwindcss from "@tailwindcss/vite";
 
+const installAppShellHistoryFallback = (server) => {
+  server.middlewares.use((request, _response, next) => {
+    const acceptsHtml = request.headers.accept?.includes("text/html") === true;
+    if (
+      request.method === "GET" &&
+      acceptsHtml &&
+      /^\/(?:pipeline(?:\/.*)?|jobs\/[^/]+\/[^/?#]+)(?:[?#].*)?$/u.test(request.url ?? "")
+    ) {
+      request.url = "/app-shell.html";
+    }
+    next();
+  });
+};
+
+const appShellHistoryFallback = {
+  name: "coredrill-app-shell-history-fallback",
+  configurePreviewServer: installAppShellHistoryFallback,
+  configureServer: installAppShellHistoryFallback,
+};
+
 export default defineConfig({
-  plugins: [tailwindcss()],
+  plugins: [appShellHistoryFallback, tailwindcss()],
   build: {
     rollupOptions: {
       input: {
