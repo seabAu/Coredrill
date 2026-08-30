@@ -447,8 +447,9 @@
         "id": "A11Y-AXE",
         "method": "Automated axe checks on every implemented core route/state/theme/density",
         "targetPriority": "required",
-        "availability": "planned",
-        "verification": "not-executed"
+        "availability": "available",
+        "verification": "passed",
+        "evidence": "docs/proof/phase-1-accessibility-verification.md#available-matrix-results"
       },
       {
         "id": "A11Y-KEYBOARD",
@@ -503,15 +504,17 @@
         "id": "A11Y-REFLOW",
         "method": "320 CSS-pixel reflow case, approximately 400% zoom at a 1280 CSS-pixel viewport, with no loss of information or two-dimensional scrolling except allowed content",
         "targetPriority": "required",
-        "availability": "planned",
-        "verification": "not-executed"
+        "availability": "available",
+        "verification": "passed",
+        "evidence": "docs/proof/phase-1-accessibility-verification.md#available-matrix-results"
       },
       {
         "id": "A11Y-RESPONSIVE",
         "method": "Responsive and keyboard checks at every recorded viewport",
         "targetPriority": "required",
-        "availability": "planned",
-        "verification": "not-executed"
+        "availability": "available",
+        "verification": "passed",
+        "evidence": "docs/proof/phase-1-accessibility-verification.md#available-matrix-results"
       }
     ],
     "viewports": [

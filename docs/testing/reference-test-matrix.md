@@ -36,6 +36,13 @@ WCAG 2.2 AA is the normative target. Automated checks never establish conformanc
 - Windows forced colors/high contrast, reduced motion, screen magnification, browser text resize to 200%, and the separate 320-CSS-pixel reflow case (approximately 400% zoom at a 1280 CSS-pixel viewport).
 - Five responsive checkpoints: `360×800`, `768×1024`, `1024×768`, `1440×900`, and `1920×1080`.
 
+The available Phase 1 automation passes `A11Y-AXE`, `A11Y-REFLOW`, and
+`A11Y-RESPONSIVE` locally and in the exact Chrome 151/152 lanes; see the
+[Phase 1 accessibility verification report](../proof/phase-1-accessibility-verification.md).
+Manual keyboard, assistive-technology, screen-magnification, and 200% text-
+resize obligations remain `not-executed` and are not represented as
+conformance.
+
 ## Performance, privacy, and offline budgets
 
 | ID             | Measurement                                                    | Initial target                 | Status                                                            |
