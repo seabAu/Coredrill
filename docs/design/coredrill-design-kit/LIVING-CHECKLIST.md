@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-30
 Current milestone: Phase 2 — capture and approved extraction (`GATE-0` and `GATE-1` external-evidence blockers remain open)
-Current work item: `CAP-004` — sanitized source preview and excerpt/path navigation
-Next recommended slice: `CAP-005` after `CAP-004` proof
+Current work item: `CAP-005` — field-candidate/conflict preservation and confirmed-value protection
+Next recommended slice: `XTR-001` after `CAP-005` proof
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `CAP-005` after `CAP-004` proof
 | Field | Value |
 |---|---|
 | Milestone | Phase 2, with the independent Phase 0 and Phase 1 evidence gates retained below |
-| Item range | `CAP-004` |
+| Item range | `CAP-005` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-30 |
-| Expected proof | Hostile XSS fixtures plus a UI test for inert source preview and excerpt/path navigation |
-| Blocker | None for `CAP-004`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
-| Next handoff | Inspect the existing Inbox review and Source surfaces, then compose a sanitized preview over stored capture evidence with explicit excerpt/path navigation and no executable or implicitly trusted content. |
+| Expected proof | Property and regression tests that retain every candidate/conflict, apply the documented source ranking only as a suggestion, reject untrusted embedded confirmation, and keep an existing user-confirmed value selected until explicit replacement |
+| Blocker | None for `CAP-005`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
+| Next handoff | Compose a fail-closed application reconciliation policy over the existing field-evidence contracts and schema-92 candidate history, then prove deterministic ranking, conflict retention, and the existing explicit confirmed-value replacement guard without adding a speculative migration. |
 
 ## Milestone status
 
@@ -213,7 +213,7 @@ Next recommended slice: `CAP-005` after `CAP-004` proof
 - [x] **CAP-001** Implement capture envelope, source snapshot reference, checksum, nonce/sequence, expiry, and version compatibility. — Proof: [strict contract, property tests, reusable checksum verification, and hosted clean-commit matrix](../../proof/phase-2-capture-envelope-verification.md)
 - [x] **CAP-002** Implement ingestion idempotency and duplicate suggestions by source ID, canonical URL, content hash, and fuzzy title/company. — Proof: [transactional exact/content idempotency, explainable fixture/property suggestions, real-browser E2E, and hosted clean-commit matrix](../../proof/phase-2-capture-ingestion-verification.md)
 - [x] **CAP-003** Implement manual form, paste text/URL, saved HTML/text, and JSON capture paths. — Proof: [validated local routes, hostile-content/no-fetch E2E, and hosted clean-commit matrix](../../proof/phase-2-supplied-capture-verification.md)
-- [ ] **CAP-004** Implement sanitized source preview and excerpt/path navigation. — Proof: _XSS fixtures + UI test_
+- [x] **CAP-004** Implement sanitized source preview and excerpt/path navigation. — Proof: [hash-verified inert preview, hostile XSS fixtures, excerpt/path focus, cross-font reflow, and hosted clean-commit matrix](../../proof/phase-2-source-preview-verification.md)
 - [ ] **CAP-005** Preserve all field candidates/conflicts without overwriting user-confirmed values. — Proof: _property/regression tests_
 
 ## Extractors and policy

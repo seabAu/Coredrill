@@ -164,7 +164,9 @@ Do not imply that installing the PWA on a phone exposes the desktop/browser vaul
 
 Paste URL/text or import a saved HTML/PDF. The same capture contract and review queue run, with limitations shown when the source cannot be refreshed.
 
-`CAP-003` implements the first accountless supplied-content routes from the shared Add surface: a manual form, pasted listing text, a pasted HTTP(S) URL, and saved HTML, text, or JSON. A pasted URL is recorded as evidence and is never fetched. Saved HTML is parsed in a detached document, executable/embedded elements are removed, and only inert readable text enters the envelope; text and JSON inputs have explicit size or complexity bounds. Each successful route creates a validated `CaptureEnvelopeV1` and a durable inbox receipt, while invalid input remains in the form for correction. PDF import and source-preview navigation remain later checklist work.
+`CAP-003` implements the first accountless supplied-content routes from the shared Add surface: a manual form, pasted listing text, a pasted HTTP(S) URL, and saved HTML, text, or JSON. A pasted URL is recorded as evidence and is never fetched. Saved HTML is parsed in a detached document, executable/embedded elements are removed, and only inert readable text enters the envelope; text and JSON inputs have explicit size or complexity bounds. Each successful route creates a validated `CaptureEnvelopeV1` and a durable inbox receipt, while invalid input remains in the form for correction. PDF import remains later checklist work.
+
+`CAP-004` adds the durable Inbox preview over those receipts. Stored envelope JSON is revalidated and hash-checked before selected text, readable text, retained HTML, or structured JSON can become inert preview strings. The queue exposes exact snapshot paths and separate field-candidate excerpts; activating either moves focus to the source region and highlights retained matching text. Markup-shaped values remain text, no preview fetches a source, and the review surface reflows without page overflow at the narrow checkpoint.
 
 ### Research salary
 

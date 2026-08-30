@@ -54,6 +54,8 @@ Any URL fetcher enforces scheme/port, DNS and redirect revalidation, private/lin
 - No provider tokens in `localStorage`; browser BYOK must be user-unlocked and is discouraged compared with desktop secure storage/local AI.
 - Separate app origin from unrelated apps so OPFS/storage/service worker scope is isolated.
 
+`CAP-004` applies this rule to the durable Inbox. It rejects malformed or semantic-hash-drifted envelopes before projection, requires a detached HTML-to-text renderer for retained HTML, removes executable/embedded/media/vector/metadata nodes, and passes strings to ordinary React text rendering only. Hostile HTML and markup-shaped JSON fixtures prove zero script execution, zero external requests, zero automated Axe violations, exact excerpt/path focus, and narrow-screen reflow. Preview never follows the displayed source URL or mutates the capture.
+
 ### Database/file loss
 
 - Transactional writes, WAL/config verified per adapter, foreign keys on.
