@@ -8,7 +8,7 @@
 
 ## Outcome
 
-Coredrill can store, verify, overwrite, and delete a synthetic provider secret through Windows Credential Manager without returning the secret to the WebView or printing it in the proof process. The privileged API exposes only `store`, `status`, and `delete`; there is intentionally no IPC `get` operation. A future provider adapter must consume a stored credential inside Rust at the moment of an explicitly approved provider call.
+Coredrill can store, verify, overwrite, and delete a synthetic vault-scoped provider secret through Windows Credential Manager without returning the secret to the WebView or printing it in the proof process. The privileged API exposes only `store`, `status`, and `delete`; there is intentionally no IPC `get` operation. Protocol version 2 requires both durable vault ID and reviewed provider ID and derives a fixed non-content OS account identifier from the pair. A future provider adapter must consume a stored credential inside Rust at the moment of an explicitly approved provider call.
 
 The command fails closed with `secure_storage_unavailable` when the reviewed OS backend cannot initialize or complete an operation. It does not fall back to SQLite, repository configuration, `localStorage`, an environment file, or any other plaintext store. macOS/Linux secure-store selection and any encrypted passphrase-backed fallback remain cross-platform acceptance work for `NAT-008`.
 
@@ -16,11 +16,11 @@ The command fails closed with `secure_storage_unavailable` when the reviewed OS 
 
 The Tauri capability adds one generated permission for one versioned command, `native_secret_invoke`. Its strict tagged request contract accepts:
 
-- `store(providerId, secret)` for a non-empty, bounded secret;
-- `status(providerId)`, which reads only inside Rust and returns a boolean;
-- `delete(providerId)`, which reports whether an entry existed.
+- `store(vaultId, providerId, secret)` for a non-empty, bounded secret;
+- `status(vaultId, providerId)`, which reads only inside Rust and returns a boolean;
+- `delete(vaultId, providerId)`, which reports whether an entry existed.
 
-Request IDs and provider IDs are length- and character-bounded, unknown fields are denied, and the three response shapes contain only lifecycle booleans plus the non-sensitive backend label. Platform failures are discarded rather than formatted: callers receive one stable, content-free error code and message.
+Request IDs, vault IDs, and provider IDs are length- and character-bounded, unknown fields are denied, and the three response shapes contain only lifecycle booleans plus the non-sensitive backend label. Vault scoping prevents one vault's provider deletion from authorizing removal of another vault's entry for the same provider. Platform failures are discarded rather than formatted: callers receive one stable, content-free error code and message.
 
 Secret-bearing Rust strings implement zeroization on drop, including invalid-request and backend-failure paths. Retrieved byte buffers are zeroized before status returns. Windows Credential Manager operations are serialized under one mutex because the reviewed backend warns that same-entry calls from different threads may not sequence reliably. The selected store also clears its Windows API credential buffer; Coredrill does not claim control over copies temporarily owned by the WebView, operating system, or proof-process environment.
 
@@ -49,6 +49,13 @@ pnpm test:secure-storage:
 NAT005_SECRET_PROOF {"backend":"windows-credential-manager","stored":true,"retrievedInsideRust":true,"deleted":true,"secretExposed":false}
 cargo clippy --locked --all-targets --all-features -- -D warnings: no issues
 ```
+
+`BKP-006` reran the same redacted Windows proof on 2026-08-29 after the
+vault-scoped protocol revision and returned the equivalent
+`NAT008_SECRET_PROOF` success with `secretExposed: false`. The combined
+`native_vault_invoke` boundary separately proves deletion of only the registry
+entries derived for the target vault and restoration of staged user data when
+an injected secure-store deletion fails.
 
 Mock-backend unit tests separately prove response redaction, lifecycle behavior, strict validation, and stable content-free backend errors without touching an OS store.
 

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-native-vault-invoke"
+description = "Enables the native_vault_invoke command without any pre-configured scope."
+commands.allow = ["native_vault_invoke"]
+
+[[permission]]
+identifier = "deny-native-vault-invoke"
+description = "Denies the native_vault_invoke command without any pre-configured scope."
+commands.deny = ["native_vault_invoke"]

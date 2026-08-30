@@ -8,6 +8,7 @@
   "permissions": [
     "allow-native-storage-invoke",
     "allow-native-secret-invoke",
-    "allow-native-archive-invoke"
+    "allow-native-archive-invoke",
+    "allow-native-vault-invoke"
   ]
 }

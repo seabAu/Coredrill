@@ -1,11 +1,13 @@
 use std::sync::Mutex;
 
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use zeroize::Zeroize;
 
-pub const NATIVE_SECRET_PROTOCOL_VERSION: u16 = 1;
+pub const NATIVE_SECRET_PROTOCOL_VERSION: u16 = 2;
 
 const MAX_REQUEST_ID_BYTES: usize = 64;
+const VAULT_ID_BYTES: usize = 36;
 const MAX_PROVIDER_ID_BYTES: usize = 64;
 const MAX_SECRET_BYTES: usize = 2_048;
 const SECURE_STORAGE_BACKEND_UNAVAILABLE: &str = "unavailable";
@@ -16,11 +18,11 @@ const SECURE_STORAGE_BACKEND_MACOS: &str = "macos_keychain";
 #[cfg(target_os = "windows")]
 const SECURE_STORAGE_BACKEND_WINDOWS: &str = "windows_credential_manager";
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
-const PROVIDER_SECRET_SERVICE: &str = "app.coredrill.desktop.provider-secrets.v1";
+const PROVIDER_SECRET_SERVICE: &str = "app.coredrill.desktop.provider-secrets.v2";
 
 #[derive(Deserialize)]
 #[serde(transparent)]
-pub struct SecretValue(String);
+pub struct SecretValue(pub(crate) String);
 
 impl SecretValue {
     fn as_bytes(&self) -> &[u8] {
@@ -51,13 +53,16 @@ pub struct NativeSecretRequest {
 )]
 pub enum NativeSecretOperation {
     Store {
+        vault_id: String,
         provider_id: String,
         secret: SecretValue,
     },
     Status {
+        vault_id: String,
         provider_id: String,
     },
     Delete {
+        vault_id: String,
         provider_id: String,
     },
 }
@@ -125,7 +130,7 @@ impl NativeSecretError {
     }
 }
 
-trait SecretBackend: Send + Sync {
+pub(crate) trait SecretBackend: Send + Sync {
     fn name(&self) -> &'static str;
     fn store(&self, provider_id: &str, secret: &[u8]) -> Result<(), ()>;
     fn status(&self, provider_id: &str) -> Result<bool, ()>;
@@ -368,7 +373,7 @@ impl NativeSecretService {
     }
 
     #[cfg(test)]
-    fn with_backend(backend: Box<dyn SecretBackend>) -> Self {
+    pub(crate) fn with_backend(backend: Box<dyn SecretBackend>) -> Self {
         Self {
             backend,
             operation_lock: Mutex::new(()),
@@ -388,32 +393,39 @@ impl NativeSecretService {
         let backend = self.backend.name();
         let data = match request.operation {
             NativeSecretOperation::Store {
+                vault_id,
                 provider_id,
                 secret,
             } => {
-                validate_provider_id(&provider_id)?;
+                let account_id = scoped_provider_account(&vault_id, &provider_id)?;
                 validate_secret(&secret)?;
                 self.backend
-                    .store(&provider_id, secret.as_bytes())
+                    .store(&account_id, secret.as_bytes())
                     .map_err(|_| NativeSecretError::secure_storage_unavailable())?;
                 NativeSecretResponseData::Stored {
                     present: true,
                     backend,
                 }
             }
-            NativeSecretOperation::Status { provider_id } => {
-                validate_provider_id(&provider_id)?;
+            NativeSecretOperation::Status {
+                vault_id,
+                provider_id,
+            } => {
+                let account_id = scoped_provider_account(&vault_id, &provider_id)?;
                 let present = self
                     .backend
-                    .status(&provider_id)
+                    .status(&account_id)
                     .map_err(|_| NativeSecretError::secure_storage_unavailable())?;
                 NativeSecretResponseData::Status { present, backend }
             }
-            NativeSecretOperation::Delete { provider_id } => {
-                validate_provider_id(&provider_id)?;
+            NativeSecretOperation::Delete {
+                vault_id,
+                provider_id,
+            } => {
+                let account_id = scoped_provider_account(&vault_id, &provider_id)?;
                 let deleted = self
                     .backend
-                    .delete(&provider_id)
+                    .delete(&account_id)
                     .map_err(|_| NativeSecretError::secure_storage_unavailable())?;
                 NativeSecretResponseData::Deleted { deleted, backend }
             }
@@ -423,6 +435,36 @@ impl NativeSecretService {
             request_id,
             data,
         })
+    }
+
+    pub(crate) fn delete_for_vault(
+        &self,
+        vault_id: &str,
+        provider_id: &str,
+    ) -> Result<bool, NativeSecretError> {
+        let account_id = scoped_provider_account(vault_id, provider_id)?;
+        let _guard = self
+            .operation_lock
+            .lock()
+            .map_err(|_| NativeSecretError::secure_storage_unavailable())?;
+        self.backend
+            .delete(&account_id)
+            .map_err(|_| NativeSecretError::secure_storage_unavailable())
+    }
+
+    pub(crate) fn status_for_vault(
+        &self,
+        vault_id: &str,
+        provider_id: &str,
+    ) -> Result<bool, NativeSecretError> {
+        let account_id = scoped_provider_account(vault_id, provider_id)?;
+        let _guard = self
+            .operation_lock
+            .lock()
+            .map_err(|_| NativeSecretError::secure_storage_unavailable())?;
+        self.backend
+            .status(&account_id)
+            .map_err(|_| NativeSecretError::secure_storage_unavailable())
     }
 }
 
@@ -458,6 +500,42 @@ fn validate_provider_id(provider_id: &str) -> Result<(), NativeSecretError> {
     Ok(())
 }
 
+fn validate_vault_id(vault_id: &str) -> Result<(), NativeSecretError> {
+    if vault_id.len() != VAULT_ID_BYTES
+        || !vault_id.bytes().enumerate().all(|(index, byte)| {
+            if matches!(index, 8 | 13 | 18 | 23) {
+                byte == b'-'
+            } else {
+                byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte)
+            }
+        })
+    {
+        return Err(NativeSecretError::invalid_request());
+    }
+    Ok(())
+}
+
+pub(crate) fn scoped_provider_account(
+    vault_id: &str,
+    provider_id: &str,
+) -> Result<String, NativeSecretError> {
+    validate_vault_id(vault_id)?;
+    validate_provider_id(provider_id)?;
+    let mut hasher = Sha256::new();
+    hasher.update(b"coredrill-vault-provider-secret-v1\0");
+    hasher.update(vault_id.as_bytes());
+    hasher.update(b"\0");
+    hasher.update(provider_id.as_bytes());
+    let digest = hasher.finalize();
+    let mut account = String::with_capacity(73);
+    account.push_str("vault-v1-");
+    for byte in digest {
+        use std::fmt::Write;
+        write!(&mut account, "{byte:02x}").map_err(|_| NativeSecretError::invalid_request())?;
+    }
+    Ok(account)
+}
+
 fn validate_secret(secret: &SecretValue) -> Result<(), NativeSecretError> {
     if secret.as_bytes().is_empty()
         || secret.as_bytes().len() > MAX_SECRET_BYTES
@@ -482,7 +560,10 @@ mod tests {
     use super::{
         NATIVE_SECRET_PROTOCOL_VERSION, NativeSecretOperation, NativeSecretRequest,
         NativeSecretResponseData, NativeSecretService, SecretBackend, SecretValue,
+        scoped_provider_account,
     };
+
+    const VAULT_ID: &str = "0198f200-0000-7000-8000-000000000001";
 
     #[derive(Default)]
     struct MemorySecretBackend {
@@ -556,6 +637,7 @@ mod tests {
             .invoke(request(
                 "store-1",
                 NativeSecretOperation::Store {
+                    vault_id: VAULT_ID.to_owned(),
                     provider_id: "test-provider".to_owned(),
                     secret: SecretValue(synthetic_secret.to_owned()),
                 },
@@ -578,6 +660,7 @@ mod tests {
             .invoke(request(
                 "status-1",
                 NativeSecretOperation::Status {
+                    vault_id: VAULT_ID.to_owned(),
                     provider_id: "test-provider".to_owned(),
                 },
             ))
@@ -591,6 +674,7 @@ mod tests {
             .invoke(request(
                 "delete-1",
                 NativeSecretOperation::Delete {
+                    vault_id: VAULT_ID.to_owned(),
                     provider_id: "test-provider".to_owned(),
                 },
             ))
@@ -604,6 +688,7 @@ mod tests {
             .invoke(request(
                 "status-2",
                 NativeSecretOperation::Status {
+                    vault_id: VAULT_ID.to_owned(),
                     provider_id: "test-provider".to_owned(),
                 },
             ))
@@ -619,21 +704,24 @@ mod tests {
         let service = NativeSecretService::with_backend(Box::new(MemorySecretBackend::default()));
         let invalid_requests = [
             NativeSecretRequest {
-                protocol_version: 2,
+                protocol_version: 3,
                 request_id: "wrong-version".to_owned(),
                 operation: NativeSecretOperation::Status {
+                    vault_id: VAULT_ID.to_owned(),
                     provider_id: "provider".to_owned(),
                 },
             },
             request(
                 "bad-provider",
                 NativeSecretOperation::Status {
+                    vault_id: VAULT_ID.to_owned(),
                     provider_id: "../provider".to_owned(),
                 },
             ),
             request(
                 "empty-secret",
                 NativeSecretOperation::Store {
+                    vault_id: VAULT_ID.to_owned(),
                     provider_id: "provider".to_owned(),
                     secret: SecretValue(String::new()),
                 },
@@ -641,6 +729,7 @@ mod tests {
             request(
                 "nul-secret",
                 NativeSecretOperation::Store {
+                    vault_id: VAULT_ID.to_owned(),
                     provider_id: "provider".to_owned(),
                     secret: SecretValue("secret\0suffix".to_owned()),
                 },
@@ -664,6 +753,7 @@ mod tests {
             .invoke(request(
                 "failure-1",
                 NativeSecretOperation::Store {
+                    vault_id: VAULT_ID.to_owned(),
                     provider_id: provider_id.to_owned(),
                     secret: SecretValue(synthetic_secret.to_owned()),
                 },
@@ -722,6 +812,9 @@ mod tests {
             .expect("the system clock must follow the Unix epoch")
             .as_nanos();
         let provider_id = format!("nat008-{}-{nonce}", std::process::id());
+        let vault_id = VAULT_ID;
+        let account_id = scoped_provider_account(vault_id, &provider_id)
+            .expect("the proof account must be vault scoped");
         let expected_backend = backend.name();
         let service = NativeSecretService::with_backend(Box::new(backend.clone()));
 
@@ -738,12 +831,13 @@ mod tests {
 
         let _cleanup = ProofCleanup {
             backend: backend.clone(),
-            provider_id: provider_id.clone(),
+            provider_id: account_id.clone(),
         };
 
         let _ = service.invoke(request(
             "proof-cleanup-before",
             NativeSecretOperation::Delete {
+                vault_id: vault_id.to_owned(),
                 provider_id: provider_id.clone(),
             },
         ));
@@ -752,6 +846,7 @@ mod tests {
             .invoke(request(
                 "proof-store",
                 NativeSecretOperation::Store {
+                    vault_id: vault_id.to_owned(),
                     provider_id: provider_id.clone(),
                     secret: SecretValue(expected.as_str().to_owned()),
                 },
@@ -766,7 +861,7 @@ mod tests {
         }
 
         let mut retrieved = backend
-            .read_for_proof(&provider_id)
+            .read_for_proof(&account_id)
             .expect("the synthetic proof secret must be retrievable inside Rust");
         let matches_expected = retrieved.as_slice() == expected.as_bytes();
         retrieved.zeroize();
@@ -776,6 +871,7 @@ mod tests {
             .invoke(request(
                 "proof-delete",
                 NativeSecretOperation::Delete {
+                    vault_id: vault_id.to_owned(),
                     provider_id: provider_id.clone(),
                 },
             ))
@@ -789,6 +885,7 @@ mod tests {
             .invoke(request(
                 "proof-status-after",
                 NativeSecretOperation::Status {
+                    vault_id: vault_id.to_owned(),
                     provider_id: provider_id.clone(),
                 },
             ))
@@ -801,7 +898,10 @@ mod tests {
         let second_delete = service
             .invoke(request(
                 "proof-delete-again",
-                NativeSecretOperation::Delete { provider_id },
+                NativeSecretOperation::Delete {
+                    vault_id: vault_id.to_owned(),
+                    provider_id,
+                },
             ))
             .expect("deleting an absent proof secret must be idempotent");
         assert!(matches!(

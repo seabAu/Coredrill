@@ -20,6 +20,15 @@
 
 Secrets are not stored in ordinary settings.
 
+`BKP-006` uses the existing strict `app_setting` row
+`provider-secret-registry.v1` as a vault-local, versioned, sorted registry of
+reviewed provider IDs. It contains no secret bytes, keychain account names, or
+paths. The privileged desktop boundary derives the OS-store account from the
+durable vault ID plus provider ID; deletion fails closed if the registry is
+malformed. No schema migration is needed because the versioned JSON value fits
+the already accepted generic settings table. See [vault deletion version
+1](vault-deletion-v1.md).
+
 ### Candidate/career evidence
 
 `candidate_profile(id, display_name, summary, target_roles_json, location_id, work_preferences_json)`

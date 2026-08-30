@@ -257,6 +257,15 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
 - **Why:** Avoid false privacy promises and unrecoverable data loss.
 - **Revisit when:** Encryption spike establishes browser/desktop threat model, UX, key derivation, backup, and recovery.
 - **Phase 0 evidence (2026-08-24):** `NAT-005` and `NAT-008` implement store/status/delete through exact target-confined Windows Credential Manager, macOS Keychain, and Linux Secret Service providers with no plaintext fallback, no secret-read IPC, stable redacted errors, owned-buffer zeroization, and one-time synthetic lifecycle proofs. Linux native support remains diagnostic because of the shell dependency risk, not because secret storage falls back to plaintext; see [secure-storage verification](../../proof/native-secure-storage-verification.md) and [cross-platform native verification](../../proof/native-cross-platform-verification.md).
+- **Phase 1 deletion evidence (2026-08-29):** `BKP-006` makes every provider
+  secret account vault-scoped, retains only a strict provider-ID registry in
+  SQLite, and deletes registered accounts inside the combined privileged vault
+  operation. Database, unshared attachments, and managed backups stage before
+  credential cleanup; injected failure restores usable content and returns a
+  content-free warning that credentials already removed may need re-entry.
+  Browser/native results remain path-free and external portable archives remain
+  outside deletion scope. This strengthens D-050 without claiming vault
+  encryption; see [vault deletion version 1](vault-deletion-v1.md).
 
 ### D-051 — Portable archive is a core feature
 

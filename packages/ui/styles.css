@@ -234,6 +234,12 @@ textarea {
   transform: translateY(1px);
 }
 
+.cd-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+  transform: none;
+}
+
 .cd-button-primary {
   border-color: var(--color-accent);
   background: var(--color-accent);
@@ -248,6 +254,10 @@ textarea {
 .cd-button-danger {
   border-color: var(--color-danger);
   color: var(--color-danger);
+}
+
+.cd-button-danger:hover:not(:disabled) {
+  background: var(--color-danger-soft);
 }
 
 .cd-button-quiet {
@@ -401,6 +411,166 @@ textarea {
   .cd-vault-backup-alert,
   .cd-vault-backup-health-grid article {
     border-color: CanvasText;
+  }
+}
+
+/* Typed-confirmation vault deletion */
+
+.cd-vault-deletion-settings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  margin-block-start: var(--space-5);
+  padding: clamp(var(--space-4), 3vw, var(--space-6));
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+}
+
+.cd-vault-deletion-settings > div {
+  max-width: 48rem;
+}
+
+.cd-vault-deletion-settings h2,
+.cd-vault-deletion-settings p {
+  margin: 0;
+}
+
+.cd-vault-deletion-settings h2 {
+  margin-block-end: var(--space-2);
+}
+
+.cd-vault-deletion-settings p:not(.cd-vault-backup-eyebrow) {
+  color: var(--color-text-muted);
+}
+
+.cd-vault-deletion-dialog {
+  position: fixed;
+  z-index: 50;
+  top: min(6vh, 3rem);
+  left: 50%;
+  width: min(44rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  box-shadow: 0 1rem 3rem color-mix(in srgb, #000000 22%, transparent);
+  transform: translateX(-50%);
+  animation: cd-dialog-in var(--motion-standard) ease-out;
+}
+
+.cd-vault-deletion-warning,
+.cd-vault-deletion-scope,
+.cd-vault-deletion-confirmation,
+.cd-vault-deletion-actions,
+.cd-vault-deletion-error {
+  margin-inline: var(--space-4);
+}
+
+.cd-vault-deletion-warning {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-3);
+  margin-block-start: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-control);
+  background: var(--color-warning-soft);
+  outline: none;
+}
+
+.cd-vault-deletion-warning:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+
+.cd-vault-deletion-warning p,
+.cd-vault-deletion-scope p,
+.cd-vault-deletion-error p {
+  margin: var(--space-1) 0 0;
+}
+
+.cd-vault-deletion-scope {
+  padding-block: var(--space-4);
+}
+
+.cd-vault-deletion-scope h3 {
+  margin: 0;
+}
+
+.cd-vault-deletion-scope ul {
+  margin-block: var(--space-2);
+  padding-inline-start: var(--space-5);
+}
+
+.cd-vault-deletion-confirmation {
+  display: grid;
+  gap: var(--space-2);
+  font-weight: 700;
+}
+
+.cd-vault-deletion-confirmation code {
+  overflow-wrap: anywhere;
+}
+
+.cd-vault-deletion-confirmation input {
+  width: 100%;
+  min-height: var(--control-block-size);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.cd-vault-deletion-error {
+  margin-block-start: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-control);
+  background: var(--color-danger-soft);
+}
+
+.cd-vault-deletion-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: flex-end;
+  margin-block: var(--space-5) var(--space-4);
+  padding-block-start: var(--space-4);
+  border-block-start: 1px solid var(--color-border);
+}
+
+@media (max-width: 48rem) {
+  .cd-vault-deletion-settings,
+  .cd-vault-deletion-settings > .cd-button,
+  .cd-vault-deletion-actions .cd-button {
+    width: 100%;
+  }
+
+  .cd-vault-deletion-dialog {
+    top: var(--space-2);
+    width: calc(100vw - 1rem);
+    max-height: calc(100vh - 1rem);
+  }
+
+  .cd-vault-deletion-actions {
+    justify-content: stretch;
+  }
+}
+
+@media (forced-colors: active) {
+  .cd-vault-deletion-settings,
+  .cd-vault-deletion-dialog,
+  .cd-vault-deletion-warning,
+  .cd-vault-deletion-confirmation input,
+  .cd-vault-deletion-error {
+    border-color: CanvasText;
+    forced-color-adjust: auto;
   }
 }
 

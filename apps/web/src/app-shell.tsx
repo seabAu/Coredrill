@@ -20,6 +20,7 @@ import {
   isJobWorkspaceContentTab,
   matchesLocalSearchQuery,
   snoozeBrowserExportReminder,
+  VaultDeletionSettings,
   type BrowserExportReminder,
   type BrowserExportReminderAction,
   type BrowserVaultBackupModel,
@@ -58,6 +59,12 @@ import {
   type ThemePreference,
   type VaultHealthState,
 } from "@coredrill/ui";
+import type {
+  DeleteVaultInput,
+  VaultDeletionPreviewDto,
+  VaultDeletionResultDto,
+} from "@coredrill/application";
+import { entityId, instant } from "@coredrill/domain";
 import {
   inspectBrowserStorageEnvironment,
   type BrowserStorageEnvironment,
@@ -97,6 +104,9 @@ interface AppShellCatalogState {
   readonly theme: ThemePreference;
   readonly vaultHealth: VaultHealthState;
   readonly exportReminderState: BrowserExportReminder["state"];
+  readonly vaultDeleted: boolean;
+  readonly vaultDeletionStatus: VaultDeletionResultDto["status"] | null;
+  readonly vaultDeletionSubmitCount: number;
 }
 
 interface AppShellCatalogApi {
@@ -602,8 +612,24 @@ const NETWORK_MODEL = Object.freeze({
   }),
 } as const satisfies NetworkWorkspaceModel);
 
+const VAULT_DELETION_PREVIEW = Object.freeze({
+  previewId: entityId("application-operation", "0198f110-0000-7000-8000-000000000001"),
+  vaultId: entityId("vault", "0198f110-0000-7000-8000-000000000002"),
+  vaultName: "Job search 2026",
+  storageMode: "browser",
+  inventory: Object.freeze({
+    attachmentFiles: 0,
+    managedBackups: 0,
+    providerSecrets: 0,
+    sharedAttachmentFiles: 0,
+  }),
+  lastSuccessfulPortableExportAt: instant("2026-08-20T14:30:00.000Z"),
+  requiredConfirmation: "DELETE Job search 2026",
+} as const satisfies VaultDeletionPreviewDto);
+
 const readAppearance = (): {
   readonly boardMode: "large" | "standard";
+  readonly deletionMode: "cleanup" | "failure" | "ready";
   readonly density: DensityMode;
   readonly expectedDatabase: "found" | "missing";
   readonly homeMode: HomeDashboardModel["state"];
@@ -618,6 +644,7 @@ const readAppearance = (): {
   const parameters = new URLSearchParams(window.location.search);
   const requestedBoard = parameters.get("board");
   const requestedDensity = parameters.get("density");
+  const requestedDeletion = parameters.get("deletion");
   const requestedExpectedDatabase = parameters.get("expectedDatabase");
   const requestedHome = parameters.get("home");
   const requestedPipeline = parameters.get("pipeline");
@@ -627,6 +654,10 @@ const readAppearance = (): {
   const requestedWorkspaceState = parameters.get("workspaceState");
   return {
     boardMode: requestedBoard === "large" ? "large" : "standard",
+    deletionMode:
+      requestedDeletion === "cleanup" || requestedDeletion === "failure"
+        ? requestedDeletion
+        : "ready",
     density: requestedDensity === "compact" ? "compact" : "comfortable",
     expectedDatabase: requestedExpectedDatabase === "missing" ? "missing" : "found",
     homeMode: requestedHome === "empty" ? "empty" : "ready",
@@ -1243,6 +1274,10 @@ const AppShellCatalog = () => {
     deriveBrowserExportReminder({ enabled: true, nowUnixMs: Date.now() }),
   );
   const [persistenceRequestCount, setPersistenceRequestCount] = useState(0);
+  const [vaultDeletionStatus, setVaultDeletionStatus] = useState<
+    VaultDeletionResultDto["status"] | null
+  >(null);
+  const [vaultDeletionSubmitCount, setVaultDeletionSubmitCount] = useState(0);
   const [networkInteractionDraftCount, setNetworkInteractionDraftCount] = useState(0);
   const [networkTab, setNetworkTab] = useState<NetworkTabId>(
     initialLocation.kind === "network" ? initialLocation.tab : "companies",
@@ -1458,6 +1493,9 @@ const AppShellCatalog = () => {
           tableEditCount,
           theme: appearance.theme,
           vaultHealth: appearance.vaultHealth,
+          vaultDeleted: vaultDeletionStatus !== null,
+          vaultDeletionStatus,
+          vaultDeletionSubmitCount,
           exportReminderState: exportReminder.state,
           workspaceJobId: workspaceRoute?.jobId ?? null,
           workspaceMode: workspaceRoute?.mode ?? null,
@@ -1487,6 +1525,8 @@ const AppShellCatalog = () => {
     persistenceRequestCount,
     tableColumnSaveCount,
     tableEditCount,
+    vaultDeletionStatus,
+    vaultDeletionSubmitCount,
     workspaceRoute,
   ]);
 
@@ -1526,6 +1566,59 @@ const AppShellCatalog = () => {
     }
     setExportReminder(deriveBrowserExportReminder({ enabled: true, nowUnixMs: Date.now() }));
     setLastActivity("Optional browser export reminders are on.");
+  };
+
+  const deleteVaultFromUserAction = (
+    input: DeleteVaultInput,
+  ): Promise<
+    | { readonly ok: true; readonly value: VaultDeletionResultDto }
+    | {
+        readonly ok: false;
+        readonly error: {
+          readonly code: "unavailable" | "validation";
+          readonly message: string;
+          readonly retryable: boolean;
+        };
+      }
+  > => {
+    setVaultDeletionSubmitCount((count) => count + 1);
+    if (
+      input.vaultId !== VAULT_DELETION_PREVIEW.vaultId ||
+      input.previewId !== VAULT_DELETION_PREVIEW.previewId ||
+      input.confirmation !== VAULT_DELETION_PREVIEW.requiredConfirmation
+    ) {
+      return Promise.resolve(
+        Object.freeze({
+          ok: false,
+          error: Object.freeze({
+            code: "validation",
+            message: "Type the exact confirmation phrase shown for this vault.",
+            retryable: false,
+          }),
+        }),
+      );
+    }
+    if (appearance.deletionMode === "failure") {
+      return Promise.resolve(
+        Object.freeze({
+          ok: false,
+          error: Object.freeze({
+            code: "unavailable",
+            message:
+              "The vault was restored after local cleanup failed. Some provider credentials may need to be entered again.",
+            retryable: true,
+          }),
+        }),
+      );
+    }
+    const value = Object.freeze({
+      deletionId: entityId("application-operation", "0198f110-0000-7000-8000-000000000003"),
+      vaultId: VAULT_DELETION_PREVIEW.vaultId,
+      status: appearance.deletionMode === "cleanup" ? "cleanup_pending" : "deleted",
+      deleted: VAULT_DELETION_PREVIEW.inventory,
+      externalPortableArchivesAffected: false,
+    } as const satisfies VaultDeletionResultDto);
+    return Promise.resolve(Object.freeze({ ok: true, value }));
   };
 
   const recordHomeAction = (action: HomeDashboardActionId): void => {
@@ -2292,26 +2385,65 @@ const AppShellCatalog = () => {
             selectedContactId={networkSelectedContactId}
           />
         ) : activeDestination === "settings" ? (
-          browserVaultBackupModel === null ? (
+          vaultDeletionStatus !== null ? (
+            <section className="cd-shell-page-card" role="status">
+              <h2>
+                {vaultDeletionStatus === "cleanup_pending"
+                  ? "Local vault deleted; cleanup pending"
+                  : "Local vault deleted"}
+              </h2>
+              {vaultDeletionStatus === "cleanup_pending" ? (
+                <p>
+                  The active vault was removed, but Coredrill retained a managed cleanup record.
+                  Desktop storage will retry the bounded purge when Coredrill starts again. External
+                  portable archives were not changed.
+                </p>
+              ) : (
+                <p>
+                  App-managed data for Job search 2026 was removed. External portable archives were
+                  not changed. Start a new accountless vault or restore a portable archive.
+                </p>
+              )}
+            </section>
+          ) : browserVaultBackupModel === null ? (
             <section className="cd-shell-page-card" role="status">
               Checking browser storage health without requesting new permission…
             </section>
           ) : (
-            <BrowserVaultBackupSettings
-              model={browserVaultBackupModel}
-              onExportPortableArchive={() => {
-                setLastActivity(
-                  "Portable archive export selected. The reminder remains due until an export succeeds.",
-                );
-              }}
-              onReminderAction={recordExportReminderAction}
-              onRequestPersistentStorage={requestPersistentStorageFromUserAction}
-              onReviewRestore={() => {
-                setLastActivity(
-                  "Restore guidance selected. Preview and validation happen before any replacement.",
-                );
-              }}
-            />
+            <>
+              <BrowserVaultBackupSettings
+                model={browserVaultBackupModel}
+                onExportPortableArchive={() => {
+                  setLastActivity(
+                    "Portable archive export selected. The reminder remains due until an export succeeds.",
+                  );
+                }}
+                onReminderAction={recordExportReminderAction}
+                onRequestPersistentStorage={requestPersistentStorageFromUserAction}
+                onReviewRestore={() => {
+                  setLastActivity(
+                    "Restore guidance selected. Preview and validation happen before any replacement.",
+                  );
+                }}
+              />
+              <VaultDeletionSettings
+                onDelete={deleteVaultFromUserAction}
+                onDeleted={(result) => {
+                  setVaultDeletionStatus(result.status);
+                  setLastActivity(
+                    result.status === "cleanup_pending"
+                      ? "The local vault was deleted with bounded desktop cleanup pending. External portable archives were not changed."
+                      : "The local vault was deleted. External portable archives were not changed.",
+                  );
+                }}
+                onExportPortableArchive={() => {
+                  setLastActivity(
+                    "Portable archive export selected from the deletion warning. Deletion remains pending.",
+                  );
+                }}
+                preview={VAULT_DELETION_PREVIEW}
+              />
+            </>
           )
         ) : (
           <section className="cd-shell-page-card min-h-72" aria-labelledby="destination-heading">

@@ -192,7 +192,66 @@ test("opens official SQLite in a Worker, persists transactions, and restores a c
     sha256: portable.sha256,
   });
 
-  await callHarness(restorePage, "delete");
+  const exportRecordedAt = Date.parse("2026-08-29T23:45:00.000Z");
+  await callHarness(restorePage, "updateBrowserExportReminder", {
+    action: "record-success",
+    nowUnixMs: exportRecordedAt,
+  });
+  const deletionPreviewId = "0198d9d3-0000-7000-8000-000000000001";
+  const deletionPreview = await callHarness(restorePage, "previewVaultDeletion", {
+    vaultId: committedVault.id,
+    previewId: deletionPreviewId,
+    previewedAt: "2026-08-29T23:46:00.000Z",
+  });
+  expect(deletionPreview).toEqual({
+    ok: true,
+    value: {
+      previewId: deletionPreviewId,
+      vaultId: committedVault.id,
+      vaultName: committedVault.name,
+      storageMode: "browser",
+      inventory: {
+        attachmentFiles: 0,
+        managedBackups: 0,
+        providerSecrets: 0,
+        sharedAttachmentFiles: 0,
+      },
+      lastSuccessfulPortableExportAt: "2026-08-29T23:45:00.000Z",
+      requiredConfirmation: `DELETE ${committedVault.name}`,
+    },
+  });
+  const rejectedDeletion = await callHarness(restorePage, "deleteVault", {
+    vaultId: committedVault.id,
+    previewId: deletionPreviewId,
+    deletionId: "0198d9d3-0000-7000-8000-000000000002",
+    confirmation: `DELETE ${committedVault.name} `,
+    deletedAt: "2026-08-29T23:47:00.000Z",
+  });
+  expect(rejectedDeletion).toMatchObject({ ok: false, error: { code: "validation" } });
+  await expect(callHarness(restorePage, "listVaults")).resolves.toEqual(durableRows);
+
+  const deletion = await callHarness(restorePage, "deleteVault", {
+    vaultId: committedVault.id,
+    previewId: deletionPreviewId,
+    deletionId: "0198d9d3-0000-7000-8000-000000000003",
+    confirmation: `DELETE ${committedVault.name}`,
+    deletedAt: "2026-08-29T23:48:00.000Z",
+  });
+  expect(deletion).toEqual({
+    ok: true,
+    value: {
+      deletionId: "0198d9d3-0000-7000-8000-000000000003",
+      vaultId: committedVault.id,
+      status: "deleted",
+      deleted: {
+        attachmentFiles: 0,
+        managedBackups: 0,
+        providerSecrets: 0,
+        sharedAttachmentFiles: 0,
+      },
+      externalPortableArchivesAffected: false,
+    },
+  });
   await callHarness(restorePage, "openAndMigrate");
   await expect(callHarness(restorePage, "listVaults")).resolves.toEqual([]);
   await callHarness(restorePage, "delete");
@@ -225,6 +284,8 @@ test("opens official SQLite in a Worker, persists transactions, and restores a c
       archiveRestoreCommitted: archiveRestore.committed,
       archiveRestoreCorruptionRejected: archiveRestore.corruptionRejected,
       archiveRestoreStaleRejected: archiveRestore.staleTargetRejected,
+      typedVaultDeletion: deletion.ok,
+      deletionPreservedExternalArchive: restoredPortable.sha256 === portable.sha256,
     })}`,
   );
 });

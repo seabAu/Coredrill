@@ -1,6 +1,8 @@
 import {
   BROWSER_EXPORT_REMINDER_SETTING_KEY,
+  VaultDeletionError,
   createDefaultBrowserExportReminderPreference,
+  createVaultDeletionOperations,
   deriveBrowserExportReminderFromPreference,
   parseBrowserExportReminderPreference,
   serializeBrowserExportReminderPreference,
@@ -8,6 +10,14 @@ import {
   type BrowserExportReminder,
   type BrowserExportReminderPreferenceAction,
   type BrowserExportReminderPreferenceV1,
+  type ApplicationOperationContext,
+  type ApplicationResult,
+  type DeleteVaultPortInput,
+  type DeleteVaultInput,
+  type PreviewVaultDeletionPortInput,
+  type VaultDeletionPort,
+  type VaultDeletionPreviewDto,
+  type VaultDeletionResultDto,
 } from "@coredrill/application";
 import {
   BrowserSqliteBusyError,
@@ -40,7 +50,7 @@ import {
   type QueryRow,
   type StorageDiagnostics,
 } from "@coredrill/storage-core";
-import { instant } from "@coredrill/domain";
+import { entityId, instant } from "@coredrill/domain";
 
 import initialMigrationSql from "../../../migrations/0001_vault.sql?raw";
 import captureInboxMigrationSql from "../../../migrations/0002_capture_inbox.sql?raw";
@@ -164,6 +174,17 @@ interface BrowserExportReminderUpdateInput {
   readonly nowUnixMs: number;
 }
 
+interface BrowserVaultDeletionPreviewInput {
+  readonly vaultId: string;
+  readonly previewId: string;
+  readonly previewedAt: string;
+}
+
+interface BrowserVaultDeletionCommandInput extends DeleteVaultInput {
+  readonly deletionId: string;
+  readonly deletedAt: string;
+}
+
 interface Phase1RepositoryContractProof {
   readonly manifest: Phase1RepositoryContractManifest;
   readonly run: DatabaseContractRunResult;
@@ -225,6 +246,12 @@ export interface CoredrillStorageSpikeApi {
   updateBrowserExportReminder(
     input: BrowserExportReminderUpdateInput,
   ): Promise<BrowserExportReminderProof>;
+  previewVaultDeletion(
+    input: BrowserVaultDeletionPreviewInput,
+  ): Promise<ApplicationResult<VaultDeletionPreviewDto>>;
+  deleteVault(
+    input: BrowserVaultDeletionCommandInput,
+  ): Promise<ApplicationResult<VaultDeletionResultDto>>;
   close(): Promise<void>;
   delete(): Promise<boolean>;
   runBenchmark(input: StorageBenchmarkInput): Promise<StorageBenchmarkResult>;
@@ -598,6 +625,103 @@ const writeBrowserExportReminder = async (
   });
 };
 
+interface BrowserVaultDeletionSnapshot {
+  readonly databaseSha256: string;
+  readonly vaultId: string;
+  readonly vaultName: string;
+}
+
+const browserVaultDeletionSnapshots = new Map<string, BrowserVaultDeletionSnapshot>();
+
+const browserVaultDeletionPort: VaultDeletionPort = Object.freeze({
+  preview: async (input: PreviewVaultDeletionPortInput) => {
+    const client = await getDatabase();
+    await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
+    const rows = await client.query<VaultRow>(
+      sqlStatement(
+        "SELECT id, name, schema_version, created_at, last_opened_at FROM vault ORDER BY id",
+      ),
+    );
+    const vault = rows[0];
+    if (vault === undefined) throw new VaultDeletionError("not_found");
+    if (rows.length !== 1 || vault.id !== input.vaultId) {
+      throw new VaultDeletionError("invalid_state");
+    }
+    const portable = await client.exportPortable();
+    browserVaultDeletionSnapshots.set(
+      input.previewId,
+      Object.freeze({
+        databaseSha256: portable.sha256,
+        vaultId: vault.id,
+        vaultName: vault.name,
+      }),
+    );
+    while (browserVaultDeletionSnapshots.size > 16) {
+      const oldest = browserVaultDeletionSnapshots.keys().next().value;
+      if (oldest === undefined) break;
+      browserVaultDeletionSnapshots.delete(oldest);
+    }
+    const reminder = await readBrowserExportReminder(new Date(input.previewedAt).getTime());
+    const lastSuccessfulPortableExportAt =
+      reminder.preference.lastSuccessfulExportAtUnixMs === null
+        ? null
+        : instant(new Date(reminder.preference.lastSuccessfulExportAtUnixMs).toISOString());
+    return Object.freeze({
+      vaultId: entityId("vault", vault.id),
+      vaultName: vault.name,
+      storageMode: "browser",
+      inventory: Object.freeze({
+        attachmentFiles: 0,
+        managedBackups: 0,
+        providerSecrets: 0,
+        sharedAttachmentFiles: 0,
+      }),
+      lastSuccessfulPortableExportAt,
+    });
+  },
+  delete: async (input: DeleteVaultPortInput) => {
+    const snapshot = browserVaultDeletionSnapshots.get(input.previewId);
+    if (snapshot?.vaultId !== input.vaultId) {
+      throw new VaultDeletionError("stale_preview");
+    }
+    const client = await getDatabase();
+    const rows = await client.query<VaultRow>(
+      sqlStatement(
+        "SELECT id, name, schema_version, created_at, last_opened_at FROM vault ORDER BY id",
+      ),
+    );
+    const vault = rows[0];
+    if (rows.length !== 1 || vault?.id !== snapshot.vaultId) {
+      throw new VaultDeletionError("stale_preview");
+    }
+    if (input.confirmation !== `DELETE ${vault.name}`) {
+      throw new VaultDeletionError("confirmation_mismatch");
+    }
+    const portable = await client.exportPortable();
+    if (portable.sha256 !== snapshot.databaseSha256 || vault.name !== snapshot.vaultName) {
+      throw new VaultDeletionError("stale_preview");
+    }
+    const deleted = await client.delete();
+    if (!deleted) throw new VaultDeletionError("cleanup_failed");
+    database = undefined;
+    browserVaultDeletionSnapshots.delete(input.previewId);
+    return Object.freeze({
+      deletionId: input.deletionId,
+      vaultId: input.vaultId,
+      status: "deleted",
+      deleted: Object.freeze({
+        attachmentFiles: 0,
+        managedBackups: 0,
+        providerSecrets: 0,
+        sharedAttachmentFiles: 0,
+      }),
+      externalPortableArchivesAffected: false,
+    });
+  },
+});
+
+const browserVaultDeletionOperations = createVaultDeletionOperations(browserVaultDeletionPort);
+
 const logOpenProof = (diagnostics: StorageDiagnostics): void => {
   console.info(
     `COREDRILL_STORAGE ${JSON.stringify({
@@ -733,6 +857,30 @@ const api: CoredrillStorageSpikeApi = {
   requestPersistentStorage: async () => (await getDatabase()).requestPersistentStorage(),
   getBrowserExportReminder: readBrowserExportReminder,
   updateBrowserExportReminder: writeBrowserExportReminder,
+  previewVaultDeletion: async (input) => {
+    const context: ApplicationOperationContext = Object.freeze({
+      operationId: entityId("application-operation", input.previewId),
+      initiatedAt: instant(input.previewedAt),
+    });
+    return browserVaultDeletionOperations.previewVaultDeletionQuery.execute(
+      { vaultId: input.vaultId },
+      context,
+    );
+  },
+  deleteVault: async (input) => {
+    const context: ApplicationOperationContext = Object.freeze({
+      operationId: entityId("application-operation", input.deletionId),
+      initiatedAt: instant(input.deletedAt),
+    });
+    return browserVaultDeletionOperations.deleteVaultCommand.execute(
+      {
+        vaultId: input.vaultId,
+        previewId: input.previewId,
+        confirmation: input.confirmation,
+      },
+      context,
+    );
+  },
   close: async () => {
     if (database === undefined) return;
     await database.close();

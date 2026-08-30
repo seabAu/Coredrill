@@ -341,6 +341,16 @@ recovery health version 1](browser-vault-recovery-health-v1.md).
 
 Network-enabled settings show default-off toggles, exact data categories, destination, credential location, last use, and disable/delete controls.
 
+Vault deletion is visually separated after export/restore controls and opens a
+modal whose initial focus is the recoverability warning. It names the current
+vault, shows bounded deletion/preservation counts, offers portable export
+without submitting, and keeps the final action disabled until the literal
+`DELETE <vault name>` phrase matches. Stable restored-on-failure and
+cleanup-pending messages do not reuse clean-success language. The dialog owns
+320-pixel overflow, forced-color borders, keyboard focus, busy/double-submit
+prevention, and screen-reader announcements. See [vault deletion version
+1](vault-deletion-v1.md).
+
 Diagnostics explicitly says that events stay local and contain only reviewed operational fields. Copy support bundle is a user-initiated action that copies versioned pretty JSON for at most the newest 200 events; the surface previews event count, application version, generation time, and the no-automatic-send guarantee. It never offers raw logs, paths, free-text exception messages, or job/applicant content. Any future telemetry control is separate, default off, and must not be implied by local bundle copy.
 
 ## 6. First-run design

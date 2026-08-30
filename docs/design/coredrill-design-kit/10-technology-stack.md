@@ -117,6 +117,14 @@ live beneath `backups/<database-leaf>/`; retention is caller-configurable from
 one through 90 and cannot delete the newly verified last-known-good backup. See
 [desktop automatic backup version 1](desktop-automatic-backup-v1.md).
 
+`BKP-006` adds no dependency. TypeScript application/UI contracts reuse React,
+Radix Dialog, Vitest, Playwright, and the existing browser database adapter.
+The native boundary reuses `rusqlite`, `sha2`, the accepted platform keyring
+stores, and standard-library confined same-volume rename/remove primitives.
+The generated Tauri capability grants only `native_vault_invoke`; the WebView
+does not receive filesystem permissions, database paths, provider IDs, or
+keychain account identifiers. See [vault deletion version 1](vault-deletion-v1.md).
+
 NAT-007 uses Tauri's built-in NSIS bundler for an English, current-user Windows installer with downgrade blocking, the Apache-2.0 license, and `downloadBootstrapper` WebView2 provisioning. NAT-008 adds an ad-hoc-signed macOS app and diagnostic Linux AppImage, rejects the internal storage probe from all packages, smoke-launches each package, and exercises the exact target secure store. A pinned GitHub artifact action retains clean-commit packages and raw hosted manifests for 30 days; sanitized durable manifests remain in repository proof. Windows and macOS architecture targets are accepted, while Linux native remains diagnostic because its compiled GTK3 graph carries an unresolved RustSec unsoundness warning and unmaintained dependencies. Signing/notarization, provenance, updater behavior, an optional fully offline installer, and reference-hardware release checks remain later gates. See [native package verification](../../proof/native-windows-package-verification.md) and [cross-platform native verification](../../proof/native-cross-platform-verification.md).
 
 ### Portable archive container

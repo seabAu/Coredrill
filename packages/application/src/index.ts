@@ -178,3 +178,23 @@ export {
   type BrowserExportReminderPreferenceAction,
   type BrowserExportReminderPreferenceV1,
 } from "./browser-recovery.js";
+export {
+  VAULT_DELETION_ERROR_CODES,
+  VAULT_DELETION_STATUSES,
+  VAULT_DELETION_STORAGE_MODES,
+  VaultDeletionError,
+  createVaultDeletionOperations,
+  type DeleteVaultInput,
+  type DeleteVaultPortInput,
+  type PreviewVaultDeletionInput,
+  type PreviewVaultDeletionPortInput,
+  type VaultDeletionErrorCode,
+  type VaultDeletionInventoryDto,
+  type VaultDeletionOperations,
+  type VaultDeletionPort,
+  type VaultDeletionPortPreview,
+  type VaultDeletionPreviewDto,
+  type VaultDeletionResultDto,
+  type VaultDeletionStatus,
+  type VaultDeletionStorageMode,
+} from "./vault-deletion.js";

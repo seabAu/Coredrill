@@ -153,6 +153,132 @@ test("browser Vault & Backup requests persistence only from the user action and 
   expect(externalRequests).toEqual([]);
 });
 
+test("typed vault deletion names recovery scope, preserves export choice, and requires an exact phrase", async ({
+  page,
+}, testInfo) => {
+  const externalRequests = [];
+  page.on("request", (request) => {
+    if (!request.url().startsWith("http://127.0.0.1:4178/")) externalRequests.push(request.url());
+  });
+  await page.setViewportSize({ width: 1280, height: 960 });
+  await openShell(page);
+  await page.getByRole("link", { name: "Settings" }).click();
+
+  const deletion = page.getByTestId("vault-deletion-settings");
+  await expect(deletion.getByRole("heading", { name: "Delete local vault" })).toBeVisible();
+  await expect(deletion).toContainText("External portable archives are not changed");
+  await deletion.getByRole("button", { name: "Delete local vault" }).click();
+
+  const dialog = page.getByRole("dialog", { name: "Delete Job search 2026?" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText("There is no in-app undo");
+  await expect(dialog).toContainText("Only an external portable archive can restore this vault");
+  await expect(dialog).toContainText("Coredrill cannot verify that an exported file still exists");
+  await expect(dialog).toContainText("0 attachment files");
+  await expect(dialog).toContainText("0 managed automatic backups");
+  await expect(dialog).toContainText("0 vault-scoped provider keys");
+  await expect(dialog).toContainText("other vaults are preserved");
+  expect(
+    await page.evaluate(() =>
+      document.activeElement?.classList.contains("cd-vault-deletion-warning"),
+    ),
+  ).toBe(true);
+
+  const confirmation = dialog.getByLabel(/Type DELETE Job search 2026 to continue/);
+  const finalDelete = dialog.getByRole("button", { name: "Delete local vault" });
+  await expect(finalDelete).toBeDisabled();
+  await confirmation.fill("delete Job search 2026");
+  await expect(finalDelete).toBeDisabled();
+  await confirmation.fill("DELETE Job search 2026 ");
+  await expect(finalDelete).toBeDisabled();
+
+  await dialog.getByRole("button", { name: "Export portable archive" }).click();
+  await expect(dialog).toBeVisible();
+  expect(await page.evaluate(() => globalThis.coredrillAppShell?.getState())).toMatchObject({
+    lastActivity:
+      "Portable archive export selected from the deletion warning. Deletion remains pending.",
+    vaultDeleted: false,
+    vaultDeletionSubmitCount: 0,
+  });
+
+  await confirmation.fill("DELETE Job search 2026");
+  await expect(finalDelete).toBeEnabled();
+  await attachAxe(page, testInfo, "vault-deletion-confirmation");
+  await page.setViewportSize({ width: 320, height: 800 });
+  const dimensions = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
+  await attachProof(page, testInfo, "vault-deletion-mobile");
+  await finalDelete.click();
+
+  await expect(page.getByRole("heading", { name: "Local vault deleted" })).toBeVisible();
+  await expect(
+    page.getByText("The local vault was deleted. External portable archives were not changed.", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  expect(await page.evaluate(() => globalThis.coredrillAppShell?.getState())).toMatchObject({
+    vaultDeleted: true,
+    vaultDeletionStatus: "deleted",
+    vaultDeletionSubmitCount: 1,
+  });
+  expect(externalRequests).toEqual([]);
+});
+
+test("vault deletion failure keeps the target visible and explains credential recovery", async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await openShell(page, { deletion: "failure" });
+  await page.getByRole("link", { name: "Settings" }).click();
+  await page
+    .getByTestId("vault-deletion-settings")
+    .getByRole("button", { name: "Delete local vault" })
+    .click();
+  const dialog = page.getByRole("dialog", { name: "Delete Job search 2026?" });
+  await dialog.getByLabel(/Type DELETE Job search 2026 to continue/).fill("DELETE Job search 2026");
+  await dialog.getByRole("button", { name: "Delete local vault" }).click();
+
+  await expect(dialog.getByRole("alert")).toContainText(
+    "The vault was restored after local cleanup failed",
+  );
+  await expect(dialog.getByRole("alert")).toContainText("credentials may need to be entered again");
+  expect(await page.evaluate(() => globalThis.coredrillAppShell?.getState())).toMatchObject({
+    vaultDeleted: false,
+    vaultDeletionSubmitCount: 1,
+  });
+  await attachAxe(page, testInfo, "vault-deletion-failure");
+});
+
+test("vault deletion cleanup-pending state clears the target without claiming a clean purge", async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 1000, height: 800 });
+  await openShell(page, { deletion: "cleanup" });
+  await page.getByRole("link", { name: "Settings" }).click();
+  await page
+    .getByTestId("vault-deletion-settings")
+    .getByRole("button", { name: "Delete local vault" })
+    .click();
+  const dialog = page.getByRole("dialog", { name: "Delete Job search 2026?" });
+  await dialog.getByLabel(/Type DELETE Job search 2026 to continue/).fill("DELETE Job search 2026");
+  await dialog.getByRole("button", { name: "Delete local vault" }).click();
+
+  await expect(dialog).toBeHidden();
+  await expect(
+    page.getByRole("heading", { name: "Local vault deleted; cleanup pending" }),
+  ).toBeVisible();
+  await expect(page.getByText(/retry the bounded purge when Coredrill starts again/)).toBeVisible();
+  expect(await page.evaluate(() => globalThis.coredrillAppShell?.getState())).toMatchObject({
+    vaultDeleted: true,
+    vaultDeletionStatus: "cleanup_pending",
+    vaultDeletionSubmitCount: 1,
+  });
+  await attachAxe(page, testInfo, "vault-deletion-cleanup-pending");
+});
+
 test("Home orders actionable local work, limits Now, and lets users hide the snapshot", async ({
   page,
 }, testInfo) => {

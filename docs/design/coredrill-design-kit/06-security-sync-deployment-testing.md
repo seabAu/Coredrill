@@ -73,6 +73,15 @@ snoozed or disabled, and advances only after a successful portable export;
 button selection or failure is not recorded as recovery evidence. See [browser
 vault recovery health version 1](browser-vault-recovery-health-v1.md).
 
+`BKP-006` treats deletion as a security boundary, not a UI-only confirmation.
+The application and browser/native adapters independently require the exact
+preview-bound phrase, reject stale/replayed identity, and return only stable
+path-free results. Browser proof deletes real OPFS SQLite and reopens empty.
+The combined native command stages confined data before vault-scoped secret
+cleanup, preserves other-vault/shared/external material, restores on injected
+staging or secure-store failure, and marks rather than overclaims an incomplete
+final purge. See [vault deletion version 1](vault-deletion-v1.md).
+
 ### AI/provider leakage
 
 - Provider disabled by default.
@@ -98,6 +107,13 @@ vault recovery health version 1](browser-vault-recovery-health-v1.md).
 - Lock screen is privacy convenience unless cryptographic key material is actually evicted.
 
 `NAT-005` and `NAT-008` prove provider-secret lifecycles through exact target-confined Windows Credential Manager, macOS Keychain, and Linux Secret Service providers. The Tauri surface permits store/status/delete but never returns secret material; Coredrill-owned secret strings and retrieved buffers are zeroized, operations are serialized, and platform failures are content-free. Each proof harness generates a one-time synthetic value, captures all test output, and refuses to print it if the value is present. Unavailable or locked backends fail closed without a plaintext fallback. The Linux secure-store path passes under an ephemeral Secret Service, although the Linux native shell remains diagnostic for a separate GTK3 dependency risk. See [secure-storage verification](../../proof/native-secure-storage-verification.md) and [cross-platform native verification](../../proof/native-cross-platform-verification.md).
+
+The `BKP-006` protocol revision makes the vault ID mandatory for every
+store/status/delete request and derives a fixed non-content account identifier
+from vault plus provider. This prevents deleting one vault from authorizing
+credential cleanup for another vault that uses the same provider. The redacted
+Windows Credential Manager lifecycle passes with the scoped protocol and still
+has no secret-read IPC.
 
 `NAT-006` proves first-OS database recovery through an official native picker called only inside Rust. The custom command receives an opaque session, never a path; the selected path never returns to the WebView, and dialog/filesystem JavaScript permissions are absent. Export snapshots WAL safely through SQLite's online-backup API, streams a version/schema/length/SHA-256 envelope, and atomically replaces a same-directory temporary file. Restore verifies the entire envelope and temporary SQLite database before closing the target, then maintains a same-volume recovery snapshot until atomic replacement, reopen, integrity, and schema checks succeed. Corrupt bytes and an injected post-replacement failure both preserve the previous usable vault. This remains database-only recovery evidence, not the full portable archive promised by D-051. See [native archive verification](../../proof/native-archive-verification.md).
 

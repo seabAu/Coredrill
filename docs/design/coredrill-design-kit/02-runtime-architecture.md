@@ -157,6 +157,13 @@ version-1 preference in canonical SQLite records the optional 30-day portable
 export reminder, seven-day snooze, disable/enable choice, and successful-export
 instant. See [browser vault recovery health version 1](browser-vault-recovery-health-v1.md).
 
+`BKP-006` adds a preview-bound `VaultDeletionPort`. The browser adapter hashes
+the current portable database state, rechecks the sole vault row/name and exact
+typed phrase, then uses the existing serialized Worker deletion operation. A
+wrong phrase or stale preview preserves the database; a successful reopen is a
+clean migrated profile. Browser attachment, automatic-backup, and secret counts
+remain zero because those stores do not exist in the browser baseline.
+
 ### Native adapter
 
 - `NAT-001` through `NAT-008` establish an accepted capability-gated Tauri boundary with a strict, versioned operation protocol over a narrow `rusqlite` 0.40.1 service. The shared TypeScript `DatabasePort`, reviewed SQL migration ledger, and repository contracts remain the public surface; Rust/Tauri/SQLite types do not cross into storage-core.
@@ -178,6 +185,18 @@ backups. Retention is bounded from one through 90; the new known-good backup is
 never a prune candidate, and cleanup failure retains extra backups with an
 explicit warning. No path crosses IPC. See [desktop automatic backup version
 1](desktop-automatic-backup-v1.md).
+
+`BKP-006` adds a fourth exact Tauri command that composes the native storage and
+OS-secret services inside Rust. Preview validates the single vault, strict
+provider registry, attachment manifests across other managed databases,
+physical content-addressed files, and the target backup directory without
+returning paths or provider IDs. Delete revalidates the opaque preview and exact
+phrase, closes only the target session, stages database/WAL/SHM, unshared
+attachments, and that database's backups by same-volume rename, then removes
+vault-scoped secrets. Staging or secret failure restores and reopens usable
+content; final purge failure returns `cleanup_pending`, with only a
+purge-approved marker eligible for bounded startup retry. See [vault deletion
+version 1](vault-deletion-v1.md).
 
 `NAT-007` packages that same boundary as an unsigned Windows current-user NSIS installer. The main window remains hidden until the bundled page reports Tauri's finished page-load event; the proof-only launch flag keeps it hidden while the native title supplies a deterministic readiness signal. Five warmups plus 20 measured launches record installer/application size, hashes, signature state, WebView2 version, startup, and aggregate app/WebView2 working-set and private memory. The isolated lifecycle proves install, launch, contract-probe exclusion, uninstall, and app-data preservation. These Windows 10 and hosted-runner measurements are diagnostics, not the unexecuted Windows 11 25H2/HW-WIN-REF release-performance gate; see [native package verification](../../proof/native-windows-package-verification.md).
 

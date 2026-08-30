@@ -188,6 +188,28 @@ try {
   await executeHarness("delete");
   await executeHarness("restorePortable", portable);
   const restored = await executeHarness("listVaults");
+  const deletionPreview = await executeHarness("previewVaultDeletion", {
+    vaultId: "0198d9d2-c2fd-7d5c-8a0f-485258c1eb9e",
+    previewId: "0198d9d3-0000-7000-8000-000000000011",
+    previewedAt: "2026-08-29T23:46:00.000Z",
+  });
+  const rejectedDeletion = await executeHarness("deleteVault", {
+    vaultId: "0198d9d2-c2fd-7d5c-8a0f-485258c1eb9e",
+    previewId: "0198d9d3-0000-7000-8000-000000000011",
+    deletionId: "0198d9d3-0000-7000-8000-000000000012",
+    confirmation: "DELETE Firefox compatibility vault ",
+    deletedAt: "2026-08-29T23:47:00.000Z",
+  });
+  const rowsAfterRejectedDeletion = await executeHarness("listVaults");
+  const deletion = await executeHarness("deleteVault", {
+    vaultId: "0198d9d2-c2fd-7d5c-8a0f-485258c1eb9e",
+    previewId: "0198d9d3-0000-7000-8000-000000000011",
+    deletionId: "0198d9d3-0000-7000-8000-000000000013",
+    confirmation: "DELETE Firefox compatibility vault",
+    deletedAt: "2026-08-29T23:48:00.000Z",
+  });
+  await executeHarness("openAndMigrate");
+  const rowsAfterDeletion = await executeHarness("listVaults");
   await executeHarness("delete");
   const repositoryContracts = await executeHarness("runPhase1RepositoryContracts");
   const archiveWriter = await executeHarness("runPortableArchiveWriterProof");
@@ -212,6 +234,11 @@ try {
     archiveRestoreCommitted: archiveRestore.committed,
     archiveRestoreCorruptionRejected: archiveRestore.corruptionRejected,
     archiveRestoreStaleRejected: archiveRestore.staleTargetRejected,
+    typedVaultDeletion: deletion.ok === true,
+    typedVaultDeletionPreview: deletionPreview.ok === true,
+    typedVaultDeletionRejectedSafely:
+      rejectedDeletion.ok === false && rowsAfterRejectedDeletion.length === 1,
+    typedVaultDeletionCleanProfile: rowsAfterDeletion.length === 0,
     repositoryContractCases: repositoryCases.length,
     repositoryContractSuite: repositoryContracts.run.suiteName,
     repositoryContractVersion: repositoryContracts.manifest.schemaVersion,
@@ -224,6 +251,10 @@ try {
   if (
     proof?.rows !== 1 ||
     proof.restoredRows !== 1 ||
+    proof.typedVaultDeletion !== true ||
+    proof.typedVaultDeletionPreview !== true ||
+    proof.typedVaultDeletionRejectedSafely !== true ||
+    proof.typedVaultDeletionCleanProfile !== true ||
     proof.repositoryContractCases !== 18 ||
     proof.humanReadableDataFiles !== 58 ||
     proof.humanReadableDatasets !== 29 ||

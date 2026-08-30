@@ -27,3 +27,15 @@ export {
   type NativeStorageTransport,
 } from "./protocol.js";
 export { TauriNativeStorageTransport } from "./tauri-transport.js";
+export {
+  deserializeNativeVaultError,
+  NATIVE_VAULT_PROTOCOL_VERSION,
+  NativeVaultProtocolError,
+  parseNativeVaultResponse,
+  type NativeVaultDeleted,
+  type NativeVaultDeletionInventory,
+  type NativeVaultDeletionPreview,
+  type NativeVaultRequest,
+  type NativeVaultResponse,
+  type NativeVaultTransport,
+} from "./vault-protocol.js";

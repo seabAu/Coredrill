@@ -113,6 +113,16 @@ Each generated sentence is either linked to evidence, labeled non-factual/style-
 - AI provider data-flow cards, saved-key location, retention links, and per-run confirmation option.
 - Connector registry with status, permissions, terms-review date, last use, and kill switch.
 
+`BKP-006` implements the deletion row as a separated destructive control. Its
+accessible dialog names the current vault, inventories database/unshared
+attachment/managed-backup/vault-secret scope, explains that only an external
+portable archive can recover the vault, and requires the exact case- and
+whitespace-sensitive phrase `DELETE <vault name>`. Export remains available
+without submitting deletion. Clean deletion, restored-on-failure, and
+desktop-cleanup-pending states make different claims; no countdown, network
+request, or opaque recovery promise is used. See [vault deletion version
+1](vault-deletion-v1.md).
+
 ## Browser extension UX
 
 The action popup is intentionally small:
