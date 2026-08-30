@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-30
 Current milestone: Phase 2 — capture and approved extraction (`GATE-0` and `GATE-1` external-evidence blockers remain open)
-Current work item: `XTR-001` — connector policy registry and runtime kill switch
-Next recommended slice: `XTR-002` after `XTR-001` proof
+Current work item: `XTR-002` — Schema.org `JobPosting` parser
+Next recommended slice: `XTR-003` after `XTR-002` proof
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `XTR-002` after `XTR-001` proof
 | Field | Value |
 |---|---|
 | Milestone | Phase 2, with the independent Phase 0 and Phase 1 evidence gates retained below |
-| Item range | `XTR-001` |
+| Item range | `XTR-002` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-30 |
-| Expected proof | Policy tests for strict versioned records, exact HTTPS destinations and methods, enabled/review state, unknown/disabled/stale/killed denial, and an injected runtime kill switch that does not disable manual capture |
-| Blocker | None for `XTR-001`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
-| Next handoff | Implement the immutable fail-closed registry in the empty `source-policy` package with synthetic policy fixtures only. Do not add, enable, fetch from, or claim a current terms review for a real network connector in this slice. |
+| Expected proof | Golden accuracy report for Schema.org `JobPosting` fixtures covering nested values, arrays, `@graph`, multiple candidates, malformed JSON-LD, and missing/invalid fields while retaining raw source evidence and provenance |
+| Blocker | None for `XTR-002`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
+| Next handoff | Audit the existing extractor and fixture packages, then implement a pure bounded local parser and golden report. Do not add network access, a source-specific connector, broad DOM extraction, or entity writes in this slice. |
 
 ## Milestone status
 
@@ -218,7 +218,7 @@ Next recommended slice: `XTR-002` after `XTR-001` proof
 
 ## Extractors and policy
 
-- [ ] **XTR-001** Implement connector policy registry and runtime kill switch before network connectors. — Proof: _policy tests_
+- [x] **XTR-001** Implement connector policy registry and runtime kill switch before network connectors. — Proof: [strict immutable records, exact-destination authorization, runtime kills, independent manual capture, synthetic/property tests, and hosted clean-commit matrix](../../proof/phase-2-connector-policy-verification.md)
 - [ ] **XTR-002** Implement Schema.org `JobPosting` parser with nested/array/malformed fixtures. — Proof: _golden accuracy report_
 - [ ] **XTR-003** Implement selected-text and conservative generic DOM/Readability extractor. — Proof: _golden fixtures_
 - [ ] **XTR-004** Implement Greenhouse public postings adapter under reviewed current interface/terms. — Proof: _policy record + fixtures_
