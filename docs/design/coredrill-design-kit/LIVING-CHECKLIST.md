@@ -24,12 +24,12 @@ Next recommended slice: `CAP-004` after `CAP-003` proof
 | Field | Value |
 |---|---|
 | Milestone | Phase 2, with the independent Phase 0 and Phase 1 evidence gates retained below |
-| Item range | `CAP-003` |
+| Item range | `CAP-004` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-30 |
-| Expected proof | End-to-end tests for manual form, pasted text/URL, saved HTML/text, and JSON capture paths through the validated durable inbox boundary |
-| Blocker | None for `CAP-003`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
-| Next handoff | Read the capture and interface journey sections plus the existing inbox/import composition, then implement the smallest user-invoked supplied-content paths without adding connectors, crawling, hosted state, AI requirements, or silent field promotion. |
+| Expected proof | Hostile XSS fixtures plus a UI test for inert source preview and excerpt/path navigation |
+| Blocker | None for `CAP-004`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
+| Next handoff | Inspect the existing Inbox review and Source surfaces, then compose a sanitized preview over stored capture evidence with explicit excerpt/path navigation and no executable or implicitly trusted content. |
 
 ## Milestone status
 
@@ -212,7 +212,7 @@ Next recommended slice: `CAP-004` after `CAP-003` proof
 
 - [x] **CAP-001** Implement capture envelope, source snapshot reference, checksum, nonce/sequence, expiry, and version compatibility. — Proof: [strict contract, property tests, reusable checksum verification, and hosted clean-commit matrix](../../proof/phase-2-capture-envelope-verification.md)
 - [x] **CAP-002** Implement ingestion idempotency and duplicate suggestions by source ID, canonical URL, content hash, and fuzzy title/company. — Proof: [transactional exact/content idempotency, explainable fixture/property suggestions, real-browser E2E, and hosted clean-commit matrix](../../proof/phase-2-capture-ingestion-verification.md)
-- [ ] **CAP-003** Implement manual form, paste text/URL, saved HTML/text, and JSON capture paths. — Proof: _E2E tests_
+- [x] **CAP-003** Implement manual form, paste text/URL, saved HTML/text, and JSON capture paths. — Proof: [validated local routes, hostile-content/no-fetch E2E, and hosted clean-commit matrix](../../proof/phase-2-supplied-capture-verification.md)
 - [ ] **CAP-004** Implement sanitized source preview and excerpt/path navigation. — Proof: _XSS fixtures + UI test_
 - [ ] **CAP-005** Preserve all field candidates/conflicts without overwriting user-confirmed values. — Proof: _property/regression tests_
 
