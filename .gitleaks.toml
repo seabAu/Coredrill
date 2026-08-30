@@ -1,0 +1,12 @@
+title = "Coredrill Gitleaks policy"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Synthetic custom-port URL used to prove exact connector destination denial"
+condition = "AND"
+targetRules = ["generic-api-key"]
+paths = ['''^packages/source-policy/test/connector-policy\.test\.ts$''']
+regexTarget = "line"
+regexes = ['''destinationUrl:\s*"https://api\.jobs\.example:444/v1/jobs/fixture"''']
