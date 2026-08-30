@@ -1227,6 +1227,7 @@ mod tests {
         fs,
         path::{Path, PathBuf},
         process,
+        sync::atomic::{AtomicU64, Ordering},
         time::{SystemTime, UNIX_EPOCH},
     };
 
@@ -1242,6 +1243,8 @@ mod tests {
     };
     use crate::native_storage::{NATIVE_STORAGE_PROTOCOL_VERSION, NativeStorageService};
 
+    static NEXT_TEST_ROOT: AtomicU64 = AtomicU64::new(1);
+
     struct TestRoot(PathBuf);
 
     impl TestRoot {
@@ -1250,9 +1253,10 @@ mod tests {
                 .duration_since(UNIX_EPOCH)
                 .expect("the system clock must follow the Unix epoch")
                 .as_nanos();
+            let sequence = NEXT_TEST_ROOT.fetch_add(1, Ordering::Relaxed);
             Self(std::env::temp_dir().join(format!(
-                "coredrill-native-archive-{}-{nonce}",
-                process::id()
+                "coredrill-native-archive-{}-{nonce}-{sequence}",
+                process::id(),
             )))
         }
 
