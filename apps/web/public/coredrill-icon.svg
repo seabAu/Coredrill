@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Coredrill">
+  <rect width="512" height="512" rx="112" fill="#173f35" />
+  <path
+    fill="#f7f4ed"
+    d="M256 88c-70 0-127 57-127 127 0 48 27 91 68 112v77h-34v32h186v-32h-34v-77c41-21 68-64 68-112 0-70-57-127-127-127Zm0 32c52 0 95 43 95 95 0 35-20 68-51 84l-17 8v97h-54v-97l-17-8a95 95 0 0 1 44-179Z"
+  />
+  <circle cx="256" cy="215" r="42" fill="#d9a441" />
+</svg>

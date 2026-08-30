@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "inventoryId": "JW-DI-001",
-  "version": "1.18.1",
-  "reviewedAt": "2026-08-30T01:09:09Z",
+  "version": "1.19.0",
+  "reviewedAt": "2026-08-30T08:03:25Z",
   "scope": {
     "included": [
       "Pinned Node.js, pnpm, and Rust foundation toolchains",
@@ -17,7 +17,7 @@
   },
   "lockfile": {
     "path": "pnpm-lock.yaml",
-    "sha256": "47401aa17fea0b0b54176831669e02fc601658970442321a98a2437f5f2aca9b"
+    "sha256": "42714099de4169b3baf084ccd799df31a83d5cc4cfb51ac16d9c5260a391324a"
   },
   "toolchains": [
     {
@@ -272,6 +272,20 @@
       "metadataSource": "https://registry.npmjs.org/vite/8.2.2",
       "knownAdvisories": [],
       "selectionNote": "Current Vite 8.2.2 was published at 2026-08-20T04:14:39.107Z and is deliberately selected inside the 60-day review window. The prior 8.1.0 graph retained esbuild 0.27.7 after GHSA-g7r4-m6w7-qqqr; 8.2.2 removes that dependency and the complete reviewed lockfile audit is clean."
+    },
+    {
+      "manifest": "apps/web/package.json",
+      "dependencyType": "devDependencies",
+      "name": "vite-plugin-pwa",
+      "version": "1.3.0",
+      "upstreamLatest": "1.3.0",
+      "selectionStatus": "current",
+      "license": "MIT",
+      "maintainers": ["antfu", "hannoeru", "userquin"],
+      "repository": "https://github.com/vite-pwa/vite-plugin-pwa",
+      "metadataSource": "https://registry.npmjs.org/vite-plugin-pwa/1.3.0",
+      "knownAdvisories": [],
+      "selectionNote": "Current stable release with explicit Vite 8 peer support, selected to implement the accepted versioned Workbox app-shell cache and consent-based update flow. The service worker is generated at build time; SQLite/OPFS remains outside Cache Storage and is never deleted by the update lifecycle."
     },
     {
       "manifest": "package.json",
@@ -1040,10 +1054,10 @@
   "advisoryReview": {
     "command": "pnpm audit --json",
     "source": "https://pnpm.io/cli/audit",
-    "reviewedAt": "2026-08-30T01:09:09Z",
-    "lockfileSha256": "47401aa17fea0b0b54176831669e02fc601658970442321a98a2437f5f2aca9b",
-    "resolvedDependencyCount": 622,
-    "optionalDependencyCount": 82,
+    "reviewedAt": "2026-08-30T08:03:25Z",
+    "lockfileSha256": "42714099de4169b3baf084ccd799df31a83d5cc4cfb51ac16d9c5260a391324a",
+    "resolvedDependencyCount": 935,
+    "optionalDependencyCount": 108,
     "vulnerabilities": {
       "info": 0,
       "low": 0,
@@ -1054,11 +1068,11 @@
   },
   "licenseReview": {
     "command": "pnpm check:licenses",
-    "reviewedAt": "2026-08-30T01:09:09Z",
-    "lockfileSha256": "47401aa17fea0b0b54176831669e02fc601658970442321a98a2437f5f2aca9b",
-    "resolvedPackageRecords": 354,
+    "reviewedAt": "2026-08-30T08:03:25Z",
+    "lockfileSha256": "42714099de4169b3baf084ccd799df31a83d5cc4cfb51ac16d9c5260a391324a",
+    "resolvedPackageRecords": 520,
     "result": "pass",
-    "note": "License records and advisory dependency counts use different tool scopes and are not expected to match. The application shell uses reviewed MIT Tailwind CSS and Radix UI dependencies; the archive writer adds dependency-free MIT fflate 0.8.3. The exact graph contains 622 external resolutions and 354 license records."
+    "note": "License records and advisory dependency counts use different tool scopes and are not expected to match. The application shell uses reviewed MIT Tailwind CSS, Radix UI, and vite-plugin-pwa dependencies; the generated Workbox worker owns only versioned app-shell Cache Storage while SQLite remains OPFS truth. The exact graph contains 935 external resolutions and 520 license records."
   },
   "maintenanceWatch": [
     {
@@ -1100,6 +1114,11 @@
       "dependency": "vite",
       "reason": "Current 8.2.2 is intentionally selected inside the 60-day window because the prior 8.1.0 graph retained advisory-affected esbuild 0.27.7. Recheck the current graph and audit with WXT.",
       "nextReviewOn": "2026-08-31"
+    },
+    {
+      "dependency": "vite-plugin-pwa",
+      "reason": "Version 1.3.0 is the current stable Vite 8-compatible release, but upstream has announced a future modular replacement and maintenance-mode transition. Recheck that transition before a public hosted PWA release.",
+      "nextReviewOn": "2026-09-30"
     },
     {
       "dependency": "lucide-react",

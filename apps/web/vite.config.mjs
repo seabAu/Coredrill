@@ -1,6 +1,10 @@
 import { defineConfig } from "vite";
 import { fileURLToPath } from "node:url";
 import tailwindcss from "@tailwindcss/vite";
+import { VitePWA } from "vite-plugin-pwa";
+
+const APP_SHELL_NAVIGATION =
+  /^\/(?:app-shell\.html|network\/(?:companies|contacts)(?:\/[^/?#]+)?|network\/interactions|pipeline(?:\/.*)?|jobs\/[^/]+\/[^/?#]+|documents(?:\/[^/?#]+)?|profile(?:\/[^/?#]+)?|insights(?:\/[^/?#]+)?|settings(?:\/[^/?#]+)?)\/?$/u;
 
 const installAppShellHistoryFallback = (server) => {
   server.middlewares.use((request, _response, next) => {
@@ -8,9 +12,7 @@ const installAppShellHistoryFallback = (server) => {
     if (
       request.method === "GET" &&
       acceptsHtml &&
-      /^\/(?:network\/(?:companies|contacts)(?:\/[^/?#]+)?|network\/interactions|pipeline(?:\/.*)?|jobs\/[^/]+\/[^/?#]+|documents(?:\/[^/?#]+)?|profile(?:\/[^/?#]+)?|insights(?:\/[^/?#]+)?|settings(?:\/[^/?#]+)?)(?:[?#].*)?$/u.test(
-        request.url ?? "",
-      )
+      APP_SHELL_NAVIGATION.test(new URL(request.url ?? "/", "http://coredrill.local").pathname)
     ) {
       request.url = "/app-shell.html";
     }
@@ -25,7 +27,43 @@ const appShellHistoryFallback = {
 };
 
 export default defineConfig({
-  plugins: [appShellHistoryFallback, tailwindcss()],
+  plugins: [
+    appShellHistoryFallback,
+    tailwindcss(),
+    VitePWA({
+      filename: "service-worker.js",
+      includeAssets: ["coredrill-icon.svg"],
+      injectRegister: false,
+      manifest: {
+        background_color: "#f7f4ed",
+        description: "Local-first job search workspace",
+        display: "standalone",
+        icons: [
+          {
+            purpose: "any maskable",
+            sizes: "any",
+            src: "/coredrill-icon.svg",
+            type: "image/svg+xml",
+          },
+        ],
+        name: "Coredrill",
+        scope: "/",
+        short_name: "Coredrill",
+        start_url: "/app-shell.html",
+        theme_color: "#173f35",
+      },
+      registerType: "prompt",
+      strategies: "generateSW",
+      workbox: {
+        cleanupOutdatedCaches: true,
+        clientsClaim: false,
+        globPatterns: ["**/*.{css,html,js,svg,wasm}"],
+        inlineWorkboxRuntime: true,
+        navigateFallback: "/app-shell.html",
+        skipWaiting: false,
+      },
+    }),
+  ],
   build: {
     rollupOptions: {
       input: {

@@ -73,6 +73,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 
 import "./app-shell.css";
+import { initializeOfflineShell, OfflineShellNotice } from "./offline-shell.js";
 
 interface AppShellCatalogState {
   readonly activeDestination: ShellDestinationId;
@@ -2495,10 +2496,12 @@ const AppShellCatalog = () => {
           </section>
         )}
       </div>
+      <OfflineShellNotice />
     </ApplicationShell>
   );
 };
 
+initializeOfflineShell();
 const rootElement = document.querySelector<HTMLElement>("#root");
 if (rootElement === null) throw new Error("Application shell root is missing.");
 createRoot(rootElement).render(<AppShellCatalog />);

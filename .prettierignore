@@ -6,5 +6,6 @@ node_modules/
 pnpm-lock.yaml
 docs/design/
 LICENSE
+apps/web/public/coredrill-icon.svg
 tooling/fixtures/
 packages/storage-core/test/fixtures/portable-data-v1/

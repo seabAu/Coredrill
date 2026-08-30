@@ -3,6 +3,50 @@
 @source "../../../packages/ui/src";
 @source "./app-shell.tsx";
 
+/* The production PWA announces offline readiness and waits for explicit consent before reload. */
+.cd-offline-shell-notice {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 50;
+  display: grid;
+  max-width: min(28rem, calc(100vw - 2rem));
+  gap: 0.75rem;
+  padding: 1rem;
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-panel);
+}
+
+.cd-offline-shell-notice p {
+  margin: 0;
+}
+
+.cd-offline-shell-notice__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.cd-offline-shell-notice button {
+  min-height: 2.75rem;
+  padding: 0.5rem 0.875rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cd-offline-shell-notice button:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
 @layer components {
   .cd-shell-page-title {
     @apply text-3xl font-bold tracking-tight;
