@@ -13,7 +13,7 @@ const result = spawnSync(
     "--locked",
     "--no-default-features",
     "--lib",
-    "native_archive::tests::checksummed_archive_restore_is_atomic_recoverable_and_durable",
+    "native_archive::tests::",
   ],
   {
     cwd: repositoryRoot,
@@ -41,6 +41,23 @@ console.log(
     replacementFailureRecovery: true,
     postReplacementRecovery: true,
     durableAfterReopen: true,
+    pathExposedToWebview: false,
+  })}`,
+);
+
+console.log(
+  `BKP004_BACKUP_PROOF ${JSON.stringify({
+    storage: "managed-per-vault-app-data",
+    pickerRequired: false,
+    timestamped: true,
+    sqliteOnlineSnapshot: true,
+    checksumAndIntegrityVerifiedBeforeRotation: true,
+    retentionBounds: { min: 1, max: 90 },
+    lastKnownGoodPreserved: true,
+    failedPublishPreservesPriorBackups: true,
+    failedVerificationPreservesPriorBackups: true,
+    cleanupFailureRetainsExtraBackups: true,
+    activeVaultPreserved: true,
     pathExposedToWebview: false,
   })}`,
 );

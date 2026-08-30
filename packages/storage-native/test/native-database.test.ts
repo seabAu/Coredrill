@@ -442,6 +442,9 @@ describe("native SQLite repository and migration contracts", () => {
     await expect(database.restoreRecoveryArchive()).rejects.toBeInstanceOf(
       NativeStorageCapabilityError,
     );
+    await expect(database.createAutomaticBackup(7)).rejects.toBeInstanceOf(
+      NativeStorageCapabilityError,
+    );
     await database.delete();
   });
 

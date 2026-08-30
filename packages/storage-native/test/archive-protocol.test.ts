@@ -16,6 +16,15 @@ const metadata = Object.freeze({
   sha256: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 });
 
+const backupMetadata = Object.freeze({
+  createdAtUnixMs: 1_788_000_000_000,
+  retentionCount: 7,
+  knownGoodBackups: 7,
+  prunedBackups: 1,
+  cleanupPending: false,
+  archive: metadata,
+});
+
 describe("native recovery archive protocol", () => {
   it("accepts only versioned, checksummed metadata without a filesystem path", () => {
     const response = parseNativeArchiveResponse(
@@ -35,7 +44,7 @@ describe("native recovery archive protocol", () => {
     expect(JSON.stringify(response)).not.toContain("path");
   });
 
-  it("routes export and restore through a picker-owned command without path parameters", async () => {
+  it("routes picker recovery and pickerless backup without path parameters", async () => {
     const archiveRequests: NativeArchiveRequest[] = [];
     const transport = {
       invoke: async (request: NativeStorageRequest) => ({
@@ -45,17 +54,26 @@ describe("native recovery archive protocol", () => {
       }),
       invokeArchive: async (request: NativeArchiveRequest) => {
         archiveRequests.push(request);
-        return request.operation.type === "export"
-          ? {
+        switch (request.operation.type) {
+          case "export":
+            return {
               protocolVersion: 1,
               requestId: request.requestId,
               data: { type: "exported", archive: metadata },
-            }
-          : {
+            };
+          case "restore":
+            return {
               protocolVersion: 1,
               requestId: request.requestId,
               data: { type: "cancelled", operation: "restore" },
             };
+          case "automatic_backup":
+            return {
+              protocolVersion: 1,
+              requestId: request.requestId,
+              data: { type: "backup_created", backup: backupMetadata },
+            };
+        }
       },
     };
     const database = await openNativeSqliteDatabase({
@@ -68,11 +86,53 @@ describe("native recovery archive protocol", () => {
       archive: metadata,
     });
     await expect(database.restoreRecoveryArchive()).resolves.toEqual({ status: "cancelled" });
+    await expect(database.createAutomaticBackup(7)).resolves.toEqual(backupMetadata);
     expect(archiveRequests.map(({ operation }) => operation)).toEqual([
       { type: "export", sessionId: "native-session-1" },
       { type: "restore", sessionId: "native-session-1" },
+      { type: "automatic_backup", sessionId: "native-session-1", retentionCount: 7 },
     ]);
     expect(JSON.stringify(archiveRequests)).not.toContain("path");
+  });
+
+  it("rejects unsafe automatic-backup retention before crossing the transport", async () => {
+    let archiveCalls = 0;
+    const transport = {
+      invoke: async (request: NativeStorageRequest) => ({
+        protocolVersion: 1,
+        requestId: request.requestId,
+        data: { type: "opened", sessionId: "native-session-1" },
+      }),
+      invokeArchive: async () => {
+        archiveCalls += 1;
+        return undefined;
+      },
+    };
+    const database = await openNativeSqliteDatabase({
+      databaseName: "archive-test.sqlite3",
+      transport,
+    });
+
+    for (const retentionCount of [0, 1.5, 91, Number.NaN]) {
+      await expect(database.createAutomaticBackup(retentionCount)).rejects.toMatchObject({
+        code: "invalid_request",
+      });
+    }
+    expect(archiveCalls).toBe(0);
+  });
+
+  it("accepts only bounded path-free automatic-backup metadata", () => {
+    const response = parseNativeArchiveResponse(
+      {
+        protocolVersion: 1,
+        requestId: "native-archive-1",
+        data: { type: "backup_created", backup: backupMetadata },
+      },
+      "native-archive-1",
+    );
+
+    expect(response.data).toEqual({ type: "backup_created", backup: backupMetadata });
+    expect(JSON.stringify(response)).not.toContain("path");
   });
 
   it("closes the adapter after an unrecoverable native restore failure", async () => {
@@ -131,6 +191,30 @@ describe("native recovery archive protocol", () => {
       label: "unknown operation",
       requestId: "native-archive-1",
       data: { type: "cancelled", operation: "delete" },
+    },
+    {
+      label: "zero known-good backups",
+      requestId: "native-archive-1",
+      data: {
+        type: "backup_created",
+        backup: { ...backupMetadata, knownGoodBackups: 0 },
+      },
+    },
+    {
+      label: "unbounded backup retention",
+      requestId: "native-archive-1",
+      data: {
+        type: "backup_created",
+        backup: { ...backupMetadata, retentionCount: 91 },
+      },
+    },
+    {
+      label: "invalid cleanup state",
+      requestId: "native-archive-1",
+      data: {
+        type: "backup_created",
+        backup: { ...backupMetadata, cleanupPending: "no" },
+      },
     },
   ])("rejects $label responses", ({ requestId, data }) => {
     expect(() =>

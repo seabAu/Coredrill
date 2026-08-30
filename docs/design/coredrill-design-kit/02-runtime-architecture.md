@@ -161,6 +161,16 @@ Accepted [ADR-0003](../../adr/0003-adopt-browser-storage-support-floor.md) adds 
 
 `NAT-006` adds a third exact custom command for a database-only recovery artifact. The official native dialog is opened inside Rust on a worker thread; no path crosses IPC and no dialog/filesystem JavaScript permission is granted. Export uses SQLite's online-backup API, streams a version/schema/length/SHA-256 header and standalone database bytes, and atomically replaces a same-directory temporary file. Restore verifies length, digest, SQLite integrity, and the current schema in managed temporary storage before closing the connection. It creates a recovery snapshot, atomically replaces and reopens the database, and rolls back to the snapshot if any post-replacement step fails. The real lifecycle proves cancellation, managed-path rejection, corrupt-input preservation, injected post-replacement recovery, successful restore, and close/reopen durability; see [native archive verification](../../proof/native-archive-verification.md).
 
+`BKP-004` extends that exact archive command with a pickerless automatic-backup
+operation. Rust owns the clock and a canonical per-database `backups/` directory
+under Tauri app-data. It creates an online SQLite snapshot, publishes the
+checksummed recovery envelope atomically, rereads and restores it into temporary
+state for integrity/schema verification, and only then removes older verified
+backups. Retention is bounded from one through 90; the new known-good backup is
+never a prune candidate, and cleanup failure retains extra backups with an
+explicit warning. No path crosses IPC. See [desktop automatic backup version
+1](desktop-automatic-backup-v1.md).
+
 `NAT-007` packages that same boundary as an unsigned Windows current-user NSIS installer. The main window remains hidden until the bundled page reports Tauri's finished page-load event; the proof-only launch flag keeps it hidden while the native title supplies a deterministic readiness signal. Five warmups plus 20 measured launches record installer/application size, hashes, signature state, WebView2 version, startup, and aggregate app/WebView2 working-set and private memory. The isolated lifecycle proves install, launch, contract-probe exclusion, uninstall, and app-data preservation. These Windows 10 and hosted-runner measurements are diagnostics, not the unexecuted Windows 11 25H2/HW-WIN-REF release-performance gate; see [native package verification](../../proof/native-windows-package-verification.md).
 
 [ADR-0004](../../adr/0004-adopt-tauri-rusqlite-native-boundary.md) accepts the Tauri 2 plus narrow first-party `rusqlite` boundary for Windows and macOS after `NAT-008` cross-platform dependency, secure-store, and package proof. The same Linux AppImage and Secret Service paths remain in diagnostic CI, but Linux users retain the local browser app plus portable export while the GTK3 dependency graph carries an unresolved RustSec unsoundness warning and unmaintained dependencies. Public signing/notarization, updater/provenance, clean-machine behavior, and reference-hardware performance remain release gates; see [cross-platform native verification](../../proof/native-cross-platform-verification.md).

@@ -126,6 +126,17 @@ or attachment drift since preview, and delegates only to an atomic adapter port
 that must preserve the prior usable vault on failure. Errors are typed and
 content-free. See [portable archive restore version 1](portable-archive-restore-v1.md).
 
+`BKP-004` adds pickerless desktop recovery checkpoints beneath a canonical
+per-database app-data backup directory. A SQLite online snapshot, recovery
+envelope checksum, and full temporary reopen/integrity/schema check all succeed
+before the new timestamped file becomes known-good or any older verified file
+is eligible for retention cleanup. Retention cannot be zero. The new backup is
+never pruned; corrupt or unexpected entries are retained for explicit recovery
+attention; and deletion/sync failure keeps extra known-good backups with a
+cleanup-pending result. Snapshot, publish, and verification failures leave the
+active vault and all earlier known-good backups unchanged. See [desktop
+automatic backup version 1](desktop-automatic-backup-v1.md).
+
 `NAT-007` proves a Windows current-user NSIS package from a clean commit. CI rebuilds the package, installs it only under a generated temporary root, rejects the contract-only native storage probe if bundled, launches the installed application five discarded plus 20 measured times, records package/application hashes and unsigned development status, aggregates the application/WebView2 process tree, and runs the uninstaller. Program files are removed while the platform app-data directory remains. WebView2 uses Tauri's download bootstrapper if the runtime is absent, so this Phase 0 package is not a fully offline or signed public release. The recorded Windows 10 and hosted-runner results remain nonconformant diagnostics until the Windows 11 25H2/HW-WIN-REF release matrix executes. See [native package verification](../../proof/native-windows-package-verification.md).
 
 ## Future sync architecture

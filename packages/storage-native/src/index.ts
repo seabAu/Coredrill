@@ -2,12 +2,14 @@
 export {
   deserializeNativeArchiveError,
   NATIVE_ARCHIVE_PROTOCOL_VERSION,
+  NATIVE_BACKUP_RETENTION_LIMITS,
   parseNativeArchiveResponse,
   type NativeArchiveMetadata,
   type NativeArchiveOutcome,
   type NativeArchiveRequest,
   type NativeArchiveResponse,
   type NativeArchiveTransport,
+  type NativeAutomaticBackupMetadata,
 } from "./archive-protocol.js";
 export {
   openNativeSqliteDatabase,

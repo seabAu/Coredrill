@@ -1,8 +1,9 @@
 use std::{
     fs::{self, File, OpenOptions},
-    io::{self, Read, Write},
+    io::{self, Read, Seek, SeekFrom, Write},
     path::{Path, PathBuf},
     sync::atomic::{AtomicU64, Ordering},
+    time::{SystemTime, UNIX_EPOCH},
 };
 
 use rusqlite::{Connection, OpenFlags};
@@ -23,7 +24,13 @@ const MAX_ARCHIVE_DATABASE_BYTES: u64 = 64 * 1024 * 1024 * 1024;
 const COPY_BUFFER_BYTES: usize = 1024 * 1024;
 const SHA256_BYTES: usize = 32;
 const TEMP_ATTEMPTS: u8 = 64;
+const MIN_BACKUP_RETENTION: u16 = 1;
+const MAX_BACKUP_RETENTION: u16 = 90;
+const MAX_MANAGED_BACKUP_ENTRIES: usize = 512;
+const BACKUP_FILE_PREFIX: &str = "backup-";
+const BACKUP_FILE_SUFFIX: &str = ".coredrill-db";
 static NEXT_TEMPORARY_FILE: AtomicU64 = AtomicU64::new(1);
+static NEXT_BACKUP_FILE: AtomicU64 = AtomicU64::new(1);
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -41,8 +48,16 @@ pub struct NativeArchiveRequest {
     deny_unknown_fields
 )]
 pub enum NativeArchiveOperation {
-    Export { session_id: String },
-    Restore { session_id: String },
+    Export {
+        session_id: String,
+    },
+    Restore {
+        session_id: String,
+    },
+    AutomaticBackup {
+        session_id: String,
+        retention_count: u16,
+    },
 }
 
 #[derive(Debug, Serialize)]
@@ -69,6 +84,9 @@ pub enum NativeArchiveResponseData {
     Restored {
         archive: NativeArchiveMetadata,
     },
+    BackupCreated {
+        backup: NativeAutomaticBackupMetadata,
+    },
 }
 
 #[derive(Clone, Copy, Debug, Serialize)]
@@ -85,6 +103,17 @@ pub struct NativeArchiveMetadata {
     pub schema_version: u32,
     pub database_bytes: u64,
     pub sha256: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NativeAutomaticBackupMetadata {
+    pub created_at_unix_ms: u64,
+    pub retention_count: u16,
+    pub known_good_backups: u16,
+    pub pruned_backups: u16,
+    pub cleanup_pending: bool,
+    pub archive: NativeArchiveMetadata,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -159,6 +188,22 @@ impl NativeArchiveError {
             false,
         )
     }
+
+    fn backup_failed() -> Self {
+        Self::new(
+            "backup_failed",
+            "The automatic backup could not complete; the active vault and prior backups were preserved.",
+            true,
+        )
+    }
+
+    fn backup_verification_failed() -> Self {
+        Self::new(
+            "backup_verification_failed",
+            "The automatic backup did not pass verification; the active vault and prior backups were preserved.",
+            false,
+        )
+    }
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -169,12 +214,39 @@ enum RestoreFault {
     AfterAtomicReplacement,
 }
 
-impl NativeArchiveOperation {
-    fn operation_name(&self) -> NativeArchiveOperationName {
-        match self {
-            Self::Export { .. } => NativeArchiveOperationName::Export,
-            Self::Restore { .. } => NativeArchiveOperationName::Restore,
-        }
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+enum BackupFault {
+    #[default]
+    None,
+    BeforePublish,
+    CorruptAfterPublish,
+    CleanupFailure,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct BackupTimestamp {
+    unix_seconds: u64,
+    nanoseconds: u32,
+}
+
+impl BackupTimestamp {
+    fn now() -> Result<Self, NativeArchiveError> {
+        let duration = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_err(|_| NativeArchiveError::backup_failed())?;
+        Ok(Self {
+            unix_seconds: duration.as_secs(),
+            nanoseconds: duration.subsec_nanos(),
+        })
+    }
+
+    fn unix_milliseconds(self) -> Result<u64, NativeArchiveError> {
+        self.unix_seconds
+            .checked_mul(1_000)
+            .and_then(|milliseconds| {
+                milliseconds.checked_add(u64::from(self.nanoseconds / 1_000_000))
+            })
+            .ok_or_else(NativeArchiveError::backup_failed)
     }
 }
 
@@ -184,20 +256,30 @@ fn validate_native_archive_request(
     validate_request(request)?;
     let session_id = match &request.operation {
         NativeArchiveOperation::Export { session_id }
-        | NativeArchiveOperation::Restore { session_id } => session_id,
+        | NativeArchiveOperation::Restore { session_id }
+        | NativeArchiveOperation::AutomaticBackup { session_id, .. } => session_id,
     };
-    validate_archive_session_id(session_id)
+    validate_archive_session_id(session_id)?;
+    if let NativeArchiveOperation::AutomaticBackup {
+        retention_count, ..
+    } = &request.operation
+        && !(MIN_BACKUP_RETENTION..=MAX_BACKUP_RETENTION).contains(retention_count)
+    {
+        return Err(NativeArchiveError::invalid_request());
+    }
+    Ok(())
 }
 
 impl NativeStorageService {
-    pub(crate) fn validate_archive_picker_request(
+    pub(crate) fn validate_archive_request(
         &self,
         request: &NativeArchiveRequest,
     ) -> Result<(), NativeArchiveError> {
         validate_native_archive_request(request)?;
         let session_id = match &request.operation {
             NativeArchiveOperation::Export { session_id }
-            | NativeArchiveOperation::Restore { session_id } => session_id,
+            | NativeArchiveOperation::Restore { session_id }
+            | NativeArchiveOperation::AutomaticBackup { session_id, .. } => session_id,
         };
         let mut state = self
             .state
@@ -229,13 +311,17 @@ impl NativeStorageService {
         selected_path: Option<PathBuf>,
         restore_fault: RestoreFault,
     ) -> Result<NativeArchiveResponse, NativeArchiveError> {
-        self.validate_archive_picker_request(&request)?;
-        let operation_name = request.operation.operation_name();
+        self.validate_archive_request(&request)?;
         let request_id = request.request_id;
         let data = match (request.operation, selected_path) {
-            (_, None) => NativeArchiveResponseData::Cancelled {
-                operation: operation_name,
+            (NativeArchiveOperation::Export { .. }, None) => NativeArchiveResponseData::Cancelled {
+                operation: NativeArchiveOperationName::Export,
             },
+            (NativeArchiveOperation::Restore { .. }, None) => {
+                NativeArchiveResponseData::Cancelled {
+                    operation: NativeArchiveOperationName::Restore,
+                }
+            }
             (NativeArchiveOperation::Export { session_id }, Some(path)) => {
                 NativeArchiveResponseData::Exported {
                     archive: self.export_archive(&session_id, &path)?,
@@ -245,6 +331,23 @@ impl NativeStorageService {
                 NativeArchiveResponseData::Restored {
                     archive: self.restore_archive(&session_id, &path, restore_fault)?,
                 }
+            }
+            (
+                NativeArchiveOperation::AutomaticBackup {
+                    session_id,
+                    retention_count,
+                },
+                None,
+            ) => NativeArchiveResponseData::BackupCreated {
+                backup: self.create_automatic_backup(
+                    &session_id,
+                    retention_count,
+                    BackupTimestamp::now()?,
+                    BackupFault::None,
+                )?,
+            },
+            (NativeArchiveOperation::AutomaticBackup { .. }, Some(_)) => {
+                return Err(NativeArchiveError::invalid_request());
             }
         };
         Ok(NativeArchiveResponse {
@@ -297,6 +400,109 @@ impl NativeStorageService {
         };
         write_archive_atomically(snapshot.path(), &target, &metadata, digest)?;
         Ok(metadata)
+    }
+
+    fn create_automatic_backup(
+        &self,
+        session_id: &str,
+        retention_count: u16,
+        timestamp: BackupTimestamp,
+        fault: BackupFault,
+    ) -> Result<NativeAutomaticBackupMetadata, NativeArchiveError> {
+        validate_archive_session_id(session_id)?;
+        if !(MIN_BACKUP_RETENTION..=MAX_BACKUP_RETENTION).contains(&retention_count) {
+            return Err(NativeArchiveError::invalid_request());
+        }
+        let mut state = self
+            .state
+            .lock()
+            .map_err(|_| NativeArchiveError::backup_failed())?;
+        let session = state
+            .sessions
+            .get_mut(session_id)
+            .ok_or_else(NativeArchiveError::session_missing)?;
+        if session.transaction_active {
+            return Err(NativeArchiveError::transaction_state());
+        }
+        self.layout
+            .verify_database_path(&session.database_path)
+            .map_err(|_| NativeArchiveError::backup_failed())?;
+        let backup_directory = self
+            .layout
+            .prepare_backup_directory(&session.database_path)
+            .map_err(|_| NativeArchiveError::backup_failed())?;
+        ensure_backup_capacity(&backup_directory)?;
+        let schema_version = validate_connection(&session.connection, None)
+            .map_err(|_| NativeArchiveError::backup_verification_failed())?;
+        let snapshot = create_sqlite_snapshot(
+            &session.connection,
+            self.layout.database_root(),
+            "automatic-backup",
+        )
+        .map_err(|_| NativeArchiveError::backup_failed())?;
+        validate_sqlite_file(snapshot.path(), Some(schema_version))
+            .map_err(|_| NativeArchiveError::backup_verification_failed())?;
+        let (database_bytes, digest) =
+            digest_file(snapshot.path()).map_err(|_| NativeArchiveError::backup_failed())?;
+        if database_bytes > MAX_ARCHIVE_DATABASE_BYTES {
+            return Err(NativeArchiveError::backup_verification_failed());
+        }
+        let archive = NativeArchiveMetadata {
+            format_version: ARCHIVE_FORMAT_VERSION,
+            schema_version,
+            database_bytes,
+            sha256: digest_hex(&digest),
+        };
+        if fault == BackupFault::BeforePublish {
+            return Err(NativeArchiveError::backup_failed());
+        }
+
+        let backup_path = backup_directory.join(backup_file_name(timestamp));
+        reject_link_or_directory(&backup_path).map_err(|_| NativeArchiveError::backup_failed())?;
+        write_archive_atomically(snapshot.path(), &backup_path, &archive, digest)
+            .map_err(|_| NativeArchiveError::backup_failed())?;
+        if fault == BackupFault::CorruptAfterPublish {
+            corrupt_final_byte(&backup_path).map_err(|_| NativeArchiveError::backup_failed())?;
+        }
+
+        let verified_archive =
+            extract_and_validate_archive(&backup_path, self.layout.database_root(), schema_version)
+                .map(|(_, metadata)| metadata);
+        if !matches!(verified_archive, Ok(ref metadata) if metadata == &archive) {
+            let _ = fs::remove_file(&backup_path);
+            let _ = sync_parent(&backup_directory);
+            return Err(NativeArchiveError::backup_verification_failed());
+        }
+
+        let (known_good_backups, pruned_backups, cleanup_pending) = match inspect_managed_backups(
+            &backup_directory,
+            self.layout.database_root(),
+            schema_version,
+        ) {
+            Ok(inventory) => {
+                let rotation = rotate_verified_backups(
+                    inventory.known_good,
+                    &backup_path,
+                    retention_count,
+                    fault == BackupFault::CleanupFailure,
+                );
+                (
+                    rotation.known_good_backups,
+                    rotation.pruned_backups,
+                    inventory.invalid_entries > 0 || rotation.cleanup_pending,
+                )
+            }
+            Err(_) => (1, 0, true),
+        };
+
+        Ok(NativeAutomaticBackupMetadata {
+            created_at_unix_ms: timestamp.unix_milliseconds()?,
+            retention_count,
+            known_good_backups,
+            pruned_backups,
+            cleanup_pending,
+            archive,
+        })
     }
 
     fn restore_archive(
@@ -744,6 +950,191 @@ fn digest_hex(digest: &[u8; SHA256_BYTES]) -> String {
     encoded
 }
 
+fn backup_file_name(timestamp: BackupTimestamp) -> String {
+    let sequence = NEXT_BACKUP_FILE.fetch_add(1, Ordering::Relaxed);
+    format!(
+        "{BACKUP_FILE_PREFIX}{:020}-{:09}-{:020}{BACKUP_FILE_SUFFIX}",
+        timestamp.unix_seconds, timestamp.nanoseconds, sequence
+    )
+}
+
+fn is_managed_backup_file_name(name: &str) -> bool {
+    let Some(body) = name
+        .strip_prefix(BACKUP_FILE_PREFIX)
+        .and_then(|value| value.strip_suffix(BACKUP_FILE_SUFFIX))
+    else {
+        return false;
+    };
+    let mut components = body.split('-');
+    matches!(
+        (
+            components.next(),
+            components.next(),
+            components.next(),
+            components.next(),
+        ),
+        (Some(seconds), Some(nanos), Some(sequence), None)
+            if seconds.len() == 20
+                && nanos.len() == 9
+                && sequence.len() == 20
+                && seconds.bytes().all(|byte| byte.is_ascii_digit())
+                && nanos.bytes().all(|byte| byte.is_ascii_digit())
+                && sequence.bytes().all(|byte| byte.is_ascii_digit())
+    )
+}
+
+fn corrupt_final_byte(path: &Path) -> Result<(), NativeArchiveError> {
+    let mut file = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(path)
+        .map_err(|_| NativeArchiveError::backup_failed())?;
+    let length = file
+        .metadata()
+        .map_err(|_| NativeArchiveError::backup_failed())?
+        .len();
+    if length == 0 {
+        return Err(NativeArchiveError::backup_failed());
+    }
+    file.seek(SeekFrom::Start(length - 1))
+        .map_err(|_| NativeArchiveError::backup_failed())?;
+    let mut byte = [0_u8; 1];
+    file.read_exact(&mut byte)
+        .map_err(|_| NativeArchiveError::backup_failed())?;
+    byte[0] ^= 0xff;
+    file.seek(SeekFrom::Start(length - 1))
+        .and_then(|_| file.write_all(&byte))
+        .and_then(|_| file.flush())
+        .and_then(|_| file.sync_all())
+        .map_err(|_| NativeArchiveError::backup_failed())
+}
+
+struct ManagedBackupInventory {
+    known_good: Vec<PathBuf>,
+    invalid_entries: usize,
+}
+
+fn inspect_managed_backups(
+    backup_directory: &Path,
+    database_root: &Path,
+    expected_schema: u32,
+) -> Result<ManagedBackupInventory, NativeArchiveError> {
+    let mut entries = fs::read_dir(backup_directory)
+        .map_err(|_| NativeArchiveError::backup_failed())?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|_| NativeArchiveError::backup_failed())?;
+    if entries.len() > MAX_MANAGED_BACKUP_ENTRIES {
+        return Err(NativeArchiveError::backup_failed());
+    }
+    entries.sort_by_key(|entry| entry.file_name());
+    let mut known_good = Vec::new();
+    let mut invalid_entries = 0_usize;
+    for entry in entries {
+        let path = entry.path();
+        let name_is_valid = entry
+            .file_name()
+            .to_str()
+            .is_some_and(is_managed_backup_file_name);
+        let file_type = entry
+            .file_type()
+            .map_err(|_| NativeArchiveError::backup_failed())?;
+        if !name_is_valid || !file_type.is_file() || file_type.is_symlink() {
+            invalid_entries += 1;
+            continue;
+        }
+        let canonical = match fs::canonicalize(&path) {
+            Ok(canonical) => canonical,
+            Err(_) => {
+                invalid_entries += 1;
+                continue;
+            }
+        };
+        if canonical.parent() != Some(backup_directory) {
+            invalid_entries += 1;
+            continue;
+        }
+        match extract_and_validate_archive(&canonical, database_root, expected_schema) {
+            Ok(_) => known_good.push(canonical),
+            Err(_) => invalid_entries += 1,
+        }
+    }
+    Ok(ManagedBackupInventory {
+        known_good,
+        invalid_entries,
+    })
+}
+
+fn ensure_backup_capacity(backup_directory: &Path) -> Result<(), NativeArchiveError> {
+    let entries =
+        fs::read_dir(backup_directory).map_err(|_| NativeArchiveError::backup_failed())?;
+    let mut count = 0_usize;
+    for entry in entries {
+        entry.map_err(|_| NativeArchiveError::backup_failed())?;
+        count += 1;
+        if count >= MAX_MANAGED_BACKUP_ENTRIES {
+            return Err(NativeArchiveError::backup_failed());
+        }
+    }
+    Ok(())
+}
+
+struct BackupRotationResult {
+    known_good_backups: u16,
+    pruned_backups: u16,
+    cleanup_pending: bool,
+}
+
+fn rotate_verified_backups(
+    mut known_good: Vec<PathBuf>,
+    newest_backup: &Path,
+    retention_count: u16,
+    inject_cleanup_failure: bool,
+) -> BackupRotationResult {
+    known_good.sort();
+    let known_good_count = known_good.len();
+    let desired_prune = known_good_count.saturating_sub(usize::from(retention_count));
+    if desired_prune == 0 {
+        return BackupRotationResult {
+            known_good_backups: u16::try_from(known_good_count).unwrap_or(u16::MAX),
+            pruned_backups: 0,
+            cleanup_pending: false,
+        };
+    }
+    if inject_cleanup_failure {
+        return BackupRotationResult {
+            known_good_backups: u16::try_from(known_good_count).unwrap_or(u16::MAX),
+            pruned_backups: 0,
+            cleanup_pending: true,
+        };
+    }
+
+    let mut pruned = 0_usize;
+    let mut cleanup_pending = false;
+    for path in known_good
+        .iter()
+        .filter(|path| path.as_path() != newest_backup)
+        .take(desired_prune)
+    {
+        match fs::remove_file(path) {
+            Ok(()) => pruned += 1,
+            Err(_) => cleanup_pending = true,
+        }
+    }
+    if pruned > 0 {
+        match newest_backup.parent() {
+            Some(parent) if sync_parent(parent).is_ok() => {}
+            _ => cleanup_pending = true,
+        }
+    }
+    cleanup_pending |= known_good_count.saturating_sub(pruned) > usize::from(retention_count);
+    BackupRotationResult {
+        known_good_backups: u16::try_from(known_good_count.saturating_sub(pruned))
+            .unwrap_or(u16::MAX),
+        pruned_backups: u16::try_from(pruned).unwrap_or(u16::MAX),
+        cleanup_pending,
+    }
+}
+
 struct TemporaryPath(PathBuf);
 
 impl TemporaryPath {
@@ -845,8 +1236,9 @@ mod tests {
     };
 
     use super::{
-        NATIVE_ARCHIVE_PROTOCOL_VERSION, NativeArchiveOperation, NativeArchiveOperationName,
-        NativeArchiveRequest, NativeArchiveResponseData, RestoreFault,
+        BackupFault, BackupTimestamp, NATIVE_ARCHIVE_PROTOCOL_VERSION, NativeArchiveOperation,
+        NativeArchiveOperationName, NativeArchiveRequest, NativeArchiveResponseData, RestoreFault,
+        extract_and_validate_archive,
     };
     use crate::native_storage::{NATIVE_STORAGE_PROTOCOL_VERSION, NativeStorageService};
 
@@ -951,6 +1343,31 @@ mod tests {
             },
             _ => panic!("the archive test query must return rows"),
         }
+    }
+
+    fn backup_paths(service: &NativeStorageService, session_id: &str) -> Vec<PathBuf> {
+        let database_path = {
+            let state = service
+                .state
+                .lock()
+                .expect("the native storage state must be available");
+            state
+                .sessions
+                .get(session_id)
+                .expect("the native storage session must exist")
+                .database_path
+                .clone()
+        };
+        let backup_directory = service
+            .layout
+            .prepare_backup_directory(&database_path)
+            .expect("the managed backup directory must resolve");
+        let mut paths = fs::read_dir(backup_directory)
+            .expect("the managed backup directory must be readable")
+            .map(|entry| entry.expect("the backup entry must be readable").path())
+            .collect::<Vec<_>>();
+        paths.sort();
+        paths
     }
 
     #[test]
@@ -1162,5 +1579,229 @@ mod tests {
                 },
             ))
             .expect("the restored archive test database must be deleted");
+    }
+
+    #[test]
+    fn automatic_backups_verify_before_rotation_and_preserve_last_known_good() {
+        let test_root = TestRoot::new();
+        let app_data_root = test_root.path().join("app-data");
+        let service = NativeStorageService::new(app_data_root)
+            .expect("the native backup service must initialize");
+        let session_id = open_session(&service, "backup-open");
+        execute(
+            &service,
+            &session_id,
+            "backup-schema",
+            "CREATE TABLE archive_probe(id INTEGER PRIMARY KEY, value TEXT NOT NULL) STRICT",
+        );
+        execute(
+            &service,
+            &session_id,
+            "backup-version",
+            "PRAGMA user_version = 1",
+        );
+        execute(
+            &service,
+            &session_id,
+            "backup-first-value",
+            "INSERT INTO archive_probe(id, value) VALUES (1, 'first')",
+        );
+
+        let first = service
+            .create_automatic_backup(
+                &session_id,
+                2,
+                BackupTimestamp {
+                    unix_seconds: 1_000,
+                    nanoseconds: 1,
+                },
+                BackupFault::None,
+            )
+            .expect("the first automatic backup must verify");
+        assert_eq!(first.created_at_unix_ms, 1_000_000);
+        assert_eq!(first.known_good_backups, 1);
+        assert_eq!(first.pruned_backups, 0);
+        assert!(!first.cleanup_pending);
+        let first_paths = backup_paths(&service, &session_id);
+        assert_eq!(first_paths.len(), 1);
+        let first_name = first_paths[0]
+            .file_name()
+            .and_then(|name| name.to_str())
+            .expect("the first backup name must be UTF-8");
+        assert!(first_name.starts_with("backup-00000000000000001000-000000001-"));
+
+        execute(
+            &service,
+            &session_id,
+            "backup-second-value",
+            "UPDATE archive_probe SET value = 'second' WHERE id = 1",
+        );
+        let second = service
+            .create_automatic_backup(
+                &session_id,
+                2,
+                BackupTimestamp {
+                    unix_seconds: 2_000,
+                    nanoseconds: 2,
+                },
+                BackupFault::None,
+            )
+            .expect("the second automatic backup must verify");
+        assert_eq!(second.known_good_backups, 2);
+        assert_eq!(second.pruned_backups, 0);
+
+        execute(
+            &service,
+            &session_id,
+            "backup-third-value",
+            "UPDATE archive_probe SET value = 'third' WHERE id = 1",
+        );
+        let third = service
+            .create_automatic_backup(
+                &session_id,
+                2,
+                BackupTimestamp {
+                    unix_seconds: 3_000,
+                    nanoseconds: 3,
+                },
+                BackupFault::None,
+            )
+            .expect("the third automatic backup must verify before rotation");
+        assert_eq!(third.known_good_backups, 2);
+        assert_eq!(third.pruned_backups, 1);
+        assert!(!third.cleanup_pending);
+        let retained_after_rotation = backup_paths(&service, &session_id);
+        assert_eq!(retained_after_rotation.len(), 2);
+        assert!(!retained_after_rotation.contains(&first_paths[0]));
+
+        let before_failed_publish = retained_after_rotation.clone();
+        let failed_publish = service
+            .create_automatic_backup(
+                &session_id,
+                1,
+                BackupTimestamp {
+                    unix_seconds: 4_000,
+                    nanoseconds: 4,
+                },
+                BackupFault::BeforePublish,
+            )
+            .expect_err("a pre-publication failure must not rotate prior backups");
+        assert_eq!(failed_publish.code, "backup_failed");
+        assert_eq!(backup_paths(&service, &session_id), before_failed_publish);
+
+        let failed_verification = service
+            .create_automatic_backup(
+                &session_id,
+                1,
+                BackupTimestamp {
+                    unix_seconds: 5_000,
+                    nanoseconds: 5,
+                },
+                BackupFault::CorruptAfterPublish,
+            )
+            .expect_err("a corrupt newly published backup must fail verification");
+        assert_eq!(failed_verification.code, "backup_verification_failed");
+        assert_eq!(backup_paths(&service, &session_id), before_failed_publish);
+        assert_eq!(
+            query_value(&service, &session_id, "backup-query-after-failures"),
+            "third"
+        );
+
+        execute(
+            &service,
+            &session_id,
+            "backup-fourth-value",
+            "UPDATE archive_probe SET value = 'fourth' WHERE id = 1",
+        );
+        let cleanup_deferred = service
+            .create_automatic_backup(
+                &session_id,
+                1,
+                BackupTimestamp {
+                    unix_seconds: 6_000,
+                    nanoseconds: 6,
+                },
+                BackupFault::CleanupFailure,
+            )
+            .expect("cleanup failure must not erase successful backup creation");
+        assert_eq!(cleanup_deferred.known_good_backups, 3);
+        assert_eq!(cleanup_deferred.pruned_backups, 0);
+        assert!(cleanup_deferred.cleanup_pending);
+        assert_eq!(backup_paths(&service, &session_id).len(), 3);
+
+        let recovered_cleanup = service
+            .create_automatic_backup(
+                &session_id,
+                1,
+                BackupTimestamp {
+                    unix_seconds: 7_000,
+                    nanoseconds: 7,
+                },
+                BackupFault::None,
+            )
+            .expect("a later successful backup must finish deferred rotation");
+        assert_eq!(recovered_cleanup.known_good_backups, 1);
+        assert_eq!(recovered_cleanup.pruned_backups, 3);
+        assert!(!recovered_cleanup.cleanup_pending);
+        let final_paths = backup_paths(&service, &session_id);
+        assert_eq!(final_paths.len(), 1);
+        let (verified_database, verified_metadata) =
+            extract_and_validate_archive(&final_paths[0], service.layout.database_root(), 1)
+                .expect("the final retained backup must remain restorable");
+        assert_eq!(verified_metadata, recovered_cleanup.archive);
+        drop(verified_database);
+        assert_eq!(
+            query_value(&service, &session_id, "backup-query-after-rotation"),
+            "fourth"
+        );
+
+        for retention_count in [0, 91] {
+            let invalid = service
+                .invoke_archive_with_selected_path(
+                    archive_request(
+                        "backup-invalid-retention",
+                        NativeArchiveOperation::AutomaticBackup {
+                            session_id: session_id.clone(),
+                            retention_count,
+                        },
+                    ),
+                    None,
+                )
+                .expect_err("unsafe retention must fail before filesystem mutation");
+            assert_eq!(invalid.code, "invalid_request");
+        }
+        assert_eq!(backup_paths(&service, &session_id), final_paths);
+        let public_backup = service
+            .invoke_archive_with_selected_path(
+                archive_request(
+                    "backup-public-operation",
+                    NativeArchiveOperation::AutomaticBackup {
+                        session_id: session_id.clone(),
+                        retention_count: 1,
+                    },
+                ),
+                None,
+            )
+            .expect("the path-free public automatic-backup operation must succeed");
+        match public_backup.data {
+            NativeArchiveResponseData::BackupCreated { backup } => {
+                assert_eq!(backup.retention_count, 1);
+                assert_eq!(backup.known_good_backups, 1);
+                assert_eq!(backup.pruned_backups, 1);
+                assert!(!backup.cleanup_pending);
+            }
+            _ => panic!("the automatic-backup operation must return backup metadata"),
+        }
+        assert_eq!(backup_paths(&service, &session_id).len(), 1);
+        assert_eq!(
+            query_value(&service, &session_id, "backup-query-after-public-operation"),
+            "fourth"
+        );
+        service
+            .invoke(storage_request(
+                "backup-delete",
+                NativeStorageOperation::Delete { session_id },
+            ))
+            .expect("the backup test database must be deleted");
     }
 }

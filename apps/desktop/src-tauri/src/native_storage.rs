@@ -25,6 +25,7 @@ const MAX_RESULT_BYTES: usize = 32 * 1024 * 1024;
 const DATABASE_DIRECTORY_NAME: &str = "databases";
 const ATTACHMENT_DIRECTORY_NAME: &str = "attachments";
 const ATTACHMENT_HASH_DIRECTORY_NAME: &str = "sha256";
+const BACKUP_DIRECTORY_NAME: &str = "backups";
 const SHA256_HEX_BYTES: usize = 64;
 
 #[derive(Debug, Deserialize)]
@@ -201,6 +202,7 @@ pub struct NativeStorageLayout {
     app_data_root: PathBuf,
     database_root: PathBuf,
     attachment_root: PathBuf,
+    backup_root: PathBuf,
 }
 
 impl NativeStorageLayout {
@@ -219,11 +221,14 @@ impl NativeStorageLayout {
             &attachment_container,
             Path::new(ATTACHMENT_HASH_DIRECTORY_NAME),
         )?;
+        let backup_root =
+            initialize_managed_directory(&app_data_root, Path::new(BACKUP_DIRECTORY_NAME))?;
 
         Ok(Self {
             app_data_root,
             database_root,
             attachment_root,
+            backup_root,
         })
     }
 
@@ -237,6 +242,10 @@ impl NativeStorageLayout {
 
     pub fn attachment_root(&self) -> &Path {
         &self.attachment_root
+    }
+
+    pub fn backup_root(&self) -> &Path {
+        &self.backup_root
     }
 
     pub fn prepare_attachment_path(&self, sha256: &str) -> Result<PathBuf, NativeStorageError> {
@@ -288,6 +297,25 @@ impl NativeStorageLayout {
             return Err(NativeStorageError::storage_unavailable());
         }
         Ok(())
+    }
+
+    #[cfg(any(feature = "desktop-shell", test))]
+    pub(crate) fn prepare_backup_directory(
+        &self,
+        database_path: &Path,
+    ) -> Result<PathBuf, NativeStorageError> {
+        self.verify_database_path(database_path)?;
+        verify_managed_directory(
+            &self.app_data_root,
+            Path::new(BACKUP_DIRECTORY_NAME),
+            &self.backup_root,
+        )?;
+        let database_name = database_path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .ok_or_else(NativeStorageError::storage_unavailable)?;
+        validate_database_name(database_name)?;
+        initialize_managed_directory(&self.backup_root, Path::new(database_name))
     }
 }
 
@@ -942,6 +970,11 @@ mod tests {
             layout.attachment_root(),
             fs::canonicalize(layout.app_data_root().join("attachments").join("sha256"))
                 .expect("the attachment directory must canonicalize")
+        );
+        assert_eq!(
+            layout.backup_root(),
+            fs::canonicalize(layout.app_data_root().join("backups"))
+                .expect("the backup directory must canonicalize")
         );
 
         let attachment_path = layout

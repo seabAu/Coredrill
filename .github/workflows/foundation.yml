@@ -159,7 +159,7 @@ jobs:
       - name: Prove redacted OS secure storage
         run: pnpm test:secure-storage
 
-      - name: Prove picker-owned native archive recovery
+      - name: Prove native archive recovery and automatic backup rotation
         run: pnpm test:native-archive
 
       - name: Lint complete Tauri boundary
@@ -221,6 +221,9 @@ jobs:
         env:
           COREDRILL_SECRET_PROOF_REQUIRED: "true"
         run: pnpm test:secure-storage
+
+      - name: Prove automatic native backup rotation
+        run: pnpm test:native-archive
 
       - name: Lint complete Tauri boundary
         run: pnpm --filter @coredrill/desktop lint:desktop
@@ -295,6 +298,9 @@ jobs:
 
       - name: Prove redacted FreeDesktop Secret Service lifecycle
         run: dbus-run-session -- bash tooling/scripts/run-linux-secret-service-proof.sh
+
+      - name: Prove automatic native backup rotation
+        run: pnpm test:native-archive
 
       - name: Lint complete Tauri boundary
         run: pnpm --filter @coredrill/desktop lint:desktop

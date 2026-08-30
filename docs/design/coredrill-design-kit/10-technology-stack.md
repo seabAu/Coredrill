@@ -104,6 +104,14 @@ The accepted support floor includes exact Chrome `152.0.7977.54`/`151.0.7922.138
 
 The NAT-006 recovery command uses exact optional `tauri-plugin-dialog` 2.7.1 only from Rust, rusqlite's official online-backup feature, exact `sha2` 0.11.0 for streaming checksums, and direct target-only `windows-sys` 0.61.2 features for write-through atomic replacement. It proves cancellation, checksummed database-only export, pre-replacement corruption rejection, recovery after an injected post-replacement failure, and durable restore without exposing paths or granting dialog/filesystem JavaScript permissions. Cross-platform package and secure-store evidence closes the adapter comparison in favor of the narrower first-party `rusqlite` layer; evidence and reviewed Cargo risk are in [native verification](../../proof/native-sqlite-tauri-verification.md), [secure-storage verification](../../proof/native-secure-storage-verification.md), [native archive verification](../../proof/native-archive-verification.md), and [cross-platform native verification](../../proof/native-cross-platform-verification.md).
 
+`BKP-004` reuses those already reviewed `rusqlite`, `sha2`, atomic-replacement,
+and temporary-file primitives without another dependency. The same archive
+protocol command accepts a pickerless `automatic_backup` operation and returns
+path-free verification/rotation metadata. Managed timestamped recovery files
+live beneath `backups/<database-leaf>/`; retention is caller-configurable from
+one through 90 and cannot delete the newly verified last-known-good backup. See
+[desktop automatic backup version 1](desktop-automatic-backup-v1.md).
+
 NAT-007 uses Tauri's built-in NSIS bundler for an English, current-user Windows installer with downgrade blocking, the Apache-2.0 license, and `downloadBootstrapper` WebView2 provisioning. NAT-008 adds an ad-hoc-signed macOS app and diagnostic Linux AppImage, rejects the internal storage probe from all packages, smoke-launches each package, and exercises the exact target secure store. A pinned GitHub artifact action retains clean-commit packages and raw hosted manifests for 30 days; sanitized durable manifests remain in repository proof. Windows and macOS architecture targets are accepted, while Linux native remains diagnostic because its compiled GTK3 graph carries an unresolved RustSec unsoundness warning and unmaintained dependencies. Signing/notarization, provenance, updater behavior, an optional fully offline installer, and reference-hardware release checks remain later gates. See [native package verification](../../proof/native-windows-package-verification.md) and [cross-platform native verification](../../proof/native-cross-platform-verification.md).
 
 ### Portable archive container

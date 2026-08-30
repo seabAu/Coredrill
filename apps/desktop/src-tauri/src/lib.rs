@@ -40,7 +40,7 @@ async fn native_archive_invoke(
 ) -> Result<NativeArchiveResponse, NativeArchiveError> {
     let service = Arc::clone(&state.0);
     tauri::async_runtime::spawn_blocking(move || {
-        service.validate_archive_picker_request(&request)?;
+        service.validate_archive_request(&request)?;
         let picker = app
             .dialog()
             .file()
@@ -50,6 +50,7 @@ async fn native_archive_invoke(
                 .set_file_name("coredrill-recovery.coredrill-db")
                 .blocking_save_file(),
             NativeArchiveOperation::Restore { .. } => picker.blocking_pick_file(),
+            NativeArchiveOperation::AutomaticBackup { .. } => None,
         };
         let selected_path = selected
             .map(|path| path.into_path())

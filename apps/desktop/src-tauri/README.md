@@ -4,7 +4,16 @@ This crate contains Coredrill's accepted Tauri shell and narrow native `rusqlite
 
 `coredrill-native-storage-probe` runs the exact same service over JSON Lines for repository-contract proof without requiring a WebView. Its input and values are never logged. The probe uses a caller-supplied temporary app-data root; the Tauri entry point forwards the operating system's application-data directory exactly as resolved by pinned Tauri.
 
-The service canonicalizes separate `databases/` and `attachments/sha256/` roots. Attachment paths are lowercase SHA-256-addressed and sharded; arbitrary attachment paths do not cross IPC. The archive command opens the official native picker inside Rust, so selected paths never return to the WebView. It streams a versioned SHA-256 database-recovery artifact, validates restore data in a managed temporary database, replaces on the same volume, and restores a recovery snapshot if final validation fails. This database-only artifact is not the later D-051 portable archive with attachments and human-readable exports.
+The service canonicalizes separate `databases/`, `attachments/sha256/`, and
+per-database `backups/` roots. Attachment paths are lowercase
+SHA-256-addressed and sharded; arbitrary attachment and backup paths do not
+cross IPC. Picker export/restore remains inside Rust. The same archive command
+also creates pickerless timestamped automatic checkpoints through SQLite's
+online-backup API, verifies their recovery envelope and temporary SQLite reopen
+before rotating older known-good files, and retains extra backups when cleanup
+fails. Retention is bounded from one through 90 and never removes the newly
+verified last-known-good backup. These database-only artifacts are distinct
+from the D-051 portable archive with attachments and human-readable exports.
 
 Provider secrets use one exact, target-confined operating-system backend: Windows Credential Manager, the macOS login Keychain, or FreeDesktop Secret Service. Each lifecycle is serialized; unavailable or locked secure storage fails closed with a stable content-free error, and there is no plaintext fallback. The redacted proof harness retrieves its synthetic value only inside Rust, zeroizes Coredrill-owned buffers, deletes the entry, and emits booleans plus the backend name rather than secret material.
 

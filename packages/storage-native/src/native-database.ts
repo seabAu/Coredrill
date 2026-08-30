@@ -28,6 +28,7 @@ import {
   type NativeArchiveOutcome,
   type NativeArchiveResponseData,
   type NativeArchiveTransport,
+  type NativeAutomaticBackupMetadata,
 } from "./archive-protocol.js";
 
 export interface OpenNativeSqliteOptions {
@@ -39,6 +40,7 @@ export interface OpenNativeSqliteOptions {
 export interface NativeSqliteDatabase extends DatabasePort {
   exportRecoveryArchive(): Promise<NativeArchiveOutcome>;
   restoreRecoveryArchive(): Promise<NativeArchiveOutcome>;
+  createAutomaticBackup(retentionCount: number): Promise<NativeAutomaticBackupMetadata>;
   close(): Promise<void>;
   delete(): Promise<boolean>;
 }
@@ -136,6 +138,19 @@ class NativeSqliteDatabaseAdapter implements NativeSqliteDatabase {
     return this.runExclusive(() =>
       this.sendArchive({ type: "restore", sessionId: this.sessionId }),
     );
+  }
+
+  public createAutomaticBackup(retentionCount: number): Promise<NativeAutomaticBackupMetadata> {
+    if (!Number.isSafeInteger(retentionCount) || retentionCount < 1 || retentionCount > 90) {
+      return Promise.reject(
+        new NativeStorageProtocolError(
+          "invalid_request",
+          "Automatic backup retention must be an integer from 1 through 90.",
+          false,
+        ),
+      );
+    }
+    return this.runExclusive(() => this.sendAutomaticBackup(retentionCount));
   }
 
   public diagnostics(): Promise<StorageDiagnostics> {
@@ -249,7 +264,9 @@ class NativeSqliteDatabaseAdapter implements NativeSqliteDatabase {
     }
   }
 
-  private async sendArchive(operation: NativeArchiveOperation): Promise<NativeArchiveOutcome> {
+  private async sendArchive(
+    operation: Exclude<NativeArchiveOperation, { readonly type: "automatic_backup" }>,
+  ): Promise<NativeArchiveOutcome> {
     this.assertOpen();
     if (this.archiveTransport === undefined) {
       throw new NativeStorageCapabilityError("native-recovery-archive");
@@ -289,6 +306,41 @@ class NativeSqliteDatabaseAdapter implements NativeSqliteDatabase {
       );
     }
     return Object.freeze({ status: "completed", archive: data.archive });
+  }
+
+  private async sendAutomaticBackup(
+    retentionCount: number,
+  ): Promise<NativeAutomaticBackupMetadata> {
+    this.assertOpen();
+    if (this.archiveTransport === undefined) {
+      throw new NativeStorageCapabilityError("native-automatic-backup");
+    }
+    const requestId = `native-archive-${String(this.requestSequence)}`;
+    this.requestSequence += 1;
+    let data: NativeArchiveResponseData;
+    try {
+      const response = await this.archiveTransport.invokeArchive({
+        protocolVersion: NATIVE_ARCHIVE_PROTOCOL_VERSION,
+        requestId,
+        operation: {
+          type: "automatic_backup",
+          sessionId: this.sessionId,
+          retentionCount,
+        },
+      });
+      data = parseNativeArchiveResponse(response, requestId).data;
+    } catch (error) {
+      if (error instanceof NativeStorageProtocolError) throw error;
+      throw deserializeNativeArchiveError(error);
+    }
+    if (data.type !== "backup_created") {
+      throw new NativeStorageProtocolError(
+        "invalid_response",
+        `Native archive returned ${data.type} while backup_created was required.`,
+        false,
+      );
+    }
+    return data.backup;
   }
 
   private runExclusive<Result>(work: () => Promise<Result>, allowClosed = false): Promise<Result> {
