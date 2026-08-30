@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-30
 Current milestone: Phase 2 — capture and approved extraction (`GATE-0` and `GATE-1` external-evidence blockers remain open)
-Current work item: `CAP-002` — ingestion idempotency and duplicate suggestions
-Next recommended slice: `CAP-003` after `CAP-002` proof
+Current work item: `CAP-003` — manual and supplied-content capture paths
+Next recommended slice: `CAP-004` after `CAP-003` proof
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `CAP-003` after `CAP-002` proof
 | Field | Value |
 |---|---|
 | Milestone | Phase 2, with the independent Phase 0 and Phase 1 evidence gates retained below |
-| Item range | `CAP-002` |
+| Item range | `CAP-003` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-30 |
-| Expected proof | Fixture/property tests for exact idempotency and non-destructive duplicate suggestions by source ID, canonical URL, semantic content hash, and fuzzy title/company |
-| Blocker | None for `CAP-002`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
-| Next handoff | Read the capture-inbox migration and storage/application boundaries, then implement the smallest transactional ingestion and duplicate-suggestion slice without adding extraction connectors, crawling, hosted state, or silent merge behavior. |
+| Expected proof | End-to-end tests for manual form, pasted text/URL, saved HTML/text, and JSON capture paths through the validated durable inbox boundary |
+| Blocker | None for `CAP-003`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
+| Next handoff | Read the capture and interface journey sections plus the existing inbox/import composition, then implement the smallest user-invoked supplied-content paths without adding connectors, crawling, hosted state, AI requirements, or silent field promotion. |
 
 ## Milestone status
 
@@ -211,7 +211,7 @@ Next recommended slice: `CAP-003` after `CAP-002` proof
 ## Capture core
 
 - [x] **CAP-001** Implement capture envelope, source snapshot reference, checksum, nonce/sequence, expiry, and version compatibility. — Proof: [strict contract, property tests, reusable checksum verification, and hosted clean-commit matrix](../../proof/phase-2-capture-envelope-verification.md)
-- [ ] **CAP-002** Implement ingestion idempotency and duplicate suggestions by source ID, canonical URL, content hash, and fuzzy title/company. — Proof: _fixture tests_
+- [x] **CAP-002** Implement ingestion idempotency and duplicate suggestions by source ID, canonical URL, content hash, and fuzzy title/company. — Proof: [transactional exact/content idempotency, explainable fixture/property suggestions, real-browser E2E, and hosted clean-commit matrix](../../proof/phase-2-capture-ingestion-verification.md)
 - [ ] **CAP-003** Implement manual form, paste text/URL, saved HTML/text, and JSON capture paths. — Proof: _E2E tests_
 - [ ] **CAP-004** Implement sanitized source preview and excerpt/path navigation. — Proof: _XSS fixtures + UI test_
 - [ ] **CAP-005** Preserve all field candidates/conflicts without overwriting user-confirmed values. — Proof: _property/regression tests_
