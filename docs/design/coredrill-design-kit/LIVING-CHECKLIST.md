@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-30
 Current milestone: Phase 2 — capture and approved extraction (`GATE-0` and `GATE-1` external-evidence blockers remain open)
-Current work item: `CAP-001` — versioned capture envelope and compatibility contract
-Next recommended slice: `CAP-002` after `CAP-001` proof
+Current work item: `CAP-002` — ingestion idempotency and duplicate suggestions
+Next recommended slice: `CAP-003` after `CAP-002` proof
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `CAP-002` after `CAP-001` proof
 | Field | Value |
 |---|---|
 | Milestone | Phase 2, with the independent Phase 0 and Phase 1 evidence gates retained below |
-| Item range | `CAP-001` |
+| Item range | `CAP-002` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-30 |
-| Expected proof | Strict capture-envelope contract and property/compatibility tests for source snapshot reference, checksum, nonce/sequence, expiry, and supported versions |
-| Blocker | None for `CAP-001`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
-| Next handoff | Read the capture/extraction policy and existing capture contracts, then implement only the smallest versioned envelope slice without adding a connector, crawler, account, hosted service, or background surveillance. |
+| Expected proof | Fixture/property tests for exact idempotency and non-destructive duplicate suggestions by source ID, canonical URL, semantic content hash, and fuzzy title/company |
+| Blocker | None for `CAP-002`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
+| Next handoff | Read the capture-inbox migration and storage/application boundaries, then implement the smallest transactional ingestion and duplicate-suggestion slice without adding extraction connectors, crawling, hosted state, or silent merge behavior. |
 
 ## Milestone status
 
@@ -210,7 +210,7 @@ Next recommended slice: `CAP-002` after `CAP-001` proof
 
 ## Capture core
 
-- [ ] **CAP-001** Implement capture envelope, source snapshot reference, checksum, nonce/sequence, expiry, and version compatibility. — Proof: _contract/property tests_
+- [x] **CAP-001** Implement capture envelope, source snapshot reference, checksum, nonce/sequence, expiry, and version compatibility. — Proof: [strict contract, property tests, reusable checksum verification, and hosted clean-commit matrix](../../proof/phase-2-capture-envelope-verification.md)
 - [ ] **CAP-002** Implement ingestion idempotency and duplicate suggestions by source ID, canonical URL, content hash, and fuzzy title/company. — Proof: _fixture tests_
 - [ ] **CAP-003** Implement manual form, paste text/URL, saved HTML/text, and JSON capture paths. — Proof: _E2E tests_
 - [ ] **CAP-004** Implement sanitized source preview and excerpt/path navigation. — Proof: _XSS fixtures + UI test_
