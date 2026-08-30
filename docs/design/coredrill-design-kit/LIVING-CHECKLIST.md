@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-30
 Current milestone: Phase 1 — local tracker and recovery loop (`GATE-0` human validation remains blocked)
-Current work item: `Q1-004` — Phase 1 threat review
-Next recommended slice: `Q1-005` — Phase 1 canonical journey
+Current work item: `Q1-005` — Phase 1 canonical journey
+Next recommended slice: `GATE-1` review after exact reference/manual blockers are resolved
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `Q1-005` — Phase 1 canonical journey
 | Field | Value |
 |---|---|
 | Milestone | Phase 1, with the independent Phase 0 human-validation gate retained below |
-| Item range | `Q1-004` |
+| Item range | `Q1-005` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-30 |
-| Expected proof | Reviewed Phase 1 threat model and finding log covering SQL, XSS, IPC, attachments, native paths, and diagnostics, with reproducible tests or policy checks for each trust boundary |
-| Blocker | None for `Q1-004`. `Q1-001`, the manual portion of `Q1-003`, the participant study, and `FND-001` remain independently blocked and are not relabeled complete. |
-| Next handoff | Audit the implemented surfaces against the accepted security model, close or triage every finding with retained evidence, then proceed to the `Q1-005` canonical journey. |
+| Expected proof | One recorded browser and first-desktop-OS E2E artifact for create vault → add job → move stages → schedule interview/follow-up → export → delete → restore, with no account, network, or AI dependency |
+| Blocker | None for `Q1-005`. `Q1-001`, the manual portion of `Q1-003`, the participant study, and `FND-001` remain independently blocked and are not relabeled complete. |
+| Next handoff | Compose the existing application commands, recovery contracts, and production shell into one canonical flow, retain browser and Windows evidence, then assess `GATE-1` without weakening its independent blockers. |
 
 ## Milestone status
 
@@ -200,7 +200,7 @@ Next recommended slice: `Q1-005` — Phase 1 canonical journey
 - [ ] **Q1-001** Meet reference-data startup/query/board/table performance budgets or record approved adjustment. — Proof: [production benchmark harness and clean-commit diagnostic; exact `HW-WIN-REF` execution still required](../../proof/phase-1-reference-data-performance-verification.md)
 - [x] **Q1-002** Pass offline, refresh, crash, storage-denied, quota, and second-tab journeys. — Proof: [production PWA, OPFS preservation, typed storage failures, writer handoff, and exact Chrome 151/152 E2E matrix](../../proof/phase-1-resilience-e2e-verification.md)
 - [ ] **Q1-003** Pass Phase 1 WCAG automated/manual matrix. — Proof: [available automated matrix passes; exact manual targets remain blocked](../../proof/phase-1-accessibility-verification.md)
-- [ ] **Q1-004** Complete threat review for SQL, XSS, IPC, attachments, paths, and diagnostics. — Proof: _security review_
+- [x] **Q1-004** Complete threat review for SQL, XSS, IPC, attachments, paths, and diagnostics. — Proof: [reviewed trust-boundary matrix, closed/triaged finding log, adversarial tests, and cross-platform hosted verification](../../proof/phase-1-threat-review.md)
 - [ ] **Q1-005** Run canonical journey: create vault → add job → move stages → schedule interview/follow-up → export → delete → restore. — Proof: _recorded E2E artifact_
 - [ ] **GATE-1** Phase 1 canonical journey passes in browser and first desktop OS; recovery is proven; no account/network/AI is required. — Proof: _Phase 1 gate report_
 
