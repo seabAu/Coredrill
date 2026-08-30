@@ -533,13 +533,9 @@ function requirementTexts(element: Element): readonly Element[] {
 
 function requirementSectionElements(heading: Element): readonly Element[] {
   const elements: Element[] = [];
-  const headingRank = Number(heading.tagName.slice(1));
   let sibling = heading.nextElementSibling;
   while (sibling !== null) {
-    if (/^H[1-6]$/u.test(sibling.tagName)) {
-      const siblingRank = Number(sibling.tagName.slice(1));
-      if (siblingRank <= headingRank) break;
-    }
+    if (/^H[1-6]$/u.test(sibling.tagName)) break;
     elements.push(...requirementTexts(sibling));
     sibling = sibling.nextElementSibling;
   }

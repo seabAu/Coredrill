@@ -501,4 +501,24 @@ describe("selected-text and generic job-document boundary hardening", () => {
       ]),
     );
   });
+
+  it("stops requirement sections at the next heading regardless of heading depth", () => {
+    const document = htmlDocument(`<!doctype html><html><body><main>
+      <h2>Requirements</h2>
+      <p>Ship bounded, reviewable changes.</p>
+      <h3>About the company</h3>
+      <p>This company profile is not a requirement.</p>
+    </main></body></html>`);
+    const extraction = extractGenericJobDocumentV1(documentInput(document));
+    const requirements = extraction.candidates.filter(
+      ({ fieldName }) => fieldName === "requirements",
+    );
+
+    expect(requirements).toHaveLength(1);
+    expect(requirements[0]?.value).toEqual({
+      category: "requirement",
+      content: "Ship bounded, reviewable changes.",
+    });
+    expect(JSON.stringify(requirements)).not.toContain("company profile");
+  });
 });
