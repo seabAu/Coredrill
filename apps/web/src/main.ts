@@ -42,12 +42,14 @@ import {
   PHASE_1_REPOSITORY_CONTRACT_MANIFEST,
   PortableArchiveRestoreError,
   runDatabaseContractSuite,
+  runPhase1CanonicalJourney,
   inspectPortableArchiveV1,
   sqlStatement,
   writePortableArchiveV1,
   type DatabaseContractRunResult,
   type DatabasePort,
   type Phase1RepositoryContractManifest,
+  type Phase1CanonicalJourneyProof,
   type PortableArchiveRestoreCommitPayloadV1,
   type PortableArchiveRestorePortV1,
   type PortableArchiveRestoreTargetSnapshotV1,
@@ -296,6 +298,7 @@ export interface CoredrillStorageSpikeApi {
   runBenchmark(input: StorageBenchmarkInput): Promise<StorageBenchmarkResult>;
   runJobSearchBenchmark(input: StorageBenchmarkInput): Promise<JobSearchBenchmarkResult>;
   runPhase1RepositoryContracts(): Promise<Phase1RepositoryContractProof>;
+  runPhase1CanonicalJourney(): Promise<Phase1CanonicalJourneyProof>;
   runPortableArchiveWriterProof(): Promise<PortableArchiveBrowserProof>;
   exportHumanReadable(input: HumanReadableExportInput): Promise<HumanReadableExportProof>;
   runPortableArchiveRestoreProof(
@@ -1528,6 +1531,34 @@ const api: CoredrillStorageSpikeApi = {
       run,
     });
   },
+  runPhase1CanonicalJourney: async () =>
+    runPhase1CanonicalJourney({
+      runtime: "browser",
+      prepareSource: async () => {
+        const client = await getDatabase();
+        await (await getAttachmentStore()).deleteAll();
+        await client.delete();
+        database = undefined;
+        attachmentStore = undefined;
+        const source = await getDatabase();
+        await applySqlMigrations(source, await migrations(), MIGRATION_APPLIED_AT);
+        return source;
+      },
+      createVaultDeletionPort: () => browserVaultDeletionPort,
+      prepareRestoreTarget: async () => {
+        const target = await getDatabase();
+        await applySqlMigrations(target, await migrations(), MIGRATION_APPLIED_AT);
+        return target;
+      },
+      createRestorePort: async (target, vaultId) =>
+        createBrowserPortableArchiveRestorePortV1({
+          database: target as BrowserSqliteDatabase,
+          attachments: await getAttachmentStore(),
+          expectedVaultId: vaultId,
+        }),
+      readRestoredAttachment: async (_target, contentId) =>
+        (await getAttachmentStore()).read(contentId),
+    }),
 };
 
 globalThis.coredrillStorageSpike = Object.freeze(api);

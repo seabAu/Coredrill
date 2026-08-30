@@ -2,6 +2,151 @@
 @import "@coredrill/ui/styles.css";
 @source "../../../packages/ui/src";
 @source "./app-shell.tsx";
+@source "./canonical-journey-panel.tsx";
+
+.cd-canonical-journey {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.cd-canonical-journey__intro {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.cd-canonical-journey__intro h2,
+.cd-canonical-journey__intro p,
+.cd-canonical-journey__action p,
+.cd-canonical-journey__proof p {
+  margin: 0;
+}
+
+.cd-canonical-journey__intro h2 {
+  margin-block: 0.35rem 0.55rem;
+  font-size: 1.35rem;
+}
+
+.cd-canonical-journey__intro > div:first-child > p:last-child {
+  max-width: 48rem;
+  color: var(--color-text-muted);
+}
+
+.cd-canonical-journey__eyebrow {
+  color: var(--color-text-subtle);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.cd-canonical-journey__boundaries {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.cd-canonical-journey__boundaries span {
+  padding: 0.35rem 0.55rem;
+  color: var(--color-success);
+  background: var(--color-success-soft);
+  border: 1px solid var(--color-success);
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.cd-canonical-journey__action {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding-block: 1rem;
+  border-block: 1px solid var(--color-border);
+}
+
+.cd-canonical-journey__action p {
+  color: var(--color-text-muted);
+}
+
+.cd-canonical-journey__proof {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(16rem, 0.85fr);
+  gap: 1.25rem;
+}
+
+.cd-canonical-journey__proof ol,
+.cd-canonical-journey__proof dl {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0;
+  padding: 0;
+}
+
+.cd-canonical-journey__proof ol {
+  list-style: none;
+}
+
+.cd-canonical-journey__proof li {
+  display: grid;
+  grid-template-columns: 1.5rem 1fr;
+  gap: 0.6rem;
+  align-items: start;
+}
+
+.cd-canonical-journey__proof li > span {
+  color: var(--color-success);
+  font-weight: 800;
+}
+
+.cd-canonical-journey__proof strong {
+  text-transform: capitalize;
+}
+
+.cd-canonical-journey__proof li p,
+.cd-canonical-journey__proof dd {
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.cd-canonical-journey__proof dl > div {
+  padding: 0.7rem;
+  background: var(--color-accent-soft);
+  border-radius: var(--radius-control);
+}
+
+.cd-canonical-journey__proof dt {
+  margin-bottom: 0.25rem;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cd-canonical-journey__proof dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
+@media (max-width: 48rem) {
+  .cd-canonical-journey__intro,
+  .cd-canonical-journey__action {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .cd-canonical-journey__boundaries {
+    justify-content: flex-start;
+  }
+
+  .cd-canonical-journey__proof {
+    grid-template-columns: 1fr;
+  }
+}
 
 /* The production PWA announces offline readiness and waits for explicit consent before reload. */
 .cd-offline-shell-notice {

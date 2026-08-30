@@ -73,6 +73,8 @@ import { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 
 import "./app-shell.css";
+import "./main.js";
+import { CanonicalJourneyPanel } from "./canonical-journey-panel.js";
 import { initializeOfflineShell, OfflineShellNotice } from "./offline-shell.js";
 
 interface AppShellCatalogState {
@@ -1267,6 +1269,10 @@ const moveBoardJob = (
 
 const AppShellCatalog = () => {
   const appearance = useMemo(readAppearance, []);
+  const canonicalJourneyMode = useMemo(
+    () => new URLSearchParams(window.location.search).get("journey") === "phase-1",
+    [],
+  );
   const initialLocation = useMemo(readInitialLocation, []);
   const initialPipelineSnapshot = useMemo(() => readPipelineSnapshot(window.history.state), []);
   const initialJobRoute = useMemo<JobRouteState | null>(() => {
@@ -1368,9 +1374,11 @@ const AppShellCatalog = () => {
   const [workspaceRoute, setWorkspaceRoute] = useState<JobRouteState | null>(initialJobRoute);
   const [workspaceWidth, setWorkspaceWidth] = useState(640);
   const [lastActivity, setLastActivity] = useState(
-    appearance.workspaceState === null
-      ? "Shell ready. All displayed records are synthetic."
-      : `State proof ready: ${appearance.workspaceState}. All displayed records are synthetic.`,
+    canonicalJourneyMode
+      ? "Canonical recovery rehearsal ready. No account, network, or AI is required."
+      : appearance.workspaceState === null
+        ? "Shell ready. All displayed records are synthetic."
+        : `State proof ready: ${appearance.workspaceState}. All displayed records are synthetic.`,
   );
   const browserVaultBackupModel = useMemo<BrowserVaultBackupModel | null>(
     () =>
@@ -1459,8 +1467,9 @@ const AppShellCatalog = () => {
         });
   const workspaceContentModel =
     workspaceJob === undefined ? null : jobWorkspaceContentFor(workspaceJob, tableRows);
-  const page =
-    workspaceRoute?.mode === "full-page" && workspaceModel !== null
+  const page = canonicalJourneyMode
+    ? Object.freeze({ eyebrow: "Phase 1 local proof", title: "Accountless recovery journey" })
+    : workspaceRoute?.mode === "full-page" && workspaceModel !== null
       ? Object.freeze({ eyebrow: "Local job workspace", title: workspaceModel.title })
       : PAGE_COPY[activeDestination];
   const pipelineModel: PipelineShellModel = Object.freeze({
@@ -2225,7 +2234,7 @@ const AppShellCatalog = () => {
       vault={{
         health: appearance.workspaceState === "offline" ? "offline" : appearance.vaultHealth,
         kind: "browser",
-        name: "Job search 2026",
+        name: canonicalJourneyMode ? "Canonical local job search" : "Job search 2026",
       }}
     >
       <div className="mx-auto grid max-w-[90rem] gap-5">
@@ -2243,7 +2252,9 @@ const AppShellCatalog = () => {
           </p>
         </header>
 
-        {appearance.workspaceState !== null ? (
+        {canonicalJourneyMode ? (
+          <CanonicalJourneyPanel />
+        ) : appearance.workspaceState !== null ? (
           <PhaseOneWorkspaceState
             model={PHASE_ONE_WORKSPACE_STATE_CATALOG[appearance.workspaceState]}
             onAction={recordWorkspaceStateAction}

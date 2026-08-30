@@ -14,6 +14,7 @@
     "dist"
   ],
   "dependencies": {
+    "@coredrill/application": "workspace:*",
     "@coredrill/contracts": "workspace:*",
     "@coredrill/domain": "workspace:*",
     "fflate": "0.8.3"

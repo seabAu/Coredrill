@@ -20,6 +20,7 @@ import {
   PHASE_1_REPOSITORY_CONTRACT_MANIFEST,
   inspectPortableArchiveV1,
   runDatabaseContractSuite,
+  runPhase1CanonicalJourney,
   sqlStatement,
   type DatabaseContractAdapter,
   type DatabasePort,
@@ -564,6 +565,159 @@ describe("native SQLite repository and migration contracts", () => {
       await database.delete();
     }
   });
+
+  it.runIf(process.platform === "win32")(
+    "runs the complete Phase 1 canonical journey through the Windows native process",
+    async () => {
+      const databaseName = nextDatabaseName();
+      let sourceDatabase: NativeSqliteDatabase | undefined;
+      let restoreDatabase: NativeSqliteDatabase | undefined;
+      let preview:
+        | Readonly<{
+            databaseSha256: string;
+            previewId: string;
+            vaultId: string;
+            vaultName: string;
+          }>
+        | undefined;
+
+      try {
+        const proof = await runPhase1CanonicalJourney({
+          runtime: "windows-native",
+          prepareSource: async () => {
+            sourceDatabase = await openNativeSqliteDatabase({ databaseName, transport });
+            await applySqlMigrations(sourceDatabase, migrations(), APPLIED_AT);
+            return sourceDatabase;
+          },
+          createVaultDeletionPort: (database) => ({
+            preview: async (input) => {
+              const rows = await database.query<
+                VaultRow & { readonly created_at: string; readonly last_opened_at: string }
+              >(
+                sqlStatement(
+                  "SELECT id, name, schema_version, created_at, last_opened_at FROM vault ORDER BY id",
+                ),
+              );
+              const vault = rows[0];
+              if (rows.length !== 1 || vault?.id !== input.vaultId) {
+                throw new Error("The native canonical deletion preview changed vault identity.");
+              }
+              preview = Object.freeze({
+                databaseSha256: (await database.exportPortable()).sha256,
+                previewId: input.previewId,
+                vaultId: vault.id,
+                vaultName: vault.name,
+              });
+              return Object.freeze({
+                vaultId: input.vaultId,
+                vaultName: vault.name,
+                storageMode: "desktop" as const,
+                inventory: Object.freeze({
+                  attachmentFiles: 0,
+                  managedBackups: 0,
+                  providerSecrets: 0,
+                  sharedAttachmentFiles: 0,
+                }),
+                lastSuccessfulPortableExportAt: null,
+              });
+            },
+            delete: async (input) => {
+              const current = preview;
+              const rows = await database.query<VaultRow>(
+                sqlStatement("SELECT id, name, schema_version FROM vault ORDER BY id"),
+              );
+              const vault = rows[0];
+              if (
+                current === undefined ||
+                current.previewId !== input.previewId ||
+                current.vaultId !== input.vaultId ||
+                rows.length !== 1 ||
+                vault?.id !== current.vaultId ||
+                vault.name !== current.vaultName ||
+                input.confirmation !== `DELETE ${current.vaultName}` ||
+                (await database.exportPortable()).sha256 !== current.databaseSha256
+              ) {
+                throw new Error("The native canonical deletion preview became stale.");
+              }
+              if (!(await (database as NativeSqliteDatabase).delete())) {
+                throw new Error("The native canonical database was not deleted.");
+              }
+              sourceDatabase = undefined;
+              preview = undefined;
+              return Object.freeze({
+                deletionId: input.deletionId,
+                vaultId: input.vaultId,
+                status: "deleted" as const,
+                deleted: Object.freeze({
+                  attachmentFiles: 0,
+                  managedBackups: 0,
+                  providerSecrets: 0,
+                  sharedAttachmentFiles: 0,
+                }),
+                externalPortableArchivesAffected: false as const,
+              });
+            },
+          }),
+          prepareRestoreTarget: async () => {
+            restoreDatabase = await openNativeSqliteDatabase({ databaseName, transport });
+            await applySqlMigrations(restoreDatabase, migrations(), APPLIED_AT);
+            return restoreDatabase;
+          },
+          createRestorePort: async (database, vaultId) =>
+            createNativePortableArchiveRestorePortV1({
+              database: database as NativeSqliteDatabase,
+              expectedVaultId: vaultId,
+            }),
+          readRestoredAttachment: (database, contentId) =>
+            (database as NativeSqliteDatabase).readPortableAttachment(contentId),
+        });
+
+        expect(proof).toMatchObject({
+          version: 1,
+          runtime: "windows-native",
+          adapterName: "native-rusqlite-candidate",
+          schemaVersion: 92,
+          vaultName: "Canonical local job search",
+          jobTitle: "Research Operations Lead",
+          finalStage: "Interviewing",
+          statusEventCount: 3,
+          interviewCount: 1,
+          nextActionCount: 1,
+          reminderCount: 1,
+          deletionStatus: "deleted",
+          restoreConflict: "none",
+          restoreCommitted: true,
+          restoredDatabaseMatchesArchive: true,
+          accountRequired: false,
+          networkRequired: false,
+          aiRequired: false,
+        });
+        expect(proof.steps.map(({ id }) => id)).toEqual([
+          "create_vault",
+          "add_job",
+          "move_stages",
+          "schedule_interview",
+          "schedule_follow_up",
+          "export_archive",
+          "delete_vault",
+          "restore_archive",
+        ]);
+        expect(proof.contentSha256AfterRestore).toBe(proof.contentSha256BeforeDelete);
+        const proofOutputDirectory = path.join(repositoryRoot, "test-results");
+        await mkdir(proofOutputDirectory, { recursive: true });
+        await writeFile(
+          path.join(proofOutputDirectory, "phase-1-canonical-native.json"),
+          `${JSON.stringify(proof, null, 2)}\n`,
+          "utf8",
+        );
+        console.info(`Q1_CANONICAL_NATIVE_PROOF ${JSON.stringify(proof)}`);
+      } finally {
+        if (sourceDatabase !== undefined) await sourceDatabase.delete();
+        if (restoreDatabase !== undefined) await restoreDatabase.delete();
+      }
+    },
+    120_000,
+  );
 
   it("rejects path-shaped database names before privileged work", async () => {
     await expect(

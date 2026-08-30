@@ -34,6 +34,81 @@ const attachAriaSnapshot = async (locator, testInfo, name) => {
   });
 };
 
+test("runs and records the complete accountless browser recovery journey", async ({
+  page,
+}, testInfo) => {
+  const externalRequests = [];
+  page.on("request", (request) => {
+    if (!request.url().startsWith("http://127.0.0.1:4178/")) externalRequests.push(request.url());
+  });
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await page.goto("/app-shell.html?journey=phase-1");
+  await page.waitForFunction(
+    () =>
+      globalThis.coredrillAppShell !== undefined &&
+      globalThis.coredrillCanonicalJourney !== undefined,
+  );
+
+  await expect(page.getByTestId("page-title")).toHaveText("Accountless recovery journey");
+  await expect(page.getByLabel("Journey boundaries")).toContainText("No account");
+  await expect(page.getByLabel("Journey boundaries")).toContainText("No network");
+  await expect(page.getByLabel("Journey boundaries")).toContainText("AI disabled");
+  await page.getByRole("button", { name: "Run local journey" }).click();
+  const journeyStatus = page.locator(".cd-canonical-journey").getByRole("status");
+  await expect(journeyStatus).toContainText("Writing and verifying", {
+    timeout: 10_000,
+  });
+  await expect(journeyStatus).toContainText("Canonical journey passed", {
+    timeout: 120_000,
+  });
+
+  const state = await page.evaluate(() => globalThis.coredrillCanonicalJourney?.getState());
+  expect(state).toMatchObject({
+    status: "passed",
+    proof: {
+      version: 1,
+      runtime: "browser",
+      adapterName: "official-sqlite-wasm-opfs-sahpool",
+      schemaVersion: 92,
+      vaultName: "Canonical local job search",
+      jobTitle: "Research Operations Lead",
+      finalStage: "Interviewing",
+      statusEventCount: 3,
+      interviewCount: 1,
+      nextActionCount: 1,
+      reminderCount: 1,
+      deletionStatus: "deleted",
+      restoreConflict: "none",
+      restoreCommitted: true,
+      restoredDatabaseMatchesArchive: true,
+      accountRequired: false,
+      networkRequired: false,
+      aiRequired: false,
+    },
+  });
+  expect(state.proof.steps.map(({ id }) => id)).toEqual([
+    "create_vault",
+    "add_job",
+    "move_stages",
+    "schedule_interview",
+    "schedule_follow_up",
+    "export_archive",
+    "delete_vault",
+    "restore_archive",
+  ]);
+  expect(state.proof.contentSha256AfterRestore).toBe(state.proof.contentSha256BeforeDelete);
+  expect(externalRequests).toEqual([]);
+
+  const proofPath = testInfo.outputPath("phase-1-canonical-browser.json");
+  await writeFile(proofPath, `${JSON.stringify(state.proof, null, 2)}\n`, "utf8");
+  await testInfo.attach("phase-1-canonical-browser.json", {
+    path: proofPath,
+    contentType: "application/json",
+  });
+  await attachAxe(page, testInfo, "phase-1-canonical-browser");
+  await attachProof(page, testInfo, "phase-1-canonical-browser");
+});
+
 test("desktop shell exposes reviewed navigation, routes, local state, and no axe violations", async ({
   page,
 }, testInfo) => {

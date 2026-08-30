@@ -5,9 +5,15 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { entityId, instant, timeZone } from "@coredrill/domain";
+
 import {
   applySqlMigrations,
+  createDatabaseJobActivityPort,
+  createDatabaseJobPipelinePort,
+  createDatabaseVaultLifecyclePort,
   createPhase1RepositoryContractSuite,
+  createPipelineRepositories,
   defineSqlMigrations,
   normalizeJobSearchTokens,
   openJobSearchRepository,
@@ -322,5 +328,185 @@ describe("Phase 1 tracker repository contracts", () => {
       suiteName: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.suiteName,
       completedCases: PHASE_1_REPOSITORY_CONTRACT_CASE_NAMES,
     });
+  });
+});
+
+describe("SQLite application port composition", () => {
+  it("persists the adapter-neutral vault, pipeline, and activity operations", async () => {
+    const database = new NodeSqliteTestDatabase();
+    const ids = {
+      vault: entityId("vault", "0199a200-0000-7000-8000-000000000001"),
+      job: entityId("job", "0199a200-0000-7000-8000-000000000002"),
+      saved: entityId("status_definition", "0199a200-0000-7000-8000-000000000003"),
+      applied: entityId("status_definition", "0199a200-0000-7000-8000-000000000004"),
+      statusEvent: entityId("status-event", "0199a200-0000-7000-8000-000000000005"),
+      statusUndo: entityId("mutation-undo-token", "0199a200-0000-7000-8000-000000000006"),
+      application: entityId("application", "0199a200-0000-7000-8000-000000000007"),
+      interaction: entityId("interaction", "0199a200-0000-7000-8000-000000000008"),
+      nextAction: entityId("next-action", "0199a200-0000-7000-8000-000000000009"),
+      nextActionUndo: entityId("mutation-undo-token", "0199a200-0000-7000-8000-00000000000a"),
+      interview: entityId("interview", "0199a200-0000-7000-8000-00000000000b"),
+      reminder: entityId("reminder", "0199a200-0000-7000-8000-00000000000c"),
+    } as const;
+    const createdAt = instant("2026-08-30T13:00:00.000Z");
+    const changedAt = instant("2026-08-30T13:01:00.000Z");
+    const openedAt = instant("2026-08-30T13:02:00.000Z");
+    const dueAt = instant("2026-09-02T13:00:00.000Z");
+    const reminderAt = instant("2026-09-02T12:00:00.000Z");
+    const zone = timeZone("America/New_York");
+
+    try {
+      await applySqlMigrations(database, migrations, APPLIED_AT);
+
+      const lifecycle = createDatabaseVaultLifecyclePort(database);
+      const createdVault = await lifecycle.create({
+        vaultId: ids.vault,
+        name: "Composition proof",
+        createdAt,
+      });
+      const openedVault = await lifecycle.open({ vaultId: ids.vault, openedAt });
+      expect(createdVault.vault.name).toBe("Composition proof");
+      expect(openedVault.vault.lastOpenedAt).toBe(openedAt);
+      await expect(lifecycle.diagnostics()).resolves.toMatchObject({
+        health: "ready",
+        persistence: "memory",
+        issueCodes: ["persistence-memory-only"],
+      });
+
+      const pipelineRepositories = createPipelineRepositories(database);
+      await pipelineRepositories.statusDefinitions.create({
+        id: ids.saved,
+        name: "Saved",
+        category: "saved",
+        color: "blue",
+        isSystem: true,
+        sortOrder: 10,
+        terminal: false,
+        archivedAt: null,
+        createdAt,
+        updatedAt: createdAt,
+      });
+      await pipelineRepositories.statusDefinitions.create({
+        id: ids.applied,
+        name: "Applied",
+        category: "applied",
+        color: "indigo",
+        isSystem: true,
+        sortOrder: 20,
+        terminal: false,
+        archivedAt: null,
+        createdAt,
+        updatedAt: createdAt,
+      });
+
+      const pipeline = createDatabaseJobPipelinePort(database);
+      const job = await pipeline.createManualJob({
+        id: ids.job,
+        companyId: null,
+        title: "Research operations lead",
+        normalizedTitle: null,
+        descriptionText: "Local composition proof.",
+        employmentType: "full_time",
+        workplaceType: "remote",
+        seniority: null,
+        locationId: null,
+        remoteRegion: null,
+        datePosted: null,
+        validThrough: null,
+        currentStatusId: null,
+        nextActionAt: null,
+        archivedAt: null,
+        createdAt,
+        updatedAt: createdAt,
+      });
+      const changed = await pipeline.changeStatus({
+        eventId: ids.statusEvent,
+        undoTokenId: ids.statusUndo,
+        jobId: ids.job,
+        applicationId: null,
+        toStatusId: ids.saved,
+        occurredAt: changedAt,
+        note: "Saved locally.",
+        allowReopen: false,
+      });
+      expect(job.title).toBe("Research operations lead");
+      expect(changed.statusEvent.toStatusId).toBe(ids.saved);
+
+      await pipelineRepositories.applications.create({
+        id: ids.application,
+        jobId: ids.job,
+        appliedAt: changedAt,
+        channel: "manual",
+        currentStatusId: ids.saved,
+        selectedResumeVersionId: null,
+        selectedCoverLetterVersionId: null,
+        notes: "User-controlled submission.",
+        archivedAt: null,
+        createdAt: changedAt,
+        updatedAt: changedAt,
+      });
+
+      const activity = createDatabaseJobActivityPort(database);
+      const interaction = await activity.recordInteraction({
+        id: ids.interaction,
+        jobId: ids.job,
+        contactId: null,
+        type: "note",
+        occurredAt: changedAt,
+        direction: "outbound",
+        summary: "Prepared locally; no outreach sent.",
+        nextActionAt: null,
+        createdAt: changedAt,
+        updatedAt: changedAt,
+      });
+      const nextAction = await activity.setNextAction({
+        id: ids.nextAction,
+        undoTokenId: ids.nextActionUndo,
+        jobId: ids.job,
+        applicationId: ids.application,
+        interactionId: ids.interaction,
+        title: "Send interview follow-up",
+        dueAt,
+        timeZone: zone,
+        state: "pending",
+        completedAt: null,
+        createdAt: changedAt,
+        updatedAt: changedAt,
+      });
+      const interview = await activity.scheduleInterview({
+        id: ids.interview,
+        applicationId: ids.application,
+        stageName: "Hiring manager interview",
+        startsAt: dueAt,
+        timeZone: zone,
+        durationMinutes: 45,
+        locationOrUrl: "Stored locally",
+        contactIds: [],
+        preparationNotes: "Review evidence.",
+        outcome: null,
+        createdAt: changedAt,
+        updatedAt: changedAt,
+      });
+      const reminder = await activity.scheduleReminder({
+        id: ids.reminder,
+        jobId: ids.job,
+        nextActionId: ids.nextAction,
+        interviewId: ids.interview,
+        remindAt: reminderAt,
+        timeZone: zone,
+        state: "pending",
+        note: "Prepare only; do not send.",
+        firedAt: null,
+        createdAt: changedAt,
+        updatedAt: changedAt,
+      });
+
+      expect(interaction.id).toBe(ids.interaction);
+      expect(nextAction.nextAction.id).toBe(ids.nextAction);
+      expect(interview.id).toBe(ids.interview);
+      expect(reminder.id).toBe(ids.reminder);
+    } finally {
+      database.close();
+    }
   });
 });

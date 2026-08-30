@@ -241,6 +241,9 @@ importers:
 
   packages/storage-core:
     dependencies:
+      '@coredrill/application':
+        specifier: workspace:*
+        version: link:../application
       '@coredrill/contracts':
         specifier: workspace:*
         version: link:../contracts

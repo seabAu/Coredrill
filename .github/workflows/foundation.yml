@@ -181,6 +181,7 @@ jobs:
           path: |
             apps/desktop/src-tauri/target/release/bundle/nsis/*-setup.exe
             ${{ runner.temp }}/coredrill-native-package-proof.json
+            test-results/phase-1-canonical-native.json
           if-no-files-found: error
           retention-days: 30
           compression-level: 0

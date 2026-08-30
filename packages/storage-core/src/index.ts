@@ -5,6 +5,11 @@ export {
   type AuditTimestamps,
 } from "./audit-integrity.js";
 export {
+  createDatabaseJobActivityPort,
+  createDatabaseJobPipelinePort,
+  createDatabaseVaultLifecyclePort,
+} from "./application-ports.js";
+export {
   createTransactionSemanticsSuite,
   DatabaseContractViolation,
   defineDatabaseContractSuite,
@@ -115,6 +120,13 @@ export {
   createPhase1RepositoryContractSuite,
   type Phase1RepositoryContractSetup,
 } from "./phase-1-repository-contract-harness.js";
+export {
+  PHASE_1_CANONICAL_JOURNEY_VERSION,
+  runPhase1CanonicalJourney,
+  type Phase1CanonicalJourneyProof,
+  type Phase1CanonicalJourneyRuntime,
+  type Phase1CanonicalJourneyStep,
+} from "./phase-1-canonical-journey.js";
 export {
   PHASE_1_REPOSITORY_CONTRACT_CASE_NAMES,
   PHASE_1_REPOSITORY_CONTRACT_MANIFEST,
