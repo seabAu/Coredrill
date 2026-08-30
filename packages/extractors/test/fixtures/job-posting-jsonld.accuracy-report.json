@@ -1,0 +1,77 @@
+{
+  "specVersion": 1,
+  "extractor": {
+    "name": "coredrill.schema-org-job-posting",
+    "version": "1.0.0"
+  },
+  "fixtureSuite": "job-posting-jsonld.golden.json",
+  "fixtureCases": 4,
+  "expectedCandidates": 43,
+  "producedCandidates": 43,
+  "exactMatches": 43,
+  "falsePositives": 0,
+  "falseNegatives": 0,
+  "precision": 1,
+  "recall": 1,
+  "perField": {
+    "title": { "expected": 5, "produced": 5, "exactMatches": 5, "precision": 1, "recall": 1 },
+    "company": { "expected": 5, "produced": 5, "exactMatches": 5, "precision": 1, "recall": 1 },
+    "description": {
+      "expected": 5,
+      "produced": 5,
+      "exactMatches": 5,
+      "precision": 1,
+      "recall": 1
+    },
+    "salary": { "expected": 2, "produced": 2, "exactMatches": 2, "precision": 1, "recall": 1 },
+    "locations": { "expected": 6, "produced": 6, "exactMatches": 6, "precision": 1, "recall": 1 },
+    "workplace_type": {
+      "expected": 1,
+      "produced": 1,
+      "exactMatches": 1,
+      "precision": 1,
+      "recall": 1
+    },
+    "posted_at": { "expected": 4, "produced": 4, "exactMatches": 4, "precision": 1, "recall": 1 },
+    "valid_through": {
+      "expected": 1,
+      "produced": 1,
+      "exactMatches": 1,
+      "precision": 1,
+      "recall": 1
+    },
+    "requirements": {
+      "expected": 6,
+      "produced": 6,
+      "exactMatches": 6,
+      "precision": 1,
+      "recall": 1
+    },
+    "apply_url": { "expected": 2, "produced": 2, "exactMatches": 2, "precision": 1, "recall": 1 },
+    "external_id": {
+      "expected": 2,
+      "produced": 2,
+      "exactMatches": 2,
+      "precision": 1,
+      "recall": 1
+    },
+    "employment_type": {
+      "expected": 4,
+      "produced": 4,
+      "exactMatches": 4,
+      "precision": 1,
+      "recall": 1
+    }
+  },
+  "scenarios": {
+    "nestedValues": true,
+    "arrays": true,
+    "graph": true,
+    "multipleCandidatesRetained": true,
+    "malformedJsonLdRejectedOrWarned": true,
+    "missingInvalidFieldsWarned": true,
+    "partialValidFieldsRetained": true,
+    "rawSourceEvidenceRetained": true,
+    "provenanceRetained": true
+  }
+}

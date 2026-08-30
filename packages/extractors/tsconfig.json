@@ -6,5 +6,5 @@
     "tsBuildInfoFile": ".turbo/build.tsbuildinfo"
   },
   "include": ["src/**/*.ts"],
-  "references": []
+  "references": [{ "path": "../contracts" }]
 }

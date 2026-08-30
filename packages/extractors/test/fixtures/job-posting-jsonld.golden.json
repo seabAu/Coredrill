@@ -1,0 +1,629 @@
+{
+  "specVersion": 1,
+  "sourceId": "018f0f4e-7b8c-7d00-8000-000000000001",
+  "capturedAt": "2026-08-30T12:00:00.000Z",
+  "cases": [
+    {
+      "id": "direct-nested-arrays",
+      "jsonLd": [
+        {
+          "@context": "https://schema.org",
+          "@type": ["Thing", "JobPosting"],
+          "title": " Senior Data Engineer ",
+          "description": "Build reliable data products.",
+          "hiringOrganization": {
+            "@type": "Organization",
+            "name": "Coredrill Labs"
+          },
+          "jobLocation": [
+            {
+              "@type": "Place",
+              "address": {
+                "@type": "PostalAddress",
+                "addressLocality": "Boston",
+                "addressRegion": "MA",
+                "addressCountry": "US"
+              }
+            },
+            {
+              "@type": "Place",
+              "address": {
+                "@type": "PostalAddress",
+                "addressLocality": "New York",
+                "addressRegion": "NY",
+                "addressCountry": { "@type": "Country", "name": "US" }
+              }
+            }
+          ],
+          "datePosted": "2026-08-01",
+          "validThrough": "2026-09-01T23:59:59Z",
+          "identifier": {
+            "@type": "PropertyValue",
+            "name": "Coredrill Labs",
+            "value": "CDE-42"
+          },
+          "employmentType": ["FULL_TIME", "CONTRACTOR"],
+          "baseSalary": {
+            "@type": "MonetaryAmount",
+            "currency": "USD",
+            "value": {
+              "@type": "QuantitativeValue",
+              "minValue": 120000,
+              "maxValue": 150000,
+              "unitText": "YEAR"
+            }
+          },
+          "qualifications": ["SQL", "Python"],
+          "responsibilities": "Own batch and streaming systems.",
+          "skills": { "@type": "DefinedTerm", "name": "Data modeling" },
+          "url": "https://jobs.example/apply/CDE-42"
+        }
+      ],
+      "expectedCandidates": [
+        {
+          "fieldName": "title",
+          "value": "Senior Data Engineer",
+          "pointer": "/content/jsonLd/0/title",
+          "confidence": 0.9
+        },
+        {
+          "fieldName": "company",
+          "value": "Coredrill Labs",
+          "pointer": "/content/jsonLd/0/hiringOrganization/name",
+          "confidence": 0.9
+        },
+        {
+          "fieldName": "description",
+          "value": "Build reliable data products.",
+          "pointer": "/content/jsonLd/0/description",
+          "confidence": 0.9
+        },
+        {
+          "fieldName": "salary",
+          "value": {
+            "@type": "MonetaryAmount",
+            "currency": "USD",
+            "value": {
+              "@type": "QuantitativeValue",
+              "minValue": 120000,
+              "maxValue": 150000,
+              "unitText": "YEAR"
+            }
+          },
+          "pointer": "/content/jsonLd/0/baseSalary",
+          "confidence": 0.88
+        },
+        {
+          "fieldName": "locations",
+          "value": {
+            "@type": "Place",
+            "address": {
+              "@type": "PostalAddress",
+              "addressLocality": "Boston",
+              "addressRegion": "MA",
+              "addressCountry": "US"
+            }
+          },
+          "pointer": "/content/jsonLd/0/jobLocation/0",
+          "confidence": 0.88
+        },
+        {
+          "fieldName": "locations",
+          "value": {
+            "@type": "Place",
+            "address": {
+              "@type": "PostalAddress",
+              "addressLocality": "New York",
+              "addressRegion": "NY",
+              "addressCountry": { "@type": "Country", "name": "US" }
+            }
+          },
+          "pointer": "/content/jsonLd/0/jobLocation/1",
+          "confidence": 0.88
+        },
+        {
+          "fieldName": "posted_at",
+          "value": "2026-08-01",
+          "pointer": "/content/jsonLd/0/datePosted",
+          "confidence": 0.9
+        },
+        {
+          "fieldName": "valid_through",
+          "value": "2026-09-01T23:59:59Z",
+          "pointer": "/content/jsonLd/0/validThrough",
+          "confidence": 0.9
+        },
+        {
+          "fieldName": "requirements",
+          "value": { "category": "qualification", "content": "SQL" },
+          "pointer": "/content/jsonLd/0/qualifications/0",
+          "confidence": 0.84
+        },
+        {
+          "fieldName": "requirements",
+          "value": { "category": "qualification", "content": "Python" },
+          "pointer": "/content/jsonLd/0/qualifications/1",
+          "confidence": 0.84
+        },
+        {
+          "fieldName": "requirements",
+          "value": {
+            "category": "responsibility",
+            "content": "Own batch and streaming systems."
+          },
+          "pointer": "/content/jsonLd/0/responsibilities",
+          "confidence": 0.84
+        },
+        {
+          "fieldName": "requirements",
+          "value": {
+            "category": "skill",
+            "content": { "@type": "DefinedTerm", "name": "Data modeling" }
+          },
+          "pointer": "/content/jsonLd/0/skills",
+          "confidence": 0.84
+        },
+        {
+          "fieldName": "apply_url",
+          "value": "https://jobs.example/apply/CDE-42",
+          "pointer": "/content/jsonLd/0/url",
+          "confidence": 0.9
+        },
+        {
+          "fieldName": "external_id",
+          "value": "CDE-42",
+          "pointer": "/content/jsonLd/0/identifier/value",
+          "confidence": 0.88
+        },
+        {
+          "fieldName": "employment_type",
+          "value": "FULL_TIME",
+          "pointer": "/content/jsonLd/0/employmentType/0",
+          "confidence": 0.9
+        },
+        {
+          "fieldName": "employment_type",
+          "value": "CONTRACTOR",
+          "pointer": "/content/jsonLd/0/employmentType/1",
+          "confidence": 0.9
+        }
+      ],
+      "expectedWarnings": [],
+      "expectedSummary": {
+        "inputItems": 1,
+        "discoveredJobPostings": 1,
+        "acceptedJobPostings": 1,
+        "completeJobPostings": 1,
+        "candidateCount": 16,
+        "warningCount": 0
+      }
+    },
+    {
+      "id": "graph-remote-inherited-context",
+      "jsonLd": [
+        {
+          "@context": { "@vocab": "https://schema.org/" },
+          "@graph": [
+            { "@type": "Organization", "name": "Remote Systems" },
+            {
+              "@type": "https://schema.org/JobPosting",
+              "title": "Distributed Systems Engineer",
+              "description": "Build systems from anywhere in the listed regions.",
+              "hiringOrganization": {
+                "@type": "Organization",
+                "name": "Remote Systems"
+              },
+              "jobLocationType": "TELECOMMUTE",
+              "applicantLocationRequirements": [
+                { "@type": "Country", "name": "United States" },
+                { "@type": "State", "name": "Ontario" }
+              ],
+              "datePosted": "2026-08-15T08:30:00-04:00",
+              "baseSalary": {
+                "@type": "MonetaryAmount",
+                "currency": "CAD",
+                "value": {
+                  "@type": "QuantitativeValue",
+                  "value": 12500,
+                  "unitText": "MONTH"
+                }
+              },
+              "educationRequirements": {
+                "@type": "EducationalOccupationalCredential",
+                "credentialCategory": "bachelor degree"
+              },
+              "url": "https://remote.example/jobs/9001",
+              "identifier": 9001,
+              "employmentType": "FULL_TIME"
+            }
+          ]
+        }
+      ],
+      "expectedCandidates": [
+        {
+          "fieldName": "title",
+          "value": "Distributed Systems Engineer",
+          "pointer": "/content/jsonLd/0/@graph/1/title",
+          "confidence": 0.9
+        },
+        {
+          "fieldName": "company",
+          "value": "Remote Systems",
+          "pointer": "/content/jsonLd/0/@graph/1/hiringOrganization/name",
+          "confidence": 0.9
+        },
+        {
+          "fieldName": "description",
+          "value": "Build systems from anywhere in the listed regions.",
+          "pointer": "/content/jsonLd/0/@graph/1/description",
+          "confidence": 0.9
+        },
+        {
+          "fieldName": "salary",
+          "value": {
+            "@type": "MonetaryAmount",
+            "currency": "CAD",
+            "value": {
+              "@type": "QuantitativeValue",
+              "value": 12500,
+              "unitText": "MONTH"
+            }
+          },
+          "pointer": "/content/jsonLd/0/@graph/1/baseSalary",
+          "confidence": 0.88
+        },
+        {
+          "fieldName": "locations",
+          "value": { "@type": "Country", "name": "United States" },
+          "pointer": "/content/jsonLd/0/@graph/1/applicantLocationRequirements/0",
+          "confidence": 0.88
+        },
+        {
+          "fieldName": "locations",
+          "value": { "@type": "State", "name": "Ontario" },
+          "pointer": "/content/jsonLd/0/@graph/1/applicantLocationRequirements/1",
+          "confidence": 0.88
+        },
+        {
+          "fieldName": "workplace_type",
+          "value": "TELECOMMUTE",
+          "pointer": "/content/jsonLd/0/@graph/1/jobLocationType",
+          "confidence": 0.9
+        },
+        {
+          "fieldName": "posted_at",
+          "value": "2026-08-15T08:30:00-04:00",
+          "pointer": "/content/jsonLd/0/@graph/1/datePosted",
+          "confidence": 0.9
+        },
+        {
+          "fieldName": "requirements",
+          "value": {
+            "category": "education",
+            "content": {
+              "@type": "EducationalOccupationalCredential",
+              "credentialCategory": "bachelor degree"
+            }
+          },
+          "pointer": "/content/jsonLd/0/@graph/1/educationRequirements",
+          "confidence": 0.84
+        },
+        {
+          "fieldName": "apply_url",
+          "value": "https://remote.example/jobs/9001",
+          "pointer": "/content/jsonLd/0/@graph/1/url",
+          "confidence": 0.9
+        },
+        {
+          "fieldName": "external_id",
+          "value": 9001,
+          "pointer": "/content/jsonLd/0/@graph/1/identifier",
+          "confidence": 0.88
+        },
+        {
+          "fieldName": "employment_type",
+          "value": "FULL_TIME",
+          "pointer": "/content/jsonLd/0/@graph/1/employmentType",
+          "confidence": 0.9
+        }
+      ],
+      "expectedWarnings": [],
+      "expectedSummary": {
+        "inputItems": 1,
+        "discoveredJobPostings": 1,
+        "acceptedJobPostings": 1,
+        "completeJobPostings": 1,
+        "candidateCount": 12,
+        "warningCount": 0
+      }
+    },
+    {
+      "id": "nested-multiple-conflicting-postings",
+      "jsonLd": [
+        {
+          "wrapper": [
+            {
+              "@context": "https://schema.org",
+              "@type": "JobPosting",
+              "title": "Platform Engineer",
+              "description": "Own the internal platform.",
+              "hiringOrganization": { "@type": "Organization", "name": "Alpha Works" },
+              "jobLocation": {
+                "@type": "Place",
+                "address": { "@type": "PostalAddress", "addressCountry": "US" }
+              },
+              "datePosted": "2026-08-20"
+            },
+            {
+              "@context": "http://schema.org/",
+              "@type": "JobPosting",
+              "title": ["Platform Engineer", "Backend Engineer"],
+              "description": "Own backend services.",
+              "hiringOrganization": [
+                { "@type": "Organization", "name": "Beta Works" },
+                { "@type": "Organization", "name": "Beta Staffing" }
+              ],
+              "jobLocation": {
+                "@type": "Place",
+                "address": {
+                  "@type": "PostalAddress",
+                  "addressCountry": { "name": "CA" }
+                }
+              },
+              "datePosted": "2026-08-21"
+            }
+          ]
+        }
+      ],
+      "expectedCandidates": [
+        {
+          "fieldName": "title",
+          "value": "Platform Engineer",
+          "pointer": "/content/jsonLd/0/wrapper/0/title",
+          "confidence": 0.9
+        },
+        {
+          "fieldName": "company",
+          "value": "Alpha Works",
+          "pointer": "/content/jsonLd/0/wrapper/0/hiringOrganization/name",
+          "confidence": 0.9
+        },
+        {
+          "fieldName": "description",
+          "value": "Own the internal platform.",
+          "pointer": "/content/jsonLd/0/wrapper/0/description",
+          "confidence": 0.9
+        },
+        {
+          "fieldName": "locations",
+          "value": {
+            "@type": "Place",
+            "address": { "@type": "PostalAddress", "addressCountry": "US" }
+          },
+          "pointer": "/content/jsonLd/0/wrapper/0/jobLocation",
+          "confidence": 0.88
+        },
+        {
+          "fieldName": "posted_at",
+          "value": "2026-08-20",
+          "pointer": "/content/jsonLd/0/wrapper/0/datePosted",
+          "confidence": 0.9
+        },
+        {
+          "fieldName": "title",
+          "value": "Platform Engineer",
+          "pointer": "/content/jsonLd/0/wrapper/1/title/0",
+          "confidence": 0.9
+        },
+        {
+          "fieldName": "title",
+          "value": "Backend Engineer",
+          "pointer": "/content/jsonLd/0/wrapper/1/title/1",
+          "confidence": 0.9
+        },
+        {
+          "fieldName": "company",
+          "value": "Beta Works",
+          "pointer": "/content/jsonLd/0/wrapper/1/hiringOrganization/0/name",
+          "confidence": 0.9
+        },
+        {
+          "fieldName": "company",
+          "value": "Beta Staffing",
+          "pointer": "/content/jsonLd/0/wrapper/1/hiringOrganization/1/name",
+          "confidence": 0.9
+        },
+        {
+          "fieldName": "description",
+          "value": "Own backend services.",
+          "pointer": "/content/jsonLd/0/wrapper/1/description",
+          "confidence": 0.9
+        },
+        {
+          "fieldName": "locations",
+          "value": {
+            "@type": "Place",
+            "address": {
+              "@type": "PostalAddress",
+              "addressCountry": { "name": "CA" }
+            }
+          },
+          "pointer": "/content/jsonLd/0/wrapper/1/jobLocation",
+          "confidence": 0.88
+        },
+        {
+          "fieldName": "posted_at",
+          "value": "2026-08-21",
+          "pointer": "/content/jsonLd/0/wrapper/1/datePosted",
+          "confidence": 0.9
+        }
+      ],
+      "expectedWarnings": [
+        {
+          "code": "multiple_job_postings",
+          "fieldName": null,
+          "pointer": "/content/jsonLd"
+        }
+      ],
+      "expectedSummary": {
+        "inputItems": 1,
+        "discoveredJobPostings": 2,
+        "acceptedJobPostings": 2,
+        "completeJobPostings": 2,
+        "candidateCount": 12,
+        "warningCount": 1
+      }
+    },
+    {
+      "id": "malformed-and-partial",
+      "jsonLd": [
+        "not an object",
+        {
+          "@context": "https://unsupported.example/vocabulary",
+          "@type": "JobPosting",
+          "title": "Must not be accepted"
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "JobPosting",
+          "title": "   ",
+          "description": "Retain this partial description.",
+          "hiringOrganization": { "@type": "Organization", "name": "" },
+          "baseSalary": {
+            "@type": "MonetaryAmount",
+            "currency": "usd",
+            "value": { "value": 100, "unitText": "FORTNIGHT" }
+          },
+          "jobLocation": {
+            "@type": "Place",
+            "address": { "@type": "PostalAddress", "addressLocality": "Nowhere" }
+          },
+          "applicantLocationRequirements": { "@type": "Country", "name": "" },
+          "jobLocationType": "HYBRID",
+          "datePosted": "not-a-date",
+          "validThrough": false,
+          "responsibilities": true,
+          "skills": ["TypeScript", 42],
+          "url": "javascript:alert(1)",
+          "identifier": { "value": { "unexpected": true } },
+          "employmentType": [null, "PART_TIME"]
+        }
+      ],
+      "expectedCandidates": [
+        {
+          "fieldName": "description",
+          "value": "Retain this partial description.",
+          "pointer": "/content/jsonLd/2/description",
+          "confidence": 0.9
+        },
+        {
+          "fieldName": "requirements",
+          "value": { "category": "skill", "content": "TypeScript" },
+          "pointer": "/content/jsonLd/2/skills/0",
+          "confidence": 0.84
+        },
+        {
+          "fieldName": "employment_type",
+          "value": "PART_TIME",
+          "pointer": "/content/jsonLd/2/employmentType/1",
+          "confidence": 0.9
+        }
+      ],
+      "expectedWarnings": [
+        {
+          "code": "jsonld_item_ignored",
+          "fieldName": null,
+          "pointer": "/content/jsonLd/0"
+        },
+        {
+          "code": "context_missing_or_unsupported",
+          "fieldName": null,
+          "pointer": "/content/jsonLd/1/@context"
+        },
+        {
+          "code": "field_invalid",
+          "fieldName": "title",
+          "pointer": "/content/jsonLd/2/title"
+        },
+        {
+          "code": "required_field_missing_or_invalid",
+          "fieldName": "title",
+          "pointer": "/content/jsonLd/2/title"
+        },
+        {
+          "code": "field_invalid",
+          "fieldName": "company",
+          "pointer": "/content/jsonLd/2/hiringOrganization"
+        },
+        {
+          "code": "required_field_missing_or_invalid",
+          "fieldName": "company",
+          "pointer": "/content/jsonLd/2/hiringOrganization"
+        },
+        {
+          "code": "field_invalid",
+          "fieldName": "salary",
+          "pointer": "/content/jsonLd/2/baseSalary"
+        },
+        {
+          "code": "field_invalid",
+          "fieldName": "locations",
+          "pointer": "/content/jsonLd/2/jobLocation"
+        },
+        {
+          "code": "field_invalid",
+          "fieldName": "locations",
+          "pointer": "/content/jsonLd/2/applicantLocationRequirements"
+        },
+        {
+          "code": "field_invalid",
+          "fieldName": "workplace_type",
+          "pointer": "/content/jsonLd/2/jobLocationType"
+        },
+        {
+          "code": "required_field_missing_or_invalid",
+          "fieldName": "locations",
+          "pointer": "/content/jsonLd/2/jobLocation"
+        },
+        {
+          "code": "field_invalid",
+          "fieldName": "posted_at",
+          "pointer": "/content/jsonLd/2/datePosted"
+        },
+        {
+          "code": "required_field_missing_or_invalid",
+          "fieldName": "posted_at",
+          "pointer": "/content/jsonLd/2/datePosted"
+        },
+        {
+          "code": "field_invalid",
+          "fieldName": "valid_through",
+          "pointer": "/content/jsonLd/2/validThrough"
+        },
+        {
+          "code": "field_invalid",
+          "fieldName": "requirements",
+          "pointer": "/content/jsonLd/2/responsibilities"
+        },
+        {
+          "code": "field_invalid",
+          "fieldName": "apply_url",
+          "pointer": "/content/jsonLd/2/url"
+        },
+        {
+          "code": "field_invalid",
+          "fieldName": "external_id",
+          "pointer": "/content/jsonLd/2/identifier"
+        }
+      ],
+      "expectedSummary": {
+        "inputItems": 3,
+        "discoveredJobPostings": 2,
+        "acceptedJobPostings": 1,
+        "completeJobPostings": 0,
+        "candidateCount": 3,
+        "warningCount": 17
+      }
+    }
+  ]
+}

@@ -11,6 +11,7 @@ export default defineConfig({
         "packages/application/src/**/*.ts",
         "packages/capture-core/src/**/*.ts",
         "packages/extension-bridge/src/**/*.ts",
+        "packages/extractors/src/**/*.ts",
         "packages/observability/src/**/*.ts",
         "packages/search-filter/src/**/*.ts",
         "packages/source-policy/src/**/*.ts",

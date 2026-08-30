@@ -200,7 +200,11 @@ importers:
         specifier: workspace:*
         version: link:../contracts
 
-  packages/extractors: {}
+  packages/extractors:
+    dependencies:
+      '@coredrill/contracts':
+        specifier: workspace:*
+        version: link:../contracts
 
   packages/labor-data: {}
 
