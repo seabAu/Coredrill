@@ -11,14 +11,15 @@ Decision changes: none
 
 ## Outcome
 
-The implementation adds a versioned, failure-safe deletion boundary for an
-explicitly selected local vault. A preview revalidates the target, returns a
-path-free inventory of the data and recovery material in scope, and supplies
-the exact confirmation phrase `DELETE <vault name>`. Deletion is unavailable
-until the user enters that phrase exactly. The interface warns that external
-portable exports are the recovery path, offers export before deletion without
-making it mandatory, and does not use urgency, countdowns, or opaque risk
-claims.
+Implementation commits `ef72d21511bcf581418af8fb95dbf3803c4e3ce3` and
+`4cb3677adcfe353a434e545fcd07bfc7bdea0fe0` add a versioned, failure-safe
+deletion boundary for an explicitly selected local vault. A preview
+revalidates the target, returns a path-free inventory of the data and recovery
+material in scope, and supplies the exact confirmation phrase
+`DELETE <vault name>`. Deletion is unavailable until the user enters that
+phrase exactly. The interface warns that external portable exports are the
+recovery path, offers export before deletion without making it mandatory, and
+does not use urgency, countdowns, or opaque risk claims.
 
 The normative contract is recorded in
 [`vault-deletion-v1.md`](../design/coredrill-design-kit/vault-deletion-v1.md).
@@ -105,10 +106,27 @@ NAT008_SECRET_PROOF {"backend":"windows-credential-manager","stored":true,"retri
 
 ## Cross-platform hosted proof
 
-The final Foundation CI run is pending the implementation push. It must repeat
-the deletion boundary from a clean checkout in current and previous Chrome,
-current and previous branded Firefox, and the Windows/macOS/Ubuntu native
-lanes before `BKP-006` is marked complete.
+Foundation CI run
+[`33288624734`](https://github.com/seabAu/Coredrill/actions/runs/33288624734)
+repeated the complete boundary from a clean checkout:
+
+| Platform              |                                                                                           Job | Result                                                                                                                                                                  |
+| --------------------- | --------------------------------------------------------------------------------------------: | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Chrome 151.0.7922.138 | [`99196219600`](https://github.com/seabAu/Coredrill/actions/runs/33288624734/job/99196219600) | Passed exact-phrase OPFS deletion, reopen-empty, external-archive preservation, and the full browser/UI matrix.                                                         |
+| Chrome 152.0.7977.54  | [`99196219543`](https://github.com/seabAu/Coredrill/actions/runs/33288624734/job/99196219543) | Passed the same production boundary and exact-version assertion.                                                                                                        |
+| Firefox 153.0         | [`99196219672`](https://github.com/seabAu/Coredrill/actions/runs/33288624734/job/99196219672) | Passed exact-phrase deletion through branded Firefox and local W3C WebDriver.                                                                                           |
+| Firefox 154.0         | [`99196219559`](https://github.com/seabAu/Coredrill/actions/runs/33288624734/job/99196219559) | Passed the same Firefox boundary and exact-version assertion.                                                                                                           |
+| Windows               | [`99196219534`](https://github.com/seabAu/Coredrill/actions/runs/33288624734/job/99196219534) | Passed native SQLite/deletion contracts, real Credential Manager cleanup, archive/backup proof, complete lint, installer build, installed startup, and artifact upload. |
+| macOS 26              | [`99196219514`](https://github.com/seabAu/Coredrill/actions/runs/33288624734/job/99196219514) | Passed native SQLite/deletion contracts, real Keychain cleanup, archive/backup proof, complete lint, bundle build, launch inspection, and artifact upload.              |
+| Ubuntu 26.04          | [`99196219454`](https://github.com/seabAu/Coredrill/actions/runs/33288624734/job/99196219454) | Passed native SQLite/deletion contracts, real Secret Service cleanup, archive/backup proof, complete lint, AppImage build, launch inspection, and artifact upload.      |
+
+The same run passed the aggregate build/static/test/policy lane, extension
+transfer, and full-history secret scan. The first hosted implementation run
+correctly exposed that two pre-existing native archive tests could choose the
+same temporary root when macOS launched them in the same clock tick. Corrective
+commit `4cb3677adcfe353a434e545fcd07bfc7bdea0fe0` adds an atomic sequence to
+those test roots; the final run passed the formerly colliding archive tests and
+all new deletion tests on every native platform.
 
 ## Reproducible verification
 
@@ -123,6 +141,7 @@ lockfile:
 | `pnpm test:secure-storage`                                                                                   | Passed the real Windows Credential Manager store/retrieve/delete lifecycle with vault-scoped identifiers and no secret exposure.                                                                                                            |
 | `cargo clippy --manifest-path apps/desktop/src-tauri/Cargo.toml --all-targets --all-features -- -D warnings` | Passed the complete Rust feature and target matrix without findings.                                                                                                                                                                        |
 | `pnpm verify`                                                                                                | Passed with exit code 0 across formatting, boundaries, records, typecheck, lint, 59 coverage files and 535 tests, all 22 builds, 58 browser scenarios, native/extension/document proof, schemas, licenses, secrets, audits, and Changesets. |
+| [Foundation CI run 33288624734](https://github.com/seabAu/Coredrill/actions/runs/33288624734)                | Passed for final implementation commit `4cb3677adcfe353a434e545fcd07bfc7bdea0fe0`; all policy, current/previous Chrome and Firefox, extension, and Windows/macOS/Ubuntu native lanes completed successfully.                                |
 
 Overall coverage is 83.30% statements, 74.98% branches, 82.16% functions,
 and 85.90% lines.

@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-29
 Current milestone: Phase 1 — local tracker and recovery loop (`GATE-0` human validation remains blocked)
-Current work item: `BKP-006` — typed-confirmation vault deletion, secret cleanup, and recoverability warning
-Next recommended slice: `BKP-007` — clean browser and desktop recovery with canonical hash comparison
+Current work item: `BKP-007` — clean browser and desktop recovery with canonical hash comparison
+Next recommended slice: `Q1-001` — reference-data startup, query, board, and table performance budgets
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `BKP-007` — clean browser and desktop recovery with ca
 | Field | Value |
 |---|---|
 | Milestone | Phase 1, with the independent Phase 0 human-validation gate retained below |
-| Item range | `BKP-006` |
+| Item range | `BKP-007` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-29 |
-| Expected proof | Typed-confirmation and recoverability-warning UI plus failure-safe E2E/security proof that the active database, vault-owned unshared attachments, managed automatic backups, and vault-scoped provider secrets are deleted without touching external portable archives, another vault, or shared attachment content |
+| Expected proof | Clean-install recovery report for the same representative Phase 1 vault in production browser SQLite/OPFS and the native desktop SQLite boundary, including attachments, manifest/checksum validation, and canonical content-hash comparison across the source and both restored vaults |
 | Blocker | None for this slice. `UXR-004` through `UXR-008` still require the owner-authorized participant study before the Phase 1 UI lock; `FND-001` remains independently blocked. |
-| Next handoff | Implement and prove `BKP-006`, then continue to `BKP-007` without claiming `GATE-0` or resolving `Q-006` without participant evidence. |
+| Next handoff | Implement and prove `BKP-007`, then continue to `Q1-001` without claiming `GATE-0` or resolving `Q-006` without participant evidence. |
 
 ## Milestone status
 
@@ -192,7 +192,7 @@ Next recommended slice: `BKP-007` — clean browser and desktop recovery with ca
 - [x] **BKP-003** Implement restore dry run, version/checksum validation, conflict preview, and transactional commit. — Proof: [bounded fail-closed archive validation, immutable conflict preview, stale-target protection, transactional failure preservation, and hosted Chrome/Firefox restore reproduction](../../proof/phase-1-portable-archive-restore-verification.md)
 - [x] **BKP-004** Implement desktop automatic backup rotation without deleting last known-good backup. — Proof: [managed path-free checkpoints, verify-before-rotate retention, failure-safe preservation, restorable final artifact, and hosted Windows/macOS/Ubuntu reproduction](../../proof/phase-1-desktop-automatic-backup-verification.md)
 - [x] **BKP-005** Implement browser persistence/quota health and export reminder without manipulative prompts. — Proof: [passive observation, explicit request, durable neutral reminder, accessible Settings, and exact Chrome/Firefox verification](../../proof/phase-1-browser-vault-recovery-health-verification.md)
-- [ ] **BKP-006** Implement typed-confirmation vault deletion, secret cleanup, and recoverability warning. — Proof: _E2E/security test_
+- [x] **BKP-006** Implement typed-confirmation vault deletion, secret cleanup, and recoverability warning. — Proof: [exact confirmation, scoped deletion, rollback, credential cleanup, honest deferred purge, accessibility, and cross-platform hosted verification](../../proof/phase-1-vault-deletion-verification.md)
 - [ ] **BKP-007** Restore a Phase 1 vault into clean browser and desktop installations and compare canonical hashes. — Proof: _recovery report_
 
 ## Phase 1 quality
