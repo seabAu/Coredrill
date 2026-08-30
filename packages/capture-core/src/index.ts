@@ -21,3 +21,11 @@ export {
   type SuppliedCaptureDraftV1,
   type SuppliedCaptureFieldV1,
 } from "./envelope.js";
+export {
+  parseCaptureSourcePreviewJsonV1,
+  type CaptureSourceEvidenceV1,
+  type CaptureSourcePreviewOptions,
+  type CaptureSourcePreviewResultV1,
+  type CaptureSourcePreviewSectionV1,
+  type CaptureSourcePreviewV1,
+} from "./source-preview.js";

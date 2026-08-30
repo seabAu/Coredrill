@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-30
 Current milestone: Phase 2 — capture and approved extraction (`GATE-0` and `GATE-1` external-evidence blockers remain open)
-Current work item: `CAP-003` — manual and supplied-content capture paths
-Next recommended slice: `CAP-004` after `CAP-003` proof
+Current work item: `CAP-004` — sanitized source preview and excerpt/path navigation
+Next recommended slice: `CAP-005` after `CAP-004` proof
 
 ## How to use this file
 

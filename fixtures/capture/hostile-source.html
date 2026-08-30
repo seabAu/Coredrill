@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Hostile source fixture</title>
+    <meta http-equiv="refresh" content="0;url=https://tracker.invalid/refresh" />
+    <link rel="stylesheet" href="https://tracker.invalid/style.css" />
+    <style>
+      body {
+        display: none;
+      }
+    </style>
+    <script>
+      globalThis.__capturePreviewScriptRan = true;
+    </script>
+  </head>
+  <body onload="globalThis.__capturePreviewBodyRan = true">
+    <h1>Security Engineer</h1>
+    <p>SecureCo builds defensive local-first systems.</p>
+    <img src="https://tracker.invalid/pixel" onerror="globalThis.__capturePreviewImageRan = true" />
+    <iframe src="https://tracker.invalid/frame"></iframe>
+    <svg onload="globalThis.__capturePreviewSvgRan = true">
+      <script>
+        globalThis.__capturePreviewSvgScriptRan = true;
+      </script>
+    </svg>
+  </body>
+</html>

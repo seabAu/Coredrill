@@ -1,5 +1,7 @@
 import type { SuppliedCaptureDraftV1 } from "@coredrill/capture-core";
 
+import { sourceTextFromHtml } from "./source-text.js";
+
 export const SUPPLIED_CAPTURE_FILE_LIMIT_BYTES = 2 * 1024 * 1024;
 const READABLE_TEXT_LIMIT = 512 * 1024;
 const JSON_NODE_LIMIT = 10_000;
@@ -112,58 +114,6 @@ function assertBoundedJson(
   }
 }
 
-function inertHtmlText(html: string): string {
-  const parsed = new DOMParser().parseFromString(html, "text/html");
-  parsed
-    .querySelectorAll("script, style, template, noscript, iframe, object, embed, svg, math")
-    .forEach((element) => {
-      element.remove();
-    });
-  const separatingElements = new Set([
-    "ADDRESS",
-    "ARTICLE",
-    "ASIDE",
-    "BLOCKQUOTE",
-    "BR",
-    "DD",
-    "DIV",
-    "DL",
-    "DT",
-    "FIGCAPTION",
-    "FIGURE",
-    "FOOTER",
-    "FORM",
-    "H1",
-    "H2",
-    "H3",
-    "H4",
-    "H5",
-    "H6",
-    "HEADER",
-    "HR",
-    "LI",
-    "MAIN",
-    "NAV",
-    "OL",
-    "P",
-    "PRE",
-    "SECTION",
-    "TABLE",
-    "TD",
-    "TH",
-    "TR",
-    "UL",
-  ]);
-  const textFrom = (node: Node): string => {
-    if (node.nodeType === Node.TEXT_NODE) return node.textContent ?? "";
-    const content = [...node.childNodes].map(textFrom).join("");
-    return node instanceof Element && separatingElements.has(node.tagName)
-      ? ` ${content} `
-      : content;
-  };
-  return textFrom(parsed.body).replace(/\s+/gu, " ").trim();
-}
-
 function fileKind(file: File): "saved_text" | "saved_html" | "saved_json" {
   const lowerName = file.name.toLocaleLowerCase();
   if (file.type === "text/html" || lowerName.endsWith(".html") || lowerName.endsWith(".htm")) {
@@ -267,7 +217,7 @@ export async function prepareSuppliedCaptureDraft(
       captureClient,
     };
   }
-  const readableText = kind === "saved_html" ? inertHtmlText(content) : content;
+  const readableText = kind === "saved_html" ? sourceTextFromHtml(content) : content;
   return {
     captureMethod: "file",
     senderKind: "import_tool",

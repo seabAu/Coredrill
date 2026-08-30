@@ -9,7 +9,7 @@ const channel =
 
 export default defineConfig({
   testDir: "./e2e",
-  testMatch: ["app-shell.spec.mjs", "supplied-capture.spec.mjs"],
+  testMatch: ["app-shell.spec.mjs", "source-preview.spec.mjs", "supplied-capture.spec.mjs"],
   outputDir: "test-results/app-shell",
   fullyParallel: false,
   workers: 1,

@@ -220,6 +220,7 @@ Dragging changes status after an accessible confirmation announcement and writes
 - Queue supports Accept, Merge, Snooze, and Discard.
 - Review is field-based; “accept all high-confidence” never accepts unresolved conflicts.
 - Source excerpts are sanitized text. A user can jump to the captured location in the source snapshot.
+- The shipped `CAP-004` baseline presents the durable capture queue beside a text-only source region. Snapshot-location controls expose exact `/content/...` paths; field-candidate controls expose method, confidence, excerpt, and provenance path. Activating either control moves focus to the source region, and a retained matching excerpt is highlighted without inserting source markup. Loading, empty, and fail-closed verification states remain explicit, and the two-column review reflows to one column without page overflow on narrow screens.
 - The primary Save action lists remaining unknown/conflicting fields without forcing irrelevant fields.
 - Discard is undoable until outbox/source cleanup is committed.
 

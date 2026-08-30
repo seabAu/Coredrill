@@ -1,6 +1,7 @@
 import {
   ApplicationShell,
   BrowserVaultBackupSettings,
+  CaptureInboxReview,
   deriveBrowserExportReminder,
   HomeDashboard,
   JobWorkspaceContent,
@@ -59,6 +60,10 @@ import {
   type ThemePreference,
   type VaultHealthState,
 } from "@coredrill/ui";
+import {
+  parseCaptureSourcePreviewJsonV1,
+  type CaptureSourcePreviewV1,
+} from "@coredrill/capture-core";
 import type {
   DeleteVaultInput,
   VaultDeletionPreviewDto,
@@ -77,6 +82,7 @@ import "./main.js";
 import { CanonicalJourneyPanel } from "./canonical-journey-panel.js";
 import { CaptureEntryDialog } from "./capture-entry-dialog.js";
 import { initializeOfflineShell, OfflineShellNotice } from "./offline-shell.js";
+import { sourceTextFromHtml } from "./source-text.js";
 import type { SuppliedCaptureMode } from "./supplied-capture.js";
 
 interface AppShellCatalogState {
@@ -1377,6 +1383,11 @@ const AppShellCatalog = () => {
     appearance.tableMode === "large" ? LARGE_TABLE_ROWS : STANDARD_TABLE_ROWS,
   );
   const [suppliedCaptureCount, setSuppliedCaptureCount] = useState(0);
+  const [capturePreviews, setCapturePreviews] = useState<readonly CaptureSourcePreviewV1[]>([]);
+  const [capturePreviewState, setCapturePreviewState] = useState<"loading" | "ready" | "error">(
+    "loading",
+  );
+  const [capturePreviewRefreshVersion, setCapturePreviewRefreshVersion] = useState(0);
   const [workspaceRoute, setWorkspaceRoute] = useState<JobRouteState | null>(initialJobRoute);
   const [workspaceWidth, setWorkspaceWidth] = useState(640);
   const [lastActivity, setLastActivity] = useState(
@@ -1515,6 +1526,38 @@ const AppShellCatalog = () => {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    setCapturePreviewState("loading");
+    if (pipelineView !== "inbox") return;
+    void globalThis.coredrillExtensionInbox
+      .listReceipts()
+      .then(async (receipts) => {
+        const previews: CaptureSourcePreviewV1[] = [];
+        for (const receipt of receipts) {
+          const result = await parseCaptureSourcePreviewJsonV1(receipt.envelopeJson, {
+            sanitizedHtmlToText: sourceTextFromHtml,
+          });
+          if (!result.success) throw new Error(result.code);
+          previews.push(result.preview);
+        }
+        previews.sort((left, right) => right.capturedAt.localeCompare(left.capturedAt));
+        if (active) {
+          setCapturePreviews(Object.freeze(previews));
+          setCapturePreviewState("ready");
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setCapturePreviews(Object.freeze([]));
+          setCapturePreviewState("error");
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [capturePreviewRefreshVersion, pipelineView, suppliedCaptureCount]);
 
   useEffect(() => {
     globalThis.coredrillAppShell = Object.freeze({
@@ -2359,6 +2402,9 @@ const AppShellCatalog = () => {
                 }}
                 onViewChange={(view) => {
                   setPipelineView(view);
+                  if (view === "inbox") {
+                    setCapturePreviewRefreshVersion((version) => version + 1);
+                  }
                   if (workspaceRoute === null) {
                     window.history.replaceState(
                       window.history.state,
@@ -2371,7 +2417,9 @@ const AppShellCatalog = () => {
                   );
                 }}
               >
-                {pipelineView === "board" ? (
+                {pipelineView === "inbox" ? (
+                  <CaptureInboxReview items={capturePreviews} state={capturePreviewState} />
+                ) : pipelineView === "board" ? (
                   <PipelineBoard
                     announcement={boardAnnouncement}
                     columns={filteredBoardColumns}
