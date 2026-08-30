@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-30
 Current milestone: Phase 1 — local tracker and recovery loop (`GATE-0` human validation remains blocked)
-Current work item: `Q1-002` — offline, refresh, crash, storage-denied, quota, and second-tab journeys
-Next recommended slice: `Q1-003` — Phase 1 WCAG automated and manual matrix
+Current work item: `Q1-003` — Phase 1 WCAG automated and manual matrix
+Next recommended slice: `Q1-004` — Phase 1 threat review
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `Q1-003` — Phase 1 WCAG automated and manual matrix
 | Field | Value |
 |---|---|
 | Milestone | Phase 1, with the independent Phase 0 human-validation gate retained below |
-| Item range | `Q1-002` |
+| Item range | `Q1-003` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-30 |
-| Expected proof | Browser and native E2E matrix for offline use, refresh durability, abrupt owner loss/crash recovery, storage denial, quota pressure, and second-tab writer coordination, with exact limitations for any target that cannot reproduce a scenario |
-| Blocker | None for this slice. `Q1-001` separately awaits the provisioned Windows 11/i5 reference target; `UXR-004` through `UXR-008` still require the owner-authorized participant study, and `FND-001` remains independently blocked. |
-| Next handoff | Implement and prove `Q1-002`, then continue to `Q1-003` without claiming `Q1-001`, `GATE-0`, or `GATE-1` until their independent evidence exists. |
+| Expected proof | Phase 1 accessibility report covering exact automated axe, keyboard, forced-colors/reduced-motion, reflow, and responsive evidence plus the required manual NVDA, VoiceOver, TalkBack, magnification, and text-resize matrix |
+| Blocker | The available automated portion can proceed, but the accepted manual matrix cannot close here: NVDA 2026.1.1 and `HW-WIN-REF` are unavailable, as are the required macOS/Safari, iOS, and Android physical targets. `Q1-001`, the participant study, and `FND-001` remain independently blocked. |
+| Next handoff | Complete and record every available automated accessibility case, retain `Q1-003` unchecked with exact manual-target actions, then continue to the independent `Q1-004` threat review. |
 
 ## Milestone status
 
@@ -198,7 +198,7 @@ Next recommended slice: `Q1-003` — Phase 1 WCAG automated and manual matrix
 ## Phase 1 quality
 
 - [ ] **Q1-001** Meet reference-data startup/query/board/table performance budgets or record approved adjustment. — Proof: [production benchmark harness and clean-commit diagnostic; exact `HW-WIN-REF` execution still required](../../proof/phase-1-reference-data-performance-verification.md)
-- [ ] **Q1-002** Pass offline, refresh, crash, storage-denied, quota, and second-tab journeys. — Proof: _E2E matrix_
+- [x] **Q1-002** Pass offline, refresh, crash, storage-denied, quota, and second-tab journeys. — Proof: [production PWA, OPFS preservation, typed storage failures, writer handoff, and exact Chrome 151/152 E2E matrix](../../proof/phase-1-resilience-e2e-verification.md)
 - [ ] **Q1-003** Pass Phase 1 WCAG automated/manual matrix. — Proof: _accessibility report_
 - [ ] **Q1-004** Complete threat review for SQL, XSS, IPC, attachments, paths, and diagnostics. — Proof: _security review_
 - [ ] **Q1-005** Run canonical journey: create vault → add job → move stages → schedule interview/follow-up → export → delete → restore. — Proof: _recorded E2E artifact_
@@ -519,6 +519,7 @@ This phase is deliberately deferred. Re-open only after `GATE-6`, demonstrated m
 | 2026-08-24 | `FND-006` | The remote was attached, but no green hosted Foundation CI URL had been recorded. | Integrated both histories at `f8d9a18`; [Foundation CI run #1](https://github.com/seabAu/Coredrill/actions/runs/32694914029) completed successfully, including the full-history secret scan. | None; retain the URL as proof and keep future `main` runs green. | Resolved |
 | 2026-08-24 | `UXR-004` through `UXR-008` | The remaining Phase 0 UX gate requires at least five representative human sessions, including keyboard-heavy and nontechnical participants; Codex cannot manufacture participant evidence. | Built and browser-tested the disposable desktop/mobile prototypes, synthetic vault, ten-task moderated script, observation rubric, privacy rule, and stop/synthesis criteria. | Owner: recruit the required participants or authorize access to an appropriate research cohort; then run/anonymize the study and return findings for synthesis and decision updates. | Open |
 | 2026-08-30 | `Q1-001` | The accepted performance claim requires `HW-WIN-REF` (Intel Core i5-12400, 8 GiB) on Windows 11 25H2, but that target remains planned and is not available to this workspace. | Added a fail-closed production-build harness; the clean `1004ccd` Edge 152 diagnostic on `HW-LOCAL-DIAG` recorded 20 startup and 50 query/board/table samples with zero failures and p95 values below the design thresholds. Hosted and local nonconformant runners were not relabeled as reference hardware. | Owner: provision the exact reference target and run `pnpm test:performance` with conformant bindings, or explicitly approve a documented adjustment only after reviewing a retained failure artifact. | Open |
+| 2026-08-30 | `Q1-003` | The accepted manual accessibility matrix requires NVDA 2026.1.1 on `HW-WIN-REF`, VoiceOver/Safari on `HW-MAC-REF`, iOS VoiceOver on `HW-IOS-REF`, and version-recorded TalkBack on `HW-ANDROID-REF`; none is available to this workspace. Screen magnification and 200% browser text-resize review also require a retained manual result. | Audited the reference matrix and installed tools; NVDA is absent, `HW-WIN-REF` remains planned, and the macOS, iOS, and Android reference targets are recorded unavailable. Existing exact-Chrome axe, keyboard, forced-colors, reduced-motion, and 320-pixel evidence can be expanded and retained, but automation is not represented as conformance. | Owner: provision the recorded targets and execute the manual scripts with exact browser/AT versions; Codex continues the available automated matrix and then the independent `Q1-004` review. | Open |
 
 ## Accepted scope changes
 
