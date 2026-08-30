@@ -1,5 +1,30 @@
 /** Deterministic, policy-gated extraction adapters. */
 export {
+  GENERIC_JOB_DOCUMENT_ERROR_CODES,
+  GENERIC_JOB_DOCUMENT_EXTRACTOR,
+  GENERIC_JOB_DOCUMENT_FIELD_NAMES,
+  GENERIC_JOB_DOCUMENT_LIMITS,
+  GENERIC_JOB_DOCUMENT_SPEC_VERSION,
+  GENERIC_JOB_DOCUMENT_WARNING_CODES,
+  GenericJobDocumentError,
+  SELECTED_TEXT_EXTRACTOR,
+  extractGenericJobDocumentV1,
+  extractSelectedTextV1,
+  type GenericJobCandidateIdContextV1,
+  type GenericJobDocumentErrorCode,
+  type GenericJobDocumentExtractionV1,
+  type GenericJobDocumentFieldName,
+  type GenericJobDocumentInputV1,
+  type GenericJobDocumentSummaryV1,
+  type GenericJobDocumentWarningCode,
+  type GenericJobDocumentWarningV1,
+  type GenericReadableContentV1,
+  type SelectedTextExtractionV1,
+  type SelectedTextInputV1,
+  type SelectedTextSummaryV1,
+} from "./generic-job-document.js";
+
+export {
   JOB_POSTING_JSON_LD_EXTRACTOR,
   JOB_POSTING_JSON_LD_FIELD_NAMES,
   JOB_POSTING_JSON_LD_LIMITS,

@@ -1,0 +1,70 @@
+{
+  "specVersion": 1,
+  "extractors": [
+    { "name": "coredrill.selected-text", "version": "1.0.0" },
+    { "name": "coredrill.generic-job-document", "version": "1.0.0" }
+  ],
+  "fixtureSuite": "generic-job-document.golden.json",
+  "fixtureCases": 4,
+  "expected": 27,
+  "produced": 27,
+  "exactMatches": 27,
+  "precision": 1,
+  "recall": 1,
+  "falsePositives": 0,
+  "falseNegatives": 0,
+  "perField": {
+    "title": { "expected": 8, "produced": 8, "exactMatches": 8, "precision": 1, "recall": 1 },
+    "company": { "expected": 3, "produced": 3, "exactMatches": 3, "precision": 1, "recall": 1 },
+    "description": { "expected": 3, "produced": 3, "exactMatches": 3, "precision": 1, "recall": 1 },
+    "salary": { "expected": 1, "produced": 1, "exactMatches": 1, "precision": 1, "recall": 1 },
+    "locations": { "expected": 2, "produced": 2, "exactMatches": 2, "precision": 1, "recall": 1 },
+    "workplace_type": {
+      "expected": 1,
+      "produced": 1,
+      "exactMatches": 1,
+      "precision": 1,
+      "recall": 1
+    },
+    "posted_at": { "expected": 1, "produced": 1, "exactMatches": 1, "precision": 1, "recall": 1 },
+    "valid_through": {
+      "expected": 1,
+      "produced": 1,
+      "exactMatches": 1,
+      "precision": 1,
+      "recall": 1
+    },
+    "requirements": {
+      "expected": 4,
+      "produced": 4,
+      "exactMatches": 4,
+      "precision": 1,
+      "recall": 1
+    },
+    "apply_url": { "expected": 1, "produced": 1, "exactMatches": 1, "precision": 1, "recall": 1 },
+    "external_id": { "expected": 1, "produced": 1, "exactMatches": 1, "precision": 1, "recall": 1 },
+    "employment_type": {
+      "expected": 1,
+      "produced": 1,
+      "exactMatches": 1,
+      "precision": 1,
+      "recall": 1
+    }
+  },
+  "perMethod": {
+    "selector": { "expected": 25, "produced": 25, "exactMatches": 25, "precision": 1, "recall": 1 },
+    "readability": { "expected": 2, "produced": 2, "exactMatches": 2, "precision": 1, "recall": 1 }
+  },
+  "scenarios": {
+    "explicitSelectedText": true,
+    "readabilityPlainText": true,
+    "visibleAndMetadataTitlesRetained": true,
+    "labeledFieldsRetained": true,
+    "repeatedConflictingCandidatesRetained": true,
+    "requirementSectionsRetained": true,
+    "boilerplateAndHiddenContentRejected": true,
+    "rawSourceEvidenceRetained": true,
+    "provenanceRetained": true,
+    "inputDocumentUnchanged": true
+  }
+}

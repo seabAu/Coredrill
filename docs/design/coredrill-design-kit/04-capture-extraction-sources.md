@@ -118,6 +118,19 @@ Refresh never overwrites a confirmed field. It creates a new snapshot and a comp
 
 Capture only after the user clicks the extension or supplies content. This is a personal workflow, not an unattended crawler. Site-specific prohibitions still apply; the extension maintains a denylist/policy registry and shows manual-entry fallback.
 
+The shipped `XTR-003` baseline keeps this last-resort path pure, local, and bounded:
+
+- explicit selected text produces one high-confidence description candidate while retaining the exact selected string as raw evidence;
+- generic page extraction accepts only a caller-supplied `Document`, clones it before inspection, and never fetches, observes, mutates, or persists the live page;
+- scripts, styles, forms, embedded content, hidden content, navigation, footers, sidebars, and obvious advertising/consent/share boilerplate are removed before extraction;
+- visible `h1`, Open Graph/Twitter title metadata, document title, labeled definition-list/table values, and requirement sections produce separate provisional selector candidates with stable DOM evidence paths;
+- conflicting or repeated values remain separate candidates, and unsafe application URLs are rejected rather than normalized into trusted data;
+- [Mozilla Readability 0.6.0](https://github.com/mozilla/readability) runs with JSON-LD disabled on a second detached clone. Coredrill retains only normalized plain `textContent`; Readability-generated HTML is discarded rather than treated as safe markup;
+- the runtime uses the browser's platform DOM. [LinkeDOM 0.18.13](https://github.com/WebReflection/linkedom) is test-only, supplies deterministic detached documents for synthetic golden fixtures, and is isolated behind a runtime-checked adapter because its published DOM declarations do not match the repository's newer browser type surface;
+- element, depth, total text, readable text, selected text, candidate, and requirement limits fail closed with content-free errors before an unbounded result can cross the extractor boundary.
+
+Every emitted candidate passes the versioned `FieldCandidateV1` contract and carries capture source ID, exact evidence pointer, extractor identity/version, method, capture time, confidence, source excerpt, raw value, and a visible-source review note. The extractor does not confirm fields, resolve conflicts, write entities, call AI, add permissions, or introduce network behavior.
+
 #### Schema.org `JobPosting`
 
 Parse JSON-LD from a single job detail page. Validate `@context`, `@type`, title, description, hiring organization, location/remote fields, date, validity, identifier, employment type, and base salary. Treat it as untrusted page input and compare to visible content. Google documents the format and requires the structured data to represent the visible job page: [JobPosting documentation](https://developers.google.com/search/docs/appearance/structured-data/job-posting).

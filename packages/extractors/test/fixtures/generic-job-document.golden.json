@@ -1,0 +1,310 @@
+{
+  "specVersion": 1,
+  "sourceId": "018f0f4e-7b8c-7d00-8000-000000000001",
+  "capturedAt": "2026-08-30T16:30:00.000Z",
+  "selectedTextCases": [
+    {
+      "id": "explicit-selection",
+      "selectedText": "  Build resilient systems.\nOwn production quality.  ",
+      "expectedCandidates": [
+        {
+          "fieldName": "description",
+          "value": "Build resilient systems. Own production quality.",
+          "rawValue": "  Build resilient systems.\nOwn production quality.  ",
+          "pointer": "/content/selectedText",
+          "method": "selector",
+          "confidence": 0.98
+        }
+      ]
+    }
+  ],
+  "documentCases": [
+    {
+      "id": "complete-job-with-boilerplate",
+      "fixture": "generic-job-document/complete-job.html",
+      "expectedReadableText": "Senior Platform Engineer Company Northstar Labs Job location Boston, MA Workplace type Hybrid Pay range $150,000 - $185,000 USD yearly Employment type Full-time Date posted 2026-08-25 Application deadline 2026-09-30 Requisition ID PLAT-204 Apply URL Apply now Join a platform team building reliable systems used by thousands of people every day. You will work across service ownership, observability, and developer tooling. The role partners with product teams to improve delivery quality while keeping local development fast, clear, and dependable. Qualifications Five years of TypeScript experience Production observability experience Responsibilities Own service reliability and incident learning Improve the internal developer platform",
+      "forbiddenOutput": ["Subscribe for alerts", "Privacy Terms", "Social links"],
+      "expectedCandidates": [
+        {
+          "fieldName": "title",
+          "value": "Senior Platform Engineer",
+          "rawValue": "Senior Platform Engineer",
+          "pointer": "/document/html[1]/body[1]/main[1]/article[1]/h1[1]",
+          "method": "selector",
+          "confidence": 0.82
+        },
+        {
+          "fieldName": "title",
+          "value": "Platform Engineer, Reliability",
+          "rawValue": "Platform Engineer, Reliability",
+          "pointer": "/document/html[1]/head[1]/meta[1]/@content",
+          "method": "selector",
+          "confidence": 0.62
+        },
+        {
+          "fieldName": "title",
+          "value": "Senior Platform Engineer | Northstar Careers",
+          "rawValue": "Senior Platform Engineer | Northstar Careers",
+          "pointer": "/document/html[1]/head[1]/title[1]",
+          "method": "selector",
+          "confidence": 0.52
+        },
+        {
+          "fieldName": "company",
+          "value": "Northstar Labs",
+          "rawValue": "Northstar Labs",
+          "pointer": "/document/html[1]/body[1]/main[1]/article[1]/dl[1]/dd[1]",
+          "method": "selector",
+          "confidence": 0.82
+        },
+        {
+          "fieldName": "locations",
+          "value": "Boston, MA",
+          "rawValue": "Boston, MA",
+          "pointer": "/document/html[1]/body[1]/main[1]/article[1]/dl[1]/dd[2]",
+          "method": "selector",
+          "confidence": 0.84
+        },
+        {
+          "fieldName": "workplace_type",
+          "value": "Hybrid",
+          "rawValue": "Hybrid",
+          "pointer": "/document/html[1]/body[1]/main[1]/article[1]/dl[1]/dd[3]",
+          "method": "selector",
+          "confidence": 0.84
+        },
+        {
+          "fieldName": "salary",
+          "value": "$150,000 - $185,000 USD yearly",
+          "rawValue": "$150,000 - $185,000 USD yearly",
+          "pointer": "/document/html[1]/body[1]/main[1]/article[1]/dl[1]/dd[4]",
+          "method": "selector",
+          "confidence": 0.82
+        },
+        {
+          "fieldName": "employment_type",
+          "value": "Full-time",
+          "rawValue": "Full-time",
+          "pointer": "/document/html[1]/body[1]/main[1]/article[1]/dl[1]/dd[5]",
+          "method": "selector",
+          "confidence": 0.82
+        },
+        {
+          "fieldName": "posted_at",
+          "value": "2026-08-25",
+          "rawValue": "2026-08-25",
+          "pointer": "/document/html[1]/body[1]/main[1]/article[1]/dl[1]/dd[6]",
+          "method": "selector",
+          "confidence": 0.8
+        },
+        {
+          "fieldName": "valid_through",
+          "value": "2026-09-30",
+          "rawValue": "2026-09-30",
+          "pointer": "/document/html[1]/body[1]/main[1]/article[1]/dl[1]/dd[7]",
+          "method": "selector",
+          "confidence": 0.82
+        },
+        {
+          "fieldName": "external_id",
+          "value": "PLAT-204",
+          "rawValue": "PLAT-204",
+          "pointer": "/document/html[1]/body[1]/main[1]/article[1]/dl[1]/dd[8]",
+          "method": "selector",
+          "confidence": 0.84
+        },
+        {
+          "fieldName": "apply_url",
+          "value": "https://careers.example/jobs/plat-204/apply",
+          "rawValue": "https://careers.example/jobs/plat-204/apply",
+          "pointer": "/document/html[1]/body[1]/main[1]/article[1]/dl[1]/dd[9]/a[1]/@href",
+          "method": "selector",
+          "confidence": 0.82
+        },
+        {
+          "fieldName": "requirements",
+          "value": {
+            "category": "qualification",
+            "content": "Five years of TypeScript experience"
+          },
+          "rawValue": "Five years of TypeScript experience",
+          "pointer": "/document/html[1]/body[1]/main[1]/article[1]/ul[1]/li[1]",
+          "method": "selector",
+          "confidence": 0.78
+        },
+        {
+          "fieldName": "requirements",
+          "value": {
+            "category": "qualification",
+            "content": "Production observability experience"
+          },
+          "rawValue": "Production observability experience",
+          "pointer": "/document/html[1]/body[1]/main[1]/article[1]/ul[1]/li[2]",
+          "method": "selector",
+          "confidence": 0.78
+        },
+        {
+          "fieldName": "requirements",
+          "value": {
+            "category": "responsibility",
+            "content": "Own service reliability and incident learning"
+          },
+          "rawValue": "Own service reliability and incident learning",
+          "pointer": "/document/html[1]/body[1]/main[1]/article[1]/ul[2]/li[1]",
+          "method": "selector",
+          "confidence": 0.78
+        },
+        {
+          "fieldName": "requirements",
+          "value": {
+            "category": "responsibility",
+            "content": "Improve the internal developer platform"
+          },
+          "rawValue": "Improve the internal developer platform",
+          "pointer": "/document/html[1]/body[1]/main[1]/article[1]/ul[2]/li[2]",
+          "method": "selector",
+          "confidence": 0.78
+        },
+        {
+          "fieldName": "description",
+          "value": "Senior Platform Engineer Company Northstar Labs Job location Boston, MA Workplace type Hybrid Pay range $150,000 - $185,000 USD yearly Employment type Full-time Date posted 2026-08-25 Application deadline 2026-09-30 Requisition ID PLAT-204 Apply URL Apply now Join a platform team building reliable systems used by thousands of people every day. You will work across service ownership, observability, and developer tooling. The role partners with product teams to improve delivery quality while keeping local development fast, clear, and dependable. Qualifications Five years of TypeScript experience Production observability experience Responsibilities Own service reliability and incident learning Improve the internal developer platform",
+          "rawValue": "Senior Platform Engineer Company Northstar Labs Job location Boston, MA Workplace type Hybrid Pay range $150,000 - $185,000 USD yearly Employment type Full-time Date posted 2026-08-25 Application deadline 2026-09-30 Requisition ID PLAT-204 Apply URL Apply now Join a platform team building reliable systems used by thousands of people every day. You will work across service ownership, observability, and developer tooling. The role partners with product teams to improve delivery quality while keeping local development fast, clear, and dependable. Qualifications Five years of TypeScript experience Production observability experience Responsibilities Own service reliability and incident learning Improve the internal developer platform",
+          "pointer": "/content/readableText",
+          "method": "readability",
+          "confidence": 0.68
+        }
+      ],
+      "expectedWarnings": [],
+      "expectedSummary": {
+        "inputElementCount": 41,
+        "retainedElementCount": 38,
+        "removedElementCount": 3,
+        "readabilityAccepted": true,
+        "candidateCount": 17,
+        "warningCount": 0
+      }
+    },
+    {
+      "id": "conflicting-labels-retained",
+      "fixture": "generic-job-document/conflicting-labels.html",
+      "expectedReadableText": null,
+      "forbiddenOutput": [],
+      "expectedCandidates": [
+        {
+          "fieldName": "title",
+          "value": "Staff Data Engineer",
+          "rawValue": "Staff Data Engineer",
+          "pointer": "/document/html[1]/body[1]/main[1]/h1[1]",
+          "method": "selector",
+          "confidence": 0.82
+        },
+        {
+          "fieldName": "title",
+          "value": "Senior Data Platform Engineer",
+          "rawValue": "Senior Data Platform Engineer",
+          "pointer": "/document/html[1]/body[1]/main[1]/h1[2]",
+          "method": "selector",
+          "confidence": 0.82
+        },
+        {
+          "fieldName": "title",
+          "value": "Engineering role",
+          "rawValue": "Engineering role",
+          "pointer": "/document/html[1]/head[1]/title[1]",
+          "method": "selector",
+          "confidence": 0.52
+        },
+        {
+          "fieldName": "company",
+          "value": "Acorn Analytics",
+          "rawValue": "Acorn Analytics",
+          "pointer": "/document/html[1]/body[1]/main[1]/dl[1]/dd[1]",
+          "method": "selector",
+          "confidence": 0.82
+        },
+        {
+          "fieldName": "company",
+          "value": "Acorn Data Group",
+          "rawValue": "Acorn Data Group",
+          "pointer": "/document/html[1]/body[1]/main[1]/dl[1]/dd[2]",
+          "method": "selector",
+          "confidence": 0.82
+        },
+        {
+          "fieldName": "locations",
+          "value": "Remote — United States",
+          "rawValue": "Remote — United States",
+          "pointer": "/document/html[1]/body[1]/main[1]/dl[1]/dd[3]",
+          "method": "selector",
+          "confidence": 0.8
+        }
+      ],
+      "expectedWarnings": [
+        {
+          "code": "readability_not_available",
+          "fieldName": "description",
+          "pointer": "/content/readableText"
+        }
+      ],
+      "expectedSummary": {
+        "inputElementCount": 15,
+        "retainedElementCount": 15,
+        "removedElementCount": 0,
+        "readabilityAccepted": false,
+        "candidateCount": 6,
+        "warningCount": 1
+      }
+    },
+    {
+      "id": "hostile-boilerplate-removed",
+      "fixture": "generic-job-document/hostile-boilerplate.html",
+      "expectedReadableText": "Help design practical security controls for a local-first application that stores sensitive career evidence on the user's own device. Review trust boundaries, test failure cases, and partner with engineers so protective defaults remain understandable and usable. Document findings clearly, retain source evidence, and help teams resolve issues before they reach a public release.",
+      "forbiddenOutput": [
+        "SECRET_SCRIPT_VALUE",
+        "PRIVATE_NAV_VALUE",
+        "SECRET_HIDDEN_VALUE",
+        "SECRET_ARIA_VALUE",
+        "SECRET_STYLE_VALUE",
+        "SECRET_FORM_VALUE",
+        "SECRET_INPUT_VALUE",
+        "SECRET_COOKIE_VALUE",
+        "SECRET_FOOTER_VALUE"
+      ],
+      "expectedCandidates": [
+        {
+          "fieldName": "title",
+          "value": "Security Engineer",
+          "rawValue": "Security Engineer",
+          "pointer": "/document/html[1]/body[1]/main[1]/article[1]/h1[1]",
+          "method": "selector",
+          "confidence": 0.82
+        },
+        {
+          "fieldName": "title",
+          "value": "Security Engineer",
+          "rawValue": "Security Engineer",
+          "pointer": "/document/html[1]/head[1]/title[1]",
+          "method": "selector",
+          "confidence": 0.52
+        },
+        {
+          "fieldName": "description",
+          "value": "Help design practical security controls for a local-first application that stores sensitive career evidence on the user's own device. Review trust boundaries, test failure cases, and partner with engineers so protective defaults remain understandable and usable. Document findings clearly, retain source evidence, and help teams resolve issues before they reach a public release.",
+          "rawValue": "Help design practical security controls for a local-first application that stores sensitive career evidence on the user's own device. Review trust boundaries, test failure cases, and partner with engineers so protective defaults remain understandable and usable. Document findings clearly, retain source evidence, and help teams resolve issues before they reach a public release.",
+          "pointer": "/content/readableText",
+          "method": "readability",
+          "confidence": 0.68
+        }
+      ],
+      "expectedWarnings": [],
+      "expectedSummary": {
+        "inputElementCount": 20,
+        "retainedElementCount": 10,
+        "removedElementCount": 10,
+        "readabilityAccepted": true,
+        "candidateCount": 3,
+        "warningCount": 0
+      }
+    }
+  ]
+}

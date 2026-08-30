@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "inventoryId": "JW-DI-001",
-  "version": "1.22.0",
-  "reviewedAt": "2026-08-30T15:51:32Z",
+  "version": "1.23.0",
+  "reviewedAt": "2026-08-30T16:37:14Z",
   "scope": {
     "included": [
       "Pinned Node.js, pnpm, and Rust foundation toolchains",
@@ -17,7 +17,7 @@
   },
   "lockfile": {
     "path": "pnpm-lock.yaml",
-    "sha256": "c190201edf23dbaf2bc6919fb44d0a0a03f9523e0eea5d9bf2800d317b4b8575"
+    "sha256": "8e24563334bfbf66ecfff5420c89f7bb0f77e759226346e6768917bbe78d0898"
   },
   "toolchains": [
     {
@@ -633,6 +633,34 @@
       "selectionNote": "The documents package uses the same exact Zod version as contracts for strict IR, source-map, import-proposal, and JSON Schema validation."
     },
     {
+      "manifest": "packages/extractors/package.json",
+      "dependencyType": "dependencies",
+      "name": "@mozilla/readability",
+      "version": "0.6.0",
+      "upstreamLatest": "0.6.0",
+      "selectionStatus": "current",
+      "license": "Apache-2.0",
+      "maintainers": ["gijs", "cmkm", "fchasen"],
+      "repository": "https://github.com/mozilla/readability",
+      "metadataSource": "https://registry.npmjs.org/@mozilla%2freadability/0.6.0",
+      "knownAdvisories": [],
+      "selectionNote": "Current Firefox Reader View extraction library. Coredrill runs it only on a bounded detached DOM with JSON-LD disabled and retains normalized plain text; its generated HTML is discarded rather than rendered or persisted."
+    },
+    {
+      "manifest": "packages/extractors/package.json",
+      "dependencyType": "devDependencies",
+      "name": "linkedom",
+      "version": "0.18.13",
+      "upstreamLatest": "0.18.13",
+      "selectionStatus": "current",
+      "license": "ISC",
+      "maintainers": ["webreflection"],
+      "repository": "https://github.com/WebReflection/linkedom",
+      "metadataSource": "https://registry.npmjs.org/linkedom/0.18.13",
+      "knownAdvisories": [],
+      "selectionNote": "Test-only detached DOM for deterministic synthetic extractor goldens; production uses the platform DOM. This exact version was already resolved through the reviewed WXT/unbuild graph, and its declarations are isolated behind a runtime-checked test adapter rather than weakening TypeScript's library checks."
+    },
+    {
       "manifest": "packages/search-filter/package.json",
       "dependencyType": "devDependencies",
       "name": "fast-check",
@@ -1054,9 +1082,9 @@
   "advisoryReview": {
     "command": "pnpm audit --json",
     "source": "https://pnpm.io/cli/audit",
-    "reviewedAt": "2026-08-30T15:51:32Z",
-    "lockfileSha256": "c190201edf23dbaf2bc6919fb44d0a0a03f9523e0eea5d9bf2800d317b4b8575",
-    "resolvedDependencyCount": 935,
+    "reviewedAt": "2026-08-30T16:37:14Z",
+    "lockfileSha256": "8e24563334bfbf66ecfff5420c89f7bb0f77e759226346e6768917bbe78d0898",
+    "resolvedDependencyCount": 936,
     "optionalDependencyCount": 108,
     "vulnerabilities": {
       "info": 0,
@@ -1068,11 +1096,11 @@
   },
   "licenseReview": {
     "command": "pnpm check:licenses",
-    "reviewedAt": "2026-08-30T15:51:32Z",
-    "lockfileSha256": "c190201edf23dbaf2bc6919fb44d0a0a03f9523e0eea5d9bf2800d317b4b8575",
+    "reviewedAt": "2026-08-30T16:37:14Z",
+    "lockfileSha256": "8e24563334bfbf66ecfff5420c89f7bb0f77e759226346e6768917bbe78d0898",
     "resolvedPackageRecords": 520,
     "result": "pass",
-    "note": "License records and advisory dependency counts use different tool scopes and are not expected to match. The application shell uses reviewed MIT Tailwind CSS, Radix UI, and vite-plugin-pwa dependencies; the generated Workbox worker owns only versioned app-shell Cache Storage while SQLite remains OPFS truth. The exact graph contains 935 external resolutions and 520 license records. The Q1-005, CAP-003, and XTR-002 lockfile-only changes add reviewed workspace edges from storage-core to application, web to capture-core, and extractors to contracts; none adds or updates an external resolution."
+    "note": "License records and advisory dependency counts use different tool scopes and are not expected to match. The application shell uses reviewed MIT Tailwind CSS, Radix UI, and vite-plugin-pwa dependencies; the generated Workbox worker owns only versioned app-shell Cache Storage while SQLite remains OPFS truth. The exact graph contains 936 external resolutions and 520 license records. XTR-003 adds current Apache-2.0 Mozilla Readability for bounded plain-text extraction and declares already-resolved ISC LinkeDOM as a test-only detached DOM; production continues to use the platform DOM."
   },
   "maintenanceWatch": [
     {
