@@ -17,6 +17,7 @@
     "format:check": "prettier --check .",
     "test": "pnpm test:unit",
     "test:unit": "vitest run --exclude packages/storage-native/test/native-database.test.ts",
+    "test:security": "vitest run tooling/tests/phase-1-security.test.mjs packages/search-filter/test/filter-ast.test.ts packages/documents/test/document-ir.test.ts packages/observability/test/diagnostics.test.ts packages/application/test/diagnostics.test.ts packages/storage-core/test/portable-archive-restore.test.ts packages/storage-core/test/portable-archive-writer.test.ts",
     "test:coverage": "vitest run --coverage --exclude packages/storage-native/test/native-database.test.ts",
     "test:storage-browser": "playwright test --config=playwright.storage.config.mjs",
     "test:documents-browser": "playwright test --config=playwright.documents.config.mjs",

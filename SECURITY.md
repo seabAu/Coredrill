@@ -28,7 +28,7 @@ The detailed baseline is [the security design](docs/design/coredrill-design-kit/
 ## Mandatory controls
 
 - Validate and size-limit every serialized boundary before persistence or privileged work.
-- Parameterize SQL and validate transaction behavior in every adapter.
+- Parameterize SQL and validate transaction behavior in every adapter. The native SQLite connection must also fail closed on unreviewed pragmas, virtual-table modules, functions, attached databases, and WebView-supplied transaction control.
 - Treat captured source as data; never execute its scripts, handlers, or styles.
 - Keep provider keys and vault keys out of source, build variables, SQLite settings, logs, URLs, extension storage, and fixtures.
 - Use strict CSP and bundled/self-hosted assets; no remote executable code in the core app or extension.

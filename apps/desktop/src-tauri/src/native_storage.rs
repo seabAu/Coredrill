@@ -7,7 +7,10 @@ use std::{
 };
 
 use rusqlite::{
-    Connection, Error as RusqliteError, ErrorCode, OpenFlags, params_from_iter,
+    Connection, Error as RusqliteError, ErrorCode, OpenFlags,
+    config::DbConfig,
+    hooks::{AuthAction, AuthContext, Authorization},
+    params_from_iter,
     types::{Value, ValueRef},
 };
 use serde::{Deserialize, Serialize};
@@ -27,6 +30,16 @@ const ATTACHMENT_DIRECTORY_NAME: &str = "attachments";
 const ATTACHMENT_HASH_DIRECTORY_NAME: &str = "sha256";
 const BACKUP_DIRECTORY_NAME: &str = "backups";
 const SHA256_HEX_BYTES: usize = 64;
+const DENIED_SQL_FUNCTIONS: [&str; 8] = [
+    "edit",
+    "fts3_tokenizer",
+    "load_extension",
+    "readfile",
+    "sqlar_compress",
+    "sqlar_uncompress",
+    "writefile",
+    "zipfile",
+];
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -665,6 +678,20 @@ fn validate_statement(statement: &NativeSqlStatement) -> Result<(), NativeStorag
         || statement.sql.len() > MAX_SQL_BYTES
         || statement.sql.contains('\0')
         || statement.parameters.len() > MAX_PARAMETERS
+        || leading_sql_keyword(&statement.sql).is_some_and(|keyword| {
+            matches!(
+                keyword.as_str(),
+                "attach"
+                    | "begin"
+                    | "commit"
+                    | "detach"
+                    | "end"
+                    | "release"
+                    | "rollback"
+                    | "savepoint"
+                    | "vacuum"
+            )
+        })
     {
         return Err(NativeStorageError::new(
             "invalid_statement",
@@ -706,6 +733,139 @@ fn validate_statement(statement: &NativeSqlStatement) -> Result<(), NativeStorag
         }
     }
     Ok(())
+}
+
+fn leading_sql_keyword(sql: &str) -> Option<String> {
+    let bytes = sql.as_bytes();
+    let mut index = 0;
+    loop {
+        while bytes.get(index).is_some_and(u8::is_ascii_whitespace) {
+            index += 1;
+        }
+        if bytes.get(index..index + 2) == Some(b"--") {
+            index += 2;
+            while bytes
+                .get(index)
+                .is_some_and(|byte| *byte != b'\n' && *byte != b'\r')
+            {
+                index += 1;
+            }
+            continue;
+        }
+        if bytes.get(index..index + 2) == Some(b"/*") {
+            index += 2;
+            while bytes
+                .get(index..index + 2)
+                .is_some_and(|pair| pair != b"*/")
+            {
+                index += 1;
+            }
+            if bytes.get(index..index + 2) != Some(b"*/") {
+                return None;
+            }
+            index += 2;
+            continue;
+        }
+        break;
+    }
+    let start = index;
+    while bytes
+        .get(index)
+        .is_some_and(|byte| byte.is_ascii_alphabetic() || *byte == b'_')
+    {
+        index += 1;
+    }
+    (index > start).then(|| sql[start..index].to_ascii_lowercase())
+}
+
+fn pragma_allowed(pragma_name: &str, pragma_value: Option<&str>) -> bool {
+    if pragma_name.eq_ignore_ascii_case("trusted_schema") {
+        return pragma_value.is_none_or(|value| value.eq_ignore_ascii_case("off") || value == "0");
+    }
+    [
+        "data_version",
+        "foreign_keys",
+        "integrity_check",
+        "quick_check",
+        "table_info",
+        "table_xinfo",
+        "user_version",
+    ]
+    .iter()
+    .any(|allowed| pragma_name.eq_ignore_ascii_case(allowed))
+}
+
+fn function_allowed(function_name: &str) -> bool {
+    !DENIED_SQL_FUNCTIONS
+        .iter()
+        .any(|denied| function_name.eq_ignore_ascii_case(denied))
+}
+
+fn authorize_native_sql(context: AuthContext<'_>) -> Authorization {
+    if context
+        .database_name
+        .is_some_and(|name| name != "main" && name != "temp")
+    {
+        return Authorization::Deny;
+    }
+    match context.action {
+        AuthAction::Unknown { .. } | AuthAction::Attach { .. } | AuthAction::Detach { .. } => {
+            Authorization::Deny
+        }
+        AuthAction::Pragma {
+            pragma_name,
+            pragma_value,
+        } => {
+            if pragma_allowed(pragma_name, pragma_value) {
+                Authorization::Allow
+            } else {
+                Authorization::Deny
+            }
+        }
+        AuthAction::Function { function_name } => {
+            if function_allowed(function_name) {
+                Authorization::Allow
+            } else {
+                Authorization::Deny
+            }
+        }
+        AuthAction::CreateVtable { module_name, .. }
+        | AuthAction::DropVtable { module_name, .. } => {
+            if module_name.eq_ignore_ascii_case("fts5") {
+                Authorization::Allow
+            } else {
+                Authorization::Deny
+            }
+        }
+        AuthAction::CreateIndex { .. }
+        | AuthAction::CreateTable { .. }
+        | AuthAction::CreateTempIndex { .. }
+        | AuthAction::CreateTempTable { .. }
+        | AuthAction::CreateTempTrigger { .. }
+        | AuthAction::CreateTempView { .. }
+        | AuthAction::CreateTrigger { .. }
+        | AuthAction::CreateView { .. }
+        | AuthAction::Delete { .. }
+        | AuthAction::DropIndex { .. }
+        | AuthAction::DropTable { .. }
+        | AuthAction::DropTempIndex { .. }
+        | AuthAction::DropTempTable { .. }
+        | AuthAction::DropTempTrigger { .. }
+        | AuthAction::DropTempView { .. }
+        | AuthAction::DropTrigger { .. }
+        | AuthAction::DropView { .. }
+        | AuthAction::Insert { .. }
+        | AuthAction::Read { .. }
+        | AuthAction::Select
+        | AuthAction::Transaction { .. }
+        | AuthAction::Update { .. }
+        | AuthAction::AlterTable { .. }
+        | AuthAction::Reindex { .. }
+        | AuthAction::Analyze { .. }
+        | AuthAction::Savepoint { .. }
+        | AuthAction::Recursive => Authorization::Allow,
+        _ => Authorization::Deny,
+    }
 }
 
 fn decode_parameters(parameters: Vec<NativeSqlValue>) -> Result<Vec<Value>, NativeStorageError> {
@@ -860,6 +1020,21 @@ pub(crate) fn open_database_connection(
             "PRAGMA foreign_keys = ON; PRAGMA trusted_schema = OFF; PRAGMA journal_mode = WAL;",
         )
         .map_err(map_sqlite_error)?;
+    for (config, value) in [
+        (DbConfig::SQLITE_DBCONFIG_DEFENSIVE, true),
+        (DbConfig::SQLITE_DBCONFIG_DQS_DDL, false),
+        (DbConfig::SQLITE_DBCONFIG_DQS_DML, false),
+        (DbConfig::SQLITE_DBCONFIG_ENABLE_FTS3_TOKENIZER, false),
+        (DbConfig::SQLITE_DBCONFIG_TRUSTED_SCHEMA, false),
+        (DbConfig::SQLITE_DBCONFIG_WRITABLE_SCHEMA, false),
+    ] {
+        connection
+            .set_db_config(config, value)
+            .map_err(map_sqlite_error)?;
+    }
+    connection
+        .authorizer(Some(authorize_native_sql))
+        .map_err(map_sqlite_error)?;
     Ok(connection)
 }
 
@@ -902,6 +1077,28 @@ fn map_sqlite_error(error: RusqliteError) -> NativeStorageError {
                 false,
             )
         }
+        RusqliteError::SqliteFailure(details, message)
+            if matches!(details.code, ErrorCode::AuthorizationForStatementDenied)
+                || message
+                    .as_deref()
+                    .is_some_and(|message| message.starts_with("not authorized")) =>
+        {
+            NativeStorageError::new(
+                "invalid_statement",
+                "The native storage statement is outside the reviewed SQLite boundary.",
+                false,
+            )
+        }
+        RusqliteError::SqlInputError { error, msg, .. }
+            if matches!(error.code, ErrorCode::AuthorizationForStatementDenied)
+                || msg.starts_with("not authorized") =>
+        {
+            NativeStorageError::new(
+                "invalid_statement",
+                "The native storage statement is outside the reviewed SQLite boundary.",
+                false,
+            )
+        }
         _ => NativeStorageError::new(
             "sqlite_failure",
             "Native SQLite could not complete the operation.",
@@ -919,7 +1116,11 @@ mod tests {
         time::{SystemTime, UNIX_EPOCH},
     };
 
-    use super::{NativeStorageLayout, NativeStorageService};
+    use super::{
+        NATIVE_STORAGE_PROTOCOL_VERSION, NativeSqlStatement, NativeSqlValue, NativeStorageLayout,
+        NativeStorageOperation, NativeStorageRequest, NativeStorageResponseData,
+        NativeStorageService,
+    };
 
     const SYNTHETIC_ATTACHMENT_SHA256: &str =
         "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
@@ -1025,5 +1226,165 @@ mod tests {
                 .expect_err("noncanonical attachment identifiers must fail closed");
             assert_eq!(error.code, "invalid_request");
         }
+    }
+
+    fn request(request_id: &str, operation: NativeStorageOperation) -> NativeStorageRequest {
+        NativeStorageRequest {
+            protocol_version: NATIVE_STORAGE_PROTOCOL_VERSION,
+            request_id: request_id.to_owned(),
+            operation,
+        }
+    }
+
+    fn statement(sql: &str, parameters: Vec<NativeSqlValue>) -> NativeSqlStatement {
+        NativeSqlStatement {
+            sql: sql.to_owned(),
+            parameters,
+        }
+    }
+
+    #[test]
+    fn confines_webview_sql_to_the_reviewed_database_boundary() {
+        let test_root = TestRoot::new("sql-authorizer");
+        let service = NativeStorageService::new(test_root.path().join("app-data"))
+            .expect("the synthetic app-data root must initialize");
+        let opened = service
+            .invoke(request(
+                "open-authorizer",
+                NativeStorageOperation::Open {
+                    database_name: "authorizer.sqlite3".to_owned(),
+                },
+            ))
+            .expect("the synthetic database must open");
+        let NativeStorageResponseData::Opened { session_id } = opened.data else {
+            panic!("the open request must return a session");
+        };
+
+        for (index, sql) in [
+            "ATTACH DATABASE ? AS escaped",
+            "/* prefix */ VACUUM INTO ?",
+            "PRAGMA writable_schema = ON",
+            "SELECT load_extension(?)",
+            "CREATE VIRTUAL TABLE escaped USING zipfile(?)",
+            "-- prefix\nBEGIN IMMEDIATE",
+        ]
+        .iter()
+        .enumerate()
+        {
+            let error = service
+                .invoke(request(
+                    &format!("deny-{index}"),
+                    NativeStorageOperation::Execute {
+                        session_id: session_id.clone(),
+                        statement: statement(
+                            sql,
+                            vec![NativeSqlValue::Text {
+                                value: test_root
+                                    .path()
+                                    .join("outside.sqlite3")
+                                    .to_string_lossy()
+                                    .into_owned(),
+                            }],
+                        ),
+                    },
+                ))
+                .expect_err(
+                    "file control, unsafe pragmas/functions, and transaction SQL must fail",
+                );
+            assert_eq!(
+                error.code, "invalid_statement",
+                "unexpected result for {sql}"
+            );
+        }
+        assert!(!test_root.path().join("outside.sqlite3").exists());
+
+        service
+            .invoke(request(
+                "create-probe",
+                NativeStorageOperation::Execute {
+                    session_id: session_id.clone(),
+                    statement: statement(
+                        "CREATE TABLE security_probe(value TEXT NOT NULL)",
+                        Vec::new(),
+                    ),
+                },
+            ))
+            .expect("ordinary schema work must remain available");
+        service
+            .invoke(request(
+                "fts-probe",
+                NativeStorageOperation::Execute {
+                    session_id: session_id.clone(),
+                    statement: statement(
+                        "CREATE VIRTUAL TABLE temp.security_fts_probe USING fts5(token)",
+                        Vec::new(),
+                    ),
+                },
+            ))
+            .expect("the reviewed FTS5 module must remain available");
+        service
+            .invoke(request(
+                "drop-fts-probe",
+                NativeStorageOperation::Execute {
+                    session_id: session_id.clone(),
+                    statement: statement("DROP TABLE temp.security_fts_probe", Vec::new()),
+                },
+            ))
+            .expect("the reviewed FTS5 module must remain removable");
+        for (request_id, sql) in [
+            (
+                "create-fts-content",
+                "CREATE TABLE job_search_content(search_id INTEGER PRIMARY KEY, token TEXT NOT NULL)",
+            ),
+            (
+                "create-main-fts",
+                "CREATE VIRTUAL TABLE job_search_fts USING fts5(token, content='job_search_content', content_rowid='search_id')",
+            ),
+            (
+                "rebuild-main-fts",
+                "INSERT INTO job_search_fts(job_search_fts) VALUES ('rebuild')",
+            ),
+        ] {
+            service
+                .invoke(request(
+                    request_id,
+                    NativeStorageOperation::Execute {
+                        session_id: session_id.clone(),
+                        statement: statement(sql, Vec::new()),
+                    },
+                ))
+                .expect("the reviewed external-content FTS5 lifecycle must remain available");
+        }
+        let hostile = "x'); ATTACH DATABASE 'outside.sqlite3' AS escaped; --";
+        service
+            .invoke(request(
+                "insert-probe",
+                NativeStorageOperation::Execute {
+                    session_id: session_id.clone(),
+                    statement: statement(
+                        "INSERT INTO security_probe(value) VALUES (?)",
+                        vec![NativeSqlValue::Text {
+                            value: hostile.to_owned(),
+                        }],
+                    ),
+                },
+            ))
+            .expect("hostile values must remain inert bound data");
+        let rows = service
+            .invoke(request(
+                "query-probe",
+                NativeStorageOperation::Query {
+                    session_id,
+                    statement: statement("SELECT value FROM security_probe", Vec::new()),
+                },
+            ))
+            .expect("the bound value must remain readable");
+        let NativeStorageResponseData::Rows { rows, .. } = rows.data else {
+            panic!("the query request must return rows");
+        };
+        assert!(matches!(
+            rows.as_slice(),
+            [row] if matches!(row.as_slice(), [NativeSqlValue::Text { value }] if value == hostile)
+        ));
     }
 }
