@@ -1,0 +1,56 @@
+{
+  "specVersion": 1,
+  "extractor": {
+    "name": "coredrill.lever-public-posting",
+    "version": "1.0.0"
+  },
+  "fixtureSuite": "lever-public-posting.golden.json",
+  "fixtureCases": 3,
+  "expected": 21,
+  "produced": 21,
+  "exactMatches": 21,
+  "falsePositives": 0,
+  "falseNegatives": 0,
+  "precision": 1,
+  "recall": 1,
+  "perField": {
+    "title": { "expected": 3, "produced": 3, "exactMatches": 3, "precision": 1, "recall": 1 },
+    "description": { "expected": 3, "produced": 3, "exactMatches": 3, "precision": 1, "recall": 1 },
+    "locations": { "expected": 4, "produced": 4, "exactMatches": 4, "precision": 1, "recall": 1 },
+    "workplace_type": {
+      "expected": 1,
+      "produced": 1,
+      "exactMatches": 1,
+      "precision": 1,
+      "recall": 1
+    },
+    "employment_type": {
+      "expected": 1,
+      "produced": 1,
+      "exactMatches": 1,
+      "precision": 1,
+      "recall": 1
+    },
+    "requirements": {
+      "expected": 3,
+      "produced": 3,
+      "exactMatches": 3,
+      "precision": 1,
+      "recall": 1
+    },
+    "apply_url": { "expected": 1, "produced": 1, "exactMatches": 1, "precision": 1, "recall": 1 },
+    "external_id": { "expected": 3, "produced": 3, "exactMatches": 3, "precision": 1, "recall": 1 },
+    "salary": { "expected": 2, "produced": 2, "exactMatches": 2, "precision": 1, "recall": 1 }
+  },
+  "scenarios": {
+    "globalAndEuRequestDescriptors": true,
+    "exactApiDestinations": true,
+    "applicationSubmissionExcluded": true,
+    "postingIdentityMatched": true,
+    "plainDescriptionPreferred": true,
+    "rawEvidenceRetained": true,
+    "provenanceRetained": true,
+    "applicantDataRejected": true,
+    "invalidOptionalFieldsRejected": true
+  }
+}

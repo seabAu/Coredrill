@@ -216,6 +216,8 @@ Imported binary files are untrusted. Enforce size/type limits, do not execute ma
 
 `XTR-004` adds the first production record after a current Greenhouse review. It authorizes only the exact `boards-api.greenhouse.io` destination under `documented_public_api`, uses no credentials, requires attribution, expires for re-review after 30 days, and retains both targeted and global runtime kills. The paired request boundary can construct only a non-executing public job-detail GET with pay transparency and without application questions. The paired extractor is dependency-free, pure, bounded, provenance-retaining, job-ID-matched, and rejects applicant/demographic/compliance fields. An executing fetch/cache/retry client remains deferred to `XTR-009`.
 
+`XTR-005` adds the second production record after a current Lever review. A single connector record authorizes only Lever's exact documented global and EU Postings API hosts under `documented_public_api`, with no credentials, required attribution, a 30-day review deadline, and existing targeted/global runtime kills. The paired request boundary can construct only an identity-specific non-executing job-detail GET; the applicant-creation POST, API keys, lists/global search, HTML/iframe modes, and arbitrary hosts are not representable. The pure dependency-free adapter prefers documented plaintext, retains untrusted list HTML only as provisional raw evidence, validates hosted/apply identity, and rejects applicant/application data. Executing transport remains deferred to `XTR-009`.
+
 ### Optional Python worker
 
 If Phase 5 or later establishes a need:

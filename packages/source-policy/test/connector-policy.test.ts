@@ -6,6 +6,8 @@ import {
   ConnectorPolicyError,
   GREENHOUSE_JOB_BOARD_CONNECTOR_ID,
   GREENHOUSE_JOB_BOARD_CONNECTOR_POLICY_V1,
+  LEVER_POSTINGS_CONNECTOR_ID,
+  LEVER_POSTINGS_CONNECTOR_POLICY_V1,
   checkedInConnectorPolicyRegistryV1,
   createConnectorPolicyRegistryV1,
   parseConnectorPolicyRecordV1,
@@ -228,9 +230,10 @@ describe("connector policy authorization", () => {
     );
   });
 
-  it("registers only the reviewed Greenhouse connector while preserving fail-closed defaults", () => {
+  it("registers only reviewed connectors while preserving fail-closed defaults", () => {
     expect(CHECKED_IN_CONNECTOR_POLICY_RECORDS_V1).toEqual([
       GREENHOUSE_JOB_BOARD_CONNECTOR_POLICY_V1,
+      LEVER_POSTINGS_CONNECTOR_POLICY_V1,
     ]);
     expect(GREENHOUSE_JOB_BOARD_CONNECTOR_POLICY_V1.id).toBe(GREENHOUSE_JOB_BOARD_CONNECTOR_ID);
     expect(
@@ -279,7 +282,7 @@ describe("connector policy authorization", () => {
       targetedKillSwitchDenied: true,
       globalKillSwitchDenied: true,
       manualCaptureUnaffected: true,
-      productionNetworkRecords: 1,
+      productionNetworkRecords: 2,
     });
     const runtimeProcess = (
       globalThis as typeof globalThis & {

@@ -1,0 +1,360 @@
+{
+  "specVersion": 1,
+  "sourceId": "018f0f4e-7b8c-7d00-8000-000000000501",
+  "capturedAt": "2026-08-30T12:30:00.000Z",
+  "cases": [
+    {
+      "id": "complete-global-posting",
+      "region": "global",
+      "site": "synthetic-demo",
+      "postingId": "5ac21346-8e0c-4494-8e7a-3eb92ff77902",
+      "payload": {
+        "id": "5ac21346-8e0c-4494-8e7a-3eb92ff77902",
+        "text": "  Senior   Platform Engineer ",
+        "descriptionPlain": "Build\n reliable systems and support the team.",
+        "categories": {
+          "location": "Remote - United States",
+          "allLocations": ["Remote - United States", "New York, NY"],
+          "commitment": "Full-time",
+          "team": "Engineering",
+          "department": "Product Development"
+        },
+        "country": "US",
+        "workplaceType": "remote",
+        "lists": [
+          {
+            "text": " Requirements ",
+            "content": "<li>TypeScript experience</li><li>Systems judgment</li>"
+          },
+          {
+            "text": "Benefits",
+            "content": "<li>Health coverage</li>"
+          }
+        ],
+        "hostedUrl": "https://jobs.lever.co/synthetic-demo/5ac21346-8e0c-4494-8e7a-3eb92ff77902?lever-source=test",
+        "applyUrl": "https://jobs.lever.co/synthetic-demo/5ac21346-8e0c-4494-8e7a-3eb92ff77902/apply?lever-source=test",
+        "salaryRange": {
+          "currency": "USD",
+          "interval": "per-year-salary",
+          "min": 150000,
+          "max": 190000
+        },
+        "salaryDescriptionPlain": "Base salary only.",
+        "additionalPlain": "Synthetic closing content.",
+        "unknownFutureField": { "ignored": true }
+      },
+      "expectedCandidates": [
+        {
+          "fieldName": "title",
+          "value": "Senior Platform Engineer",
+          "rawValue": "  Senior   Platform Engineer ",
+          "pointer": "/content/lever/text",
+          "confidence": 0.99
+        },
+        {
+          "fieldName": "description",
+          "value": "Build reliable systems and support the team.",
+          "rawValue": "Build\n reliable systems and support the team.",
+          "pointer": "/content/lever/descriptionPlain",
+          "confidence": 0.99
+        },
+        {
+          "fieldName": "locations",
+          "value": "Remote - United States",
+          "rawValue": "Remote - United States",
+          "pointer": "/content/lever/categories/allLocations/0",
+          "confidence": 0.99
+        },
+        {
+          "fieldName": "locations",
+          "value": "New York, NY",
+          "rawValue": "New York, NY",
+          "pointer": "/content/lever/categories/allLocations/1",
+          "confidence": 0.99
+        },
+        {
+          "fieldName": "employment_type",
+          "value": "Full-time",
+          "rawValue": "Full-time",
+          "pointer": "/content/lever/categories/commitment",
+          "confidence": 0.98
+        },
+        {
+          "fieldName": "workplace_type",
+          "value": "remote",
+          "rawValue": "remote",
+          "pointer": "/content/lever/workplaceType",
+          "confidence": 0.99
+        },
+        {
+          "fieldName": "requirements",
+          "value": {
+            "label": "Requirements",
+            "content_html": "<li>TypeScript experience</li><li>Systems judgment</li>"
+          },
+          "rawValue": {
+            "text": " Requirements ",
+            "content": "<li>TypeScript experience</li><li>Systems judgment</li>"
+          },
+          "pointer": "/content/lever/lists/0",
+          "confidence": 0.96
+        },
+        {
+          "fieldName": "requirements",
+          "value": {
+            "label": "Benefits",
+            "content_html": "<li>Health coverage</li>"
+          },
+          "rawValue": {
+            "text": "Benefits",
+            "content": "<li>Health coverage</li>"
+          },
+          "pointer": "/content/lever/lists/1",
+          "confidence": 0.96
+        },
+        {
+          "fieldName": "apply_url",
+          "value": "https://jobs.lever.co/synthetic-demo/5ac21346-8e0c-4494-8e7a-3eb92ff77902/apply?lever-source=test",
+          "rawValue": "https://jobs.lever.co/synthetic-demo/5ac21346-8e0c-4494-8e7a-3eb92ff77902/apply?lever-source=test",
+          "pointer": "/content/lever/applyUrl",
+          "confidence": 0.99
+        },
+        {
+          "fieldName": "external_id",
+          "value": "5ac21346-8e0c-4494-8e7a-3eb92ff77902",
+          "rawValue": "5ac21346-8e0c-4494-8e7a-3eb92ff77902",
+          "pointer": "/content/lever/id",
+          "confidence": 1
+        },
+        {
+          "fieldName": "salary",
+          "value": {
+            "currency": "USD",
+            "interval": "per-year-salary",
+            "min": 150000,
+            "max": 190000
+          },
+          "rawValue": {
+            "currency": "USD",
+            "interval": "per-year-salary",
+            "min": 150000,
+            "max": 190000
+          },
+          "pointer": "/content/lever/salaryRange",
+          "confidence": 0.98
+        }
+      ],
+      "expectedWarnings": [],
+      "expectedSummary": {
+        "postingId": "5ac21346-8e0c-4494-8e7a-3eb92ff77902",
+        "completePosting": true,
+        "locationsSeen": 2,
+        "locationsAccepted": 2,
+        "listsSeen": 2,
+        "listsAccepted": 2,
+        "salaryAccepted": true,
+        "candidateCount": 11,
+        "warningCount": 0
+      }
+    },
+    {
+      "id": "minimal-eu-posting",
+      "region": "eu",
+      "site": "eu-synthetic",
+      "postingId": "9bc21346-8e0c-4494-8e7a-3eb92ff77903",
+      "payload": {
+        "id": "9bc21346-8e0c-4494-8e7a-3eb92ff77903",
+        "text": "Research Analyst",
+        "descriptionPlain": "Analyze synthetic market evidence.",
+        "categories": { "location": "Berlin, Germany" },
+        "workplaceType": "unspecified",
+        "hostedUrl": "https://jobs.eu.lever.co/eu-synthetic/9bc21346-8e0c-4494-8e7a-3eb92ff77903"
+      },
+      "expectedCandidates": [
+        {
+          "fieldName": "title",
+          "value": "Research Analyst",
+          "rawValue": "Research Analyst",
+          "pointer": "/content/lever/text",
+          "confidence": 0.99
+        },
+        {
+          "fieldName": "description",
+          "value": "Analyze synthetic market evidence.",
+          "rawValue": "Analyze synthetic market evidence.",
+          "pointer": "/content/lever/descriptionPlain",
+          "confidence": 0.99
+        },
+        {
+          "fieldName": "locations",
+          "value": "Berlin, Germany",
+          "rawValue": "Berlin, Germany",
+          "pointer": "/content/lever/categories/location",
+          "confidence": 0.98
+        },
+        {
+          "fieldName": "external_id",
+          "value": "9bc21346-8e0c-4494-8e7a-3eb92ff77903",
+          "rawValue": "9bc21346-8e0c-4494-8e7a-3eb92ff77903",
+          "pointer": "/content/lever/id",
+          "confidence": 1
+        }
+      ],
+      "expectedWarnings": [],
+      "expectedSummary": {
+        "postingId": "9bc21346-8e0c-4494-8e7a-3eb92ff77903",
+        "completePosting": true,
+        "locationsSeen": 1,
+        "locationsAccepted": 1,
+        "listsSeen": 0,
+        "listsAccepted": 0,
+        "salaryAccepted": false,
+        "candidateCount": 4,
+        "warningCount": 0
+      }
+    },
+    {
+      "id": "malformed-optional-fields",
+      "region": "global",
+      "site": "synthetic-edge",
+      "postingId": "aac21346-8e0c-4494-8e7a-3eb92ff77904",
+      "payload": {
+        "id": "aac21346-8e0c-4494-8e7a-3eb92ff77904",
+        "text": "Operations Lead",
+        "descriptionPlain": "Coordinate a synthetic operation.",
+        "categories": {
+          "allLocations": [42, "  Boston, MA  ", "   "],
+          "commitment": 12
+        },
+        "workplaceType": "virtual",
+        "lists": [
+          null,
+          { "text": "Qualifications", "content": "<li>Good judgment</li>" },
+          { "text": "Broken", "content": " " }
+        ],
+        "hostedUrl": "https://malicious.example/synthetic-edge/aac21346-8e0c-4494-8e7a-3eb92ff77904",
+        "applyUrl": "https://malicious.example/apply",
+        "salaryRange": {
+          "currency": "USD",
+          "interval": "per-hour-wage",
+          "min": 45.5,
+          "max": 60
+        },
+        "salaryDescriptionPlain": 42
+      },
+      "expectedCandidates": [
+        {
+          "fieldName": "title",
+          "value": "Operations Lead",
+          "rawValue": "Operations Lead",
+          "pointer": "/content/lever/text",
+          "confidence": 0.99
+        },
+        {
+          "fieldName": "description",
+          "value": "Coordinate a synthetic operation.",
+          "rawValue": "Coordinate a synthetic operation.",
+          "pointer": "/content/lever/descriptionPlain",
+          "confidence": 0.99
+        },
+        {
+          "fieldName": "locations",
+          "value": "Boston, MA",
+          "rawValue": "  Boston, MA  ",
+          "pointer": "/content/lever/categories/allLocations/1",
+          "confidence": 0.99
+        },
+        {
+          "fieldName": "requirements",
+          "value": {
+            "label": "Qualifications",
+            "content_html": "<li>Good judgment</li>"
+          },
+          "rawValue": {
+            "text": "Qualifications",
+            "content": "<li>Good judgment</li>"
+          },
+          "pointer": "/content/lever/lists/1",
+          "confidence": 0.96
+        },
+        {
+          "fieldName": "external_id",
+          "value": "aac21346-8e0c-4494-8e7a-3eb92ff77904",
+          "rawValue": "aac21346-8e0c-4494-8e7a-3eb92ff77904",
+          "pointer": "/content/lever/id",
+          "confidence": 1
+        },
+        {
+          "fieldName": "salary",
+          "value": {
+            "currency": "USD",
+            "interval": "per-hour-wage",
+            "min": 45.5,
+            "max": 60
+          },
+          "rawValue": {
+            "currency": "USD",
+            "interval": "per-hour-wage",
+            "min": 45.5,
+            "max": 60
+          },
+          "pointer": "/content/lever/salaryRange",
+          "confidence": 0.98
+        }
+      ],
+      "expectedWarnings": [
+        {
+          "code": "field_invalid",
+          "fieldName": "locations",
+          "pointer": "/content/lever/categories/allLocations/0"
+        },
+        {
+          "code": "field_invalid",
+          "fieldName": "locations",
+          "pointer": "/content/lever/categories/allLocations/2"
+        },
+        {
+          "code": "field_invalid",
+          "fieldName": "employment_type",
+          "pointer": "/content/lever/categories/commitment"
+        },
+        {
+          "code": "field_invalid",
+          "fieldName": "workplace_type",
+          "pointer": "/content/lever/workplaceType"
+        },
+        {
+          "code": "field_invalid",
+          "fieldName": "requirements",
+          "pointer": "/content/lever/lists/0"
+        },
+        {
+          "code": "field_invalid",
+          "fieldName": "requirements",
+          "pointer": "/content/lever/lists/2"
+        },
+        {
+          "code": "field_invalid",
+          "fieldName": null,
+          "pointer": "/content/lever/hostedUrl"
+        },
+        {
+          "code": "field_invalid",
+          "fieldName": "apply_url",
+          "pointer": "/content/lever/applyUrl"
+        }
+      ],
+      "expectedSummary": {
+        "postingId": "aac21346-8e0c-4494-8e7a-3eb92ff77904",
+        "completePosting": true,
+        "locationsSeen": 3,
+        "locationsAccepted": 1,
+        "listsSeen": 3,
+        "listsAccepted": 1,
+        "salaryAccepted": true,
+        "candidateCount": 6,
+        "warningCount": 8
+      }
+    }
+  ]
+}
