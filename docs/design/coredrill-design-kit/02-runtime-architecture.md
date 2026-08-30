@@ -243,6 +243,8 @@ The Phase 0 `EXT-004` through `EXT-006` implementation proves this boundary with
 
 `CAP-001` centralizes capture-version dispatch at those outbox and receiver boundaries. V1 is currently both the current and only accepted version; adding V2 must retain a V1 reader so the accepted set becomes current plus previous. The envelope UUID is the pre-ingestion source-snapshot identity used by every candidate provenance reference, expiry must follow capture time, and the semantic content checksum is independently reproducible. This semantic checksum intentionally excludes envelope/replay identity, while the existing transport checksum authenticates the complete canonical envelope.
 
+`CAP-002` extends the same schema-92 receiver transaction without adding a second canonical store. The `capture_inbox` uniqueness constraints classify exact transport retries, fresh envelopes with already-durable semantic content, and conflicting replay identities separately; both safe duplicate classes can be acknowledged, while conflicts roll back. The receiver returns the incoming envelope identity plus the durable receipt identity when they differ. It reads saved `job`/`company`/`job_source`/`source_snapshot` identity data through parameterized SQLite queries and passes neutral candidates to a bounded, deterministic `@coredrill/application` policy. That policy returns reason-coded suggestions for source ID, canonical URL, content hash, and transparent title/company similarity only. It has no adapter dependency and performs no merge, confirmation, or trusted-field mutation.
+
 ## Application use cases
 
 Commands are explicit and transactional:

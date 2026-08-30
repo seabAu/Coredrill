@@ -1,4 +1,9 @@
 import {
+  findCaptureDuplicateSuggestionsV1,
+  type CaptureDuplicateJobCandidateV1,
+  type CaptureDuplicateSuggestionV1,
+} from "@coredrill/application";
+import {
   createTransferAcknowledgement,
   parseOutboxExportJson,
   safeParseTransferResponse,
@@ -34,6 +39,7 @@ export interface CaptureInboxReceipt {
   readonly expiresAt: string;
   readonly receivedAt: string;
   readonly receivedVia: "external_message" | "manual_export";
+  readonly duplicateSuggestions: readonly CaptureDuplicateSuggestionV1[];
 }
 
 export interface ExtensionMessageTransport {
@@ -54,13 +60,36 @@ interface CaptureInboxRow extends QueryRow {
   readonly envelope_json: string;
 }
 
+interface CaptureDuplicateCandidateRow extends QueryRow {
+  readonly job_id: string;
+  readonly title: string;
+  readonly company_name: string | null;
+  readonly job_source_id: string | null;
+  readonly source_kind: string | null;
+  readonly external_id: string | null;
+  readonly canonical_url: string | null;
+  readonly source_content_hash: string | null;
+  readonly snapshot_content_hash: string | null;
+}
+
+export type CaptureInboxDuplicateKind = "none" | "exact_retry" | "content_hash";
+
+interface StoreItemResult {
+  readonly duplicateKind: CaptureInboxDuplicateKind;
+  readonly durableEnvelopeId: string;
+  readonly duplicateSuggestions: readonly CaptureDuplicateSuggestionV1[];
+}
+
 export type PullAndStoreResult =
   | { readonly status: "empty"; readonly removedExpired: number }
   | {
       readonly status: "stored";
       readonly envelopeId: string;
+      readonly durableEnvelopeId: string;
       readonly attempt: number;
       readonly duplicate: boolean;
+      readonly duplicateKind: CaptureInboxDuplicateKind;
+      readonly duplicateSuggestions: readonly CaptureDuplicateSuggestionV1[];
       readonly acknowledged: boolean;
       readonly remainingCount?: number;
     };
@@ -97,12 +126,118 @@ function rowMatchesItem(row: CaptureInboxRow, item: OutboxItemV1): boolean {
   );
 }
 
+function rowReusesReplayIdentity(row: CaptureInboxRow, item: OutboxItemV1): boolean {
+  return (
+    row.envelope_id === item.envelope.id ||
+    row.sender_nonce === item.envelope.nonce ||
+    (row.sender_id === item.envelope.sender.id && row.sender_sequence === item.envelope.sequence)
+  );
+}
+
+async function loadDuplicateCandidates(
+  session: DatabaseSession,
+): Promise<readonly CaptureDuplicateJobCandidateV1[]> {
+  const rows = await session.query<CaptureDuplicateCandidateRow>(
+    sqlStatement(
+      `SELECT job.id AS job_id, job.title, company.canonical_name AS company_name,
+              job_source.id AS job_source_id, job_source.connector_id AS source_kind,
+              job_source.external_id, job_source.canonical_url,
+              job_source.content_hash AS source_content_hash,
+              source_snapshot.content_hash AS snapshot_content_hash
+       FROM job
+       LEFT JOIN company ON company.id = job.company_id
+       LEFT JOIN job_source ON job_source.job_id = job.id
+       LEFT JOIN source_snapshot ON source_snapshot.job_source_id = job_source.id
+       ORDER BY job.id, job_source.id, source_snapshot.id`,
+    ),
+  );
+  const jobs = new Map<
+    string,
+    {
+      title: string;
+      companyName: string | null;
+      sources: Map<
+        string,
+        {
+          sourceKind: string | null;
+          externalId: string | null;
+          canonicalUrl: string | null;
+          contentHashes: Set<string>;
+        }
+      >;
+    }
+  >();
+  for (const row of rows) {
+    let job = jobs.get(row.job_id);
+    if (job === undefined) {
+      job = {
+        title: row.title,
+        companyName: row.company_name,
+        sources: new Map(),
+      };
+      jobs.set(row.job_id, job);
+    }
+    if (row.job_source_id === null) continue;
+    let source = job.sources.get(row.job_source_id);
+    if (source === undefined) {
+      source = {
+        sourceKind: row.source_kind,
+        externalId: row.external_id,
+        canonicalUrl: row.canonical_url,
+        contentHashes: new Set(),
+      };
+      job.sources.set(row.job_source_id, source);
+    }
+    if (row.source_content_hash !== null) source.contentHashes.add(row.source_content_hash);
+    if (row.snapshot_content_hash !== null) source.contentHashes.add(row.snapshot_content_hash);
+  }
+  return [...jobs.entries()].map(([jobId, job]) => ({
+    jobId,
+    title: job.title,
+    companyName: job.companyName,
+    sources: [...job.sources.values()].map((source) => ({
+      sourceKind: source.sourceKind,
+      externalId: source.externalId,
+      canonicalUrl: source.canonicalUrl,
+      contentHashes: [...source.contentHashes],
+    })),
+  }));
+}
+
+async function duplicateSuggestions(
+  session: DatabaseSession,
+  envelope: OutboxItemV1["envelope"],
+): Promise<readonly CaptureDuplicateSuggestionV1[]> {
+  try {
+    return findCaptureDuplicateSuggestionsV1(envelope, await loadDuplicateCandidates(session));
+  } catch {
+    throw new ExtensionTransferError(
+      "duplicate_analysis_invalid",
+      "Durable capture and saved-job identity data failed duplicate analysis.",
+    );
+  }
+}
+
+function storedDuplicateSuggestions(
+  envelopeJson: string,
+  candidates: readonly CaptureDuplicateJobCandidateV1[],
+): readonly CaptureDuplicateSuggestionV1[] {
+  try {
+    return findCaptureDuplicateSuggestionsV1(JSON.parse(envelopeJson) as unknown, candidates);
+  } catch {
+    throw new ExtensionTransferError(
+      "duplicate_analysis_invalid",
+      "Durable capture and saved-job identity data failed duplicate analysis.",
+    );
+  }
+}
+
 async function storeItem(
   session: DatabaseSession,
   item: OutboxItemV1,
   receivedAt: string,
   receivedVia: "external_message" | "manual_export",
-): Promise<boolean> {
+): Promise<StoreItemResult> {
   const collisions = await session.query<CaptureInboxRow>(
     sqlStatement(
       `SELECT envelope_id, content_hash, envelope_checksum, sender_id, sender_sequence,
@@ -121,13 +256,29 @@ async function storeItem(
     ),
   );
   if (collisions.length > 0) {
-    const [onlyCollision] = collisions;
+    const exactRetry = collisions.find((row) => rowMatchesItem(row, item));
     if (
-      collisions.length === 1 &&
-      onlyCollision !== undefined &&
-      rowMatchesItem(onlyCollision, item)
+      collisions.some((row) => rowReusesReplayIdentity(row, item) && !rowMatchesItem(row, item))
     ) {
-      return true;
+      throw new ExtensionTransferError(
+        "replay_conflict",
+        "Capture replay metadata conflicts with a durable inbox receipt.",
+      );
+    }
+    if (exactRetry !== undefined) {
+      return Object.freeze({
+        duplicateKind: "exact_retry",
+        durableEnvelopeId: exactRetry.envelope_id,
+        duplicateSuggestions: await duplicateSuggestions(session, item.envelope),
+      });
+    }
+    const sameContent = collisions.find((row) => row.content_hash === item.envelope.contentHash);
+    if (sameContent !== undefined) {
+      return Object.freeze({
+        duplicateKind: "content_hash",
+        durableEnvelopeId: sameContent.envelope_id,
+        duplicateSuggestions: await duplicateSuggestions(session, item.envelope),
+      });
     }
     throw new ExtensionTransferError(
       "replay_conflict",
@@ -155,7 +306,11 @@ async function storeItem(
       ],
     ),
   );
-  return false;
+  return Object.freeze({
+    duplicateKind: "none",
+    durableEnvelopeId: item.envelope.id,
+    duplicateSuggestions: await duplicateSuggestions(session, item.envelope),
+  });
 }
 
 function itemFromOffer(offer: TransferOfferV1, receivedAt: string): OutboxItemV1 {
@@ -264,15 +419,18 @@ export function createExtensionInbox(
 
       const receivedAt = now.toISOString();
       const client = await database();
-      const duplicate = await client.transaction((transaction) =>
+      const stored = await client.transaction((transaction) =>
         storeItem(transaction, itemFromOffer(response, receivedAt), receivedAt, "external_message"),
       );
       if (options.acknowledge === false) {
         return {
           status: "stored",
           envelopeId: response.envelope.id,
+          durableEnvelopeId: stored.durableEnvelopeId,
           attempt: response.attempt,
-          duplicate,
+          duplicate: stored.duplicateKind !== "none",
+          duplicateKind: stored.duplicateKind,
+          duplicateSuggestions: stored.duplicateSuggestions,
           acknowledged: false,
         };
       }
@@ -302,8 +460,11 @@ export function createExtensionInbox(
       return {
         status: "stored",
         envelopeId: response.envelope.id,
+        durableEnvelopeId: stored.durableEnvelopeId,
         attempt: response.attempt,
-        duplicate,
+        duplicate: stored.duplicateKind !== "none",
+        duplicateKind: stored.duplicateKind,
+        duplicateSuggestions: stored.duplicateSuggestions,
         acknowledged: true,
         remainingCount: acknowledgementResponse.remainingCount,
       };
@@ -318,23 +479,24 @@ export function createExtensionInbox(
         let imported = 0;
         let duplicates = 0;
         for (const item of parsed.data.items) {
-          if (await storeItem(transaction, item, receivedAt, "manual_export")) duplicates += 1;
-          else imported += 1;
+          const stored = await storeItem(transaction, item, receivedAt, "manual_export");
+          if (stored.duplicateKind === "none") imported += 1;
+          else duplicates += 1;
         }
         return Object.freeze({ imported, duplicates, total: parsed.data.items.length });
       });
     },
 
     listReceipts: async (): Promise<readonly CaptureInboxReceipt[]> => {
-      const rows = await (
-        await database()
-      ).query<CaptureInboxRow>(
+      const client = await database();
+      const rows = await client.query<CaptureInboxRow>(
         sqlStatement(
           `SELECT envelope_id, content_hash, envelope_checksum, sender_id, sender_sequence,
                   sender_nonce, captured_at, expires_at, received_at, received_via, envelope_json
            FROM capture_inbox ORDER BY envelope_id`,
         ),
       );
+      const candidates = await loadDuplicateCandidates(client);
       return rows.map((row) =>
         Object.freeze({
           envelopeId: row.envelope_id,
@@ -347,6 +509,7 @@ export function createExtensionInbox(
           expiresAt: row.expires_at,
           receivedAt: row.received_at,
           receivedVia: row.received_via,
+          duplicateSuggestions: storedDuplicateSuggestions(row.envelope_json, candidates),
         }),
       );
     },

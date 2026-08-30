@@ -7,8 +7,8 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite",
-    "prebuild": "pnpm --filter @coredrill/storage-browser build && pnpm --filter @coredrill/extension-bridge build && pnpm --filter @coredrill/documents build && pnpm --filter @coredrill/ui build",
-    "predev": "pnpm --filter @coredrill/storage-browser build && pnpm --filter @coredrill/extension-bridge build && pnpm --filter @coredrill/documents build && pnpm --filter @coredrill/ui build",
+    "prebuild": "pnpm --filter @coredrill/application build && pnpm --filter @coredrill/storage-browser build && pnpm --filter @coredrill/extension-bridge build && pnpm --filter @coredrill/documents build && pnpm --filter @coredrill/ui build",
+    "predev": "pnpm --filter @coredrill/application build && pnpm --filter @coredrill/storage-browser build && pnpm --filter @coredrill/extension-bridge build && pnpm --filter @coredrill/documents build && pnpm --filter @coredrill/ui build",
     "typecheck": "tsc -p tsconfig.json --noEmit --pretty false --tsBuildInfoFile .turbo/typecheck.tsbuildinfo",
     "lint": "eslint src vite.config.mjs --max-warnings 0"
   },

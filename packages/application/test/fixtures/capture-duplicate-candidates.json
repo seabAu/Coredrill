@@ -1,0 +1,116 @@
+{
+  "envelope": {
+    "specVersion": 1,
+    "id": "019539af-7c11-7dd4-8b54-395d8f3fe4c2",
+    "capturedAt": "2026-08-24T14:03:05.123Z",
+    "expiresAt": "2026-08-31T14:03:05.123Z",
+    "captureMethod": "extension",
+    "sender": {
+      "kind": "browser_extension",
+      "id": "abcdefghijklmnopabcdefghijklmnop"
+    },
+    "sequence": 42,
+    "nonce": "abcdefghijklmnopqrstuv",
+    "source": {
+      "url": "https://jobs.example.test/openings/42?source=careers",
+      "canonicalUrl": "https://jobs.example.test/openings/42",
+      "pageTitle": "Senior Platform Engineer — Example Systems",
+      "sourceKind": "official_careers_page",
+      "externalId": "JOB-42"
+    },
+    "content": {
+      "selectedText": "Senior Platform Engineer\nExample Systems"
+    },
+    "fieldCandidates": [
+      {
+        "specVersion": 1,
+        "id": "019539af-7c12-7dd4-8b54-395d8f3fe4c3",
+        "fieldName": "title",
+        "value": "Senior Platform Engineer",
+        "provenance": {
+          "specVersion": 1,
+          "source": {
+            "sourceType": "capture",
+            "sourceId": "019539af-7c11-7dd4-8b54-395d8f3fe4c2",
+            "pointer": "/content/selectedText"
+          },
+          "method": "selector",
+          "extractor": {
+            "name": "coredrill.synthetic",
+            "version": "1.0.0"
+          },
+          "capturedAt": "2026-08-24T14:03:05.123Z",
+          "confidence": 0.9,
+          "licenseNote": "Synthetic fixture; no third-party content."
+        }
+      },
+      {
+        "specVersion": 1,
+        "id": "019539af-7c13-7dd4-8b54-395d8f3fe4c4",
+        "fieldName": "company",
+        "value": "Example Systems",
+        "provenance": {
+          "specVersion": 1,
+          "source": {
+            "sourceType": "capture",
+            "sourceId": "019539af-7c11-7dd4-8b54-395d8f3fe4c2",
+            "pointer": "/content/selectedText"
+          },
+          "method": "selector",
+          "extractor": {
+            "name": "coredrill.synthetic",
+            "version": "1.0.0"
+          },
+          "capturedAt": "2026-08-24T14:03:05.123Z",
+          "confidence": 0.85,
+          "licenseNote": "Synthetic fixture; no third-party content."
+        }
+      }
+    ],
+    "captureClient": {
+      "name": "coredrill.extension",
+      "version": "0.1.0"
+    },
+    "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "candidates": [
+    {
+      "jobId": "019539af-7d01-7dd4-8b54-395d8f3fe501",
+      "title": "Senior Platform Engineer",
+      "companyName": "Example Systems",
+      "sources": [
+        {
+          "sourceKind": "official_careers_page",
+          "externalId": "JOB-42",
+          "canonicalUrl": "https://jobs.example.test/openings/42#apply",
+          "contentHashes": ["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"]
+        }
+      ]
+    },
+    {
+      "jobId": "019539af-7d02-7dd4-8b54-395d8f3fe502",
+      "title": "Reliability Engineer",
+      "companyName": "Different Company",
+      "sources": [
+        {
+          "sourceKind": null,
+          "externalId": null,
+          "canonicalUrl": null,
+          "contentHashes": ["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"]
+        }
+      ]
+    },
+    {
+      "jobId": "019539af-7d03-7dd4-8b54-395d8f3fe503",
+      "title": "Sr Platform Engineering",
+      "companyName": "Example Systems, Inc.",
+      "sources": []
+    },
+    {
+      "jobId": "019539af-7d04-7dd4-8b54-395d8f3fe504",
+      "title": "Account Executive",
+      "companyName": "Unrelated Ventures",
+      "sources": []
+    }
+  ]
+}

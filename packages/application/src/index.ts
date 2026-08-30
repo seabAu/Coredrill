@@ -1,5 +1,18 @@
 /** Use-case orchestration and query DTOs over domain ports. */
 export {
+  CAPTURE_DUPLICATE_LIMITS,
+  CAPTURE_DUPLICATE_REASONS,
+  CAPTURE_INGESTION_ERROR_CODES,
+  CaptureIngestionError,
+  findCaptureDuplicateSuggestionsV1,
+  type CaptureDuplicateJobCandidateV1,
+  type CaptureDuplicateReason,
+  type CaptureDuplicateSimilarityV1,
+  type CaptureDuplicateSourceCandidateV1,
+  type CaptureDuplicateSuggestionV1,
+  type CaptureIngestionErrorCode,
+} from "./capture-ingestion.js";
+export {
   defineCommand,
   defineQuery,
   type ApplicationCommand,

@@ -111,6 +111,7 @@ test("durably stores before acknowledgement and safely retries the exact Chromiu
       status: "stored",
       attempt: 1,
       duplicate: false,
+      duplicateKind: "none",
       acknowledged: false,
     });
     const receipts = await callInbox(app, "listReceipts");
@@ -156,6 +157,8 @@ test("durably stores before acknowledgement and safely retries the exact Chromiu
       envelopeId: receipts[0].envelopeId,
       attempt: 2,
       duplicate: true,
+      duplicateKind: "exact_retry",
+      durableEnvelopeId: receipts[0].envelopeId,
       acknowledged: true,
       remainingCount: 0,
     });
@@ -181,6 +184,27 @@ test("durably stores before acknowledgement and safely retries the exact Chromiu
     );
     expect(status).toMatchObject({ success: true, type: "outbox.status.v1", outboxCount: 0 });
 
+    const repeatedContent = await popup.evaluate(
+      async (value) =>
+        globalThis.chrome.runtime.sendMessage({ type: "capture.queue.v1", snapshot: value }),
+      snapshot,
+    );
+    expect(repeatedContent).toMatchObject({
+      success: true,
+      type: "capture.queued.v1",
+      outboxCount: 1,
+    });
+    const semanticDuplicate = await callInbox(app, "pullAndStore", extensionId);
+    expect(semanticDuplicate).toMatchObject({
+      status: "stored",
+      duplicate: true,
+      duplicateKind: "content_hash",
+      durableEnvelopeId: receipts[0].envelopeId,
+      acknowledged: true,
+      remainingCount: 0,
+    });
+    await expect(callInbox(app, "listReceipts")).resolves.toHaveLength(1);
+
     const attacker = await context.newPage();
     await attacker.route("https://attacker.example/**", (route) =>
       route.fulfill({ contentType: "text/html", body: "<!doctype html><title>attacker</title>" }),
@@ -198,6 +222,7 @@ test("durably stores before acknowledgement and safely retries the exact Chromiu
         appOrigin,
         durableBeforeAck: true,
         retryAttempt: retry.attempt,
+        semanticContentDeduplicated: true,
         duplicateReceipts: 0,
         wrongOriginRejected: true,
         oversizedRejected: true,
