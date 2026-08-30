@@ -154,6 +154,15 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
 - **Status:** Accepted
 - **Decision:** Use official SQLite WASM in a dedicated Worker with `opfs-sahpool` and an origin-wide exclusive Web Lock. Support current/previous Chromium-family and Firefox desktop generations that pass the real lifecycle lanes; block unsupported Safari/mobile or missing-capability browsers with a supported-browser/future-native and portable-export fallback. Label storage `durable` only after a persistence grant and otherwise report honest best-effort/degraded diagnostics.
 - **Why:** The failure, contention, crash/reload, export/restore, and deterministic benchmark matrix passed locally, and exact Chrome 152/151 plus branded Firefox 154/153 lifecycle lanes passed in [Foundation CI run 32712600336](https://github.com/seabAu/Coredrill/actions/runs/32712600336). SQLite documents broad support, high performance, and no COOP/COEP requirement, with the known single-connection trade-off; real Safari/mobile runners remain unavailable and are not simulated.
+- **Phase 1 recovery-health evidence (2026-08-29):** `BKP-005` keeps
+  persistence and quota observation passive, exposes `persist()` only through
+  an explicit user action, and stores the optional 30-day export reminder in
+  canonical SQLite with seven-day snooze and durable disable/enable controls.
+  Granted, denied, error, unsupported, low/unknown quota, and
+  expected-database-missing states remain separate and path-free. Exact Chrome
+  152/151 and branded Firefox 154/153 lanes pass in [Foundation CI run
+  33285567150](https://github.com/seabAu/Coredrill/actions/runs/33285567150);
+  see [browser recovery-health verification](../../proof/phase-1-browser-vault-recovery-health-verification.md).
 - **Revisit when:** Real Safari/macOS or mobile rows pass; multi-tab editing becomes a validated requirement; Web Locks/`opfs-sahpool` compatibility changes; or another VFS proves materially better without weakening offline deployment, portability, recovery, or support.
 
 ### D-026 — No full ORM
