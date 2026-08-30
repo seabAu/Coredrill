@@ -132,6 +132,9 @@ test("renders hostile saved sources as inert text and navigates exact excerpt pa
     contentType: "application/json",
   });
 
+  await review.evaluate((element) => {
+    element.style.fontFamily = '"Courier New", monospace';
+  });
   await page.setViewportSize({ width: 360, height: 800 });
   expect(
     await page.evaluate(() => ({
@@ -147,6 +150,7 @@ test("renders hostile saved sources as inert text and navigates exact excerpt pa
       markupShapedJsonEscaped: true,
       sectionPathFocused: true,
       fieldExcerptFocused: true,
+      crossFontReflow: true,
       narrowReflow: true,
       axeViolations: axe.violations.length,
       externalRequests: externalRequests.length,

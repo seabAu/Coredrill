@@ -510,9 +510,17 @@ textarea {
   box-shadow: inset 3px 0 0 var(--color-accent);
 }
 
+.cd-capture-review__queue strong,
+.cd-capture-review__queue span,
+.cd-capture-review__queue small,
+.cd-capture-review__locations button > *,
+.cd-capture-review__evidence-list button > * {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .cd-capture-review__queue span,
 .cd-capture-review__queue small {
-  overflow-wrap: anywhere;
   color: var(--color-text-muted);
   font-size: var(--font-size-metadata);
 }
