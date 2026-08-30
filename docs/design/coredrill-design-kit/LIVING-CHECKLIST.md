@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-30
 Current milestone: Phase 2 — capture and approved extraction (`GATE-0` and `GATE-1` external-evidence blockers remain open)
-Current work item: `XTR-003` — selected-text and conservative generic DOM/Readability extractor
-Next recommended slice: `XTR-004` after `XTR-003` proof
+Current work item: `XTR-004` — Greenhouse public postings adapter and reviewed connector policy
+Next recommended slice: `XTR-005` after `XTR-004` proof
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `XTR-004` after `XTR-003` proof
 | Field | Value |
 |---|---|
 | Milestone | Phase 2, with the independent Phase 0 and Phase 1 evidence gates retained below |
-| Item range | `XTR-003` |
+| Item range | `XTR-004` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-30 |
-| Expected proof | Golden fixtures for explicit selected text and conservative generic DOM/Readability extraction covering content bounds, boilerplate rejection, repeated/conflicting candidates, malformed markup, raw source evidence, provenance, and deterministic offline behavior |
-| Blocker | None for `XTR-003`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
-| Next handoff | Audit the accepted selected-text and generic DOM extraction requirements plus existing capture/extractor contracts, then implement the smallest pure bounded local extractor and golden suite. Do not add network access, a source-specific connector, entity writes, AI inference, or expanded extension permissions in this slice. |
+| Expected proof | Current Greenhouse Job Board API/interface and policy review, one checked-in exact-destination connector record with a review deadline and kill switch, deterministic GET-only request descriptors, and synthetic golden payload fixtures proving bounded field mapping, raw evidence, provenance, and applicant-data rejection |
+| Blocker | None for `XTR-004`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
+| Next handoff | Implement the smallest pure Greenhouse public-posting adapter and reviewed policy record around documented unauthenticated GET endpoints. Do not add an executing network client, application submission, credentials, applicant questions/demographic/compliance data, arbitrary destinations, entity writes, AI inference, or expanded extension permissions in this slice. |
 
 ## Milestone status
 
@@ -220,7 +220,7 @@ Next recommended slice: `XTR-004` after `XTR-003` proof
 
 - [x] **XTR-001** Implement connector policy registry and runtime kill switch before network connectors. — Proof: [strict immutable records, exact-destination authorization, runtime kills, independent manual capture, synthetic/property tests, and hosted clean-commit matrix](../../proof/phase-2-connector-policy-verification.md)
 - [x] **XTR-002** Implement Schema.org `JobPosting` parser with nested/array/malformed fixtures. — Proof: [43-of-43 exact golden candidates, per-field accuracy, bounded malformed-input tests, provenance, and hosted clean-commit matrix](../../proof/phase-2-schema-org-job-posting-verification.md)
-- [ ] **XTR-003** Implement selected-text and conservative generic DOM/Readability extractor. — Proof: _golden fixtures_
+- [x] **XTR-003** Implement selected-text and conservative generic DOM/Readability extractor. — Proof: [27-of-27 exact golden candidates, bounded detached DOM/Readability extraction, provenance, regression hardening, and hosted clean-commit matrix](../../proof/phase-2-generic-job-document-verification.md)
 - [ ] **XTR-004** Implement Greenhouse public postings adapter under reviewed current interface/terms. — Proof: _policy record + fixtures_
 - [ ] **XTR-005** Implement Lever public postings adapter under reviewed current interface/terms. — Proof: _policy record + fixtures_
 - [ ] **XTR-006** Implement USAJOBS adapter/configuration under reviewed current requirements. — Proof: _policy record + contract tests_
