@@ -9,7 +9,11 @@ const channel =
 
 export default defineConfig({
   testDir: "./e2e",
-  testMatch: "phase-1-resilience.spec.mjs",
+  testMatch: [
+    "phase-1-resilience.spec.mjs",
+    "storage-concurrency.spec.mjs",
+    "storage-failures.spec.mjs",
+  ],
   outputDir: "test-results/resilience",
   fullyParallel: false,
   workers: 1,
