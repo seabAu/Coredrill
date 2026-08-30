@@ -85,6 +85,8 @@ Requirement kind: `required`, `preferred`, `responsibility`, `education`, `certi
 
 The main entity contains the current resolved value for efficient queries. `field_value` retains candidates/history and explains why it was chosen. User confirmation wins until the user accepts a new value.
 
+`CAP-005` keeps that rule on schema 92 rather than adding a speculative conflict table. The application reconciliation boundary accepts trusted existing candidates separately from untrusted incoming proposals; incoming data carrying an embedded `userConfirmation` is rejected. It revalidates every candidate, preserves the complete bounded set, compares normalized JSON canonically, and emits a version-1 unresolved conflict when one field has differing values. An existing active confirmation remains selected regardless of method or confidence. Without one, the documented source-method ladder produces a deterministic suggestion only, and the result still requires user review. Multiple active confirmations, reused candidate/conflict IDs, and a conflict too large for the 32-candidate contract fail closed before persistence. The existing repository boundary continues to reject generic supersession of a confirmed `field_value`; only `replaceConfirmedFieldValue` can confirm the replacement and link the prior value in one transaction, preserving both history rows.
+
 ### Pipeline and interactions
 
 `status_definition(id, name, category, color, is_system, sort_order, terminal)`

@@ -13,6 +13,17 @@ export {
   type CaptureIngestionErrorCode,
 } from "./capture-ingestion.js";
 export {
+  FIELD_CANDIDATE_RECONCILIATION_ERROR_CODES,
+  FIELD_CANDIDATE_RECONCILIATION_LIMITS,
+  FieldCandidateReconciliationError,
+  reconcileFieldCandidatesV1,
+  type FieldCandidateReconciliationErrorCode,
+  type FieldCandidateReconciliationV1,
+  type FieldCandidateResolutionV1,
+  type FieldCandidateSelectionReason,
+  type ReconcileFieldCandidatesInputV1,
+} from "./field-candidate-reconciliation.js";
+export {
   defineCommand,
   defineQuery,
   type ApplicationCommand,
