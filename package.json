@@ -22,6 +22,7 @@
     "test:documents-browser": "playwright test --config=playwright.documents.config.mjs",
     "test:ui-foundations": "playwright test --config=playwright.ui-foundations.config.mjs",
     "test:app-shell": "playwright test --config=playwright.app-shell.config.mjs",
+    "test:performance": "playwright test --config=playwright.performance.config.mjs",
     "test:onboarding": "playwright test --config=playwright.onboarding.config.mjs",
     "test:storage-firefox-webdriver": "node tooling/scripts/run-storage-firefox-webdriver.mjs",
     "test:extension-transfer": "playwright test --config=playwright.extension.config.mjs",
@@ -51,7 +52,7 @@
     "audit:dependencies": "pnpm audit --audit-level=low && cargo audit --file apps/desktop/src-tauri/Cargo.lock",
     "changeset": "changeset",
     "changeset:status": "changeset status",
-    "verify": "pnpm format:check && pnpm check:boundaries && pnpm check:foundation-records && pnpm typecheck && pnpm lint && pnpm test:unit && pnpm test:coverage && pnpm build && pnpm check:ui-contrast-report && pnpm check:extension-build && pnpm check:extension-packages && pnpm test:ui-foundations && pnpm test:app-shell && pnpm test:onboarding && pnpm test:documents-browser && pnpm test:storage-browser && pnpm test:storage-native && pnpm test:secure-storage && pnpm test:native-archive && pnpm check:contract-schemas && pnpm check:licenses && pnpm check:secrets && pnpm audit:dependencies && pnpm changeset:status"
+    "verify": "pnpm format:check && pnpm check:boundaries && pnpm check:foundation-records && pnpm typecheck && pnpm lint && pnpm test:unit && pnpm test:coverage && pnpm build && pnpm check:ui-contrast-report && pnpm check:extension-build && pnpm check:extension-packages && pnpm test:ui-foundations && pnpm test:app-shell && pnpm test:performance && pnpm test:onboarding && pnpm test:documents-browser && pnpm test:storage-browser && pnpm test:storage-native && pnpm test:secure-storage && pnpm test:native-archive && pnpm check:contract-schemas && pnpm check:licenses && pnpm check:secrets && pnpm audit:dependencies && pnpm changeset:status"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",

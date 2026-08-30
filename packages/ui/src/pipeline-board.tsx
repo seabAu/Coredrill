@@ -350,7 +350,12 @@ export const PipelineBoard = ({
   };
 
   return (
-    <section aria-labelledby={headingId} className="cd-board" data-testid="pipeline-board">
+    <section
+      aria-labelledby={headingId}
+      className="cd-board"
+      data-board-total={columns.reduce((count, column) => count + column.items.length, 0)}
+      data-testid="pipeline-board"
+    >
       <div className="cd-board-heading">
         <div>
           <p className="cd-eyebrow">Board</p>

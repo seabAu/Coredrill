@@ -628,7 +628,7 @@ const VAULT_DELETION_PREVIEW = Object.freeze({
 } as const satisfies VaultDeletionPreviewDto);
 
 const readAppearance = (): {
-  readonly boardMode: "large" | "standard";
+  readonly boardMode: "large" | "reference" | "standard";
   readonly deletionMode: "cleanup" | "failure" | "ready";
   readonly density: DensityMode;
   readonly expectedDatabase: "found" | "missing";
@@ -653,7 +653,8 @@ const readAppearance = (): {
   const requestedHealth = parameters.get("health");
   const requestedWorkspaceState = parameters.get("workspaceState");
   return {
-    boardMode: requestedBoard === "large" ? "large" : "standard",
+    boardMode:
+      requestedBoard === "large" || requestedBoard === "reference" ? requestedBoard : "standard",
     deletionMode:
       requestedDeletion === "cleanup" || requestedDeletion === "failure"
         ? requestedDeletion
@@ -986,6 +987,36 @@ const LARGE_BOARD_COLUMNS = Object.freeze([
   ...STANDARD_BOARD_COLUMNS.slice(1),
 ] as const satisfies readonly BoardColumn[]);
 
+const REFERENCE_BOARD_ITEMS = Object.freeze(
+  Array.from({ length: 1_992 }, (_, index) => {
+    const fixtureNumber = index + 1;
+    return boardJob(
+      `board-reference-${String(fixtureNumber).padStart(4, "0")}`,
+      `Reference opportunity ${String(fixtureNumber)}`,
+      `Reference company ${String(fixtureNumber)}`,
+      {
+        lastActivity: `Updated ${String((fixtureNumber % 28) + 1)} days ago`,
+        nextAction: fixtureNumber % 4 === 0 ? null : "Review local notes",
+        priority: fixtureNumber % 7 === 0 ? "high" : "normal",
+      },
+    );
+  }),
+);
+
+const REFERENCE_BOARD_COLUMNS = Object.freeze(
+  STANDARD_BOARD_COLUMNS.map((column, columnIndex) =>
+    Object.freeze({
+      items: Object.freeze([
+        ...column.items,
+        ...REFERENCE_BOARD_ITEMS.filter(
+          (_item, itemIndex) => itemIndex % BOARD_STAGES.length === columnIndex,
+        ),
+      ]),
+      stage: column.stage,
+    }),
+  ),
+) satisfies readonly BoardColumn[];
+
 const TABLE_STATUS_OPTIONS = Object.freeze(
   BOARD_STAGES.map(({ id, name, terminal }) => Object.freeze({ id, name, terminal })),
 ) satisfies readonly PipelineTableStatusOption[];
@@ -1263,7 +1294,11 @@ const AppShellCatalog = () => {
   );
   const [boardAnnouncement, setBoardAnnouncement] = useState("");
   const [boardColumns, setBoardColumns] = useState<readonly BoardColumn[]>(
-    appearance.boardMode === "large" ? LARGE_BOARD_COLUMNS : STANDARD_BOARD_COLUMNS,
+    appearance.boardMode === "reference"
+      ? REFERENCE_BOARD_COLUMNS
+      : appearance.boardMode === "large"
+        ? LARGE_BOARD_COLUMNS
+        : STANDARD_BOARD_COLUMNS,
   );
   const [boardTimelineEventCount, setBoardTimelineEventCount] = useState(0);
   const [boardUndo, setBoardUndo] = useState<BoardUndoRecord | null>(null);
