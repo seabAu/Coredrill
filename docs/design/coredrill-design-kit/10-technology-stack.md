@@ -212,6 +212,8 @@ Imported binary files are untrusted. Enforce size/type limits, do not execute ma
 - BLS/O*NET/CareerOneStop and other approved public labor-data adapters;
 - connector policy registry with enablement, credentials, terms/license notes, retention, attribution, rate limit, last review, and kill switch.
 
+`XTR-001` implements that registry as a dependency-free TypeScript boundary in `@coredrill/source-policy`. Its checked-in production record set is intentionally empty until a real connector's own review slice completes. Synthetic policy fixtures prove strict record parsing, exact HTTPS destination/method authorization, review freshness, targeted/global runtime disables, and an independent manual-capture path; the slice adds no network client, permission, source-specific adapter, or remote configuration service.
+
 ### Optional Python worker
 
 If Phase 5 or later establishes a need:

@@ -13,6 +13,7 @@ export default defineConfig({
         "packages/extension-bridge/src/**/*.ts",
         "packages/observability/src/**/*.ts",
         "packages/search-filter/src/**/*.ts",
+        "packages/source-policy/src/**/*.ts",
         "packages/storage-core/src/**/*.ts",
         "packages/ui/src/**/*.{ts,tsx}",
         "tooling/architecture/check-boundaries.mjs",

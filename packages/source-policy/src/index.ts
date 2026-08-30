@@ -1,2 +1,27 @@
 /** Connector registry, allow/deny policy, and kill-switch enforcement. */
-export {};
+export {
+  CHECKED_IN_CONNECTOR_POLICY_RECORDS_V1,
+  CONNECTOR_ATTRIBUTION_POLICIES,
+  CONNECTOR_CREDENTIAL_MODES,
+  CONNECTOR_NETWORK_METHODS,
+  CONNECTOR_POLICY_DENIAL_REASONS,
+  CONNECTOR_POLICY_ERROR_CODES,
+  CONNECTOR_POLICY_LIMITS,
+  CONNECTOR_POLICY_SPEC_VERSION,
+  CONNECTOR_POLICY_STATUSES,
+  ConnectorPolicyError,
+  checkedInConnectorPolicyRegistryV1,
+  createConnectorPolicyRegistryV1,
+  parseConnectorPolicyRecordV1,
+  type ConnectorAttributionPolicy,
+  type ConnectorCredentialMode,
+  type ConnectorNetworkMethod,
+  type ConnectorPolicyDecisionV1,
+  type ConnectorPolicyDenialReason,
+  type ConnectorPolicyErrorCode,
+  type ConnectorPolicyRecordV1,
+  type ConnectorPolicyRegistryV1,
+  type ConnectorPolicyStatus,
+  type ConnectorRuntimeControlV1,
+  type SourceAcquisitionRequestV1,
+} from "./connector-policy.js";

@@ -46,6 +46,8 @@ The Phase 0 transfer proof requires sender origin and URL to agree with the sing
 
 Any URL fetcher enforces scheme/port, DNS and redirect revalidation, private/link-local/metadata IP blocks, size/time/type limits, and approved connector domains. Browser extension does not expose a general fetch oracle to pages.
 
+`XTR-001` adds the policy gate before any URL fetcher or network connector exists. Version-1 records are strict, immutable, bounded, and require exact HTTPS hostnames plus current review metadata and a kill-switch declaration. Runtime authorization fails closed for unknown/disabled/stale policies, method or exact-host mismatch, and targeted or global emergency disables. It rejects credentials and custom ports in connector destinations and never expands a host to subdomains. This is not the later DNS/redirect/IP/size/time fetch boundary: no request is made in this slice. Manual capture bypasses the network registry by an explicit request kind and remains available even when global network disable state is active or absent.
+
 ### XSS/data exfiltration
 
 - Strict CSP; no remote scripts, `eval`, unsafe inline handlers, or captured HTML execution.

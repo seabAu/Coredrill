@@ -189,6 +189,8 @@ kill_switch: true
 
 Review on a schedule and when terms/API behavior changes. A connector can be disabled independently without disabling manual capture. Robots.txt and rate limits are operational controls, not proof of legal permission.
 
+`XTR-001` makes the pre-network gate executable without claiming that a real connector has completed review. A strict immutable version-1 record requires an owner, explicit enabled/disabled status, reviewed methods, exact lowercase HTTPS destination hosts, terms/privacy URLs, reuse basis, review and due instants, rate/retention/attribution/credential policy, a user-visible data-flow statement, and kill-switch capability. Unknown or extra fields, duplicate IDs, wildcards, unsafe policy URLs, invalid review windows, and missing kill switches fail closed. Authorization separately validates the acquisition request and injected runtime control, then denies unknown, disabled, targeted/globally killed, not-current, method-mismatched, and destination-mismatched network requests with content-free reasons. Host matching is exact: policy for `api.example` does not permit `sub.api.example`. Manual capture is an explicit non-network request and does not depend on registry contents or runtime kill-switch state. The checked-in production registry remains empty until a later connector checklist item supplies a current reviewed record; tests use synthetic `.example` records only.
+
 ## Generic page extraction
 
 Reusable functions are capability-based, not “scrape anything”:
