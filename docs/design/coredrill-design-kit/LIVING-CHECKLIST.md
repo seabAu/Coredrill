@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-30
 Current milestone: Phase 2 — capture and approved extraction (`GATE-0` and `GATE-1` external-evidence blockers remain open)
-Current work item: `XTR-002` — Schema.org `JobPosting` parser
-Next recommended slice: `XTR-003` after `XTR-002` proof
+Current work item: `XTR-003` — selected-text and conservative generic DOM/Readability extractor
+Next recommended slice: `XTR-004` after `XTR-003` proof
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `XTR-003` after `XTR-002` proof
 | Field | Value |
 |---|---|
 | Milestone | Phase 2, with the independent Phase 0 and Phase 1 evidence gates retained below |
-| Item range | `XTR-002` |
+| Item range | `XTR-003` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-30 |
-| Expected proof | Golden accuracy report for Schema.org `JobPosting` fixtures covering nested values, arrays, `@graph`, multiple candidates, malformed JSON-LD, and missing/invalid fields while retaining raw source evidence and provenance |
-| Blocker | None for `XTR-002`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
-| Next handoff | Audit the existing extractor and fixture packages, then implement a pure bounded local parser and golden report. Do not add network access, a source-specific connector, broad DOM extraction, or entity writes in this slice. |
+| Expected proof | Golden fixtures for explicit selected text and conservative generic DOM/Readability extraction covering content bounds, boilerplate rejection, repeated/conflicting candidates, malformed markup, raw source evidence, provenance, and deterministic offline behavior |
+| Blocker | None for `XTR-003`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
+| Next handoff | Audit the accepted selected-text and generic DOM extraction requirements plus existing capture/extractor contracts, then implement the smallest pure bounded local extractor and golden suite. Do not add network access, a source-specific connector, entity writes, AI inference, or expanded extension permissions in this slice. |
 
 ## Milestone status
 
@@ -219,7 +219,7 @@ Next recommended slice: `XTR-003` after `XTR-002` proof
 ## Extractors and policy
 
 - [x] **XTR-001** Implement connector policy registry and runtime kill switch before network connectors. — Proof: [strict immutable records, exact-destination authorization, runtime kills, independent manual capture, synthetic/property tests, and hosted clean-commit matrix](../../proof/phase-2-connector-policy-verification.md)
-- [ ] **XTR-002** Implement Schema.org `JobPosting` parser with nested/array/malformed fixtures. — Proof: _golden accuracy report_
+- [x] **XTR-002** Implement Schema.org `JobPosting` parser with nested/array/malformed fixtures. — Proof: [43-of-43 exact golden candidates, per-field accuracy, bounded malformed-input tests, provenance, and hosted clean-commit matrix](../../proof/phase-2-schema-org-job-posting-verification.md)
 - [ ] **XTR-003** Implement selected-text and conservative generic DOM/Readability extractor. — Proof: _golden fixtures_
 - [ ] **XTR-004** Implement Greenhouse public postings adapter under reviewed current interface/terms. — Proof: _policy record + fixtures_
 - [ ] **XTR-005** Implement Lever public postings adapter under reviewed current interface/terms. — Proof: _policy record + fixtures_
