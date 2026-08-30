@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-30
 Current milestone: Phase 2 — capture and approved extraction (`GATE-0` and `GATE-1` external-evidence blockers remain open)
-Current work item: `XTR-005` — Lever public postings adapter and reviewed connector policy
-Next recommended slice: `XTR-006` after `XTR-005` proof
+Current work item: `XTR-006` — USAJOBS adapter/configuration under reviewed current requirements
+Next recommended slice: `XTR-007` after `XTR-006` proof
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `XTR-006` after `XTR-005` proof
 | Field | Value |
 |---|---|
 | Milestone | Phase 2, with the independent Phase 0 and Phase 1 evidence gates retained below |
-| Item range | `XTR-005` |
+| Item range | `XTR-006` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-30 |
-| Expected proof | Current Lever Postings API/interface and policy review, one checked-in exact-destination connector record with a review deadline and kill switch, deterministic GET-only request descriptors, and synthetic golden payload fixtures proving bounded field mapping, raw evidence, and provenance |
-| Blocker | None for `XTR-005`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
-| Next handoff | Review Lever's current published-posting interface and legal/privacy terms, then implement the smallest pure public-posting adapter and reviewed exact-destination policy record. Do not add an executing network client, application submission, credentials, applicant data, arbitrary destinations, entity writes, AI inference, or expanded extension permissions in this slice. |
+| Expected proof | Current official USAJOBS Search API, authentication, rate-limit, API-consumer terms, and privacy review; one exact-destination user-configured-credential connector record with review deadline and kill switch; deterministic bounded GET-only search/configuration descriptors that never expose a key value; and synthetic response fixtures proving faithful field mapping, attribution, raw evidence, and provenance |
+| Blocker | None for `XTR-006`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
+| Next handoff | Formalize the current USAJOBS public-search and registered-consumer boundary, then implement the smallest non-executing BYOK configuration/request contract and pure response adapter. Do not ship a shared key, secret-read/logging path, executing network client, status/internal-job access, automatic application, broad redistribution, entity writes, AI inference, or expanded extension permissions in this slice. |
 
 ## Milestone status
 
@@ -222,7 +222,7 @@ Next recommended slice: `XTR-006` after `XTR-005` proof
 - [x] **XTR-002** Implement Schema.org `JobPosting` parser with nested/array/malformed fixtures. — Proof: [43-of-43 exact golden candidates, per-field accuracy, bounded malformed-input tests, provenance, and hosted clean-commit matrix](../../proof/phase-2-schema-org-job-posting-verification.md)
 - [x] **XTR-003** Implement selected-text and conservative generic DOM/Readability extractor. — Proof: [27-of-27 exact golden candidates, bounded detached DOM/Readability extraction, provenance, regression hardening, and hosted clean-commit matrix](../../proof/phase-2-generic-job-document-verification.md)
 - [x] **XTR-004** Implement Greenhouse public postings adapter under reviewed current interface/terms. — Proof: [current interface/policy review, exact GET-only descriptor, 19-of-19 synthetic golden candidates, applicant-data rejection, and hosted clean-commit matrix](../../proof/phase-2-greenhouse-public-posting-verification.md)
-- [ ] **XTR-005** Implement Lever public postings adapter under reviewed current interface/terms. — Proof: _policy record + fixtures_
+- [x] **XTR-005** Implement Lever public postings adapter under reviewed current interface/terms. — Proof: [current interface/policy review, exact global/EU GET-only descriptors, 21-of-21 synthetic golden candidates, applicant-data rejection, and hosted clean-commit matrix](../../proof/phase-2-lever-public-posting-verification.md)
 - [ ] **XTR-006** Implement USAJOBS adapter/configuration under reviewed current requirements. — Proof: _policy record + contract tests_
 - [ ] **XTR-007** Implement normalization for title/company/location/work mode/salary/currency/date/source without erasing raw values. — Proof: _property/golden tests_
 - [ ] **XTR-008** Publish per-field precision, coverage, and confidence calibration by adapter/version. — Proof: _generated report_
