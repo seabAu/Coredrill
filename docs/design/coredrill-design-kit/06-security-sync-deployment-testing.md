@@ -150,6 +150,16 @@ or attachment drift since preview, and delegates only to an atomic adapter port
 that must preserve the prior usable vault on failure. Errors are typed and
 content-free. See [portable archive restore version 1](portable-archive-restore-v1.md).
 
+`BKP-007` exercises that boundary with one committed synthetic schema-92 vault
+in empty production browser and native targets. The archive member checksum
+continues to protect exact SQLite transport, while the version-1 canonical
+content hash compares regenerated JSON projections and separately reread,
+content-addressed attachment bytes across adapters. This avoids treating
+adapter-specific SQLite page rewrites as content loss. Browser attachment bytes
+remain under the Coredrill OPFS root; native bytes remain under the confined
+app-data `attachments/sha256` root; neither adapter accepts an arbitrary path.
+See [portable vault content hash version 1](portable-vault-content-hash-v1.md).
+
 `BKP-004` adds pickerless desktop recovery checkpoints beneath a canonical
 per-database app-data backup directory. A SQLite online snapshot, recovery
 envelope checksum, and full temporary reopen/integrity/schema check all succeed

@@ -35,6 +35,7 @@ test("fails closed for denied persistence, quota pressure, profile loss, and cor
     const original = navigator.storage;
     const synthetic = Object.create(original);
     Object.defineProperties(synthetic, {
+      getDirectory: { value: original.getDirectory.bind(original) },
       estimate: { value: async () => ({ quota: 1_000, usage: 950 }) },
       persist: {
         value: async () => {
@@ -77,6 +78,7 @@ test("fails closed for denied persistence, quota pressure, profile loss, and cor
     const original = navigator.storage;
     const synthetic = Object.create(original);
     Object.defineProperties(synthetic, {
+      getDirectory: { value: original.getDirectory.bind(original) },
       estimate: { value: async () => ({ quota: 1_000_000_000, usage: 100_000_000 }) },
       persist: {
         value: async () => {
@@ -103,6 +105,7 @@ test("fails closed for denied persistence, quota pressure, profile loss, and cor
     const original = navigator.storage;
     const synthetic = Object.create(original);
     Object.defineProperties(synthetic, {
+      getDirectory: { value: original.getDirectory.bind(original) },
       estimate: { value: async () => Promise.reject(new Error("synthetic quota error")) },
       persist: { value: async () => Promise.reject(new Error("synthetic persist error")) },
       persisted: { value: async () => Promise.reject(new Error("synthetic persisted error")) },
@@ -128,6 +131,7 @@ test("fails closed for denied persistence, quota pressure, profile loss, and cor
     const original = navigator.storage;
     const synthetic = Object.create(original);
     Object.defineProperties(synthetic, {
+      getDirectory: { value: original.getDirectory.bind(original) },
       estimate: { value: async () => ({ quota: 1_000_000, usage: 100_000 }) },
       persist: { value: undefined },
       persisted: { value: undefined },

@@ -11,16 +11,21 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 use crate::native_storage::{
-    NativeSession, NativeStorageService, open_database_connection, validate_session_id,
+    NativeSession, NativeStorageLayout, NativeStorageService, open_database_connection,
+    validate_session_id,
 };
 
-pub const NATIVE_ARCHIVE_PROTOCOL_VERSION: u16 = 1;
+pub const NATIVE_ARCHIVE_PROTOCOL_VERSION: u16 = 2;
 
 const ARCHIVE_MAGIC: [u8; 16] = *b"COREDRILL_DB_V1\0";
 const ARCHIVE_FORMAT_VERSION: u16 = 1;
 const ARCHIVE_HEADER_BYTES: u64 = 16 + 2 + 4 + 8 + 32;
 const MAX_REQUEST_ID_BYTES: usize = 64;
 const MAX_ARCHIVE_DATABASE_BYTES: u64 = 64 * 1024 * 1024 * 1024;
+const MAX_PORTABLE_ENTRY_BYTES: usize = 256 * 1024 * 1024;
+const MAX_PORTABLE_ATTACHMENTS: usize = 10_000;
+const MAX_MEDIA_TYPE_BYTES: usize = 255;
+const MAX_LOGICAL_NAME_BYTES: usize = 512;
 const COPY_BUFFER_BYTES: usize = 1024 * 1024;
 const SHA256_BYTES: usize = 32;
 const TEMP_ATTEMPTS: u8 = 64;
@@ -58,6 +63,28 @@ pub enum NativeArchiveOperation {
         session_id: String,
         retention_count: u16,
     },
+    PortableExport {
+        session_id: String,
+    },
+    PortableInspect {
+        session_id: String,
+        database: NativePortableDatabase,
+        expected_vault_id: String,
+    },
+    PortableTarget {
+        session_id: String,
+    },
+    AttachmentRead {
+        session_id: String,
+        content_id: String,
+    },
+    PortableCommit {
+        session_id: String,
+        expected_target_fingerprint: String,
+        vault_id: String,
+        database: NativePortableDatabase,
+        attachments: Vec<NativePortableAttachment>,
+    },
 }
 
 #[derive(Debug, Serialize)]
@@ -86,6 +113,76 @@ pub enum NativeArchiveResponseData {
     },
     BackupCreated {
         backup: NativeAutomaticBackupMetadata,
+    },
+    PortableDatabase {
+        database: NativePortableDatabase,
+    },
+    PortableInspection {
+        integrity: PortableIntegrity,
+        schema_version: u32,
+        vault_id: String,
+    },
+    PortableTarget {
+        target: NativePortableTarget,
+    },
+    AttachmentData {
+        content_id: String,
+        byte_length: u64,
+        sha256: String,
+        bytes: Vec<u8>,
+    },
+    AttachmentMissing {
+        content_id: String,
+    },
+    PortableCommitted {
+        database_sha256: String,
+        attachment_count: usize,
+    },
+}
+
+#[derive(Clone, Copy, Debug, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PortableIntegrity {
+    Ok,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct NativePortableDatabase {
+    pub schema_version: u32,
+    pub byte_length: u64,
+    pub sha256: String,
+    pub bytes: Vec<u8>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct NativePortableAttachment {
+    pub content_id: String,
+    pub media_type: String,
+    pub logical_name: Option<String>,
+    pub byte_length: u64,
+    pub sha256: String,
+    pub bytes: Vec<u8>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(
+    tag = "state",
+    rename_all = "snake_case",
+    rename_all_fields = "camelCase"
+)]
+pub enum NativePortableTarget {
+    Empty {
+        fingerprint: String,
+        attachment_content_ids: Vec<String>,
+    },
+    Present {
+        fingerprint: String,
+        vault_id: String,
+        schema_version: u32,
+        database_sha256: String,
+        attachment_content_ids: Vec<String>,
     },
 }
 
@@ -257,7 +354,12 @@ fn validate_native_archive_request(
     let session_id = match &request.operation {
         NativeArchiveOperation::Export { session_id }
         | NativeArchiveOperation::Restore { session_id }
-        | NativeArchiveOperation::AutomaticBackup { session_id, .. } => session_id,
+        | NativeArchiveOperation::AutomaticBackup { session_id, .. }
+        | NativeArchiveOperation::PortableExport { session_id }
+        | NativeArchiveOperation::PortableInspect { session_id, .. }
+        | NativeArchiveOperation::PortableTarget { session_id }
+        | NativeArchiveOperation::AttachmentRead { session_id, .. }
+        | NativeArchiveOperation::PortableCommit { session_id, .. } => session_id,
     };
     validate_archive_session_id(session_id)?;
     if let NativeArchiveOperation::AutomaticBackup {
@@ -279,7 +381,12 @@ impl NativeStorageService {
         let session_id = match &request.operation {
             NativeArchiveOperation::Export { session_id }
             | NativeArchiveOperation::Restore { session_id }
-            | NativeArchiveOperation::AutomaticBackup { session_id, .. } => session_id,
+            | NativeArchiveOperation::AutomaticBackup { session_id, .. }
+            | NativeArchiveOperation::PortableExport { session_id }
+            | NativeArchiveOperation::PortableInspect { session_id, .. }
+            | NativeArchiveOperation::PortableTarget { session_id }
+            | NativeArchiveOperation::AttachmentRead { session_id, .. }
+            | NativeArchiveOperation::PortableCommit { session_id, .. } => session_id,
         };
         let mut state = self
             .state
@@ -297,7 +404,7 @@ impl NativeStorageService {
             .map_err(|_| NativeArchiveError::archive_io_failure())
     }
 
-    pub(crate) fn invoke_archive_with_selected_path(
+    pub fn invoke_archive_with_selected_path(
         &self,
         request: NativeArchiveRequest,
         selected_path: Option<PathBuf>,
@@ -332,6 +439,71 @@ impl NativeStorageService {
                     archive: self.restore_archive(&session_id, &path, restore_fault)?,
                 }
             }
+            (NativeArchiveOperation::PortableExport { session_id }, None) => {
+                NativeArchiveResponseData::PortableDatabase {
+                    database: self.export_portable_database(&session_id)?,
+                }
+            }
+            (
+                NativeArchiveOperation::PortableInspect {
+                    session_id,
+                    database,
+                    expected_vault_id,
+                },
+                None,
+            ) => {
+                let (schema_version, vault_id) =
+                    self.inspect_portable_database(&session_id, &database, &expected_vault_id)?;
+                NativeArchiveResponseData::PortableInspection {
+                    integrity: PortableIntegrity::Ok,
+                    schema_version,
+                    vault_id,
+                }
+            }
+            (NativeArchiveOperation::PortableTarget { session_id }, None) => {
+                NativeArchiveResponseData::PortableTarget {
+                    target: self.inspect_portable_target(&session_id)?,
+                }
+            }
+            (
+                NativeArchiveOperation::AttachmentRead {
+                    session_id,
+                    content_id,
+                },
+                None,
+            ) => match self.read_portable_attachment(&session_id, &content_id)? {
+                Some(bytes) => NativeArchiveResponseData::AttachmentData {
+                    content_id: content_id.clone(),
+                    byte_length: bytes.len() as u64,
+                    sha256: content_id,
+                    bytes,
+                },
+                None => NativeArchiveResponseData::AttachmentMissing { content_id },
+            },
+            (
+                NativeArchiveOperation::PortableCommit {
+                    session_id,
+                    expected_target_fingerprint,
+                    vault_id,
+                    database,
+                    attachments,
+                },
+                None,
+            ) => {
+                let database_sha256 = database.sha256.clone();
+                let attachment_count = attachments.len();
+                self.commit_portable_restore(
+                    &session_id,
+                    &expected_target_fingerprint,
+                    &vault_id,
+                    database,
+                    attachments,
+                )?;
+                NativeArchiveResponseData::PortableCommitted {
+                    database_sha256,
+                    attachment_count,
+                }
+            }
             (
                 NativeArchiveOperation::AutomaticBackup {
                     session_id,
@@ -349,6 +521,14 @@ impl NativeStorageService {
             (NativeArchiveOperation::AutomaticBackup { .. }, Some(_)) => {
                 return Err(NativeArchiveError::invalid_request());
             }
+            (
+                NativeArchiveOperation::PortableExport { .. }
+                | NativeArchiveOperation::PortableInspect { .. }
+                | NativeArchiveOperation::PortableTarget { .. }
+                | NativeArchiveOperation::AttachmentRead { .. }
+                | NativeArchiveOperation::PortableCommit { .. },
+                Some(_),
+            ) => return Err(NativeArchiveError::invalid_request()),
         };
         Ok(NativeArchiveResponse {
             protocol_version: NATIVE_ARCHIVE_PROTOCOL_VERSION,
@@ -400,6 +580,255 @@ impl NativeStorageService {
         };
         write_archive_atomically(snapshot.path(), &target, &metadata, digest)?;
         Ok(metadata)
+    }
+
+    fn export_portable_database(
+        &self,
+        session_id: &str,
+    ) -> Result<NativePortableDatabase, NativeArchiveError> {
+        validate_archive_session_id(session_id)?;
+        let mut state = self
+            .state
+            .lock()
+            .map_err(|_| NativeArchiveError::archive_io_failure())?;
+        let session = state
+            .sessions
+            .get_mut(session_id)
+            .ok_or_else(NativeArchiveError::session_missing)?;
+        if session.transaction_active {
+            return Err(NativeArchiveError::transaction_state());
+        }
+        self.layout
+            .verify_database_path(&session.database_path)
+            .map_err(|_| NativeArchiveError::archive_io_failure())?;
+        let schema_version = validate_connection(&session.connection, None)?;
+        if schema_version == 0 {
+            return Err(NativeArchiveError::archive_invalid());
+        }
+        let snapshot = create_sqlite_snapshot(
+            &session.connection,
+            self.layout.database_root(),
+            "portable-export",
+        )?;
+        let bytes =
+            fs::read(snapshot.path()).map_err(|_| NativeArchiveError::archive_io_failure())?;
+        portable_database_from_bytes(schema_version, bytes)
+    }
+
+    fn inspect_portable_database(
+        &self,
+        session_id: &str,
+        database: &NativePortableDatabase,
+        expected_vault_id: &str,
+    ) -> Result<(u32, String), NativeArchiveError> {
+        validate_archive_session_id(session_id)?;
+        validate_vault_id(expected_vault_id)?;
+        let mut state = self
+            .state
+            .lock()
+            .map_err(|_| NativeArchiveError::archive_io_failure())?;
+        let session = state
+            .sessions
+            .get_mut(session_id)
+            .ok_or_else(NativeArchiveError::session_missing)?;
+        if session.transaction_active {
+            return Err(NativeArchiveError::transaction_state());
+        }
+        let (candidate, schema_version, vault_id) =
+            prepare_portable_database(database, self.layout.database_root(), expected_vault_id)?;
+        drop(candidate);
+        Ok((schema_version, vault_id))
+    }
+
+    fn inspect_portable_target(
+        &self,
+        session_id: &str,
+    ) -> Result<NativePortableTarget, NativeArchiveError> {
+        validate_archive_session_id(session_id)?;
+        let mut state = self
+            .state
+            .lock()
+            .map_err(|_| NativeArchiveError::archive_io_failure())?;
+        let session = state
+            .sessions
+            .get_mut(session_id)
+            .ok_or_else(NativeArchiveError::session_missing)?;
+        if session.transaction_active {
+            return Err(NativeArchiveError::transaction_state());
+        }
+        portable_target_for_session(&self.layout, session)
+    }
+
+    fn read_portable_attachment(
+        &self,
+        session_id: &str,
+        content_id: &str,
+    ) -> Result<Option<Vec<u8>>, NativeArchiveError> {
+        validate_archive_session_id(session_id)?;
+        validate_sha256_hex(content_id)?;
+        let mut state = self
+            .state
+            .lock()
+            .map_err(|_| NativeArchiveError::archive_io_failure())?;
+        let session = state
+            .sessions
+            .get_mut(session_id)
+            .ok_or_else(NativeArchiveError::session_missing)?;
+        if session.transaction_active {
+            return Err(NativeArchiveError::transaction_state());
+        }
+        let path = self
+            .layout
+            .prepare_attachment_path(content_id)
+            .map_err(|_| NativeArchiveError::archive_io_failure())?;
+        let bytes = match fs::read(path) {
+            Ok(bytes) => bytes,
+            Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
+            Err(_) => return Err(NativeArchiveError::archive_io_failure()),
+        };
+        if bytes.len() > MAX_PORTABLE_ENTRY_BYTES || digest_hex(&digest_bytes(&bytes)) != content_id
+        {
+            return Err(NativeArchiveError::archive_invalid());
+        }
+        Ok(Some(bytes))
+    }
+
+    fn commit_portable_restore(
+        &self,
+        session_id: &str,
+        expected_target_fingerprint: &str,
+        vault_id: &str,
+        database: NativePortableDatabase,
+        attachments: Vec<NativePortableAttachment>,
+    ) -> Result<(), NativeArchiveError> {
+        validate_archive_session_id(session_id)?;
+        validate_sha256_hex(expected_target_fingerprint)?;
+        validate_vault_id(vault_id)?;
+        if attachments.len() > MAX_PORTABLE_ATTACHMENTS {
+            return Err(NativeArchiveError::invalid_request());
+        }
+        let mut state = self
+            .state
+            .lock()
+            .map_err(|_| NativeArchiveError::archive_io_failure())?;
+        let session = state
+            .sessions
+            .remove(session_id)
+            .ok_or_else(NativeArchiveError::session_missing)?;
+        let result = self.commit_removed_portable_session(
+            session,
+            expected_target_fingerprint,
+            vault_id,
+            database,
+            attachments,
+        );
+        match result {
+            RestoreSessionResult::Restored(session, _) => {
+                state.sessions.insert(session_id.to_owned(), session);
+                Ok(())
+            }
+            RestoreSessionResult::Preserved(session, error) => {
+                state.sessions.insert(session_id.to_owned(), session);
+                Err(error)
+            }
+            RestoreSessionResult::Closed(error) => Err(error),
+        }
+    }
+
+    fn commit_removed_portable_session(
+        &self,
+        session: NativeSession,
+        expected_target_fingerprint: &str,
+        vault_id: &str,
+        database: NativePortableDatabase,
+        attachments: Vec<NativePortableAttachment>,
+    ) -> RestoreSessionResult {
+        if session.transaction_active {
+            return RestoreSessionResult::Preserved(
+                session,
+                NativeArchiveError::transaction_state(),
+            );
+        }
+        let target = match portable_target_for_session(&self.layout, &session) {
+            Ok(target) => target,
+            Err(error) => return RestoreSessionResult::Preserved(session, error),
+        };
+        if portable_target_fingerprint(&target) != expected_target_fingerprint {
+            return RestoreSessionResult::Preserved(session, NativeArchiveError::restore_failed());
+        }
+        let current_schema = match validate_connection(&session.connection, None) {
+            Ok(schema) => schema,
+            Err(error) => return RestoreSessionResult::Preserved(session, error),
+        };
+        let (incoming, incoming_schema, incoming_vault_id) =
+            match prepare_portable_database(&database, self.layout.database_root(), vault_id) {
+                Ok(prepared) => prepared,
+                Err(error) => return RestoreSessionResult::Preserved(session, error),
+            };
+        if incoming_vault_id != vault_id {
+            return RestoreSessionResult::Preserved(session, NativeArchiveError::archive_invalid());
+        }
+        if let Err(error) =
+            validate_and_publish_portable_attachments(&self.layout, incoming.path(), &attachments)
+        {
+            return RestoreSessionResult::Preserved(session, error);
+        }
+        let recovery = match create_sqlite_snapshot(
+            &session.connection,
+            self.layout.database_root(),
+            "portable-recovery",
+        ) {
+            Ok(recovery) => recovery,
+            Err(error) => return RestoreSessionResult::Preserved(session, error),
+        };
+        if validate_sqlite_file(recovery.path(), Some(current_schema)).is_err() {
+            return RestoreSessionResult::Preserved(
+                session,
+                NativeArchiveError::archive_io_failure(),
+            );
+        }
+
+        let metadata = NativeArchiveMetadata {
+            format_version: ARCHIVE_FORMAT_VERSION,
+            schema_version: incoming_schema,
+            database_bytes: database.byte_length,
+            sha256: database.sha256,
+        };
+        let database_path = session.database_path;
+        drop(session.connection);
+        if remove_database_sidecars(&database_path).is_err()
+            || atomic_replace_and_sync(incoming.path(), &database_path).is_err()
+        {
+            return recover_session_after_close(database_path, recovery, current_schema);
+        }
+        match open_and_validate_database(&database_path, incoming_schema) {
+            Ok(connection) => RestoreSessionResult::Restored(
+                NativeSession {
+                    connection,
+                    database_path,
+                    transaction_active: false,
+                },
+                metadata,
+            ),
+            Err(_) => {
+                if remove_database_sidecars(&database_path).is_err()
+                    || atomic_replace_and_sync(recovery.path(), &database_path).is_err()
+                {
+                    return RestoreSessionResult::Closed(NativeArchiveError::recovery_failed());
+                }
+                match open_and_validate_database(&database_path, current_schema) {
+                    Ok(connection) => RestoreSessionResult::Preserved(
+                        NativeSession {
+                            connection,
+                            database_path,
+                            transaction_active: false,
+                        },
+                        NativeArchiveError::restore_failed(),
+                    ),
+                    Err(_) => RestoreSessionResult::Closed(NativeArchiveError::recovery_failed()),
+                }
+            }
+        }
     }
 
     fn create_automatic_backup(
@@ -658,6 +1087,313 @@ fn validate_request(request: &NativeArchiveRequest) -> Result<(), NativeArchiveE
 
 fn validate_archive_session_id(session_id: &str) -> Result<(), NativeArchiveError> {
     validate_session_id(session_id).map_err(|_| NativeArchiveError::invalid_request())
+}
+
+fn digest_bytes(bytes: &[u8]) -> [u8; SHA256_BYTES] {
+    Sha256::digest(bytes).into()
+}
+
+fn portable_database_from_bytes(
+    schema_version: u32,
+    bytes: Vec<u8>,
+) -> Result<NativePortableDatabase, NativeArchiveError> {
+    if schema_version == 0 || bytes.len() > MAX_PORTABLE_ENTRY_BYTES {
+        return Err(NativeArchiveError::archive_invalid());
+    }
+    let digest = digest_bytes(&bytes);
+    Ok(NativePortableDatabase {
+        schema_version,
+        byte_length: bytes.len() as u64,
+        sha256: digest_hex(&digest),
+        bytes,
+    })
+}
+
+fn validate_sha256_hex(value: &str) -> Result<(), NativeArchiveError> {
+    if value.len() != SHA256_BYTES * 2
+        || !value
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+    {
+        return Err(NativeArchiveError::invalid_request());
+    }
+    Ok(())
+}
+
+fn validate_vault_id(value: &str) -> Result<(), NativeArchiveError> {
+    let bytes = value.as_bytes();
+    let hyphens = [8_usize, 13, 18, 23];
+    if bytes.len() != 36
+        || hyphens.iter().any(|index| bytes[*index] != b'-')
+        || bytes[14] != b'7'
+        || !matches!(bytes[19], b'8' | b'9' | b'a' | b'b')
+        || bytes.iter().enumerate().any(|(index, byte)| {
+            !hyphens.contains(&index) && !(byte.is_ascii_digit() || (b'a'..=b'f').contains(byte))
+        })
+    {
+        return Err(NativeArchiveError::invalid_request());
+    }
+    Ok(())
+}
+
+fn prepare_portable_database(
+    database: &NativePortableDatabase,
+    database_root: &Path,
+    expected_vault_id: &str,
+) -> Result<(TemporaryPath, u32, String), NativeArchiveError> {
+    validate_vault_id(expected_vault_id)?;
+    validate_sha256_hex(&database.sha256)?;
+    if database.schema_version == 0
+        || database.bytes.len() > MAX_PORTABLE_ENTRY_BYTES
+        || database.byte_length != database.bytes.len() as u64
+        || digest_hex(&digest_bytes(&database.bytes)) != database.sha256
+    {
+        return Err(NativeArchiveError::archive_invalid());
+    }
+    let (temporary, mut file) = TemporaryPath::create(database_root, "portable-incoming")?;
+    file.write_all(&database.bytes)
+        .and_then(|_| file.flush())
+        .and_then(|_| file.sync_all())
+        .map_err(|_| NativeArchiveError::archive_io_failure())?;
+    drop(file);
+    let schema_version = validate_sqlite_file(temporary.path(), Some(database.schema_version))?;
+    let connection = Connection::open_with_flags(
+        temporary.path(),
+        OpenFlags::SQLITE_OPEN_READ_ONLY
+            | OpenFlags::SQLITE_OPEN_NO_MUTEX
+            | OpenFlags::SQLITE_OPEN_NOFOLLOW,
+    )
+    .map_err(|_| NativeArchiveError::archive_invalid())?;
+    connection
+        .execute_batch("PRAGMA trusted_schema = OFF;")
+        .map_err(|_| NativeArchiveError::archive_invalid())?;
+    let vault_id = single_vault_id(&connection)?.ok_or_else(NativeArchiveError::archive_invalid)?;
+    if vault_id != expected_vault_id {
+        return Err(NativeArchiveError::archive_invalid());
+    }
+    Ok((temporary, schema_version, vault_id))
+}
+
+fn single_vault_id(connection: &Connection) -> Result<Option<String>, NativeArchiveError> {
+    let has_vault = connection
+        .query_row(
+            "SELECT EXISTS(SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = 'vault')",
+            [],
+            |row| row.get::<_, u8>(0),
+        )
+        .map_err(|_| NativeArchiveError::archive_invalid())?
+        == 1;
+    if !has_vault {
+        return Ok(None);
+    }
+    let mut statement = connection
+        .prepare("SELECT id FROM vault ORDER BY id")
+        .map_err(|_| NativeArchiveError::archive_invalid())?;
+    let ids = statement
+        .query_map([], |row| row.get::<_, String>(0))
+        .map_err(|_| NativeArchiveError::archive_invalid())?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|_| NativeArchiveError::archive_invalid())?;
+    if ids.len() > 1 {
+        return Err(NativeArchiveError::archive_invalid());
+    }
+    if let Some(id) = ids.first() {
+        validate_vault_id(id)?;
+    }
+    Ok(ids.into_iter().next())
+}
+
+fn attachment_manifest_rows(
+    connection: &Connection,
+) -> Result<Vec<(String, String, u64)>, NativeArchiveError> {
+    let has_manifest = connection
+        .query_row(
+            "SELECT EXISTS(SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = 'attachment_manifest')",
+            [],
+            |row| row.get::<_, u8>(0),
+        )
+        .map_err(|_| NativeArchiveError::archive_invalid())?
+        == 1;
+    if !has_manifest {
+        return Ok(Vec::new());
+    }
+    let mut statement = connection
+        .prepare(
+            "SELECT content_id, media_type, byte_length FROM attachment_manifest ORDER BY content_id",
+        )
+        .map_err(|_| NativeArchiveError::archive_invalid())?;
+    let rows = statement
+        .query_map([], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, i64>(2)?,
+            ))
+        })
+        .map_err(|_| NativeArchiveError::archive_invalid())?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|_| NativeArchiveError::archive_invalid())?;
+    let mut result = Vec::with_capacity(rows.len());
+    for (content_id, media_type, byte_length) in rows {
+        validate_sha256_hex(&content_id)?;
+        if media_type.is_empty()
+            || media_type.len() > MAX_MEDIA_TYPE_BYTES
+            || byte_length < 0
+            || byte_length as u64 > MAX_PORTABLE_ENTRY_BYTES as u64
+        {
+            return Err(NativeArchiveError::archive_invalid());
+        }
+        result.push((content_id, media_type, byte_length as u64));
+    }
+    Ok(result)
+}
+
+fn portable_target_fingerprint(target: &NativePortableTarget) -> &str {
+    match target {
+        NativePortableTarget::Empty { fingerprint, .. }
+        | NativePortableTarget::Present { fingerprint, .. } => fingerprint,
+    }
+}
+
+fn calculate_target_fingerprint(database_sha256: &str, content_ids: &[String]) -> String {
+    let mut preimage = format!("coredrill-restore-target-v1\ndatabase:{database_sha256}\n");
+    for content_id in content_ids {
+        preimage.push_str(content_id);
+        preimage.push('\n');
+    }
+    digest_hex(&digest_bytes(preimage.as_bytes()))
+}
+
+fn portable_target_for_session(
+    layout: &NativeStorageLayout,
+    session: &NativeSession,
+) -> Result<NativePortableTarget, NativeArchiveError> {
+    layout
+        .verify_database_path(&session.database_path)
+        .map_err(|_| NativeArchiveError::archive_io_failure())?;
+    let snapshot = create_sqlite_snapshot(
+        &session.connection,
+        layout.database_root(),
+        "portable-target",
+    )?;
+    let (_, digest) = digest_file(snapshot.path())?;
+    let database_sha256 = digest_hex(&digest);
+    let vault_id = single_vault_id(&session.connection)?;
+    let manifest_rows = attachment_manifest_rows(&session.connection)?;
+    if vault_id.is_none() {
+        if !manifest_rows.is_empty() {
+            return Err(NativeArchiveError::archive_invalid());
+        }
+        return Ok(NativePortableTarget::Empty {
+            fingerprint: calculate_target_fingerprint(&database_sha256, &[]),
+            attachment_content_ids: Vec::new(),
+        });
+    }
+    let mut content_ids = Vec::with_capacity(manifest_rows.len());
+    for (content_id, _, byte_length) in manifest_rows {
+        let path = layout
+            .prepare_attachment_path(&content_id)
+            .map_err(|_| NativeArchiveError::archive_io_failure())?;
+        let bytes = fs::read(path).map_err(|_| NativeArchiveError::archive_invalid())?;
+        if bytes.len() as u64 != byte_length || digest_hex(&digest_bytes(&bytes)) != content_id {
+            return Err(NativeArchiveError::archive_invalid());
+        }
+        content_ids.push(content_id);
+    }
+    let schema_version = validate_connection(&session.connection, None)?;
+    let vault_id = vault_id.ok_or_else(NativeArchiveError::archive_invalid)?;
+    Ok(NativePortableTarget::Present {
+        fingerprint: calculate_target_fingerprint(&database_sha256, &content_ids),
+        vault_id,
+        schema_version,
+        database_sha256,
+        attachment_content_ids: content_ids,
+    })
+}
+
+fn validate_and_publish_portable_attachments(
+    layout: &NativeStorageLayout,
+    database_path: &Path,
+    attachments: &[NativePortableAttachment],
+) -> Result<(), NativeArchiveError> {
+    let connection = Connection::open_with_flags(
+        database_path,
+        OpenFlags::SQLITE_OPEN_READ_ONLY
+            | OpenFlags::SQLITE_OPEN_NO_MUTEX
+            | OpenFlags::SQLITE_OPEN_NOFOLLOW,
+    )
+    .map_err(|_| NativeArchiveError::archive_invalid())?;
+    connection
+        .execute_batch("PRAGMA trusted_schema = OFF;")
+        .map_err(|_| NativeArchiveError::archive_invalid())?;
+    let manifest_rows = attachment_manifest_rows(&connection)?;
+    if manifest_rows.len() != attachments.len() {
+        return Err(NativeArchiveError::archive_invalid());
+    }
+    for ((expected_id, expected_media_type, expected_length), attachment) in
+        manifest_rows.iter().zip(attachments)
+    {
+        validate_sha256_hex(&attachment.content_id)?;
+        validate_sha256_hex(&attachment.sha256)?;
+        if attachment.content_id != *expected_id
+            || attachment.sha256 != attachment.content_id
+            || attachment.media_type != *expected_media_type
+            || attachment.media_type.is_empty()
+            || attachment.media_type.len() > MAX_MEDIA_TYPE_BYTES
+            || attachment.byte_length != *expected_length
+            || attachment.byte_length != attachment.bytes.len() as u64
+            || attachment.bytes.len() > MAX_PORTABLE_ENTRY_BYTES
+            || digest_hex(&digest_bytes(&attachment.bytes)) != attachment.content_id
+            || attachment
+                .logical_name
+                .as_ref()
+                .is_some_and(|logical_name| {
+                    logical_name.trim().is_empty() || logical_name.len() > MAX_LOGICAL_NAME_BYTES
+                })
+        {
+            return Err(NativeArchiveError::archive_invalid());
+        }
+        publish_portable_attachment(layout, attachment)?;
+    }
+    Ok(())
+}
+
+fn publish_portable_attachment(
+    layout: &NativeStorageLayout,
+    attachment: &NativePortableAttachment,
+) -> Result<(), NativeArchiveError> {
+    let target = layout
+        .prepare_attachment_path(&attachment.content_id)
+        .map_err(|_| NativeArchiveError::archive_io_failure())?;
+    match fs::read(&target) {
+        Ok(existing)
+            if existing.len() == attachment.bytes.len()
+                && digest_hex(&digest_bytes(&existing)) == attachment.content_id =>
+        {
+            return Ok(());
+        }
+        Ok(_) => {}
+        Err(error) if error.kind() == io::ErrorKind::NotFound => {}
+        Err(_) => return Err(NativeArchiveError::archive_io_failure()),
+    }
+    let parent = target
+        .parent()
+        .ok_or_else(NativeArchiveError::archive_io_failure)?;
+    let (temporary, mut output) = TemporaryPath::create(parent, "portable-attachment")?;
+    output
+        .write_all(&attachment.bytes)
+        .and_then(|_| output.flush())
+        .and_then(|_| output.sync_all())
+        .map_err(|_| NativeArchiveError::archive_io_failure())?;
+    drop(output);
+    atomic_replace_and_sync(temporary.path(), &target)?;
+    let stored = fs::read(&target).map_err(|_| NativeArchiveError::archive_io_failure())?;
+    if stored.len() != attachment.bytes.len()
+        || digest_hex(&digest_bytes(&stored)) != attachment.content_id
+    {
+        return Err(NativeArchiveError::archive_io_failure());
+    }
+    Ok(())
 }
 
 fn validate_connection(

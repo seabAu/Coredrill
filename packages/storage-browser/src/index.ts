@@ -1,5 +1,9 @@
 /** Official SQLite WASM dedicated-Worker and OPFS adapter boundary. */
 export {
+  BrowserAttachmentStore,
+  createBrowserPortableArchiveRestorePortV1,
+} from "./browser-attachment-store.js";
+export {
   BrowserSqliteDatabase,
   openBrowserSqliteDatabase,
   type BrowserSqliteOptions,

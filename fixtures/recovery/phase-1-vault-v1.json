@@ -1,0 +1,15 @@
+{
+  "specVersion": 1,
+  "archiveFile": "phase-1-vault-v1.coredrill.zip",
+  "archiveId": "0198d9d5-0000-7000-8000-000000000001",
+  "generatedAt": "2026-08-29T23:55:00.000Z",
+  "vaultId": "0198d9d4-0000-7000-8000-0000000000ff",
+  "schemaVersion": 92,
+  "archiveByteLength": 1040738,
+  "archiveSha256": "72cc17f42ce2a4b1027c7d56a9d6a0ea7d4971dbcf9bb2aaa73f2ca5075947a2",
+  "databaseSha256": "5d1350d39b397b5ddfec7d5852789ec216b7f9d4d077146ca6619345973809c6",
+  "contentSha256": "30345b76dd3c3042e46d3f5bfdb5bc3d6938b30a5809d4ec87548cb5c746b5cf",
+  "dataFileCount": 58,
+  "attachmentCount": 1,
+  "attachmentContentIds": ["e14c2f1b15c4323496d174fee5c4b5c52cf961c88de4bd99f8836f82ffa15a7b"]
+}

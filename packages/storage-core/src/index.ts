@@ -174,6 +174,16 @@ export {
   type PortableArchiveRestoreTargetSnapshotV1,
 } from "./portable-archive-restore.js";
 export {
+  PORTABLE_VAULT_CONTENT_HASH_VERSION,
+  PortableVaultContentHashError,
+  createPortableArchiveContentHashV1,
+  createPortableRestoreTargetFingerprintV1,
+  createPortableVaultContentHashV1,
+  type PortableVaultContentHashErrorCode,
+  type PortableVaultContentHashInputV1,
+  type PortableVaultContentHashV1,
+} from "./portable-vault-content-hash.js";
+export {
   PORTABLE_DATA_EXPORT_DATASETS,
   PORTABLE_DATA_EXPORT_EXCLUDED_TABLES,
   PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION,

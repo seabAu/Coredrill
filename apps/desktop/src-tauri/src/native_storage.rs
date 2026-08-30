@@ -299,7 +299,7 @@ impl NativeStorageLayout {
         Ok(())
     }
 
-    #[cfg(any(feature = "desktop-shell", test))]
+    #[cfg(any(feature = "desktop-shell", feature = "native-storage-probe", test))]
     pub(crate) fn prepare_backup_directory(
         &self,
         database_path: &Path,

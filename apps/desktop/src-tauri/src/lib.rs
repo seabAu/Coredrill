@@ -1,4 +1,4 @@
-#[cfg(any(feature = "desktop-shell", test))]
+#[cfg(any(feature = "desktop-shell", feature = "native-storage-probe", test))]
 pub mod native_archive;
 pub mod native_secrets;
 pub mod native_storage;
@@ -57,6 +57,11 @@ async fn native_archive_invoke(
                 .blocking_save_file(),
             NativeArchiveOperation::Restore { .. } => picker.blocking_pick_file(),
             NativeArchiveOperation::AutomaticBackup { .. } => None,
+            NativeArchiveOperation::PortableExport { .. }
+            | NativeArchiveOperation::PortableInspect { .. }
+            | NativeArchiveOperation::PortableTarget { .. }
+            | NativeArchiveOperation::AttachmentRead { .. }
+            | NativeArchiveOperation::PortableCommit { .. } => None,
         };
         let selected_path = selected
             .map(|path| path.into_path())

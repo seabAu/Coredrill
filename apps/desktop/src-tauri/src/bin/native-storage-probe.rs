@@ -4,33 +4,61 @@ use std::{
     path::PathBuf,
 };
 
+use coredrill_desktop::native_archive::{
+    NativeArchiveError, NativeArchiveRequest, NativeArchiveResponse,
+};
 use coredrill_desktop::native_storage::{
     NativeStorageError, NativeStorageRequest, NativeStorageResponse, NativeStorageService,
 };
 use serde::Serialize;
+use serde_json::Value;
 
-const MAX_LINE_BYTES: usize = 12 * 1024 * 1024;
+const MAX_LINE_BYTES: usize = 64 * 1024 * 1024;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct ProbeEnvelope {
     ok: bool,
-    response: Option<NativeStorageResponse>,
-    error: Option<NativeStorageError>,
+    response: Option<Value>,
+    error: Option<Value>,
 }
 
-fn envelope(result: Result<NativeStorageResponse, NativeStorageError>) -> ProbeEnvelope {
+fn envelope<Response: Serialize, Error: Serialize>(
+    result: Result<Response, Error>,
+) -> ProbeEnvelope {
     match result {
         Ok(response) => ProbeEnvelope {
             ok: true,
-            response: Some(response),
+            response: serde_json::to_value(response).ok(),
             error: None,
         },
         Err(error) => ProbeEnvelope {
             ok: false,
             response: None,
-            error: Some(error),
+            error: serde_json::to_value(error).ok(),
         },
+    }
+}
+
+fn invoke_line(service: &NativeStorageService, line: &str) -> ProbeEnvelope {
+    let value = match serde_json::from_str::<Value>(line) {
+        Ok(value) => value,
+        Err(_) => {
+            return envelope::<NativeStorageResponse, NativeStorageError>(Err(
+                NativeStorageError::invalid_request(),
+            ));
+        }
+    };
+    if let Ok(request) = serde_json::from_value::<NativeStorageRequest>(value.clone()) {
+        return envelope(service.invoke(request));
+    }
+    match serde_json::from_value::<NativeArchiveRequest>(value) {
+        Ok(request) => envelope::<NativeArchiveResponse, NativeArchiveError>(
+            service.invoke_archive_with_selected_path(request, None),
+        ),
+        Err(_) => envelope::<NativeStorageResponse, NativeStorageError>(Err(
+            NativeStorageError::invalid_request(),
+        )),
     }
 }
 
@@ -54,13 +82,16 @@ fn main() {
     for line in stdin.lock().lines() {
         let result = match line {
             Ok(line) if line.len() <= MAX_LINE_BYTES => {
-                serde_json::from_str::<NativeStorageRequest>(&line)
-                    .map_err(|_| NativeStorageError::invalid_request())
-                    .and_then(|request| service.invoke(request))
+                write_envelope(&mut stdout, &invoke_line(&service, &line))
             }
-            _ => Err(NativeStorageError::invalid_request()),
+            _ => write_envelope(
+                &mut stdout,
+                &envelope::<NativeStorageResponse, NativeStorageError>(Err(
+                    NativeStorageError::invalid_request(),
+                )),
+            ),
         };
-        if write_envelope(&mut stdout, &envelope(result)).is_err() {
+        if result.is_err() {
             std::process::exit(3);
         }
     }

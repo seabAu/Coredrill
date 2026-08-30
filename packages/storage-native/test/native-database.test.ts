@@ -8,12 +8,17 @@ import { spawn, spawnSync, type ChildProcessWithoutNullStreams } from "node:chil
 
 import {
   applySqlMigrations,
+  commitPortableArchiveRestoreV1,
+  createPortableArchiveContentHashV1,
+  createPortableArchiveRestorePreviewV1,
+  createPortableVaultContentHashV1,
   createPhase1RepositoryContractSuite,
   createTransactionSemanticsSuite,
   defineDatabaseContractSuite,
   defineSqlMigrations,
   PHASE_1_REPOSITORY_CONTRACT_CASE_NAMES,
   PHASE_1_REPOSITORY_CONTRACT_MANIFEST,
+  inspectPortableArchiveV1,
   runDatabaseContractSuite,
   sqlStatement,
   type DatabaseContractAdapter,
@@ -25,9 +30,11 @@ import {
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import {
-  NativeStorageCapabilityError,
   NativeStorageProtocolError,
+  createNativePortableArchiveRestorePortV1,
   openNativeSqliteDatabase,
+  type NativeArchiveRequest,
+  type NativeArchiveTransport,
   type NativeSqliteDatabase,
   type NativeStorageRequest,
   type NativeStorageTransport,
@@ -126,7 +133,7 @@ const migrationPaths = migrationDefinitions.map(([fileName]) =>
 );
 const APPLIED_AT = "2026-08-24T12:00:00.000Z";
 
-class ProbeTransport implements NativeStorageTransport {
+class ProbeTransport implements NativeStorageTransport, NativeArchiveTransport {
   private readonly child: ChildProcessWithoutNullStreams;
   private readonly pending: PendingInvocation[] = [];
   private stdoutBuffer = "";
@@ -150,6 +157,14 @@ class ProbeTransport implements NativeStorageTransport {
   }
 
   public invoke(request: NativeStorageRequest): Promise<unknown> {
+    return this.send(request);
+  }
+
+  public invokeArchive(request: NativeArchiveRequest): Promise<unknown> {
+    return this.send(request);
+  }
+
+  private send(request: NativeStorageRequest | NativeArchiveRequest): Promise<unknown> {
     if (this.closed) return Promise.reject(this.transportClosed());
     return new Promise((resolve, reject) => {
       this.pending.push({ resolve, reject });
@@ -422,7 +437,7 @@ describe("native SQLite repository and migration contracts", () => {
     await expect(reopened.delete()).resolves.toBe(true);
   });
 
-  it("enforces query/execute separation and keeps unfinished capabilities explicit", async () => {
+  it("enforces query/execute separation and exposes the path-free archive boundary", async () => {
     const database = await openNativeSqliteDatabase({
       databaseName: nextDatabaseName(),
       transport,
@@ -435,17 +450,119 @@ describe("native SQLite repository and migration contracts", () => {
     await expect(database.execute(sqlStatement("SELECT 1"))).rejects.toMatchObject({
       code: "invalid_statement",
     });
-    await expect(database.exportPortable()).rejects.toBeInstanceOf(NativeStorageCapabilityError);
-    await expect(database.exportRecoveryArchive()).rejects.toBeInstanceOf(
-      NativeStorageCapabilityError,
-    );
-    await expect(database.restoreRecoveryArchive()).rejects.toBeInstanceOf(
-      NativeStorageCapabilityError,
-    );
-    await expect(database.createAutomaticBackup(7)).rejects.toBeInstanceOf(
-      NativeStorageCapabilityError,
-    );
+    await applySqlMigrations(database, migrations(), APPLIED_AT);
+    await expect(database.exportPortable()).resolves.toMatchObject({
+      schemaVersion: 92,
+      byteLength: expect.any(Number),
+      sha256: expect.stringMatching(/^[a-f0-9]{64}$/u),
+    });
+    await expect(database.exportRecoveryArchive()).resolves.toEqual({ status: "cancelled" });
+    await expect(database.restoreRecoveryArchive()).resolves.toEqual({ status: "cancelled" });
+    await expect(database.createAutomaticBackup(7)).resolves.toMatchObject({
+      retentionCount: 7,
+      knownGoodBackups: 1,
+      cleanupPending: false,
+      archive: { schemaVersion: 92, sha256: expect.stringMatching(/^[a-f0-9]{64}$/u) },
+    });
     await database.delete();
+  });
+
+  it("restores the committed Phase 1 vault and attachment through the native boundary", async () => {
+    const manifest = JSON.parse(
+      await readFile(
+        path.join(repositoryRoot, "fixtures", "recovery", "phase-1-vault-v1.json"),
+        "utf8",
+      ),
+    ) as {
+      readonly archiveSha256: string;
+      readonly contentSha256: string;
+      readonly databaseSha256: string;
+      readonly generatedAt: string;
+      readonly vaultId: string;
+      readonly schemaVersion: number;
+      readonly attachmentCount: number;
+      readonly attachmentContentIds: readonly string[];
+    };
+    const archiveBytes = new Uint8Array(
+      await readFile(
+        path.join(repositoryRoot, "fixtures", "recovery", "phase-1-vault-v1.coredrill.zip"),
+      ),
+    );
+    const inspected = await inspectPortableArchiveV1({
+      bytes: archiveBytes,
+      expectedSchemaVersion: manifest.schemaVersion,
+      expectedArchiveSha256: manifest.archiveSha256,
+    });
+    await expect(createPortableArchiveContentHashV1(inspected)).resolves.toMatchObject({
+      sha256: manifest.contentSha256,
+    });
+
+    const database = await openNativeSqliteDatabase({
+      databaseName: nextDatabaseName(),
+      transport,
+    });
+    try {
+      const port = createNativePortableArchiveRestorePortV1({
+        database,
+        expectedVaultId: manifest.vaultId,
+      });
+      const preview = await createPortableArchiveRestorePreviewV1({
+        archiveBytes,
+        expectedSchemaVersion: manifest.schemaVersion,
+        expectedArchiveSha256: manifest.archiveSha256,
+        port,
+      });
+      expect(preview).toMatchObject({
+        conflict: "none",
+        requiredConfirmation: "commit",
+        target: { state: "empty", attachmentCount: 0 },
+        changes: {
+          database: "create",
+          attachmentsAdded: manifest.attachmentCount,
+          attachmentsReused: 0,
+          attachmentsRemoved: 0,
+        },
+      });
+      await expect(
+        commitPortableArchiveRestoreV1({ preview, confirmation: "commit" }),
+      ).resolves.toMatchObject({
+        committed: true,
+        archiveSha256: manifest.archiveSha256,
+        databaseSha256: manifest.databaseSha256,
+        attachmentCount: manifest.attachmentCount,
+      });
+
+      const restoredContent = await createPortableVaultContentHashV1({
+        database,
+        generatedAt: manifest.generatedAt,
+        vaultId: manifest.vaultId,
+        readAttachment: (contentId) => database.readPortableAttachment(contentId),
+      });
+      expect(restoredContent.sha256).toBe(manifest.contentSha256);
+      await expect(
+        database.query<{ readonly content_id: string } & QueryRow>(
+          sqlStatement("SELECT content_id FROM attachment_manifest ORDER BY content_id"),
+        ),
+      ).resolves.toEqual(
+        manifest.attachmentContentIds.map((contentId) => ({ content_id: contentId })),
+      );
+      const restoredDatabase = await database.exportPortable();
+      expect(restoredDatabase).toMatchObject({
+        schemaVersion: manifest.schemaVersion,
+        sha256: expect.stringMatching(/^[a-f0-9]{64}$/u),
+      });
+      console.info(
+        `BKP007_NATIVE_PROOF ${JSON.stringify({
+          archiveSha256: manifest.archiveSha256,
+          contentSha256: restoredContent.sha256,
+          databaseMatchesArchive: restoredDatabase.sha256 === manifest.databaseSha256,
+          attachmentCount: manifest.attachmentCount,
+          cleanInstallRestore: true,
+        })}`,
+      );
+    } finally {
+      await database.delete();
+    }
   });
 
   it("rejects path-shaped database names before privileged work", async () => {

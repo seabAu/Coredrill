@@ -10,8 +10,12 @@ export {
   type NativeArchiveResponse,
   type NativeArchiveTransport,
   type NativeAutomaticBackupMetadata,
+  type NativePortableAttachment,
+  type NativePortableDatabase,
+  type NativePortableTarget,
 } from "./archive-protocol.js";
 export {
+  createNativePortableArchiveRestorePortV1,
   openNativeSqliteDatabase,
   type NativeSqliteDatabase,
   type OpenNativeSqliteOptions,

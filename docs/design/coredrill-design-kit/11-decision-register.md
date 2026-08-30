@@ -313,6 +313,15 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
   replay, and injected commit failure preserve the old target. See [portable
   archive restore version 1](portable-archive-restore-v1.md) and [restore
   verification](../../proof/phase-1-portable-archive-restore-verification.md).
+- **Phase 1 clean recovery evidence (2026-08-30):** `BKP-007` restores one
+  committed representative schema-92 ZIP, including all human-readable data
+  projections and a verified content-addressed attachment, into empty browser
+  SQLite/OPFS and native rusqlite/app-data targets. A versioned canonical hash
+  over the 29 JSON projections and physical attachment bytes matches the source
+  and both restored vaults; raw SQLite member checksums remain exact transport
+  evidence but are not misrepresented as cross-adapter logical identity. See
+  [portable vault content hash version 1](portable-vault-content-hash-v1.md) and
+  [clean recovery verification](../../proof/phase-1-clean-recovery-verification.md).
 
 ### D-052 — Future sync is opt-in and encrypted
 

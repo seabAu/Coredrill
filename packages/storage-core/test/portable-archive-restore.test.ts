@@ -6,7 +6,9 @@ import { describe, expect, it } from "vitest";
 import {
   PortableArchiveRestoreError,
   commitPortableArchiveRestoreV1,
+  createPortableArchiveContentHashV1,
   createPortableArchiveRestorePreviewV1,
+  createPortableRestoreTargetFingerprintV1,
   inspectPortableArchiveV1,
   writePortableArchiveV1,
   type PortableArchiveDatabaseInspectionV1,
@@ -156,6 +158,35 @@ const repack = (
 };
 
 describe("portable archive restore", () => {
+  it("derives a stable adapter-neutral content hash and sorted target fingerprint", async () => {
+    const { archive, attachmentSha256 } = await createArchive();
+    const inspected = await inspectPortableArchiveV1({
+      bytes: archive.bytes,
+      expectedSchemaVersion: SCHEMA_VERSION,
+    });
+    await expect(createPortableArchiveContentHashV1(inspected)).resolves.toMatchObject({
+      specVersion: 1,
+      vaultId: VAULT_ID,
+      schemaVersion: SCHEMA_VERSION,
+      jsonDataFileCount: 1,
+      attachmentCount: 1,
+      sha256: expect.stringMatching(/^[a-f0-9]{64}$/u),
+    });
+    const first = await createPortableRestoreTargetFingerprintV1("a".repeat(64), [
+      "c".repeat(64),
+      attachmentSha256,
+    ]);
+    await expect(
+      createPortableRestoreTargetFingerprintV1("a".repeat(64), [attachmentSha256, "c".repeat(64)]),
+    ).resolves.toBe(first);
+    await expect(
+      createPortableRestoreTargetFingerprintV1("a".repeat(64), [
+        attachmentSha256,
+        attachmentSha256,
+      ]),
+    ).rejects.toMatchObject({ code: "invalid_input" });
+  });
+
   it("inspects every entry, previews an empty target, and commits only after confirmation", async () => {
     const { archive, attachmentSha256, databaseSha256 } = await createArchive();
     const inspected = await inspectPortableArchiveV1({

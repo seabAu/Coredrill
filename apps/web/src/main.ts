@@ -23,6 +23,8 @@ import {
   BrowserSqliteBusyError,
   BrowserStorageUnavailableError,
   BrowserVaultBusyError,
+  BrowserAttachmentStore,
+  createBrowserPortableArchiveRestorePortV1,
   openBrowserSqliteDatabase,
   type BrowserSqliteDatabase,
   type BrowserStorageHealthSnapshot,
@@ -30,14 +32,17 @@ import {
 import {
   applySqlMigrations,
   commitPortableArchiveRestoreV1,
+  createPortableArchiveContentHashV1,
   createPortableDataExportV1,
   createPortableArchiveRestorePreviewV1,
+  createPortableVaultContentHashV1,
   createPhase1RepositoryContractSuite,
   createTrackerRepositories,
   defineSqlMigrations,
   PHASE_1_REPOSITORY_CONTRACT_MANIFEST,
   PortableArchiveRestoreError,
   runDatabaseContractSuite,
+  inspectPortableArchiveV1,
   sqlStatement,
   writePortableArchiveV1,
   type DatabaseContractRunResult,
@@ -231,6 +236,40 @@ interface PortableArchiveRestoreProof {
   readonly restoredVaultName: string;
 }
 
+interface PortableRecoveryFixtureInput {
+  readonly archiveId: string;
+  readonly generatedAt: string;
+  readonly vaultId: string;
+}
+
+interface PortableRecoveryFixture {
+  readonly archiveByteLength: number;
+  readonly archiveSha256: string;
+  readonly archiveBytesBase64: string;
+  readonly databaseSha256: string;
+  readonly contentSha256: string;
+  readonly attachmentContentIds: readonly string[];
+  readonly dataFileCount: number;
+  readonly attachmentCount: number;
+}
+
+interface PortableRecoveryRestoreInput {
+  readonly archiveBytesBase64: string;
+  readonly archiveSha256: string;
+  readonly generatedAt: string;
+  readonly vaultId: string;
+}
+
+interface PortableRecoveryRestoreProof {
+  readonly contentSha256: string;
+  readonly databaseSha256: string;
+  readonly databaseMatchesArchive: boolean;
+  readonly attachmentContentIds: readonly string[];
+  readonly attachmentCount: number;
+  readonly conflict: "none";
+  readonly committed: true;
+}
+
 export interface CoredrillStorageSpikeApi {
   openAndMigrate(options?: OpenOptions): Promise<OpenMigrationProof>;
   tryOpenAndMigrate(options?: OpenOptions): Promise<OpenAttempt>;
@@ -262,6 +301,12 @@ export interface CoredrillStorageSpikeApi {
   runPortableArchiveRestoreProof(
     input: PortableArchiveRestoreProofInput,
   ): Promise<PortableArchiveRestoreProof>;
+  createPortableRecoveryFixture(
+    input: PortableRecoveryFixtureInput,
+  ): Promise<PortableRecoveryFixture>;
+  restorePortableRecoveryFixture(
+    input: PortableRecoveryRestoreInput,
+  ): Promise<PortableRecoveryRestoreProof>;
 }
 
 declare global {
@@ -270,6 +315,7 @@ declare global {
 }
 
 let database: BrowserSqliteDatabase | undefined;
+let attachmentStore: BrowserAttachmentStore | undefined;
 const statusElement = document.querySelector<HTMLElement>("#status");
 
 const setStatus = (message: string): void => {
@@ -586,6 +632,11 @@ const getDatabase = async (options: OpenOptions = {}): Promise<BrowserSqliteData
   return database;
 };
 
+const getAttachmentStore = async (): Promise<BrowserAttachmentStore> => {
+  attachmentStore ??= await BrowserAttachmentStore.open();
+  return attachmentStore;
+};
+
 const readBrowserExportReminder = async (
   nowUnixMs: number,
 ): Promise<BrowserExportReminderProof> => {
@@ -626,6 +677,7 @@ const writeBrowserExportReminder = async (
 };
 
 interface BrowserVaultDeletionSnapshot {
+  readonly attachmentFiles: number;
   readonly databaseSha256: string;
   readonly vaultId: string;
   readonly vaultName: string;
@@ -648,9 +700,17 @@ const browserVaultDeletionPort: VaultDeletionPort = Object.freeze({
       throw new VaultDeletionError("invalid_state");
     }
     const portable = await client.exportPortable();
+    const attachmentRows = await client.query<{ readonly count: number } & QueryRow>(
+      sqlStatement("SELECT count(*) AS count FROM attachment_manifest"),
+    );
+    const attachmentFiles = attachmentRows[0]?.count;
+    if (!Number.isSafeInteger(attachmentFiles) || attachmentFiles === undefined) {
+      throw new VaultDeletionError("invalid_state");
+    }
     browserVaultDeletionSnapshots.set(
       input.previewId,
       Object.freeze({
+        attachmentFiles,
         databaseSha256: portable.sha256,
         vaultId: vault.id,
         vaultName: vault.name,
@@ -671,7 +731,7 @@ const browserVaultDeletionPort: VaultDeletionPort = Object.freeze({
       vaultName: vault.name,
       storageMode: "browser",
       inventory: Object.freeze({
-        attachmentFiles: 0,
+        attachmentFiles,
         managedBackups: 0,
         providerSecrets: 0,
         sharedAttachmentFiles: 0,
@@ -704,13 +764,20 @@ const browserVaultDeletionPort: VaultDeletionPort = Object.freeze({
     const deleted = await client.delete();
     if (!deleted) throw new VaultDeletionError("cleanup_failed");
     database = undefined;
+    let attachmentCleanupPending = false;
+    try {
+      await (await getAttachmentStore()).deleteAll();
+      attachmentStore = undefined;
+    } catch {
+      attachmentCleanupPending = true;
+    }
     browserVaultDeletionSnapshots.delete(input.previewId);
     return Object.freeze({
       deletionId: input.deletionId,
       vaultId: input.vaultId,
-      status: "deleted",
+      status: attachmentCleanupPending ? "cleanup_pending" : "deleted",
       deleted: Object.freeze({
-        attachmentFiles: 0,
+        attachmentFiles: attachmentCleanupPending ? 0 : snapshot.attachmentFiles,
         managedBackups: 0,
         providerSecrets: 0,
         sharedAttachmentFiles: 0,
@@ -751,6 +818,279 @@ const toPortableDatabase = (portable: PortableDatabaseJson): PortableDatabase =>
   sha256: portable.sha256,
   bytes: base64ToBytes(portable.bytesBase64),
 });
+
+interface AttachmentExportRow extends QueryRow {
+  readonly content_id: string;
+  readonly media_type: string;
+  readonly byte_length: number;
+  readonly logical_name: string | null;
+}
+
+const seedRepresentativePhase1Vault = async (
+  client: BrowserSqliteDatabase,
+  vaultId: string,
+): Promise<readonly string[]> => {
+  const createdAt = "2026-08-29T23:50:00.000Z";
+  const attachmentBytes = new TextEncoder().encode(
+    "Synthetic Coredrill resume attachment for the BKP-007 recovery drill.\n",
+  );
+  const attachmentContentId = await sha256Text(new TextDecoder().decode(attachmentBytes));
+  await (
+    await getAttachmentStore()
+  ).put({
+    contentId: attachmentContentId,
+    byteLength: attachmentBytes.byteLength,
+    sha256: attachmentContentId,
+    bytes: attachmentBytes,
+  });
+
+  const companyId = "0198d9d4-0000-7000-8000-000000000001";
+  const jobId = "0198d9d4-0000-7000-8000-000000000002";
+  const statusId = "0198d9d4-0000-7000-8000-000000000003";
+  const applicationId = "0198d9d4-0000-7000-8000-000000000004";
+  const statusEventId = "0198d9d4-0000-7000-8000-000000000005";
+  const nextActionId = "0198d9d4-0000-7000-8000-000000000006";
+  const reminderId = "0198d9d4-0000-7000-8000-000000000007";
+  const tagId = "0198d9d4-0000-7000-8000-000000000008";
+  const documentId = "0198d9d4-0000-7000-8000-000000000009";
+  const documentVersionId = "0198d9d4-0000-7000-8000-00000000000a";
+  await client.transaction(async (transaction) => {
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO company(
+           id, canonical_name, website_url, domain, notes, created_at, updated_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          companyId,
+          "Northstar Systems",
+          "https://northstar.example/",
+          "northstar.example",
+          "Synthetic recovery fixture company.",
+          createdAt,
+          createdAt,
+        ],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO status_definition(
+           id, name, category, color, is_system, sort_order, terminal, created_at, updated_at
+         ) VALUES (?, ?, ?, ?, 1, 0, 0, ?, ?)`,
+        [statusId, "Saved", "saved", "blue", createdAt, createdAt],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO job(
+           id, company_id, title, normalized_title, description_text, employment_type,
+           workplace_type, seniority, remote_region_json, date_posted, valid_through,
+           current_status_id, created_at, updated_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          jobId,
+          companyId,
+          "Senior Platform Engineer",
+          "senior platform engineer",
+          "Build reliable local-first systems with TypeScript, Rust, and SQLite.",
+          "full_time",
+          "remote",
+          "senior",
+          JSON.stringify({ regions: ["US"] }),
+          "2026-08-28",
+          "2026-09-30",
+          statusId,
+          createdAt,
+          createdAt,
+        ],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO application(
+           id, job_id, current_status_id, notes, created_at, updated_at
+         ) VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          applicationId,
+          jobId,
+          statusId,
+          "Prepare a tailored local application.",
+          createdAt,
+          createdAt,
+        ],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO status_event(
+           id, job_id, application_id, from_status_id, to_status_id, occurred_at, note, created_at
+         ) VALUES (?, ?, ?, NULL, ?, ?, ?, ?)`,
+        [
+          statusEventId,
+          jobId,
+          applicationId,
+          statusId,
+          createdAt,
+          "Added to the pipeline.",
+          createdAt,
+        ],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO next_action(
+           id, job_id, application_id, title, due_at, timezone, state, created_at, updated_at
+         ) VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
+        [
+          nextActionId,
+          jobId,
+          applicationId,
+          "Tailor resume",
+          "2026-08-31T15:00:00.000Z",
+          "America/New_York",
+          createdAt,
+          createdAt,
+        ],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO reminder(
+           id, job_id, next_action_id, remind_at, timezone, state, note, created_at, updated_at
+         ) VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, ?)`,
+        [
+          reminderId,
+          jobId,
+          nextActionId,
+          "2026-08-31T14:30:00.000Z",
+          "America/New_York",
+          "Recovery fixture reminder.",
+          createdAt,
+          createdAt,
+        ],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        "INSERT INTO tag(id, name, color, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+        [tagId, "Priority", "amber", createdAt, createdAt],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement("INSERT INTO job_tag(job_id, tag_id, created_at) VALUES (?, ?, ?)", [
+        jobId,
+        tagId,
+        createdAt,
+      ]),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO document(id, kind, title, source, created_at, updated_at)
+         VALUES (?, 'resume', ?, 'user', ?, ?)`,
+        [documentId, "Platform resume", createdAt, createdAt],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO document_version(
+           id, document_id, version_number, content_ir_version, content_ir_json, content_plain,
+           created_by, created_at, parent_version_id, content_hash, label
+         ) VALUES (?, ?, 1, 1, ?, ?, 'user', ?, NULL, ?, ?)`,
+        [
+          documentVersionId,
+          documentId,
+          JSON.stringify({ specVersion: 1, type: "doc", content: [] }),
+          "Senior Platform Engineer resume",
+          createdAt,
+          await sha256Text("Senior Platform Engineer resume"),
+          "Recovery proof",
+        ],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO attachment_manifest(content_id, media_type, byte_length, created_at)
+         VALUES (?, 'text/plain', ?, ?)`,
+        [attachmentContentId, attachmentBytes.byteLength, createdAt],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO document_version_attachment(
+           document_version_id, content_id, purpose, logical_name, sort_order, created_at
+         ) VALUES (?, ?, 'source', 'resume-source.txt', 0, ?)`,
+        [documentVersionId, attachmentContentId, createdAt],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO document_job_link(document_id, job_id, purpose, created_at)
+         VALUES (?, ?, 'application', ?)`,
+        [documentId, jobId, createdAt],
+      ),
+    );
+    const vault = await transaction.query<VaultRow>(
+      sqlStatement("SELECT id, name, schema_version, created_at, last_opened_at FROM vault"),
+    );
+    if (vault.length !== 1 || vault[0]?.id !== vaultId) {
+      throw new Error("The representative recovery fixture changed vault identity.");
+    }
+  });
+  return Object.freeze([attachmentContentId]);
+};
+
+const createCurrentPortableArchive = async (input: PortableRecoveryFixtureInput) => {
+  const client = await getDatabase();
+  const dataBundle = await createPortableDataExportV1({
+    database: client,
+    generatedAt: input.generatedAt,
+    vaultId: input.vaultId,
+  });
+  const portable = await client.exportPortable();
+  const migrationRows = await client.query<MigrationLedgerRow>(
+    sqlStatement(
+      "SELECT version, name, sha256, applied_at FROM coredrill_schema_migration ORDER BY version",
+    ),
+  );
+  const attachmentRows = await client.query<AttachmentExportRow>(
+    sqlStatement(
+      `SELECT attachment_manifest.content_id, attachment_manifest.media_type,
+              attachment_manifest.byte_length, min(document_version_attachment.logical_name) AS logical_name
+       FROM attachment_manifest
+       LEFT JOIN document_version_attachment
+         ON document_version_attachment.content_id = attachment_manifest.content_id
+       GROUP BY attachment_manifest.content_id, attachment_manifest.media_type,
+                attachment_manifest.byte_length
+       ORDER BY attachment_manifest.content_id`,
+    ),
+  );
+  const store = await getAttachmentStore();
+  const archive = await writePortableArchiveV1({
+    archiveId: input.archiveId,
+    createdAt: input.generatedAt,
+    createdByVersion: "0.0.0",
+    vault: {
+      id: input.vaultId,
+      schemaVersion: portable.schemaVersion,
+      migrationHistory: migrationRows.map((row) => ({
+        version: row.version,
+        name: row.name,
+        appliedAt: row.applied_at,
+        sha256: row.sha256,
+      })),
+    },
+    database: portable,
+    dataFiles: dataBundle.dataFiles,
+    attachments: attachmentRows.map((row) => ({
+      contentId: row.content_id,
+      sha256: row.content_id,
+      mediaType: row.media_type,
+      byteLength: row.byte_length,
+      ...(row.logical_name === null ? {} : { logicalName: row.logical_name }),
+    })),
+    readAttachment: (contentId) => store.read(contentId),
+  });
+  return Object.freeze({ archive, portable });
+};
 
 const createBrowserContractAdapter = () => {
   let sequence = 1;
@@ -888,8 +1228,10 @@ const api: CoredrillStorageSpikeApi = {
   },
   delete: async () => {
     const client = await getDatabase();
+    await (await getAttachmentStore()).deleteAll();
     const deleted = await client.delete();
     database = undefined;
+    attachmentStore = undefined;
     return deleted;
   },
   runBenchmark: (input) => runStorageBenchmark(input),
@@ -1095,6 +1437,78 @@ const api: CoredrillStorageSpikeApi = {
       restoredDatabaseSha256: restored.sha256,
       restoredDatabaseMatchesArchive: restored.sha256 === portable.sha256,
       restoredVaultName: restoredVaults[0]?.name ?? "",
+    });
+  },
+  createPortableRecoveryFixture: async (input) => {
+    const client = await getDatabase();
+    const attachmentContentIds = await seedRepresentativePhase1Vault(client, input.vaultId);
+    const { archive, portable } = await createCurrentPortableArchive(input);
+    const inspected = await inspectPortableArchiveV1({
+      bytes: archive.bytes,
+      expectedSchemaVersion: portable.schemaVersion,
+      expectedArchiveSha256: archive.sha256,
+    });
+    const content = await createPortableArchiveContentHashV1(inspected);
+    return Object.freeze({
+      archiveByteLength: archive.byteLength,
+      archiveSha256: archive.sha256,
+      archiveBytesBase64: bytesToBase64(archive.bytes),
+      databaseSha256: portable.sha256,
+      contentSha256: content.sha256,
+      attachmentContentIds,
+      dataFileCount: archive.manifest.dataFiles.length,
+      attachmentCount: archive.manifest.attachments.length,
+    });
+  },
+  restorePortableRecoveryFixture: async (input) => {
+    const client = await getDatabase();
+    const archiveBytes = base64ToBytes(input.archiveBytesBase64);
+    const schemaVersion = (await client.diagnostics()).schemaVersion;
+    const inspected = await inspectPortableArchiveV1({
+      bytes: archiveBytes,
+      expectedSchemaVersion: schemaVersion,
+      expectedArchiveSha256: input.archiveSha256,
+    });
+    if (inspected.manifest.vault.id !== input.vaultId) {
+      throw new Error("The recovery fixture changed vault identity.");
+    }
+    const store = await getAttachmentStore();
+    const port = createBrowserPortableArchiveRestorePortV1({
+      database: client,
+      attachments: store,
+      expectedVaultId: input.vaultId,
+    });
+    const preview = await createPortableArchiveRestorePreviewV1({
+      archiveBytes,
+      expectedSchemaVersion: schemaVersion,
+      expectedArchiveSha256: input.archiveSha256,
+      port,
+    });
+    if (preview.conflict !== "none" || preview.requiredConfirmation !== "commit") {
+      throw new Error("The recovery fixture target is not clean.");
+    }
+    const result = await commitPortableArchiveRestoreV1({
+      preview,
+      confirmation: "commit",
+    });
+    const restored = await client.exportPortable();
+    const content = await createPortableVaultContentHashV1({
+      database: client,
+      generatedAt: input.generatedAt,
+      vaultId: input.vaultId,
+      readAttachment: (contentId) => store.read(contentId),
+    });
+    const attachmentRows = await client.query<{ readonly content_id: string } & QueryRow>(
+      sqlStatement("SELECT content_id FROM attachment_manifest ORDER BY content_id"),
+    );
+    return Object.freeze({
+      contentSha256: content.sha256,
+      databaseSha256: restored.sha256,
+      databaseMatchesArchive: restored.sha256 === inspected.database.sha256,
+      attachmentContentIds: Object.freeze(attachmentRows.map((row) => row.content_id)),
+      attachmentCount: attachmentRows.length,
+      conflict: preview.conflict,
+      committed: result.committed,
     });
   },
   runPhase1RepositoryContracts: async () => {

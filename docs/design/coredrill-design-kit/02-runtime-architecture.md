@@ -133,6 +133,8 @@ interface DatabasePort extends DatabaseSession {
 
 `BKP-003` adds the corresponding restore coordinator in `@coredrill/storage-core`. Inspection accepts only the exact bounded version-1 ZIP inventory, validates the whole archive when an expected digest exists, rejects unsafe/duplicate/compressed/oversized entries, verifies every recorded length and SHA-256, and asks an adapter to inspect copied SQLite bytes only in temporary state. A preview exposes immutable archive/target summaries, explicit empty/identical/same-vault/different-vault conflict classes, the required confirmation, and attachment add/reuse/remove counts; archive bytes and the adapter capability remain private. Commit rechecks the exact target snapshot for database or attachment drift, revalidates the retained archive, and requires the adapter to atomically replace database and attachment state or preserve the old target. See [portable archive restore version 1](portable-archive-restore-v1.md).
 
+`BKP-007` composes that coordinator with production browser and native ports. One committed synthetic schema-92 archive carries all 58 data files and a real content-addressed attachment into empty targets. The [portable vault content hash version 1](portable-vault-content-hash-v1.md) compares the 29 canonical JSON projections and verified attachment bytes while deliberately excluding adapter-specific SQLite page layout and redundant CSV projections. The source archive, restored browser vault, and restored native vault must produce one identical canonical SHA-256 before the recovery drill passes.
+
 ### Browser adapter
 
 - Official SQLite WebAssembly in a dedicated Worker.
@@ -161,8 +163,11 @@ instant. See [browser vault recovery health version 1](browser-vault-recovery-he
 the current portable database state, rechecks the sole vault row/name and exact
 typed phrase, then uses the existing serialized Worker deletion operation. A
 wrong phrase or stale preview preserves the database; a successful reopen is a
-clean migrated profile. Browser attachment, automatic-backup, and secret counts
-remain zero because those stores do not exist in the browser baseline.
+clean migrated profile. Its original proof vault had zero attachment,
+automatic-backup, and secret counts. `BKP-007` adds the production OPFS
+content-addressed attachment store; deletion now inventories and removes those
+bytes and reports `cleanup_pending` rather than a clean result if OPFS cleanup
+does not finish.
 
 ### Native adapter
 

@@ -37,7 +37,7 @@ describe("native recovery archive protocol", () => {
     );
 
     expect(response).toEqual({
-      protocolVersion: 1,
+      protocolVersion: NATIVE_ARCHIVE_PROTOCOL_VERSION,
       requestId: "native-archive-1",
       data: { type: "exported", archive: metadata },
     });
@@ -57,22 +57,24 @@ describe("native recovery archive protocol", () => {
         switch (request.operation.type) {
           case "export":
             return {
-              protocolVersion: 1,
+              protocolVersion: NATIVE_ARCHIVE_PROTOCOL_VERSION,
               requestId: request.requestId,
               data: { type: "exported", archive: metadata },
             };
           case "restore":
             return {
-              protocolVersion: 1,
+              protocolVersion: NATIVE_ARCHIVE_PROTOCOL_VERSION,
               requestId: request.requestId,
               data: { type: "cancelled", operation: "restore" },
             };
           case "automatic_backup":
             return {
-              protocolVersion: 1,
+              protocolVersion: NATIVE_ARCHIVE_PROTOCOL_VERSION,
               requestId: request.requestId,
               data: { type: "backup_created", backup: backupMetadata },
             };
+          default:
+            throw new Error("Unexpected portable operation in the picker protocol test.");
         }
       },
     };
@@ -124,7 +126,7 @@ describe("native recovery archive protocol", () => {
   it("accepts only bounded path-free automatic-backup metadata", () => {
     const response = parseNativeArchiveResponse(
       {
-        protocolVersion: 1,
+        protocolVersion: NATIVE_ARCHIVE_PROTOCOL_VERSION,
         requestId: "native-archive-1",
         data: { type: "backup_created", backup: backupMetadata },
       },
@@ -133,6 +135,47 @@ describe("native recovery archive protocol", () => {
 
     expect(response.data).toEqual({ type: "backup_created", backup: backupMetadata });
     expect(JSON.stringify(response)).not.toContain("path");
+  });
+
+  it("accepts bounded portable database, target, attachment, and commit responses", () => {
+    const digest = "a".repeat(64);
+    const portableResponses = [
+      {
+        type: "portable_database",
+        database: { schemaVersion: 92, byteLength: 3, sha256: digest, bytes: [1, 2, 3] },
+      },
+      {
+        type: "portable_inspection",
+        integrity: "ok",
+        schemaVersion: 92,
+        vaultId: "0198d9d4-0000-7000-8000-0000000000ff",
+      },
+      {
+        type: "portable_target",
+        target: { state: "empty", fingerprint: digest, attachmentContentIds: [] },
+      },
+      {
+        type: "attachment_data",
+        contentId: digest,
+        byteLength: 3,
+        sha256: digest,
+        bytes: [1, 2, 3],
+      },
+      { type: "attachment_missing", contentId: digest },
+      { type: "portable_committed", databaseSha256: digest, attachmentCount: 1 },
+    ];
+    for (const data of portableResponses) {
+      expect(
+        parseNativeArchiveResponse(
+          {
+            protocolVersion: NATIVE_ARCHIVE_PROTOCOL_VERSION,
+            requestId: "native-archive-1",
+            data,
+          },
+          "native-archive-1",
+        ).data,
+      ).toEqual(data);
+    }
   });
 
   it("closes the adapter after an unrecoverable native restore failure", async () => {

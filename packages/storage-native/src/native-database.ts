@@ -3,6 +3,10 @@ import type {
   DatabaseTransaction,
   ExecuteResult,
   PortableDatabase,
+  PortableArchiveDatabaseInspectionV1,
+  PortableArchiveRestoreCommitPayloadV1,
+  PortableArchiveRestorePortV1,
+  PortableArchiveRestoreTargetSnapshotV1,
   QueryRow,
   SqlStatement,
   StorageDiagnostics,
@@ -29,6 +33,7 @@ import {
   type NativeArchiveResponseData,
   type NativeArchiveTransport,
   type NativeAutomaticBackupMetadata,
+  type NativePortableDatabase,
 } from "./archive-protocol.js";
 
 export interface OpenNativeSqliteOptions {
@@ -41,6 +46,13 @@ export interface NativeSqliteDatabase extends DatabasePort {
   exportRecoveryArchive(): Promise<NativeArchiveOutcome>;
   restoreRecoveryArchive(): Promise<NativeArchiveOutcome>;
   createAutomaticBackup(retentionCount: number): Promise<NativeAutomaticBackupMetadata>;
+  inspectPortable(
+    database: PortableDatabase,
+    expectedVaultId: string,
+  ): Promise<PortableArchiveDatabaseInspectionV1>;
+  inspectPortableTarget(): Promise<PortableArchiveRestoreTargetSnapshotV1>;
+  readPortableAttachment(contentId: string): Promise<Uint8Array | undefined>;
+  commitPortableRestore(payload: PortableArchiveRestoreCommitPayloadV1): Promise<void>;
   close(): Promise<void>;
   delete(): Promise<boolean>;
 }
@@ -65,6 +77,22 @@ const supportsNativeArchive = (
   const candidate = transport as NativeStorageTransport & Partial<NativeArchiveTransport>;
   return typeof candidate.invokeArchive === "function";
 };
+
+const encodePortableDatabase = (database: PortableDatabase): NativePortableDatabase =>
+  Object.freeze({
+    schemaVersion: database.schemaVersion,
+    byteLength: database.byteLength,
+    sha256: database.sha256,
+    bytes: Object.freeze([...database.bytes]),
+  });
+
+const decodePortableDatabase = (database: NativePortableDatabase): PortableDatabase =>
+  Object.freeze({
+    schemaVersion: database.schemaVersion,
+    byteLength: database.byteLength,
+    sha256: database.sha256,
+    bytes: Uint8Array.from(database.bytes),
+  });
 
 class NativeSqliteDatabaseAdapter implements NativeSqliteDatabase {
   private closed = false;
@@ -127,7 +155,101 @@ class NativeSqliteDatabaseAdapter implements NativeSqliteDatabase {
   }
 
   public exportPortable(): Promise<PortableDatabase> {
-    return Promise.reject(new NativeStorageCapabilityError("portable-export"));
+    return this.runExclusive(async () => {
+      const data = await this.sendArchiveData({
+        type: "portable_export",
+        sessionId: this.sessionId,
+      });
+      if (data.type !== "portable_database")
+        throw this.invalidArchiveResponse("portable_database", data.type);
+      return decodePortableDatabase(data.database);
+    });
+  }
+
+  public inspectPortable(
+    database: PortableDatabase,
+    expectedVaultId: string,
+  ): Promise<PortableArchiveDatabaseInspectionV1> {
+    return this.runExclusive(async () => {
+      const data = await this.sendArchiveData({
+        type: "portable_inspect",
+        sessionId: this.sessionId,
+        database: encodePortableDatabase(database),
+        expectedVaultId,
+      });
+      if (data.type !== "portable_inspection") {
+        throw this.invalidArchiveResponse("portable_inspection", data.type);
+      }
+      return Object.freeze({
+        integrity: data.integrity,
+        schemaVersion: data.schemaVersion,
+        vaultId: data.vaultId,
+      });
+    });
+  }
+
+  public inspectPortableTarget(): Promise<PortableArchiveRestoreTargetSnapshotV1> {
+    return this.runExclusive(async () => {
+      const data = await this.sendArchiveData({
+        type: "portable_target",
+        sessionId: this.sessionId,
+      });
+      if (data.type !== "portable_target")
+        throw this.invalidArchiveResponse("portable_target", data.type);
+      return data.target;
+    });
+  }
+
+  public readPortableAttachment(contentId: string): Promise<Uint8Array | undefined> {
+    return this.runExclusive(async () => {
+      const data = await this.sendArchiveData({
+        type: "attachment_read",
+        sessionId: this.sessionId,
+        contentId,
+      });
+      if (data.type === "attachment_missing") {
+        if (data.contentId !== contentId)
+          throw this.invalidArchiveResponse("attachment_data", data.type);
+        return undefined;
+      }
+      if (data.type !== "attachment_data" || data.contentId !== contentId) {
+        throw this.invalidArchiveResponse("attachment_data", data.type);
+      }
+      return Uint8Array.from(data.bytes);
+    });
+  }
+
+  public commitPortableRestore(payload: PortableArchiveRestoreCommitPayloadV1): Promise<void> {
+    return this.runExclusive(async () => {
+      const data = await this.sendArchiveData({
+        type: "portable_commit",
+        sessionId: this.sessionId,
+        expectedTargetFingerprint: payload.expectedTargetFingerprint,
+        vaultId: payload.vaultId,
+        database: encodePortableDatabase(payload.database),
+        attachments: Object.freeze(
+          payload.attachments.map((attachment) =>
+            Object.freeze({
+              contentId: attachment.contentId,
+              mediaType: attachment.mediaType,
+              ...(attachment.logicalName === undefined
+                ? {}
+                : { logicalName: attachment.logicalName }),
+              byteLength: attachment.byteLength,
+              sha256: attachment.sha256,
+              bytes: Object.freeze([...attachment.bytes]),
+            }),
+          ),
+        ),
+      });
+      if (
+        data.type !== "portable_committed" ||
+        data.databaseSha256 !== payload.database.sha256 ||
+        data.attachmentCount !== payload.attachments.length
+      ) {
+        throw this.invalidArchiveResponse("portable_committed", data.type);
+      }
+    });
   }
 
   public exportRecoveryArchive(): Promise<NativeArchiveOutcome> {
@@ -265,28 +387,10 @@ class NativeSqliteDatabaseAdapter implements NativeSqliteDatabase {
   }
 
   private async sendArchive(
-    operation: Exclude<NativeArchiveOperation, { readonly type: "automatic_backup" }>,
+    operation: Extract<NativeArchiveOperation, { readonly type: "export" | "restore" }>,
   ): Promise<NativeArchiveOutcome> {
     this.assertOpen();
-    if (this.archiveTransport === undefined) {
-      throw new NativeStorageCapabilityError("native-recovery-archive");
-    }
-    const requestId = `native-archive-${String(this.requestSequence)}`;
-    this.requestSequence += 1;
-    let data: NativeArchiveResponseData;
-    try {
-      const response = await this.archiveTransport.invokeArchive({
-        protocolVersion: NATIVE_ARCHIVE_PROTOCOL_VERSION,
-        requestId,
-        operation,
-      });
-      data = parseNativeArchiveResponse(response, requestId).data;
-    } catch (error) {
-      const protocolError =
-        error instanceof NativeStorageProtocolError ? error : deserializeNativeArchiveError(error);
-      if (protocolError.code === "archive_recovery_failed") this.closed = true;
-      throw protocolError;
-    }
+    const data = await this.sendArchiveData(operation);
     if (data.type === "cancelled") {
       if (data.operation !== operation.type) {
         throw new NativeStorageProtocolError(
@@ -312,27 +416,11 @@ class NativeSqliteDatabaseAdapter implements NativeSqliteDatabase {
     retentionCount: number,
   ): Promise<NativeAutomaticBackupMetadata> {
     this.assertOpen();
-    if (this.archiveTransport === undefined) {
-      throw new NativeStorageCapabilityError("native-automatic-backup");
-    }
-    const requestId = `native-archive-${String(this.requestSequence)}`;
-    this.requestSequence += 1;
-    let data: NativeArchiveResponseData;
-    try {
-      const response = await this.archiveTransport.invokeArchive({
-        protocolVersion: NATIVE_ARCHIVE_PROTOCOL_VERSION,
-        requestId,
-        operation: {
-          type: "automatic_backup",
-          sessionId: this.sessionId,
-          retentionCount,
-        },
-      });
-      data = parseNativeArchiveResponse(response, requestId).data;
-    } catch (error) {
-      if (error instanceof NativeStorageProtocolError) throw error;
-      throw deserializeNativeArchiveError(error);
-    }
+    const data = await this.sendArchiveData({
+      type: "automatic_backup",
+      sessionId: this.sessionId,
+      retentionCount,
+    });
     if (data.type !== "backup_created") {
       throw new NativeStorageProtocolError(
         "invalid_response",
@@ -341,6 +429,36 @@ class NativeSqliteDatabaseAdapter implements NativeSqliteDatabase {
       );
     }
     return data.backup;
+  }
+
+  private async sendArchiveData(
+    operation: NativeArchiveOperation,
+  ): Promise<NativeArchiveResponseData> {
+    this.assertOpen();
+    if (this.archiveTransport === undefined) {
+      throw new NativeStorageCapabilityError(
+        operation.type.startsWith("portable_") || operation.type === "attachment_read"
+          ? "portable-recovery"
+          : operation.type === "automatic_backup"
+            ? "native-automatic-backup"
+            : "native-recovery-archive",
+      );
+    }
+    const requestId = `native-archive-${String(this.requestSequence)}`;
+    this.requestSequence += 1;
+    try {
+      const response = await this.archiveTransport.invokeArchive({
+        protocolVersion: NATIVE_ARCHIVE_PROTOCOL_VERSION,
+        requestId,
+        operation,
+      });
+      return parseNativeArchiveResponse(response, requestId).data;
+    } catch (error) {
+      const protocolError =
+        error instanceof NativeStorageProtocolError ? error : deserializeNativeArchiveError(error);
+      if (protocolError.code === "archive_recovery_failed") this.closed = true;
+      throw protocolError;
+    }
   }
 
   private runExclusive<Result>(work: () => Promise<Result>, allowClosed = false): Promise<Result> {
@@ -374,6 +492,14 @@ class NativeSqliteDatabaseAdapter implements NativeSqliteDatabase {
       false,
     );
   }
+
+  private invalidArchiveResponse(expected: string, actual: string): NativeStorageProtocolError {
+    return new NativeStorageProtocolError(
+      "invalid_response",
+      `Native archive returned ${actual} while ${expected} was required.`,
+      false,
+    );
+  }
 }
 
 export const openNativeSqliteDatabase = async (
@@ -398,3 +524,19 @@ export const openNativeSqliteDatabase = async (
       (supportsNativeArchive(options.transport) ? options.transport : undefined),
   );
 };
+
+export const createNativePortableArchiveRestorePortV1 = (input: {
+  readonly database: NativeSqliteDatabase;
+  readonly expectedVaultId: string;
+}): PortableArchiveRestorePortV1 =>
+  Object.freeze({
+    inspectTarget: () => input.database.inspectPortableTarget(),
+    inspectDatabase: (database: PortableDatabase) =>
+      input.database.inspectPortable(database, input.expectedVaultId),
+    commit: (payload: PortableArchiveRestoreCommitPayloadV1) => {
+      if (payload.vaultId !== input.expectedVaultId) {
+        return Promise.reject(new TypeError("The native restore payload changed vault identity."));
+      }
+      return input.database.commitPortableRestore(payload);
+    },
+  });
