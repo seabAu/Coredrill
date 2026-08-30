@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-29
 Current milestone: Phase 1 — local tracker and recovery loop (`GATE-0` human validation remains blocked)
-Current work item: `BKP-004` — desktop automatic backup rotation without deleting the last known-good backup
-Next recommended slice: `BKP-005` — browser persistence/quota health and a neutral export reminder
+Current work item: `BKP-005` — browser persistence/quota health and a neutral export reminder
+Next recommended slice: `BKP-006` — typed-confirmation vault deletion, secret cleanup, and recoverability warning
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `BKP-005` — browser persistence/quota health and a neu
 | Field | Value |
 |---|---|
 | Milestone | Phase 1, with the independent Phase 0 human-validation gate retained below |
-| Item range | `BKP-004` |
+| Item range | `BKP-005` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-29 |
-| Expected proof | Filesystem tests proving timestamped automatic backup creation, successful-backup verification, retention limits, cleanup only after a known-good backup exists, preservation of the last known-good backup, and failure-safe handling without damaging the active vault |
+| Expected proof | Current/previous Chrome and Firefox tests proving persistence is requested only by explicit user action; granted, denied, error, unsupported, quota-risk, and expected-database-missing diagnostics stay honest; and the visible export reminder and recovery guidance remain neutral, accessible, and non-manipulative |
 | Blocker | None for this slice. `UXR-004` through `UXR-008` still require the owner-authorized participant study before the Phase 1 UI lock; `FND-001` remains independently blocked. |
-| Next handoff | Implement and prove `BKP-004`, then continue to `BKP-005` without claiming `GATE-0` or resolving `Q-006` without participant evidence. |
+| Next handoff | Implement and prove `BKP-005`, then continue to `BKP-006` without claiming `GATE-0` or resolving `Q-006` without participant evidence. |
 
 ## Milestone status
 
@@ -190,7 +190,7 @@ Next recommended slice: `BKP-005` — browser persistence/quota health and a neu
 - [x] **BKP-001** Implement portable archive writer with manifest, database/data, attachments, and checksums. — Proof: [deterministic golden archive, entry integrity, fail-closed validation, and hosted Chrome/Firefox reproduction](../../proof/phase-1-portable-archive-writer-verification.md)
 - [x] **BKP-002** Implement human-readable JSON and CSV exports with documented field mapping. — Proof: [strict schema, exact 29-dataset field mapping, byte-exact JSON/CSV fixtures, archive integration, and hosted Chrome/Firefox production projection](../../proof/phase-1-human-readable-data-export-verification.md)
 - [x] **BKP-003** Implement restore dry run, version/checksum validation, conflict preview, and transactional commit. — Proof: [bounded fail-closed archive validation, immutable conflict preview, stale-target protection, transactional failure preservation, and hosted Chrome/Firefox restore reproduction](../../proof/phase-1-portable-archive-restore-verification.md)
-- [ ] **BKP-004** Implement desktop automatic backup rotation without deleting last known-good backup. — Proof: _filesystem tests_
+- [x] **BKP-004** Implement desktop automatic backup rotation without deleting last known-good backup. — Proof: [managed path-free checkpoints, verify-before-rotate retention, failure-safe preservation, restorable final artifact, and hosted Windows/macOS/Ubuntu reproduction](../../proof/phase-1-desktop-automatic-backup-verification.md)
 - [ ] **BKP-005** Implement browser persistence/quota health and export reminder without manipulative prompts. — Proof: _browser tests_
 - [ ] **BKP-006** Implement typed-confirmation vault deletion, secret cleanup, and recoverability warning. — Proof: _E2E/security test_
 - [ ] **BKP-007** Restore a Phase 1 vault into clean browser and desktop installations and compare canonical hashes. — Proof: _recovery report_

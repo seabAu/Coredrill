@@ -256,6 +256,16 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
 - **Why:** Ownership, recovery, migration, and eventual sync independence.
 - **Revisit when:** Format versions evolve compatibly.
 - **Phase 0 evidence (2026-08-24):** `NAT-006` proves a versioned checksummed database-only recovery artifact through a Rust-owned native picker, including atomic replacement and rollback. It is intentionally not labeled the D-051 portable archive because attachments, manifest assembly, encryption metadata where applicable, and JSON/CSV exports remain BKP-001 and later delivery work; see [native archive verification](../../proof/native-archive-verification.md).
+- **Phase 1 desktop backup evidence (2026-08-29):** `BKP-004` adds a
+  pickerless, path-free Tauri checkpoint that creates a consistent SQLite
+  online snapshot in managed app data, atomically publishes and rereads the
+  existing checksummed database-recovery envelope, verifies integrity and
+  schema before rotation, and never deletes the last known-good backup. Failed
+  publish/verification preserves prior backups and the active vault; failed
+  cleanup retains extra verified backups with an honest pending state. This is
+  deliberately database-only and does not replace the full D-051 portable ZIP;
+  see [desktop automatic backup version 1](desktop-automatic-backup-v1.md) and
+  [desktop automatic backup verification](../../proof/phase-1-desktop-automatic-backup-verification.md).
 - **Phase 1 writer evidence (2026-08-29):** `BKP-001` implements one shared
   TypeScript ZIP writer with fixed metadata/order, validated version-1 manifest,
   database and caller-supplied data projections, content-addressed attachment
