@@ -38,14 +38,16 @@ WCAG 2.2 AA is the normative target. Automated checks never establish conformanc
 
 ## Performance, privacy, and offline budgets
 
-| ID             | Measurement                                                    | Initial target                 | Status                                                        |
-| -------------- | -------------------------------------------------------------- | ------------------------------ | ------------------------------------------------------------- |
-| `PERF-UI`      | Common board/table/detail interactions excluding import and AI | p95 `< 150 ms` on `HW-WIN-REF` | Design target                                                 |
-| `PERF-WARM`    | Installed PWA and desktop warm launch to usable local shell    | p95 `< 2,000 ms`               | Design target; exact method/budget validated by storage spike |
-| `PERF-CAPTURE` | Capture-to-reviewed-record in representative usability tests   | median `< 120 s`               | Usability target                                              |
-| `PERF-OFFLINE` | Unexpected requests during installed core flows                | `0`                            | Privacy/offline target                                        |
+| ID             | Measurement                                                    | Initial target                 | Status                                                            |
+| -------------- | -------------------------------------------------------------- | ------------------------------ | ----------------------------------------------------------------- |
+| `PERF-UI`      | Common board/table/detail interactions excluding import and AI | p95 `< 150 ms` on `HW-WIN-REF` | Diagnostic harness passes; required reference target not executed |
+| `PERF-WARM`    | Installed PWA and desktop warm launch to usable local shell    | p95 `< 2,000 ms`               | Diagnostic harness passes; required reference target not executed |
+| `PERF-CAPTURE` | Capture-to-reviewed-record in representative usability tests   | median `< 120 s`               | Usability target                                                  |
+| `PERF-OFFLINE` | Unexpected requests during installed core flows                | `0`                            | Privacy/offline target                                            |
 
 Interaction benchmarks discard five warmups and record at least 50 measured iterations; warm-start measurements use at least 20 runs. Reports include p50, p95, maximum, failure count, and raw measurements. Initial deterministic synthetic profiles contain 100 jobs (smoke), 2,000 jobs (reference), and 10,000 jobs (stress), with a recorded seed and fixture hash.
+
+The `Q1-001` production-build harness and its clean-commit Edge 152 local diagnostic are recorded in [the Phase 1 reference-data performance report](../proof/phase-1-reference-data-performance-verification.md). The 2,000-job diagnostic measured p95 values of 47.4 ms for warm shell startup, 2.7 ms for production FTS5 query, 23.5 ms for board projection, and 26.5 ms for table projection, all with zero failures. `HW-LOCAL-DIAG`/Windows 10 is not `HW-WIN-REF`/Windows 11 25H2, so these figures do not satisfy the required performance gate and `Q1-001` remains open.
 
 Cold startup, create/migrate/query/search, import/export/restore, bundle size, JavaScript heap/desktop RSS, and database/attachment size are record-only until their owning Phase 0 spike establishes a defensible budget.
 

@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-08-30
 Current milestone: Phase 1 — local tracker and recovery loop (`GATE-0` human validation remains blocked)
-Current work item: `Q1-001` — reference-data startup, query, board, and table performance budgets
-Next recommended slice: `Q1-002` — offline, refresh, crash, storage-denied, quota, and second-tab journeys
+Current work item: `Q1-002` — offline, refresh, crash, storage-denied, quota, and second-tab journeys
+Next recommended slice: `Q1-003` — Phase 1 WCAG automated and manual matrix
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `Q1-002` — offline, refresh, crash, storage-denied, qu
 | Field | Value |
 |---|---|
 | Milestone | Phase 1, with the independent Phase 0 human-validation gate retained below |
-| Item range | `Q1-001` |
+| Item range | `Q1-002` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-30 |
-| Expected proof | Reference-data benchmark report covering startup, production query, board projection, and table projection against their accepted Phase 1 budgets, with an approved documented adjustment only if a measured budget cannot be met |
-| Blocker | None for this slice. `UXR-004` through `UXR-008` still require the owner-authorized participant study before the Phase 1 UI lock; `FND-001` remains independently blocked. |
-| Next handoff | Implement and prove `Q1-001`, then continue to `Q1-002` without claiming `GATE-0` or resolving `Q-006` without participant evidence. |
+| Expected proof | Browser and native E2E matrix for offline use, refresh durability, abrupt owner loss/crash recovery, storage denial, quota pressure, and second-tab writer coordination, with exact limitations for any target that cannot reproduce a scenario |
+| Blocker | None for this slice. `Q1-001` separately awaits the provisioned Windows 11/i5 reference target; `UXR-004` through `UXR-008` still require the owner-authorized participant study, and `FND-001` remains independently blocked. |
+| Next handoff | Implement and prove `Q1-002`, then continue to `Q1-003` without claiming `Q1-001`, `GATE-0`, or `GATE-1` until their independent evidence exists. |
 
 ## Milestone status
 
@@ -197,7 +197,7 @@ Next recommended slice: `Q1-002` — offline, refresh, crash, storage-denied, qu
 
 ## Phase 1 quality
 
-- [ ] **Q1-001** Meet reference-data startup/query/board/table performance budgets or record approved adjustment. — Proof: _benchmark report_
+- [ ] **Q1-001** Meet reference-data startup/query/board/table performance budgets or record approved adjustment. — Proof: [production benchmark harness and clean-commit diagnostic; exact `HW-WIN-REF` execution still required](../../proof/phase-1-reference-data-performance-verification.md)
 - [ ] **Q1-002** Pass offline, refresh, crash, storage-denied, quota, and second-tab journeys. — Proof: _E2E matrix_
 - [ ] **Q1-003** Pass Phase 1 WCAG automated/manual matrix. — Proof: _accessibility report_
 - [ ] **Q1-004** Complete threat review for SQL, XSS, IPC, attachments, paths, and diagnostics. — Proof: _security review_
@@ -518,6 +518,7 @@ This phase is deliberately deferred. Re-open only after `GATE-6`, demonstrated m
 | 2026-08-24 | `FND-001` | Apache-2.0 and the Coredrill identity are proven, but no durable private conduct or vulnerability-reporting route is published. | Added `ADR-0002`, `D-054`, `D-055`, canonical license text, package metadata checks, governance wording, full local proof, and a public Security-page inspection. | Owner: publish repository-specific private conduct and vulnerability routes before external contribution intake/public distribution. | Open |
 | 2026-08-24 | `FND-006` | The remote was attached, but no green hosted Foundation CI URL had been recorded. | Integrated both histories at `f8d9a18`; [Foundation CI run #1](https://github.com/seabAu/Coredrill/actions/runs/32694914029) completed successfully, including the full-history secret scan. | None; retain the URL as proof and keep future `main` runs green. | Resolved |
 | 2026-08-24 | `UXR-004` through `UXR-008` | The remaining Phase 0 UX gate requires at least five representative human sessions, including keyboard-heavy and nontechnical participants; Codex cannot manufacture participant evidence. | Built and browser-tested the disposable desktop/mobile prototypes, synthetic vault, ten-task moderated script, observation rubric, privacy rule, and stop/synthesis criteria. | Owner: recruit the required participants or authorize access to an appropriate research cohort; then run/anonymize the study and return findings for synthesis and decision updates. | Open |
+| 2026-08-30 | `Q1-001` | The accepted performance claim requires `HW-WIN-REF` (Intel Core i5-12400, 8 GiB) on Windows 11 25H2, but that target remains planned and is not available to this workspace. | Added a fail-closed production-build harness; the clean `1004ccd` Edge 152 diagnostic on `HW-LOCAL-DIAG` recorded 20 startup and 50 query/board/table samples with zero failures and p95 values below the design thresholds. Hosted and local nonconformant runners were not relabeled as reference hardware. | Owner: provision the exact reference target and run `pnpm test:performance` with conformant bindings, or explicitly approve a documented adjustment only after reviewing a retained failure artifact. | Open |
 
 ## Accepted scope changes
 

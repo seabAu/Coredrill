@@ -1,0 +1,133 @@
+{
+  "schemaVersion": 1,
+  "proofId": "Q1-001-PHASE-1-PERFORMANCE",
+  "matrixId": "JW-TM-001",
+  "matrixVersion": "1.2.0",
+  "commitSha": "1004ccdc2aa1cf96cd6eec655642d5ee4e48302b",
+  "dirtyWorktree": false,
+  "lockfileSha256": "47401aa17fea0b0b54176831669e02fc601658970442321a98a2437f5f2aca9b",
+  "hardwareTargetId": "HW-LOCAL-DIAG",
+  "operatingSystemTargetId": "OS-WIN10-LOCAL",
+  "reviewer": "Codex",
+  "targetConformant": false,
+  "targetLimitation": "Windows 10 and the local Core Ultra diagnostic host are not the required Windows 11 25H2 and Intel Core i5-12400 reference target.",
+  "result": "diagnostic-only",
+  "browser": "152.0.4191.53",
+  "engine": "chromium",
+  "headless": true,
+  "productionBuild": true,
+  "viewport": {
+    "height": 900,
+    "width": 1440
+  },
+  "fixture": {
+    "descriptionBytesPerRecord": 320,
+    "fixtureId": "JW-STG-DATA-001",
+    "profileId": "DATA-REFERENCE",
+    "records": 2000,
+    "seed": "coredrill-storage-benchmark-v1",
+    "definitionSha256": "401c293d29dbb4002ecdbc5030e5dd242f42a678896cedfc97c00f999f57435d",
+    "contentSha256": "7b05296a57408ce51689ed37cbcc2bfe8c3fc16ffdd621546ec66db41af01ad0",
+    "boardJobs": 2000,
+    "tableJobs": 2000
+  },
+  "protocol": {
+    "interactionRuns": 50,
+    "interactionWarmupsDiscarded": 5,
+    "startupRuns": 20,
+    "startupWarmupsDiscarded": 5,
+    "projectionReadyPoint": "active presentation committed plus two animation frames",
+    "startupReadyPoint": "local shell catalog and page title committed plus two animation frames"
+  },
+  "metrics": {
+    "boardProjection": {
+      "failures": 0,
+      "maximumMs": 27.7,
+      "p50Ms": 22.1,
+      "p95Ms": 23.5,
+      "rawMs": [
+        22.2, 22.3, 16.4, 16.7, 22.2, 16.4, 22.1, 23.5, 16.6, 22.1, 22.2, 22.3, 22.1, 22.1, 22.2,
+        22.2, 22.2, 16.5, 22.1, 22.2, 22.2, 17.7, 22.4, 16.5, 21.9, 22.1, 22.1, 16.5, 16.5, 16.6,
+        22.1, 22.1, 16.7, 16.6, 16.6, 23.4, 22.2, 16.7, 22.3, 16.5, 16.5, 27.7, 16.6, 16.6, 23.4,
+        22.2, 23.6, 20.2, 22.2, 22.1
+      ]
+    },
+    "durableStorageStartup": {
+      "failures": 0,
+      "maximumMs": 81.3,
+      "p50Ms": 75.8,
+      "p95Ms": 80.4,
+      "rawMs": [
+        77.8, 75, 81.3, 75.8, 74.9, 76.1, 76, 73.7, 77.1, 80.4, 69.4, 73.3, 74, 68.7, 78.4, 79.7,
+        75.3, 77.3, 75.7, 77.9
+      ]
+    },
+    "productionQuery": {
+      "failures": 0,
+      "maximumMs": 7.9,
+      "p50Ms": 1.7,
+      "p95Ms": 2.7,
+      "rawMs": [
+        1.7, 7.9, 3.4, 2.2, 2.2, 2.3, 2.1, 2, 2.1, 1.7, 1.7, 1.8, 1.8, 1.5, 1.9, 2.7, 1.7, 1.6, 1.4,
+        1.4, 1.5, 1.5, 1.6, 1.7, 1.5, 1.9, 1.8, 1.6, 2, 1.7, 1.6, 1.8, 1.7, 1.8, 1.8, 1.6, 1.6, 1.9,
+        2, 1.8, 1.8, 1.7, 1.6, 1.5, 1.6, 1.5, 1.8, 1.7, 1.5, 1.8
+      ]
+    },
+    "shellWarmStart": {
+      "failures": 0,
+      "maximumMs": 47.6,
+      "p50Ms": 36.2,
+      "p95Ms": 47.4,
+      "rawMs": [
+        46.8, 43.8, 38, 35.8, 47.4, 40.9, 36.1, 36, 30.4, 36.4, 41.6, 36.2, 37.8, 33.7, 35.8, 32.6,
+        32.6, 30.2, 47.6, 41.9
+      ]
+    },
+    "tableProjection": {
+      "failures": 0,
+      "maximumMs": 27.8,
+      "p50Ms": 16.7,
+      "p95Ms": 26.5,
+      "rawMs": [
+        22.2, 22, 16.8, 16.6, 16.8, 16.7, 20.9, 16.6, 16.7, 16.5, 16.6, 22.3, 16.7, 16.7, 16.5,
+        16.6, 22.1, 16.8, 16.7, 16.8, 20.8, 16.7, 16.6, 16.9, 16.6, 16.6, 27.8, 16.8, 16.8, 22.2,
+        16.7, 16.6, 22.1, 16.6, 16.8, 26.5, 16.5, 22.2, 16.6, 16.8, 16.8, 16.6, 16.7, 16.6, 15.3,
+        22.2, 22.6, 16.7, 16.5, 27.8
+      ]
+    }
+  },
+  "budgetComparisons": [
+    {
+      "budgetId": "PERF-WARM",
+      "measurement": "shellWarmStart",
+      "operator": "<",
+      "passed": true,
+      "p95Ms": 47.4,
+      "targetMs": 2000
+    },
+    {
+      "budgetId": "PERF-UI",
+      "measurement": "productionQuery",
+      "operator": "<",
+      "passed": true,
+      "p95Ms": 2.7,
+      "targetMs": 150
+    },
+    {
+      "budgetId": "PERF-UI",
+      "measurement": "boardProjection",
+      "operator": "<",
+      "passed": true,
+      "p95Ms": 23.5,
+      "targetMs": 150
+    },
+    {
+      "budgetId": "PERF-UI",
+      "measurement": "tableProjection",
+      "operator": "<",
+      "passed": true,
+      "p95Ms": 26.5,
+      "targetMs": 150
+    }
+  ]
+}
