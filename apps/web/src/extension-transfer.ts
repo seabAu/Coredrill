@@ -4,8 +4,14 @@ import {
   type CaptureDuplicateSuggestionV1,
 } from "@coredrill/application";
 import {
+  buildSuppliedCaptureEnvelopeV1,
+  type SuppliedCaptureDraftV1,
+} from "@coredrill/capture-core";
+import {
+  createEmptyOutboxState,
   createTransferAcknowledgement,
   parseOutboxExportJson,
+  queueCaptureEnvelope,
   safeParseTransferResponse,
   type OutboxItemV1,
   type TransferOfferV1,
@@ -39,6 +45,7 @@ export interface CaptureInboxReceipt {
   readonly expiresAt: string;
   readonly receivedAt: string;
   readonly receivedVia: "external_message" | "manual_export";
+  readonly envelopeJson: string;
   readonly duplicateSuggestions: readonly CaptureDuplicateSuggestionV1[];
 }
 
@@ -73,6 +80,13 @@ interface CaptureDuplicateCandidateRow extends QueryRow {
 }
 
 export type CaptureInboxDuplicateKind = "none" | "exact_retry" | "content_hash";
+
+export interface SuppliedCaptureStoreResult {
+  readonly envelopeId: string;
+  readonly durableEnvelopeId: string;
+  readonly duplicateKind: CaptureInboxDuplicateKind;
+  readonly duplicateSuggestions: readonly CaptureDuplicateSuggestionV1[];
+}
 
 interface StoreItemResult {
   readonly duplicateKind: CaptureInboxDuplicateKind;
@@ -313,6 +327,10 @@ async function storeItem(
   });
 }
 
+interface SenderSequenceRow extends QueryRow {
+  readonly maximum_sequence: number | null;
+}
+
 function itemFromOffer(offer: TransferOfferV1, receivedAt: string): OutboxItemV1 {
   return {
     specVersion: 1,
@@ -381,6 +399,45 @@ export function createExtensionInbox(
   transport: ExtensionMessageTransport = createChromeExtensionTransport(),
 ) {
   return Object.freeze({
+    ingestSupplied: async (
+      draft: SuppliedCaptureDraftV1,
+      now = new Date(),
+    ): Promise<SuppliedCaptureStoreResult> => {
+      const receivedAt = now.toISOString();
+      const client = await database();
+      return client.transaction(async (transaction) => {
+        const senderId = "coredrill.web.local-capture";
+        const rows = await transaction.query<SenderSequenceRow>(
+          sqlStatement(
+            `SELECT MAX(sender_sequence) AS maximum_sequence
+             FROM capture_inbox
+             WHERE sender_id = ?`,
+            [senderId],
+          ),
+        );
+        const maximumSequence = rows[0]?.maximum_sequence ?? 0;
+        const built = await buildSuppliedCaptureEnvelopeV1(draft, {
+          senderId,
+          sequence: maximumSequence + 1,
+          now,
+        });
+        if (!built.success) {
+          throw new ExtensionTransferError(built.code, built.issue);
+        }
+        const queued = await queueCaptureEnvelope(createEmptyOutboxState(), built.envelope, now);
+        if (!queued.success) {
+          throw new ExtensionTransferError(queued.code, queued.issue);
+        }
+        const stored = await storeItem(transaction, queued.item, receivedAt, "manual_export");
+        return Object.freeze({
+          envelopeId: built.envelope.id,
+          durableEnvelopeId: stored.durableEnvelopeId,
+          duplicateKind: stored.duplicateKind,
+          duplicateSuggestions: stored.duplicateSuggestions,
+        });
+      });
+    },
+
     pullAndStore: async (
       extensionId: string,
       options: { readonly acknowledge?: boolean; readonly now?: Date } = {},
@@ -509,6 +566,7 @@ export function createExtensionInbox(
           expiresAt: row.expires_at,
           receivedAt: row.received_at,
           receivedVia: row.received_via,
+          envelopeJson: row.envelope_json,
           duplicateSuggestions: storedDuplicateSuggestions(row.envelope_json, candidates),
         }),
       );

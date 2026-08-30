@@ -192,6 +192,202 @@
   outline-offset: 2px;
 }
 
+.cd-capture-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  padding: 1rem;
+  background: color-mix(in srgb, var(--color-canvas) 72%, transparent);
+}
+
+.cd-capture-dialog {
+  width: min(44rem, 100%);
+  max-height: calc(100dvh - 2rem);
+  overflow: auto;
+  padding: clamp(1rem, 3vw, 1.5rem);
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-panel);
+}
+
+.cd-capture-dialog__header,
+.cd-capture-form__actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.cd-capture-dialog__header h2,
+.cd-capture-dialog__header p,
+.cd-capture-form__boundary,
+.cd-capture-form__status {
+  margin: 0;
+}
+
+.cd-capture-dialog__header h2 {
+  margin-top: 0.2rem;
+  font-size: clamp(1.35rem, 4vw, 1.75rem);
+}
+
+.cd-capture-dialog__header p:last-child {
+  margin-top: 0.4rem;
+  color: var(--color-text-muted);
+}
+
+.cd-capture-dialog__eyebrow {
+  color: var(--color-text-subtle);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.cd-capture-dialog__tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.35rem;
+  margin-top: 1.25rem;
+  padding: 0.3rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+}
+
+.cd-capture-dialog__tabs button {
+  min-height: 2.75rem;
+  padding: 0.45rem 0.6rem;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: calc(var(--radius-control) - 0.2rem);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cd-capture-dialog__tabs button[aria-pressed="true"] {
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  border-color: var(--color-border);
+  box-shadow: var(--shadow-control);
+}
+
+.cd-capture-form {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.cd-capture-form__columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.cd-capture-form label {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+  color: var(--color-text);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.cd-capture-form input,
+.cd-capture-form textarea {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.65rem 0.75rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-control);
+  font: inherit;
+  font-weight: 400;
+}
+
+.cd-capture-form textarea {
+  min-height: 9rem;
+  resize: vertical;
+}
+
+.cd-capture-form input:focus-visible,
+.cd-capture-form textarea:focus-visible,
+.cd-capture-dialog__tabs button:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.cd-capture-form small,
+.cd-capture-form__boundary {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.cd-capture-form__boundary {
+  padding: 0.7rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+}
+
+.cd-capture-form__status {
+  padding: 0.75rem;
+  color: var(--color-text);
+  background: var(--color-info-surface, var(--color-surface));
+  border: 1px solid var(--color-info, var(--color-border));
+  border-radius: var(--radius-control);
+}
+
+.cd-capture-form__status.is-error {
+  background: var(--color-danger-surface, var(--color-surface));
+  border-color: var(--color-danger);
+}
+
+.cd-capture-form__actions {
+  justify-content: flex-end;
+}
+
+@media (max-width: 36rem) {
+  .cd-capture-dialog-overlay {
+    align-items: end;
+    padding: 0;
+  }
+
+  .cd-capture-dialog {
+    width: 100%;
+    max-height: 94dvh;
+    border-radius: var(--radius-panel) var(--radius-panel) 0 0;
+  }
+
+  .cd-capture-dialog__tabs,
+  .cd-capture-form__columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (forced-colors: active) {
+  .cd-capture-dialog-overlay {
+    background: Canvas;
+  }
+
+  .cd-capture-dialog,
+  .cd-capture-dialog__tabs,
+  .cd-capture-dialog__tabs button[aria-pressed="true"],
+  .cd-capture-form__boundary,
+  .cd-capture-form__status {
+    border: 2px solid CanvasText;
+  }
+}
+
 @layer components {
   .cd-shell-page-title {
     @apply text-3xl font-bold tracking-tight;

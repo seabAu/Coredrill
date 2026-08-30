@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildCaptureEnvelopeV1,
+  buildSuppliedCaptureEnvelopeV1,
   canonicalJsonStringify,
   createCaptureEnvelopeContentHashV1,
   safeParsePageCaptureSnapshot,
@@ -199,6 +200,105 @@ describe("capture envelope builder", () => {
         now,
         randomBytes: () => new Uint8Array(1),
       }),
+    ).resolves.toMatchObject({ success: false, code: "envelope_invalid" });
+  });
+
+  it("builds manual, paste, text, HTML-text, and JSON file envelopes through one contract", async () => {
+    const drafts = [
+      {
+        captureMethod: "manual",
+        senderKind: "web_app",
+        source: { sourceKind: "manual_entry" },
+        content: { readableText: "User-entered role notes." },
+        fields: { title: { value: "Staff Engineer" }, company: { value: "Northstar" } },
+        captureClient: { name: "coredrill.web.capture", version: "0.1.0" },
+      },
+      {
+        captureMethod: "paste",
+        senderKind: "web_app",
+        source: {
+          url: "https://jobs.example.test/role/7",
+          canonicalUrl: "https://jobs.example.test/role/7",
+          sourceKind: "pasted_listing",
+        },
+        content: { readableText: "Build accessible, offline-capable tools." },
+        captureClient: { name: "coredrill.web.capture", version: "0.1.0" },
+      },
+      {
+        captureMethod: "file",
+        senderKind: "import_tool",
+        source: { pageTitle: "listing.txt", sourceKind: "saved_text" },
+        content: { readableText: "Saved text listing" },
+        captureClient: { name: "coredrill.web.capture", version: "0.1.0" },
+      },
+      {
+        captureMethod: "file",
+        senderKind: "import_tool",
+        source: { pageTitle: "listing.html", sourceKind: "saved_html" },
+        content: { readableText: "Inert HTML-derived listing text" },
+        captureClient: { name: "coredrill.web.capture", version: "0.1.0" },
+      },
+      {
+        captureMethod: "file",
+        senderKind: "import_tool",
+        source: { pageTitle: "listing.json", sourceKind: "saved_json" },
+        content: { apiPayload: { title: "Research Engineer", remote: true } },
+        captureClient: { name: "coredrill.web.capture", version: "0.1.0" },
+      },
+    ] as const;
+
+    for (const [index, draft] of drafts.entries()) {
+      const result = await buildSuppliedCaptureEnvelopeV1(draft, {
+        senderId: "coredrill.web.local-capture",
+        sequence: index + 1,
+        now: new Date(now.getTime() + index * 1_000),
+        randomBytes: deterministicEntropy(index + 20),
+      });
+      expect(result.success).toBe(true);
+      if (!result.success) throw new Error(result.issue);
+      expect(safeParseCaptureEnvelopeV1(result.envelope).success).toBe(true);
+      expect(result.envelope.captureMethod).toBe(draft.captureMethod);
+      expect(result.envelope.source.sourceKind).toBe(draft.source.sourceKind);
+      expect(result.envelope.sender.kind).toBe(draft.senderKind);
+      await expect(verifyCaptureEnvelopeContentHashV1(result.envelope)).resolves.toBe(true);
+    }
+  });
+
+  it("rejects empty or invalid supplied capture drafts without persisting a partial envelope", async () => {
+    await expect(
+      buildSuppliedCaptureEnvelopeV1(
+        {
+          captureMethod: "paste",
+          senderKind: "web_app",
+          source: { sourceKind: "pasted_listing" },
+          content: { readableText: "  " },
+          captureClient: { name: "coredrill.web.capture", version: "0.1.0" },
+        },
+        {
+          senderId: "coredrill.web.local-capture",
+          sequence: 1,
+          now,
+          randomBytes: deterministicEntropy(),
+        },
+      ),
+    ).resolves.toMatchObject({ success: false, code: "snapshot_invalid" });
+
+    await expect(
+      buildSuppliedCaptureEnvelopeV1(
+        {
+          captureMethod: "paste",
+          senderKind: "web_app",
+          source: { url: "file:///secret", sourceKind: "pasted_listing" },
+          content: {},
+          captureClient: { name: "coredrill.web.capture", version: "0.1.0" },
+        },
+        {
+          senderId: "coredrill.web.local-capture",
+          sequence: 1,
+          now,
+          randomBytes: deterministicEntropy(),
+        },
+      ),
     ).resolves.toMatchObject({ success: false, code: "envelope_invalid" });
   });
 });

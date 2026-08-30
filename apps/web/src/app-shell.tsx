@@ -75,13 +75,16 @@ import { createRoot } from "react-dom/client";
 import "./app-shell.css";
 import "./main.js";
 import { CanonicalJourneyPanel } from "./canonical-journey-panel.js";
+import { CaptureEntryDialog } from "./capture-entry-dialog.js";
 import { initializeOfflineShell, OfflineShellNotice } from "./offline-shell.js";
+import type { SuppliedCaptureMode } from "./supplied-capture.js";
 
 interface AppShellCatalogState {
   readonly activeDestination: ShellDestinationId;
   readonly boardAnnouncement: string;
   readonly boardTimelineEventCount: number;
   readonly boardUndoAvailable: boolean;
+  readonly captureDialogMode: SuppliedCaptureMode | null;
   readonly density: DensityMode;
   readonly homeMode: HomeDashboardModel["state"];
   readonly homeSnapshotVisible: boolean;
@@ -98,6 +101,7 @@ interface AppShellCatalogState {
   readonly persistenceRequestCount: number;
   readonly storagePersistence: BrowserStorageEnvironment["persistence"] | "checking";
   readonly storageQuota: BrowserStorageEnvironment["quota"] | "checking";
+  readonly suppliedCaptureCount: number;
   readonly tableColumnSaveCount: number;
   readonly tableEditCount: number;
   readonly workspaceJobId: string | null;
@@ -1309,6 +1313,7 @@ const AppShellCatalog = () => {
   );
   const [boardTimelineEventCount, setBoardTimelineEventCount] = useState(0);
   const [boardUndo, setBoardUndo] = useState<BoardUndoRecord | null>(null);
+  const [captureDialogMode, setCaptureDialogMode] = useState<SuppliedCaptureMode | null>(null);
   const [homeSnapshotVisible, setHomeSnapshotVisible] = useState(true);
   const [browserStorageEnvironment, setBrowserStorageEnvironment] =
     useState<BrowserStorageEnvironment | null>(null);
@@ -1371,6 +1376,7 @@ const AppShellCatalog = () => {
   const [tableRows, setTableRows] = useState<readonly PipelineTableJob[]>(
     appearance.tableMode === "large" ? LARGE_TABLE_ROWS : STANDARD_TABLE_ROWS,
   );
+  const [suppliedCaptureCount, setSuppliedCaptureCount] = useState(0);
   const [workspaceRoute, setWorkspaceRoute] = useState<JobRouteState | null>(initialJobRoute);
   const [workspaceWidth, setWorkspaceWidth] = useState(640);
   const [lastActivity, setLastActivity] = useState(
@@ -1476,7 +1482,7 @@ const AppShellCatalog = () => {
     activeSavedViewId: pipelineSavedViewId,
     activeView: pipelineView,
     filters: pipelineFilters,
-    inboxCount: 3,
+    inboxCount: 3 + suppliedCaptureCount,
     matchingCount: pipelineMatchingCount,
     savedViews: PIPELINE_SAVED_VIEWS,
     searchQuery: pipelineSearchQuery,
@@ -1518,6 +1524,7 @@ const AppShellCatalog = () => {
           boardAnnouncement,
           boardTimelineEventCount,
           boardUndoAvailable: boardUndo !== null,
+          captureDialogMode,
           density: appearance.density,
           homeMode: appearance.homeMode,
           homeSnapshotVisible,
@@ -1534,6 +1541,7 @@ const AppShellCatalog = () => {
           persistenceRequestCount,
           storagePersistence: browserStorageEnvironment?.persistence ?? "checking",
           storageQuota: browserStorageEnvironment?.quota ?? "checking",
+          suppliedCaptureCount,
           tableColumnSaveCount,
           tableEditCount,
           theme: appearance.theme,
@@ -1554,6 +1562,7 @@ const AppShellCatalog = () => {
     boardAnnouncement,
     boardTimelineEventCount,
     boardUndo,
+    captureDialogMode,
     browserStorageEnvironment,
     exportReminder.state,
     homeSnapshotVisible,
@@ -1568,6 +1577,7 @@ const AppShellCatalog = () => {
     pipelineSelectedCount,
     pipelineView,
     persistenceRequestCount,
+    suppliedCaptureCount,
     tableColumnSaveCount,
     tableEditCount,
     vaultDeletionStatus,
@@ -1576,6 +1586,16 @@ const AppShellCatalog = () => {
   ]);
 
   const recordAction = (action: ShellActionId): void => {
+    if (action === "add-job") {
+      setCaptureDialogMode("manual");
+      setLastActivity("Manual capture form opened. Nothing has been written yet.");
+      return;
+    }
+    if (action === "paste-listing" || action === "capture-url") {
+      setCaptureDialogMode("paste");
+      setLastActivity("Supplied-content capture opened. Pasted URLs are never fetched.");
+      return;
+    }
     setLastActivity(`Action selected: ${action}. No external request was made.`);
   };
 
@@ -1667,6 +1687,11 @@ const AppShellCatalog = () => {
   };
 
   const recordHomeAction = (action: HomeDashboardActionId): void => {
+    if (action === "add-job") {
+      setCaptureDialogMode("manual");
+      setLastActivity("Manual capture form opened. Nothing has been written yet.");
+      return;
+    }
     setLastActivity(`Home action selected: ${action}. No external request was made.`);
   };
 
@@ -2225,7 +2250,7 @@ const AppShellCatalog = () => {
   return (
     <ApplicationShell
       activeDestination={activeDestination}
-      inboxCount={3}
+      inboxCount={3 + suppliedCaptureCount}
       onAction={recordAction}
       onNavigate={navigateDestination}
       onSearchResult={openGlobalSearchResult}
@@ -2508,6 +2533,22 @@ const AppShellCatalog = () => {
         )}
       </div>
       <OfflineShellNotice />
+      {captureDialogMode === null ? null : (
+        <CaptureEntryDialog
+          initialMode={captureDialogMode}
+          onClose={() => {
+            setCaptureDialogMode(null);
+          }}
+          onStored={({ duplicate, envelopeId }) => {
+            if (!duplicate) setSuppliedCaptureCount((count) => count + 1);
+            setLastActivity(
+              duplicate
+                ? `Capture ${envelopeId} matched an existing durable inbox receipt.`
+                : `Capture ${envelopeId} was stored locally and is ready for review.`,
+            );
+          }}
+        />
+      )}
     </ApplicationShell>
   );
 };

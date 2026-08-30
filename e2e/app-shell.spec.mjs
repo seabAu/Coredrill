@@ -413,7 +413,8 @@ test("empty Home offers three non-account paths without inventing goals", async 
   await attachProof(page, testInfo, "home-empty");
 
   await page.getByRole("button", { name: "Add a job" }).click();
-  await expect(page.getByRole("status")).toContainText("Home action selected: add-job");
+  await expect(page.getByRole("dialog")).toHaveAttribute("data-capture-mode", "manual");
+  await page.keyboard.press("Escape");
 });
 
 test("Phase 1 state catalog distinguishes every local state and exposes bounded recovery", async ({
@@ -1399,7 +1400,8 @@ test("search, command, and Add surfaces restore focus and stay local", async ({ 
   const pasteListing = page.getByRole("menuitem", { name: /Paste listing/ });
   await expect(pasteListing).toBeFocused();
   await pasteListing.click();
-  await expect(page.getByRole("status")).toContainText("paste-listing");
+  await expect(page.getByRole("dialog")).toHaveAttribute("data-capture-mode", "paste");
+  await page.keyboard.press("Escape");
   await expect(page.getByRole("button", { name: "Add", exact: true })).toBeFocused();
 
   expect(externalRequests).toEqual([]);

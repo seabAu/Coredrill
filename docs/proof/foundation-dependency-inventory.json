@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "inventoryId": "JW-DI-001",
-  "version": "1.20.0",
-  "reviewedAt": "2026-08-30T10:10:00Z",
+  "version": "1.21.0",
+  "reviewedAt": "2026-08-30T12:54:19Z",
   "scope": {
     "included": [
       "Pinned Node.js, pnpm, and Rust foundation toolchains",
@@ -17,7 +17,7 @@
   },
   "lockfile": {
     "path": "pnpm-lock.yaml",
-    "sha256": "6fa2bab9b73802472b25fa75601c52140d5d05103a0cab5ab970d657f5f62910"
+    "sha256": "9d29afa39902555eb9cc20753df52b9e50245a13a3131f8b7545030d84e25b9c"
   },
   "toolchains": [
     {
@@ -1054,8 +1054,8 @@
   "advisoryReview": {
     "command": "pnpm audit --json",
     "source": "https://pnpm.io/cli/audit",
-    "reviewedAt": "2026-08-30T10:10:00Z",
-    "lockfileSha256": "6fa2bab9b73802472b25fa75601c52140d5d05103a0cab5ab970d657f5f62910",
+    "reviewedAt": "2026-08-30T12:54:19Z",
+    "lockfileSha256": "9d29afa39902555eb9cc20753df52b9e50245a13a3131f8b7545030d84e25b9c",
     "resolvedDependencyCount": 935,
     "optionalDependencyCount": 108,
     "vulnerabilities": {
@@ -1068,11 +1068,11 @@
   },
   "licenseReview": {
     "command": "pnpm check:licenses",
-    "reviewedAt": "2026-08-30T10:10:00Z",
-    "lockfileSha256": "6fa2bab9b73802472b25fa75601c52140d5d05103a0cab5ab970d657f5f62910",
+    "reviewedAt": "2026-08-30T12:54:19Z",
+    "lockfileSha256": "9d29afa39902555eb9cc20753df52b9e50245a13a3131f8b7545030d84e25b9c",
     "resolvedPackageRecords": 520,
     "result": "pass",
-    "note": "License records and advisory dependency counts use different tool scopes and are not expected to match. The application shell uses reviewed MIT Tailwind CSS, Radix UI, and vite-plugin-pwa dependencies; the generated Workbox worker owns only versioned app-shell Cache Storage while SQLite remains OPFS truth. The exact graph contains 935 external resolutions and 520 license records. The Q1-005 lockfile-only change adds the reviewed workspace edge from storage-core to application and does not add or update an external resolution."
+    "note": "License records and advisory dependency counts use different tool scopes and are not expected to match. The application shell uses reviewed MIT Tailwind CSS, Radix UI, and vite-plugin-pwa dependencies; the generated Workbox worker owns only versioned app-shell Cache Storage while SQLite remains OPFS truth. The exact graph contains 935 external resolutions and 520 license records. The Q1-005 and CAP-003 lockfile-only changes add reviewed workspace edges from storage-core to application and from web to capture-core; neither adds or updates an external resolution."
   },
   "maintenanceWatch": [
     {

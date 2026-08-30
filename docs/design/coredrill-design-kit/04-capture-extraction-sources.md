@@ -45,6 +45,8 @@ V1 validates strict object shapes and safe HTTP(S) source URLs, and caps the UTF
 
 `CAP-002` keeps transport replay identity separate from semantic duplicate evidence. An exact envelope/checksum/nonce/sequence retry returns the existing durable receipt; a fresh replay identity with the same semantic content hash is acknowledged as a `content_hash` duplicate and points to the original durable envelope instead of inserting a second receipt; reuse of an envelope ID, nonce, or sender sequence with different content still fails closed. Saved-job suggestions aggregate exact connector/external ID, fragment-free canonical URL, job-source or source-snapshot content hash, and conservative title/company token similarity. The current transparent fuzzy gate requires title similarity of at least `0.75` and company similarity of at least `0.80`, with common title abbreviations and company legal suffixes normalized. Results expose the matched reasons and separate title/company components; they never merge records, promote fields, overwrite user-confirmed values, or present a hiring/ATS probability.
 
+`CAP-003` routes explicit manual form input, pasted text or HTTP(S) URLs, and saved HTML/text/JSON files through the same V1 builder and durable inbox. Pasted URLs have fragments removed and are recorded without a network request. Saved files are limited to 2 MiB; readable text is limited to 512 KiB; JSON must parse and remain within 10,000 values and 32 levels; unsupported or invalid files fail before a receipt is written. Saved HTML never enters a live document: a detached parser removes script, style, template, frame, object/embed, SVG, and MathML elements and retains only normalized readable text. Manual title/company candidates use `method: "user"`, confidence `1`, the envelope UUID as their capture source, and an exact captured-at time. The existing `manual_export` receipt channel identifies user-supplied transport while the envelope retains the specific manual/paste/file method and source kind. No path creates a job or overwrites reviewed data.
+
 ## Extraction result
 
 ```ts
@@ -131,6 +133,8 @@ Official API-key search for open federal announcements with documented filters a
 #### User files/paste
 
 Always supported. Text/HTML/JSON/CSV are baseline. PDF/DOCX import extracts to a proposal with page/paragraph provenance and requires review.
+
+The shipped `CAP-003` baseline covers manual entry, pasted text/URL, and saved HTML/text/JSON. CSV, PDF, and DOCX ingestion remain unimplemented and must retain the review/provenance requirements above when added.
 
 ### Tier B — labor/occupation data
 

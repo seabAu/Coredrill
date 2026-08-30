@@ -11,10 +11,13 @@ export {
 } from "./page-capture.js";
 export {
   buildCaptureEnvelopeV1,
+  buildSuppliedCaptureEnvelopeV1,
   captureEnvelopeContentProjectionV1,
   createCaptureEnvelopeContentHashV1,
   verifyCaptureEnvelopeContentHashV1,
   type CaptureEnvelopeBuildOptions,
   type CaptureEnvelopeBuildResult,
   type CaptureEnvelopeContentV1,
+  type SuppliedCaptureDraftV1,
+  type SuppliedCaptureFieldV1,
 } from "./envelope.js";

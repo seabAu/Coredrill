@@ -12,6 +12,9 @@
       "path": "../../packages/application"
     },
     {
+      "path": "../../packages/capture-core"
+    },
+    {
       "path": "../../packages/documents"
     },
     {

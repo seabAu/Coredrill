@@ -90,6 +90,9 @@ importers:
       '@coredrill/application':
         specifier: workspace:*
         version: link:../../packages/application
+      '@coredrill/capture-core':
+        specifier: workspace:*
+        version: link:../../packages/capture-core
       '@coredrill/documents':
         specifier: workspace:*
         version: link:../../packages/documents

@@ -164,6 +164,8 @@ Do not imply that installing the PWA on a phone exposes the desktop/browser vaul
 
 Paste URL/text or import a saved HTML/PDF. The same capture contract and review queue run, with limitations shown when the source cannot be refreshed.
 
+`CAP-003` implements the first accountless supplied-content routes from the shared Add surface: a manual form, pasted listing text, a pasted HTTP(S) URL, and saved HTML, text, or JSON. A pasted URL is recorded as evidence and is never fetched. Saved HTML is parsed in a detached document, executable/embedded elements are removed, and only inert readable text enters the envelope; text and JSON inputs have explicit size or complexity bounds. Each successful route creates a validated `CaptureEnvelopeV1` and a durable inbox receipt, while invalid input remains in the form for correction. PDF import and source-preview navigation remain later checklist work.
+
 ### Research salary
 
 Normalize title/location → map to O*NET-SOC → fetch/cache allowed labor datasets → compare disclosed range to percentiles → apply user target and transparent heuristics → show band/confidence/citations. User can override the occupation/geography mapping.
