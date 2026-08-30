@@ -3,9 +3,9 @@
 This file is the single progress ledger. `GOAL.md` defines the outcome; numbered design documents define behavior; `11-decision-register.md` defines accepted choices. This checklist records what is actually proven.
 
 Last design update: 2026-08-30
-Current milestone: Phase 1 — local tracker and recovery loop (`GATE-0` human validation remains blocked)
-Current work item: `Q1-005` — Phase 1 canonical journey
-Next recommended slice: `GATE-1` review after exact reference/manual blockers are resolved
+Current milestone: Phase 2 — capture and approved extraction (`GATE-0` and `GATE-1` external-evidence blockers remain open)
+Current work item: `CAP-001` — versioned capture envelope and compatibility contract
+Next recommended slice: `CAP-002` after `CAP-001` proof
 
 ## How to use this file
 
@@ -23,21 +23,21 @@ Next recommended slice: `GATE-1` review after exact reference/manual blockers ar
 
 | Field | Value |
 |---|---|
-| Milestone | Phase 1, with the independent Phase 0 human-validation gate retained below |
-| Item range | `Q1-005` |
+| Milestone | Phase 2, with the independent Phase 0 and Phase 1 evidence gates retained below |
+| Item range | `CAP-001` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-08-30 |
-| Expected proof | One recorded browser and first-desktop-OS E2E artifact for create vault → add job → move stages → schedule interview/follow-up → export → delete → restore, with no account, network, or AI dependency |
-| Blocker | None for `Q1-005`. `Q1-001`, the manual portion of `Q1-003`, the participant study, and `FND-001` remain independently blocked and are not relabeled complete. |
-| Next handoff | Compose the existing application commands, recovery contracts, and production shell into one canonical flow, retain browser and Windows evidence, then assess `GATE-1` without weakening its independent blockers. |
+| Expected proof | Strict capture-envelope contract and property/compatibility tests for source snapshot reference, checksum, nonce/sequence, expiry, and supported versions |
+| Blocker | None for `CAP-001`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
+| Next handoff | Read the capture/extraction policy and existing capture contracts, then implement only the smallest versioned envelope slice without adding a connector, crawler, account, hosted service, or background surveillance. |
 
 ## Milestone status
 
 | Phase | Outcome | Status | Gate |
 |---|---|---|---|
 | 0 | Repository, UX prototypes, and risky platform assumptions proven | Blocked on representative human validation | `GATE-0` |
-| 1 | Complete local tracker and recovery loop | In progress | `GATE-1` |
-| 2 | Safe capture, review, and approved extraction | Not started | `GATE-2` |
+| 1 | Complete local tracker and recovery loop | Implementation complete; gate blocked on external performance/accessibility evidence | `GATE-1` |
+| 2 | Safe capture, review, and approved extraction | In progress | `GATE-2` |
 | 3 | Career evidence and versioned documents | Not started | `GATE-3` |
 | 4 | Optional evidence-grounded AI assistance | Not started | `GATE-4` |
 | 5 | Salary context and compliant discovery | Not started | `GATE-5` |
@@ -201,7 +201,7 @@ Next recommended slice: `GATE-1` review after exact reference/manual blockers ar
 - [x] **Q1-002** Pass offline, refresh, crash, storage-denied, quota, and second-tab journeys. — Proof: [production PWA, OPFS preservation, typed storage failures, writer handoff, and exact Chrome 151/152 E2E matrix](../../proof/phase-1-resilience-e2e-verification.md)
 - [ ] **Q1-003** Pass Phase 1 WCAG automated/manual matrix. — Proof: [available automated matrix passes; exact manual targets remain blocked](../../proof/phase-1-accessibility-verification.md)
 - [x] **Q1-004** Complete threat review for SQL, XSS, IPC, attachments, paths, and diagnostics. — Proof: [reviewed trust-boundary matrix, closed/triaged finding log, adversarial tests, and cross-platform hosted verification](../../proof/phase-1-threat-review.md)
-- [ ] **Q1-005** Run canonical journey: create vault → add job → move stages → schedule interview/follow-up → export → delete → restore. — Proof: _recorded E2E artifact_
+- [x] **Q1-005** Run canonical journey: create vault → add job → move stages → schedule interview/follow-up → export → delete → restore. — Proof: [shared production-command runner, recorded browser app-shell journey, Windows native-process journey, clean restore, and cross-adapter canonical hash](../../proof/phase-1-canonical-journey-verification.md)
 - [ ] **GATE-1** Phase 1 canonical journey passes in browser and first desktop OS; recovery is proven; no account/network/AI is required. — Proof: _Phase 1 gate report_
 
 ---
@@ -520,6 +520,7 @@ This phase is deliberately deferred. Re-open only after `GATE-6`, demonstrated m
 | 2026-08-24 | `UXR-004` through `UXR-008` | The remaining Phase 0 UX gate requires at least five representative human sessions, including keyboard-heavy and nontechnical participants; Codex cannot manufacture participant evidence. | Built and browser-tested the disposable desktop/mobile prototypes, synthetic vault, ten-task moderated script, observation rubric, privacy rule, and stop/synthesis criteria. | Owner: recruit the required participants or authorize access to an appropriate research cohort; then run/anonymize the study and return findings for synthesis and decision updates. | Open |
 | 2026-08-30 | `Q1-001` | The accepted performance claim requires `HW-WIN-REF` (Intel Core i5-12400, 8 GiB) on Windows 11 25H2, but that target remains planned and is not available to this workspace. | Added a fail-closed production-build harness; the clean `1004ccd` Edge 152 diagnostic on `HW-LOCAL-DIAG` recorded 20 startup and 50 query/board/table samples with zero failures and p95 values below the design thresholds. Hosted and local nonconformant runners were not relabeled as reference hardware. | Owner: provision the exact reference target and run `pnpm test:performance` with conformant bindings, or explicitly approve a documented adjustment only after reviewing a retained failure artifact. | Open |
 | 2026-08-30 | `Q1-003` | The accepted manual accessibility matrix requires NVDA 2026.1.1 on `HW-WIN-REF`, VoiceOver/Safari on `HW-MAC-REF`, iOS VoiceOver on `HW-IOS-REF`, and version-recorded TalkBack on `HW-ANDROID-REF`; none is available to this workspace. Screen magnification and 200% browser text-resize review also require a retained manual result. | Audited the reference matrix and installed tools; NVDA is absent, `HW-WIN-REF` remains planned, and the macOS, iOS, and Android reference targets are recorded unavailable. Existing exact-Chrome axe, keyboard, forced-colors, reduced-motion, and 320-pixel evidence can be expanded and retained, but automation is not represented as conformance. | Owner: provision the recorded targets and execute the manual scripts with exact browser/AT versions; Codex continues the available automated matrix and then the independent `Q1-004` review. | Open |
+| 2026-08-30 | `GATE-1` | The canonical browser/Windows journey and recovery proof pass, but required child items `Q1-001` and `Q1-003` remain open on unavailable reference hardware and manual assistive-technology targets. | Completed `Q1-005` with one shared production-command runner, exact browser request recording, real Windows native-process execution, clean delete/restore, and an identical cross-adapter logical content hash. Re-reviewed every Phase 1 quality checkbox without treating diagnostic or automated evidence as the missing conformance proof. | Owner: complete the exact `Q1-001` and `Q1-003` actions above. Continue with independent unblocked implementation slices without marking Phase 1 or `GATE-1` complete. | Open |
 
 ## Accepted scope changes
 

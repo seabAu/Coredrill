@@ -160,6 +160,18 @@ remain under the Coredrill OPFS root; native bytes remain under the confined
 app-data `attachments/sha256` root; neither adapter accepts an arbitrary path.
 See [portable vault content hash version 1](portable-vault-content-hash-v1.md).
 
+`Q1-005` closes the Phase 1 workflow-level recovery proof without widening a
+trust boundary. The actual app shell and the real Windows native storage
+process run the same adapter-neutral sequence through validated application
+commands, production repositories, the deterministic archive writer, exact
+typed deletion confirmation, and clean-target restore. Browser automation
+records every request and rejects any destination outside the local test
+origin; the runner exposes no account, network, provider, or AI capability.
+Each adapter retains its physical archive checksum, while one canonical
+content checksum proves that the restored vault contains the same job,
+application, three status events, interview, next action, and reminder. See
+[Phase 1 canonical journey verification](../../proof/phase-1-canonical-journey-verification.md).
+
 `BKP-004` adds pickerless desktop recovery checkpoints beneath a canonical
 per-database app-data backup directory. A SQLite online snapshot, recovery
 envelope checksum, and full temporary reopen/integrity/schema check all succeed

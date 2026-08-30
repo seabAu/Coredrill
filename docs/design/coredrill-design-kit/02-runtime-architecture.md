@@ -129,6 +129,18 @@ interface DatabasePort extends DatabaseSession {
 
 `APP-008` adds `RecordDiagnosticEventCommand` and `CopySupportBundleQuery` over a narrow local `DiagnosticLogPort`. The application owns event identity, operation time, and application version; `@coredrill/observability` sanitizes raw attributes through the reviewed fail-closed allowlist before any append. SQLite schema versions 88–92 store strict immutable events, reject content-bearing or malformed attribute JSON even below TypeScript, index deterministic newest-first reads, and retain only the newest 1,000 records. `SupportBundleV1` is a local-copy contract containing at most 200 revalidated unique events in deterministic newest-first order. No automatic delivery, network capability, error free text, path, or private job/applicant content crosses this boundary, and product telemetry remains a separate future opt-in contract. See [local diagnostic support-bundle verification](../../proof/phase-1-local-diagnostic-support-bundle-verification.md).
 
+`Q1-005` supplies the previously deferred concrete SQLite composition for the
+vault, manual-job/status, and activity ports without moving adapter knowledge
+into `@coredrill/application`. One adapter-neutral canonical runner invokes the
+production commands and repositories to create a vault and job, append three
+status events, schedule an interview and follow-up/reminder, write a verified
+portable archive, delete app-managed vault data through the typed deletion
+boundary, and restore into a clean target. The browser app shell binds that
+runner to official SQLite WASM/OPFS; the Windows proof binds the same runner to
+the Rust JSON-lines native service. Both regenerate the same logical vault hash
+after restore even though their adapter-specific SQLite archive bytes differ.
+See [Phase 1 canonical journey verification](../../proof/phase-1-canonical-journey-verification.md).
+
 `PortableDatabase` is the adapter-neutral database-byte/checksum/schema-version handoff. Archive assembly adds the versioned manifest, human-readable JSON/CSV data, attachment inventory, migration history, per-entry SHA-256 checksums, and explicit encryption state required by the portable-archive contract.
 
 `BKP-003` adds the corresponding restore coordinator in `@coredrill/storage-core`. Inspection accepts only the exact bounded version-1 ZIP inventory, validates the whole archive when an expected digest exists, rejects unsafe/duplicate/compressed/oversized entries, verifies every recorded length and SHA-256, and asks an adapter to inspect copied SQLite bytes only in temporary state. A preview exposes immutable archive/target summaries, explicit empty/identical/same-vault/different-vault conflict classes, the required confirmation, and attachment add/reuse/remove counts; archive bytes and the adapter capability remain private. Commit rechecks the exact target snapshot for database or attachment drift, revalidates the retained archive, and requires the adapter to atomically replace database and attachment state or preserve the old target. See [portable archive restore version 1](portable-archive-restore-v1.md).
