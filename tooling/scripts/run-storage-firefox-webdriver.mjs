@@ -106,6 +106,13 @@ try {
         "moz:firefoxOptions": {
           args: ["-headless"],
           binary: firefoxPath,
+          // Headless Firefox cannot answer its native persistence permission sheet. These
+          // Mozilla-owned testing prefs keep the real StorageManager.persist() call
+          // deterministic; the separate browser UI suite proves the user-action boundary.
+          prefs: {
+            "dom.storageManager.prompt.testing": true,
+            "dom.storageManager.prompt.testing.allow": true,
+          },
         },
       },
     },
@@ -260,9 +267,7 @@ try {
     !["denied", "error", "granted", "unsupported"].includes(
       proof.browserStoragePersistenceBeforeRequest,
     ) ||
-    !["denied", "error", "granted", "unsupported"].includes(
-      proof.browserStoragePersistenceAfterRequest,
-    ) ||
+    proof.browserStoragePersistenceAfterRequest !== "granted" ||
     !["available", "low", "unknown"].includes(proof.browserStorageQuota) ||
     passiveStorageHealth.expectedDatabase !== "not-required" ||
     requestedStorageHealth.expectedDatabase !== "not-required" ||
