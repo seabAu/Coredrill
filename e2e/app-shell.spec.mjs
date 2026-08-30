@@ -1413,3 +1413,89 @@ test("mobile bottom navigation, More, forced colors, and 320 pixel reflow remain
   await attachAxe(page, testInfo, "mobile-forced-colors-320");
   await attachProof(page, testInfo, "mobile-forced-colors-320");
 });
+
+const PHASE_ONE_CORE_ROUTE_CASES = Object.freeze([
+  ["home", "/app-shell.html"],
+  ["pipeline-board", "/pipeline?view=board"],
+  ["pipeline-table", "/pipeline?view=table"],
+  ["documents", "/documents"],
+  ["career-profile", "/profile/basics"],
+  ["network-companies", "/network/companies"],
+  ["network-contacts", "/network/contacts"],
+  ["network-interactions", "/network/interactions"],
+  ["insights", "/insights/pipeline"],
+  ["settings", "/settings/vault-backup"],
+  ["job-overview", "/jobs/board-northstar/overview"],
+  ["job-requirements", "/jobs/board-northstar/requirements"],
+  ["job-documents", "/jobs/board-northstar/documents"],
+  ["job-timeline", "/jobs/board-northstar/timeline"],
+  ["job-company", "/jobs/board-northstar/company"],
+  ["job-source", "/jobs/board-northstar/source"],
+  ["company-detail", "/network/companies/company-acme"],
+  ["contact-detail", "/network/contacts/contact-maya"],
+  ["document-detail", "/documents/document-product-base"],
+]);
+
+for (const [name, route] of PHASE_ONE_CORE_ROUTE_CASES) {
+  test(`Phase 1 core route ${name} has no automated axe violations`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(route);
+    await page.waitForFunction(() => globalThis.coredrillAppShell !== undefined);
+    await expect(page.locator("main")).toBeVisible();
+    await attachAxe(page, testInfo, `phase-one-core-route-${name}`);
+  });
+}
+
+for (const appearance of [
+  { density: "comfortable", theme: "light" },
+  { density: "compact", theme: "light" },
+  { density: "comfortable", theme: "dark" },
+  { density: "compact", theme: "dark" },
+]) {
+  test(`Phase 1 shell ${appearance.theme} ${appearance.density} appearance has no automated axe violations`, async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await openShell(page, appearance);
+    await expect(page.locator("html")).toHaveAttribute("data-theme", appearance.theme);
+    await expect(page.locator("html")).toHaveAttribute("data-density", appearance.density);
+    await attachAxe(
+      page,
+      testInfo,
+      `phase-one-appearance-${appearance.theme}-${appearance.density}`,
+    );
+  });
+}
+
+for (const viewport of [
+  { height: 800, id: "mobile", width: 360 },
+  { height: 1024, id: "tablet-portrait", width: 768 },
+  { height: 768, id: "tablet-landscape", width: 1024 },
+  { height: 900, id: "desktop", width: 1440 },
+  { height: 1080, id: "wide", width: 1920 },
+]) {
+  test(`Phase 1 responsive checkpoint ${viewport.id} retains reflow and keyboard navigation`, async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize({ height: viewport.height, width: viewport.width });
+    await page.goto("/pipeline?view=board");
+    await page.waitForFunction(() => globalThis.coredrillAppShell !== undefined);
+
+    expect(
+      await page.evaluate(() => ({
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+      })),
+    ).toEqual({ clientWidth: viewport.width, scrollWidth: viewport.width });
+
+    const navigation = page.getByRole("navigation", {
+      name: viewport.width < 640 ? "Mobile" : "Primary",
+    });
+    const home = navigation.getByRole("link", { name: "Home" });
+    await home.focus();
+    await expect(home).toBeFocused();
+    await home.press("Enter");
+    await expect(page.getByTestId("page-title")).toHaveText("Keep the next move clear");
+    await attachAxe(page, testInfo, `phase-one-responsive-${viewport.id}`);
+  });
+}

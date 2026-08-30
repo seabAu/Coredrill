@@ -483,29 +483,33 @@ const CompanyPanel = ({ model, onAction }: JobWorkspaceContentPanelProps) => (
           <dl className="cd-job-company-stats">
             <div>
               <dt>Contacts</dt>
-              <dd>{String(model.company.contactCount)}</dd>
-              <button
-                className="cd-text-button"
-                onClick={() => {
-                  onAction?.({ id: "open-company-contacts" });
-                }}
-                type="button"
-              >
-                Open contacts
-              </button>
+              <dd className="cd-job-company-stat-with-action">
+                <span>{String(model.company.contactCount)}</span>
+                <button
+                  className="cd-text-button"
+                  onClick={() => {
+                    onAction?.({ id: "open-company-contacts" });
+                  }}
+                  type="button"
+                >
+                  Open contacts
+                </button>
+              </dd>
             </div>
             <div>
               <dt>Other active roles</dt>
-              <dd>{String(model.company.otherActiveJobCount)}</dd>
-              <button
-                className="cd-text-button"
-                onClick={() => {
-                  onAction?.({ id: "open-company-jobs" });
-                }}
-                type="button"
-              >
-                Open roles
-              </button>
+              <dd className="cd-job-company-stat-with-action">
+                <span>{String(model.company.otherActiveJobCount)}</span>
+                <button
+                  className="cd-text-button"
+                  onClick={() => {
+                    onAction?.({ id: "open-company-jobs" });
+                  }}
+                  type="button"
+                >
+                  Open roles
+                </button>
+              </dd>
             </div>
             <div>
               <dt>Recorded outcomes</dt>

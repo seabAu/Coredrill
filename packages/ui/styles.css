@@ -2805,6 +2805,15 @@ textarea {
   margin-top: var(--space-2);
 }
 
+.cd-job-company-stat-with-action {
+  display: grid;
+  justify-items: start;
+}
+
+.cd-job-company-stat-with-action .cd-text-button {
+  font-size: var(--font-size-body);
+}
+
 .cd-job-policy-note {
   padding: var(--space-3) var(--space-4);
   border-left: 0.3rem solid var(--color-accent);
