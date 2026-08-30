@@ -161,3 +161,20 @@ export {
   type RecordDiagnosticEventInput,
   type SupportBundleCopyDto,
 } from "./diagnostics.js";
+export {
+  BROWSER_EXPORT_REMINDER_INTERVAL_DAYS,
+  BROWSER_EXPORT_REMINDER_PREFERENCE_VERSION,
+  BROWSER_EXPORT_REMINDER_SETTING_KEY,
+  BROWSER_EXPORT_REMINDER_SNOOZE_DAYS,
+  createDefaultBrowserExportReminderPreference,
+  deriveBrowserExportReminder,
+  deriveBrowserExportReminderFromPreference,
+  parseBrowserExportReminderPreference,
+  serializeBrowserExportReminderPreference,
+  snoozeBrowserExportReminder,
+  updateBrowserExportReminderPreference,
+  type BrowserExportReminder,
+  type BrowserExportReminderInput,
+  type BrowserExportReminderPreferenceAction,
+  type BrowserExportReminderPreferenceV1,
+} from "./browser-recovery.js";

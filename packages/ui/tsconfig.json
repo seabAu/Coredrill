@@ -7,5 +7,9 @@
     "tsBuildInfoFile": ".turbo/build.tsbuildinfo"
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
-  "references": []
+  "references": [
+    {
+      "path": "../application"
+    }
+  ]
 }

@@ -22,7 +22,9 @@ import { deserializeBrowserStorageError } from "./errors.js";
 import {
   inspectBrowserStorageEnvironment,
   withBrowserStorageWarning,
+  type BrowserExpectedDatabaseState,
   type BrowserStorageEnvironment,
+  type BrowserStorageHealthSnapshot,
   type BrowserStorageManager,
 } from "./storage-environment.js";
 import {
@@ -38,9 +40,14 @@ export interface BrowserSqliteOptions {
   readonly lockManager?: BrowserLockManager;
   readonly lowQuotaBytes?: number;
   readonly lowQuotaRatio?: number;
-  readonly requestPersistentStorage?: boolean;
   readonly storageManager?: BrowserStorageManager;
   readonly workerFactory?: () => Worker;
+}
+
+interface BrowserStorageInspectionOptions {
+  readonly lowQuotaBytes?: number;
+  readonly lowQuotaRatio?: number;
+  readonly storageManager?: BrowserStorageManager;
 }
 
 interface PendingRequest {
@@ -66,10 +73,12 @@ export class BrowserSqliteDatabase implements DatabasePort {
   private readonly pending = new Map<string, PendingRequest>();
   private readonly queue = new SerialOperationQueue();
   private closed = false;
+  private expectedDatabase: BrowserExpectedDatabaseState = "not-required";
 
   private constructor(
     private readonly databaseName: string,
     private environment: BrowserStorageEnvironment,
+    private readonly inspectionOptions: BrowserStorageInspectionOptions,
     private readonly lease: BrowserVaultLease | undefined,
     workerFactory: () => Worker,
   ) {
@@ -89,7 +98,7 @@ export class BrowserSqliteDatabase implements DatabasePort {
     let environment = await inspectBrowserStorageEnvironment({
       ...(options.lowQuotaBytes === undefined ? {} : { lowQuotaBytes: options.lowQuotaBytes }),
       ...(options.lowQuotaRatio === undefined ? {} : { lowQuotaRatio: options.lowQuotaRatio }),
-      requestPersistence: options.requestPersistentStorage ?? false,
+      requestPersistence: false,
       ...(options.storageManager === undefined ? {} : { storageManager: options.storageManager }),
     });
     const lease =
@@ -99,6 +108,11 @@ export class BrowserSqliteDatabase implements DatabasePort {
     const database = new BrowserSqliteDatabase(
       options.databaseName,
       environment,
+      {
+        ...(options.lowQuotaBytes === undefined ? {} : { lowQuotaBytes: options.lowQuotaBytes }),
+        ...(options.lowQuotaRatio === undefined ? {} : { lowQuotaRatio: options.lowQuotaRatio }),
+        ...(options.storageManager === undefined ? {} : { storageManager: options.storageManager }),
+      },
       lease,
       options.workerFactory ??
         (() =>
@@ -115,6 +129,12 @@ export class BrowserSqliteDatabase implements DatabasePort {
         environment = withBrowserStorageWarning(environment, "expected-database-missing");
         database.environment = environment;
       }
+      database.expectedDatabase =
+        options.expectedExisting === true
+          ? opened.existedBeforeOpen
+            ? "found"
+            : "missing"
+          : "not-required";
       return database;
     } catch (error) {
       database.shutdown();
@@ -229,6 +249,30 @@ export class BrowserSqliteDatabase implements DatabasePort {
     });
   }
 
+  /** Re-observes browser storage without requesting a persistence grant. */
+  public refreshStorageHealth(): Promise<BrowserStorageHealthSnapshot> {
+    return this.queue.run(async () => {
+      this.environment = await this.inspectStorageEnvironment(false);
+      return this.storageHealth();
+    });
+  }
+
+  /** Must be called only from an explicit user action such as a Settings button. */
+  public requestPersistentStorage(): Promise<BrowserStorageHealthSnapshot> {
+    return this.queue.run(async () => {
+      this.environment = await this.inspectStorageEnvironment(true);
+      return this.storageHealth();
+    });
+  }
+
+  public storageHealth(): BrowserStorageHealthSnapshot {
+    return Object.freeze({
+      ...this.environment,
+      expectedDatabase: this.expectedDatabase,
+      warnings: Object.freeze([...this.environment.warnings]),
+    });
+  }
+
   public delete(): Promise<boolean> {
     return this.queue.run(async () => {
       const result = await this.request<BrowserStorageDeleteResult>("delete", {
@@ -275,6 +319,18 @@ export class BrowserSqliteDatabase implements DatabasePort {
         reject(error instanceof Error ? error : new Error("The SQLite Worker request failed."));
       }
     });
+  }
+
+  private async inspectStorageEnvironment(
+    requestPersistence: boolean,
+  ): Promise<BrowserStorageEnvironment> {
+    const environment = await inspectBrowserStorageEnvironment({
+      ...this.inspectionOptions,
+      requestPersistence,
+    });
+    return this.expectedDatabase === "missing"
+      ? withBrowserStorageWarning(environment, "expected-database-missing")
+      : environment;
   }
 
   private handleResponse(value: unknown): void {

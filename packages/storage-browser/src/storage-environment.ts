@@ -1,5 +1,6 @@
 export type BrowserStoragePersistenceState = "denied" | "error" | "granted" | "unsupported";
 export type BrowserStorageQuotaState = "available" | "low" | "unknown";
+export type BrowserExpectedDatabaseState = "found" | "missing" | "not-required";
 export type BrowserStorageWarning =
   | "expected-database-missing"
   | "opfs-unavailable"
@@ -15,6 +16,10 @@ export interface BrowserStorageEnvironment {
   readonly quotaBytes?: number;
   readonly remainingBytes?: number;
   readonly warnings: readonly BrowserStorageWarning[];
+}
+
+export interface BrowserStorageHealthSnapshot extends BrowserStorageEnvironment {
+  readonly expectedDatabase: BrowserExpectedDatabaseState;
 }
 
 export interface BrowserStorageManager {

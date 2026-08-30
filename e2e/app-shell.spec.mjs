@@ -77,6 +77,82 @@ test("dark compact shell and backup-due state remain accessible", async ({ page 
   await attachProof(page, testInfo, "desktop-dark-compact-backup-due");
 });
 
+test("browser Vault & Backup requests persistence only from the user action and keeps reminders neutral", async ({
+  page,
+}, testInfo) => {
+  const externalRequests = [];
+  page.on("request", (request) => {
+    if (!request.url().startsWith("http://127.0.0.1:4178/")) externalRequests.push(request.url());
+  });
+  await page.addInitScript(() => {
+    globalThis.coredrillPersistRequestCount = 0;
+    const original = navigator.storage;
+    const synthetic = Object.create(original);
+    Object.defineProperties(synthetic, {
+      estimate: { value: async () => ({ quota: 1_000, usage: 950 }) },
+      persist: {
+        value: async () => {
+          globalThis.coredrillPersistRequestCount += 1;
+          return true;
+        },
+      },
+      persisted: { value: async () => false },
+    });
+    Object.defineProperty(navigator, "storage", { configurable: true, value: synthetic });
+  });
+  await page.setViewportSize({ width: 1280, height: 960 });
+  await openShell(page, { expectedDatabase: "missing" });
+  await page.getByRole("link", { name: "Settings" }).click();
+
+  const settings = page.getByTestId("browser-vault-backup-settings");
+  await expect(
+    settings.getByRole("heading", { name: "Browser vault on this device" }),
+  ).toBeVisible();
+  await expect(settings).toContainText("http://127.0.0.1:4178");
+  await expect(settings.getByText("Best-effort browser storage")).toBeVisible();
+  await expect(settings.getByText("Storage space is low")).toBeVisible();
+  await expect(settings.getByRole("alert")).toContainText("Expected vault database not found");
+  expect(await page.evaluate(() => globalThis.coredrillPersistRequestCount)).toBe(0);
+  expect(await page.evaluate(() => globalThis.coredrillAppShell?.getState())).toMatchObject({
+    exportReminderState: "due",
+    persistenceRequestCount: 0,
+    storagePersistence: "denied",
+    storageQuota: "low",
+  });
+
+  await settings.getByRole("button", { name: "Request persistent storage" }).click();
+  await expect(settings.getByText("Persistent storage granted")).toBeVisible();
+  expect(await page.evaluate(() => globalThis.coredrillPersistRequestCount)).toBe(1);
+  expect(await page.evaluate(() => globalThis.coredrillAppShell?.getState())).toMatchObject({
+    persistenceRequestCount: 1,
+    storagePersistence: "granted",
+  });
+
+  await expect(settings).toContainText(
+    "Coredrill will keep working if you choose to do this later",
+  );
+  await settings.getByRole("button", { name: "Remind me later" }).click();
+  await expect(settings).toContainText("next optional export reminder is scheduled");
+  await settings.getByRole("button", { name: "Turn off reminders" }).click();
+  await expect(settings).toContainText("Export reminders are off");
+  await settings.getByRole("button", { name: "Turn on reminders" }).click();
+  await settings.getByRole("button", { name: "Export portable archive" }).click();
+  await expect(page.getByRole("status")).toContainText(
+    "The reminder remains due until an export succeeds",
+  );
+
+  await attachAxe(page, testInfo, "browser-vault-backup-explicit-persistence");
+  await attachProof(page, testInfo, "browser-vault-backup-explicit-persistence");
+  await page.setViewportSize({ width: 320, height: 800 });
+  const dimensions = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
+  await attachAxe(page, testInfo, "browser-vault-backup-mobile");
+  expect(externalRequests).toEqual([]);
+});
+
 test("Home orders actionable local work, limits Now, and lets users hide the snapshot", async ({
   page,
 }, testInfo) => {

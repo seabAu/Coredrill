@@ -13,7 +13,9 @@
     "lint": "eslint src vite.config.mjs --max-warnings 0"
   },
   "dependencies": {
+    "@coredrill/application": "workspace:*",
     "@coredrill/documents": "workspace:*",
+    "@coredrill/domain": "workspace:*",
     "@coredrill/extension-bridge": "workspace:*",
     "@coredrill/storage-browser": "workspace:*",
     "@coredrill/storage-core": "workspace:*",

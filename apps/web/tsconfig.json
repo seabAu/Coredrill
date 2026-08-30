@@ -9,7 +9,13 @@
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.d.ts"],
   "references": [
     {
+      "path": "../../packages/application"
+    },
+    {
       "path": "../../packages/documents"
+    },
+    {
+      "path": "../../packages/domain"
     },
     {
       "path": "../../packages/storage-browser"

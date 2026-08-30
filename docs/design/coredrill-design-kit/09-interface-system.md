@@ -330,6 +330,15 @@ Last verified backup: 4 days ago
 [Back up now] [Export portable archive] [Test restore]
 ```
 
+In a browser vault, the card names the exact origin and shows persistence,
+quota, and expected-database evidence separately. `Request persistent storage`
+is an explicit action and says that the browser decides. The optional portable
+export reminder recurs every 30 days after a successful export, supports
+`Remind me later` for seven days and `Turn off reminders`, and never uses a
+modal, streak, countdown, escalating urgency, or penalty. Storage-risk and
+restore guidance remain visible when reminders are off. See [browser vault
+recovery health version 1](browser-vault-recovery-health-v1.md).
+
 Network-enabled settings show default-off toggles, exact data categories, destination, credential location, last use, and disable/delete controls.
 
 Diagnostics explicitly says that events stay local and contain only reviewed operational fields. Copy support bundle is a user-initiated action that copies versioned pretty JSON for at most the newest 200 events; the surface previews event count, application version, generation time, and the no-automatic-send guarantee. It never offers raw logs, paths, free-text exception messages, or job/applicant content. Any future telemetry control is separate, default off, and must not be implied by local bundle copy.

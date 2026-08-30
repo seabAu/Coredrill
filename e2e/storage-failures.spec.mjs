@@ -31,11 +31,17 @@ test("fails closed for denied persistence, quota pressure, profile loss, and cor
 }) => {
   const deniedContext = await browser.newContext();
   await deniedContext.addInitScript(() => {
+    globalThis.coredrillPersistRequestCount = 0;
     const original = navigator.storage;
     const synthetic = Object.create(original);
     Object.defineProperties(synthetic, {
       estimate: { value: async () => ({ quota: 1_000, usage: 950 }) },
-      persist: { value: async () => false },
+      persist: {
+        value: async () => {
+          globalThis.coredrillPersistRequestCount += 1;
+          return false;
+        },
+      },
       persisted: { value: async () => false },
     });
     Object.defineProperty(navigator, "storage", { configurable: true, value: synthetic });
@@ -43,6 +49,13 @@ test("fails closed for denied persistence, quota pressure, profile loss, and cor
   const deniedPage = await openHarness(deniedContext);
   await callHarness(deniedPage, "delete");
   const denied = await callHarness(deniedPage, "openAndMigrate");
+  const passiveHealth = await callHarness(deniedPage, "storageHealth");
+  expect(await deniedPage.evaluate(() => globalThis.coredrillPersistRequestCount)).toBe(0);
+  expect(passiveHealth).toMatchObject({
+    expectedDatabase: "not-required",
+    persistence: "denied",
+    quota: "low",
+  });
   expect(denied.diagnostics).toMatchObject({ health: "degraded", persistence: "best-effort" });
   expect(denied.diagnostics.details).toEqual(
     expect.arrayContaining([
@@ -52,13 +65,122 @@ test("fails closed for denied persistence, quota pressure, profile loss, and cor
       "storage-warning:quota-low",
     ]),
   );
+  const deniedRequest = await callHarness(deniedPage, "requestPersistentStorage");
+  expect(await deniedPage.evaluate(() => globalThis.coredrillPersistRequestCount)).toBe(1);
+  expect(deniedRequest).toMatchObject({ persistence: "denied", quota: "low" });
   await callHarness(deniedPage, "delete");
   await deniedContext.close();
+
+  const grantedContext = await browser.newContext();
+  await grantedContext.addInitScript(() => {
+    globalThis.coredrillPersistRequestCount = 0;
+    const original = navigator.storage;
+    const synthetic = Object.create(original);
+    Object.defineProperties(synthetic, {
+      estimate: { value: async () => ({ quota: 1_000_000_000, usage: 100_000_000 }) },
+      persist: {
+        value: async () => {
+          globalThis.coredrillPersistRequestCount += 1;
+          return true;
+        },
+      },
+      persisted: { value: async () => false },
+    });
+    Object.defineProperty(navigator, "storage", { configurable: true, value: synthetic });
+  });
+  const grantedPage = await openHarness(grantedContext);
+  await callHarness(grantedPage, "delete");
+  await callHarness(grantedPage, "openAndMigrate");
+  expect(await grantedPage.evaluate(() => globalThis.coredrillPersistRequestCount)).toBe(0);
+  const granted = await callHarness(grantedPage, "requestPersistentStorage");
+  expect(await grantedPage.evaluate(() => globalThis.coredrillPersistRequestCount)).toBe(1);
+  expect(granted).toMatchObject({ persistence: "granted", quota: "available" });
+  await callHarness(grantedPage, "delete");
+  await grantedContext.close();
+
+  const errorContext = await browser.newContext();
+  await errorContext.addInitScript(() => {
+    const original = navigator.storage;
+    const synthetic = Object.create(original);
+    Object.defineProperties(synthetic, {
+      estimate: { value: async () => Promise.reject(new Error("synthetic quota error")) },
+      persist: { value: async () => Promise.reject(new Error("synthetic persist error")) },
+      persisted: { value: async () => Promise.reject(new Error("synthetic persisted error")) },
+    });
+    Object.defineProperty(navigator, "storage", { configurable: true, value: synthetic });
+  });
+  const errorPage = await openHarness(errorContext);
+  await callHarness(errorPage, "delete");
+  const errored = await callHarness(errorPage, "openAndMigrate");
+  expect(errored.diagnostics.details).toEqual(
+    expect.arrayContaining([
+      "storage-persistence:error",
+      "storage-quota:unknown",
+      "storage-warning:persistence-not-granted",
+      "storage-warning:quota-unknown",
+    ]),
+  );
+  await callHarness(errorPage, "delete");
+  await errorContext.close();
+
+  const unsupportedContext = await browser.newContext();
+  await unsupportedContext.addInitScript(() => {
+    const original = navigator.storage;
+    const synthetic = Object.create(original);
+    Object.defineProperties(synthetic, {
+      estimate: { value: async () => ({ quota: 1_000_000, usage: 100_000 }) },
+      persist: { value: undefined },
+      persisted: { value: undefined },
+    });
+    Object.defineProperty(navigator, "storage", { configurable: true, value: synthetic });
+  });
+  const unsupportedPage = await openHarness(unsupportedContext);
+  await callHarness(unsupportedPage, "delete");
+  const unsupported = await callHarness(unsupportedPage, "openAndMigrate");
+  expect(unsupported.diagnostics.details).toEqual(
+    expect.arrayContaining([
+      "storage-persistence:unsupported",
+      "storage-warning:persistence-not-granted",
+    ]),
+  );
+  await callHarness(unsupportedPage, "delete");
+  await unsupportedContext.close();
 
   const sourceContext = await browser.newContext();
   const sourcePage = await openHarness(sourceContext);
   await callHarness(sourcePage, "delete");
   await callHarness(sourcePage, "openAndMigrate");
+  const reminderNow = Date.UTC(2026, 7, 29, 12);
+  const initialReminder = await callHarness(sourcePage, "getBrowserExportReminder", reminderNow);
+  expect(initialReminder.reminder).toEqual({ reason: "never-exported", state: "due" });
+  const snoozedReminder = await callHarness(sourcePage, "updateBrowserExportReminder", {
+    action: "snooze",
+    nowUnixMs: reminderNow,
+  });
+  expect(snoozedReminder.reminder).toMatchObject({ state: "scheduled" });
+  await callHarness(sourcePage, "close");
+  await callHarness(sourcePage, "openAndMigrate", { expectedExisting: true });
+  await expect(callHarness(sourcePage, "getBrowserExportReminder", reminderNow)).resolves.toEqual(
+    snoozedReminder,
+  );
+  const disabledReminder = await callHarness(sourcePage, "updateBrowserExportReminder", {
+    action: "disable",
+    nowUnixMs: reminderNow,
+  });
+  expect(disabledReminder.reminder).toEqual({ state: "off" });
+  const enabledReminder = await callHarness(sourcePage, "updateBrowserExportReminder", {
+    action: "enable",
+    nowUnixMs: reminderNow,
+  });
+  expect(enabledReminder.reminder).toEqual({ reason: "never-exported", state: "due" });
+  const successfulExportReminder = await callHarness(sourcePage, "updateBrowserExportReminder", {
+    action: "record-success",
+    nowUnixMs: reminderNow,
+  });
+  expect(successfulExportReminder.reminder).toEqual({
+    nextReminderAtUnixMs: reminderNow + 30 * 24 * 60 * 60 * 1_000,
+    state: "scheduled",
+  });
   await callHarness(sourcePage, "writeVault", vault);
   const portable = await callHarness(sourcePage, "exportPortable");
   const sourceRows = await callHarness(sourcePage, "listVaults");
@@ -78,6 +200,11 @@ test("fails closed for denied persistence, quota pressure, profile loss, and cor
   const missing = await callHarness(sourcePage, "openAndMigrate", { expectedExisting: true });
   expect(missing.diagnostics).toMatchObject({ health: "degraded" });
   expect(missing.diagnostics.details).toContain("storage-warning:expected-database-missing");
+  const missingHealth = await callHarness(sourcePage, "storageHealth");
+  expect(missingHealth).toMatchObject({ expectedDatabase: "missing" });
+  expect((await callHarness(sourcePage, "diagnostics")).details).toContain(
+    "storage-warning:expected-database-missing",
+  );
   await callHarness(sourcePage, "delete");
   await sourceContext.close();
 
@@ -104,9 +231,16 @@ test("fails closed for denied persistence, quota pressure, profile loss, and cor
     `STG_FAILURE_PROOF ${JSON.stringify({
       corruptRestorePreservedTarget: true,
       deniedPersistence: true,
+      erroredPersistence: true,
       ephemeralProfileLossDetected: true,
+      explicitPersistenceRequestOnly: true,
+      exportReminderPreferencePersisted: true,
+      exportReminderUserControls: true,
       expectedDatabaseMissing: true,
+      grantedPersistence: true,
       quotaLow: true,
+      quotaUnknown: true,
+      unsupportedPersistence: true,
     })}`,
   );
 });

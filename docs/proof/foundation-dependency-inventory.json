@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "inventoryId": "JW-DI-001",
-  "version": "1.18.0",
-  "reviewedAt": "2026-08-29T22:01:44Z",
+  "version": "1.18.1",
+  "reviewedAt": "2026-08-30T01:09:09Z",
   "scope": {
     "included": [
       "Pinned Node.js, pnpm, and Rust foundation toolchains",
@@ -17,7 +17,7 @@
   },
   "lockfile": {
     "path": "pnpm-lock.yaml",
-    "sha256": "187bd9086e029157a638b2a184ce96cdd89ac3a78a4760eb75290c6952b1b405"
+    "sha256": "47401aa17fea0b0b54176831669e02fc601658970442321a98a2437f5f2aca9b"
   },
   "toolchains": [
     {
@@ -1040,8 +1040,8 @@
   "advisoryReview": {
     "command": "pnpm audit --json",
     "source": "https://pnpm.io/cli/audit",
-    "reviewedAt": "2026-08-29T22:01:44Z",
-    "lockfileSha256": "187bd9086e029157a638b2a184ce96cdd89ac3a78a4760eb75290c6952b1b405",
+    "reviewedAt": "2026-08-30T01:09:09Z",
+    "lockfileSha256": "47401aa17fea0b0b54176831669e02fc601658970442321a98a2437f5f2aca9b",
     "resolvedDependencyCount": 622,
     "optionalDependencyCount": 82,
     "vulnerabilities": {
@@ -1054,8 +1054,8 @@
   },
   "licenseReview": {
     "command": "pnpm check:licenses",
-    "reviewedAt": "2026-08-29T22:01:44Z",
-    "lockfileSha256": "187bd9086e029157a638b2a184ce96cdd89ac3a78a4760eb75290c6952b1b405",
+    "reviewedAt": "2026-08-30T01:09:09Z",
+    "lockfileSha256": "47401aa17fea0b0b54176831669e02fc601658970442321a98a2437f5f2aca9b",
     "resolvedPackageRecords": 354,
     "result": "pass",
     "note": "License records and advisory dependency counts use different tool scopes and are not expected to match. The application shell uses reviewed MIT Tailwind CSS and Radix UI dependencies; the archive writer adds dependency-free MIT fflate 0.8.3. The exact graph contains 622 external resolutions and 354 license records."

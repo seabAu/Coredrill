@@ -1,5 +1,7 @@
 import {
   ApplicationShell,
+  BrowserVaultBackupSettings,
+  deriveBrowserExportReminder,
   HomeDashboard,
   JobWorkspaceContent,
   JobWorkspaceFrame,
@@ -17,6 +19,10 @@ import {
   getRootAppearanceAttributes,
   isJobWorkspaceContentTab,
   matchesLocalSearchQuery,
+  snoozeBrowserExportReminder,
+  type BrowserExportReminder,
+  type BrowserExportReminderAction,
+  type BrowserVaultBackupModel,
   type DensityMode,
   type HomeDashboardActionId,
   type HomeDashboardModel,
@@ -52,6 +58,10 @@ import {
   type ThemePreference,
   type VaultHealthState,
 } from "@coredrill/ui";
+import {
+  inspectBrowserStorageEnvironment,
+  type BrowserStorageEnvironment,
+} from "@coredrill/storage-browser";
 import { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 
@@ -75,6 +85,9 @@ interface AppShellCatalogState {
   readonly pipelineSearchQuery: string;
   readonly pipelineSelectedCount: number;
   readonly pipelineView: PipelineViewId;
+  readonly persistenceRequestCount: number;
+  readonly storagePersistence: BrowserStorageEnvironment["persistence"] | "checking";
+  readonly storageQuota: BrowserStorageEnvironment["quota"] | "checking";
   readonly tableColumnSaveCount: number;
   readonly tableEditCount: number;
   readonly workspaceJobId: string | null;
@@ -83,6 +96,7 @@ interface AppShellCatalogState {
   readonly workspaceTab: JobWorkspaceTabId | null;
   readonly theme: ThemePreference;
   readonly vaultHealth: VaultHealthState;
+  readonly exportReminderState: BrowserExportReminder["state"];
 }
 
 interface AppShellCatalogApi {
@@ -591,6 +605,7 @@ const NETWORK_MODEL = Object.freeze({
 const readAppearance = (): {
   readonly boardMode: "large" | "standard";
   readonly density: DensityMode;
+  readonly expectedDatabase: "found" | "missing";
   readonly homeMode: HomeDashboardModel["state"];
   readonly pipelineSelectionCount: number;
   readonly pipelineView: PipelineViewId;
@@ -603,6 +618,7 @@ const readAppearance = (): {
   const parameters = new URLSearchParams(window.location.search);
   const requestedBoard = parameters.get("board");
   const requestedDensity = parameters.get("density");
+  const requestedExpectedDatabase = parameters.get("expectedDatabase");
   const requestedHome = parameters.get("home");
   const requestedPipeline = parameters.get("pipeline");
   const requestedTable = parameters.get("table");
@@ -612,6 +628,7 @@ const readAppearance = (): {
   return {
     boardMode: requestedBoard === "large" ? "large" : "standard",
     density: requestedDensity === "compact" ? "compact" : "comfortable",
+    expectedDatabase: requestedExpectedDatabase === "missing" ? "missing" : "found",
     homeMode: requestedHome === "empty" ? "empty" : "ready",
     pipelineSelectionCount: requestedPipeline === "selected" ? 2 : 0,
     pipelineView: requestedTable === "large" || requestedTable === "conflict" ? "table" : "board",
@@ -1220,6 +1237,12 @@ const AppShellCatalog = () => {
   const [boardTimelineEventCount, setBoardTimelineEventCount] = useState(0);
   const [boardUndo, setBoardUndo] = useState<BoardUndoRecord | null>(null);
   const [homeSnapshotVisible, setHomeSnapshotVisible] = useState(true);
+  const [browserStorageEnvironment, setBrowserStorageEnvironment] =
+    useState<BrowserStorageEnvironment | null>(null);
+  const [exportReminder, setExportReminder] = useState<BrowserExportReminder>(() =>
+    deriveBrowserExportReminder({ enabled: true, nowUnixMs: Date.now() }),
+  );
+  const [persistenceRequestCount, setPersistenceRequestCount] = useState(0);
   const [networkInteractionDraftCount, setNetworkInteractionDraftCount] = useState(0);
   const [networkTab, setNetworkTab] = useState<NetworkTabId>(
     initialLocation.kind === "network" ? initialLocation.tab : "companies",
@@ -1277,6 +1300,22 @@ const AppShellCatalog = () => {
     appearance.workspaceState === null
       ? "Shell ready. All displayed records are synthetic."
       : `State proof ready: ${appearance.workspaceState}. All displayed records are synthetic.`,
+  );
+  const browserVaultBackupModel = useMemo<BrowserVaultBackupModel | null>(
+    () =>
+      browserStorageEnvironment === null
+        ? null
+        : Object.freeze({
+            expectedDatabase: appearance.expectedDatabase,
+            origin: window.location.origin,
+            persistence: browserStorageEnvironment.persistence,
+            quota: browserStorageEnvironment.quota,
+            ...(browserStorageEnvironment.remainingBytes === undefined
+              ? {}
+              : { remainingBytes: browserStorageEnvironment.remainingBytes }),
+            reminder: exportReminder,
+          }),
+    [appearance.expectedDatabase, browserStorageEnvironment, exportReminder],
   );
   const homeModel: HomeDashboardModel =
     appearance.homeMode === "empty"
@@ -1382,6 +1421,16 @@ const AppShellCatalog = () => {
   }, [appearance]);
 
   useEffect(() => {
+    let active = true;
+    void inspectBrowserStorageEnvironment().then((environment) => {
+      if (active) setBrowserStorageEnvironment(environment);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
     globalThis.coredrillAppShell = Object.freeze({
       getState: () =>
         Object.freeze({
@@ -1402,10 +1451,14 @@ const AppShellCatalog = () => {
           pipelineSearchQuery,
           pipelineSelectedCount,
           pipelineView,
+          persistenceRequestCount,
+          storagePersistence: browserStorageEnvironment?.persistence ?? "checking",
+          storageQuota: browserStorageEnvironment?.quota ?? "checking",
           tableColumnSaveCount,
           tableEditCount,
           theme: appearance.theme,
           vaultHealth: appearance.vaultHealth,
+          exportReminderState: exportReminder.state,
           workspaceJobId: workspaceRoute?.jobId ?? null,
           workspaceMode: workspaceRoute?.mode ?? null,
           workspaceState: appearance.workspaceState,
@@ -1418,6 +1471,8 @@ const AppShellCatalog = () => {
     boardAnnouncement,
     boardTimelineEventCount,
     boardUndo,
+    browserStorageEnvironment,
+    exportReminder.state,
     homeSnapshotVisible,
     lastActivity,
     networkInteractionDraftCount,
@@ -1429,6 +1484,7 @@ const AppShellCatalog = () => {
     pipelineSearchQuery,
     pipelineSelectedCount,
     pipelineView,
+    persistenceRequestCount,
     tableColumnSaveCount,
     tableEditCount,
     workspaceRoute,
@@ -1436,6 +1492,40 @@ const AppShellCatalog = () => {
 
   const recordAction = (action: ShellActionId): void => {
     setLastActivity(`Action selected: ${action}. No external request was made.`);
+  };
+
+  const requestPersistentStorageFromUserAction = (): void => {
+    setPersistenceRequestCount((count) => count + 1);
+    void inspectBrowserStorageEnvironment({ requestPersistence: true }).then((environment) => {
+      setBrowserStorageEnvironment(environment);
+      setLastActivity(
+        environment.persistence === "granted"
+          ? "The browser granted persistent storage for this exact origin."
+          : "The browser did not grant persistent storage. The vault remains available with best-effort recovery guidance.",
+      );
+    });
+  };
+
+  const recordExportReminderAction = (action: BrowserExportReminderAction): void => {
+    if (action === "disable") {
+      setExportReminder(Object.freeze({ state: "off" }));
+      setLastActivity(
+        "Optional browser export reminders are off. Manual export remains available.",
+      );
+      return;
+    }
+    if (action === "snooze") {
+      setExportReminder(
+        Object.freeze({
+          nextReminderAtUnixMs: snoozeBrowserExportReminder(Date.now()),
+          state: "scheduled",
+        }),
+      );
+      setLastActivity("The optional export reminder will return in seven days.");
+      return;
+    }
+    setExportReminder(deriveBrowserExportReminder({ enabled: true, nowUnixMs: Date.now() }));
+    setLastActivity("Optional browser export reminders are on.");
   };
 
   const recordHomeAction = (action: HomeDashboardActionId): void => {
@@ -2201,6 +2291,28 @@ const AppShellCatalog = () => {
             selectedCompanyId={networkSelectedCompanyId}
             selectedContactId={networkSelectedContactId}
           />
+        ) : activeDestination === "settings" ? (
+          browserVaultBackupModel === null ? (
+            <section className="cd-shell-page-card" role="status">
+              Checking browser storage health without requesting new permission…
+            </section>
+          ) : (
+            <BrowserVaultBackupSettings
+              model={browserVaultBackupModel}
+              onExportPortableArchive={() => {
+                setLastActivity(
+                  "Portable archive export selected. The reminder remains due until an export succeeds.",
+                );
+              }}
+              onReminderAction={recordExportReminderAction}
+              onRequestPersistentStorage={requestPersistentStorageFromUserAction}
+              onReviewRestore={() => {
+                setLastActivity(
+                  "Restore guidance selected. Preview and validation happen before any replacement.",
+                );
+              }}
+            />
+          )
         ) : (
           <section className="cd-shell-page-card min-h-72" aria-labelledby="destination-heading">
             <p className="m-0 text-xs font-bold uppercase tracking-wider text-[var(--color-text-subtle)]">

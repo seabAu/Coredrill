@@ -21,6 +21,7 @@
     "lint": "eslint src --max-warnings 0"
   },
   "dependencies": {
+    "@coredrill/application": "workspace:*",
     "@radix-ui/react-dialog": "1.1.23",
     "@radix-ui/react-dropdown-menu": "2.1.24",
     "lucide-react": "1.35.0"

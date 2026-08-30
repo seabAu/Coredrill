@@ -12,7 +12,9 @@ export {
 } from "./errors.js";
 export {
   inspectBrowserStorageEnvironment,
+  type BrowserExpectedDatabaseState,
   type BrowserStorageEnvironment,
+  type BrowserStorageHealthSnapshot,
   type BrowserStorageManager,
   type BrowserStoragePersistenceState,
   type BrowserStorageQuotaState,

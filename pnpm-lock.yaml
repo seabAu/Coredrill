@@ -87,9 +87,15 @@ importers:
 
   apps/web:
     dependencies:
+      '@coredrill/application':
+        specifier: workspace:*
+        version: link:../../packages/application
       '@coredrill/documents':
         specifier: workspace:*
         version: link:../../packages/documents
+      '@coredrill/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
       '@coredrill/extension-bridge':
         specifier: workspace:*
         version: link:../../packages/extension-bridge
@@ -255,6 +261,9 @@ importers:
 
   packages/ui:
     dependencies:
+      '@coredrill/application':
+        specifier: workspace:*
+        version: link:../application
       '@radix-ui/react-dialog':
         specifier: 1.1.23
         version: 1.1.23(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)

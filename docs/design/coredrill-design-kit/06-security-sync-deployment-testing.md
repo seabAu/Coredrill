@@ -65,6 +65,14 @@ The Phase 0 browser adapter exports SQLite bytes with schema version, byte lengt
 
 The accepted browser-storage boundary additionally imports restore data under a temporary SAH-pool name and validates SQLite integrity/schema before target replacement. A correctly checksummed but truncated database is rejected while the healthy target remains readable. Every open runs `quick_check`. Observable persistence denial, low/unknown quota, and an expected database missing produce degraded local diagnostics; Coredrill does not attempt private-mode fingerprinting. An origin-wide Web Lock blocks a second writer before SQLite initialization and releases automatically after abrupt tab/page loss. [ADR-0003](../../adr/0003-adopt-browser-storage-support-floor.md) binds this behavior to the exact hosted Chrome/Firefox matrix and an explicit unsupported Safari/mobile fallback.
 
+`BKP-005` keeps `persisted()`/`estimate()` observation passive and makes
+`persist()` callable only through the explicit Vault & Backup action. The UI
+receives stable path-free state rather than raw errors, origin-private data, or
+record content. Its recurring export preference lives in SQLite, can be
+snoozed or disabled, and advances only after a successful portable export;
+button selection or failure is not recorded as recovery evidence. See [browser
+vault recovery health version 1](browser-vault-recovery-health-v1.md).
+
 ### AI/provider leakage
 
 - Provider disabled by default.

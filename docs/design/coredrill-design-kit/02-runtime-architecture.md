@@ -149,6 +149,14 @@ The browser coordinator serializes public operations so the Phase 0 path has one
 
 Accepted [ADR-0003](../../adr/0003-adopt-browser-storage-support-floor.md) adds three permanent boundaries. First, the main-thread coordinator inspects OPFS, persistent-storage grant, quota state, and whether an expected database existed; it reports stable warnings and never equates a successful OPFS open with a persistence grant. Persistence requests are explicit user actions, not an open side effect. Second, an origin-wide exclusive Web Lock is acquired before the Worker installs the SAH pool, so another tab receives a typed retryable handoff rather than racing a second connection. Third, restore validates a temporary imported database before replacing the target and attempts recovery from the original bytes if final replacement fails. Exact hosted Chrome 152/151 and Firefox 154/153 lanes passed on commit `0271aaa65b793e530b092e0ce35c59f9ff6b7728`; D-025 is Accepted.
 
+`BKP-005` makes the first boundary user-facing. Passive open and refresh cannot
+call `navigator.storage.persist()`; a separate serialized method is invoked
+only by the explicit Vault & Backup action. Its immutable path-free snapshot
+keeps persistence, quota, and expected-database evidence separate. A strict
+version-1 preference in canonical SQLite records the optional 30-day portable
+export reminder, seven-day snooze, disable/enable choice, and successful-export
+instant. See [browser vault recovery health version 1](browser-vault-recovery-health-v1.md).
+
 ### Native adapter
 
 - `NAT-001` through `NAT-008` establish an accepted capability-gated Tauri boundary with a strict, versioned operation protocol over a narrow `rusqlite` 0.40.1 service. The shared TypeScript `DatabasePort`, reviewed SQL migration ledger, and repository contracts remain the public surface; Rust/Tauri/SQLite types do not cross into storage-core.

@@ -12,4 +12,5 @@ export * from "./network-workspace.js";
 export * from "./pipeline-board.js";
 export * from "./pipeline-shell.js";
 export * from "./pipeline-table.js";
+export * from "./vault-backup-settings.js";
 export * from "./workspace-state.js";

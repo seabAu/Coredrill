@@ -18,6 +18,22 @@ const manager = (overrides: Partial<BrowserStorageManager> = {}): BrowserStorage
 });
 
 describe("browser storage environment diagnostics", () => {
+  it("observes persistence during passive inspection without requesting it", async () => {
+    let requestCount = 0;
+    const environment = await inspectBrowserStorageEnvironment({
+      storageManager: manager({
+        persist: async () => {
+          requestCount += 1;
+          return true;
+        },
+      }),
+    });
+
+    expect(requestCount).toBe(0);
+    expect(environment.persistence).toBe("denied");
+    expect(environment.warnings).toContain("persistence-not-granted");
+  });
+
   it("requests persistence and reports a healthy quota without exposing content", async () => {
     const environment = await inspectBrowserStorageEnvironment({
       requestPersistence: true,
@@ -63,6 +79,20 @@ describe("browser storage environment diagnostics", () => {
       quota: "unknown",
       warnings: ["opfs-unavailable", "persistence-not-granted", "quota-unknown"],
     });
+  });
+
+  it("distinguishes an observable persistence error from unsupported storage", async () => {
+    const environment = await inspectBrowserStorageEnvironment({
+      storageManager: manager({
+        persisted: async () => {
+          throw new Error("synthetic browser failure with private content");
+        },
+      }),
+    });
+
+    expect(environment.persistence).toBe("error");
+    expect(environment.warnings).toEqual(["persistence-not-granted"]);
+    expect(JSON.stringify(environment)).not.toContain("private content");
   });
 
   it("maps SQLite busy result codes and messages to a retryable typed error", () => {

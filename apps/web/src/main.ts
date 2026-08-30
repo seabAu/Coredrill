@@ -1,9 +1,21 @@
 import {
+  BROWSER_EXPORT_REMINDER_SETTING_KEY,
+  createDefaultBrowserExportReminderPreference,
+  deriveBrowserExportReminderFromPreference,
+  parseBrowserExportReminderPreference,
+  serializeBrowserExportReminderPreference,
+  updateBrowserExportReminderPreference,
+  type BrowserExportReminder,
+  type BrowserExportReminderPreferenceAction,
+  type BrowserExportReminderPreferenceV1,
+} from "@coredrill/application";
+import {
   BrowserSqliteBusyError,
   BrowserStorageUnavailableError,
   BrowserVaultBusyError,
   openBrowserSqliteDatabase,
   type BrowserSqliteDatabase,
+  type BrowserStorageHealthSnapshot,
 } from "@coredrill/storage-browser";
 import {
   applySqlMigrations,
@@ -11,6 +23,7 @@ import {
   createPortableDataExportV1,
   createPortableArchiveRestorePreviewV1,
   createPhase1RepositoryContractSuite,
+  createTrackerRepositories,
   defineSqlMigrations,
   PHASE_1_REPOSITORY_CONTRACT_MANIFEST,
   PortableArchiveRestoreError,
@@ -27,6 +40,7 @@ import {
   type QueryRow,
   type StorageDiagnostics,
 } from "@coredrill/storage-core";
+import { instant } from "@coredrill/domain";
 
 import initialMigrationSql from "../../../migrations/0001_vault.sql?raw";
 import captureInboxMigrationSql from "../../../migrations/0002_capture_inbox.sql?raw";
@@ -140,6 +154,16 @@ interface OpenAttempt {
   readonly proof?: OpenMigrationProof;
 }
 
+interface BrowserExportReminderProof {
+  readonly preference: BrowserExportReminderPreferenceV1;
+  readonly reminder: BrowserExportReminder;
+}
+
+interface BrowserExportReminderUpdateInput {
+  readonly action: BrowserExportReminderPreferenceAction;
+  readonly nowUnixMs: number;
+}
+
 interface Phase1RepositoryContractProof {
   readonly manifest: Phase1RepositoryContractManifest;
   readonly run: DatabaseContractRunResult;
@@ -195,6 +219,12 @@ export interface CoredrillStorageSpikeApi {
   exportPortable(): Promise<PortableDatabaseJson>;
   restorePortable(portable: PortableDatabaseJson): Promise<void>;
   diagnostics(): Promise<StorageDiagnostics>;
+  storageHealth(): Promise<BrowserStorageHealthSnapshot>;
+  requestPersistentStorage(): Promise<BrowserStorageHealthSnapshot>;
+  getBrowserExportReminder(nowUnixMs: number): Promise<BrowserExportReminderProof>;
+  updateBrowserExportReminder(
+    input: BrowserExportReminderUpdateInput,
+  ): Promise<BrowserExportReminderProof>;
   close(): Promise<void>;
   delete(): Promise<boolean>;
   runBenchmark(input: StorageBenchmarkInput): Promise<StorageBenchmarkResult>;
@@ -525,9 +555,47 @@ const getDatabase = async (options: OpenOptions = {}): Promise<BrowserSqliteData
   database ??= await openBrowserSqliteDatabase({
     databaseName: DATABASE_NAME,
     expectedExisting: options.expectedExisting ?? false,
-    requestPersistentStorage: false,
   });
   return database;
+};
+
+const readBrowserExportReminder = async (
+  nowUnixMs: number,
+): Promise<BrowserExportReminderProof> => {
+  const client = await getDatabase();
+  await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
+  const stored = await createTrackerRepositories(client).settings.get(
+    BROWSER_EXPORT_REMINDER_SETTING_KEY,
+  );
+  const preference =
+    stored === undefined
+      ? createDefaultBrowserExportReminderPreference()
+      : parseBrowserExportReminderPreference(stored.value);
+  return Object.freeze({
+    preference,
+    reminder: deriveBrowserExportReminderFromPreference(preference, nowUnixMs),
+  });
+};
+
+const writeBrowserExportReminder = async (
+  input: BrowserExportReminderUpdateInput,
+): Promise<BrowserExportReminderProof> => {
+  const current = await readBrowserExportReminder(input.nowUnixMs);
+  const preference = updateBrowserExportReminderPreference(
+    current.preference,
+    input.action,
+    input.nowUnixMs,
+  );
+  const client = await getDatabase();
+  await createTrackerRepositories(client).settings.put({
+    key: BROWSER_EXPORT_REMINDER_SETTING_KEY,
+    updatedAt: instant(new Date(input.nowUnixMs).toISOString()),
+    value: serializeBrowserExportReminderPreference(preference),
+  });
+  return Object.freeze({
+    preference,
+    reminder: deriveBrowserExportReminderFromPreference(preference, input.nowUnixMs),
+  });
 };
 
 const logOpenProof = (diagnostics: StorageDiagnostics): void => {
@@ -568,7 +636,6 @@ const createBrowserContractAdapter = () => {
       const client = await openBrowserSqliteDatabase({
         databaseName: `/coredrill-phase-1-contract-${String(sequence)}.sqlite3`,
         expectedExisting: false,
-        requestPersistentStorage: false,
       });
       sequence += 1;
       return client;
@@ -662,6 +729,10 @@ const api: CoredrillStorageSpikeApi = {
     await (await getDatabase()).restorePortable(toPortableDatabase(portable));
   },
   diagnostics: async () => (await getDatabase()).diagnostics(),
+  storageHealth: async () => (await getDatabase()).refreshStorageHealth(),
+  requestPersistentStorage: async () => (await getDatabase()).requestPersistentStorage(),
+  getBrowserExportReminder: readBrowserExportReminder,
+  updateBrowserExportReminder: writeBrowserExportReminder,
   close: async () => {
     if (database === undefined) return;
     await database.close();

@@ -148,6 +148,14 @@ try {
 
   await executeHarness("delete");
   const opened = await executeHarness("openAndMigrate");
+  const passiveStorageHealth = await executeHarness("storageHealth");
+  const requestedStorageHealth = await executeHarness("requestPersistentStorage");
+  const reminderNow = Date.UTC(2026, 7, 29, 12);
+  const initialReminder = await executeHarness("getBrowserExportReminder", reminderNow);
+  const snoozedReminder = await executeHarness("updateBrowserExportReminder", {
+    action: "snooze",
+    nowUnixMs: reminderNow,
+  });
   await executeHarness("writeVault", {
     id: "0198d9d2-c2fd-7d5c-8a0f-485258c1eb9e",
     name: "Firefox compatibility vault",
@@ -156,6 +164,7 @@ try {
   });
   await executeHarness("close");
   const reopened = await executeHarness("openAndMigrate", { expectedExisting: true });
+  const persistedReminder = await executeHarness("getBrowserExportReminder", reminderNow);
   const rows = await executeHarness("listVaults");
   const portable = await executeHarness("exportPortable");
   const humanReadable = await executeHarness("exportHumanReadable", {
@@ -180,6 +189,12 @@ try {
   const proof = {
     appliedVersions: opened.appliedVersions,
     browserStoragePersistence: opened.diagnostics.persistence,
+    browserStoragePersistenceBeforeRequest: passiveStorageHealth.persistence,
+    browserStoragePersistenceAfterRequest: requestedStorageHealth.persistence,
+    browserStorageQuota: requestedStorageHealth.quota,
+    explicitPersistenceRequest: true,
+    exportReminderPersisted: JSON.stringify(persistedReminder) === JSON.stringify(snoozedReminder),
+    exportReminderState: persistedReminder.reminder.state,
     reopenedVersions: reopened.appliedVersions,
     restoredRows: restored.length,
     rows: rows.length,
@@ -207,7 +222,7 @@ try {
     proof.humanReadableDatasets !== 29 ||
     humanReadable.csvFiles !== 29 ||
     humanReadable.jsonFiles !== 29 ||
-    humanReadable.rowCount !== 1 ||
+    humanReadable.rowCount !== 2 ||
     humanReadable.sourceSchemaVersion !== expectedSchemaVersion ||
     archiveRestore.attachmentCount !== 0 ||
     archiveRestore.dataFileCount !== 58 ||
@@ -237,6 +252,22 @@ try {
     proof.schemaVersion !== expectedSchemaVersion ||
     proof.vfs !== true ||
     proof.worker !== true ||
+    proof.explicitPersistenceRequest !== true ||
+    initialReminder.reminder?.state !== "due" ||
+    initialReminder.reminder?.reason !== "never-exported" ||
+    proof.exportReminderPersisted !== true ||
+    proof.exportReminderState !== "scheduled" ||
+    !["denied", "error", "granted", "unsupported"].includes(
+      proof.browserStoragePersistenceBeforeRequest,
+    ) ||
+    !["denied", "error", "granted", "unsupported"].includes(
+      proof.browserStoragePersistenceAfterRequest,
+    ) ||
+    !["available", "low", "unknown"].includes(proof.browserStorageQuota) ||
+    passiveStorageHealth.expectedDatabase !== "not-required" ||
+    requestedStorageHealth.expectedDatabase !== "not-required" ||
+    !Array.isArray(passiveStorageHealth.warnings) ||
+    !Array.isArray(requestedStorageHealth.warnings) ||
     !Array.isArray(proof.appliedVersions) ||
     proof.appliedVersions.length !== expectedSchemaVersion ||
     proof.appliedVersions.some((version, index) => version !== index + 1) ||
