@@ -92,7 +92,7 @@ Python is good scraping tooling; it is not legal permission, and it is not autom
 - [OWASP session-management guidance](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html)
 - [SQLite WebAssembly persistence and OPFS](https://sqlite.org/wasm/doc/tip/persistence.md)
 - [Google JobPosting structured-data documentation](https://developers.google.com/search/docs/appearance/structured-data/job-posting)
-- [Greenhouse Job Board API](https://developer.greenhouse.io/job-board.html)
+- [Greenhouse Job Board API](https://docs.greenhouse.io/job-board.html)
 - [Lever Postings API](https://github.com/lever/postings-api)
 - [USAJOBS API](https://developer.usajobs.gov/api-reference/)
 - [CareerOneStop API Explorer](https://api.careeronestop.org/api-explorer/)

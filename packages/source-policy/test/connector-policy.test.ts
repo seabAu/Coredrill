@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 import {
   CHECKED_IN_CONNECTOR_POLICY_RECORDS_V1,
   ConnectorPolicyError,
+  GREENHOUSE_JOB_BOARD_CONNECTOR_ID,
+  GREENHOUSE_JOB_BOARD_CONNECTOR_POLICY_V1,
   checkedInConnectorPolicyRegistryV1,
   createConnectorPolicyRegistryV1,
   parseConnectorPolicyRecordV1,
@@ -226,8 +228,11 @@ describe("connector policy authorization", () => {
     );
   });
 
-  it("keeps the production registry empty until a real connector completes its own review", () => {
-    expect(CHECKED_IN_CONNECTOR_POLICY_RECORDS_V1).toEqual([]);
+  it("registers only the reviewed Greenhouse connector while preserving fail-closed defaults", () => {
+    expect(CHECKED_IN_CONNECTOR_POLICY_RECORDS_V1).toEqual([
+      GREENHOUSE_JOB_BOARD_CONNECTOR_POLICY_V1,
+    ]);
+    expect(GREENHOUSE_JOB_BOARD_CONNECTOR_POLICY_V1.id).toBe(GREENHOUSE_JOB_BOARD_CONNECTOR_ID);
     expect(
       checkedInConnectorPolicyRegistryV1.authorize(NETWORK_REQUEST, CLEAR_RUNTIME),
     ).toMatchObject({ allowed: false, reason: "unknown_connector" });
@@ -274,7 +279,7 @@ describe("connector policy authorization", () => {
       targetedKillSwitchDenied: true,
       globalKillSwitchDenied: true,
       manualCaptureUnaffected: true,
-      productionNetworkRecords: 0,
+      productionNetworkRecords: 1,
     });
     const runtimeProcess = (
       globalThis as typeof globalThis & {

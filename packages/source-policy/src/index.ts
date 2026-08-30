@@ -9,6 +9,7 @@ export {
   CONNECTOR_POLICY_LIMITS,
   CONNECTOR_POLICY_SPEC_VERSION,
   CONNECTOR_POLICY_STATUSES,
+  GREENHOUSE_JOB_BOARD_CONNECTOR_POLICY_V1,
   ConnectorPolicyError,
   checkedInConnectorPolicyRegistryV1,
   createConnectorPolicyRegistryV1,
@@ -25,3 +26,19 @@ export {
   type ConnectorRuntimeControlV1,
   type SourceAcquisitionRequestV1,
 } from "./connector-policy.js";
+
+export {
+  GREENHOUSE_JOB_BOARD_API_HOST,
+  GREENHOUSE_JOB_BOARD_CONNECTOR_ID,
+  GREENHOUSE_JOB_BOARD_LIMITS,
+  GREENHOUSE_JOB_BOARD_POLICY_INPUT_V1,
+  GREENHOUSE_JOB_BOARD_POLICY_METHOD,
+  GREENHOUSE_JOB_BOARD_REQUEST_ERROR_CODES,
+  GREENHOUSE_JOB_BOARD_SPEC_VERSION,
+  GreenhouseJobBoardRequestError,
+  createGreenhouseJobBoardRequestV1,
+  recognizeGreenhouseJobPostUrlV1,
+  type GreenhouseJobBoardRequestErrorCode,
+  type GreenhouseJobBoardRequestV1,
+  type GreenhouseJobReferenceV1,
+} from "./greenhouse-job-board.js";

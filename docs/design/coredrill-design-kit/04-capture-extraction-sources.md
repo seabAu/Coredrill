@@ -137,7 +137,19 @@ Parse JSON-LD from a single job detail page. Validate `@context`, `@type`, title
 
 #### Greenhouse Job Board API
 
-Greenhouse documents unauthenticated GET access to published board/job JSON. Implement recognized board-token URLs and retrieve through the desktop/hosted connector layer when policy permits: [Greenhouse Job Board API](https://developer.greenhouse.io/job-board.html). Do not submit applications via the API in v1.
+Greenhouse documents unauthenticated GET access to published board/job JSON. Implement recognized board-token URLs and retrieve through the desktop/hosted connector layer when policy permits: [Greenhouse Job Board API](https://docs.greenhouse.io/job-board.html). Do not submit applications via the API in v1.
+
+The shipped `XTR-004` baseline keeps that source boundary explicit and non-executing:
+
+- the interface and policy review dated 2026-08-30 uses Greenhouse's current Job Board API documentation, API overview, legal hub, and privacy policy. The documentation says published Job Board GET data is public and unauthenticated; authenticated application submission is excluded;
+- official `boards.greenhouse.io` and `job-boards.greenhouse.io` job URLs are recognized only when both a bounded board token and positive job-post ID are present. Custom domains, subdomains, insecure or credentialed URLs, ambiguous IDs, and malformed paths are rejected;
+- recognized references create an immutable descriptor for exactly `GET https://boards-api.greenhouse.io/v1/boards/{board_token}/jobs/{job_id}?pay_transparency=true`, with credentials omitted and JSON requested. No callback, `questions=true`, POST, arbitrary host, or executing fetch client is representable in this slice;
+- the checked-in connector record allows only the exact `boards-api.greenhouse.io` destination and `documented_public_api` method, requires attribution, uses no credentials, carries a 30-day review deadline and runtime kill switch, and records conservative rate/cache controls because the reviewed Job Board documentation publishes no rate limit. Those transport controls must be implemented before a network client ships under `XTR-009`;
+- the pure payload adapter requires the response job ID to match the requested ID, rejects any application-question, location-question, compliance, demographic-question, or data-compliance field atomically, and ignores unrelated API fields rather than treating them as job evidence;
+- title, company, untrusted description content, location, first-published/deadline dates, safe HTTP(S) apply URL, Greenhouse post ID, and valid pay-transparency ranges become separate provisional API candidates. Exact recognized raw values, source pointers, extractor version, confidence, attribution/review note, capture source, and capture instant remain attached; and
+- payload keys, strings, pay ranges, candidates, source URLs, board tokens, and identifiers are bounded before output. Synthetic fixtures contain no production employer content or applicant data.
+
+The adapter does not render Greenhouse HTML, confirm fields, normalize money/dates beyond basic validity, write entities, fetch a URL, cache a response, submit an application, handle credentials, or retrieve candidate data. Normalization remains `XTR-007`; executing rate/cache/retry/last-review behavior remains `XTR-009`.
 
 #### Lever Postings API
 

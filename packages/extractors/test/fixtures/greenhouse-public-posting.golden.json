@@ -1,0 +1,303 @@
+{
+  "specVersion": 1,
+  "sourceId": "018f0f4e-7b8c-7d00-8000-000000000401",
+  "capturedAt": "2026-08-30T12:00:00.000Z",
+  "cases": [
+    {
+      "id": "complete-posting-with-pay-transparency",
+      "boardToken": "acme",
+      "jobId": 123456,
+      "payload": {
+        "id": 123456,
+        "internal_job_id": 654321,
+        "requisition_id": "ENG-42",
+        "title": "  Senior Platform Engineer  ",
+        "company_name": "Acme Drillworks",
+        "content": "<p>Build resilient local-first systems.</p>",
+        "location": { "name": "New York, NY" },
+        "first_published": "2026-08-15T13:45:00Z",
+        "updated_at": "2026-08-29T09:30:00-04:00",
+        "application_deadline": "2026-09-30T23:59:59Z",
+        "absolute_url": "https://job-boards.greenhouse.io/acme/jobs/123456",
+        "language": "en",
+        "pay_input_ranges": [
+          {
+            "min_cents": 15000000,
+            "max_cents": 19000000,
+            "currency_type": "USD",
+            "title": "NYC salary range",
+            "blurb": "Annual base salary before bonus."
+          },
+          {
+            "min_cents": 14000000,
+            "max_cents": 18000000,
+            "currency_type": "USD",
+            "title": "Remote US salary range"
+          }
+        ]
+      },
+      "expectedCandidates": [
+        {
+          "fieldName": "title",
+          "value": "Senior Platform Engineer",
+          "rawValue": "  Senior Platform Engineer  ",
+          "pointer": "/content/greenhouse/title",
+          "confidence": 0.99
+        },
+        {
+          "fieldName": "company",
+          "value": "Acme Drillworks",
+          "rawValue": "Acme Drillworks",
+          "pointer": "/content/greenhouse/company_name",
+          "confidence": 0.99
+        },
+        {
+          "fieldName": "description",
+          "value": "<p>Build resilient local-first systems.</p>",
+          "rawValue": "<p>Build resilient local-first systems.</p>",
+          "pointer": "/content/greenhouse/content",
+          "confidence": 0.96
+        },
+        {
+          "fieldName": "locations",
+          "value": "New York, NY",
+          "rawValue": { "name": "New York, NY" },
+          "pointer": "/content/greenhouse/location/name",
+          "confidence": 0.98
+        },
+        {
+          "fieldName": "posted_at",
+          "value": "2026-08-15T13:45:00Z",
+          "rawValue": "2026-08-15T13:45:00Z",
+          "pointer": "/content/greenhouse/first_published",
+          "confidence": 0.98
+        },
+        {
+          "fieldName": "valid_through",
+          "value": "2026-09-30T23:59:59Z",
+          "rawValue": "2026-09-30T23:59:59Z",
+          "pointer": "/content/greenhouse/application_deadline",
+          "confidence": 0.98
+        },
+        {
+          "fieldName": "apply_url",
+          "value": "https://job-boards.greenhouse.io/acme/jobs/123456",
+          "rawValue": "https://job-boards.greenhouse.io/acme/jobs/123456",
+          "pointer": "/content/greenhouse/absolute_url",
+          "confidence": 0.99
+        },
+        {
+          "fieldName": "external_id",
+          "value": 123456,
+          "rawValue": 123456,
+          "pointer": "/content/greenhouse/id",
+          "confidence": 1
+        },
+        {
+          "fieldName": "salary",
+          "value": {
+            "min_cents": 15000000,
+            "max_cents": 19000000,
+            "currency_type": "USD",
+            "title": "NYC salary range",
+            "blurb": "Annual base salary before bonus."
+          },
+          "rawValue": {
+            "min_cents": 15000000,
+            "max_cents": 19000000,
+            "currency_type": "USD",
+            "title": "NYC salary range",
+            "blurb": "Annual base salary before bonus."
+          },
+          "pointer": "/content/greenhouse/pay_input_ranges/0",
+          "confidence": 0.98
+        },
+        {
+          "fieldName": "salary",
+          "value": {
+            "min_cents": 14000000,
+            "max_cents": 18000000,
+            "currency_type": "USD",
+            "title": "Remote US salary range"
+          },
+          "rawValue": {
+            "min_cents": 14000000,
+            "max_cents": 18000000,
+            "currency_type": "USD",
+            "title": "Remote US salary range"
+          },
+          "pointer": "/content/greenhouse/pay_input_ranges/1",
+          "confidence": 0.98
+        }
+      ],
+      "expectedWarnings": [],
+      "expectedSummary": {
+        "jobId": 123456,
+        "completePosting": true,
+        "payRangesSeen": 2,
+        "payRangesAccepted": 2,
+        "candidateCount": 10,
+        "warningCount": 0
+      }
+    },
+    {
+      "id": "minimal-published-posting",
+      "boardToken": "minimal-board",
+      "jobId": 222,
+      "payload": {
+        "id": 222,
+        "title": "Product Designer",
+        "company_name": "Small Studio",
+        "content": "Design understandable workflows.",
+        "metadata": null
+      },
+      "expectedCandidates": [
+        {
+          "fieldName": "title",
+          "value": "Product Designer",
+          "rawValue": "Product Designer",
+          "pointer": "/content/greenhouse/title",
+          "confidence": 0.99
+        },
+        {
+          "fieldName": "company",
+          "value": "Small Studio",
+          "rawValue": "Small Studio",
+          "pointer": "/content/greenhouse/company_name",
+          "confidence": 0.99
+        },
+        {
+          "fieldName": "description",
+          "value": "Design understandable workflows.",
+          "rawValue": "Design understandable workflows.",
+          "pointer": "/content/greenhouse/content",
+          "confidence": 0.96
+        },
+        {
+          "fieldName": "external_id",
+          "value": 222,
+          "rawValue": 222,
+          "pointer": "/content/greenhouse/id",
+          "confidence": 1
+        }
+      ],
+      "expectedWarnings": [],
+      "expectedSummary": {
+        "jobId": 222,
+        "completePosting": true,
+        "payRangesSeen": 0,
+        "payRangesAccepted": 0,
+        "candidateCount": 4,
+        "warningCount": 0
+      }
+    },
+    {
+      "id": "invalid-optional-fields-remain-provisional",
+      "boardToken": "bounded-board",
+      "jobId": 333,
+      "payload": {
+        "id": 333,
+        "title": "Data Analyst",
+        "company_name": "Bounded Metrics",
+        "content": "Review evidence before accepting conclusions.",
+        "location": { "name": "   " },
+        "first_published": "not-a-date",
+        "application_deadline": null,
+        "absolute_url": "javascript:alert(1)",
+        "pay_input_ranges": [
+          {
+            "min_cents": 9000000,
+            "max_cents": 11000000,
+            "currency_type": "USD"
+          },
+          {
+            "min_cents": 12000000,
+            "max_cents": 10000000,
+            "currency_type": "USD"
+          },
+          "not-a-range"
+        ]
+      },
+      "expectedCandidates": [
+        {
+          "fieldName": "title",
+          "value": "Data Analyst",
+          "rawValue": "Data Analyst",
+          "pointer": "/content/greenhouse/title",
+          "confidence": 0.99
+        },
+        {
+          "fieldName": "company",
+          "value": "Bounded Metrics",
+          "rawValue": "Bounded Metrics",
+          "pointer": "/content/greenhouse/company_name",
+          "confidence": 0.99
+        },
+        {
+          "fieldName": "description",
+          "value": "Review evidence before accepting conclusions.",
+          "rawValue": "Review evidence before accepting conclusions.",
+          "pointer": "/content/greenhouse/content",
+          "confidence": 0.96
+        },
+        {
+          "fieldName": "external_id",
+          "value": 333,
+          "rawValue": 333,
+          "pointer": "/content/greenhouse/id",
+          "confidence": 1
+        },
+        {
+          "fieldName": "salary",
+          "value": {
+            "min_cents": 9000000,
+            "max_cents": 11000000,
+            "currency_type": "USD"
+          },
+          "rawValue": {
+            "min_cents": 9000000,
+            "max_cents": 11000000,
+            "currency_type": "USD"
+          },
+          "pointer": "/content/greenhouse/pay_input_ranges/0",
+          "confidence": 0.98
+        }
+      ],
+      "expectedWarnings": [
+        {
+          "code": "field_invalid",
+          "fieldName": "locations",
+          "pointer": "/content/greenhouse/location"
+        },
+        {
+          "code": "field_invalid",
+          "fieldName": "posted_at",
+          "pointer": "/content/greenhouse/first_published"
+        },
+        {
+          "code": "field_invalid",
+          "fieldName": "apply_url",
+          "pointer": "/content/greenhouse/absolute_url"
+        },
+        {
+          "code": "field_invalid",
+          "fieldName": "salary",
+          "pointer": "/content/greenhouse/pay_input_ranges/1"
+        },
+        {
+          "code": "field_invalid",
+          "fieldName": "salary",
+          "pointer": "/content/greenhouse/pay_input_ranges/2"
+        }
+      ],
+      "expectedSummary": {
+        "jobId": 333,
+        "completePosting": true,
+        "payRangesSeen": 3,
+        "payRangesAccepted": 1,
+        "candidateCount": 5,
+        "warningCount": 5
+      }
+    }
+  ]
+}

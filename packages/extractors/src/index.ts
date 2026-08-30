@@ -1,5 +1,24 @@
 /** Deterministic, policy-gated extraction adapters. */
 export {
+  GREENHOUSE_PUBLIC_POSTING_ERROR_CODES,
+  GREENHOUSE_PUBLIC_POSTING_EXTRACTOR,
+  GREENHOUSE_PUBLIC_POSTING_FIELD_NAMES,
+  GREENHOUSE_PUBLIC_POSTING_LIMITS,
+  GREENHOUSE_PUBLIC_POSTING_SPEC_VERSION,
+  GREENHOUSE_PUBLIC_POSTING_WARNING_CODES,
+  GreenhousePublicPostingError,
+  extractGreenhousePublicPostingV1,
+  type GreenhousePostingCandidateIdContextV1,
+  type GreenhousePublicPostingErrorCode,
+  type GreenhousePublicPostingExtractionV1,
+  type GreenhousePublicPostingFieldName,
+  type GreenhousePublicPostingInputV1,
+  type GreenhousePublicPostingSummaryV1,
+  type GreenhousePublicPostingWarningCode,
+  type GreenhousePublicPostingWarningV1,
+} from "./greenhouse-public-posting.js";
+
+export {
   GENERIC_JOB_DOCUMENT_ERROR_CODES,
   GENERIC_JOB_DOCUMENT_EXTRACTOR,
   GENERIC_JOB_DOCUMENT_FIELD_NAMES,

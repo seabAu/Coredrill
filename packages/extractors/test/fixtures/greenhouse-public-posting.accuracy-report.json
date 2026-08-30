@@ -1,0 +1,85 @@
+{
+  "specVersion": 1,
+  "extractor": {
+    "name": "coredrill.greenhouse-public-posting",
+    "version": "1.0.0"
+  },
+  "fixtureSuite": "greenhouse-public-posting.golden.json",
+  "fixtureCases": 3,
+  "expected": 19,
+  "produced": 19,
+  "exactMatches": 19,
+  "falsePositives": 0,
+  "falseNegatives": 0,
+  "precision": 1,
+  "recall": 1,
+  "perField": {
+    "title": { "expected": 3, "produced": 3, "exactMatches": 3, "precision": 1, "recall": 1 },
+    "company": {
+      "expected": 3,
+      "produced": 3,
+      "exactMatches": 3,
+      "precision": 1,
+      "recall": 1
+    },
+    "description": {
+      "expected": 3,
+      "produced": 3,
+      "exactMatches": 3,
+      "precision": 1,
+      "recall": 1
+    },
+    "locations": {
+      "expected": 1,
+      "produced": 1,
+      "exactMatches": 1,
+      "precision": 1,
+      "recall": 1
+    },
+    "posted_at": {
+      "expected": 1,
+      "produced": 1,
+      "exactMatches": 1,
+      "precision": 1,
+      "recall": 1
+    },
+    "valid_through": {
+      "expected": 1,
+      "produced": 1,
+      "exactMatches": 1,
+      "precision": 1,
+      "recall": 1
+    },
+    "apply_url": {
+      "expected": 1,
+      "produced": 1,
+      "exactMatches": 1,
+      "precision": 1,
+      "recall": 1
+    },
+    "external_id": {
+      "expected": 3,
+      "produced": 3,
+      "exactMatches": 3,
+      "precision": 1,
+      "recall": 1
+    },
+    "salary": {
+      "expected": 3,
+      "produced": 3,
+      "exactMatches": 3,
+      "precision": 1,
+      "recall": 1
+    }
+  },
+  "scenarios": {
+    "getOnlyRequestDescriptor": true,
+    "exactApiDestination": true,
+    "payTransparencyWithoutQuestions": true,
+    "jobIdentityMatched": true,
+    "rawEvidenceRetained": true,
+    "provenanceRetained": true,
+    "applicantDataRejected": true,
+    "invalidOptionalFieldsRejected": true
+  }
+}

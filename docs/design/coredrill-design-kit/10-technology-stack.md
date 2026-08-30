@@ -212,7 +212,9 @@ Imported binary files are untrusted. Enforce size/type limits, do not execute ma
 - BLS/O*NET/CareerOneStop and other approved public labor-data adapters;
 - connector policy registry with enablement, credentials, terms/license notes, retention, attribution, rate limit, last review, and kill switch.
 
-`XTR-001` implements that registry as a dependency-free TypeScript boundary in `@coredrill/source-policy`. Its checked-in production record set is intentionally empty until a real connector's own review slice completes. Synthetic policy fixtures prove strict record parsing, exact HTTPS destination/method authorization, review freshness, targeted/global runtime disables, and an independent manual-capture path; the slice adds no network client, permission, source-specific adapter, or remote configuration service.
+`XTR-001` implements that registry as a dependency-free TypeScript boundary in `@coredrill/source-policy`. It initially shipped with an empty production record set until a real connector's own review slice completed. Synthetic policy fixtures prove strict record parsing, exact HTTPS destination/method authorization, review freshness, targeted/global runtime disables, and an independent manual-capture path; the slice added no network client, permission, source-specific adapter, or remote configuration service.
+
+`XTR-004` adds the first production record after a current Greenhouse review. It authorizes only the exact `boards-api.greenhouse.io` destination under `documented_public_api`, uses no credentials, requires attribution, expires for re-review after 30 days, and retains both targeted and global runtime kills. The paired request boundary can construct only a non-executing public job-detail GET with pay transparency and without application questions. The paired extractor is dependency-free, pure, bounded, provenance-retaining, job-ID-matched, and rejects applicant/demographic/compliance fields. An executing fetch/cache/retry client remains deferred to `XTR-009`.
 
 ### Optional Python worker
 

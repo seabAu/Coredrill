@@ -1,3 +1,5 @@
+import { GREENHOUSE_JOB_BOARD_POLICY_INPUT_V1 } from "./greenhouse-job-board.js";
+
 export const CONNECTOR_POLICY_SPEC_VERSION = 1 as const;
 
 export const CONNECTOR_NETWORK_METHODS = [
@@ -447,12 +449,13 @@ export function createConnectorPolicyRegistryV1(
   });
 }
 
-/**
- * No network connector is registered until its own checklist slice completes a
- * current source review. Manual capture does not depend on this empty registry.
- */
+export const GREENHOUSE_JOB_BOARD_CONNECTOR_POLICY_V1 = parseConnectorPolicyRecordV1(
+  GREENHOUSE_JOB_BOARD_POLICY_INPUT_V1,
+);
+
+/** Only connectors with a current source-specific review are registered here. */
 export const CHECKED_IN_CONNECTOR_POLICY_RECORDS_V1: readonly ConnectorPolicyRecordV1[] =
-  Object.freeze([]);
+  Object.freeze([GREENHOUSE_JOB_BOARD_CONNECTOR_POLICY_V1]);
 
 export const checkedInConnectorPolicyRegistryV1 = createConnectorPolicyRegistryV1(
   CHECKED_IN_CONNECTOR_POLICY_RECORDS_V1,
