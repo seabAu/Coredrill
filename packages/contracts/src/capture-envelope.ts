@@ -12,6 +12,12 @@ import {
 } from "./primitives.js";
 
 export const CAPTURE_ENVELOPE_SPEC_VERSION = 1 as const;
+export const CAPTURE_ENVELOPE_ACCEPTED_SPEC_VERSIONS = [CAPTURE_ENVELOPE_SPEC_VERSION] as const;
+export const CAPTURE_ENVELOPE_COMPATIBILITY = Object.freeze({
+  policy: "current-and-previous" as const,
+  currentSpecVersion: CAPTURE_ENVELOPE_SPEC_VERSION,
+  acceptedSpecVersions: CAPTURE_ENVELOPE_ACCEPTED_SPEC_VERSIONS,
+});
 export const CAPTURE_ENVELOPE_V1_SCHEMA_ID =
   "https://schemas.coredrill.local/capture-envelope/v1.json" as const;
 
@@ -75,11 +81,51 @@ export const captureEnvelopeV1Schema = z
     }),
     contentHash: sha256Schema,
   })
+  .superRefine((envelope, context) => {
+    if (Date.parse(envelope.expiresAt) <= Date.parse(envelope.capturedAt)) {
+      context.addIssue({
+        code: "custom",
+        path: ["expiresAt"],
+        message: "Capture expiry must be later than capture time.",
+      });
+    }
+
+    const candidateIds = new Set<string>();
+    envelope.fieldCandidates.forEach((candidate, index) => {
+      if (candidateIds.has(candidate.id)) {
+        context.addIssue({
+          code: "custom",
+          path: ["fieldCandidates", index, "id"],
+          message: "Capture field-candidate IDs must be unique.",
+        });
+      }
+      candidateIds.add(candidate.id);
+
+      if (
+        candidate.provenance.source.sourceType !== "capture" ||
+        candidate.provenance.source.sourceId !== envelope.id
+      ) {
+        context.addIssue({
+          code: "custom",
+          path: ["fieldCandidates", index, "provenance", "source"],
+          message: "Capture field provenance must reference this source snapshot.",
+        });
+      }
+      if (candidate.provenance.capturedAt !== envelope.capturedAt) {
+        context.addIssue({
+          code: "custom",
+          path: ["fieldCandidates", index, "provenance", "capturedAt"],
+          message: "Capture field provenance must use the source snapshot capture time.",
+        });
+      }
+    });
+  })
   .meta({
     title: "Coredrill CaptureEnvelopeV1",
     description:
       "A size-bounded, checksummed, replay-identifiable envelope for user-invoked capture inputs and their source-backed field candidates.",
     "x-coredrill-maxBytes": CAPTURE_ENVELOPE_LIMITS.maxBytes,
+    "x-coredrill-compatibility": CAPTURE_ENVELOPE_COMPATIBILITY,
   });
 
 const generatedCaptureEnvelopeV1JsonSchema = z.toJSONSchema(captureEnvelopeV1Schema, {
@@ -107,6 +153,15 @@ export type CaptureEnvelopeV1ValidationResult =
       readonly code: "not_json_serializable" | "too_large" | "schema_invalid";
       readonly encodedBytes?: number;
       readonly issues?: readonly BoundaryValidationIssue[];
+    };
+
+export type CaptureEnvelopeValidationResult =
+  | CaptureEnvelopeV1ValidationResult
+  | {
+      readonly success: false;
+      readonly code: "unsupported_version";
+      readonly receivedSpecVersion: number;
+      readonly acceptedSpecVersions: typeof CAPTURE_ENVELOPE_ACCEPTED_SPEC_VERSIONS;
     };
 
 export function safeParseCaptureEnvelopeV1(input: unknown): CaptureEnvelopeV1ValidationResult {
@@ -143,6 +198,36 @@ export function safeParseCaptureEnvelopeV1(input: unknown): CaptureEnvelopeV1Val
   return { success: true, data: result.data, encodedBytes };
 }
 
+/**
+ * Version-dispatch boundary for persisted or transferred captures. Version 1
+ * is both current and the only serialized version so far; when version 2 ships,
+ * this dispatcher is the single place that retains the required previous-version
+ * reader while builders move to the new current version.
+ */
+export function safeParseCaptureEnvelope(input: unknown): CaptureEnvelopeValidationResult {
+  const parsedV1 = safeParseCaptureEnvelopeV1(input);
+  if (parsedV1.success || parsedV1.code !== "schema_invalid") return parsedV1;
+  if (typeof input !== "object" || input === null || Array.isArray(input)) return parsedV1;
+
+  const receivedSpecVersion = (input as Record<string, unknown>)["specVersion"];
+  if (
+    typeof receivedSpecVersion !== "number" ||
+    !Number.isSafeInteger(receivedSpecVersion) ||
+    CAPTURE_ENVELOPE_ACCEPTED_SPEC_VERSIONS.includes(
+      receivedSpecVersion as (typeof CAPTURE_ENVELOPE_ACCEPTED_SPEC_VERSIONS)[number],
+    )
+  ) {
+    return parsedV1;
+  }
+  return {
+    success: false,
+    code: "unsupported_version",
+    receivedSpecVersion,
+    acceptedSpecVersions: CAPTURE_ENVELOPE_ACCEPTED_SPEC_VERSIONS,
+  };
+}
+
 export type CaptureMethod = (typeof CAPTURE_METHODS)[number];
 export type CaptureSenderKind = (typeof CAPTURE_SENDER_KINDS)[number];
 export type CaptureEnvelopeV1 = z.infer<typeof captureEnvelopeV1Schema>;
+export type CaptureEnvelope = CaptureEnvelopeV1;

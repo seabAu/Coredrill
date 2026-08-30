@@ -41,6 +41,8 @@ type CaptureEnvelopeV1 = {
 
 V1 validates strict object shapes and safe HTTP(S) source URLs, and caps the UTF-8-encoded envelope at 2 MiB before schema traversal. It separately caps selected text at 64 KiB, readable text at 512 KiB, sanitized HTML at 1 MiB, JSON-LD at 64 items, and field candidates at 256. Safe truncation markers belong to capture implementations; a boundary validator never silently truncates. Never capture cookies, form inputs, hidden tokens, browser history, authorization headers, or the page's JavaScript state wholesale.
 
+`CAP-001` makes the remaining V1 invariants executable without changing that serialized shape. Before inbox ingestion creates a durable source row, the envelope UUID is the source-snapshot reference: every included field candidate must use `sourceType: "capture"`, point its provenance `sourceId` to that UUID, and retain the envelope's exact `capturedAt`; candidate IDs are unique within the envelope. Expiry must be strictly later than capture time. A canonical semantic SHA-256 covers source metadata, captured content, and sorted candidate facts and can be independently recomputed; the transfer/outbox checksum continues to cover the complete envelope, including replay metadata. Boundary consumers use one version dispatcher. Under the accepted current-and-previous policy, the accepted set is `[1]` while V1 is the only shipped version; the dispatcher reports an otherwise well-formed integer version outside that set as unsupported rather than misclassifying it as malformed V1.
+
 ## Extraction result
 
 ```ts

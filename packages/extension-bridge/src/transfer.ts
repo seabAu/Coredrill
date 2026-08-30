@@ -1,5 +1,5 @@
 import { sha256CanonicalJson } from "@coredrill/capture-core";
-import { safeParseCaptureEnvelopeV1, type CaptureEnvelopeV1 } from "@coredrill/contracts";
+import { safeParseCaptureEnvelope, type CaptureEnvelopeV1 } from "@coredrill/contracts";
 
 import {
   OUTBOX_LIMITS,
@@ -384,7 +384,7 @@ export async function safeParseTransferResponse(
     ) {
       return undefined;
     }
-    const parsedEnvelope = safeParseCaptureEnvelopeV1(input["envelope"]);
+    const parsedEnvelope = safeParseCaptureEnvelope(input["envelope"]);
     if (
       !parsedEnvelope.success ||
       parsedEnvelope.encodedBytes !== input["envelopeBytes"] ||

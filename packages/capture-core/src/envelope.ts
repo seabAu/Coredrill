@@ -134,28 +134,38 @@ function fieldEntries(snapshot: PageCaptureSnapshot): ["title" | "company", Page
   return entries;
 }
 
-function hashableContent(snapshot: PageCaptureSnapshot): unknown {
+export type CaptureEnvelopeContentV1 = Pick<
+  CaptureEnvelopeV1,
+  "source" | "content" | "fieldCandidates"
+>;
+
+/** Canonical semantic source snapshot used for deduplication and integrity checks. */
+export function captureEnvelopeContentProjectionV1(envelope: CaptureEnvelopeContentV1): unknown {
   return {
-    source: {
-      url: snapshot.url,
-      ...(snapshot.canonicalUrl === undefined ? {} : { canonicalUrl: snapshot.canonicalUrl }),
-      ...(snapshot.pageTitle === undefined ? {} : { pageTitle: snapshot.pageTitle }),
-      sourceKind: "job_page",
-    },
-    content: {
-      ...(snapshot.jsonLd === undefined ? {} : { jsonLd: snapshot.jsonLd }),
-      ...(snapshot.selectedText === undefined ? {} : { selectedText: snapshot.selectedText }),
-    },
-    fields: fieldEntries(snapshot)
-      .sort(([left], [right]) => left.localeCompare(right))
-      .map(([fieldName, field]) => ({
-        fieldName,
-        value: field.value,
-        ...(field.rawValue === undefined ? {} : { rawValue: field.rawValue }),
-        pointer: field.pointer,
-        method: field.method,
+    source: envelope.source,
+    content: envelope.content,
+    fields: [...envelope.fieldCandidates]
+      .sort((left, right) => left.fieldName.localeCompare(right.fieldName))
+      .map((candidate) => ({
+        fieldName: candidate.fieldName,
+        value: candidate.value,
+        ...(candidate.rawValue === undefined ? {} : { rawValue: candidate.rawValue }),
+        pointer: candidate.provenance.source.pointer,
+        method: candidate.provenance.method,
       })),
   };
+}
+
+export function createCaptureEnvelopeContentHashV1(
+  envelope: CaptureEnvelopeContentV1,
+): Promise<string> {
+  return sha256CanonicalJson(captureEnvelopeContentProjectionV1(envelope));
+}
+
+export async function verifyCaptureEnvelopeContentHashV1(
+  envelope: CaptureEnvelopeV1,
+): Promise<boolean> {
+  return (await createCaptureEnvelopeContentHashV1(envelope)) === envelope.contentHash;
 }
 
 export async function buildCaptureEnvelopeV1(
@@ -209,7 +219,20 @@ export async function buildCaptureEnvelopeV1(
   }
 
   const capturedAt = now.toISOString();
-  const contentHash = await sha256CanonicalJson(hashableContent(snapshot));
+  const semanticContent = {
+    source: {
+      url: snapshot.url,
+      ...(snapshot.canonicalUrl === undefined ? {} : { canonicalUrl: snapshot.canonicalUrl }),
+      ...(snapshot.pageTitle === undefined ? {} : { pageTitle: snapshot.pageTitle }),
+      sourceKind: "job_page",
+    },
+    content: {
+      ...(snapshot.jsonLd === undefined ? {} : { jsonLd: [...snapshot.jsonLd] }),
+      ...(snapshot.selectedText === undefined ? {} : { selectedText: snapshot.selectedText }),
+    },
+    fieldCandidates,
+  } satisfies CaptureEnvelopeContentV1;
+  const contentHash = await createCaptureEnvelopeContentHashV1(semanticContent);
   const envelope = {
     specVersion: CAPTURE_ENVELOPE_SPEC_VERSION,
     id: envelopeId,
@@ -222,17 +245,7 @@ export async function buildCaptureEnvelopeV1(
     },
     sequence: options.sequence,
     nonce,
-    source: {
-      url: snapshot.url,
-      ...(snapshot.canonicalUrl === undefined ? {} : { canonicalUrl: snapshot.canonicalUrl }),
-      ...(snapshot.pageTitle === undefined ? {} : { pageTitle: snapshot.pageTitle }),
-      sourceKind: "job_page",
-    },
-    content: {
-      ...(snapshot.jsonLd === undefined ? {} : { jsonLd: snapshot.jsonLd }),
-      ...(snapshot.selectedText === undefined ? {} : { selectedText: snapshot.selectedText }),
-    },
-    fieldCandidates,
+    ...semanticContent,
     captureClient: {
       name: "coredrill.extension",
       version: "0.1.0",

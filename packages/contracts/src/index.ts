@@ -1,5 +1,7 @@
 /** Versioned serialized boundary contracts; no runtime adapters. */
 export {
+  CAPTURE_ENVELOPE_ACCEPTED_SPEC_VERSIONS,
+  CAPTURE_ENVELOPE_COMPATIBILITY,
   CAPTURE_ENVELOPE_LIMITS,
   CAPTURE_ENVELOPE_SPEC_VERSION,
   CAPTURE_ENVELOPE_V1_SCHEMA_ID,
@@ -7,8 +9,11 @@ export {
   CAPTURE_SENDER_KINDS,
   captureEnvelopeV1JsonSchema,
   captureEnvelopeV1Schema,
+  safeParseCaptureEnvelope,
   safeParseCaptureEnvelopeV1,
   type BoundaryValidationIssue,
+  type CaptureEnvelope,
+  type CaptureEnvelopeValidationResult,
   type CaptureEnvelopeV1,
   type CaptureEnvelopeV1ValidationResult,
   type CaptureMethod,

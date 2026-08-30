@@ -1,5 +1,5 @@
 import { sha256CanonicalJson } from "@coredrill/capture-core";
-import { safeParseCaptureEnvelopeV1, type CaptureEnvelopeV1 } from "@coredrill/contracts";
+import { safeParseCaptureEnvelope, type CaptureEnvelopeV1 } from "@coredrill/contracts";
 
 export const OUTBOX_SPEC_VERSION = 1 as const;
 export const OUTBOX_ITEM_SPEC_VERSION = 1 as const;
@@ -139,7 +139,7 @@ export async function safeParseOutboxState(input: unknown): Promise<OutboxValida
       return { success: false, code: "state_invalid", issue: parsedItem.issue };
     }
     const item = parsedItem.item;
-    const parsedEnvelope = safeParseCaptureEnvelopeV1(item["envelope"]);
+    const parsedEnvelope = safeParseCaptureEnvelope(item["envelope"]);
     if (
       !parsedEnvelope.success ||
       parsedEnvelope.encodedBytes !== item["envelopeBytes"] ||
@@ -198,7 +198,7 @@ export async function queueCaptureEnvelope(
   const parsedState = await safeParseOutboxState(stateInput);
   if (!parsedState.success) return parsedState;
 
-  const parsedEnvelope = safeParseCaptureEnvelopeV1(envelopeInput);
+  const parsedEnvelope = safeParseCaptureEnvelope(envelopeInput);
   if (!parsedEnvelope.success) {
     return {
       success: false,

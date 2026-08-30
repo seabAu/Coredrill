@@ -220,6 +220,11 @@
   "title": "Coredrill CaptureEnvelopeV1",
   "description": "A size-bounded, checksummed, replay-identifiable envelope for user-invoked capture inputs and their source-backed field candidates.",
   "x-coredrill-maxBytes": 2097152,
+  "x-coredrill-compatibility": {
+    "policy": "current-and-previous",
+    "currentSpecVersion": 1,
+    "acceptedSpecVersions": [1]
+  },
   "$defs": {
     "__schema0": {
       "anyOf": [

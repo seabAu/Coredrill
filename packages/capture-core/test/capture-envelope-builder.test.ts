@@ -1,11 +1,14 @@
 import { safeParseCaptureEnvelopeV1 } from "@coredrill/contracts";
+import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 
 import {
   buildCaptureEnvelopeV1,
   canonicalJsonStringify,
+  createCaptureEnvelopeContentHashV1,
   safeParsePageCaptureSnapshot,
   sha256Hex,
+  verifyCaptureEnvelopeContentHashV1,
   type PageCaptureSnapshot,
 } from "../src/index.js";
 
@@ -91,6 +94,7 @@ describe("capture envelope builder", () => {
       source: { sourceId: result.envelope.id, pointer: "/content/jsonLd/0/title" },
       confidence: 0.98,
     });
+    await expect(verifyCaptureEnvelopeContentHashV1(result.envelope)).resolves.toBe(true);
   });
 
   it("uses semantic captured content, not random IDs or sequence, for its dedupe hash", async () => {
@@ -110,6 +114,53 @@ describe("capture envelope builder", () => {
     if (!first.success || !second.success) throw new Error("Expected valid envelopes.");
     expect(first.envelope.id).not.toBe(second.envelope.id);
     expect(first.envelope.contentHash).toBe(second.envelope.contentHash);
+  });
+
+  it("detects semantic source-snapshot mutations through the reusable content checksum", async () => {
+    const result = await buildCaptureEnvelopeV1(snapshot, {
+      senderId: "abcdefghijklmnopabcdefghijklmnop",
+      sequence: 42,
+      now,
+      randomBytes: deterministicEntropy(),
+    });
+    expect(result.success).toBe(true);
+    if (!result.success) throw new Error(result.issue);
+
+    const mutated = structuredClone(result.envelope);
+    mutated.source.pageTitle = "Mutated title";
+    await expect(verifyCaptureEnvelopeContentHashV1(mutated)).resolves.toBe(false);
+    await expect(createCaptureEnvelopeContentHashV1(mutated)).resolves.not.toBe(
+      result.envelope.contentHash,
+    );
+  });
+
+  it("builds valid nonce, sequence, and expiry combinations across generated inputs", async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.integer({ min: 0, max: Number.MAX_SAFE_INTEGER }),
+        fc.integer({ min: 1, max: 30 * 24 * 60 * 60 * 1_000 }),
+        fc.integer({ min: 0, max: 255 }),
+        async (sequence, retentionMilliseconds, entropySeed) => {
+          const result = await buildCaptureEnvelopeV1(snapshot, {
+            senderId: "abcdefghijklmnopabcdefghijklmnop",
+            sequence,
+            retentionMilliseconds,
+            now,
+            randomBytes: deterministicEntropy(entropySeed),
+          });
+          expect(result.success).toBe(true);
+          if (!result.success) throw new Error(result.issue);
+
+          expect(safeParseCaptureEnvelopeV1(result.envelope).success).toBe(true);
+          expect(result.envelope.sequence).toBe(sequence);
+          expect(
+            Date.parse(result.envelope.expiresAt) - Date.parse(result.envelope.capturedAt),
+          ).toBe(retentionMilliseconds);
+          expect(result.envelope.nonce).toMatch(/^[A-Za-z0-9_-]{24}$/);
+          await expect(verifyCaptureEnvelopeContentHashV1(result.envelope)).resolves.toBe(true);
+        },
+      ),
+    );
   });
 
   it("strictly rejects unsafe URLs, extra keys, oversized text, and hostile JSON depth", () => {
