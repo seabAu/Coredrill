@@ -11,6 +11,7 @@ export {
   CONNECTOR_POLICY_STATUSES,
   GREENHOUSE_JOB_BOARD_CONNECTOR_POLICY_V1,
   LEVER_POSTINGS_CONNECTOR_POLICY_V1,
+  USAJOBS_SEARCH_CONNECTOR_POLICY_V1,
   ConnectorPolicyError,
   checkedInConnectorPolicyRegistryV1,
   createConnectorPolicyRegistryV1,
@@ -61,3 +62,22 @@ export {
   type LeverPostingsRegion,
   type LeverPostingsRequestErrorCode,
 } from "./lever-postings.js";
+
+export {
+  USAJOBS_SEARCH_API_ENDPOINT,
+  USAJOBS_SEARCH_API_HOST,
+  USAJOBS_SEARCH_CONNECTOR_ID,
+  USAJOBS_SEARCH_ERROR_CODES,
+  USAJOBS_SEARCH_LIMITS,
+  USAJOBS_SEARCH_POLICY_INPUT_V1,
+  USAJOBS_SEARCH_POLICY_METHOD,
+  USAJOBS_SEARCH_SPEC_VERSION,
+  UsaJobsSearchError,
+  createUsaJobsSearchConfigurationV1,
+  createUsaJobsSearchRequestV1,
+  type UsaJobsPublicSearchQueryV1,
+  type UsaJobsSearchConfigurationAttestationV1,
+  type UsaJobsSearchConfigurationV1,
+  type UsaJobsSearchErrorCode,
+  type UsaJobsSearchRequestV1,
+} from "./usajobs-search.js";

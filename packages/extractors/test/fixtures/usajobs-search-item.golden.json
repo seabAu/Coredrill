@@ -1,0 +1,475 @@
+{
+  "specVersion": 1,
+  "sourceId": "018f0f4e-7b8c-7d00-8000-000000000600",
+  "capturedAt": "2026-08-30T12:00:00.000Z",
+  "cases": [
+    {
+      "id": "complete-public-announcement",
+      "matchedObjectId": "123456789",
+      "payload": {
+        "MatchedObjectId": "123456789",
+        "MatchedObjectDescriptor": {
+          "PositionID": "DE-1234-26-0001",
+          "PositionTitle": "IT SPECIALIST (INFOSEC)",
+          "PositionURI": "https://www.usajobs.gov/GetJob/ViewDetails/123456789",
+          "ApplyURI": [
+            "https://www.usajobs.gov/GetJob/ViewDetails/123456789?PostingChannelID=RESTAPI"
+          ],
+          "PositionLocationDisplay": "Multiple Locations",
+          "PositionLocation": [
+            { "LocationName": "Atlanta, Georgia", "CountryCode": "United States" },
+            { "LocationName": "Washington, District of Columbia" }
+          ],
+          "OrganizationName": "Cybersecurity and Infrastructure Security Agency",
+          "DepartmentName": "Department of Homeland Security",
+          "PositionSchedule": [{ "Name": "Full-time", "Code": "1" }],
+          "PositionOfferingType": [{ "Name": "Permanent", "Code": "15317" }],
+          "QualificationSummary": "You must demonstrate specialized cybersecurity experience.",
+          "PositionRemuneration": [
+            {
+              "MinimumRange": "117962",
+              "MaximumRange": "181216",
+              "RateIntervalCode": "PA",
+              "Description": "Per Year"
+            }
+          ],
+          "PublicationStartDate": "2026-08-30T00:00:00Z",
+          "ApplicationCloseDate": "2026-09-13T23:59:59Z",
+          "UserArea": {
+            "Details": {
+              "JobSummary": "Protect national civilian systems from significant cyber risk.",
+              "MajorDuties": "Lead incident analysis and coordinate risk-reduction work.",
+              "Requirements": "Must be a U.S. citizen and pass a background investigation.",
+              "Education": "Education may not be substituted for specialized experience.",
+              "Evaluations": "You will be evaluated on the experience in your application.",
+              "RequiredDocuments": "Submit a resume and supporting eligibility documents.",
+              "KeyRequirements": [
+                "U.S. citizenship is required.",
+                "Background investigation required."
+              ],
+              "AgencyContactEmail": "public-contact@example.gov"
+            }
+          }
+        }
+      },
+      "expectedCandidates": [
+        {
+          "fieldName": "title",
+          "value": "IT SPECIALIST (INFOSEC)",
+          "rawValue": "IT SPECIALIST (INFOSEC)",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/PositionTitle",
+          "confidence": 1
+        },
+        {
+          "fieldName": "company",
+          "value": "Cybersecurity and Infrastructure Security Agency",
+          "rawValue": "Cybersecurity and Infrastructure Security Agency",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/OrganizationName",
+          "confidence": 1
+        },
+        {
+          "fieldName": "description",
+          "value": "Protect national civilian systems from significant cyber risk.",
+          "rawValue": "Protect national civilian systems from significant cyber risk.",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/UserArea/Details/JobSummary",
+          "confidence": 0.99
+        },
+        {
+          "fieldName": "description",
+          "value": "Lead incident analysis and coordinate risk-reduction work.",
+          "rawValue": "Lead incident analysis and coordinate risk-reduction work.",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/UserArea/Details/MajorDuties",
+          "confidence": 0.97
+        },
+        {
+          "fieldName": "locations",
+          "value": "Atlanta, Georgia",
+          "rawValue": "Atlanta, Georgia",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/PositionLocation/0/LocationName",
+          "confidence": 1
+        },
+        {
+          "fieldName": "locations",
+          "value": "Washington, District of Columbia",
+          "rawValue": "Washington, District of Columbia",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/PositionLocation/1/LocationName",
+          "confidence": 1
+        },
+        {
+          "fieldName": "employment_type",
+          "value": "Full-time",
+          "rawValue": "Full-time",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/PositionSchedule/0/Name",
+          "confidence": 1
+        },
+        {
+          "fieldName": "employment_type",
+          "value": "Permanent",
+          "rawValue": "Permanent",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/PositionOfferingType/0/Name",
+          "confidence": 1
+        },
+        {
+          "fieldName": "requirements",
+          "value": "You must demonstrate specialized cybersecurity experience.",
+          "rawValue": "You must demonstrate specialized cybersecurity experience.",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/QualificationSummary",
+          "confidence": 0.98
+        },
+        {
+          "fieldName": "requirements",
+          "value": "Must be a U.S. citizen and pass a background investigation.",
+          "rawValue": "Must be a U.S. citizen and pass a background investigation.",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/UserArea/Details/Requirements",
+          "confidence": 0.98
+        },
+        {
+          "fieldName": "requirements",
+          "value": "Education may not be substituted for specialized experience.",
+          "rawValue": "Education may not be substituted for specialized experience.",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/UserArea/Details/Education",
+          "confidence": 0.98
+        },
+        {
+          "fieldName": "requirements",
+          "value": "You will be evaluated on the experience in your application.",
+          "rawValue": "You will be evaluated on the experience in your application.",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/UserArea/Details/Evaluations",
+          "confidence": 0.98
+        },
+        {
+          "fieldName": "requirements",
+          "value": "Submit a resume and supporting eligibility documents.",
+          "rawValue": "Submit a resume and supporting eligibility documents.",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/UserArea/Details/RequiredDocuments",
+          "confidence": 0.98
+        },
+        {
+          "fieldName": "requirements",
+          "value": "U.S. citizenship is required.",
+          "rawValue": "U.S. citizenship is required.",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/UserArea/Details/KeyRequirements/0",
+          "confidence": 0.99
+        },
+        {
+          "fieldName": "requirements",
+          "value": "Background investigation required.",
+          "rawValue": "Background investigation required.",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/UserArea/Details/KeyRequirements/1",
+          "confidence": 0.99
+        },
+        {
+          "fieldName": "posted_at",
+          "value": "2026-08-30T00:00:00Z",
+          "rawValue": "2026-08-30T00:00:00Z",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/PublicationStartDate",
+          "confidence": 1
+        },
+        {
+          "fieldName": "valid_through",
+          "value": "2026-09-13T23:59:59Z",
+          "rawValue": "2026-09-13T23:59:59Z",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/ApplicationCloseDate",
+          "confidence": 1
+        },
+        {
+          "fieldName": "apply_url",
+          "value": "https://www.usajobs.gov/GetJob/ViewDetails/123456789?PostingChannelID=RESTAPI",
+          "rawValue": "https://www.usajobs.gov/GetJob/ViewDetails/123456789?PostingChannelID=RESTAPI",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/ApplyURI/0",
+          "confidence": 1
+        },
+        {
+          "fieldName": "external_id",
+          "value": "DE-1234-26-0001",
+          "rawValue": "DE-1234-26-0001",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/PositionID",
+          "confidence": 1
+        },
+        {
+          "fieldName": "salary",
+          "value": {
+            "min": "117962",
+            "max": "181216",
+            "rate_interval_code": "PA",
+            "description": "Per Year"
+          },
+          "rawValue": {
+            "MinimumRange": "117962",
+            "MaximumRange": "181216",
+            "RateIntervalCode": "PA",
+            "Description": "Per Year"
+          },
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/PositionRemuneration/0",
+          "confidence": 1
+        }
+      ],
+      "expectedWarnings": [],
+      "expectedSummary": {
+        "matchedObjectId": "123456789",
+        "completePosting": true,
+        "descriptionsSeen": 2,
+        "descriptionsAccepted": 2,
+        "locationsSeen": 2,
+        "locationsAccepted": 2,
+        "employmentTypesSeen": 2,
+        "employmentTypesAccepted": 2,
+        "requirementsSeen": 7,
+        "requirementsAccepted": 7,
+        "salaryRangesSeen": 1,
+        "salaryRangesAccepted": 1,
+        "candidateCount": 20,
+        "warningCount": 0
+      }
+    },
+    {
+      "id": "partial-invalid-optional-fields",
+      "matchedObjectId": "987654321",
+      "payload": {
+        "MatchedObjectId": "987654321",
+        "MatchedObjectDescriptor": {
+          "PositionID": "",
+          "PositionTitle": "Program Analyst",
+          "PositionURI": "https://www.usajobs.gov/GetJob/ViewDetails/987654321",
+          "ApplyURI": [
+            "https://example.test/GetJob/ViewDetails/987654321?PostingChannelID=RESTAPI",
+            "https://www.usajobs.gov/GetJob/ViewDetails/987654321?PostingChannelID=RESTAPI"
+          ],
+          "PositionLocationDisplay": "Washington, District of Columbia",
+          "PositionLocation": [{ "LocationName": "   " }, 42],
+          "OrganizationName": "Office of Personnel Management",
+          "PositionSchedule": [{ "Name": "Full Time" }, { "Name": "" }],
+          "PositionOfferingType": [{ "Name": 42 }],
+          "QualificationSummary": "",
+          "PositionRemuneration": [
+            { "MinimumRange": "80000", "MaximumRange": "120000", "RateIntervalCode": "PA" },
+            { "MinimumRange": "9", "MaximumRange": "2", "RateIntervalCode": "PH" }
+          ],
+          "PublicationStartDate": "not-a-date",
+          "ApplicationCloseDate": "2026-09-30T23:59:59Z",
+          "UserArea": {
+            "Details": {
+              "JobSummary": "",
+              "KeyRequirements": ["Must be 18 years old.", 42]
+            }
+          }
+        }
+      },
+      "expectedCandidates": [
+        {
+          "fieldName": "title",
+          "value": "Program Analyst",
+          "rawValue": "Program Analyst",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/PositionTitle",
+          "confidence": 1
+        },
+        {
+          "fieldName": "company",
+          "value": "Office of Personnel Management",
+          "rawValue": "Office of Personnel Management",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/OrganizationName",
+          "confidence": 1
+        },
+        {
+          "fieldName": "locations",
+          "value": "Washington, District of Columbia",
+          "rawValue": "Washington, District of Columbia",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/PositionLocationDisplay",
+          "confidence": 0.98
+        },
+        {
+          "fieldName": "employment_type",
+          "value": "Full Time",
+          "rawValue": "Full Time",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/PositionSchedule/0/Name",
+          "confidence": 1
+        },
+        {
+          "fieldName": "requirements",
+          "value": "Must be 18 years old.",
+          "rawValue": "Must be 18 years old.",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/UserArea/Details/KeyRequirements/0",
+          "confidence": 0.99
+        },
+        {
+          "fieldName": "valid_through",
+          "value": "2026-09-30T23:59:59Z",
+          "rawValue": "2026-09-30T23:59:59Z",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/ApplicationCloseDate",
+          "confidence": 1
+        },
+        {
+          "fieldName": "apply_url",
+          "value": "https://www.usajobs.gov/GetJob/ViewDetails/987654321?PostingChannelID=RESTAPI",
+          "rawValue": "https://www.usajobs.gov/GetJob/ViewDetails/987654321?PostingChannelID=RESTAPI",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/ApplyURI/1",
+          "confidence": 1
+        },
+        {
+          "fieldName": "salary",
+          "value": { "min": "80000", "max": "120000", "rate_interval_code": "PA" },
+          "rawValue": {
+            "MinimumRange": "80000",
+            "MaximumRange": "120000",
+            "RateIntervalCode": "PA"
+          },
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/PositionRemuneration/0",
+          "confidence": 1
+        }
+      ],
+      "expectedWarnings": [
+        {
+          "code": "field_invalid",
+          "fieldName": "description",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/UserArea/Details/JobSummary"
+        },
+        {
+          "code": "required_field_missing_or_invalid",
+          "fieldName": "description",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/UserArea/Details/JobSummary"
+        },
+        {
+          "code": "field_invalid",
+          "fieldName": "locations",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/PositionLocation/0/LocationName"
+        },
+        {
+          "code": "field_invalid",
+          "fieldName": "locations",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/PositionLocation/1/LocationName"
+        },
+        {
+          "code": "field_invalid",
+          "fieldName": "employment_type",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/PositionSchedule/1/Name"
+        },
+        {
+          "code": "field_invalid",
+          "fieldName": "employment_type",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/PositionOfferingType/0/Name"
+        },
+        {
+          "code": "field_invalid",
+          "fieldName": "requirements",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/QualificationSummary"
+        },
+        {
+          "code": "field_invalid",
+          "fieldName": "requirements",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/UserArea/Details/KeyRequirements/1"
+        },
+        {
+          "code": "field_invalid",
+          "fieldName": "posted_at",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/PublicationStartDate"
+        },
+        {
+          "code": "field_invalid",
+          "fieldName": "apply_url",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/ApplyURI/0"
+        },
+        {
+          "code": "required_field_missing_or_invalid",
+          "fieldName": "external_id",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/PositionID"
+        },
+        {
+          "code": "field_invalid",
+          "fieldName": "salary",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/PositionRemuneration/1"
+        }
+      ],
+      "expectedSummary": {
+        "matchedObjectId": "987654321",
+        "completePosting": false,
+        "descriptionsSeen": 1,
+        "descriptionsAccepted": 0,
+        "locationsSeen": 3,
+        "locationsAccepted": 1,
+        "employmentTypesSeen": 3,
+        "employmentTypesAccepted": 1,
+        "requirementsSeen": 3,
+        "requirementsAccepted": 1,
+        "salaryRangesSeen": 2,
+        "salaryRangesAccepted": 1,
+        "candidateCount": 8,
+        "warningCount": 12
+      }
+    },
+    {
+      "id": "public-contact-fields-ignored",
+      "matchedObjectId": "456789012",
+      "payload": {
+        "MatchedObjectId": "456789012",
+        "MatchedObjectDescriptor": {
+          "PositionID": "PUBLIC-123",
+          "PositionTitle": "Human Resources Specialist",
+          "PositionURI": "https://www.usajobs.gov/GetJob/ViewDetails/456789012",
+          "OrganizationName": "Federal Agency",
+          "ContactEmail": "contact@example.gov",
+          "UserArea": {
+            "Details": {
+              "JobSummary": "Support a federal workforce program.",
+              "AgencyContactEmail": "contact@example.gov",
+              "AgencyContactPhone": "202-555-0100"
+            }
+          }
+        }
+      },
+      "expectedCandidates": [
+        {
+          "fieldName": "title",
+          "value": "Human Resources Specialist",
+          "rawValue": "Human Resources Specialist",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/PositionTitle",
+          "confidence": 1
+        },
+        {
+          "fieldName": "company",
+          "value": "Federal Agency",
+          "rawValue": "Federal Agency",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/OrganizationName",
+          "confidence": 1
+        },
+        {
+          "fieldName": "description",
+          "value": "Support a federal workforce program.",
+          "rawValue": "Support a federal workforce program.",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/UserArea/Details/JobSummary",
+          "confidence": 0.99
+        },
+        {
+          "fieldName": "apply_url",
+          "value": "https://www.usajobs.gov/GetJob/ViewDetails/456789012",
+          "rawValue": "https://www.usajobs.gov/GetJob/ViewDetails/456789012",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/PositionURI",
+          "confidence": 0.99
+        },
+        {
+          "fieldName": "external_id",
+          "value": "PUBLIC-123",
+          "rawValue": "PUBLIC-123",
+          "pointer": "/content/usajobs/MatchedObjectDescriptor/PositionID",
+          "confidence": 1
+        }
+      ],
+      "expectedWarnings": [],
+      "expectedSummary": {
+        "matchedObjectId": "456789012",
+        "completePosting": true,
+        "descriptionsSeen": 1,
+        "descriptionsAccepted": 1,
+        "locationsSeen": 0,
+        "locationsAccepted": 0,
+        "employmentTypesSeen": 0,
+        "employmentTypesAccepted": 0,
+        "requirementsSeen": 0,
+        "requirementsAccepted": 0,
+        "salaryRangesSeen": 0,
+        "salaryRangesAccepted": 0,
+        "candidateCount": 5,
+        "warningCount": 0
+      }
+    }
+  ]
+}

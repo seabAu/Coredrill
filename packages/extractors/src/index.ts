@@ -40,6 +40,25 @@ export {
 } from "./lever-public-posting.js";
 
 export {
+  USAJOBS_SEARCH_ITEM_ERROR_CODES,
+  USAJOBS_SEARCH_ITEM_EXTRACTOR,
+  USAJOBS_SEARCH_ITEM_FIELD_NAMES,
+  USAJOBS_SEARCH_ITEM_LIMITS,
+  USAJOBS_SEARCH_ITEM_SPEC_VERSION,
+  USAJOBS_SEARCH_ITEM_WARNING_CODES,
+  UsaJobsSearchItemError,
+  extractUsaJobsSearchItemV1,
+  type UsaJobsSearchItemCandidateIdContextV1,
+  type UsaJobsSearchItemErrorCode,
+  type UsaJobsSearchItemExtractionV1,
+  type UsaJobsSearchItemFieldName,
+  type UsaJobsSearchItemInputV1,
+  type UsaJobsSearchItemSummaryV1,
+  type UsaJobsSearchItemWarningCode,
+  type UsaJobsSearchItemWarningV1,
+} from "./usajobs-search-item.js";
+
+export {
   GENERIC_JOB_DOCUMENT_ERROR_CODES,
   GENERIC_JOB_DOCUMENT_EXTRACTOR,
   GENERIC_JOB_DOCUMENT_FIELD_NAMES,

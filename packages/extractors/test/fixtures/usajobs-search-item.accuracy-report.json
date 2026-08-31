@@ -1,0 +1,55 @@
+{
+  "specVersion": 1,
+  "extractor": { "name": "coredrill.usajobs-search-item", "version": "1.0.0" },
+  "fixtureSuite": "usajobs-search-item.golden.json",
+  "fixtureCases": 3,
+  "expected": 33,
+  "produced": 33,
+  "exactMatches": 33,
+  "falsePositives": 0,
+  "falseNegatives": 0,
+  "precision": 1,
+  "recall": 1,
+  "perField": {
+    "title": { "expected": 3, "produced": 3, "exactMatches": 3, "precision": 1, "recall": 1 },
+    "company": { "expected": 3, "produced": 3, "exactMatches": 3, "precision": 1, "recall": 1 },
+    "description": { "expected": 3, "produced": 3, "exactMatches": 3, "precision": 1, "recall": 1 },
+    "locations": { "expected": 3, "produced": 3, "exactMatches": 3, "precision": 1, "recall": 1 },
+    "employment_type": {
+      "expected": 3,
+      "produced": 3,
+      "exactMatches": 3,
+      "precision": 1,
+      "recall": 1
+    },
+    "requirements": {
+      "expected": 8,
+      "produced": 8,
+      "exactMatches": 8,
+      "precision": 1,
+      "recall": 1
+    },
+    "posted_at": { "expected": 1, "produced": 1, "exactMatches": 1, "precision": 1, "recall": 1 },
+    "valid_through": {
+      "expected": 2,
+      "produced": 2,
+      "exactMatches": 2,
+      "precision": 1,
+      "recall": 1
+    },
+    "apply_url": { "expected": 3, "produced": 3, "exactMatches": 3, "precision": 1, "recall": 1 },
+    "external_id": { "expected": 2, "produced": 2, "exactMatches": 2, "precision": 1, "recall": 1 },
+    "salary": { "expected": 2, "produced": 2, "exactMatches": 2, "precision": 1, "recall": 1 }
+  },
+  "scenarios": {
+    "selectedSearchItemIdentityMatched": true,
+    "sourceValuesUnchanged": true,
+    "rawEvidenceRetained": true,
+    "provenanceRetained": true,
+    "officialViewOrApplyLinkRequired": true,
+    "publicContactFieldsIgnored": true,
+    "nonPublicDataRejected": true,
+    "invalidOptionalFieldsRejected": true,
+    "salaryCurrencyNotInvented": true
+  }
+}

@@ -1,5 +1,6 @@
 import { GREENHOUSE_JOB_BOARD_POLICY_INPUT_V1 } from "./greenhouse-job-board.js";
 import { LEVER_POSTINGS_POLICY_INPUT_V1 } from "./lever-postings.js";
+import { USAJOBS_SEARCH_POLICY_INPUT_V1 } from "./usajobs-search.js";
 
 export const CONNECTOR_POLICY_SPEC_VERSION = 1 as const;
 
@@ -458,9 +459,17 @@ export const LEVER_POSTINGS_CONNECTOR_POLICY_V1 = parseConnectorPolicyRecordV1(
   LEVER_POSTINGS_POLICY_INPUT_V1,
 );
 
+export const USAJOBS_SEARCH_CONNECTOR_POLICY_V1 = parseConnectorPolicyRecordV1(
+  USAJOBS_SEARCH_POLICY_INPUT_V1,
+);
+
 /** Only connectors with a current source-specific review are registered here. */
 export const CHECKED_IN_CONNECTOR_POLICY_RECORDS_V1: readonly ConnectorPolicyRecordV1[] =
-  Object.freeze([GREENHOUSE_JOB_BOARD_CONNECTOR_POLICY_V1, LEVER_POSTINGS_CONNECTOR_POLICY_V1]);
+  Object.freeze([
+    GREENHOUSE_JOB_BOARD_CONNECTOR_POLICY_V1,
+    LEVER_POSTINGS_CONNECTOR_POLICY_V1,
+    USAJOBS_SEARCH_CONNECTOR_POLICY_V1,
+  ]);
 
 export const checkedInConnectorPolicyRegistryV1 = createConnectorPolicyRegistryV1(
   CHECKED_IN_CONNECTOR_POLICY_RECORDS_V1,
