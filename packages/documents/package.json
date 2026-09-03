@@ -31,9 +31,9 @@
     "lint": "eslint src --max-warnings 0"
   },
   "dependencies": {
-    "@tiptap/core": "3.30.2",
-    "@tiptap/pm": "3.30.2",
-    "@tiptap/starter-kit": "3.30.2",
+    "@tiptap/core": "3.30.4",
+    "@tiptap/pm": "3.30.4",
+    "@tiptap/starter-kit": "3.30.4",
     "docx": "9.7.1",
     "mammoth": "1.12.1",
     "pdfjs-dist": "6.2.108",
