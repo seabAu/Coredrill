@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-09-03
 Current milestone: Phase 2 — capture and approved extraction (`GATE-0` and `GATE-1` external-evidence blockers remain open)
-Current work item: `XTR-007` — deterministic field normalization with raw-value retention
-Next recommended slice: `XTR-008` after `XTR-007` proof
+Current work item: `XTR-008` — per-field adapter/version quality and calibration report
+Next recommended slice: `XTR-009` after `XTR-008` proof
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `XTR-008` after `XTR-007` proof
 | Field | Value |
 |---|---|
 | Milestone | Phase 2, with the independent Phase 0 and Phase 1 evidence gates retained below |
-| Item range | `XTR-007` |
+| Item range | `XTR-008` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-09-03 |
-| Expected proof | Deterministic versioned normalization for title, company, location, work mode, salary, currency, date, and source; property and golden tests over valid, ambiguous, malformed, Unicode, locale, interval, and boundary inputs; and exact assertions that normalized derivatives never erase or mutate raw candidate values, excerpts, evidence pointers, or provenance |
-| Blocker | None for `XTR-007`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
-| Next handoff | Read the normalization, data-model, interface, and contract boundaries completely; inventory existing candidate and domain types; then implement the smallest pure normalization contract and executable proof without confirmation, entity writes, AI inference, network behavior, or loss of source evidence. |
+| Expected proof | A reproducibly generated report of precision, coverage, false positives, false negatives, and confidence calibration for every supported field grouped by adapter and exact extractor/contract version; checked-in machine-readable inputs and output; threshold and no-data behavior; and explicit separation from user-facing ATS or hiring-probability scores |
+| Blocker | None for `XTR-008`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
+| Next handoff | Read the extractor fixtures, normalization outputs, confidence semantics, data-model boundary, and reporting requirements completely; inventory per-adapter field evidence; then implement the smallest deterministic report generator and checked-in report proof without network work, AI inference, canonical entity writes, or opaque user-facing scores. |
 
 ## Milestone status
 
@@ -224,7 +224,7 @@ Next recommended slice: `XTR-008` after `XTR-007` proof
 - [x] **XTR-004** Implement Greenhouse public postings adapter under reviewed current interface/terms. — Proof: [current interface/policy review, exact GET-only descriptor, 19-of-19 synthetic golden candidates, applicant-data rejection, and hosted clean-commit matrix](../../proof/phase-2-greenhouse-public-posting-verification.md)
 - [x] **XTR-005** Implement Lever public postings adapter under reviewed current interface/terms. — Proof: [current interface/policy review, exact global/EU GET-only descriptors, 21-of-21 synthetic golden candidates, applicant-data rejection, and hosted clean-commit matrix](../../proof/phase-2-lever-public-posting-verification.md)
 - [x] **XTR-006** Implement USAJOBS adapter/configuration under reviewed current requirements. — Proof: [current official interface and consumer-policy review, credential-safe Public-only descriptors, 33-of-33 synthetic golden candidates, raw provenance, and hosted clean-commit matrix](../../proof/phase-2-usajobs-public-search-verification.md)
-- [ ] **XTR-007** Implement normalization for title/company/location/work mode/salary/currency/date/source without erasing raw values. — Proof: _property/golden tests_
+- [x] **XTR-007** Implement normalization for title/company/location/work mode/salary/currency/date/source without erasing raw values. — Proof: [versioned pure contract, 16-candidate golden witness, 1,100 property cases, immutable raw/provenance retention, and hosted clean-commit matrix](../../proof/phase-2-job-candidate-normalization-verification.md)
 - [ ] **XTR-008** Publish per-field precision, coverage, and confidence calibration by adapter/version. — Proof: _generated report_
 - [ ] **XTR-009** Implement connector attribution, cache/retention, rate limit, retry/backoff, and last-review display. — Proof: _integration/policy tests_
 - [ ] **XTR-010** Add explicit disabled records/tests for prohibited/unreviewed sources, including LinkedIn/Glassdoor automation. — Proof: _policy fixtures_

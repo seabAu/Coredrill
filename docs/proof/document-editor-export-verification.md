@@ -47,6 +47,28 @@ lanes ran the nine-test document suite and uploaded the editor/import/export art
 the aggregate frozen-install gate, extension lanes, Firefox storage lanes, full-history
 secret scan, and Windows/macOS/Linux native package lanes also completed successfully.
 
+## Security maintenance verification
+
+The original editor/import/export proof above remains an historical record of the
+3.30.2 baseline. On 2026-09-03, accepted [ADR-0007](../adr/0007-patch-tiptap-prototype-manipulation.md)
+amended only that exact dependency version: all six aligned Tiptap packages moved to
+3.30.4 to remove the reviewed prototype-manipulation advisory. No editor contract,
+document IR, schema, product behavior, permission, service, or architecture changed.
+
+Commit `03b760fa753a841efa49f62f449cb6779ba10854` passed the complete local
+foundation gate as part of final implementation head
+`230e771a60609e6e14ceb0867a107fdd1188002c`, including both exact Chrome lanes'
+nine document-browser tests. The exact head then passed
+[Foundation CI run 33723649238](https://github.com/seabAu/Coredrill/actions/runs/33723649238),
+including the aggregate frozen-install/advisory gate, Chrome 151 and 152 document
+artifacts, Firefox storage lanes, full-history secret scan, extension transfer, and
+Windows/macOS/Linux installed-package proof. The npm audit reported no known
+vulnerabilities. Immutable document-editor artifacts were `9881242703`
+(`sha256:c5e34268bf8903f84c1bbd7af8ad88ee87eea6474a8d12047327a8471574007d`)
+for Chrome 151 and `9881264041`
+(`sha256:3d51fd0e145c6c4c0d498520f253c708d27c6cc554d85484f556148db13a861c`)
+for Chrome 152; both were unexpired when this supplement was recorded.
+
 ## Known boundary
 
 The print-generated PDF is structurally tagged by the supported Chromium engine; it is
