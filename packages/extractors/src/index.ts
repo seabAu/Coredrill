@@ -1,5 +1,17 @@
 /** Deterministic, policy-gated extraction adapters. */
 export {
+  CURRENCY_SCALES_V1,
+  JOB_CANDIDATE_NORMALIZATION_ERROR_CODES,
+  JOB_CANDIDATE_NORMALIZATION_LIMITS,
+  JOB_CANDIDATE_NORMALIZATION_SPEC_VERSION,
+  JobCandidateNormalizationError,
+  normalizeJobCandidatesV1,
+  type JobCandidateNormalizationErrorCode,
+  type JobCandidateNormalizationInputV1,
+  type JobSourceNormalizationInputV1,
+} from "./job-normalization.js";
+
+export {
   GREENHOUSE_PUBLIC_POSTING_ERROR_CODES,
   GREENHOUSE_PUBLIC_POSTING_EXTRACTOR,
   GREENHOUSE_PUBLIC_POSTING_FIELD_NAMES,

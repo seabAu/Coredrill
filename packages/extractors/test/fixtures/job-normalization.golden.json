@@ -1,0 +1,262 @@
+{
+  "specVersion": 1,
+  "sourceId": "018f0f4e-7b8c-7d00-8000-000000000700",
+  "capturedAt": "2026-09-03T05:30:00.000Z",
+  "source": {
+    "input": {
+      "url": "https://jobs.example.test/opening/42?utm_source=newsletter&gh_jid=42&ref=board#apply",
+      "sourceKind": "Greenhouse Board",
+      "externalId": " req-42 ",
+      "materialQueryParameters": ["gh_jid"]
+    },
+    "expected": {
+      "specVersion": 1,
+      "raw": {
+        "url": "https://jobs.example.test/opening/42?utm_source=newsletter&gh_jid=42&ref=board#apply",
+        "sourceKind": "Greenhouse Board",
+        "externalId": " req-42 ",
+        "materialQueryParameters": ["gh_jid"]
+      },
+      "status": "normalized",
+      "value": {
+        "canonicalUrl": "https://jobs.example.test/opening/42?gh_jid=42",
+        "sourceKind": "greenhouse-board",
+        "externalId": "req-42"
+      },
+      "warningCodes": []
+    }
+  },
+  "candidates": [
+    {
+      "fieldName": "title",
+      "value": "  Sr. Software Eng  ",
+      "rawValue": "  Sr. Software Eng  ",
+      "expected": {
+        "status": "normalized",
+        "normalizedValue": {
+          "kind": "title",
+          "displayValue": "Sr. Software Eng",
+          "comparisonKey": "senior software engineer"
+        },
+        "warningCodes": []
+      }
+    },
+    {
+      "fieldName": "company",
+      "value": "ACME, Inc.",
+      "rawValue": "<span>ACME, Inc.</span>",
+      "expected": {
+        "status": "normalized",
+        "normalizedValue": {
+          "kind": "company",
+          "displayValue": "ACME, Inc.",
+          "comparisonKey": "acme"
+        },
+        "warningCodes": []
+      }
+    },
+    {
+      "fieldName": "locations",
+      "value": {
+        "@type": "Place",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "New York",
+          "addressRegion": "NY",
+          "postalCode": "10001",
+          "addressCountry": "US"
+        }
+      },
+      "expected": {
+        "status": "normalized",
+        "normalizedValue": {
+          "kind": "location",
+          "locationKind": "physical",
+          "label": "New York, NY, 10001, US",
+          "addressLocality": "New York",
+          "region": "NY",
+          "postalCode": "10001",
+          "country": "US",
+          "countryCode": "US",
+          "precision": "postal_code"
+        },
+        "warningCodes": []
+      }
+    },
+    {
+      "fieldName": "locations",
+      "value": { "@type": "Country", "name": "United States" },
+      "pointer": "/job/applicantLocationRequirements/0",
+      "expected": {
+        "status": "normalized",
+        "normalizedValue": {
+          "kind": "location",
+          "locationKind": "remote_region",
+          "label": "United States",
+          "remoteRegion": "United States",
+          "precision": "label"
+        },
+        "warningCodes": []
+      }
+    },
+    {
+      "fieldName": "workplace_type",
+      "value": "Fully Remote",
+      "expected": {
+        "status": "normalized",
+        "normalizedValue": { "kind": "workplace_type", "value": "remote" },
+        "warningCodes": []
+      }
+    },
+    {
+      "fieldName": "salary",
+      "value": {
+        "currency": "USD",
+        "value": {
+          "minValue": "120000.50",
+          "maxValue": "150000",
+          "unitText": "YEAR"
+        }
+      },
+      "expected": {
+        "status": "normalized",
+        "normalizedValue": {
+          "kind": "salary",
+          "minimumDecimal": "120000.5",
+          "maximumDecimal": "150000",
+          "currency": "USD",
+          "currencyScale": 2,
+          "minimumMinorUnits": 12000050,
+          "maximumMinorUnits": 15000000,
+          "interval": "year"
+        },
+        "warningCodes": []
+      }
+    },
+    {
+      "fieldName": "currency",
+      "value": "usd",
+      "expected": {
+        "status": "normalized",
+        "normalizedValue": { "kind": "currency", "value": "USD", "scale": 2 },
+        "warningCodes": []
+      }
+    },
+    {
+      "fieldName": "posted_at",
+      "value": "2026-08-26",
+      "expected": {
+        "status": "normalized",
+        "normalizedValue": {
+          "kind": "date",
+          "date": "2026-08-26",
+          "precision": "date",
+          "instant": null
+        },
+        "warningCodes": []
+      }
+    },
+    {
+      "fieldName": "valid_through",
+      "value": "2026-09-30T23:59:59-04:00",
+      "expected": {
+        "status": "normalized",
+        "normalizedValue": {
+          "kind": "date",
+          "date": "2026-09-30",
+          "precision": "instant",
+          "instant": "2026-10-01T03:59:59.000Z"
+        },
+        "warningCodes": []
+      }
+    },
+    {
+      "fieldName": "external_id",
+      "value": " req-42 ",
+      "expected": {
+        "status": "normalized",
+        "normalizedValue": { "kind": "source", "externalId": "req-42" },
+        "warningCodes": []
+      }
+    },
+    {
+      "fieldName": "description",
+      "value": "Build dependable local-first software.",
+      "expected": {
+        "status": "not_applicable",
+        "normalizedValue": null,
+        "warningCodes": []
+      }
+    },
+    {
+      "fieldName": "salary",
+      "value": "USD 95,000 to 105,000 per year",
+      "expected": {
+        "status": "normalized",
+        "normalizedValue": {
+          "kind": "salary",
+          "minimumDecimal": "95000",
+          "maximumDecimal": "105000",
+          "currency": "USD",
+          "currencyScale": 2,
+          "minimumMinorUnits": 9500000,
+          "maximumMinorUnits": 10500000,
+          "interval": "year"
+        },
+        "warningCodes": []
+      }
+    },
+    {
+      "fieldName": "workplace_type",
+      "value": "Flexible",
+      "expected": {
+        "status": "ambiguous",
+        "normalizedValue": null,
+        "warningCodes": ["ambiguous_workplace_type"]
+      }
+    },
+    {
+      "fieldName": "posted_at",
+      "value": "2026-02-30",
+      "expected": {
+        "status": "ambiguous",
+        "normalizedValue": null,
+        "warningCodes": ["invalid_date"]
+      }
+    },
+    {
+      "fieldName": "currency",
+      "value": "XXX",
+      "expected": {
+        "status": "ambiguous",
+        "normalizedValue": null,
+        "warningCodes": ["currency_unsupported"]
+      }
+    },
+    {
+      "fieldName": "salary",
+      "value": "$120k to $150k annually",
+      "expected": {
+        "status": "partial",
+        "normalizedValue": {
+          "kind": "salary",
+          "minimumDecimal": "120000",
+          "maximumDecimal": "150000",
+          "currency": null,
+          "currencyScale": null,
+          "minimumMinorUnits": null,
+          "maximumMinorUnits": null,
+          "interval": "year"
+        },
+        "warningCodes": ["currency_missing"]
+      }
+    }
+  ],
+  "summary": {
+    "inputCandidates": 16,
+    "normalized": 11,
+    "partial": 1,
+    "ambiguous": 3,
+    "notApplicable": 1
+  }
+}

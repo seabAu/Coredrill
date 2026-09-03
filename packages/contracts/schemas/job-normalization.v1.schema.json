@@ -1,0 +1,424 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.coredrill.local/job-normalization/v1",
+  "type": "object",
+  "properties": {
+    "specVersion": { "type": "number", "const": 1 },
+    "candidates": {
+      "maxItems": 256,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "specVersion": { "type": "number", "const": 1 },
+          "sourceCandidate": {
+            "type": "object",
+            "properties": {
+              "specVersion": { "type": "number", "const": 1 },
+              "id": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+              },
+              "fieldName": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$"
+              },
+              "value": { "$ref": "#/$defs/__schema0" },
+              "rawValue": { "$ref": "#/$defs/__schema0" },
+              "provenance": {
+                "type": "object",
+                "properties": {
+                  "specVersion": { "type": "number", "const": 1 },
+                  "source": {
+                    "type": "object",
+                    "properties": {
+                      "sourceType": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$"
+                      },
+                      "sourceId": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                      },
+                      "pointer": {
+                        "type": "string",
+                        "maxLength": 2048,
+                        "pattern": "^(?!\\s)(?![\\s\\S]*[\\u0000-\\u001f\\u007f])[\\s\\S]*\\S$"
+                      }
+                    },
+                    "required": ["sourceType", "sourceId", "pointer"],
+                    "additionalProperties": false
+                  },
+                  "method": {
+                    "type": "string",
+                    "enum": ["api", "jsonld", "selector", "readability", "heuristic", "llm", "user"]
+                  },
+                  "extractor": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$"
+                      },
+                      "version": {
+                        "type": "string",
+                        "maxLength": 64,
+                        "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?$"
+                      }
+                    },
+                    "required": ["name", "version"],
+                    "additionalProperties": false
+                  },
+                  "capturedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+                  },
+                  "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+                  "sourceExcerpt": { "type": "string", "maxLength": 4096 },
+                  "licenseNote": { "type": "string", "maxLength": 1024 }
+                },
+                "required": [
+                  "specVersion",
+                  "source",
+                  "method",
+                  "extractor",
+                  "capturedAt",
+                  "confidence"
+                ],
+                "additionalProperties": false
+              },
+              "userConfirmation": {
+                "type": "object",
+                "properties": {
+                  "specVersion": { "type": "number", "const": 1 },
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                  },
+                  "actor": { "type": "string", "const": "user" },
+                  "confirmedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+                  },
+                  "confirmedValueHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+                },
+                "required": ["specVersion", "id", "actor", "confirmedAt", "confirmedValueHash"],
+                "additionalProperties": false
+              }
+            },
+            "required": ["specVersion", "id", "fieldName", "value", "provenance"],
+            "additionalProperties": false
+          },
+          "status": {
+            "type": "string",
+            "enum": ["normalized", "partial", "ambiguous", "not_applicable"]
+          },
+          "normalizedValue": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": { "type": "string", "const": "title" },
+                      "displayValue": { "type": "string", "minLength": 1, "maxLength": 1024 },
+                      "comparisonKey": { "type": "string", "minLength": 1, "maxLength": 1024 }
+                    },
+                    "required": ["kind", "displayValue", "comparisonKey"],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": { "type": "string", "const": "company" },
+                      "displayValue": { "type": "string", "minLength": 1, "maxLength": 1024 },
+                      "comparisonKey": { "type": "string", "minLength": 1, "maxLength": 1024 }
+                    },
+                    "required": ["kind", "displayValue", "comparisonKey"],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": { "type": "string", "const": "location" },
+                      "locationKind": {
+                        "type": "string",
+                        "enum": ["physical", "remote_region", "label"]
+                      },
+                      "label": { "type": "string", "minLength": 1, "maxLength": 1024 },
+                      "addressLocality": { "type": "string", "minLength": 1, "maxLength": 1024 },
+                      "region": { "type": "string", "minLength": 1, "maxLength": 1024 },
+                      "postalCode": { "type": "string", "minLength": 1, "maxLength": 64 },
+                      "country": { "type": "string", "minLength": 1, "maxLength": 1024 },
+                      "countryCode": { "type": "string", "pattern": "^[A-Z]{2}$" },
+                      "remoteRegion": { "type": "string", "minLength": 1, "maxLength": 1024 },
+                      "precision": {
+                        "type": "string",
+                        "enum": ["postal_code", "locality", "region", "country", "label"]
+                      }
+                    },
+                    "required": ["kind", "locationKind", "label", "precision"],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": { "type": "string", "const": "workplace_type" },
+                      "value": { "type": "string", "enum": ["remote", "hybrid", "on_site"] }
+                    },
+                    "required": ["kind", "value"],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": { "type": "string", "const": "salary" },
+                      "minimumDecimal": {
+                        "type": "string",
+                        "maxLength": 32,
+                        "pattern": "^(?:0|[1-9]\\d*)(?:\\.\\d{1,3})?$"
+                      },
+                      "maximumDecimal": {
+                        "type": "string",
+                        "maxLength": 32,
+                        "pattern": "^(?:0|[1-9]\\d*)(?:\\.\\d{1,3})?$"
+                      },
+                      "currency": {
+                        "anyOf": [{ "type": "string", "pattern": "^[A-Z]{3}$" }, { "type": "null" }]
+                      },
+                      "currencyScale": {
+                        "anyOf": [
+                          { "type": "integer", "minimum": 0, "maximum": 3 },
+                          { "type": "null" }
+                        ]
+                      },
+                      "minimumMinorUnits": {
+                        "anyOf": [
+                          { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+                          { "type": "null" }
+                        ]
+                      },
+                      "maximumMinorUnits": {
+                        "anyOf": [
+                          { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+                          { "type": "null" }
+                        ]
+                      },
+                      "interval": {
+                        "anyOf": [
+                          { "type": "string", "enum": ["hour", "day", "week", "month", "year"] },
+                          { "type": "null" }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "minimumDecimal",
+                      "maximumDecimal",
+                      "currency",
+                      "currencyScale",
+                      "minimumMinorUnits",
+                      "maximumMinorUnits",
+                      "interval"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": { "type": "string", "const": "currency" },
+                      "value": { "type": "string", "pattern": "^[A-Z]{3}$" },
+                      "scale": { "type": "integer", "minimum": 0, "maximum": 3 }
+                    },
+                    "required": ["kind", "value", "scale"],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": { "type": "string", "const": "date" },
+                      "date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+                      "precision": { "type": "string", "enum": ["date", "instant"] },
+                      "instant": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+                          },
+                          { "type": "null" }
+                        ]
+                      }
+                    },
+                    "required": ["kind", "date", "precision", "instant"],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": { "type": "string", "const": "source" },
+                      "externalId": { "type": "string", "minLength": 1, "maxLength": 1024 }
+                    },
+                    "required": ["kind", "externalId"],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              { "type": "null" }
+            ]
+          },
+          "warningCodes": {
+            "maxItems": 8,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "invalid_text",
+                "invalid_location",
+                "ambiguous_workplace_type",
+                "invalid_salary",
+                "currency_missing",
+                "currency_unsupported",
+                "interval_missing",
+                "invalid_currency",
+                "invalid_date",
+                "invalid_source_url",
+                "invalid_source_kind",
+                "invalid_external_id"
+              ]
+            }
+          }
+        },
+        "required": ["specVersion", "sourceCandidate", "status", "normalizedValue", "warningCodes"],
+        "additionalProperties": false
+      }
+    },
+    "source": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "specVersion": { "type": "number", "const": 1 },
+            "raw": {
+              "type": "object",
+              "properties": {
+                "url": { "anyOf": [{ "type": "string", "maxLength": 8192 }, { "type": "null" }] },
+                "sourceKind": {
+                  "anyOf": [{ "type": "string", "maxLength": 128 }, { "type": "null" }]
+                },
+                "externalId": {
+                  "anyOf": [{ "type": "string", "maxLength": 1024 }, { "type": "null" }]
+                },
+                "materialQueryParameters": {
+                  "maxItems": 32,
+                  "type": "array",
+                  "items": { "type": "string", "minLength": 1, "maxLength": 64 }
+                }
+              },
+              "required": ["url", "sourceKind", "externalId", "materialQueryParameters"],
+              "additionalProperties": false
+            },
+            "status": { "type": "string", "enum": ["normalized", "partial", "ambiguous"] },
+            "value": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "canonicalUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 8192,
+                          "pattern": "^https?:\\/\\/(?![^/?#]*@)[^\\s]+$"
+                        },
+                        { "type": "null" }
+                      ]
+                    },
+                    "sourceKind": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 128,
+                          "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$"
+                        },
+                        { "type": "null" }
+                      ]
+                    },
+                    "externalId": {
+                      "anyOf": [
+                        { "type": "string", "minLength": 1, "maxLength": 1024 },
+                        { "type": "null" }
+                      ]
+                    }
+                  },
+                  "required": ["canonicalUrl", "sourceKind", "externalId"],
+                  "additionalProperties": false
+                },
+                { "type": "null" }
+              ]
+            },
+            "warningCodes": {
+              "maxItems": 3,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "invalid_text",
+                  "invalid_location",
+                  "ambiguous_workplace_type",
+                  "invalid_salary",
+                  "currency_missing",
+                  "currency_unsupported",
+                  "interval_missing",
+                  "invalid_currency",
+                  "invalid_date",
+                  "invalid_source_url",
+                  "invalid_source_kind",
+                  "invalid_external_id"
+                ]
+              }
+            }
+          },
+          "required": ["specVersion", "raw", "status", "value", "warningCodes"],
+          "additionalProperties": false
+        },
+        { "type": "null" }
+      ]
+    },
+    "summary": {
+      "type": "object",
+      "properties": {
+        "inputCandidates": { "type": "integer", "minimum": 0, "maximum": 256 },
+        "normalized": { "type": "integer", "minimum": 0, "maximum": 256 },
+        "partial": { "type": "integer", "minimum": 0, "maximum": 256 },
+        "ambiguous": { "type": "integer", "minimum": 0, "maximum": 256 },
+        "notApplicable": { "type": "integer", "minimum": 0, "maximum": 256 }
+      },
+      "required": ["inputCandidates", "normalized", "partial", "ambiguous", "notApplicable"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["specVersion", "candidates", "source", "summary"],
+  "additionalProperties": false,
+  "$defs": {
+    "__schema0": {
+      "anyOf": [
+        { "type": "string" },
+        { "type": "number" },
+        { "type": "boolean" },
+        { "type": "null" },
+        { "type": "array", "items": { "$ref": "#/$defs/__schema0" } },
+        {
+          "type": "object",
+          "propertyNames": { "type": "string" },
+          "additionalProperties": { "$ref": "#/$defs/__schema0" }
+        }
+      ]
+    }
+  }
+}

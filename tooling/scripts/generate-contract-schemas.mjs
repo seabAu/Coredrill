@@ -32,6 +32,11 @@ const generatedSchemas = [
     source: "contracts",
   },
   {
+    exportName: "jobNormalizationV1JsonSchema",
+    path: path.join(repositoryRoot, "packages/contracts/schemas/job-normalization.v1.schema.json"),
+    source: "contracts",
+  },
+  {
     exportName: "supportBundleV1JsonSchema",
     path: path.join(repositoryRoot, "packages/contracts/schemas/support-bundle.v1.schema.json"),
     source: "contracts",

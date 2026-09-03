@@ -108,6 +108,27 @@ Resolution policy ranks user > official API/valid JSON-LD > source-specific sele
 9. **Human review:** user confirms or edits before the job becomes trusted.
 10. **Persist transactionally:** snapshot, provenance, resolved entity fields, requirements, and audit/import report.
 
+`XTR-007` makes the source-canonicalization subset of stage 2 and the first
+field-normalization subset of stage 6 executable. The version-1 contract retains
+each complete `FieldCandidateV1` beside a separate normalized derivative and an
+explicit `normalized`, `partial`, `ambiguous`, or `not_applicable` status. It
+normalizes title/company comparison keys, structured physical locations,
+remote-eligibility regions, work mode, exact decimal salary ranges, explicit
+three-letter currencies and minor-unit scales, date-only values versus UTC
+instants, external IDs, and canonical HTTP(S) source URLs. URL normalization
+retains only caller-declared material query keys and removes fragments; it never
+guesses whether an unlisted query parameter is material.
+
+The pure boundary accepts at most 256 candidates and 2 MiB of finite JSON, with
+depth/value/text/URL/query limits and unique candidate IDs. It rejects unknown
+input keys, cycles, unsupported shapes, and oversized input with content-free
+errors. Every original value, `rawValue`, confirmation record, excerpt, pointer,
+capture time, confidence, method, and extractor identity survives unchanged in
+the output. Normalization does not resolve conflicts, confirm a proposal, mutate
+input, write an entity, fetch a source, or invoke AI. Employment type,
+requirements, and skills/taxonomy normalization remain later stage-6 work rather
+than being implied by `XTR-007`.
+
 Refresh never overwrites a confirmed field. It creates a new snapshot and a comparison: added/removed/changed requirements, compensation, deadline, location, and content. Expired/deleted pages mark source state; they do not delete the user's job.
 
 ## Source adapter priority
@@ -170,6 +191,17 @@ The adapter does not render Lever HTML, confirm fields, normalize salary/work ar
 #### USAJOBS
 
 Official API-key search for open federal announcements with documented filters and salary fields: [USAJOBS API reference](https://developer.usajobs.gov/api-reference/). Cache within limits and attribute the source.
+
+The shipped `XTR-006` boundary requires a user-owned registered email and API key
+through opaque privileged bindings, never through the public configuration
+value. It can construct only a bounded non-executing
+`GET https://data.usajobs.gov/api/search` descriptor with
+`WhoMayApply=Public` and `Fields=Full`. The pure selected-item adapter rejects
+applicant/system data and identity mismatches while retaining exact public JOA
+values, raw evidence, pointers, attribution/terms notes, and configured-source
+provenance. It does not map public contact fields, redistribute a feed, execute a
+request, expose credentials, or submit an application. Transport controls remain
+`XTR-009`.
 
 #### User files/paste
 

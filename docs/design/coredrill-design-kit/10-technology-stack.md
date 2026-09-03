@@ -218,6 +218,27 @@ Imported binary files are untrusted. Enforce size/type limits, do not execute ma
 
 `XTR-005` adds the second production record after a current Lever review. A single connector record authorizes only Lever's exact documented global and EU Postings API hosts under `documented_public_api`, with no credentials, required attribution, a 30-day review deadline, and existing targeted/global runtime kills. The paired request boundary can construct only an identity-specific non-executing job-detail GET; the applicant-creation POST, API keys, lists/global search, HTML/iframe modes, and arbitrary hosts are not representable. The pure dependency-free adapter prefers documented plaintext, retains untrusted list HTML only as provisional raw evidence, validates hosted/apply identity, and rejects applicant/application data. Executing transport remains deferred to `XTR-009`.
 
+`XTR-006` adds a configured USAJOBS Search API record and pure selected-item
+adapter. Public configuration records only readiness, terms acceptance, and
+opaque privileged credential bindings; email and key values cannot enter the
+contract. Request descriptors are non-executing, exact-host, Public-only GETs,
+and the adapter retains selected public JOA evidence while rejecting applicant,
+system-user, credential, and contact mapping fields. Executing transport remains
+deferred to `XTR-009`.
+
+`XTR-007` adds a dependency-free TypeScript normalizer in
+`@coredrill/extractors` and a generated version-1 Zod/JSON Schema contract in
+`@coredrill/contracts`. Normalized values are parallel derivatives, never
+canonical storage: the complete source candidate and provenance remain attached.
+Exact decimal strings and explicit currency scales produce safe integer minor
+units without binary floating point; date-only values remain distinct from UTC
+instants; remote eligibility remains distinct from physical location; source URLs
+retain only an explicit material-query allowlist. Golden and fast-check properties
+cover deterministic output, raw evidence retention, salary units, URL
+canonicalization, malformed boundaries, and immutable results. No new runtime
+dependency, database write, AI call, network client, permission, or hosted service
+enters this slice.
+
 ### Optional Python worker
 
 If Phase 5 or later establishes a need:
