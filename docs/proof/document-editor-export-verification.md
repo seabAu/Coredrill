@@ -69,6 +69,27 @@ for Chrome 151 and `9881264041`
 (`sha256:3d51fd0e145c6c4c0d498520f253c708d27c6cc554d85484f556148db13a861c`)
 for Chrome 152; both were unexpired when this supplement was recorded.
 
+### 2026-09-17 Markdown ReDoS maintenance
+
+Accepted [ADR-0008](../adr/0008-patch-tiptap-markdown-redos.md) supersedes only
+ADR-0007's exact dependency pin. The complete resolved Tiptap family moved from 3.30.4
+to 3.30.5, the first release patched for `GHSA-j95f-988m-3j2f`. Coredrill still does
+not enable Tiptap Markdown ingestion, and the canonical document IR, restricted schema,
+local import/export boundary, permissions, persistence, and user behavior are unchanged.
+
+Implementation commit `8e9c1457ed8fafbf0c7349bd59d516bc7025763e` passed the
+complete local foundation gate, including all nine document-browser tests, hostile paste
+sanitation, deterministic IR round-trip, the synthetic 100-page editor case, local
+DOCX/PDF import, and accessible DOCX/tagged print-PDF export. The refreshed exact graph
+passed 520-package npm and 498-crate Rust license policy checks; npm reported no known
+vulnerabilities.
+
+The exact commit then passed
+[Foundation CI run 35259770050](https://github.com/seabAu/Coredrill/actions/runs/35259770050).
+Both Chrome document lanes, the aggregate frozen-install/advisory gate, Firefox storage,
+full-history secret scan, extension transfer, and Windows/macOS/Linux installed-package
+proof completed successfully.
+
 ## Known boundary
 
 The print-generated PDF is structurally tagged by the supported Chromium engine; it is

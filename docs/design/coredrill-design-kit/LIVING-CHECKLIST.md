@@ -2,10 +2,10 @@
 
 This file is the single progress ledger. `GOAL.md` defines the outcome; numbered design documents define behavior; `11-decision-register.md` defines accepted choices. This checklist records what is actually proven.
 
-Last design update: 2026-09-03
+Last design update: 2026-09-17
 Current milestone: Phase 2 — capture and approved extraction (`GATE-0` and `GATE-1` external-evidence blockers remain open)
-Current work item: `XTR-008` — per-field adapter/version quality and calibration report
-Next recommended slice: `XTR-009` after `XTR-008` proof
+Current work item: `XTR-009` — connector attribution, cache/retention, rate-limit, retry/backoff, and review-age enforcement
+Next recommended slice: `XTR-010` after `XTR-009` proof
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `XTR-009` after `XTR-008` proof
 | Field | Value |
 |---|---|
 | Milestone | Phase 2, with the independent Phase 0 and Phase 1 evidence gates retained below |
-| Item range | `XTR-008` |
+| Item range | `XTR-009` |
 | Branch/worktree | `main` / repository root |
-| Started | 2026-09-03 |
-| Expected proof | A reproducibly generated report of precision, coverage, false positives, false negatives, and confidence calibration for every supported field grouped by adapter and exact extractor/contract version; checked-in machine-readable inputs and output; threshold and no-data behavior; and explicit separation from user-facing ATS or hiring-probability scores |
-| Blocker | None for `XTR-008`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
-| Next handoff | Read the extractor fixtures, normalization outputs, confidence semantics, data-model boundary, and reporting requirements completely; inventory per-adapter field evidence; then implement the smallest deterministic report generator and checked-in report proof without network work, AI inference, canonical entity writes, or opaque user-facing scores. |
+| Started | 2026-09-17 |
+| Expected proof | Integration and policy tests proving exact connector attribution, bounded cache and retention behavior, source-specific rate limits, retry/backoff with terminal fail-closed states, and visible last-review age against the accepted connector policy records |
+| Blocker | None for `XTR-009`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
+| Next handoff | Read the connector policy records, source-policy runtime, approved adapter descriptors, capture/extraction architecture, security rules, and source-review display requirements completely; inventory the existing enforcement points; then implement the smallest policy-owned integration slice without adding an unreviewed source, credential flow, background surveillance, or canonical overwrite path. |
 
 ## Milestone status
 
@@ -225,7 +225,7 @@ Next recommended slice: `XTR-009` after `XTR-008` proof
 - [x] **XTR-005** Implement Lever public postings adapter under reviewed current interface/terms. — Proof: [current interface/policy review, exact global/EU GET-only descriptors, 21-of-21 synthetic golden candidates, applicant-data rejection, and hosted clean-commit matrix](../../proof/phase-2-lever-public-posting-verification.md)
 - [x] **XTR-006** Implement USAJOBS adapter/configuration under reviewed current requirements. — Proof: [current official interface and consumer-policy review, credential-safe Public-only descriptors, 33-of-33 synthetic golden candidates, raw provenance, and hosted clean-commit matrix](../../proof/phase-2-usajobs-public-search-verification.md)
 - [x] **XTR-007** Implement normalization for title/company/location/work mode/salary/currency/date/source without erasing raw values. — Proof: [versioned pure contract, 16-candidate golden witness, 1,100 property cases, immutable raw/provenance retention, and hosted clean-commit matrix](../../proof/phase-2-job-candidate-normalization-verification.md)
-- [ ] **XTR-008** Publish per-field precision, coverage, and confidence calibration by adapter/version. — Proof: _generated report_
+- [x] **XTR-008** Publish per-field precision, coverage, and confidence calibration by adapter/version. — Proof: [versioned input/report, exact per-adapter and per-field metrics, explicit no-data/calibration semantics, evaluator edge-case tests, and hosted clean-commit matrix](../../proof/phase-2-extraction-quality-verification.md)
 - [ ] **XTR-009** Implement connector attribution, cache/retention, rate limit, retry/backoff, and last-review display. — Proof: _integration/policy tests_
 - [ ] **XTR-010** Add explicit disabled records/tests for prohibited/unreviewed sources, including LinkedIn/Glassdoor automation. — Proof: _policy fixtures_
 
