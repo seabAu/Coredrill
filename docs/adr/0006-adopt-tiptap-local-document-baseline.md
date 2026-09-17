@@ -5,7 +5,7 @@
 - **Owners:** Project owner
 - **Decision register IDs:** `D-027`, `Q-004`
 - **Checklist IDs:** `EDT-001` through `EDT-006`
-- **Amended by:** [ADR-0007](0007-patch-tiptap-prototype-manipulation.md), which supersedes only the exact Tiptap package pin with 3.30.4
+- **Amended by:** [ADR-0007](0007-patch-tiptap-prototype-manipulation.md) and [ADR-0008](0008-patch-tiptap-markdown-redos.md), which successively supersede only the exact Tiptap package pin, now 3.30.5
 
 ## Problem and evidence
 

@@ -44,6 +44,8 @@
     "check:contract-schemas": "node tooling/scripts/generate-contract-schemas.mjs --check",
     "generate:ui-contrast-report": "node tooling/scripts/generate-ui-contrast-report.mjs",
     "check:ui-contrast-report": "node tooling/scripts/generate-ui-contrast-report.mjs --check",
+    "generate:extraction-quality-report": "pnpm --filter @coredrill/contracts build && pnpm --filter @coredrill/extractors build && node tooling/scripts/generate-extraction-quality-report.mjs",
+    "check:extraction-quality-report": "pnpm --filter @coredrill/contracts build && pnpm --filter @coredrill/extractors build && node tooling/scripts/generate-extraction-quality-report.mjs --check",
     "check:affected": "node tooling/scripts/check-affected.mjs",
     "check:licenses": "node tooling/scripts/check-licenses.mjs && node tooling/scripts/check-rust-licenses.mjs",
     "report:licenses": "pnpm licenses list --json",
@@ -54,7 +56,7 @@
     "audit:dependencies": "pnpm audit --audit-level=low && cargo audit --file apps/desktop/src-tauri/Cargo.lock",
     "changeset": "changeset",
     "changeset:status": "changeset status",
-    "verify": "pnpm format:check && pnpm check:boundaries && pnpm check:foundation-records && pnpm typecheck && pnpm lint && pnpm test:unit && pnpm test:coverage && pnpm build && pnpm check:ui-contrast-report && pnpm check:extension-build && pnpm check:extension-packages && pnpm test:ui-foundations && pnpm test:app-shell && pnpm test:performance && pnpm test:resilience && pnpm test:onboarding && pnpm test:documents-browser && pnpm test:storage-browser && pnpm test:storage-native && pnpm test:secure-storage && pnpm test:native-archive && pnpm check:contract-schemas && pnpm check:licenses && pnpm check:secrets && pnpm audit:dependencies && pnpm changeset:status"
+    "verify": "pnpm format:check && pnpm check:boundaries && pnpm check:foundation-records && pnpm typecheck && pnpm lint && pnpm test:unit && pnpm test:coverage && pnpm build && pnpm check:ui-contrast-report && pnpm check:extraction-quality-report && pnpm check:extension-build && pnpm check:extension-packages && pnpm test:ui-foundations && pnpm test:app-shell && pnpm test:performance && pnpm test:resilience && pnpm test:onboarding && pnpm test:documents-browser && pnpm test:storage-browser && pnpm test:storage-native && pnpm test:secure-storage && pnpm test:native-archive && pnpm check:contract-schemas && pnpm check:licenses && pnpm check:secrets && pnpm audit:dependencies && pnpm changeset:status"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",

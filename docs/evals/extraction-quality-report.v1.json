@@ -1,0 +1,4702 @@
+{
+  "artifact": "coredrill-extraction-quality-report",
+  "specVersion": 1,
+  "candidateContractVersion": 1,
+  "evaluationInput": "docs/evals/extraction-quality-evaluation.v1.json",
+  "corpus": {
+    "kind": "checked-in lawful synthetic golden fixtures",
+    "scope": "Deterministic exact-candidate regression evaluation for the six supported extractor identities.",
+    "limitations": "The frozen corpus is deliberately small and is not representative of live-web prevalence, source drift, or user review-correction rates."
+  },
+  "thresholds": {
+    "precision": {
+      "minimumValue": 0.95,
+      "minimumProducedSamples": 1
+    },
+    "coverage": {
+      "minimumValue": 0.95,
+      "minimumExpectedSamples": 1
+    },
+    "calibration": {
+      "maximumExpectedCalibrationError": 0.15,
+      "maximumBrierScore": 0.1,
+      "minimumPredictions": 3
+    }
+  },
+  "confidenceBins": [
+    {
+      "lowerInclusive": 0,
+      "upperBound": 0.5,
+      "upperBoundIncluded": false
+    },
+    {
+      "lowerInclusive": 0.5,
+      "upperBound": 0.7,
+      "upperBoundIncluded": false
+    },
+    {
+      "lowerInclusive": 0.7,
+      "upperBound": 0.85,
+      "upperBoundIncluded": false
+    },
+    {
+      "lowerInclusive": 0.85,
+      "upperBound": 0.95,
+      "upperBoundIncluded": false
+    },
+    {
+      "lowerInclusive": 0.95,
+      "upperBound": 1,
+      "upperBoundIncluded": true
+    }
+  ],
+  "overall": {
+    "counts": {
+      "expected": 143,
+      "produced": 143,
+      "exactMatches": 143,
+      "falsePositives": 0,
+      "falseNegatives": 0
+    },
+    "metrics": {
+      "precision": {
+        "value": 1,
+        "status": "pass"
+      },
+      "coverage": {
+        "value": 1,
+        "status": "pass"
+      },
+      "recall": {
+        "value": 1,
+        "status": "pass"
+      },
+      "calibration": {
+        "predictionCount": 143,
+        "meanConfidence": 0.916713,
+        "observedAccuracy": 1,
+        "expectedCalibrationError": 0.083286,
+        "brierScore": 0.016325,
+        "status": "pass",
+        "bins": [
+          {
+            "lowerInclusive": 0,
+            "upperBound": 0.5,
+            "upperBoundIncluded": false,
+            "count": 0,
+            "meanConfidence": null,
+            "observedAccuracy": null
+          },
+          {
+            "lowerInclusive": 0.5,
+            "upperBound": 0.7,
+            "upperBoundIncluded": false,
+            "count": 6,
+            "meanConfidence": 0.59,
+            "observedAccuracy": 1
+          },
+          {
+            "lowerInclusive": 0.7,
+            "upperBound": 0.85,
+            "upperBoundIncluded": false,
+            "count": 26,
+            "meanConfidence": 0.819231,
+            "observedAccuracy": 1
+          },
+          {
+            "lowerInclusive": 0.85,
+            "upperBound": 0.95,
+            "upperBoundIncluded": false,
+            "count": 37,
+            "meanConfidence": 0.894595,
+            "observedAccuracy": 1
+          },
+          {
+            "lowerInclusive": 0.95,
+            "upperBound": 1,
+            "upperBoundIncluded": true,
+            "count": 74,
+            "meanConfidence": 0.988514,
+            "observedAccuracy": 1
+          }
+        ]
+      }
+    },
+    "status": "pass"
+  },
+  "thresholdSummary": {
+    "adapters": {
+      "status": "fail",
+      "counts": {
+        "pass": 4,
+        "fail": 1,
+        "insufficient_data": 1,
+        "no_data": 0
+      }
+    },
+    "fields": {
+      "status": "fail",
+      "counts": {
+        "pass": 23,
+        "fail": 4,
+        "insufficient_data": 27,
+        "no_data": 0
+      }
+    }
+  },
+  "adapters": [
+    {
+      "extractor": {
+        "name": "coredrill.selected-text",
+        "version": "1.0.0"
+      },
+      "fixtureSuite": "packages/extractors/test/fixtures/generic-job-document.golden.json#selectedTextCases",
+      "fixtureCaseCount": 1,
+      "counts": {
+        "expected": 1,
+        "produced": 1,
+        "exactMatches": 1,
+        "falsePositives": 0,
+        "falseNegatives": 0
+      },
+      "metrics": {
+        "precision": {
+          "value": 1,
+          "status": "pass"
+        },
+        "coverage": {
+          "value": 1,
+          "status": "pass"
+        },
+        "recall": {
+          "value": 1,
+          "status": "pass"
+        },
+        "calibration": {
+          "predictionCount": 1,
+          "meanConfidence": 0.98,
+          "observedAccuracy": 1,
+          "expectedCalibrationError": 0.02,
+          "brierScore": 0.0004,
+          "status": "insufficient_data",
+          "bins": [
+            {
+              "lowerInclusive": 0,
+              "upperBound": 0.5,
+              "upperBoundIncluded": false,
+              "count": 0,
+              "meanConfidence": null,
+              "observedAccuracy": null
+            },
+            {
+              "lowerInclusive": 0.5,
+              "upperBound": 0.7,
+              "upperBoundIncluded": false,
+              "count": 0,
+              "meanConfidence": null,
+              "observedAccuracy": null
+            },
+            {
+              "lowerInclusive": 0.7,
+              "upperBound": 0.85,
+              "upperBoundIncluded": false,
+              "count": 0,
+              "meanConfidence": null,
+              "observedAccuracy": null
+            },
+            {
+              "lowerInclusive": 0.85,
+              "upperBound": 0.95,
+              "upperBoundIncluded": false,
+              "count": 0,
+              "meanConfidence": null,
+              "observedAccuracy": null
+            },
+            {
+              "lowerInclusive": 0.95,
+              "upperBound": 1,
+              "upperBoundIncluded": true,
+              "count": 1,
+              "meanConfidence": 0.98,
+              "observedAccuracy": 1
+            }
+          ]
+        }
+      },
+      "status": "insufficient_data",
+      "fields": [
+        {
+          "fieldName": "description",
+          "counts": {
+            "expected": 1,
+            "produced": 1,
+            "exactMatches": 1,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 1,
+              "meanConfidence": 0.98,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.02,
+              "brierScore": 0.0004,
+              "status": "insufficient_data",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 1,
+                  "meanConfidence": 0.98,
+                  "observedAccuracy": 1
+                }
+              ]
+            }
+          },
+          "status": "insufficient_data"
+        }
+      ]
+    },
+    {
+      "extractor": {
+        "name": "coredrill.generic-job-document",
+        "version": "1.0.0"
+      },
+      "fixtureSuite": "packages/extractors/test/fixtures/generic-job-document.golden.json#documentCases",
+      "fixtureCaseCount": 3,
+      "counts": {
+        "expected": 26,
+        "produced": 26,
+        "exactMatches": 26,
+        "falsePositives": 0,
+        "falseNegatives": 0
+      },
+      "metrics": {
+        "precision": {
+          "value": 1,
+          "status": "pass"
+        },
+        "coverage": {
+          "value": 1,
+          "status": "pass"
+        },
+        "recall": {
+          "value": 1,
+          "status": "pass"
+        },
+        "calibration": {
+          "predictionCount": 26,
+          "meanConfidence": 0.761538,
+          "observedAccuracy": 1,
+          "expectedCalibrationError": 0.238462,
+          "brierScore": 0.0672,
+          "status": "fail",
+          "bins": [
+            {
+              "lowerInclusive": 0,
+              "upperBound": 0.5,
+              "upperBoundIncluded": false,
+              "count": 0,
+              "meanConfidence": null,
+              "observedAccuracy": null
+            },
+            {
+              "lowerInclusive": 0.5,
+              "upperBound": 0.7,
+              "upperBoundIncluded": false,
+              "count": 6,
+              "meanConfidence": 0.59,
+              "observedAccuracy": 1
+            },
+            {
+              "lowerInclusive": 0.7,
+              "upperBound": 0.85,
+              "upperBoundIncluded": false,
+              "count": 20,
+              "meanConfidence": 0.813,
+              "observedAccuracy": 1
+            },
+            {
+              "lowerInclusive": 0.85,
+              "upperBound": 0.95,
+              "upperBoundIncluded": false,
+              "count": 0,
+              "meanConfidence": null,
+              "observedAccuracy": null
+            },
+            {
+              "lowerInclusive": 0.95,
+              "upperBound": 1,
+              "upperBoundIncluded": true,
+              "count": 0,
+              "meanConfidence": null,
+              "observedAccuracy": null
+            }
+          ]
+        }
+      },
+      "status": "fail",
+      "fields": [
+        {
+          "fieldName": "title",
+          "counts": {
+            "expected": 8,
+            "produced": 8,
+            "exactMatches": 8,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 8,
+              "meanConfidence": 0.6825,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.3175,
+              "brierScore": 0.12065,
+              "status": "fail",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 4,
+                  "meanConfidence": 0.545,
+                  "observedAccuracy": 1
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 4,
+                  "meanConfidence": 0.82,
+                  "observedAccuracy": 1
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                }
+              ]
+            }
+          },
+          "status": "fail"
+        },
+        {
+          "fieldName": "company",
+          "counts": {
+            "expected": 3,
+            "produced": 3,
+            "exactMatches": 3,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 3,
+              "meanConfidence": 0.82,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.18,
+              "brierScore": 0.0324,
+              "status": "fail",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 3,
+                  "meanConfidence": 0.82,
+                  "observedAccuracy": 1
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                }
+              ]
+            }
+          },
+          "status": "fail"
+        },
+        {
+          "fieldName": "description",
+          "counts": {
+            "expected": 2,
+            "produced": 2,
+            "exactMatches": 2,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 2,
+              "meanConfidence": 0.68,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.32,
+              "brierScore": 0.1024,
+              "status": "insufficient_data",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 2,
+                  "meanConfidence": 0.68,
+                  "observedAccuracy": 1
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                }
+              ]
+            }
+          },
+          "status": "insufficient_data"
+        },
+        {
+          "fieldName": "salary",
+          "counts": {
+            "expected": 1,
+            "produced": 1,
+            "exactMatches": 1,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 1,
+              "meanConfidence": 0.82,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.18,
+              "brierScore": 0.0324,
+              "status": "insufficient_data",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 1,
+                  "meanConfidence": 0.82,
+                  "observedAccuracy": 1
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                }
+              ]
+            }
+          },
+          "status": "insufficient_data"
+        },
+        {
+          "fieldName": "locations",
+          "counts": {
+            "expected": 2,
+            "produced": 2,
+            "exactMatches": 2,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 2,
+              "meanConfidence": 0.82,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.18,
+              "brierScore": 0.0328,
+              "status": "insufficient_data",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 2,
+                  "meanConfidence": 0.82,
+                  "observedAccuracy": 1
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                }
+              ]
+            }
+          },
+          "status": "insufficient_data"
+        },
+        {
+          "fieldName": "workplace_type",
+          "counts": {
+            "expected": 1,
+            "produced": 1,
+            "exactMatches": 1,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 1,
+              "meanConfidence": 0.84,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.16,
+              "brierScore": 0.0256,
+              "status": "insufficient_data",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 1,
+                  "meanConfidence": 0.84,
+                  "observedAccuracy": 1
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                }
+              ]
+            }
+          },
+          "status": "insufficient_data"
+        },
+        {
+          "fieldName": "posted_at",
+          "counts": {
+            "expected": 1,
+            "produced": 1,
+            "exactMatches": 1,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 1,
+              "meanConfidence": 0.8,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.2,
+              "brierScore": 0.04,
+              "status": "insufficient_data",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 1,
+                  "meanConfidence": 0.8,
+                  "observedAccuracy": 1
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                }
+              ]
+            }
+          },
+          "status": "insufficient_data"
+        },
+        {
+          "fieldName": "valid_through",
+          "counts": {
+            "expected": 1,
+            "produced": 1,
+            "exactMatches": 1,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 1,
+              "meanConfidence": 0.82,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.18,
+              "brierScore": 0.0324,
+              "status": "insufficient_data",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 1,
+                  "meanConfidence": 0.82,
+                  "observedAccuracy": 1
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                }
+              ]
+            }
+          },
+          "status": "insufficient_data"
+        },
+        {
+          "fieldName": "requirements",
+          "counts": {
+            "expected": 4,
+            "produced": 4,
+            "exactMatches": 4,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 4,
+              "meanConfidence": 0.78,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.22,
+              "brierScore": 0.0484,
+              "status": "fail",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 4,
+                  "meanConfidence": 0.78,
+                  "observedAccuracy": 1
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                }
+              ]
+            }
+          },
+          "status": "fail"
+        },
+        {
+          "fieldName": "apply_url",
+          "counts": {
+            "expected": 1,
+            "produced": 1,
+            "exactMatches": 1,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 1,
+              "meanConfidence": 0.82,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.18,
+              "brierScore": 0.0324,
+              "status": "insufficient_data",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 1,
+                  "meanConfidence": 0.82,
+                  "observedAccuracy": 1
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                }
+              ]
+            }
+          },
+          "status": "insufficient_data"
+        },
+        {
+          "fieldName": "external_id",
+          "counts": {
+            "expected": 1,
+            "produced": 1,
+            "exactMatches": 1,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 1,
+              "meanConfidence": 0.84,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.16,
+              "brierScore": 0.0256,
+              "status": "insufficient_data",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 1,
+                  "meanConfidence": 0.84,
+                  "observedAccuracy": 1
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                }
+              ]
+            }
+          },
+          "status": "insufficient_data"
+        },
+        {
+          "fieldName": "employment_type",
+          "counts": {
+            "expected": 1,
+            "produced": 1,
+            "exactMatches": 1,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 1,
+              "meanConfidence": 0.82,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.18,
+              "brierScore": 0.0324,
+              "status": "insufficient_data",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 1,
+                  "meanConfidence": 0.82,
+                  "observedAccuracy": 1
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                }
+              ]
+            }
+          },
+          "status": "insufficient_data"
+        }
+      ]
+    },
+    {
+      "extractor": {
+        "name": "coredrill.schema-org-job-posting",
+        "version": "1.0.0"
+      },
+      "fixtureSuite": "packages/extractors/test/fixtures/job-posting-jsonld.golden.json#cases",
+      "fixtureCaseCount": 4,
+      "counts": {
+        "expected": 43,
+        "produced": 43,
+        "exactMatches": 43,
+        "falsePositives": 0,
+        "falseNegatives": 0
+      },
+      "metrics": {
+        "precision": {
+          "value": 1,
+          "status": "pass"
+        },
+        "coverage": {
+          "value": 1,
+          "status": "pass"
+        },
+        "recall": {
+          "value": 1,
+          "status": "pass"
+        },
+        "calibration": {
+          "predictionCount": 43,
+          "meanConfidence": 0.886977,
+          "observedAccuracy": 1,
+          "expectedCalibrationError": 0.113023,
+          "brierScore": 0.0132,
+          "status": "pass",
+          "bins": [
+            {
+              "lowerInclusive": 0,
+              "upperBound": 0.5,
+              "upperBoundIncluded": false,
+              "count": 0,
+              "meanConfidence": null,
+              "observedAccuracy": null
+            },
+            {
+              "lowerInclusive": 0.5,
+              "upperBound": 0.7,
+              "upperBoundIncluded": false,
+              "count": 0,
+              "meanConfidence": null,
+              "observedAccuracy": null
+            },
+            {
+              "lowerInclusive": 0.7,
+              "upperBound": 0.85,
+              "upperBoundIncluded": false,
+              "count": 6,
+              "meanConfidence": 0.84,
+              "observedAccuracy": 1
+            },
+            {
+              "lowerInclusive": 0.85,
+              "upperBound": 0.95,
+              "upperBoundIncluded": false,
+              "count": 37,
+              "meanConfidence": 0.894595,
+              "observedAccuracy": 1
+            },
+            {
+              "lowerInclusive": 0.95,
+              "upperBound": 1,
+              "upperBoundIncluded": true,
+              "count": 0,
+              "meanConfidence": null,
+              "observedAccuracy": null
+            }
+          ]
+        }
+      },
+      "status": "pass",
+      "fields": [
+        {
+          "fieldName": "title",
+          "counts": {
+            "expected": 5,
+            "produced": 5,
+            "exactMatches": 5,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 5,
+              "meanConfidence": 0.9,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.1,
+              "brierScore": 0.01,
+              "status": "pass",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 5,
+                  "meanConfidence": 0.9,
+                  "observedAccuracy": 1
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                }
+              ]
+            }
+          },
+          "status": "pass"
+        },
+        {
+          "fieldName": "company",
+          "counts": {
+            "expected": 5,
+            "produced": 5,
+            "exactMatches": 5,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 5,
+              "meanConfidence": 0.9,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.1,
+              "brierScore": 0.01,
+              "status": "pass",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 5,
+                  "meanConfidence": 0.9,
+                  "observedAccuracy": 1
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                }
+              ]
+            }
+          },
+          "status": "pass"
+        },
+        {
+          "fieldName": "description",
+          "counts": {
+            "expected": 5,
+            "produced": 5,
+            "exactMatches": 5,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 5,
+              "meanConfidence": 0.9,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.1,
+              "brierScore": 0.01,
+              "status": "pass",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 5,
+                  "meanConfidence": 0.9,
+                  "observedAccuracy": 1
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                }
+              ]
+            }
+          },
+          "status": "pass"
+        },
+        {
+          "fieldName": "salary",
+          "counts": {
+            "expected": 2,
+            "produced": 2,
+            "exactMatches": 2,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 2,
+              "meanConfidence": 0.88,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.12,
+              "brierScore": 0.0144,
+              "status": "insufficient_data",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 2,
+                  "meanConfidence": 0.88,
+                  "observedAccuracy": 1
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                }
+              ]
+            }
+          },
+          "status": "insufficient_data"
+        },
+        {
+          "fieldName": "locations",
+          "counts": {
+            "expected": 6,
+            "produced": 6,
+            "exactMatches": 6,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 6,
+              "meanConfidence": 0.88,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.12,
+              "brierScore": 0.0144,
+              "status": "pass",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 6,
+                  "meanConfidence": 0.88,
+                  "observedAccuracy": 1
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                }
+              ]
+            }
+          },
+          "status": "pass"
+        },
+        {
+          "fieldName": "workplace_type",
+          "counts": {
+            "expected": 1,
+            "produced": 1,
+            "exactMatches": 1,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 1,
+              "meanConfidence": 0.9,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.1,
+              "brierScore": 0.01,
+              "status": "insufficient_data",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 1,
+                  "meanConfidence": 0.9,
+                  "observedAccuracy": 1
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                }
+              ]
+            }
+          },
+          "status": "insufficient_data"
+        },
+        {
+          "fieldName": "posted_at",
+          "counts": {
+            "expected": 4,
+            "produced": 4,
+            "exactMatches": 4,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 4,
+              "meanConfidence": 0.9,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.1,
+              "brierScore": 0.01,
+              "status": "pass",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 4,
+                  "meanConfidence": 0.9,
+                  "observedAccuracy": 1
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                }
+              ]
+            }
+          },
+          "status": "pass"
+        },
+        {
+          "fieldName": "valid_through",
+          "counts": {
+            "expected": 1,
+            "produced": 1,
+            "exactMatches": 1,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 1,
+              "meanConfidence": 0.9,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.1,
+              "brierScore": 0.01,
+              "status": "insufficient_data",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 1,
+                  "meanConfidence": 0.9,
+                  "observedAccuracy": 1
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                }
+              ]
+            }
+          },
+          "status": "insufficient_data"
+        },
+        {
+          "fieldName": "requirements",
+          "counts": {
+            "expected": 6,
+            "produced": 6,
+            "exactMatches": 6,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 6,
+              "meanConfidence": 0.84,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.16,
+              "brierScore": 0.0256,
+              "status": "fail",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 6,
+                  "meanConfidence": 0.84,
+                  "observedAccuracy": 1
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                }
+              ]
+            }
+          },
+          "status": "fail"
+        },
+        {
+          "fieldName": "apply_url",
+          "counts": {
+            "expected": 2,
+            "produced": 2,
+            "exactMatches": 2,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 2,
+              "meanConfidence": 0.9,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.1,
+              "brierScore": 0.01,
+              "status": "insufficient_data",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 2,
+                  "meanConfidence": 0.9,
+                  "observedAccuracy": 1
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                }
+              ]
+            }
+          },
+          "status": "insufficient_data"
+        },
+        {
+          "fieldName": "external_id",
+          "counts": {
+            "expected": 2,
+            "produced": 2,
+            "exactMatches": 2,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 2,
+              "meanConfidence": 0.88,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.12,
+              "brierScore": 0.0144,
+              "status": "insufficient_data",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 2,
+                  "meanConfidence": 0.88,
+                  "observedAccuracy": 1
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                }
+              ]
+            }
+          },
+          "status": "insufficient_data"
+        },
+        {
+          "fieldName": "employment_type",
+          "counts": {
+            "expected": 4,
+            "produced": 4,
+            "exactMatches": 4,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 4,
+              "meanConfidence": 0.9,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.1,
+              "brierScore": 0.01,
+              "status": "pass",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 4,
+                  "meanConfidence": 0.9,
+                  "observedAccuracy": 1
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                }
+              ]
+            }
+          },
+          "status": "pass"
+        }
+      ]
+    },
+    {
+      "extractor": {
+        "name": "coredrill.greenhouse-public-posting",
+        "version": "1.0.0"
+      },
+      "fixtureSuite": "packages/extractors/test/fixtures/greenhouse-public-posting.golden.json#cases",
+      "fixtureCaseCount": 3,
+      "counts": {
+        "expected": 19,
+        "produced": 19,
+        "exactMatches": 19,
+        "falsePositives": 0,
+        "falseNegatives": 0
+      },
+      "metrics": {
+        "precision": {
+          "value": 1,
+          "status": "pass"
+        },
+        "coverage": {
+          "value": 1,
+          "status": "pass"
+        },
+        "recall": {
+          "value": 1,
+          "status": "pass"
+        },
+        "calibration": {
+          "predictionCount": 19,
+          "meanConfidence": 0.983684,
+          "observedAccuracy": 1,
+          "expectedCalibrationError": 0.016316,
+          "brierScore": 0.000416,
+          "status": "pass",
+          "bins": [
+            {
+              "lowerInclusive": 0,
+              "upperBound": 0.5,
+              "upperBoundIncluded": false,
+              "count": 0,
+              "meanConfidence": null,
+              "observedAccuracy": null
+            },
+            {
+              "lowerInclusive": 0.5,
+              "upperBound": 0.7,
+              "upperBoundIncluded": false,
+              "count": 0,
+              "meanConfidence": null,
+              "observedAccuracy": null
+            },
+            {
+              "lowerInclusive": 0.7,
+              "upperBound": 0.85,
+              "upperBoundIncluded": false,
+              "count": 0,
+              "meanConfidence": null,
+              "observedAccuracy": null
+            },
+            {
+              "lowerInclusive": 0.85,
+              "upperBound": 0.95,
+              "upperBoundIncluded": false,
+              "count": 0,
+              "meanConfidence": null,
+              "observedAccuracy": null
+            },
+            {
+              "lowerInclusive": 0.95,
+              "upperBound": 1,
+              "upperBoundIncluded": true,
+              "count": 19,
+              "meanConfidence": 0.983684,
+              "observedAccuracy": 1
+            }
+          ]
+        }
+      },
+      "status": "pass",
+      "fields": [
+        {
+          "fieldName": "title",
+          "counts": {
+            "expected": 3,
+            "produced": 3,
+            "exactMatches": 3,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 3,
+              "meanConfidence": 0.99,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.01,
+              "brierScore": 0.0001,
+              "status": "pass",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 3,
+                  "meanConfidence": 0.99,
+                  "observedAccuracy": 1
+                }
+              ]
+            }
+          },
+          "status": "pass"
+        },
+        {
+          "fieldName": "company",
+          "counts": {
+            "expected": 3,
+            "produced": 3,
+            "exactMatches": 3,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 3,
+              "meanConfidence": 0.99,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.01,
+              "brierScore": 0.0001,
+              "status": "pass",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 3,
+                  "meanConfidence": 0.99,
+                  "observedAccuracy": 1
+                }
+              ]
+            }
+          },
+          "status": "pass"
+        },
+        {
+          "fieldName": "description",
+          "counts": {
+            "expected": 3,
+            "produced": 3,
+            "exactMatches": 3,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 3,
+              "meanConfidence": 0.96,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.04,
+              "brierScore": 0.0016,
+              "status": "pass",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 3,
+                  "meanConfidence": 0.96,
+                  "observedAccuracy": 1
+                }
+              ]
+            }
+          },
+          "status": "pass"
+        },
+        {
+          "fieldName": "locations",
+          "counts": {
+            "expected": 1,
+            "produced": 1,
+            "exactMatches": 1,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 1,
+              "meanConfidence": 0.98,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.02,
+              "brierScore": 0.0004,
+              "status": "insufficient_data",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 1,
+                  "meanConfidence": 0.98,
+                  "observedAccuracy": 1
+                }
+              ]
+            }
+          },
+          "status": "insufficient_data"
+        },
+        {
+          "fieldName": "posted_at",
+          "counts": {
+            "expected": 1,
+            "produced": 1,
+            "exactMatches": 1,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 1,
+              "meanConfidence": 0.98,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.02,
+              "brierScore": 0.0004,
+              "status": "insufficient_data",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 1,
+                  "meanConfidence": 0.98,
+                  "observedAccuracy": 1
+                }
+              ]
+            }
+          },
+          "status": "insufficient_data"
+        },
+        {
+          "fieldName": "valid_through",
+          "counts": {
+            "expected": 1,
+            "produced": 1,
+            "exactMatches": 1,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 1,
+              "meanConfidence": 0.98,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.02,
+              "brierScore": 0.0004,
+              "status": "insufficient_data",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 1,
+                  "meanConfidence": 0.98,
+                  "observedAccuracy": 1
+                }
+              ]
+            }
+          },
+          "status": "insufficient_data"
+        },
+        {
+          "fieldName": "apply_url",
+          "counts": {
+            "expected": 1,
+            "produced": 1,
+            "exactMatches": 1,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 1,
+              "meanConfidence": 0.99,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.01,
+              "brierScore": 0.0001,
+              "status": "insufficient_data",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 1,
+                  "meanConfidence": 0.99,
+                  "observedAccuracy": 1
+                }
+              ]
+            }
+          },
+          "status": "insufficient_data"
+        },
+        {
+          "fieldName": "external_id",
+          "counts": {
+            "expected": 3,
+            "produced": 3,
+            "exactMatches": 3,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 3,
+              "meanConfidence": 1,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0,
+              "brierScore": 0,
+              "status": "pass",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 3,
+                  "meanConfidence": 1,
+                  "observedAccuracy": 1
+                }
+              ]
+            }
+          },
+          "status": "pass"
+        },
+        {
+          "fieldName": "salary",
+          "counts": {
+            "expected": 3,
+            "produced": 3,
+            "exactMatches": 3,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 3,
+              "meanConfidence": 0.98,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.02,
+              "brierScore": 0.0004,
+              "status": "pass",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 3,
+                  "meanConfidence": 0.98,
+                  "observedAccuracy": 1
+                }
+              ]
+            }
+          },
+          "status": "pass"
+        }
+      ]
+    },
+    {
+      "extractor": {
+        "name": "coredrill.lever-public-posting",
+        "version": "1.0.0"
+      },
+      "fixtureSuite": "packages/extractors/test/fixtures/lever-public-posting.golden.json#cases",
+      "fixtureCaseCount": 3,
+      "counts": {
+        "expected": 21,
+        "produced": 21,
+        "exactMatches": 21,
+        "falsePositives": 0,
+        "falseNegatives": 0
+      },
+      "metrics": {
+        "precision": {
+          "value": 1,
+          "status": "pass"
+        },
+        "coverage": {
+          "value": 1,
+          "status": "pass"
+        },
+        "recall": {
+          "value": 1,
+          "status": "pass"
+        },
+        "calibration": {
+          "predictionCount": 21,
+          "meanConfidence": 0.985238,
+          "observedAccuracy": 1,
+          "expectedCalibrationError": 0.014762,
+          "brierScore": 0.000357,
+          "status": "pass",
+          "bins": [
+            {
+              "lowerInclusive": 0,
+              "upperBound": 0.5,
+              "upperBoundIncluded": false,
+              "count": 0,
+              "meanConfidence": null,
+              "observedAccuracy": null
+            },
+            {
+              "lowerInclusive": 0.5,
+              "upperBound": 0.7,
+              "upperBoundIncluded": false,
+              "count": 0,
+              "meanConfidence": null,
+              "observedAccuracy": null
+            },
+            {
+              "lowerInclusive": 0.7,
+              "upperBound": 0.85,
+              "upperBoundIncluded": false,
+              "count": 0,
+              "meanConfidence": null,
+              "observedAccuracy": null
+            },
+            {
+              "lowerInclusive": 0.85,
+              "upperBound": 0.95,
+              "upperBoundIncluded": false,
+              "count": 0,
+              "meanConfidence": null,
+              "observedAccuracy": null
+            },
+            {
+              "lowerInclusive": 0.95,
+              "upperBound": 1,
+              "upperBoundIncluded": true,
+              "count": 21,
+              "meanConfidence": 0.985238,
+              "observedAccuracy": 1
+            }
+          ]
+        }
+      },
+      "status": "pass",
+      "fields": [
+        {
+          "fieldName": "title",
+          "counts": {
+            "expected": 3,
+            "produced": 3,
+            "exactMatches": 3,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 3,
+              "meanConfidence": 0.99,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.01,
+              "brierScore": 0.0001,
+              "status": "pass",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 3,
+                  "meanConfidence": 0.99,
+                  "observedAccuracy": 1
+                }
+              ]
+            }
+          },
+          "status": "pass"
+        },
+        {
+          "fieldName": "description",
+          "counts": {
+            "expected": 3,
+            "produced": 3,
+            "exactMatches": 3,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 3,
+              "meanConfidence": 0.99,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.01,
+              "brierScore": 0.0001,
+              "status": "pass",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 3,
+                  "meanConfidence": 0.99,
+                  "observedAccuracy": 1
+                }
+              ]
+            }
+          },
+          "status": "pass"
+        },
+        {
+          "fieldName": "locations",
+          "counts": {
+            "expected": 4,
+            "produced": 4,
+            "exactMatches": 4,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 4,
+              "meanConfidence": 0.9875,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.0125,
+              "brierScore": 0.000175,
+              "status": "pass",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 4,
+                  "meanConfidence": 0.9875,
+                  "observedAccuracy": 1
+                }
+              ]
+            }
+          },
+          "status": "pass"
+        },
+        {
+          "fieldName": "workplace_type",
+          "counts": {
+            "expected": 1,
+            "produced": 1,
+            "exactMatches": 1,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 1,
+              "meanConfidence": 0.99,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.01,
+              "brierScore": 0.0001,
+              "status": "insufficient_data",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 1,
+                  "meanConfidence": 0.99,
+                  "observedAccuracy": 1
+                }
+              ]
+            }
+          },
+          "status": "insufficient_data"
+        },
+        {
+          "fieldName": "employment_type",
+          "counts": {
+            "expected": 1,
+            "produced": 1,
+            "exactMatches": 1,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 1,
+              "meanConfidence": 0.98,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.02,
+              "brierScore": 0.0004,
+              "status": "insufficient_data",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 1,
+                  "meanConfidence": 0.98,
+                  "observedAccuracy": 1
+                }
+              ]
+            }
+          },
+          "status": "insufficient_data"
+        },
+        {
+          "fieldName": "requirements",
+          "counts": {
+            "expected": 3,
+            "produced": 3,
+            "exactMatches": 3,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 3,
+              "meanConfidence": 0.96,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.04,
+              "brierScore": 0.0016,
+              "status": "pass",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 3,
+                  "meanConfidence": 0.96,
+                  "observedAccuracy": 1
+                }
+              ]
+            }
+          },
+          "status": "pass"
+        },
+        {
+          "fieldName": "apply_url",
+          "counts": {
+            "expected": 1,
+            "produced": 1,
+            "exactMatches": 1,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 1,
+              "meanConfidence": 0.99,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.01,
+              "brierScore": 0.0001,
+              "status": "insufficient_data",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 1,
+                  "meanConfidence": 0.99,
+                  "observedAccuracy": 1
+                }
+              ]
+            }
+          },
+          "status": "insufficient_data"
+        },
+        {
+          "fieldName": "external_id",
+          "counts": {
+            "expected": 3,
+            "produced": 3,
+            "exactMatches": 3,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 3,
+              "meanConfidence": 1,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0,
+              "brierScore": 0,
+              "status": "pass",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 3,
+                  "meanConfidence": 1,
+                  "observedAccuracy": 1
+                }
+              ]
+            }
+          },
+          "status": "pass"
+        },
+        {
+          "fieldName": "salary",
+          "counts": {
+            "expected": 2,
+            "produced": 2,
+            "exactMatches": 2,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 2,
+              "meanConfidence": 0.98,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.02,
+              "brierScore": 0.0004,
+              "status": "insufficient_data",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 2,
+                  "meanConfidence": 0.98,
+                  "observedAccuracy": 1
+                }
+              ]
+            }
+          },
+          "status": "insufficient_data"
+        }
+      ]
+    },
+    {
+      "extractor": {
+        "name": "coredrill.usajobs-search-item",
+        "version": "1.0.0"
+      },
+      "fixtureSuite": "packages/extractors/test/fixtures/usajobs-search-item.golden.json#cases",
+      "fixtureCaseCount": 3,
+      "counts": {
+        "expected": 33,
+        "produced": 33,
+        "exactMatches": 33,
+        "falsePositives": 0,
+        "falseNegatives": 0
+      },
+      "metrics": {
+        "precision": {
+          "value": 1,
+          "status": "pass"
+        },
+        "coverage": {
+          "value": 1,
+          "status": "pass"
+        },
+        "recall": {
+          "value": 1,
+          "status": "pass"
+        },
+        "calibration": {
+          "predictionCount": 33,
+          "meanConfidence": 0.993636,
+          "observedAccuracy": 1,
+          "expectedCalibrationError": 0.006364,
+          "brierScore": 0.000118,
+          "status": "pass",
+          "bins": [
+            {
+              "lowerInclusive": 0,
+              "upperBound": 0.5,
+              "upperBoundIncluded": false,
+              "count": 0,
+              "meanConfidence": null,
+              "observedAccuracy": null
+            },
+            {
+              "lowerInclusive": 0.5,
+              "upperBound": 0.7,
+              "upperBoundIncluded": false,
+              "count": 0,
+              "meanConfidence": null,
+              "observedAccuracy": null
+            },
+            {
+              "lowerInclusive": 0.7,
+              "upperBound": 0.85,
+              "upperBoundIncluded": false,
+              "count": 0,
+              "meanConfidence": null,
+              "observedAccuracy": null
+            },
+            {
+              "lowerInclusive": 0.85,
+              "upperBound": 0.95,
+              "upperBoundIncluded": false,
+              "count": 0,
+              "meanConfidence": null,
+              "observedAccuracy": null
+            },
+            {
+              "lowerInclusive": 0.95,
+              "upperBound": 1,
+              "upperBoundIncluded": true,
+              "count": 33,
+              "meanConfidence": 0.993636,
+              "observedAccuracy": 1
+            }
+          ]
+        }
+      },
+      "status": "pass",
+      "fields": [
+        {
+          "fieldName": "title",
+          "counts": {
+            "expected": 3,
+            "produced": 3,
+            "exactMatches": 3,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 3,
+              "meanConfidence": 1,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0,
+              "brierScore": 0,
+              "status": "pass",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 3,
+                  "meanConfidence": 1,
+                  "observedAccuracy": 1
+                }
+              ]
+            }
+          },
+          "status": "pass"
+        },
+        {
+          "fieldName": "company",
+          "counts": {
+            "expected": 3,
+            "produced": 3,
+            "exactMatches": 3,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 3,
+              "meanConfidence": 1,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0,
+              "brierScore": 0,
+              "status": "pass",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 3,
+                  "meanConfidence": 1,
+                  "observedAccuracy": 1
+                }
+              ]
+            }
+          },
+          "status": "pass"
+        },
+        {
+          "fieldName": "description",
+          "counts": {
+            "expected": 3,
+            "produced": 3,
+            "exactMatches": 3,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 3,
+              "meanConfidence": 0.983333,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.016667,
+              "brierScore": 0.000367,
+              "status": "pass",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 3,
+                  "meanConfidence": 0.983333,
+                  "observedAccuracy": 1
+                }
+              ]
+            }
+          },
+          "status": "pass"
+        },
+        {
+          "fieldName": "locations",
+          "counts": {
+            "expected": 3,
+            "produced": 3,
+            "exactMatches": 3,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 3,
+              "meanConfidence": 0.993333,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.006667,
+              "brierScore": 0.000133,
+              "status": "pass",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 3,
+                  "meanConfidence": 0.993333,
+                  "observedAccuracy": 1
+                }
+              ]
+            }
+          },
+          "status": "pass"
+        },
+        {
+          "fieldName": "employment_type",
+          "counts": {
+            "expected": 3,
+            "produced": 3,
+            "exactMatches": 3,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 3,
+              "meanConfidence": 1,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0,
+              "brierScore": 0,
+              "status": "pass",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 3,
+                  "meanConfidence": 1,
+                  "observedAccuracy": 1
+                }
+              ]
+            }
+          },
+          "status": "pass"
+        },
+        {
+          "fieldName": "requirements",
+          "counts": {
+            "expected": 8,
+            "produced": 8,
+            "exactMatches": 8,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 8,
+              "meanConfidence": 0.98375,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.01625,
+              "brierScore": 0.000288,
+              "status": "pass",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 8,
+                  "meanConfidence": 0.98375,
+                  "observedAccuracy": 1
+                }
+              ]
+            }
+          },
+          "status": "pass"
+        },
+        {
+          "fieldName": "posted_at",
+          "counts": {
+            "expected": 1,
+            "produced": 1,
+            "exactMatches": 1,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 1,
+              "meanConfidence": 1,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0,
+              "brierScore": 0,
+              "status": "insufficient_data",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 1,
+                  "meanConfidence": 1,
+                  "observedAccuracy": 1
+                }
+              ]
+            }
+          },
+          "status": "insufficient_data"
+        },
+        {
+          "fieldName": "valid_through",
+          "counts": {
+            "expected": 2,
+            "produced": 2,
+            "exactMatches": 2,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 2,
+              "meanConfidence": 1,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0,
+              "brierScore": 0,
+              "status": "insufficient_data",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 2,
+                  "meanConfidence": 1,
+                  "observedAccuracy": 1
+                }
+              ]
+            }
+          },
+          "status": "insufficient_data"
+        },
+        {
+          "fieldName": "apply_url",
+          "counts": {
+            "expected": 3,
+            "produced": 3,
+            "exactMatches": 3,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 3,
+              "meanConfidence": 0.996667,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0.003333,
+              "brierScore": 0.000033,
+              "status": "pass",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 3,
+                  "meanConfidence": 0.996667,
+                  "observedAccuracy": 1
+                }
+              ]
+            }
+          },
+          "status": "pass"
+        },
+        {
+          "fieldName": "external_id",
+          "counts": {
+            "expected": 2,
+            "produced": 2,
+            "exactMatches": 2,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 2,
+              "meanConfidence": 1,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0,
+              "brierScore": 0,
+              "status": "insufficient_data",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 2,
+                  "meanConfidence": 1,
+                  "observedAccuracy": 1
+                }
+              ]
+            }
+          },
+          "status": "insufficient_data"
+        },
+        {
+          "fieldName": "salary",
+          "counts": {
+            "expected": 2,
+            "produced": 2,
+            "exactMatches": 2,
+            "falsePositives": 0,
+            "falseNegatives": 0
+          },
+          "metrics": {
+            "precision": {
+              "value": 1,
+              "status": "pass"
+            },
+            "coverage": {
+              "value": 1,
+              "status": "pass"
+            },
+            "recall": {
+              "value": 1,
+              "status": "pass"
+            },
+            "calibration": {
+              "predictionCount": 2,
+              "meanConfidence": 1,
+              "observedAccuracy": 1,
+              "expectedCalibrationError": 0,
+              "brierScore": 0,
+              "status": "insufficient_data",
+              "bins": [
+                {
+                  "lowerInclusive": 0,
+                  "upperBound": 0.5,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.5,
+                  "upperBound": 0.7,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.7,
+                  "upperBound": 0.85,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.85,
+                  "upperBound": 0.95,
+                  "upperBoundIncluded": false,
+                  "count": 0,
+                  "meanConfidence": null,
+                  "observedAccuracy": null
+                },
+                {
+                  "lowerInclusive": 0.95,
+                  "upperBound": 1,
+                  "upperBoundIncluded": true,
+                  "count": 2,
+                  "meanConfidence": 1,
+                  "observedAccuracy": 1
+                }
+              ]
+            }
+          },
+          "status": "insufficient_data"
+        }
+      ]
+    }
+  ],
+  "interpretation": {
+    "exactMatch": "A produced candidate must match the golden field name, value, raw value when present, provenance pointer, extraction method when present, and confidence.",
+    "precision": "exactMatches / produced; null with no_data when no candidate was produced.",
+    "coverage": "exactMatches / expected; recall is emitted as the same value; null with no_data when no candidate was expected.",
+    "falsePositive": "A produced candidate that cannot be paired with an identical golden candidate in the same fixture case.",
+    "falseNegative": "A golden candidate that cannot be paired with an identical produced candidate in the same fixture case.",
+    "calibration": "ECE and Brier score use produced candidates only. False negatives have no confidence and are never assigned an invented value.",
+    "status": "pass or fail applies only once the metric-specific minimum sample count exists; otherwise status is insufficient_data or no_data.",
+    "thresholdSummary": "Adapter and field status counts are reported separately from pooled overall metrics so aggregate volume cannot hide a local failure.",
+    "prohibitedUse": "These extractor-quality measurements are not an ATS score, candidate score, hiring-probability score, or verified evidence about a person or employer."
+  }
+}

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "inventoryId": "JW-DI-001",
   "version": "1.24.0",
-  "reviewedAt": "2026-09-03T05:24:39Z",
+  "reviewedAt": "2026-09-17T18:26:50Z",
   "scope": {
     "included": [
       "Pinned Node.js, pnpm, and Rust foundation toolchains",
@@ -17,7 +17,7 @@
   },
   "lockfile": {
     "path": "pnpm-lock.yaml",
-    "sha256": "49f61b1ace069da145d45d2aa64322869683608351285e94608b993ac1e67591"
+    "sha256": "29272e7810fd1165717be5840ae73360a8835bf12a3e95591948dc89e6abd908"
   },
   "toolchains": [
     {
@@ -511,8 +511,8 @@
       "manifest": "packages/documents/package.json",
       "dependencyType": "dependencies",
       "name": "@tiptap/core",
-      "version": "3.30.4",
-      "upstreamLatest": "3.31.0",
+      "version": "3.30.5",
+      "upstreamLatest": "3.31.3",
       "selectionStatus": "release-age-approved",
       "license": "MIT",
       "maintainers": [
@@ -524,16 +524,16 @@
         "tiptap-bot"
       ],
       "repository": "https://github.com/ueberdosis/tiptap",
-      "metadataSource": "https://registry.npmjs.org/@tiptap%2fcore/3.30.4",
+      "metadataSource": "https://registry.npmjs.org/@tiptap%2fcore/3.30.5",
       "knownAdvisories": [],
-      "selectionNote": "Tiptap 3.30.4 was published to npm at 2026-08-26T09:48:15Z, satisfies minimumReleaseAge: 1440, and is the first release patched for GHSA-cp6q-959q-f8rh. The newer 3.31.0 feature release was not required for this narrow security update."
+      "selectionNote": "Tiptap 3.30.5 is older than minimumReleaseAge: 1440 and is the first release patched for GHSA-j95f-988m-3j2f while retaining the earlier GHSA-cp6q-959q-f8rh fix. The newer 3.30.6 patch and 3.31.3 feature line were not required for this narrow security update."
     },
     {
       "manifest": "packages/documents/package.json",
       "dependencyType": "dependencies",
       "name": "@tiptap/pm",
-      "version": "3.30.4",
-      "upstreamLatest": "3.31.0",
+      "version": "3.30.5",
+      "upstreamLatest": "3.31.3",
       "selectionStatus": "release-age-approved",
       "license": "MIT",
       "maintainers": [
@@ -545,16 +545,16 @@
         "tiptap-bot"
       ],
       "repository": "https://github.com/ueberdosis/tiptap",
-      "metadataSource": "https://registry.npmjs.org/@tiptap%2fpm/3.30.4",
+      "metadataSource": "https://registry.npmjs.org/@tiptap%2fpm/3.30.5",
       "knownAdvisories": [],
-      "selectionNote": "The ProseMirror integration is pinned to the same reviewed Tiptap 3.30.4 security-patch release as the core and starter-kit packages."
+      "selectionNote": "The ProseMirror integration is pinned to the same reviewed Tiptap 3.30.5 security-patch release as the core and starter-kit packages."
     },
     {
       "manifest": "packages/documents/package.json",
       "dependencyType": "dependencies",
       "name": "@tiptap/starter-kit",
-      "version": "3.30.4",
-      "upstreamLatest": "3.31.0",
+      "version": "3.30.5",
+      "upstreamLatest": "3.31.3",
       "selectionStatus": "release-age-approved",
       "license": "MIT",
       "maintainers": [
@@ -566,9 +566,9 @@
         "tiptap-bot"
       ],
       "repository": "https://github.com/ueberdosis/tiptap",
-      "metadataSource": "https://registry.npmjs.org/@tiptap%2fstarter-kit/3.30.4",
+      "metadataSource": "https://registry.npmjs.org/@tiptap%2fstarter-kit/3.30.5",
       "knownAdvisories": [],
-      "selectionNote": "Only the open-source 3.30.4 starter-kit extensions admitted by Coredrill's restricted document schema are enabled; unsupported blocks and marks remain disabled."
+      "selectionNote": "Only the open-source 3.30.5 starter-kit extensions admitted by Coredrill's restricted document schema are enabled; unsupported blocks, marks, and Markdown ingestion remain disabled."
     },
     {
       "manifest": "packages/documents/package.json",
@@ -1082,8 +1082,8 @@
   "advisoryReview": {
     "command": "pnpm audit --json",
     "source": "https://pnpm.io/cli/audit",
-    "reviewedAt": "2026-09-03T05:24:39Z",
-    "lockfileSha256": "49f61b1ace069da145d45d2aa64322869683608351285e94608b993ac1e67591",
+    "reviewedAt": "2026-09-17T18:26:50Z",
+    "lockfileSha256": "29272e7810fd1165717be5840ae73360a8835bf12a3e95591948dc89e6abd908",
     "resolvedDependencyCount": 936,
     "optionalDependencyCount": 108,
     "vulnerabilities": {
@@ -1096,11 +1096,11 @@
   },
   "licenseReview": {
     "command": "pnpm check:licenses",
-    "reviewedAt": "2026-09-03T05:24:39Z",
-    "lockfileSha256": "49f61b1ace069da145d45d2aa64322869683608351285e94608b993ac1e67591",
+    "reviewedAt": "2026-09-17T18:26:50Z",
+    "lockfileSha256": "29272e7810fd1165717be5840ae73360a8835bf12a3e95591948dc89e6abd908",
     "resolvedPackageRecords": 520,
     "result": "pass",
-    "note": "License records and advisory dependency counts use different tool scopes and are not expected to match. The application shell uses reviewed MIT Tailwind CSS, Radix UI, and vite-plugin-pwa dependencies; the generated Workbox worker owns only versioned app-shell Cache Storage while SQLite remains OPFS truth. The exact graph contains 936 external resolutions and 520 license records. XTR-003 adds current Apache-2.0 Mozilla Readability for bounded plain-text extraction and declares already-resolved ISC LinkeDOM as a test-only detached DOM; production continues to use the platform DOM. The aligned MIT Tiptap family is pinned to 3.30.4, the first release patched for GHSA-cp6q-959q-f8rh."
+    "note": "License records and advisory dependency counts use different tool scopes and are not expected to match. The application shell uses reviewed MIT Tailwind CSS, Radix UI, and vite-plugin-pwa dependencies; the generated Workbox worker owns only versioned app-shell Cache Storage while SQLite remains OPFS truth. The exact graph contains 936 external resolutions and 520 license records. XTR-003 adds current Apache-2.0 Mozilla Readability for bounded plain-text extraction and declares already-resolved ISC LinkeDOM as a test-only detached DOM; production continues to use the platform DOM. The aligned MIT Tiptap family is pinned to 3.30.5, the first release patched for GHSA-j95f-988m-3j2f while retaining the earlier GHSA-cp6q-959q-f8rh fix."
   },
   "maintenanceWatch": [
     {

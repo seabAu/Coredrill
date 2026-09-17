@@ -129,6 +129,25 @@ input, write an entity, fetch a source, or invoke AI. Employment type,
 requirements, and skills/taxonomy normalization remain later stage-6 work rather
 than being implied by `XTR-007`.
 
+`XTR-008` adds a reproducible build-time quality report without adding runtime
+telemetry, network work, AI inference, or canonical data writes. A versioned
+machine-readable manifest pins candidate-contract version 1, all six exact
+extractor identities/versions, supported fields, frozen lawful synthetic fixture
+suites, confidence bins, thresholds, and minimum-sample semantics. The generator
+runs the current built extractors against those goldens and publishes exact-match
+counts, false positives, false negatives, precision, coverage/recall, expected
+calibration error, Brier score, and calibration bins overall, per adapter, and for
+every supported field. Empty evidence is `null`/`no_data`; small samples are
+`insufficient_data`; false negatives are never assigned invented confidence.
+Threshold failures remain visible instead of being normalized away, and report
+staleness is checked in the repository verification path.
+
+The first version-1 report covers 143 expected candidates with 143 exact matches,
+zero false positives, and zero false negatives. Its small synthetic corpus is a
+deterministic regression witness, not a claim of live-web accuracy. It explicitly
+defers user review-correction measurement to representative `Q2-001` evidence and
+prohibits reuse as an ATS, candidate, or hiring-probability score.
+
 Refresh never overwrites a confirmed field. It creates a new snapshot and a comparison: added/removed/changed requirements, compensation, deadline, location, and content. Expired/deleted pages mark source state; they do not delete the user's job.
 
 ## Source adapter priority

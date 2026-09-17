@@ -5,6 +5,7 @@
 - **Owners:** Project owner
 - **Decision register IDs:** `D-027`, `Q-004`
 - **Checklist IDs:** `FND-009`, `SEC-007`
+- **Amended by:** [ADR-0008](0008-patch-tiptap-markdown-redos.md), which supersedes only the exact Tiptap package pin with 3.30.5
 
 ## Problem and evidence
 

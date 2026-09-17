@@ -1,0 +1,133 @@
+{
+  "artifact": "coredrill-extraction-quality-evaluation-input",
+  "specVersion": 1,
+  "candidateContractVersion": 1,
+  "corpus": {
+    "kind": "checked-in lawful synthetic golden fixtures",
+    "scope": "Deterministic exact-candidate regression evaluation for the six supported extractor identities.",
+    "limitations": "The frozen corpus is deliberately small and is not representative of live-web prevalence, source drift, or user review-correction rates."
+  },
+  "thresholds": {
+    "precision": {
+      "minimumValue": 0.95,
+      "minimumProducedSamples": 1
+    },
+    "coverage": {
+      "minimumValue": 0.95,
+      "minimumExpectedSamples": 1
+    },
+    "calibration": {
+      "maximumExpectedCalibrationError": 0.15,
+      "maximumBrierScore": 0.1,
+      "minimumPredictions": 3
+    }
+  },
+  "confidenceBins": [
+    { "lowerInclusive": 0, "upperBound": 0.5, "upperBoundIncluded": false },
+    { "lowerInclusive": 0.5, "upperBound": 0.7, "upperBoundIncluded": false },
+    { "lowerInclusive": 0.7, "upperBound": 0.85, "upperBoundIncluded": false },
+    { "lowerInclusive": 0.85, "upperBound": 0.95, "upperBoundIncluded": false },
+    { "lowerInclusive": 0.95, "upperBound": 1, "upperBoundIncluded": true }
+  ],
+  "adapters": [
+    {
+      "extractor": { "name": "coredrill.selected-text", "version": "1.0.0" },
+      "fixtureSuite": "packages/extractors/test/fixtures/generic-job-document.golden.json#selectedTextCases",
+      "supportedFields": ["description"]
+    },
+    {
+      "extractor": { "name": "coredrill.generic-job-document", "version": "1.0.0" },
+      "fixtureSuite": "packages/extractors/test/fixtures/generic-job-document.golden.json#documentCases",
+      "supportedFields": [
+        "title",
+        "company",
+        "description",
+        "salary",
+        "locations",
+        "workplace_type",
+        "posted_at",
+        "valid_through",
+        "requirements",
+        "apply_url",
+        "external_id",
+        "employment_type"
+      ]
+    },
+    {
+      "extractor": { "name": "coredrill.schema-org-job-posting", "version": "1.0.0" },
+      "fixtureSuite": "packages/extractors/test/fixtures/job-posting-jsonld.golden.json#cases",
+      "supportedFields": [
+        "title",
+        "company",
+        "description",
+        "salary",
+        "locations",
+        "workplace_type",
+        "posted_at",
+        "valid_through",
+        "requirements",
+        "apply_url",
+        "external_id",
+        "employment_type"
+      ]
+    },
+    {
+      "extractor": { "name": "coredrill.greenhouse-public-posting", "version": "1.0.0" },
+      "fixtureSuite": "packages/extractors/test/fixtures/greenhouse-public-posting.golden.json#cases",
+      "supportedFields": [
+        "title",
+        "company",
+        "description",
+        "locations",
+        "posted_at",
+        "valid_through",
+        "apply_url",
+        "external_id",
+        "salary"
+      ]
+    },
+    {
+      "extractor": { "name": "coredrill.lever-public-posting", "version": "1.0.0" },
+      "fixtureSuite": "packages/extractors/test/fixtures/lever-public-posting.golden.json#cases",
+      "supportedFields": [
+        "title",
+        "description",
+        "locations",
+        "workplace_type",
+        "employment_type",
+        "requirements",
+        "apply_url",
+        "external_id",
+        "salary"
+      ]
+    },
+    {
+      "extractor": { "name": "coredrill.usajobs-search-item", "version": "1.0.0" },
+      "fixtureSuite": "packages/extractors/test/fixtures/usajobs-search-item.golden.json#cases",
+      "supportedFields": [
+        "title",
+        "company",
+        "description",
+        "locations",
+        "employment_type",
+        "requirements",
+        "posted_at",
+        "valid_through",
+        "apply_url",
+        "external_id",
+        "salary"
+      ]
+    }
+  ],
+  "interpretation": {
+    "exactMatch": "A produced candidate must match the golden field name, value, raw value when present, provenance pointer, extraction method when present, and confidence.",
+    "precision": "exactMatches / produced; null with no_data when no candidate was produced.",
+    "coverage": "exactMatches / expected; recall is emitted as the same value; null with no_data when no candidate was expected.",
+    "falsePositive": "A produced candidate that cannot be paired with an identical golden candidate in the same fixture case.",
+    "falseNegative": "A golden candidate that cannot be paired with an identical produced candidate in the same fixture case.",
+    "calibration": "ECE and Brier score use produced candidates only. False negatives have no confidence and are never assigned an invented value.",
+    "status": "pass or fail applies only once the metric-specific minimum sample count exists; otherwise status is insufficient_data or no_data.",
+    "thresholdSummary": "Adapter and field status counts are reported separately from pooled overall metrics so aggregate volume cannot hide a local failure.",
+    "prohibitedUse": "These extractor-quality measurements are not an ATS score, candidate score, hiring-probability score, or verified evidence about a person or employer."
+  }
+}
