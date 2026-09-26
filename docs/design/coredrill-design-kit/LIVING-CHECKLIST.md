@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-09-26
 Current milestone: Phase 2 — capture and approved extraction (`GATE-0` and `GATE-1` external-evidence blockers remain open)
-Current work item: `REV-003` — accept high-confidence fields without accepting conflicts or unknowns
-Next recommended slice: `REV-004` after `REV-003` proof
+Current work item: `REV-004` — implement Merge, Snooze, Discard/undo, and Save job flows
+Next recommended slice: `REV-005` after `REV-004` proof
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `REV-004` after `REV-003` proof
 | Field | Value |
 |---|---|
 | Milestone | Phase 2, with the independent Phase 0 and Phase 1 evidence gates retained below |
-| Item range | `REV-003` |
+| Item range | `REV-004` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-09-26 |
-| Expected proof | A bounded, versioned pure acceptance rule uses the explicit high-confidence threshold, accepts only known supported fields with one non-conflicting candidate, and returns stable reasons for every field it leaves for review; rule tests cover the inclusive threshold boundary, conflicts, unknown fields, lower confidence, malformed input, determinism, and immutable output without persistence or canonical writes |
-| Blocker | None for `REV-003`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
-| Next handoff | Add the smallest pure application-layer acceptance-plan contract over validated review candidates, align the conservative high-confidence cutoff with the existing calibration bins, prove that conflicts and unknown fields never enter the accepted set, then run the clean-commit matrix before closing `REV-003`. Do not add Merge, Snooze, Discard, Save job, or durable writes in this slice. |
+| Expected proof | Transaction and browser E2E tests prove that Merge, Snooze, Discard with recoverable undo, and Save job each use explicit user intent, preserve confirmed/provenance data, maintain durable queue state, and fail atomically without source refresh or hidden network work |
+| Blocker | None for `REV-004`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
+| Next handoff | Read the accepted review, persistence, provenance, and undo contracts end to end; define the smallest adapter-neutral transaction boundary and durable queue-state extension that can represent all four explicit flows; then compose accessible Inbox controls and prove rollback, replay/stale undo behavior, confirmed-value preservation, and inert local E2E behavior before closing `REV-004`. |
 
 ## Milestone status
 
@@ -233,7 +233,7 @@ Next recommended slice: `REV-004` after `REV-003` proof
 
 - [x] **REV-001** Implement Inbox queue, counts, keyboard selection, and review routing. — Proof: [durable counts, local Home routing, roving keyboard selection, named review-panel linkage, inert-source E2E, and hosted clean-commit matrix](../../proof/phase-2-review-inbox-queue-verification.md)
 - [x] **REV-002** Implement field groups with candidate, method, confidence, source excerpt, confirmation, and conflict UI. — Proof: [bounded grouped review projection, explicit confirmation/conflict presentation, inert exact-source routing, accessibility E2E, and hosted clean-commit matrix](../../proof/phase-2-review-field-groups-verification.md)
-- [ ] **REV-003** Implement Accept high-confidence fields without accepting conflicts/unknowns. — Proof: _rule tests_
+- [x] **REV-003** Implement Accept high-confidence fields without accepting conflicts/unknowns. — Proof: [bounded deterministic acceptance planning, inclusive-threshold/conflict/unknown/confirmation rule tests, and hosted clean-commit matrix](../../proof/phase-2-review-high-confidence-acceptance-verification.md)
 - [ ] **REV-004** Implement Merge, Snooze, Discard/undo, and Save job flows. — Proof: _transaction/E2E tests_
 - [ ] **REV-005** Implement expired/changed/blocked source, unsupported page, and manual fallback states. — Proof: _state fixtures_
 - [ ] **REV-006** Implement listing freshness and source-diff representation without automatic trusted-field overwrite. — Proof: _diff tests_
