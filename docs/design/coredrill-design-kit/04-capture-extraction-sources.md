@@ -181,6 +181,18 @@ Because the capture envelope is untrusted ingress, an embedded
 trusted local application boundary may later supply a user-confirmed review
 state. The projection does not resolve a conflict or select a durable value.
 
+`REV-003` consumes trusted reconciliation output through a strict version-1
+application boundary and produces a deterministic acceptance plan only. The
+inclusive high-confidence threshold is `0.95`, aligned with the existing top
+calibration bin rather than inferred from a UI label. A field is eligible only
+when its selected candidate belongs to the reviewed field allowlist, has a
+non-null/non-blank/non-empty top-level value, and has no unresolved canonical
+value conflict. Existing confirmations are preserved even below the threshold.
+Malformed selections, forged conflict state, duplicate fields/candidates,
+resolved-conflict metadata, and oversized input fail closed with a content-free
+error. Confidence remains provisional evidence: the plan performs no
+confirmation or canonical write by itself.
+
 #### Schema.org `JobPosting`
 
 Parse JSON-LD from a single job detail page. Validate `@context`, `@type`, title, description, hiring organization, location/remote fields, date, validity, identifier, employment type, and base salary. Treat it as untrusted page input and compare to visible content. Google documents the format and requires the structured data to represent the visible job page: [JobPosting documentation](https://developers.google.com/search/docs/appearance/structured-data/job-posting).

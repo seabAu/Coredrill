@@ -62,6 +62,15 @@ unresolved conflict; an incoming capture cannot promote its own embedded
 confirmation claim. Source buttons retain exact inert-snapshot focus routing,
 and this slice adds no acceptance or persistence action.
 
+`REV-003` adds the pure rule behind the user-invoked Accept high-confidence
+action. Version 1 uses the existing highest calibration bin boundary of `0.95`
+as an inclusive cutoff. It accepts only allowlisted job fields whose selected
+candidate is non-conflicting and has a known top-level value. Unsupported field
+names, null/blank/empty values, lower confidence, and every unresolved conflict
+remain explicitly queued for review. Existing user confirmations are preserved;
+the rule returns an immutable plan and never writes, saves, or silently resolves
+anything.
+
 ### Pipeline: Board and Table
 
 Views:
