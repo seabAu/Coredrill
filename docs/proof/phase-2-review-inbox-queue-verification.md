@@ -2,7 +2,7 @@
 
 Date: 2026-09-26  
 Checklist item: `REV-001`  
-Status: implementation verified locally; hosted clean-commit evidence pending
+Status: complete
 
 ## Outcome
 
@@ -54,7 +54,11 @@ REV001_PROOF {"durableQueueItems":2,"countVisible":true,"homeReviewRoute":"/pipe
 - Workspace build: 22 tasks, passing.
 - Formatting, architecture boundaries, foundation records, tracked/unignored
   secret scan, and the 7-file/38-test security suite: passing.
-- Hosted clean-commit verification: pending the final slice commit.
+- Hosted clean-commit matrix for `5429b8c`: [GitHub Actions run
+  36275145843](https://github.com/seabAu/Coredrill/actions/runs/36275145843),
+  passing across static/policy checks, Chrome and Firefox browser storage,
+  Chromium/Firefox extension transfer, the full-history secret scan, and
+  Windows, macOS, and Ubuntu native packaging.
 
 ## Decision impact
 

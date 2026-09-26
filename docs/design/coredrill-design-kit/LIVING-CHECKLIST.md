@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-09-26
 Current milestone: Phase 2 — capture and approved extraction (`GATE-0` and `GATE-1` external-evidence blockers remain open)
-Current work item: `REV-001` — Inbox queue, counts, keyboard selection, and review routing
-Next recommended slice: `REV-002` after `REV-001` proof
+Current work item: `REV-002` — field groups, candidate evidence, confirmation, and conflict presentation
+Next recommended slice: `REV-003` after `REV-002` proof
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `REV-002` after `REV-001` proof
 | Field | Value |
 |---|---|
 | Milestone | Phase 2, with the independent Phase 0 and Phase 1 evidence gates retained below |
-| Item range | `REV-001` |
+| Item range | `REV-002` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-09-26 |
-| Expected proof | Durable Inbox count and selected position, direct local Home-to-Inbox routing, roving single-tab-stop queue selection with Arrow/Home/End behavior, exact queue-to-review-panel relationships, inert source rendering, zero external requests, accessibility checks, and a hosted clean-commit matrix |
-| Blocker | None for `REV-001`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
-| Next handoff | Finish the full local gate for the implemented queue/routing slice, commit and push the proof-bearing change, verify the hosted matrix, then close `REV-001` and begin the field-group presentation contract in `REV-002`. |
+| Expected proof | A bounded read-only review model groups every retained candidate into the documented field sections and visibly exposes value, extraction method, calibrated confidence, exact source excerpt/path, user-confirmation state, and unresolved same-field conflicts without accepting or overwriting anything; component/E2E accessibility and inert-source tests cover the presentation |
+| Blocker | None for `REV-002`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
+| Next handoff | Extend the hash-verified preview projection with bounded confirmation/conflict metadata, render documented field groups with explicit non-color-only state labels, prove candidate/source routing and narrow reflow, then run the clean-commit matrix before closing `REV-002`. Do not add accept, merge, save, or canonical writes in this slice. |
 
 ## Milestone status
 
@@ -231,7 +231,7 @@ Next recommended slice: `REV-002` after `REV-001` proof
 
 ## Review inbox
 
-- [ ] **REV-001** Implement Inbox queue, counts, keyboard selection, and review routing. — Proof: _E2E test_
+- [x] **REV-001** Implement Inbox queue, counts, keyboard selection, and review routing. — Proof: [durable counts, local Home routing, roving keyboard selection, named review-panel linkage, inert-source E2E, and hosted clean-commit matrix](../../proof/phase-2-review-inbox-queue-verification.md)
 - [ ] **REV-002** Implement field groups with candidate, method, confidence, source excerpt, confirmation, and conflict UI. — Proof: _component/E2E tests_
 - [ ] **REV-003** Implement Accept high-confidence fields without accepting conflicts/unknowns. — Proof: _rule tests_
 - [ ] **REV-004** Implement Merge, Snooze, Discard/undo, and Save job flows. — Proof: _transaction/E2E tests_
