@@ -2,6 +2,7 @@
 export * from "./app-shell.js";
 export * from "./capture-inbox-review.js";
 export * from "./contrast.js";
+export * from "./connector-registry-settings.js";
 export * from "./first-run.js";
 export * from "./foundations.js";
 export * from "./home-dashboard.js";

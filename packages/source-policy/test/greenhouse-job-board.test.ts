@@ -111,7 +111,7 @@ describe("Greenhouse GET-only request and checked-in policy", () => {
       connectorId: request.connectorId,
       method: request.policyMethod,
       destinationUrl: request.destinationUrl,
-      now: "2026-08-30T12:00:00.000Z",
+      now: "2026-09-26T12:00:00.000Z",
     };
 
     expect(checkedInConnectorPolicyRegistryV1.authorize(acquisition, CLEAR_RUNTIME)).toEqual({
@@ -147,8 +147,8 @@ describe("Greenhouse GET-only request and checked-in policy", () => {
       baseDomains: [GREENHOUSE_JOB_BOARD_API_HOST],
       attribution: "required",
       credentials: "none",
-      reviewedAt: "2026-08-30T00:00:00.000Z",
-      reviewDueAt: "2026-09-29T00:00:00.000Z",
+      reviewedAt: "2026-09-26T00:00:00.000Z",
+      reviewDueAt: "2026-10-26T00:00:00.000Z",
       killSwitch: true,
     });
     expect(GREENHOUSE_JOB_BOARD_CONNECTOR_POLICY_V1.ratePolicy).toContain(
@@ -179,8 +179,8 @@ describe("Greenhouse GET-only request and checked-in policy", () => {
     };
     expect(proof).toEqual({
       connectorId: "greenhouse-job-board",
-      reviewedAt: "2026-08-30T00:00:00.000Z",
-      reviewDueAt: "2026-09-29T00:00:00.000Z",
+      reviewedAt: "2026-09-26T00:00:00.000Z",
+      reviewDueAt: "2026-10-26T00:00:00.000Z",
       exactApiHost: true,
       getOnly: true,
       credentialsOmitted: true,

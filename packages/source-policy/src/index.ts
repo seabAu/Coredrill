@@ -30,6 +30,23 @@ export {
 } from "./connector-policy.js";
 
 export {
+  CONNECTOR_TRANSPORT_ERROR_CODES,
+  CONNECTOR_TRANSPORT_LIMITS_V1,
+  ConnectorTransportError,
+  createConnectorPolicyDisclosuresV1,
+  createConnectorTransportV1,
+  type ConnectorHttpResponseV1,
+  type ConnectorPolicyDisclosureV1,
+  type ConnectorTransportAttributionV1,
+  type ConnectorTransportDependenciesV1,
+  type ConnectorTransportErrorCode,
+  type ConnectorTransportExecutionV1,
+  type ConnectorTransportRequestV1,
+  type ConnectorTransportResultV1,
+  type ConnectorTransportV1,
+} from "./connector-transport.js";
+
+export {
   GREENHOUSE_JOB_BOARD_API_HOST,
   GREENHOUSE_JOB_BOARD_CONNECTOR_ID,
   GREENHOUSE_JOB_BOARD_LIMITS,

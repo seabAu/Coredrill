@@ -181,15 +181,15 @@ Greenhouse documents unauthenticated GET access to published board/job JSON. Imp
 
 The shipped `XTR-004` baseline keeps that source boundary explicit and non-executing:
 
-- the interface and policy review dated 2026-08-30 uses Greenhouse's current Job Board API documentation, API overview, legal hub, and privacy policy. The documentation says published Job Board GET data is public and unauthenticated; authenticated application submission is excluded;
+- the interface and policy review refreshed on 2026-09-26 uses Greenhouse's current Job Board API documentation, legal hub, and privacy policy. The documentation still says published Job Board GET data is public and unauthenticated; authenticated application submission is excluded;
 - official `boards.greenhouse.io` and `job-boards.greenhouse.io` job URLs are recognized only when both a bounded board token and positive job-post ID are present. Custom domains, subdomains, insecure or credentialed URLs, ambiguous IDs, and malformed paths are rejected;
 - recognized references create an immutable descriptor for exactly `GET https://boards-api.greenhouse.io/v1/boards/{board_token}/jobs/{job_id}?pay_transparency=true`, with credentials omitted and JSON requested. No callback, `questions=true`, POST, arbitrary host, or executing fetch client is representable in this slice;
-- the checked-in connector record allows only the exact `boards-api.greenhouse.io` destination and `documented_public_api` method, requires attribution, uses no credentials, carries a 30-day review deadline and runtime kill switch, and records conservative rate/cache controls because the reviewed Job Board documentation publishes no rate limit. Those transport controls must be implemented before a network client ships under `XTR-009`;
+- the checked-in connector record allows only the exact `boards-api.greenhouse.io` destination and `documented_public_api` method, requires attribution, uses no credentials, carries a 30-day review deadline and runtime kill switch, and records conservative rate/cache controls because the reviewed Job Board documentation publishes no rate limit. `XTR-009` implements those controls in the shared injected transport boundary;
 - the pure payload adapter requires the response job ID to match the requested ID, rejects any application-question, location-question, compliance, demographic-question, or data-compliance field atomically, and ignores unrelated API fields rather than treating them as job evidence;
 - title, company, untrusted description content, location, first-published/deadline dates, safe HTTP(S) apply URL, Greenhouse post ID, and valid pay-transparency ranges become separate provisional API candidates. Exact recognized raw values, source pointers, extractor version, confidence, attribution/review note, capture source, and capture instant remain attached; and
 - payload keys, strings, pay ranges, candidates, source URLs, board tokens, and identifiers are bounded before output. Synthetic fixtures contain no production employer content or applicant data.
 
-The adapter does not render Greenhouse HTML, confirm fields, normalize money/dates beyond basic validity, write entities, fetch a URL, cache a response, submit an application, handle credentials, or retrieve candidate data. Normalization remains `XTR-007`; executing rate/cache/retry/last-review behavior remains `XTR-009`.
+The adapter does not render Greenhouse HTML, confirm fields, write entities, fetch a URL, submit an application, handle credentials, or retrieve candidate data. Normalization is owned by `XTR-007`; the separate `XTR-009` transport owns authorization, bounded response handling, cache, rate, retry, attribution, and review-age behavior.
 
 #### Lever Postings API
 
@@ -197,15 +197,15 @@ Lever documents public published postings, fields including description, locatio
 
 The shipped `XTR-005` baseline keeps that source boundary explicit and non-executing:
 
-- the interface and policy review dated 2026-08-30 uses Lever's current official Postings API repository at upstream revision `f61aac5831a193bc66e1183c3ad102739dfd9f56`, Lever's legal center, and Employ's privacy center. Lever says the v0 Postings API is for public job sites, exposes only published jobs, and that published postings may be scraped by third parties. The authenticated Hire API and applicant-creation POST are excluded;
+- the interface and policy review refreshed on 2026-09-26 uses Lever's current official Postings API repository at unchanged upstream revision `f61aac5831a193bc66e1183c3ad102739dfd9f56`, Lever's legal center, and Employ's privacy center. Lever says the v0 Postings API is for public job sites, exposes only published jobs, and that published postings may be scraped by third parties. The authenticated Hire API and applicant-creation POST are excluded;
 - exact `jobs.lever.co/{site}/{posting-id}` and `jobs.eu.lever.co/{site}/{posting-id}` job URLs are recognized only with a bounded lowercase site token and canonical UUID posting ID. Application paths, custom/lookalike hosts, subdomains, insecure or credentialed URLs, non-default ports, API-key query input, and malformed paths are rejected;
 - recognized references create an immutable descriptor for exactly `GET https://api.lever.co/v0/postings/{site}/{posting-id}` or its documented EU `api.eu.lever.co` equivalent, with credentials omitted and JSON requested. No list/global-search query, HTML/iframe mode, API key, `/apply`, POST, body, arbitrary host, or executing fetch client is representable;
-- one checked-in connector record allows only those two exact documented API hosts and `documented_public_api` method, requires attribution, uses no credentials, carries a 30-day review deadline and runtime kill switch, and records conservative rate/cache controls because Lever publishes a rate limit for application POSTs but not published-posting GETs. Executing transport controls remain required under `XTR-009`;
+- one checked-in connector record allows only those two exact documented API hosts and `documented_public_api` method, requires attribution, uses no credentials, carries a 30-day review deadline and runtime kill switch, and records conservative rate/cache controls because Lever publishes a rate limit for application POSTs but not published-posting GETs. `XTR-009` implements those controls per exact global/EU site scope;
 - the pure adapter requires the response posting UUID to match the requested UUID and rejects every documented applicant/application payload field plus defensive candidate/question fields atomically. It prefers `descriptionPlain`; styled description and auxiliary salary-description fields remain ignored so each candidate's raw value and pointer identify the same exact evidence. Unknown posting fields do not become evidence;
 - title, plaintext description, each declared location, commitment, supported workplace type, each labeled untrusted list-HTML block, an exact identity-matched Lever-hosted apply URL, posting UUID, and valid salary range become separate provisional API candidates. A site slug is routing identity, not a verified company display name, so it is never promoted to `company`; and
 - exact recognized raw values, source pointers, extractor version, confidence, attribution/review note, capture source, and capture instant remain attached. Payload/category keys, strings, URLs, locations, lists, list content, candidates, site tokens, and identifiers are bounded before output, and synthetic fixtures contain no production employer or applicant data.
 
-The adapter does not render Lever HTML, confirm fields, normalize salary/work arrangements beyond basic validity, write entities, fetch a URL, cache a response, submit an application, handle credentials, access the authenticated Hire API, or retrieve candidate data. Normalization remains `XTR-007`; executing rate/cache/retry/last-review behavior remains `XTR-009`.
+The adapter does not render Lever HTML, confirm fields, write entities, fetch a URL, submit an application, handle credentials, access the authenticated Hire API, or retrieve candidate data. Normalization is owned by `XTR-007`; the separate `XTR-009` transport owns authorization, bounded response handling, cache, rate, retry, attribution, and review-age behavior.
 
 #### USAJOBS
 
@@ -219,8 +219,20 @@ value. It can construct only a bounded non-executing
 applicant/system data and identity mismatches while retaining exact public JOA
 values, raw evidence, pointers, attribution/terms notes, and configured-source
 provenance. It does not map public contact fields, redistribute a feed, execute a
-request, expose credentials, or submit an application. Transport controls remain
-`XTR-009`.
+request, expose credentials, or submit an application. Shared transport controls
+are implemented under `XTR-009`.
+
+#### Shared connector transport controls
+
+`XTR-009` adds a dependency-injected transport boundary without turning any connector on or shipping background discovery. The boundary:
+
+- requires an explicit user action and an explicit per-device enabled-connector set; the empty set is the default;
+- re-authorizes the exact connector, policy method, HTTPS destination, 30-day review window, and runtime kill switches immediately before transport;
+- accepts only the exact Greenhouse detail, Lever global/EU detail, or USAJOBS Public-search descriptor shapes already produced by the reviewed adapters;
+- limits each Greenhouse board, each exact Lever region/site, and USAJOBS to one GET per second and one request in flight;
+- accepts at most a 2 MiB response and keeps at most 128 exact-URL responses in a memory-only, 24-hour cache. Clearing the transport drops response bodies; durable retention still belongs only to a user-selected local-vault snapshot under the connector record;
+- retries only network failures and `429`, `502`, `503`, or `504`, honors valid `Retry-After` up to 30 seconds, uses bounded exponential backoff, stops after three attempts, and fails closed for every terminal state; and
+- returns exact source attribution plus review timestamps/age with each result. Settings displays the same checked-in disclosures, current/due/expired review state, exact domains, credential mode, last use, rate/cache/retention rules, and policy links. It does not expose credential values or imply that an off connector has run.
 
 #### User files/paste
 

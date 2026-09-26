@@ -2,6 +2,7 @@ import {
   ApplicationShell,
   BrowserVaultBackupSettings,
   CaptureInboxReview,
+  ConnectorRegistrySettings,
   deriveBrowserExportReminder,
   HomeDashboard,
   JobWorkspaceContent,
@@ -60,6 +61,7 @@ import {
   type ThemePreference,
   type VaultHealthState,
 } from "@coredrill/ui";
+import { createConnectorPolicyDisclosuresV1 } from "@coredrill/source-policy";
 import {
   parseCaptureSourcePreviewJsonV1,
   type CaptureSourcePreviewV1,
@@ -2531,6 +2533,9 @@ const AppShellCatalog = () => {
             </section>
           ) : (
             <>
+              <ConnectorRegistrySettings
+                connectors={createConnectorPolicyDisclosuresV1(new Date().toISOString())}
+              />
               <BrowserVaultBackupSettings
                 model={browserVaultBackupModel}
                 onExportPortableArchive={() => {

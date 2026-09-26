@@ -55,10 +55,10 @@ export const LEVER_POSTINGS_POLICY_INPUT_V1: ConnectorPolicyRecordV1 = Object.fr
   privacyUrl: "https://www.employinc.com/privacy/",
   licenseOrReuseBasis:
     "Lever documents its Postings API as a public-job-site interface and explicitly states that published postings are publicly viewable and may be scraped by third parties. Coredrill excludes authenticated Hire APIs and application submission.",
-  reviewedAt: "2026-08-30T00:00:00.000Z",
-  reviewDueAt: "2026-09-29T00:00:00.000Z",
+  reviewedAt: "2026-09-26T00:00:00.000Z",
+  reviewDueAt: "2026-10-26T00:00:00.000Z",
   ratePolicy:
-    "No public-posting GET rate limit was published at review. Before any executing client ships, limit each site to one user-initiated GET per second with one request in flight, a 24-hour unchanged-detail cache, Retry-After handling, and fail-closed backoff.",
+    "No public-posting GET rate limit was published at review. The transport requires an explicitly enabled user action, limits each exact global or EU site to one GET per second and one request in flight, keeps at most 128 unchanged responses in a 24-hour memory-only cache with a 2 MiB response cap, honors bounded Retry-After, and fails closed after at most three attempts.",
   retention:
     "Retain only the user-selected published posting snapshot and derived evidence in the local vault until the user deletes that record. Never submit or retain applicant, application, consent, or candidate data through this connector.",
   attribution: "required",

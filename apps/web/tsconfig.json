@@ -27,6 +27,9 @@
       "path": "../../packages/storage-core"
     },
     {
+      "path": "../../packages/source-policy"
+    },
+    {
       "path": "../../packages/ui"
     }
   ]

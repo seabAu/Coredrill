@@ -268,6 +268,142 @@ textarea {
 
 /* Browser vault health and recovery */
 
+/* Reviewed connector registry */
+
+.cd-connector-registry-settings {
+  display: grid;
+  gap: var(--space-5);
+  min-width: 0;
+  padding: var(--space-6);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.cd-connector-registry-heading,
+.cd-connector-registry-list article > header,
+.cd-connector-registry-list nav {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.cd-connector-registry-heading h2,
+.cd-connector-registry-heading p,
+.cd-connector-registry-intro,
+.cd-connector-registry-list h3,
+.cd-connector-registry-list p,
+.cd-connector-registry-list dl,
+.cd-connector-registry-list dd {
+  margin: 0;
+}
+
+.cd-connector-registry-heading > span,
+.cd-connector-state {
+  flex: none;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+.cd-connector-registry-intro,
+.cd-connector-registry-list header p,
+.cd-connector-registry-list details,
+.cd-connector-registry-list small {
+  color: var(--color-text-muted);
+}
+
+.cd-connector-registry-list {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.cd-connector-registry-list article {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+}
+
+.cd-connector-registry-list article[data-effective-state="ready"] .cd-connector-state {
+  color: var(--color-success);
+}
+
+.cd-connector-registry-list article[data-effective-state="blocked"] .cd-connector-state,
+.cd-connector-registry-list article[data-review-state="expired"] .cd-connector-state {
+  color: var(--color-danger);
+}
+
+.cd-connector-registry-list dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: var(--space-4);
+}
+
+.cd-connector-registry-list dt {
+  margin-block-end: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+.cd-connector-registry-list dd {
+  overflow-wrap: anywhere;
+}
+
+.cd-connector-registry-list small {
+  display: block;
+  margin-block-start: var(--space-1);
+}
+
+.cd-connector-registry-list details {
+  padding-block-start: var(--space-3);
+  border-block-start: 1px solid var(--color-border);
+}
+
+.cd-connector-registry-list details > summary {
+  cursor: pointer;
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.cd-connector-registry-list details p {
+  margin-block-start: var(--space-3);
+}
+
+.cd-connector-registry-list nav {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 48rem) {
+  .cd-connector-registry-heading,
+  .cd-connector-registry-list article > header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .cd-connector-registry-heading > span,
+  .cd-connector-state {
+    align-self: flex-start;
+  }
+}
+
+@media (forced-colors: active) {
+  .cd-connector-registry-settings,
+  .cd-connector-registry-list article,
+  .cd-connector-registry-heading > span,
+  .cd-connector-state {
+    border-color: CanvasText;
+  }
+}
+
 .cd-vault-backup-settings {
   display: grid;
   gap: var(--space-5);

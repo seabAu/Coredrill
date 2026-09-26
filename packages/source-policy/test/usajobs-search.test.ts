@@ -27,7 +27,7 @@ function configuration(): UsaJobsSearchConfigurationV1 {
     registeredEmailConfigured: true,
     apiKeyConfigured: true,
     termsAccepted: true,
-    termsAcceptedAt: "2026-08-30T12:00:00.000Z",
+    termsAcceptedAt: "2026-09-26T12:00:00.000Z",
   });
 }
 
@@ -69,7 +69,7 @@ describe("USAJOBS user-owned configuration", () => {
       registrationOwner: "user",
       credentialMode: "user_configured",
       termsAccepted: true,
-      termsAcceptedAt: "2026-08-30T12:00:00.000Z",
+      termsAcceptedAt: "2026-09-26T12:00:00.000Z",
       requiredHeaderBindings: {
         Host: { binding: "destination_host" },
         "User-Agent": { binding: "registered_email" },
@@ -91,14 +91,14 @@ describe("USAJOBS user-owned configuration", () => {
       registeredEmailConfigured: true,
       apiKeyConfigured: true,
       termsAccepted: true,
-      termsAcceptedAt: "2026-08-30T12:00:00.000Z",
+      termsAcceptedAt: "2026-09-26T12:00:00.000Z",
     } as const;
     const invalid: unknown[] = [
       { ...base, registeredEmailConfigured: false },
       { ...base, apiKeyConfigured: false },
       { ...base, termsAccepted: false },
       { ...base, termsAcceptedAt: "2026-08-29T23:59:59.999Z" },
-      { ...base, termsAcceptedAt: "2026-09-29T00:00:00.000Z" },
+      { ...base, termsAcceptedAt: "2026-10-26T00:00:00.000Z" },
       { ...base, registeredEmail: "secret@example.test" },
       { ...base, authorizationKey: "api-key-value" },
     ];
@@ -182,7 +182,7 @@ describe("USAJOBS targeted Public-only request descriptors", () => {
       connectorId: request.connectorId,
       method: request.policyMethod,
       destinationUrl: request.destinationUrl,
-      now: "2026-08-30T12:00:00.000Z",
+      now: "2026-09-26T12:00:00.000Z",
     };
 
     expect(checkedInConnectorPolicyRegistryV1.authorize(acquisition, CLEAR_RUNTIME)).toEqual({
@@ -232,8 +232,8 @@ describe("USAJOBS targeted Public-only request descriptors", () => {
     };
     expect(proof).toEqual({
       connectorId: "usajobs-search",
-      reviewedAt: "2026-08-30T00:00:00.000Z",
-      reviewDueAt: "2026-09-29T00:00:00.000Z",
+      reviewedAt: "2026-09-26T00:00:00.000Z",
+      reviewDueAt: "2026-10-26T00:00:00.000Z",
       exactHost: true,
       exactPath: true,
       getOnly: true,

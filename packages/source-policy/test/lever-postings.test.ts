@@ -127,7 +127,7 @@ describe("Lever GET-only requests and checked-in policy", () => {
         connectorId: request.connectorId,
         method: request.policyMethod,
         destinationUrl: request.destinationUrl,
-        now: "2026-08-30T12:00:00.000Z",
+        now: "2026-09-26T12:00:00.000Z",
       };
       expect(checkedInConnectorPolicyRegistryV1.authorize(acquisition, CLEAR_RUNTIME)).toEqual({
         allowed: true,
@@ -156,7 +156,7 @@ describe("Lever GET-only requests and checked-in policy", () => {
       connectorId: request.connectorId,
       method: request.policyMethod,
       destinationUrl: request.destinationUrl,
-      now: "2026-08-30T12:00:00.000Z",
+      now: "2026-09-26T12:00:00.000Z",
     };
     expect(
       checkedInConnectorPolicyRegistryV1.authorize(acquisition, {
@@ -180,8 +180,8 @@ describe("Lever GET-only requests and checked-in policy", () => {
       baseDomains: [LEVER_POSTINGS_API_HOSTS.global, LEVER_POSTINGS_API_HOSTS.eu],
       attribution: "required",
       credentials: "none",
-      reviewedAt: "2026-08-30T00:00:00.000Z",
-      reviewDueAt: "2026-09-29T00:00:00.000Z",
+      reviewedAt: "2026-09-26T00:00:00.000Z",
+      reviewDueAt: "2026-10-26T00:00:00.000Z",
       killSwitch: true,
     });
     expect(LEVER_POSTINGS_CONNECTOR_POLICY_V1.licenseOrReuseBasis).toContain(
@@ -220,8 +220,8 @@ describe("Lever GET-only requests and checked-in policy", () => {
     };
     expect(proof).toEqual({
       connectorId: "lever-postings",
-      reviewedAt: "2026-08-30T00:00:00.000Z",
-      reviewDueAt: "2026-09-29T00:00:00.000Z",
+      reviewedAt: "2026-09-26T00:00:00.000Z",
+      reviewDueAt: "2026-10-26T00:00:00.000Z",
       exactGlobalHost: true,
       exactEuHost: true,
       getOnly: true,

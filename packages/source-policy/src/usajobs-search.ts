@@ -82,8 +82,8 @@ export class UsaJobsSearchError extends Error {
   }
 }
 
-const REVIEWED_AT = "2026-08-30T00:00:00.000Z";
-const REVIEW_DUE_AT = "2026-09-29T00:00:00.000Z";
+const REVIEWED_AT = "2026-09-26T00:00:00.000Z";
+const REVIEW_DUE_AT = "2026-10-26T00:00:00.000Z";
 
 export const USAJOBS_SEARCH_POLICY_INPUT_V1: ConnectorPolicyRecordV1 = Object.freeze({
   specVersion: 1,
@@ -99,7 +99,7 @@ export const USAJOBS_SEARCH_POLICY_INPUT_V1: ConnectorPolicyRecordV1 = Object.fr
   reviewedAt: REVIEWED_AT,
   reviewDueAt: REVIEW_DUE_AT,
   ratePolicy:
-    "The public Search API documents at most 10,000 rows per query and 500 rows per page but no request-per-time allowance. Coredrill further caps descriptors at 100 rows and 100 pages. Before transport ships, require an explicit user action, one request in flight, a 24-hour unchanged-query cache, Retry-After handling, and fail-closed backoff because USAJOBS may impose limits at any time.",
+    "The public Search API documents at most 10,000 rows per query and 500 rows per page but no request-per-time allowance. Coredrill caps descriptors at 100 rows and 100 pages; the transport also requires an explicitly enabled user action, limits the source to one GET per second and one request in flight, keeps at most 128 unchanged responses in a 24-hour memory-only cache with a 2 MiB response cap, honors bounded Retry-After, and fails closed after at most three attempts.",
   retention:
     "Retain only user-selected public JOA snapshots and derived evidence in the registered user's local vault until deletion. Do not retain registered email or API-key values with source content, map public contact data, redistribute a feed, or access Status/internal announcements.",
   attribution: "required",

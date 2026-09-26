@@ -342,6 +342,15 @@ recovery health version 1](browser-vault-recovery-health-v1.md).
 
 Network-enabled settings show default-off toggles, exact data categories, destination, credential location, last use, and disable/delete controls.
 
+The shipped `XTR-009` approved-source registry is the read-only disclosure layer
+for those future persisted controls. Each card shows Off/On/Blocked effective
+state, exact destination domains, credential mode, required attribution, last
+use, review age and due date, rate/cache/retention text, data flow, and current
+terms/privacy links. The current application passes an empty enabled set, so
+every reviewed connector visibly remains Off; transport code independently
+requires explicit enablement and an explicit user action. Expired review or a
+runtime kill switch renders Blocked. Credential values never enter this model.
+
 Vault deletion is visually separated after export/restore controls and opens a
 modal whose initial focus is the recoverability warning. It names the current
 vault, shows bounded deletion/preservation counts, offers portable export

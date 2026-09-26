@@ -179,6 +179,15 @@ test("browser Vault & Backup requests persistence only from the user action and 
   await openShell(page, { expectedDatabase: "missing" });
   await page.getByRole("link", { name: "Settings" }).click();
 
+  const connectors = page.getByTestId("connector-registry-settings");
+  await expect(connectors.getByRole("heading", { name: "Approved source registry" })).toBeVisible();
+  await expect(connectors.getByRole("listitem")).toHaveCount(3);
+  await expect(connectors.locator('[data-effective-state="off"]')).toHaveCount(3);
+  await expect(connectors).toContainText("Reviewed 2026-09-26 · due 2026-10-26");
+  await expect(connectors).toContainText("Greenhouse Job Board API");
+  await expect(connectors).toContainText("Lever Postings API");
+  await expect(connectors).toContainText("USAJOBS");
+
   const settings = page.getByTestId("browser-vault-backup-settings");
   await expect(
     settings.getByRole("heading", { name: "Browser vault on this device" }),
