@@ -52,6 +52,16 @@ Arrow Up/Down plus Home/End selection. Each queue control names the exact
 review article it controls, and selection replaces only the local inert review
 panel; it does not fetch, accept, merge, or write a job.
 
+`REV-002` adds the read-only field review model. Every retained candidate stays
+visible under Role & company, Location & work mode, Compensation, Description,
+Requirements, Source & dates, or the lossless Additional details fallback. A
+candidate displays its exact proposed value, extraction method, numeric
+confidence, source excerpt and path, confirmation state, and textual conflict
+state. Differing canonical values for the same field are labeled as an
+unresolved conflict; an incoming capture cannot promote its own embedded
+confirmation claim. Source buttons retain exact inert-snapshot focus routing,
+and this slice adds no acceptance or persistence action.
+
 ### Pipeline: Board and Table
 
 Views:

@@ -14,13 +14,29 @@ export interface CaptureSourcePreviewSectionV1 {
   readonly text: string;
 }
 
+export const CAPTURE_REVIEW_FIELD_GROUPS_V1 = [
+  "role_company",
+  "location_work_mode",
+  "compensation",
+  "description",
+  "requirements",
+  "source_date",
+  "additional",
+] as const;
+
+export type CaptureReviewFieldGroupV1 = (typeof CAPTURE_REVIEW_FIELD_GROUPS_V1)[number];
+
 export interface CaptureSourceEvidenceV1 {
   readonly id: string;
   readonly fieldName: string;
+  readonly fieldGroup: CaptureReviewFieldGroupV1;
   readonly value: string;
   readonly rawValue?: string;
   readonly method: string;
   readonly confidence: number;
+  readonly confirmationState: "unconfirmed";
+  readonly conflictState: "none" | "unresolved";
+  readonly fieldCandidateCount: number;
   readonly pointer: string;
   readonly sourceExcerpt: string;
   readonly targetSectionId: string | null;
@@ -56,6 +72,48 @@ function jsonText(value: JsonValue | readonly JsonValue[]): string {
 function candidateText(value: JsonValue): string {
   if (typeof value === "string") return value;
   return JSON.stringify(value);
+}
+
+function canonicalJson(value: JsonValue): string {
+  if (value === null) return "null";
+  if (typeof value === "string" || typeof value === "boolean") return JSON.stringify(value);
+  if (typeof value === "number") return Object.is(value, -0) ? "0" : JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+  return `{${Object.keys(value)
+    .sort()
+    .map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key] as JsonValue)}`)
+    .join(",")}}`;
+}
+
+const FIELD_GROUPS_BY_NAME: Readonly<Record<string, CaptureReviewFieldGroupV1>> = Object.freeze({
+  title: "role_company",
+  company: "role_company",
+  employment_type: "role_company",
+  locations: "location_work_mode",
+  location: "location_work_mode",
+  workplace_type: "location_work_mode",
+  work_mode: "location_work_mode",
+  remote_work: "location_work_mode",
+  applicant_locations: "location_work_mode",
+  salary: "compensation",
+  compensation: "compensation",
+  currency: "compensation",
+  description: "description",
+  requirements: "requirements",
+  qualifications: "requirements",
+  responsibilities: "requirements",
+  education: "requirements",
+  certification: "requirements",
+  work_authorization: "requirements",
+  posted_at: "source_date",
+  valid_through: "source_date",
+  apply_url: "source_date",
+  external_id: "source_date",
+  source: "source_date",
+});
+
+function fieldGroup(fieldName: string): CaptureReviewFieldGroupV1 {
+  return FIELD_GROUPS_BY_NAME[fieldName] ?? "additional";
 }
 
 function sectionTarget(pointer: string): string | null {
@@ -170,24 +228,41 @@ async function fromEnvelope(
         issue: "Captured HTML needs an inert text renderer before preview.",
       };
     }
+    const fieldValues = new Map<string, { candidateCount: number; values: Set<string> }>();
+    for (const candidate of parsed.data.fieldCandidates) {
+      const facts = fieldValues.get(candidate.fieldName) ?? {
+        candidateCount: 0,
+        values: new Set<string>(),
+      };
+      facts.candidateCount += 1;
+      facts.values.add(canonicalJson(candidate.value));
+      fieldValues.set(candidate.fieldName, facts);
+    }
     const evidence = Object.freeze(
-      parsed.data.fieldCandidates.map((candidate) =>
-        Object.freeze({
+      parsed.data.fieldCandidates.map((candidate) => {
+        const facts = fieldValues.get(candidate.fieldName);
+        return Object.freeze({
           id: candidate.id,
           fieldName: candidate.fieldName,
+          fieldGroup: fieldGroup(candidate.fieldName),
           value: candidateText(candidate.value),
           ...(candidate.rawValue === undefined
             ? {}
             : { rawValue: candidateText(candidate.rawValue) }),
           method: candidate.provenance.method,
           confidence: candidate.provenance.confidence,
+          // Capture envelopes are untrusted ingress. Any embedded confirmation
+          // claim is intentionally not promoted into the review projection.
+          confirmationState: "unconfirmed" as const,
+          conflictState: facts !== undefined && facts.values.size > 1 ? "unresolved" : "none",
+          fieldCandidateCount: facts?.candidateCount ?? 1,
           pointer: candidate.provenance.source.pointer,
           sourceExcerpt:
             candidate.provenance.sourceExcerpt ??
             candidateText(candidate.rawValue ?? candidate.value).slice(0, 4096),
           targetSectionId: sectionTarget(candidate.provenance.source.pointer),
-        }),
-      ),
+        });
+      }),
     );
     return {
       success: true,

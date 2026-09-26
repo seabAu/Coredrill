@@ -96,15 +96,25 @@ test("renders hostile saved sources as inert text and navigates exact excerpt pa
   await expect(review.getByRole("article", { name: /tracker\.invalid\/title/u })).toBeVisible();
 
   await securityCapture.click();
+  const roleGroup = review.getByRole("region", { name: "Role & company" });
+  await expect(roleGroup).toBeVisible();
+  await expect(roleGroup.getByText("2 candidates", { exact: true })).toBeVisible();
+  await expect(roleGroup.getByText("Method: User", { exact: true })).toHaveCount(2);
+  await expect(roleGroup.getByText("100% confidence", { exact: true })).toHaveCount(2);
+  await expect(roleGroup.getByText("Needs user confirmation", { exact: true })).toHaveCount(2);
+  await expect(roleGroup.getByText("No conflicting value retained", { exact: true })).toHaveCount(
+    2,
+  );
+  await expect(
+    roleGroup.locator("blockquote").filter({ hasText: "Security Engineer" }),
+  ).toBeVisible();
   const source = review.getByRole("region", { name: "Active source location" });
   await expect(source.locator("pre")).toContainText(
     "Security Engineer SecureCo builds defensive local-first systems.",
   );
   await expect(source.locator("script, img, iframe, svg, object, embed")).toHaveCount(0);
 
-  await review
-    .getByRole("button", { name: /Title Security Engineer View source \| \/fields\/title/u })
-    .click();
+  await review.getByRole("button", { name: /View source for Title \/fields\/title/u }).click();
   await expect(source).toBeFocused();
   await expect(source).toHaveAttribute("data-source-pointer", "/fields/title");
   await expect(source.locator("pre mark")).toContainText("Security Engineer");
@@ -181,6 +191,20 @@ test("renders hostile saved sources as inert text and navigates exact excerpt pa
       arrowSelectionWraps: true,
       selectedReviewPanelNamed: true,
       sourcePreviewStillInert: true,
+      axeViolations: axe.violations.length,
+      externalRequests: externalRequests.length,
+    })}`,
+  );
+  console.info(
+    `REV002_E2E_PROOF ${JSON.stringify({
+      fieldGroupVisible: true,
+      groupedCandidates: 2,
+      methodVisible: true,
+      confidenceVisible: true,
+      confirmationStateVisible: true,
+      sourceExcerptVisible: true,
+      exactSourceRouting: true,
+      narrowReflow: true,
       axeViolations: axe.violations.length,
       externalRequests: externalRequests.length,
     })}`,

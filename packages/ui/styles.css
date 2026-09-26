@@ -677,7 +677,7 @@ textarea {
 .cd-capture-review__queue span,
 .cd-capture-review__queue small,
 .cd-capture-review__locations button > *,
-.cd-capture-review__evidence-list button > * {
+.cd-capture-review__candidate > button > * {
   min-width: 0;
   overflow-wrap: anywhere;
 }
@@ -729,15 +729,14 @@ textarea {
   overflow-wrap: anywhere;
 }
 
-.cd-capture-review__locations,
-.cd-capture-review__evidence-list {
+.cd-capture-review__locations {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
   gap: var(--space-2);
 }
 
 .cd-capture-review__locations button,
-.cd-capture-review__evidence-list button {
+.cd-capture-review__candidate > button {
   display: grid;
   min-height: 3.25rem;
   gap: 0.25rem;
@@ -752,14 +751,14 @@ textarea {
 
 .cd-capture-review__locations button:hover,
 .cd-capture-review__locations button[aria-pressed="true"],
-.cd-capture-review__evidence-list button:hover,
-.cd-capture-review__evidence-list button[aria-pressed="true"] {
+.cd-capture-review__candidate > button:hover,
+.cd-capture-review__candidate > button[aria-pressed="true"] {
   border-color: var(--color-accent);
   background: var(--color-accent-soft);
 }
 
 .cd-capture-review__locations code,
-.cd-capture-review__evidence-list small,
+.cd-capture-review__candidate code,
 .cd-capture-review__source-heading code,
 .cd-capture-review__active-evidence code {
   overflow-wrap: anywhere;
@@ -770,6 +769,77 @@ textarea {
 .cd-capture-review__evidence {
   display: grid;
   gap: var(--space-2);
+}
+
+.cd-capture-review__field-groups,
+.cd-capture-review__field-group,
+.cd-capture-review__evidence-list,
+.cd-capture-review__candidate {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.cd-capture-review__field-group {
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-canvas);
+}
+
+.cd-capture-review__field-group-heading,
+.cd-capture-review__candidate-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.cd-capture-review__field-group-heading h6,
+.cd-capture-review__candidate p,
+.cd-capture-review__candidate blockquote {
+  margin: 0;
+}
+
+.cd-capture-review__field-group-heading > span,
+.cd-capture-review__candidate-facts {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-metadata);
+}
+
+.cd-capture-review__candidate {
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+}
+
+.cd-capture-review__candidate[data-conflict="unresolved"] {
+  border-inline-start: 3px solid var(--color-warning);
+}
+
+.cd-capture-review__candidate p,
+.cd-capture-review__candidate blockquote,
+.cd-capture-review__candidate-facts span {
+  overflow-wrap: anywhere;
+}
+
+.cd-capture-review__candidate-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+}
+
+.cd-capture-review__candidate-facts .is-conflict {
+  color: var(--color-warning);
+  font-weight: 700;
+}
+
+.cd-capture-review__candidate blockquote {
+  padding: var(--space-2) var(--space-3);
+  border-inline-start: 3px solid var(--color-accent);
+  background: var(--color-accent-soft);
+  color: var(--color-text-muted);
 }
 
 .cd-capture-review__subheading > div:last-child {
@@ -863,14 +933,16 @@ textarea {
   .cd-capture-review__preview,
   .cd-capture-review__source,
   .cd-capture-review__locations button,
-  .cd-capture-review__evidence-list button {
+  .cd-capture-review__field-group,
+  .cd-capture-review__candidate,
+  .cd-capture-review__candidate > button {
     border-color: CanvasText;
     forced-color-adjust: auto;
   }
 
   .cd-capture-review__queue button[aria-current="true"],
   .cd-capture-review__locations button[aria-pressed="true"],
-  .cd-capture-review__evidence-list button[aria-pressed="true"] {
+  .cd-capture-review__candidate > button[aria-pressed="true"] {
     border-color: Highlight;
     box-shadow: inset 3px 0 0 Highlight;
   }

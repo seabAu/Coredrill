@@ -16,13 +16,29 @@ export interface CaptureInboxPreviewSection {
   readonly text: string;
 }
 
+export const CAPTURE_INBOX_FIELD_GROUPS = [
+  "role_company",
+  "location_work_mode",
+  "compensation",
+  "description",
+  "requirements",
+  "source_date",
+  "additional",
+] as const;
+
+export type CaptureInboxFieldGroupId = (typeof CAPTURE_INBOX_FIELD_GROUPS)[number];
+
 export interface CaptureInboxEvidence {
   readonly id: string;
   readonly fieldName: string;
+  readonly fieldGroup: CaptureInboxFieldGroupId;
   readonly value: string;
   readonly rawValue?: string;
   readonly method: string;
   readonly confidence: number;
+  readonly confirmationState: "unconfirmed" | "user_confirmed";
+  readonly conflictState: "none" | "unresolved";
+  readonly fieldCandidateCount: number;
   readonly pointer: string;
   readonly sourceExcerpt: string;
   readonly targetSectionId: string | null;
@@ -43,6 +59,16 @@ export interface CaptureInboxReviewProps {
   readonly items: readonly CaptureInboxPreviewItem[];
   readonly state?: "loading" | "ready" | "error";
 }
+
+const FIELD_GROUP_LABELS: Readonly<Record<CaptureInboxFieldGroupId, string>> = Object.freeze({
+  role_company: "Role & company",
+  location_work_mode: "Location & work mode",
+  compensation: "Compensation",
+  description: "Description",
+  requirements: "Requirements",
+  source_date: "Source & dates",
+  additional: "Additional details",
+});
 
 function safeHttpUrl(value: string): boolean {
   try {
@@ -92,12 +118,19 @@ function validateItems(items: readonly CaptureInboxPreviewItem[]): void {
       if (
         evidence.id.length === 0 ||
         evidence.fieldName.length === 0 ||
+        !CAPTURE_INBOX_FIELD_GROUPS.includes(evidence.fieldGroup) ||
         evidence.value.length === 0 ||
         !evidence.pointer.startsWith("/") ||
         evidence.sourceExcerpt.length === 0 ||
         !Number.isFinite(evidence.confidence) ||
         evidence.confidence < 0 ||
         evidence.confidence > 1 ||
+        !["unconfirmed", "user_confirmed"].includes(evidence.confirmationState) ||
+        !["none", "unresolved"].includes(evidence.conflictState) ||
+        !Number.isInteger(evidence.fieldCandidateCount) ||
+        evidence.fieldCandidateCount < 1 ||
+        evidence.fieldCandidateCount > 256 ||
+        (evidence.conflictState === "unresolved" && evidence.fieldCandidateCount < 2) ||
         (evidence.targetSectionId !== null && !sectionIds.has(evidence.targetSectionId))
       ) {
         throw new RangeError("Capture preview evidence is invalid.");
@@ -109,6 +142,11 @@ function validateItems(items: readonly CaptureInboxPreviewItem[]): void {
 function titleCase(value: string): string {
   const words = value.replaceAll("_", " ");
   return words.charAt(0).toLocaleUpperCase() + words.slice(1);
+}
+
+function confidenceText(value: number): string {
+  const percentage = value * 100;
+  return `${percentage.toFixed(Number.isInteger(percentage) ? 0 : 1)}% confidence`;
 }
 
 function highlightedText(text: string, excerpt: string | undefined): ReactNode {
@@ -147,6 +185,14 @@ export function CaptureInboxReview({ items, state = "ready" }: CaptureInboxRevie
   const selectedEvidence =
     selectedItem?.evidence.find(({ id }) => id === selectedEvidenceId) ?? null;
   const selectedIndex = selectedItem === null ? -1 : items.indexOf(selectedItem);
+  const evidenceGroups =
+    selectedItem === null
+      ? []
+      : CAPTURE_INBOX_FIELD_GROUPS.map((id) => ({
+          id,
+          label: FIELD_GROUP_LABELS[id],
+          evidence: selectedItem.evidence.filter(({ fieldGroup }) => fieldGroup === id),
+        })).filter(({ evidence }) => evidence.length > 0);
 
   useEffect(() => {
     if (navigationVersion > 0) previewTarget.current?.focus();
@@ -348,23 +394,72 @@ export function CaptureInboxReview({ items, state = "ready" }: CaptureInboxRevie
                     </div>
                   ) : null}
                 </div>
-                <div className="cd-capture-review__evidence-list">
-                  {selectedItem.evidence.map((evidence) => (
-                    <button
-                      aria-pressed={evidence.id === selectedEvidence?.id}
-                      key={evidence.id}
-                      onClick={() => {
-                        navigate(
-                          evidence.targetSectionId ?? selectedSection?.id ?? null,
-                          evidence.id,
-                        );
-                      }}
-                      type="button"
+                <div className="cd-capture-review__field-groups">
+                  {evidenceGroups.map((group) => (
+                    <section
+                      aria-labelledby={`${headingId}-field-group-${group.id}`}
+                      className="cd-capture-review__field-group"
+                      key={group.id}
                     >
-                      <strong>{titleCase(evidence.fieldName)}</strong>
-                      <span>{evidence.value}</span>
-                      <small>View source | {evidence.pointer}</small>
-                    </button>
+                      <div className="cd-capture-review__field-group-heading">
+                        <h6 id={`${headingId}-field-group-${group.id}`}>{group.label}</h6>
+                        <span>
+                          {group.evidence.length}{" "}
+                          {group.evidence.length === 1 ? "candidate" : "candidates"}
+                        </span>
+                      </div>
+                      <div className="cd-capture-review__evidence-list">
+                        {group.evidence.map((evidence) => (
+                          <article
+                            className="cd-capture-review__candidate"
+                            data-conflict={evidence.conflictState}
+                            key={evidence.id}
+                          >
+                            <div className="cd-capture-review__candidate-heading">
+                              <strong>{titleCase(evidence.fieldName)}</strong>
+                              <span
+                                className={
+                                  evidence.confirmationState === "user_confirmed"
+                                    ? "cd-evidence-chip is-confirmed"
+                                    : "cd-evidence-chip"
+                                }
+                              >
+                                {evidence.confirmationState === "user_confirmed"
+                                  ? "User confirmed"
+                                  : "Needs user confirmation"}
+                              </span>
+                            </div>
+                            <p>{evidence.value}</p>
+                            <div className="cd-capture-review__candidate-facts">
+                              <span>Method: {titleCase(evidence.method)}</span>
+                              <span>{confidenceText(evidence.confidence)}</span>
+                              {evidence.conflictState === "unresolved" ? (
+                                <span className="is-conflict">
+                                  Unresolved conflict · {String(evidence.fieldCandidateCount)}{" "}
+                                  candidates
+                                </span>
+                              ) : (
+                                <span>No conflicting value retained</span>
+                              )}
+                            </div>
+                            <blockquote>{evidence.sourceExcerpt}</blockquote>
+                            <button
+                              aria-pressed={evidence.id === selectedEvidence?.id}
+                              onClick={() => {
+                                navigate(
+                                  evidence.targetSectionId ?? selectedSection?.id ?? null,
+                                  evidence.id,
+                                );
+                              }}
+                              type="button"
+                            >
+                              <span>View source for {titleCase(evidence.fieldName)}</span>
+                              <code>{evidence.pointer}</code>
+                            </button>
+                          </article>
+                        ))}
+                      </div>
+                    </section>
                   ))}
                 </div>
               </section>

@@ -54,8 +54,111 @@ describe("capture source preview", () => {
         evidence: [
           {
             fieldName: "title",
+            fieldGroup: "role_company",
+            confirmationState: "unconfirmed",
+            conflictState: "none",
+            fieldCandidateCount: 1,
             pointer: "/content/jsonLd/0/title",
             targetSectionId: "json-ld",
+          },
+        ],
+      },
+    });
+  });
+
+  it("groups retained candidates, exposes unresolved conflicts, and distrusts embedded confirmation claims", async () => {
+    const built = await buildCaptureEnvelopeV1(
+      {
+        specVersion: 1,
+        url: "https://jobs.example.test/roles/8",
+        pageTitle: "Platform Engineer",
+        selectedText: "Platform Engineer or Principal Platform Engineer",
+        fields: {
+          title: {
+            value: "Platform Engineer",
+            pointer: "/content/selectedText",
+            method: "selector",
+            confidence: 0.88,
+          },
+        },
+      },
+      { senderId: "fixture.extension", sequence: 2, now, randomBytes },
+    );
+    expect(built.success).toBe(true);
+    if (!built.success) throw new Error(built.issue);
+    const first = built.envelope.fieldCandidates[0];
+    if (first === undefined) throw new Error("Expected title candidate.");
+
+    const changed = {
+      ...built.envelope,
+      fieldCandidates: [
+        {
+          ...first,
+          userConfirmation: {
+            specVersion: 1,
+            id: "018f4e87-2bf3-7cc3-98c8-978e8b4c9a61",
+            actor: "user",
+            confirmedAt: now.toISOString(),
+            confirmedValueHash: "0".repeat(64),
+          },
+        },
+        {
+          ...first,
+          id: "018f4e87-2bf3-7cc3-98c8-978e8b4c9a62",
+          value: "Principal Platform Engineer",
+          rawValue: "Principal Platform Engineer",
+          provenance: {
+            ...first.provenance,
+            confidence: 0.72,
+            sourceExcerpt: "Principal Platform Engineer",
+          },
+        },
+        {
+          ...first,
+          id: "018f4e87-2bf3-7cc3-98c8-978e8b4c9a63",
+          fieldName: "custom_detail",
+          value: "Visible fallback",
+          rawValue: "Visible fallback",
+          provenance: {
+            ...first.provenance,
+            source: {
+              ...first.provenance.source,
+              pointer: "/content/customDetail",
+            },
+            sourceExcerpt: "Visible fallback",
+          },
+        },
+      ],
+    };
+    const contentHash = await createCaptureEnvelopeContentHashV1(changed);
+    const result = await parseCaptureSourcePreviewJsonV1(
+      JSON.stringify({ ...changed, contentHash }),
+    );
+
+    expect(result).toMatchObject({
+      success: true,
+      preview: {
+        evidence: [
+          {
+            fieldName: "title",
+            fieldGroup: "role_company",
+            confirmationState: "unconfirmed",
+            conflictState: "unresolved",
+            fieldCandidateCount: 2,
+          },
+          {
+            fieldName: "title",
+            fieldGroup: "role_company",
+            confirmationState: "unconfirmed",
+            conflictState: "unresolved",
+            fieldCandidateCount: 2,
+          },
+          {
+            fieldName: "custom_detail",
+            fieldGroup: "additional",
+            confirmationState: "unconfirmed",
+            conflictState: "none",
+            fieldCandidateCount: 1,
           },
         ],
       },

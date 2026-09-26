@@ -171,6 +171,16 @@ The shipped `XTR-003` baseline keeps this last-resort path pure, local, and boun
 
 Every emitted candidate passes the versioned `FieldCandidateV1` contract and carries capture source ID, exact evidence pointer, extractor identity/version, method, capture time, confidence, source excerpt, raw value, and a visible-source review note. The extractor does not confirm fields, resolve conflicts, write entities, call AI, add permissions, or introduce network behavior.
 
+`REV-002` projects those hash-verified candidates into a bounded read-only
+review model. A reviewed allowlist maps known field names to the six Inbox
+groups and sends unknown names to Additional details without dropping them.
+Canonical JSON comparison labels differing values for one field as an
+unresolved presentation conflict while preserving each original candidate.
+Because the capture envelope is untrusted ingress, an embedded
+`userConfirmation` claim is deliberately projected as unconfirmed; only a
+trusted local application boundary may later supply a user-confirmed review
+state. The projection does not resolve a conflict or select a durable value.
+
 #### Schema.org `JobPosting`
 
 Parse JSON-LD from a single job detail page. Validate `@context`, `@type`, title, description, hiring organization, location/remote fields, date, validity, identifier, employment type, and base salary. Treat it as untrusted page input and compare to visible content. Google documents the format and requires the structured data to represent the visible job page: [JobPosting documentation](https://developers.google.com/search/docs/appearance/structured-data/job-posting).

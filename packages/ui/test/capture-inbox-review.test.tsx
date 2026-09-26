@@ -11,9 +11,13 @@ import {
 const HOSTILE_EVIDENCE = Object.freeze({
   id: "018f4e87-2bf3-7cc3-98c8-978e8b4c9a56",
   fieldName: "title",
+  fieldGroup: "role_company",
   value: "<svg onload=globalThis.__ran=true>",
   method: "user",
   confidence: 1,
+  confirmationState: "unconfirmed",
+  conflictState: "none",
+  fieldCandidateCount: 1,
   pointer: "/fields/title",
   sourceExcerpt: "<svg onload=globalThis.__ran=true>",
   targetSectionId: null,
@@ -68,6 +72,64 @@ describe("CaptureInboxReview", () => {
     );
   });
 
+  it("groups candidates and exposes method, confidence, confirmation, excerpts, and conflicts", () => {
+    const markup = renderToStaticMarkup(
+      createElement(CaptureInboxReview, {
+        items: [
+          {
+            ...HOSTILE_ITEM,
+            evidence: [
+              {
+                ...HOSTILE_EVIDENCE,
+                conflictState: "unresolved",
+                fieldCandidateCount: 2,
+              },
+              {
+                ...HOSTILE_EVIDENCE,
+                id: "018f4e87-2bf3-7cc3-98c8-978e8b4c9a57",
+                value: "Platform Engineer",
+                sourceExcerpt: "Platform Engineer",
+                confirmationState: "user_confirmed",
+                conflictState: "unresolved",
+                fieldCandidateCount: 2,
+              },
+              {
+                ...HOSTILE_EVIDENCE,
+                id: "018f4e87-2bf3-7cc3-98c8-978e8b4c9a58",
+                fieldName: "custom_detail",
+                fieldGroup: "additional",
+                value: "Visible fallback",
+                sourceExcerpt: "Visible fallback",
+              },
+            ],
+          },
+        ],
+      }),
+    );
+
+    expect(markup).toContain("Role &amp; company");
+    expect(markup).toContain("Additional details");
+    expect(markup).toContain("Method: User");
+    expect(markup).toContain("100% confidence");
+    expect(markup).toContain("Needs user confirmation");
+    expect(markup).toContain("User confirmed");
+    expect(markup).toContain("Unresolved conflict · 2 candidates");
+    expect(markup).toContain("Visible fallback");
+    expect(markup).toContain("View source for Title");
+    console.info(
+      `REV002_COMPONENT_PROOF ${JSON.stringify({
+        documentedFieldGroup: true,
+        unknownFieldFallbackGroup: true,
+        methodVisible: true,
+        confidenceVisible: true,
+        sourceExcerptVisible: true,
+        confirmationStatesVisible: true,
+        unresolvedConflictVisible: true,
+        conflictUsesText: true,
+      })}`,
+    );
+  });
+
   it("fails closed for unsafe URLs and dangling evidence targets", () => {
     expect(() =>
       renderToStaticMarkup(
@@ -83,6 +145,24 @@ describe("CaptureInboxReview", () => {
             {
               ...HOSTILE_ITEM,
               evidence: [{ ...HOSTILE_EVIDENCE, targetSectionId: "missing" }],
+            },
+          ],
+        }),
+      ),
+    ).toThrowError("Capture preview evidence is invalid.");
+    expect(() =>
+      renderToStaticMarkup(
+        createElement(CaptureInboxReview, {
+          items: [
+            {
+              ...HOSTILE_ITEM,
+              evidence: [
+                {
+                  ...HOSTILE_EVIDENCE,
+                  conflictState: "unresolved",
+                  fieldCandidateCount: 1,
+                },
+              ],
             },
           ],
         }),
