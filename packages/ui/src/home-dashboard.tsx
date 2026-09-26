@@ -21,6 +21,7 @@ export type HomeDashboardActionId =
   | "import-tracker"
   | "open-follow-up"
   | "open-interview-plan"
+  | "open-job"
   | "paste-listing"
   | "retry-transfer"
   | "review-backup"

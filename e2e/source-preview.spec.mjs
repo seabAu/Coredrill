@@ -11,6 +11,11 @@ const hostileJson = await readFile(
 );
 
 const openCleanShell = async (page) => {
+  await page.goto("/");
+  await page.waitForFunction(() => globalThis.coredrillStorageSpike !== undefined);
+  await page.evaluate(async () => {
+    await globalThis.coredrillStorageSpike.delete();
+  });
   await page.goto("/app-shell.html");
   await page.waitForFunction(
     () =>
@@ -18,10 +23,6 @@ const openCleanShell = async (page) => {
       globalThis.coredrillExtensionInbox !== undefined &&
       globalThis.coredrillStorageSpike !== undefined,
   );
-  await page.evaluate(async () => {
-    await globalThis.coredrillStorageSpike.delete();
-    await globalThis.coredrillStorageSpike.openAndMigrate();
-  });
 };
 
 const openFileCapture = async (page) => {
@@ -70,16 +71,31 @@ test("renders hostile saved sources as inert text and navigates exact excerpt pa
   });
   await storeCapture(dialog);
 
-  await page
-    .getByRole("navigation", { name: "Primary" })
-    .getByRole("link", { name: "Pipeline" })
-    .click();
+  await page.getByRole("button", { name: "Review captures" }).click();
+  await expect(page).toHaveURL(/\/pipeline\?.*view=inbox/u);
   const pipeline = page.getByTestId("pipeline-shell");
-  await pipeline.getByRole("button", { name: /Inbox/u }).click();
+  await expect(pipeline.getByRole("button", { name: /Inbox/u })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
   const review = page.getByTestId("capture-review");
-  await expect(review.getByRole("button", { name: /Security Engineer Saved html/u })).toBeVisible();
+  await expect(review.getByText("2 captures awaiting review")).toBeVisible();
+  const queue = review.getByRole("complementary", { name: "Capture queue, 2 items" });
+  const securityCapture = queue.getByRole("button", { name: /Security Engineer Saved html/u });
+  const hostileCapture = queue.getByRole("button", {
+    name: /tracker\.invalid\/title.*Saved json/u,
+  });
+  await expect(securityCapture).toBeVisible();
 
-  await review.getByRole("button", { name: /Security Engineer Saved html/u }).click();
+  await hostileCapture.click();
+  await hostileCapture.press("ArrowDown");
+  await expect(securityCapture).toBeFocused();
+  await expect(review.getByRole("article", { name: /Security Engineer/u })).toBeVisible();
+  await securityCapture.press("ArrowUp");
+  await expect(hostileCapture).toBeFocused();
+  await expect(review.getByRole("article", { name: /tracker\.invalid\/title/u })).toBeVisible();
+
+  await securityCapture.click();
   const source = review.getByRole("region", { name: "Active source location" });
   await expect(source.locator("pre")).toContainText(
     "Security Engineer SecureCo builds defensive local-first systems.",
@@ -98,7 +114,7 @@ test("renders hostile saved sources as inert text and navigates exact excerpt pa
   await expect(source).toHaveAttribute("data-source-pointer", "/fields/company");
   await expect(source.locator("pre mark")).toContainText("SecureCo");
 
-  await review.getByRole("button", { name: /tracker\.invalid\/title.*Saved json/u }).click();
+  await hostileCapture.click();
   await review
     .getByRole("button", {
       name: /Jump to Structured JSON \/content\/apiPayload/u,
@@ -152,6 +168,19 @@ test("renders hostile saved sources as inert text and navigates exact excerpt pa
       fieldExcerptFocused: true,
       crossFontReflow: true,
       narrowReflow: true,
+      axeViolations: axe.violations.length,
+      externalRequests: externalRequests.length,
+    })}`,
+  );
+  console.info(
+    `REV001_PROOF ${JSON.stringify({
+      durableQueueItems: 2,
+      countVisible: true,
+      homeReviewRoute: "/pipeline?view=inbox",
+      activeInboxView: true,
+      arrowSelectionWraps: true,
+      selectedReviewPanelNamed: true,
+      sourcePreviewStillInert: true,
       axeViolations: axe.violations.length,
       externalRequests: externalRequests.length,
     })}`,

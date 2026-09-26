@@ -383,7 +383,8 @@ test("Home orders actionable local work, limits Now, and lets users hide the sna
   await expect(page.getByRole("button", { name: "Add job", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Paste listing", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Capture URL", exact: true })).toBeVisible();
-  await expect(page.getByText("5 items", { exact: true })).toBeVisible();
+  await expect(page.getByText("4 items", { exact: true })).toBeVisible();
+  await expect(page.getByText("Capture inbox clear", { exact: true })).toBeVisible();
   await expect(page.getByText(/private planning aid, not a streak/)).toBeVisible();
   await attachAxe(page, testInfo, "home-attention-queue");
   await attachProof(page, testInfo, "home-attention-queue");
@@ -544,7 +545,7 @@ test("Pipeline switches peer presentations while saved views, filters, search, a
 
   const pipeline = page.getByTestId("pipeline-shell");
   await expect(pipeline).toBeVisible();
-  await expect(pipeline.getByRole("button", { name: "Inbox 3" })).toBeVisible();
+  await expect(pipeline.getByRole("button", { name: "Inbox 0", exact: true })).toBeVisible();
   await expect(pipeline.getByRole("button", { name: "Board" })).toHaveAttribute(
     "aria-pressed",
     "true",

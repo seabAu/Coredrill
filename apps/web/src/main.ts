@@ -318,6 +318,7 @@ declare global {
 }
 
 let database: BrowserSqliteDatabase | undefined;
+let databaseOpen: Promise<BrowserSqliteDatabase> | undefined;
 let attachmentStore: BrowserAttachmentStore | undefined;
 const statusElement = document.querySelector<HTMLElement>("#status");
 
@@ -628,11 +629,22 @@ const migrations = async () =>
   ]);
 
 const getDatabase = async (options: OpenOptions = {}): Promise<BrowserSqliteDatabase> => {
-  database ??= await openBrowserSqliteDatabase({
+  if (database !== undefined) return database;
+
+  databaseOpen ??= openBrowserSqliteDatabase({
     databaseName: DATABASE_NAME,
     expectedExisting: options.expectedExisting ?? false,
   });
-  return database;
+
+  try {
+    database = await databaseOpen;
+    return database;
+  } catch (error) {
+    databaseOpen = undefined;
+    throw error;
+  } finally {
+    if (database !== undefined) databaseOpen = undefined;
+  }
 };
 
 const getAttachmentStore = async (): Promise<BrowserAttachmentStore> => {

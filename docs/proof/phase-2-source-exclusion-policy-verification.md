@@ -2,7 +2,7 @@
 
 Checklist item: `XTR-010`
 
-Status: implementation verified locally; hosted clean-commit evidence pending
+Status: complete
 
 ## Scope
 
@@ -68,7 +68,11 @@ production network records.
 - Workspace lint: 22 packages plus tooling, passing with zero warnings.
 - Formatting, architecture boundaries, foundation records, tracked/unignored
   secret scan, and the 7-file/38-test security suite: passing.
-- Remaining full-repository verification: pending the final slice commit.
+- Hosted clean-commit matrix for `6d1569c`: [GitHub Actions run
+  36273712703](https://github.com/seabAu/Coredrill/actions/runs/36273712703),
+  passing across static/policy checks, Chrome and Firefox browser storage,
+  Chromium/Firefox extension transfer, the full-history secret scan, and
+  Windows, macOS, and Ubuntu native packaging.
 
 ## Decision impact
 

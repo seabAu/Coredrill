@@ -27,6 +27,8 @@ import {
   type BrowserExportReminderAction,
   type BrowserVaultBackupModel,
   type DensityMode,
+  type HomeAgendaItem,
+  type HomeAttentionItem,
   type HomeDashboardActionId,
   type HomeDashboardModel,
   type HomeRecentItem,
@@ -92,6 +94,7 @@ interface AppShellCatalogState {
   readonly boardAnnouncement: string;
   readonly boardTimelineEventCount: number;
   readonly boardUndoAvailable: boolean;
+  readonly captureInboxCount: number;
   readonly captureDialogMode: SuppliedCaptureMode | null;
   readonly density: DensityMode;
   readonly homeMode: HomeDashboardModel["state"];
@@ -768,7 +771,7 @@ const READY_HOME_MODEL = Object.freeze({
       context: "Acme Research · Deadline",
       description: "Confirm the role details and materials before the external deadline.",
       id: "now-deadline",
-      primaryAction: { id: "review-captures", label: "Open job" },
+      primaryAction: { id: "open-job", label: "Open job" },
       title: "Review the saved opportunity",
       urgency: "upcoming",
       when: "Friday",
@@ -1385,6 +1388,7 @@ const AppShellCatalog = () => {
     appearance.tableMode === "large" ? LARGE_TABLE_ROWS : STANDARD_TABLE_ROWS,
   );
   const [suppliedCaptureCount, setSuppliedCaptureCount] = useState(0);
+  const [captureInboxCount, setCaptureInboxCount] = useState(0);
   const [capturePreviews, setCapturePreviews] = useState<readonly CaptureSourcePreviewV1[]>([]);
   const [capturePreviewState, setCapturePreviewState] = useState<"loading" | "ready" | "error">(
     "loading",
@@ -1415,12 +1419,42 @@ const AppShellCatalog = () => {
           }),
     [appearance.expectedDatabase, browserStorageEnvironment, exportReminder],
   );
+  const readyHomeAttention: readonly HomeAttentionItem[] = Object.freeze(
+    READY_HOME_MODEL.attention
+      .filter((item) => item.kind !== "capture-review" || captureInboxCount > 0)
+      .map<HomeAttentionItem>((item) =>
+        item.kind === "capture-review"
+          ? Object.freeze({
+              ...item,
+              title: `${String(captureInboxCount)} ${captureInboxCount === 1 ? "capture needs" : "captures need"} review`,
+            })
+          : item,
+      ),
+  );
+  const readyHomeWeek: readonly HomeAgendaItem[] = Object.freeze(
+    READY_HOME_MODEL.week.map<HomeAgendaItem>((item) =>
+      item.id === "agenda-captures"
+        ? Object.freeze({
+            ...item,
+            title:
+              captureInboxCount === 0
+                ? "Capture inbox clear"
+                : `Review ${String(captureInboxCount)} ${captureInboxCount === 1 ? "capture" : "captures"}`,
+          })
+        : item,
+    ),
+  );
+  const readyHomeModel: HomeDashboardModel = Object.freeze({
+    ...READY_HOME_MODEL,
+    attention: readyHomeAttention,
+    week: readyHomeWeek,
+  });
   const homeModel: HomeDashboardModel =
     appearance.homeMode === "empty"
       ? EMPTY_HOME_MODEL
       : homeSnapshotVisible
-        ? READY_HOME_MODEL
-        : Object.freeze({ ...READY_HOME_MODEL, snapshot: null });
+        ? readyHomeModel
+        : Object.freeze({ ...readyHomeModel, snapshot: null });
   const filteredBoardColumns = useMemo(
     () =>
       Object.freeze(
@@ -1495,7 +1529,7 @@ const AppShellCatalog = () => {
     activeSavedViewId: pipelineSavedViewId,
     activeView: pipelineView,
     filters: pipelineFilters,
-    inboxCount: 3 + suppliedCaptureCount,
+    inboxCount: captureInboxCount,
     matchingCount: pipelineMatchingCount,
     savedViews: PIPELINE_SAVED_VIEWS,
     searchQuery: pipelineSearchQuery,
@@ -1531,6 +1565,21 @@ const AppShellCatalog = () => {
 
   useEffect(() => {
     let active = true;
+    void globalThis.coredrillExtensionInbox
+      .listReceipts()
+      .then((receipts) => {
+        if (active) setCaptureInboxCount(receipts.length);
+      })
+      .catch(() => {
+        if (active) setCaptureInboxCount(0);
+      });
+    return () => {
+      active = false;
+    };
+  }, [suppliedCaptureCount]);
+
+  useEffect(() => {
+    let active = true;
     setCapturePreviewState("loading");
     if (pipelineView !== "inbox") return;
     void globalThis.coredrillExtensionInbox
@@ -1546,6 +1595,7 @@ const AppShellCatalog = () => {
         }
         previews.sort((left, right) => right.capturedAt.localeCompare(left.capturedAt));
         if (active) {
+          setCaptureInboxCount(receipts.length);
           setCapturePreviews(Object.freeze(previews));
           setCapturePreviewState("ready");
         }
@@ -1569,6 +1619,7 @@ const AppShellCatalog = () => {
           boardAnnouncement,
           boardTimelineEventCount,
           boardUndoAvailable: boardUndo !== null,
+          captureInboxCount,
           captureDialogMode,
           density: appearance.density,
           homeMode: appearance.homeMode,
@@ -1607,6 +1658,7 @@ const AppShellCatalog = () => {
     boardAnnouncement,
     boardTimelineEventCount,
     boardUndo,
+    captureInboxCount,
     captureDialogMode,
     browserStorageEnvironment,
     exportReminder.state,
@@ -1735,6 +1787,19 @@ const AppShellCatalog = () => {
     if (action === "add-job") {
       setCaptureDialogMode("manual");
       setLastActivity("Manual capture form opened. Nothing has been written yet.");
+      return;
+    }
+    if (action === "review-captures") {
+      setWorkspaceRoute(null);
+      setPipelineView("inbox");
+      setCapturePreviewRefreshVersion((version) => version + 1);
+      setActiveDestination("pipeline");
+      window.history.pushState(
+        { kind: PIPELINE_HISTORY_KIND, snapshot: null },
+        "",
+        pipelineUrl("inbox", pipelineSavedViewId),
+      );
+      setLastActivity("Opened the durable local capture inbox for review.");
       return;
     }
     setLastActivity(`Home action selected: ${action}. No external request was made.`);
@@ -2295,7 +2360,7 @@ const AppShellCatalog = () => {
   return (
     <ApplicationShell
       activeDestination={activeDestination}
-      inboxCount={3 + suppliedCaptureCount}
+      inboxCount={captureInboxCount}
       onAction={recordAction}
       onNavigate={navigateDestination}
       onSearchResult={openGlobalSearchResult}

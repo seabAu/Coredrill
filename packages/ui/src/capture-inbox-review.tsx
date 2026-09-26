@@ -1,4 +1,12 @@
-import { Fragment, useEffect, useId, useRef, useState, type ReactNode } from "react";
+import {
+  Fragment,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
 
 export interface CaptureInboxPreviewSection {
   readonly id: string;
@@ -119,7 +127,9 @@ function highlightedText(text: string, excerpt: string | undefined): ReactNode {
 export function CaptureInboxReview({ items, state = "ready" }: CaptureInboxReviewProps) {
   validateItems(items);
   const headingId = useId();
+  const previewId = `${headingId}-preview`;
   const previewTarget = useRef<HTMLElement | null>(null);
+  const queueButtons = useRef(new Map<string, HTMLButtonElement>());
   const [selectedEnvelopeId, setSelectedEnvelopeId] = useState<string | null>(
     items[0]?.envelopeId ?? null,
   );
@@ -136,6 +146,7 @@ export function CaptureInboxReview({ items, state = "ready" }: CaptureInboxRevie
     null;
   const selectedEvidence =
     selectedItem?.evidence.find(({ id }) => id === selectedEvidenceId) ?? null;
+  const selectedIndex = selectedItem === null ? -1 : items.indexOf(selectedItem);
 
   useEffect(() => {
     if (navigationVersion > 0) previewTarget.current?.focus();
@@ -151,6 +162,24 @@ export function CaptureInboxReview({ items, state = "ready" }: CaptureInboxRevie
     setSelectedEnvelopeId(item.envelopeId);
     setSelectedSectionId(item.sections[0]?.id ?? null);
     setSelectedEvidenceId(null);
+  };
+
+  const moveQueueSelection = (
+    event: KeyboardEvent<HTMLButtonElement>,
+    currentIndex: number,
+  ): void => {
+    let nextIndex: number | null = null;
+    if (event.key === "ArrowDown") nextIndex = (currentIndex + 1) % items.length;
+    if (event.key === "ArrowUp") nextIndex = (currentIndex - 1 + items.length) % items.length;
+    if (event.key === "Home") nextIndex = 0;
+    if (event.key === "End") nextIndex = items.length - 1;
+    if (nextIndex === null) return;
+
+    event.preventDefault();
+    const next = items[nextIndex];
+    if (next === undefined) return;
+    selectItem(next);
+    queueButtons.current.get(next.envelopeId)?.focus();
   };
 
   const moveEvidence = (offset: number): void => {
@@ -173,7 +202,12 @@ export function CaptureInboxReview({ items, state = "ready" }: CaptureInboxRevie
           <p className="cd-eyebrow">Durable local inbox</p>
           <h3 id={headingId}>Review captured evidence</h3>
         </div>
-        <p>Preview text is inert. Nothing here executes or refreshes a source.</p>
+        <div>
+          <strong aria-live="polite">
+            {items.length} {items.length === 1 ? "capture" : "captures"} awaiting review
+          </strong>
+          <p>Preview text is inert. Nothing here executes or refreshes a source.</p>
+        </div>
       </div>
 
       {state === "loading" ? (
@@ -191,15 +225,33 @@ export function CaptureInboxReview({ items, state = "ready" }: CaptureInboxRevie
         </div>
       ) : selectedItem === null ? null : (
         <div className="cd-capture-review__layout">
-          <aside aria-label="Capture queue" className="cd-capture-review__queue">
-            <ol>
-              {items.map((item) => (
+          <aside
+            aria-label={`Capture queue, ${String(items.length)} ${items.length === 1 ? "item" : "items"}`}
+            className="cd-capture-review__queue"
+          >
+            <div className="cd-capture-review__queue-heading">
+              <h4>Capture queue</h4>
+              <span>
+                Reviewing {String(selectedIndex + 1)} of {String(items.length)}
+              </span>
+            </div>
+            <ol aria-label="Captures awaiting review">
+              {items.map((item, index) => (
                 <li key={item.envelopeId}>
                   <button
+                    aria-controls={previewId}
                     aria-current={item.envelopeId === selectedItem.envelopeId ? "true" : undefined}
                     onClick={() => {
                       selectItem(item);
                     }}
+                    onKeyDown={(event) => {
+                      moveQueueSelection(event, index);
+                    }}
+                    ref={(node) => {
+                      if (node === null) queueButtons.current.delete(item.envelopeId);
+                      else queueButtons.current.set(item.envelopeId, node);
+                    }}
+                    tabIndex={item.envelopeId === selectedItem.envelopeId ? 0 : -1}
                     type="button"
                   >
                     <strong>{item.label}</strong>
@@ -211,11 +263,15 @@ export function CaptureInboxReview({ items, state = "ready" }: CaptureInboxRevie
             </ol>
           </aside>
 
-          <article className="cd-capture-review__preview">
+          <article
+            aria-labelledby={`${headingId}-preview-title`}
+            className="cd-capture-review__preview"
+            id={previewId}
+          >
             <header>
               <div>
                 <p className="cd-eyebrow">{titleCase(selectedItem.captureMethod)} capture</p>
-                <h4>{selectedItem.label}</h4>
+                <h4 id={`${headingId}-preview-title`}>{selectedItem.label}</h4>
               </div>
               <span className="cd-evidence-chip">Review required</span>
             </header>

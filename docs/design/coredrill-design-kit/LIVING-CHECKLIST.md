@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-09-26
 Current milestone: Phase 2 — capture and approved extraction (`GATE-0` and `GATE-1` external-evidence blockers remain open)
-Current work item: `XTR-010` — explicit disabled records and tests for prohibited/unreviewed sources
-Next recommended slice: `REV-001` after `XTR-010` proof
+Current work item: `REV-001` — Inbox queue, counts, keyboard selection, and review routing
+Next recommended slice: `REV-002` after `REV-001` proof
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `REV-001` after `XTR-010` proof
 | Field | Value |
 |---|---|
 | Milestone | Phase 2, with the independent Phase 0 and Phase 1 evidence gates retained below |
-| Item range | `XTR-010` |
+| Item range | `REV-001` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-09-26 |
-| Expected proof | Strict checked-in disabled LinkedIn/Glassdoor automation records, executable-registry separation, and policy fixtures proving named exclusions are disabled, unknown sources fail closed, a status-only edit cannot enable an exclusion, and manual capture remains available |
-| Blocker | None for `XTR-010`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
-| Next handoff | Re-read `D-033`, `D-034`, the excluded-source architecture, the strict source-policy contract, and the current official LinkedIn/Glassdoor policies; keep excluded records out of the executable transport registry; then run policy fixtures and the full clean-commit matrix before closing the item. |
+| Expected proof | Durable Inbox count and selected position, direct local Home-to-Inbox routing, roving single-tab-stop queue selection with Arrow/Home/End behavior, exact queue-to-review-panel relationships, inert source rendering, zero external requests, accessibility checks, and a hosted clean-commit matrix |
+| Blocker | None for `REV-001`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
+| Next handoff | Finish the full local gate for the implemented queue/routing slice, commit and push the proof-bearing change, verify the hosted matrix, then close `REV-001` and begin the field-group presentation contract in `REV-002`. |
 
 ## Milestone status
 
@@ -227,7 +227,7 @@ Next recommended slice: `REV-001` after `XTR-010` proof
 - [x] **XTR-007** Implement normalization for title/company/location/work mode/salary/currency/date/source without erasing raw values. — Proof: [versioned pure contract, 16-candidate golden witness, 1,100 property cases, immutable raw/provenance retention, and hosted clean-commit matrix](../../proof/phase-2-job-candidate-normalization-verification.md)
 - [x] **XTR-008** Publish per-field precision, coverage, and confidence calibration by adapter/version. — Proof: [versioned input/report, exact per-adapter and per-field metrics, explicit no-data/calibration semantics, evaluator edge-case tests, and hosted clean-commit matrix](../../proof/phase-2-extraction-quality-verification.md)
 - [x] **XTR-009** Implement connector attribution, cache/retention, rate limit, retry/backoff, and last-review display. — Proof: [default-off transport authorization, exact descriptor/rate/cache/retry/attribution controls, visible review/last-use disclosures, accessibility regression fix, and hosted clean-commit matrix](../../proof/phase-2-connector-transport-verification.md)
-- [ ] **XTR-010** Add explicit disabled records/tests for prohibited/unreviewed sources, including LinkedIn/Glassdoor automation. — Proof: _policy fixtures_
+- [x] **XTR-010** Add explicit disabled records/tests for prohibited/unreviewed sources, including LinkedIn/Glassdoor automation. — Proof: [strict disabled records, registry separation, named/unknown denial fixtures, manual-capture preservation, and hosted clean-commit matrix](../../proof/phase-2-source-exclusion-policy-verification.md)
 
 ## Review inbox
 

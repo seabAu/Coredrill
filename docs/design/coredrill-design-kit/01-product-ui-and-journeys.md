@@ -44,6 +44,14 @@ Two-pane layout: capture queue left, review form/source preview right.
 - Duplicate matches based on canonical URL, source ID, content hash, and fuzzy company/title are suggestions, never silent merges.
 - Raw source is shown safely as text/sanitized snapshot, never live executable HTML.
 
+`REV-001` turns the existing durable preview into the first complete Inbox
+queue route. Home's Review captures action opens the Pipeline directly in the
+Inbox view and records `/pipeline?view=inbox` history. The queue displays its
+total and selected position, uses one roving tab stop, and supports wrapping
+Arrow Up/Down plus Home/End selection. Each queue control names the exact
+review article it controls, and selection replaces only the local inert review
+panel; it does not fetch, accept, merge, or write a job.
+
 ### Pipeline: Board and Table
 
 Views:

@@ -4,6 +4,11 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
 const openCleanShell = async (page) => {
+  await page.goto("/");
+  await page.waitForFunction(() => globalThis.coredrillStorageSpike !== undefined);
+  await page.evaluate(async () => {
+    await globalThis.coredrillStorageSpike.delete();
+  });
   await page.goto("/app-shell.html");
   await page.waitForFunction(
     () =>
@@ -11,10 +16,6 @@ const openCleanShell = async (page) => {
       globalThis.coredrillExtensionInbox !== undefined &&
       globalThis.coredrillStorageSpike !== undefined,
   );
-  await page.evaluate(async () => {
-    await globalThis.coredrillStorageSpike.delete();
-    await globalThis.coredrillStorageSpike.openAndMigrate();
-  });
 };
 
 const openCapture = async (page, actionName) => {

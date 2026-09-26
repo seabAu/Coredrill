@@ -45,6 +45,10 @@ describe("CaptureInboxReview", () => {
     );
 
     expect(markup).toContain("Review captured evidence");
+    expect(markup).toContain("1 capture awaiting review");
+    expect(markup).toContain("Reviewing 1 of 1");
+    expect(markup).toContain('aria-controls="');
+    expect(markup).toContain('aria-labelledby="');
     expect(markup).toContain("&lt;img src=&quot;https://tracker.invalid/title&quot;");
     expect(markup).toContain("&lt;script&gt;globalThis.__ran=true&lt;/script&gt;");
     expect(markup).not.toContain("<script>");

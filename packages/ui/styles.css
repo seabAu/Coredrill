@@ -576,11 +576,18 @@ textarea {
   margin: 0;
 }
 
-.cd-capture-review__heading > p {
+.cd-capture-review__heading > div:last-child {
+  display: grid;
+  gap: var(--space-1);
+  max-width: 34rem;
+  justify-items: end;
+  text-align: right;
+}
+
+.cd-capture-review__heading > div:last-child > p {
   max-width: 34rem;
   color: var(--color-text-muted);
   font-size: var(--font-size-metadata);
-  text-align: right;
 }
 
 .cd-capture-review__state {
@@ -616,6 +623,23 @@ textarea {
 .cd-capture-review__queue {
   max-height: 48rem;
   overflow: auto;
+}
+
+.cd-capture-review__queue-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+
+.cd-capture-review__queue-heading h4 {
+  margin: 0;
+}
+
+.cd-capture-review__queue-heading span {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-metadata);
 }
 
 .cd-capture-review__queue ol {
