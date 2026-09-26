@@ -1,4 +1,8 @@
 import { GREENHOUSE_JOB_BOARD_POLICY_INPUT_V1 } from "./greenhouse-job-board.js";
+import {
+  GLASSDOOR_AUTOMATION_POLICY_INPUT_V1,
+  LINKEDIN_AUTOMATION_POLICY_INPUT_V1,
+} from "./disabled-source-policies.js";
 import { LEVER_POSTINGS_POLICY_INPUT_V1 } from "./lever-postings.js";
 import { USAJOBS_SEARCH_POLICY_INPUT_V1 } from "./usajobs-search.js";
 
@@ -232,10 +236,11 @@ function requireDomain(value: unknown): string {
 
 function requireUniqueArray<T>(
   value: unknown,
+  minimum: number,
   maximum: number,
   parse: (entry: unknown) => T,
 ): readonly T[] {
-  if (!Array.isArray(value) || value.length === 0 || value.length > maximum) {
+  if (!Array.isArray(value) || value.length < minimum || value.length > maximum) {
     throw new ConnectorPolicyError("record_invalid");
   }
   const parsed = value.map(parse);
@@ -262,19 +267,22 @@ export function parseConnectorPolicyRecordV1(input: unknown): ConnectorPolicyRec
   const reviewedAt = requireInstant(input["reviewedAt"]);
   const reviewDueAt = requireInstant(input["reviewDueAt"]);
   if (reviewDueAt <= reviewedAt) throw new ConnectorPolicyError("record_invalid");
+  const status = requireEnum(input["status"], CONNECTOR_POLICY_STATUSES);
 
   return Object.freeze({
     specVersion: CONNECTOR_POLICY_SPEC_VERSION,
     id: requireIdentifier(input["id"], "record_invalid"),
     owner: requireText(input["owner"], CONNECTOR_POLICY_LIMITS.maxOwnerLength),
-    status: requireEnum(input["status"], CONNECTOR_POLICY_STATUSES),
+    status,
     allowedMethods: requireUniqueArray(
       input["allowedMethods"],
+      status === "disabled" ? 0 : 1,
       CONNECTOR_POLICY_LIMITS.maxMethodsPerRecord,
       (method) => requireEnum(method, CONNECTOR_NETWORK_METHODS),
     ),
     baseDomains: requireUniqueArray(
       input["baseDomains"],
+      1,
       CONNECTOR_POLICY_LIMITS.maxDomainsPerRecord,
       requireDomain,
     ),
@@ -463,6 +471,14 @@ export const USAJOBS_SEARCH_CONNECTOR_POLICY_V1 = parseConnectorPolicyRecordV1(
   USAJOBS_SEARCH_POLICY_INPUT_V1,
 );
 
+export const LINKEDIN_AUTOMATION_POLICY_V1 = parseConnectorPolicyRecordV1(
+  LINKEDIN_AUTOMATION_POLICY_INPUT_V1,
+);
+
+export const GLASSDOOR_AUTOMATION_POLICY_V1 = parseConnectorPolicyRecordV1(
+  GLASSDOOR_AUTOMATION_POLICY_INPUT_V1,
+);
+
 /** Only connectors with a current source-specific review are registered here. */
 export const CHECKED_IN_CONNECTOR_POLICY_RECORDS_V1: readonly ConnectorPolicyRecordV1[] =
   Object.freeze([
@@ -471,6 +487,21 @@ export const CHECKED_IN_CONNECTOR_POLICY_RECORDS_V1: readonly ConnectorPolicyRec
     USAJOBS_SEARCH_CONNECTOR_POLICY_V1,
   ]);
 
+/** Explicit fail-closed records that are never supplied to the connector transport. */
+export const CHECKED_IN_DISABLED_SOURCE_POLICY_RECORDS_V1: readonly ConnectorPolicyRecordV1[] =
+  Object.freeze([GLASSDOOR_AUTOMATION_POLICY_V1, LINKEDIN_AUTOMATION_POLICY_V1]);
+
+/** Complete auditable source-policy inventory, including non-executable exclusions. */
+export const CHECKED_IN_SOURCE_POLICY_RECORDS_V1: readonly ConnectorPolicyRecordV1[] =
+  Object.freeze([
+    ...CHECKED_IN_CONNECTOR_POLICY_RECORDS_V1,
+    ...CHECKED_IN_DISABLED_SOURCE_POLICY_RECORDS_V1,
+  ]);
+
 export const checkedInConnectorPolicyRegistryV1 = createConnectorPolicyRegistryV1(
   CHECKED_IN_CONNECTOR_POLICY_RECORDS_V1,
+);
+
+export const checkedInSourcePolicyRegistryV1 = createConnectorPolicyRegistryV1(
+  CHECKED_IN_SOURCE_POLICY_RECORDS_V1,
 );

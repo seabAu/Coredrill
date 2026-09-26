@@ -2,7 +2,7 @@
 
 Date: 2026-09-26  
 Checklist item: `XTR-009`  
-Status: implementation verified locally; hosted clean-commit evidence pending
+Status: complete; implementation verified locally and in the hosted clean-commit matrix
 
 ## Outcome
 
@@ -115,3 +115,24 @@ pinned Node 24 process. Running the same web dependency builds and Vite build
 directly with Node 24 passed. The hosted clean-commit matrix remains the
 authoritative proof that the ordinary root command runs in the declared
 toolchain environment.
+
+## Hosted verification
+
+[Foundation CI run 36272680253](https://github.com/seabAu/Coredrill/actions/runs/36272680253)
+completed successfully on clean commit `3909369` on 2026-09-26. The matrix
+passed:
+
+- Chrome 151 and 152 application-shell, accessibility, storage, document,
+  resilience, and onboarding journeys;
+- Firefox 153 and 154 storage/repository contracts;
+- the complete build, static-check, unit/security/policy, license, audit, and
+  secret gate;
+- Chromium and Firefox extension build/transfer proof; and
+- Windows, macOS, and Linux native storage, secure-storage, recovery, lint,
+  package, and launch proof.
+
+The first hosted run of implementation commit `51ed7dc` correctly exposed that
+Chrome 151's accessibility engine rejected an explicit `listitem` role on an
+`article`. Commit `3909369` changed the disclosure cards to native `ul`/`li`
+semantics, retained the inner articles and selectors, passed both exact failing
+journeys locally, and then passed the complete hosted matrix above.

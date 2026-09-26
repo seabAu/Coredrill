@@ -2,10 +2,10 @@
 
 This file is the single progress ledger. `GOAL.md` defines the outcome; numbered design documents define behavior; `11-decision-register.md` defines accepted choices. This checklist records what is actually proven.
 
-Last design update: 2026-09-17
+Last design update: 2026-09-26
 Current milestone: Phase 2 — capture and approved extraction (`GATE-0` and `GATE-1` external-evidence blockers remain open)
-Current work item: `XTR-009` — connector attribution, cache/retention, rate-limit, retry/backoff, and review-age enforcement
-Next recommended slice: `XTR-010` after `XTR-009` proof
+Current work item: `XTR-010` — explicit disabled records and tests for prohibited/unreviewed sources
+Next recommended slice: `REV-001` after `XTR-010` proof
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `XTR-010` after `XTR-009` proof
 | Field | Value |
 |---|---|
 | Milestone | Phase 2, with the independent Phase 0 and Phase 1 evidence gates retained below |
-| Item range | `XTR-009` |
+| Item range | `XTR-010` |
 | Branch/worktree | `main` / repository root |
-| Started | 2026-09-17 |
-| Expected proof | Integration and policy tests proving exact connector attribution, bounded cache and retention behavior, source-specific rate limits, retry/backoff with terminal fail-closed states, and visible last-review age against the accepted connector policy records |
-| Blocker | None for `XTR-009`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
-| Next handoff | Read the connector policy records, source-policy runtime, approved adapter descriptors, capture/extraction architecture, security rules, and source-review display requirements completely; inventory the existing enforcement points; then implement the smallest policy-owned integration slice without adding an unreviewed source, credential flow, background surveillance, or canonical overwrite path. |
+| Started | 2026-09-26 |
+| Expected proof | Strict checked-in disabled LinkedIn/Glassdoor automation records, executable-registry separation, and policy fixtures proving named exclusions are disabled, unknown sources fail closed, a status-only edit cannot enable an exclusion, and manual capture remains available |
+| Blocker | None for `XTR-010`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
+| Next handoff | Re-read `D-033`, `D-034`, the excluded-source architecture, the strict source-policy contract, and the current official LinkedIn/Glassdoor policies; keep excluded records out of the executable transport registry; then run policy fixtures and the full clean-commit matrix before closing the item. |
 
 ## Milestone status
 
@@ -226,7 +226,7 @@ Next recommended slice: `XTR-010` after `XTR-009` proof
 - [x] **XTR-006** Implement USAJOBS adapter/configuration under reviewed current requirements. — Proof: [current official interface and consumer-policy review, credential-safe Public-only descriptors, 33-of-33 synthetic golden candidates, raw provenance, and hosted clean-commit matrix](../../proof/phase-2-usajobs-public-search-verification.md)
 - [x] **XTR-007** Implement normalization for title/company/location/work mode/salary/currency/date/source without erasing raw values. — Proof: [versioned pure contract, 16-candidate golden witness, 1,100 property cases, immutable raw/provenance retention, and hosted clean-commit matrix](../../proof/phase-2-job-candidate-normalization-verification.md)
 - [x] **XTR-008** Publish per-field precision, coverage, and confidence calibration by adapter/version. — Proof: [versioned input/report, exact per-adapter and per-field metrics, explicit no-data/calibration semantics, evaluator edge-case tests, and hosted clean-commit matrix](../../proof/phase-2-extraction-quality-verification.md)
-- [ ] **XTR-009** Implement connector attribution, cache/retention, rate limit, retry/backoff, and last-review display. — Proof: _integration/policy tests_
+- [x] **XTR-009** Implement connector attribution, cache/retention, rate limit, retry/backoff, and last-review display. — Proof: [default-off transport authorization, exact descriptor/rate/cache/retry/attribution controls, visible review/last-use disclosures, accessibility regression fix, and hosted clean-commit matrix](../../proof/phase-2-connector-transport-verification.md)
 - [ ] **XTR-010** Add explicit disabled records/tests for prohibited/unreviewed sources, including LinkedIn/Glassdoor automation. — Proof: _policy fixtures_
 
 ## Review inbox

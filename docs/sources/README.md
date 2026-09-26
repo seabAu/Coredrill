@@ -21,3 +21,14 @@ action, then rechecks exact destination/method, review age, global and targeted
 kill switches, source-specific rate scope, one-in-flight policy, bounded
 memory-only cache, response size, retry/backoff, retention, and attribution.
 Unknown sources remain denied by default.
+
+`XTR-010` keeps a separate checked-in exclusion inventory for source automation
+that must never be supplied to the connector transport. It currently contains
+explicit `disabled` records for LinkedIn and Glassdoor automation. Each record
+has zero allowed methods, exact affected domains, current official policy and
+privacy links, a review window, a no-network/no-retention rule, a kill switch,
+and a user-visible manual-entry fallback. Changing only `status` to `enabled`
+is invalid because an enabled record must have at least one separately reviewed
+method. The complete audit registry denies these known exclusions as
+`connector_disabled`; an unreviewed ID remains `unknown_connector`. Manual
+capture remains available in both cases.

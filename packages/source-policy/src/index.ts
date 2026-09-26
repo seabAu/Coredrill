@@ -1,6 +1,8 @@
 /** Connector registry, allow/deny policy, and kill-switch enforcement. */
 export {
   CHECKED_IN_CONNECTOR_POLICY_RECORDS_V1,
+  CHECKED_IN_DISABLED_SOURCE_POLICY_RECORDS_V1,
+  CHECKED_IN_SOURCE_POLICY_RECORDS_V1,
   CONNECTOR_ATTRIBUTION_POLICIES,
   CONNECTOR_CREDENTIAL_MODES,
   CONNECTOR_NETWORK_METHODS,
@@ -10,10 +12,13 @@ export {
   CONNECTOR_POLICY_SPEC_VERSION,
   CONNECTOR_POLICY_STATUSES,
   GREENHOUSE_JOB_BOARD_CONNECTOR_POLICY_V1,
+  GLASSDOOR_AUTOMATION_POLICY_V1,
   LEVER_POSTINGS_CONNECTOR_POLICY_V1,
+  LINKEDIN_AUTOMATION_POLICY_V1,
   USAJOBS_SEARCH_CONNECTOR_POLICY_V1,
   ConnectorPolicyError,
   checkedInConnectorPolicyRegistryV1,
+  checkedInSourcePolicyRegistryV1,
   createConnectorPolicyRegistryV1,
   parseConnectorPolicyRecordV1,
   type ConnectorAttributionPolicy,
@@ -28,6 +33,11 @@ export {
   type ConnectorRuntimeControlV1,
   type SourceAcquisitionRequestV1,
 } from "./connector-policy.js";
+
+export {
+  GLASSDOOR_AUTOMATION_POLICY_INPUT_V1,
+  LINKEDIN_AUTOMATION_POLICY_INPUT_V1,
+} from "./disabled-source-policies.js";
 
 export {
   CONNECTOR_TRANSPORT_ERROR_CODES,

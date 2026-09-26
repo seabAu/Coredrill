@@ -3,13 +3,18 @@ import { describe, expect, it } from "vitest";
 
 import {
   CHECKED_IN_CONNECTOR_POLICY_RECORDS_V1,
+  CHECKED_IN_DISABLED_SOURCE_POLICY_RECORDS_V1,
+  CHECKED_IN_SOURCE_POLICY_RECORDS_V1,
   ConnectorPolicyError,
+  GLASSDOOR_AUTOMATION_POLICY_V1,
   GREENHOUSE_JOB_BOARD_CONNECTOR_ID,
   GREENHOUSE_JOB_BOARD_CONNECTOR_POLICY_V1,
   LEVER_POSTINGS_CONNECTOR_ID,
   LEVER_POSTINGS_CONNECTOR_POLICY_V1,
+  LINKEDIN_AUTOMATION_POLICY_V1,
   USAJOBS_SEARCH_CONNECTOR_POLICY_V1,
   checkedInConnectorPolicyRegistryV1,
+  checkedInSourcePolicyRegistryV1,
   createConnectorPolicyRegistryV1,
   parseConnectorPolicyRecordV1,
   type ConnectorPolicyErrorCode,
@@ -81,12 +86,29 @@ describe("connector policy records", () => {
       { ...ENABLED_RECORD, baseDomains: ["api.jobs.example", "api.jobs.example"] },
       { ...ENABLED_RECORD, reviewedAt: ENABLED_RECORD.reviewDueAt },
       { ...ENABLED_RECORD, killSwitch: false },
+      { ...ENABLED_RECORD, allowedMethods: [] },
       { ...ENABLED_RECORD, allowedMethods: ["general_crawl"] },
     ];
 
     for (const invalid of invalidRecords) {
       expectErrorCode(() => parseConnectorPolicyRecordV1(invalid), "record_invalid");
     }
+  });
+
+  it("accepts an empty method set only for an explicitly disabled record", () => {
+    const disabled = parseConnectorPolicyRecordV1({
+      ...ENABLED_RECORD,
+      id: "unreviewed-source",
+      status: "disabled",
+      allowedMethods: [],
+    });
+
+    expect(disabled.allowedMethods).toEqual([]);
+    expect(Object.isFrozen(disabled.allowedMethods)).toBe(true);
+    expectErrorCode(
+      () => parseConnectorPolicyRecordV1({ ...disabled, status: "enabled" }),
+      "record_invalid",
+    );
   });
 
   it("rejects duplicate connector IDs and oversized registries before authorization", () => {
@@ -250,6 +272,145 @@ describe("connector policy authorization", () => {
         },
       ),
     ).toMatchObject({ allowed: true, reason: "manual_capture" });
+  });
+
+  it("keeps prohibited and unreviewed automation in an explicit non-executable inventory", () => {
+    expect(CHECKED_IN_DISABLED_SOURCE_POLICY_RECORDS_V1).toEqual([
+      GLASSDOOR_AUTOMATION_POLICY_V1,
+      LINKEDIN_AUTOMATION_POLICY_V1,
+    ]);
+    expect(CHECKED_IN_SOURCE_POLICY_RECORDS_V1).toHaveLength(5);
+
+    const prohibitedAttempts = [
+      {
+        record: LINKEDIN_AUTOMATION_POLICY_V1,
+        destinationUrl: "https://www.linkedin.com/jobs/view/123",
+      },
+      {
+        record: GLASSDOOR_AUTOMATION_POLICY_V1,
+        destinationUrl: "https://www.glassdoor.com/job-listing/example-JV_123.htm",
+      },
+    ] as const;
+
+    for (const { record, destinationUrl } of prohibitedAttempts) {
+      expect(record.status).toBe("disabled");
+      expect(record.allowedMethods).toEqual([]);
+      expect(record.killSwitch).toBe(true);
+      expect(
+        checkedInSourcePolicyRegistryV1.authorize(
+          {
+            kind: "network_connector",
+            connectorId: record.id,
+            method: "documented_public_api",
+            destinationUrl,
+            now: "2026-09-26T12:00:00.000Z",
+          },
+          CLEAR_RUNTIME,
+        ),
+      ).toEqual({
+        allowed: false,
+        reason: "connector_disabled",
+        connectorId: record.id,
+      });
+      expect(
+        checkedInConnectorPolicyRegistryV1.authorize(
+          {
+            kind: "network_connector",
+            connectorId: record.id,
+            method: "documented_public_api",
+            destinationUrl,
+            now: "2026-09-26T12:00:00.000Z",
+          },
+          CLEAR_RUNTIME,
+        ),
+      ).toEqual({
+        allowed: false,
+        reason: "unknown_connector",
+        connectorId: record.id,
+      });
+    }
+
+    expect(
+      checkedInSourcePolicyRegistryV1.authorize(
+        { ...NETWORK_REQUEST, connectorId: "unreviewed-network-source" },
+        CLEAR_RUNTIME,
+      ),
+    ).toMatchObject({ allowed: false, reason: "unknown_connector" });
+    expect(checkedInSourcePolicyRegistryV1.authorize({ kind: "manual_capture" })).toEqual({
+      allowed: true,
+      reason: "manual_capture",
+      connectorId: null,
+    });
+  });
+
+  it("emits the XTR-010 prohibited-source policy proof", () => {
+    const proof = {
+      prohibitedRecords: CHECKED_IN_DISABLED_SOURCE_POLICY_RECORDS_V1.map((record) => record.id),
+      allProhibitedRecordsDisabled: CHECKED_IN_DISABLED_SOURCE_POLICY_RECORDS_V1.every(
+        (record) => record.status === "disabled" && record.allowedMethods.length === 0,
+      ),
+      linkedInAutomationDenied:
+        checkedInSourcePolicyRegistryV1.authorize(
+          {
+            kind: "network_connector",
+            connectorId: LINKEDIN_AUTOMATION_POLICY_V1.id,
+            method: "documented_public_api",
+            destinationUrl: "https://www.linkedin.com/jobs/view/123",
+            now: "2026-09-26T12:00:00.000Z",
+          },
+          CLEAR_RUNTIME,
+        ).reason === "connector_disabled",
+      glassdoorAutomationDenied:
+        checkedInSourcePolicyRegistryV1.authorize(
+          {
+            kind: "network_connector",
+            connectorId: GLASSDOOR_AUTOMATION_POLICY_V1.id,
+            method: "documented_public_api",
+            destinationUrl: "https://www.glassdoor.com/job-listing/example-JV_123.htm",
+            now: "2026-09-26T12:00:00.000Z",
+          },
+          CLEAR_RUNTIME,
+        ).reason === "connector_disabled",
+      unknownSourceDenied:
+        checkedInSourcePolicyRegistryV1.authorize(
+          { ...NETWORK_REQUEST, connectorId: "unreviewed-network-source" },
+          CLEAR_RUNTIME,
+        ).reason === "unknown_connector",
+      transportProfilesRemainReviewedOnly: CHECKED_IN_CONNECTOR_POLICY_RECORDS_V1.length === 3,
+      exclusionsAbsentFromTransportRegistry: CHECKED_IN_DISABLED_SOURCE_POLICY_RECORDS_V1.every(
+        (record) =>
+          checkedInConnectorPolicyRegistryV1.authorize(
+            {
+              kind: "network_connector",
+              connectorId: record.id,
+              method: "documented_public_api",
+              destinationUrl: `https://${record.baseDomains[0] ?? "invalid.example"}/`,
+              now: "2026-09-26T12:00:00.000Z",
+            },
+            CLEAR_RUNTIME,
+          ).reason === "unknown_connector",
+      ),
+      manualCaptureUnaffected:
+        checkedInSourcePolicyRegistryV1.authorize({ kind: "manual_capture" }).reason ===
+        "manual_capture",
+    };
+
+    expect(proof).toEqual({
+      prohibitedRecords: ["glassdoor-automation", "linkedin-automation"],
+      allProhibitedRecordsDisabled: true,
+      linkedInAutomationDenied: true,
+      glassdoorAutomationDenied: true,
+      unknownSourceDenied: true,
+      transportProfilesRemainReviewedOnly: true,
+      exclusionsAbsentFromTransportRegistry: true,
+      manualCaptureUnaffected: true,
+    });
+    const runtimeProcess = (
+      globalThis as typeof globalThis & {
+        readonly process?: { readonly stdout?: { write(value: string): unknown } };
+      }
+    ).process;
+    runtimeProcess?.stdout?.write(`XTR010_PROOF ${JSON.stringify(proof)}\n`);
   });
 
   it("emits the retained XTR-001 proof record", () => {

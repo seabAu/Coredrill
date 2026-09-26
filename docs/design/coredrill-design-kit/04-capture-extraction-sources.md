@@ -234,6 +234,17 @@ are implemented under `XTR-009`.
 - retries only network failures and `429`, `502`, `503`, or `504`, honors valid `Retry-After` up to 30 seconds, uses bounded exponential backoff, stops after three attempts, and fails closed for every terminal state; and
 - returns exact source attribution plus review timestamps/age with each result. Settings displays the same checked-in disclosures, current/due/expired review state, exact domains, credential mode, last use, rate/cache/retention rules, and policy links. It does not expose credential values or imply that an off connector has run.
 
+`XTR-010` makes the excluded-source side of the same gate auditable. LinkedIn
+and Glassdoor automation have strict checked-in `disabled` records with zero
+allowed methods, exact affected domains, current policy/privacy links, review
+and due timestamps, explicit no-network/no-retention rules, manual-entry
+fallback text, and kill switches. Enabled records still require at least one
+reviewed method, so flipping only an excluded record's status fails validation.
+The executable transport registry remains limited to Greenhouse, Lever, and
+USAJOBS; a separate complete audit registry returns `connector_disabled` for
+the two named exclusions and `unknown_connector` for every other unreviewed
+source. Neither denial disables manual capture.
+
 #### User files/paste
 
 Always supported. Text/HTML/JSON/CSV are baseline. PDF/DOCX import extracts to a proposal with page/paragraph provenance and requires review.
