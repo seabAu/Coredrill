@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-09-26
 Current milestone: Phase 2 — capture and approved extraction (`GATE-0` and `GATE-1` external-evidence blockers remain open)
-Current work item: `REV-002` — field groups, candidate evidence, confirmation, and conflict presentation
-Next recommended slice: `REV-003` after `REV-002` proof
+Current work item: `REV-003` — accept high-confidence fields without accepting conflicts or unknowns
+Next recommended slice: `REV-004` after `REV-003` proof
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `REV-003` after `REV-002` proof
 | Field | Value |
 |---|---|
 | Milestone | Phase 2, with the independent Phase 0 and Phase 1 evidence gates retained below |
-| Item range | `REV-002` |
+| Item range | `REV-003` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-09-26 |
-| Expected proof | A bounded read-only review model groups every retained candidate into the documented field sections and visibly exposes value, extraction method, calibrated confidence, exact source excerpt/path, user-confirmation state, and unresolved same-field conflicts without accepting or overwriting anything; component/E2E accessibility and inert-source tests cover the presentation |
-| Blocker | None for `REV-002`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
-| Next handoff | Extend the hash-verified preview projection with bounded confirmation/conflict metadata, render documented field groups with explicit non-color-only state labels, prove candidate/source routing and narrow reflow, then run the clean-commit matrix before closing `REV-002`. Do not add accept, merge, save, or canonical writes in this slice. |
+| Expected proof | A bounded, versioned pure acceptance rule uses the explicit high-confidence threshold, accepts only known supported fields with one non-conflicting candidate, and returns stable reasons for every field it leaves for review; rule tests cover the inclusive threshold boundary, conflicts, unknown fields, lower confidence, malformed input, determinism, and immutable output without persistence or canonical writes |
+| Blocker | None for `REV-003`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
+| Next handoff | Add the smallest pure application-layer acceptance-plan contract over validated review candidates, align the conservative high-confidence cutoff with the existing calibration bins, prove that conflicts and unknown fields never enter the accepted set, then run the clean-commit matrix before closing `REV-003`. Do not add Merge, Snooze, Discard, Save job, or durable writes in this slice. |
 
 ## Milestone status
 
@@ -232,7 +232,7 @@ Next recommended slice: `REV-003` after `REV-002` proof
 ## Review inbox
 
 - [x] **REV-001** Implement Inbox queue, counts, keyboard selection, and review routing. — Proof: [durable counts, local Home routing, roving keyboard selection, named review-panel linkage, inert-source E2E, and hosted clean-commit matrix](../../proof/phase-2-review-inbox-queue-verification.md)
-- [ ] **REV-002** Implement field groups with candidate, method, confidence, source excerpt, confirmation, and conflict UI. — Proof: _component/E2E tests_
+- [x] **REV-002** Implement field groups with candidate, method, confidence, source excerpt, confirmation, and conflict UI. — Proof: [bounded grouped review projection, explicit confirmation/conflict presentation, inert exact-source routing, accessibility E2E, and hosted clean-commit matrix](../../proof/phase-2-review-field-groups-verification.md)
 - [ ] **REV-003** Implement Accept high-confidence fields without accepting conflicts/unknowns. — Proof: _rule tests_
 - [ ] **REV-004** Implement Merge, Snooze, Discard/undo, and Save job flows. — Proof: _transaction/E2E tests_
 - [ ] **REV-005** Implement expired/changed/blocked source, unsupported page, and manual fallback states. — Proof: _state fixtures_

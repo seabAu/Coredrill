@@ -2,7 +2,9 @@
 
 Date: 2026-09-26  
 Checklist item: `REV-002`  
-Status: implementation verified locally; hosted clean-commit evidence pending
+Status: complete
+Implementation commit: `2b0117b4463c6f23970d7ec4bd926d40ddb49bcf`
+Hosted proof: [Foundation CI run 36277055328](https://github.com/seabAu/Coredrill/actions/runs/36277055328)
 
 ## Outcome
 
@@ -60,7 +62,10 @@ REV002_E2E_PROOF {"fieldGroupVisible":true,"groupedCandidates":2,"methodVisible"
   tests, and 693 unit tests: passing.
 - Full app-shell browser matrix: 63/63 passing, including the REV-002 proof,
   with zero axe violations and zero external requests in the review fixture.
-- Hosted clean-commit verification: pending the final slice commit.
+- Hosted clean-commit verification: Foundation CI run `36277055328` passed the
+  complete Windows, Ubuntu, macOS, Chrome 151/152, Firefox 153/154, extension,
+  policy, packaging, and full-history secret-scan matrix for implementation
+  commit `2b0117b4463c6f23970d7ec4bd926d40ddb49bcf`.
 
 ## Decision impact
 
