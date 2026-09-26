@@ -34,6 +34,8 @@ describe("ConnectorRegistrySettings", () => {
     );
 
     expect(markup).toContain('data-testid="connector-registry-settings"');
+    expect(markup).toContain('<ul class="cd-connector-registry-list"><li><article');
+    expect(markup).not.toContain('role="listitem"');
     expect(markup).toContain('data-effective-state="off"');
     expect(markup).toContain("Network sources are off by default");
     expect(markup).toContain("Reviewed today · 30 days until review");

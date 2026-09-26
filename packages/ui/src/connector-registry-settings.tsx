@@ -62,75 +62,76 @@ export const ConnectorRegistrySettings = ({ connectors }: ConnectorRegistrySetti
       still apply before any request.
     </p>
 
-    <div className="cd-connector-registry-list" role="list">
+    <ul className="cd-connector-registry-list">
       {connectors.map((connector) => (
-        <article
-          data-connector-id={connector.connectorId}
-          data-effective-state={connector.effectiveState}
-          data-review-state={connector.reviewState}
-          key={connector.connectorId}
-          role="listitem"
-        >
-          <header>
-            <div>
-              <h3>{connector.label}</h3>
-              <p>{connector.userVisibleDataFlow}</p>
-            </div>
-            <span className="cd-connector-state">{stateCopy(connector.effectiveState)}</span>
-          </header>
+        <li key={connector.connectorId}>
+          <article
+            data-connector-id={connector.connectorId}
+            data-effective-state={connector.effectiveState}
+            data-review-state={connector.reviewState}
+          >
+            <header>
+              <div>
+                <h3>{connector.label}</h3>
+                <p>{connector.userVisibleDataFlow}</p>
+              </div>
+              <span className="cd-connector-state">{stateCopy(connector.effectiveState)}</span>
+            </header>
 
-          <dl>
-            <div>
-              <dt>Policy review</dt>
-              <dd>
-                {reviewCopy(connector)}
-                <small>
-                  Reviewed {dateOnly(connector.reviewedAt)} · due {dateOnly(connector.reviewDueAt)}
-                </small>
-              </dd>
-            </div>
-            <div>
-              <dt>Last use</dt>
-              <dd>
-                {connector.lastUsedAt === null
-                  ? "Never on this device"
-                  : dateOnly(connector.lastUsedAt)}
-              </dd>
-            </div>
-            <div>
-              <dt>Exact destination</dt>
-              <dd>{connector.destinationDomains.join(", ")}</dd>
-            </div>
-            <div>
-              <dt>Credentials</dt>
-              <dd>
-                {connector.credentials === "none"
-                  ? "None"
-                  : "User configured; bound only at the privileged connector"}
-              </dd>
-            </div>
-            <div>
-              <dt>Attribution</dt>
-              <dd>{connector.attributionLabel}</dd>
-            </div>
-          </dl>
+            <dl>
+              <div>
+                <dt>Policy review</dt>
+                <dd>
+                  {reviewCopy(connector)}
+                  <small>
+                    Reviewed {dateOnly(connector.reviewedAt)} · due{" "}
+                    {dateOnly(connector.reviewDueAt)}
+                  </small>
+                </dd>
+              </div>
+              <div>
+                <dt>Last use</dt>
+                <dd>
+                  {connector.lastUsedAt === null
+                    ? "Never on this device"
+                    : dateOnly(connector.lastUsedAt)}
+                </dd>
+              </div>
+              <div>
+                <dt>Exact destination</dt>
+                <dd>{connector.destinationDomains.join(", ")}</dd>
+              </div>
+              <div>
+                <dt>Credentials</dt>
+                <dd>
+                  {connector.credentials === "none"
+                    ? "None"
+                    : "User configured; bound only at the privileged connector"}
+                </dd>
+              </div>
+              <div>
+                <dt>Attribution</dt>
+                <dd>{connector.attributionLabel}</dd>
+              </div>
+            </dl>
 
-          <details>
-            <summary>Rate, cache, and retention policy</summary>
-            <p>{connector.ratePolicy}</p>
-            <p>{connector.retention}</p>
-          </details>
+            <details>
+              <summary>Rate, cache, and retention policy</summary>
+              <p>{connector.ratePolicy}</p>
+              <p>{connector.retention}</p>
+            </details>
 
-          <nav aria-label={`${connector.label} policy links`}>
-            <a href={connector.termsUrl} rel="noreferrer" target="_blank">
-              Terms and source policy
-            </a>
-            <a href={connector.privacyUrl} rel="noreferrer" target="_blank">
-              Privacy
-            </a>
-          </nav>
-        </article>
+            <nav aria-label={`${connector.label} policy links`}>
+              <a href={connector.termsUrl} rel="noreferrer" target="_blank">
+                Terms and source policy
+              </a>
+              <a href={connector.privacyUrl} rel="noreferrer" target="_blank">
+                Privacy
+              </a>
+            </nav>
+          </article>
+        </li>
       ))}
-    </div>
+    </ul>
   </section>
 );

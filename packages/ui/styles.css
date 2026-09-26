@@ -320,6 +320,9 @@ textarea {
 .cd-connector-registry-list {
   display: grid;
   gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .cd-connector-registry-list article {
