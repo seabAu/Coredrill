@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-09-27
 Current milestone: Phase 2 — capture and approved extraction (`GATE-0` and `GATE-1` external-evidence blockers remain open)
-Current work item: `PEX-004` — implement exact app/extension identity validation and compatibility handshake
-Next recommended slice: `PEX-005` after `PEX-004` proof
+Current work item: `PEX-005` — implement hosted app transfer and Firefox/manual fallback
+Next recommended slice: `PEX-006` after `PEX-005` proof
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `PEX-005` after `PEX-004` proof
 | Field | Value |
 |---|---|
 | Milestone | Phase 2, with the independent Phase 0 and Phase 1 evidence gates retained below |
-| Item range | `PEX-004` |
+| Item range | `PEX-005` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-09-26 |
-| Expected proof | Strict security tests prove an explicit versioned compatibility handshake, exact app-origin and extension-ID agreement on both sides, bounded capabilities/version negotiation, and fail-closed mismatch behavior without permission broadening; the production hosted-transfer journey remains outside this slice |
-| Blocker | None for `PEX-004`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
-| Next handoff | Verify the implemented strict handshake through the complete local gate and hosted clean-commit CI. Record the exact proof before closing `PEX-004`, then move to the `PEX-005` hosted transfer and Firefox/manual-fallback browser matrix. The public app origin remains a `PEX-005` deployment decision; do not substitute the reserved `.test` evidence origin silently. |
+| Expected proof | A production browser matrix proves the deployed isolated hosted app can complete the exact-identity Chromium handshake, durable pull/ack journey, retry and failure states with the release extension identity, while Firefox completes the documented checksummed manual fallback; manifests, CSP, permissions, storage isolation, offline behavior, and clean-profile recovery remain within accepted boundaries |
+| Blocker | The isolated public app origin, deployment target, and release extension identity are not selected in the repository. Inspect all existing deployment and release records first; if they remain unresolved, `PEX-005` requires an owner decision and access to the selected external targets. `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
+| Next handoff | Audit current hosting, origin, service-worker scope, extension release identity, store-package, and browser-matrix records without treating the reserved `.test` origin as production. Complete any target-independent hardening and evidence first. If no approved public origin/deployment target exists, present the smallest exact owner decision needed for the real hosted proof; retain the Firefox checksummed manual fallback and do not add permissions or a content-script bridge for convenience. |
 
 ## Milestone status
 
@@ -243,7 +243,7 @@ Next recommended slice: `PEX-005` after `PEX-004` proof
 - [x] **PEX-001** Implement recognized/unrecognized/needs-input/queued/transferred/permission states. — Proof: [strict six-state catalog, deterministic resolver/classifier, semantic panel, least-privilege package inspection, browser regression, and hosted cross-platform verification](../../proof/phase-2-production-extension-state-catalog-verification.md)
 - [x] **PEX-002** Implement side-panel preview, page-selection correction, note, and source/freshness display. — Proof: [strict versioned draft, provenance-retaining corrections/note, production side-panel browser E2E, least-privilege package inspection, and hosted cross-platform verification](../../proof/phase-2-production-extension-preview-verification.md)
 - [x] **PEX-003** Implement bounded persistent outbox, retry/backoff, expiry warning, export, and post-ack cleanup. — Proof: [strict persisted retry lifecycle, legacy migration, exact post-ack cleanup, expiry/export UI, full-browser restart, storage-pressure retention, production-package inspection, and hosted clean-commit matrix](../../proof/phase-2-production-extension-outbox-verification.md)
-- [ ] **PEX-004** Implement exact app-origin/extension-ID validation and compatibility handshake. — Proof: _security tests_
+- [x] **PEX-004** Implement exact app-origin/extension-ID validation and compatibility handshake. — Proof: [strict bounded handshake, bidirectional identity agreement, fail-closed version/capability negotiation, production-browser mismatch cases, unchanged permissions/fallback, and hosted clean-commit matrix](../../proof/phase-2-production-extension-compatibility-verification.md)
 - [ ] **PEX-005** Implement hosted app transfer and Firefox/manual fallback. — Proof: _browser matrix_
 - [ ] **PEX-006** Add optional source permissions only through policy-reviewed enable flow. — Proof: _manifest/settings test_
 - [ ] **PEX-007** Run malicious-page, prompt-injection-text, huge-page, SPA-change, iframe, redirect, and replay fixtures. — Proof: _security report_
