@@ -2,7 +2,9 @@
 
 Date: 2026-09-27  
 Checklist item: `Q2-005`  
-Status: implementation and local production-browser verification passed; hosted clean-commit verification pending
+Implementation commit: `12fb880ea2178b5f39141c2870c54a5a08266d72`  
+Hosted run: [Foundation CI 36302873394](https://github.com/seabAu/Coredrill/actions/runs/36302873394)  
+Status: complete
 
 ## Outcome
 
@@ -58,7 +60,11 @@ The complete local `pnpm verify` gate also passed. It covered formatting, archit
 
 The separate complete extension-transfer matrix also passed all seven tests: the new canonical journey, extension preview/correction, adversarial and huge-page capture, acknowledged Chromium transfer/restart/retry, storage-failure preservation, and Firefox manual fallback.
 
-The hosted clean-commit run will be recorded after the implementation commit is immutable.
+## Hosted clean-commit verification
+
+Foundation CI run 36302873394 passed from the exact implementation commit. All ten required lanes completed successfully: the aggregate frozen-install build/static/test/policy gate; the production Chromium/Firefox extension-transfer matrix; Chrome `151.0.7922.138` and `152.0.7977.54`; Firefox `153.0` and `154.0`; Windows, macOS 26, and Ubuntu 26.04 native package builds and startup proof; and the full-history secret scan. The push-only pull-request dependency-review lane was skipped by design.
+
+The dedicated extension-transfer job rebuilt and inspected both production extension targets, rebuilt Firefox from its source-review ZIP, passed all seven browser tests, and uploaded immutable artifact [`coredrill-extension-transfer-12fb880ea2178b5f39141c2870c54a5a08266d72`](https://github.com/seabAu/Coredrill/actions/runs/36302873394/artifacts/10926421862). Artifact `10926421862` is 1,501,170 bytes with archive digest `sha256:625cbf42b4c4db81136c73543fc9e632a2f6876dc934aaf0c2a5816f39b2ba77`; it retains the Playwright JSON report, canonical-journey JSON witness, visible correction screenshot, and exact packaged Chrome and Firefox outputs.
 
 ## Decision review
 

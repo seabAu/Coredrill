@@ -3,9 +3,9 @@
 This file is the single progress ledger. `GOAL.md` defines the outcome; numbered design documents define behavior; `11-decision-register.md` defines accepted choices. This checklist records what is actually proven.
 
 Last design update: 2026-09-27
-Current milestone: Phase 2 — capture and approved extraction (`GATE-0` and `GATE-1` external-evidence blockers remain open)
-Current work item: `Q2-005` — run and retain the complete Phase 2 canonical capture/review journey
-Next recommended slice: `EVD-001` after `Q2-005`; retain `Q2-001`, `Q2-003`, `PEX-005`, `PEX-006`, and `GATE-2` as explicit external-evidence/manual-review/permission/deployment blockers
+Current milestone: Phase 3 — career evidence and versioned documents (`GATE-0`, `GATE-1`, and `GATE-2` external-evidence blockers remain open)
+Current work item: `EVD-001` — implement the complete Career Profile repository family
+Next recommended slice: `EVD-002` after `EVD-001`; retain `Q2-001`, `Q2-003`, `PEX-005`, `PEX-006`, and `GATE-2` as explicit external-evidence/manual-review/permission/deployment blockers
 
 ## How to use this file
 
@@ -23,13 +23,13 @@ Next recommended slice: `EVD-001` after `Q2-005`; retain `Q2-001`, `Q2-003`, `PE
 
 | Field | Value |
 |---|---|
-| Milestone | Phase 2, with the independent Phase 0 and Phase 1 evidence gates retained below |
-| Item range | `Q2-005` |
+| Milestone | Phase 3, with the independent Phase 0, Phase 1, and Phase 2 evidence gates retained below |
+| Item range | `EVD-001` |
 | Branch/worktree | `main` / repository root |
-| Started | 2026-09-26 |
-| Expected proof | One retained real-browser artifact drives a production-packaged extension capture through its outbox and acknowledgement into the durable Inbox, exposes and retains an explicit candidate conflict, saves the reviewed job, re-ingests changed source evidence without overwriting confirmed data, shows the source diff, applies a manual correction, and proves the final durable record after reload with zero unapproved network activity |
-| Blocker | None for the repository-side `Q2-005` journey. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-2`, `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
-| Next handoff | Run the full local gate, push the exact `Q2-005` implementation commit, retain the hosted extension-transfer artifact and complete Foundation CI result, then close `Q2-005` only if that proof stays green. |
+| Started | 2026-09-27 |
+| Expected proof | Employment, education, project, skill, accomplishment, certification, publication, volunteer, story, and preference repositories have explicit schema/repository contracts, shared browser/native parity, transaction and constraint coverage, and rollback proof without starting unrelated import, editor, or AI work |
+| Blocker | None for repository-side `EVD-001`. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-2`, `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
+| Next handoff | Inspect the accepted Career Profile data model and existing shared repository manifest, then add only the `EVD-001` schema/repository surface and cross-runtime proof before advancing to evidence verification/staleness/privacy state in `EVD-002`. |
 
 ## Milestone status
 
@@ -37,8 +37,8 @@ Next recommended slice: `EVD-001` after `Q2-005`; retain `Q2-001`, `Q2-003`, `PE
 |---|---|---|---|
 | 0 | Repository, UX prototypes, and risky platform assumptions proven | Blocked on representative human validation | `GATE-0` |
 | 1 | Complete local tracker and recovery loop | Implementation complete; gate blocked on external performance/accessibility evidence | `GATE-1` |
-| 2 | Safe capture, review, and approved extraction | In progress | `GATE-2` |
-| 3 | Career evidence and versioned documents | Not started | `GATE-3` |
+| 2 | Safe capture, review, and approved extraction | Implementation complete; gate blocked on external usability/accessibility/publication evidence | `GATE-2` |
+| 3 | Career evidence and versioned documents | In progress | `GATE-3` |
 | 4 | Optional evidence-grounded AI assistance | Not started | `GATE-4` |
 | 5 | Salary context and compliant discovery | Not started | `GATE-5` |
 | 6 | Public-beta hardening and distribution | Not started | `GATE-6` |
@@ -255,7 +255,7 @@ Next recommended slice: `EVD-001` after `Q2-005`; retain `Q2-001`, `Q2-003`, `PE
 - [x] **Q2-002** Verify no acknowledged capture is lost across browser/app crash and upgrade. — Proof: [pre-ack and post-ack persistent-profile restarts, schema-2-to-schema-101 receipt preservation, legacy extension-state migration, and hosted clean-commit verification](../../proof/phase-2-acknowledged-capture-reliability-verification.md)
 - [ ] **Q2-003** Pass review Inbox keyboard/screen-reader and mobile workflows. — Proof: _a11y report_
 - [x] **Q2-004** Pass connector source-policy, attribution, retention, rate-limit, and kill-switch audit. — Proof: [current primary-source inventory, strict runtime descriptor enforcement, attribution/retention/rate/kill-switch audit, prohibited-source confirmation, and hosted clean-commit verification](../../proof/phase-2-connector-source-policy-audit.md)
-- [ ] **Q2-005** Run canonical journey: extension capture → outbox → Inbox review/conflict → save → source diff → manual correction. — Proof: _recorded E2E artifact_
+- [x] **Q2-005** Run canonical journey: extension capture → outbox → Inbox review/conflict → save → source diff → manual correction. — Proof: [production-packaged extension outbox/acknowledgement, durable Inbox conflict and merge, immutable source diff, explicit user-provenance correction, reload survival, zero external requests, accessibility pass, and hosted artifact](../../proof/phase-2-canonical-capture-review-verification.md)
 - [ ] **GATE-2** Phase 2 safely captures and reviews representative jobs with measured extraction quality and no prohibited scraping dependency. — Proof: _Phase 2 gate report_
 
 ---
