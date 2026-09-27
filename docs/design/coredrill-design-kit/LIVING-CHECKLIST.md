@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-09-26
 Current milestone: Phase 2 — capture and approved extraction (`GATE-0` and `GATE-1` external-evidence blockers remain open)
-Current work item: `PEX-003` — implement the bounded persistent outbox lifecycle
-Next recommended slice: `PEX-004` after `PEX-003` proof
+Current work item: `PEX-004` — implement exact app/extension identity validation and compatibility handshake
+Next recommended slice: `PEX-005` after `PEX-004` proof
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `PEX-004` after `PEX-003` proof
 | Field | Value |
 |---|---|
 | Milestone | Phase 2, with the independent Phase 0 and Phase 1 evidence gates retained below |
-| Item range | `PEX-003` |
+| Item range | `PEX-004` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-09-26 |
-| Expected proof | Crash/restart and fault-injection tests prove a bounded persistent outbox, deterministic retry/backoff, an expiry warning and export path, cleanup only after acknowledgement, and preservation of queued items across storage errors; compatibility handshake, version-mismatch, and hosted-transfer behavior remain outside this slice |
-| Blocker | None for `PEX-003`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
-| Next handoff | Inspect the current extension bridge outbox, transfer, background, persistence, retry, and expiry contracts end to end. Define explicit persisted schedule and error facts before changing UI behavior; prove restart recovery, bounded retry/backoff, expiry warning/export, storage-failure retention, and cleanup only after acknowledgement. Keep origin/extension-ID handshake, version mismatch, and hosted transfer in `PEX-004` and `PEX-005`. |
+| Expected proof | Strict security tests prove an explicit versioned compatibility handshake, exact app-origin and extension-ID agreement on both sides, bounded capabilities/version negotiation, and fail-closed mismatch behavior without permission broadening; the production hosted-transfer journey remains outside this slice |
+| Blocker | None for `PEX-004`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
+| Next handoff | Inspect the existing external-message sender policy, web receiver identity checks, manifest origin declaration, transfer versions, and production-state resolver end to end. Define the smallest strict handshake contract that binds exact app origin, exact extension identity, supported protocol versions, and reviewed capabilities; prove wrong-origin, wrong-ID, extra-field, unsupported-version, and capability-mismatch failures while retaining the manual fallback. Keep the hosted transfer journey and public deployment proof in `PEX-005`. |
 
 ## Milestone status
 
@@ -242,7 +242,7 @@ Next recommended slice: `PEX-004` after `PEX-003` proof
 
 - [x] **PEX-001** Implement recognized/unrecognized/needs-input/queued/transferred/permission states. — Proof: [strict six-state catalog, deterministic resolver/classifier, semantic panel, least-privilege package inspection, browser regression, and hosted cross-platform verification](../../proof/phase-2-production-extension-state-catalog-verification.md)
 - [x] **PEX-002** Implement side-panel preview, page-selection correction, note, and source/freshness display. — Proof: [strict versioned draft, provenance-retaining corrections/note, production side-panel browser E2E, least-privilege package inspection, and hosted cross-platform verification](../../proof/phase-2-production-extension-preview-verification.md)
-- [ ] **PEX-003** Implement bounded persistent outbox, retry/backoff, expiry warning, export, and post-ack cleanup. — Proof: _crash/restart tests_
+- [x] **PEX-003** Implement bounded persistent outbox, retry/backoff, expiry warning, export, and post-ack cleanup. — Proof: [strict persisted retry lifecycle, legacy migration, exact post-ack cleanup, expiry/export UI, full-browser restart, storage-pressure retention, production-package inspection, and hosted clean-commit matrix](../../proof/phase-2-production-extension-outbox-verification.md)
 - [ ] **PEX-004** Implement exact app-origin/extension-ID validation and compatibility handshake. — Proof: _security tests_
 - [ ] **PEX-005** Implement hosted app transfer and Firefox/manual fallback. — Proof: _browser matrix_
 - [ ] **PEX-006** Add optional source permissions only through policy-reviewed enable flow. — Proof: _manifest/settings test_

@@ -2,8 +2,8 @@
 
 Date: 2026-09-26  
 Checklist item: `PEX-003`  
-Implementation commit: pending  
-Hosted run: pending
+Implementation commit: `74d779052ae3c7e75758c81a337cfe577b3ceafb`  
+Hosted run: [Foundation CI 36292023588](https://github.com/seabAu/Coredrill/actions/runs/36292023588)
 
 ## Outcome
 
@@ -98,7 +98,12 @@ matrix passed **6 files / 32 tests**.
 
 ## Hosted verification
 
-Pending the clean-commit Foundation CI run.
+Foundation CI run 36292023588 passed from the implementation commit. The
+foundation gate, full-history secret scan, production Chromium/Firefox
+extension transfer matrix, Chrome 151 and 152 browser-storage jobs, Firefox
+153 and 154 browser-storage jobs, and native Windows, macOS, and Ubuntu package
+jobs all completed successfully. The pull-request-only dependency review was
+correctly skipped on this direct `main` push.
 
 ## Residual scope
 
