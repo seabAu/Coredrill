@@ -700,6 +700,50 @@ textarea {
   font-size: 1.25rem;
 }
 
+.cd-capture-review__undo,
+.cd-capture-review__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-accent-soft);
+}
+
+.cd-capture-review__undo {
+  justify-content: space-between;
+}
+
+.cd-capture-review__actions > p,
+.cd-capture-review__actions details {
+  flex-basis: 100%;
+}
+
+.cd-capture-review__actions label,
+.cd-capture-review__actions [role="alert"] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.cd-capture-review__actions select {
+  min-height: 2.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.cd-capture-review__candidate > label {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  font-weight: 700;
+}
+
 .cd-capture-review__metadata,
 .cd-capture-review__active-evidence dl {
   display: grid;

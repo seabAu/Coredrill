@@ -26,6 +26,8 @@ import {
   type BrowserExportReminder,
   type BrowserExportReminderAction,
   type BrowserVaultBackupModel,
+  type CaptureInboxPreviewItem,
+  type CaptureInboxReviewAction,
   type DensityMode,
   type HomeAgendaItem,
   type HomeAttentionItem,
@@ -64,10 +66,7 @@ import {
   type VaultHealthState,
 } from "@coredrill/ui";
 import { createConnectorPolicyDisclosuresV1 } from "@coredrill/source-policy";
-import {
-  parseCaptureSourcePreviewJsonV1,
-  type CaptureSourcePreviewV1,
-} from "@coredrill/capture-core";
+import { parseCaptureSourcePreviewJsonV1 } from "@coredrill/capture-core";
 import type {
   DeleteVaultInput,
   VaultDeletionPreviewDto,
@@ -1389,11 +1388,15 @@ const AppShellCatalog = () => {
   );
   const [suppliedCaptureCount, setSuppliedCaptureCount] = useState(0);
   const [captureInboxCount, setCaptureInboxCount] = useState(0);
-  const [capturePreviews, setCapturePreviews] = useState<readonly CaptureSourcePreviewV1[]>([]);
+  const [capturePreviews, setCapturePreviews] = useState<readonly CaptureInboxPreviewItem[]>([]);
   const [capturePreviewState, setCapturePreviewState] = useState<"loading" | "ready" | "error">(
     "loading",
   );
   const [capturePreviewRefreshVersion, setCapturePreviewRefreshVersion] = useState(0);
+  const [captureDiscardUndo, setCaptureDiscardUndo] = useState<{
+    readonly tokenId: string;
+    readonly label: string;
+  } | null>(null);
   const [workspaceRoute, setWorkspaceRoute] = useState<JobRouteState | null>(initialJobRoute);
   const [workspaceWidth, setWorkspaceWidth] = useState(640);
   const [lastActivity, setLastActivity] = useState(
@@ -1566,9 +1569,9 @@ const AppShellCatalog = () => {
   useEffect(() => {
     let active = true;
     void globalThis.coredrillExtensionInbox
-      .listReceipts()
-      .then((receipts) => {
-        if (active) setCaptureInboxCount(receipts.length);
+      .listReviewItems()
+      .then((items) => {
+        if (active) setCaptureInboxCount(items.length);
       })
       .catch(() => {
         if (active) setCaptureInboxCount(0);
@@ -1576,22 +1579,32 @@ const AppShellCatalog = () => {
     return () => {
       active = false;
     };
-  }, [suppliedCaptureCount]);
+  }, [capturePreviewRefreshVersion, suppliedCaptureCount]);
 
   useEffect(() => {
     let active = true;
     setCapturePreviewState("loading");
     if (pipelineView !== "inbox") return;
     void globalThis.coredrillExtensionInbox
-      .listReceipts()
+      .listReviewItems()
       .then(async (receipts) => {
-        const previews: CaptureSourcePreviewV1[] = [];
+        const previews: CaptureInboxPreviewItem[] = [];
         for (const receipt of receipts) {
           const result = await parseCaptureSourcePreviewJsonV1(receipt.envelopeJson, {
             sanitizedHtmlToText: sourceTextFromHtml,
           });
           if (!result.success) throw new Error(result.code);
-          previews.push(result.preview);
+          previews.push(
+            Object.freeze({
+              ...result.preview,
+              reviewState: receipt.reviewState,
+              snoozedUntil: receipt.snoozedUntil,
+              reviewRowVersion: receipt.reviewRowVersion,
+              eligibleCandidateIds: receipt.preparation.eligibleCandidateIds,
+              reviewDecisions: receipt.preparation.decisions,
+              mergeTargets: receipt.mergeTargets,
+            }),
+          );
         }
         previews.sort((left, right) => right.capturedAt.localeCompare(left.capturedAt));
         if (active) {
@@ -1610,6 +1623,56 @@ const AppShellCatalog = () => {
       active = false;
     };
   }, [capturePreviewRefreshVersion, pipelineView, suppliedCaptureCount]);
+
+  const handleCaptureReviewAction = async (action: CaptureInboxReviewAction): Promise<void> => {
+    if (action.kind === "save_new") {
+      await globalThis.coredrillExtensionInbox.promoteReview({
+        envelopeId: action.envelopeId,
+        expectedRowVersion: action.expectedRowVersion,
+        acceptedCandidateIds: action.acceptedCandidateIds,
+        resolution: { kind: "save_new" },
+      });
+      setLastActivity("Saved the reviewed capture as a local job with provenance.");
+    } else if (action.kind === "merge_existing") {
+      await globalThis.coredrillExtensionInbox.promoteReview({
+        envelopeId: action.envelopeId,
+        expectedRowVersion: action.expectedRowVersion,
+        acceptedCandidateIds: action.acceptedCandidateIds,
+        resolution: { kind: "merge_existing", jobId: action.targetJobId },
+      });
+      setLastActivity("Merged the reviewed evidence into the selected local job.");
+    } else if (action.kind === "snooze") {
+      await globalThis.coredrillExtensionInbox.snoozeReview({
+        envelopeId: action.envelopeId,
+        expectedRowVersion: action.expectedRowVersion,
+      });
+      setLastActivity("Snoozed the capture review for one week.");
+    } else if (action.kind === "wake") {
+      await globalThis.coredrillExtensionInbox.wakeReview({
+        envelopeId: action.envelopeId,
+        expectedRowVersion: action.expectedRowVersion,
+      });
+      setLastActivity("Returned the snoozed capture to active review.");
+    } else {
+      const label =
+        capturePreviews.find(({ envelopeId }) => envelopeId === action.envelopeId)?.label ??
+        "Capture";
+      const result = await globalThis.coredrillExtensionInbox.discardReview({
+        envelopeId: action.envelopeId,
+        expectedRowVersion: action.expectedRowVersion,
+      });
+      setCaptureDiscardUndo({ tokenId: result.undo.id, label });
+      setLastActivity("Discarded the capture review. Undo remains available in this session.");
+    }
+    setCapturePreviewRefreshVersion((version) => version + 1);
+  };
+
+  const undoCaptureDiscard = async (tokenId: string): Promise<void> => {
+    await globalThis.coredrillExtensionInbox.undoDiscardReview(tokenId);
+    setCaptureDiscardUndo(null);
+    setCapturePreviewRefreshVersion((version) => version + 1);
+    setLastActivity("Restored the discarded capture review.");
+  };
 
   useEffect(() => {
     globalThis.coredrillAppShell = Object.freeze({
@@ -2485,7 +2548,13 @@ const AppShellCatalog = () => {
                 }}
               >
                 {pipelineView === "inbox" ? (
-                  <CaptureInboxReview items={capturePreviews} state={capturePreviewState} />
+                  <CaptureInboxReview
+                    discardUndo={captureDiscardUndo}
+                    items={capturePreviews}
+                    onAction={handleCaptureReviewAction}
+                    onUndoDiscard={undoCaptureDiscard}
+                    state={capturePreviewState}
+                  />
                 ) : pipelineView === "board" ? (
                   <PipelineBoard
                     announcement={boardAnnouncement}

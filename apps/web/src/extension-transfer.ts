@@ -1,12 +1,18 @@
 import {
   findCaptureDuplicateSuggestionsV1,
+  materializeCaptureReviewPromotionV1,
+  prepareCaptureReviewPromotionV1,
   type CaptureDuplicateJobCandidateV1,
   type CaptureDuplicateSuggestionV1,
+  type CaptureReviewPreparationV1,
+  type CaptureReviewPromotionResolutionV1,
 } from "@coredrill/application";
 import {
   buildSuppliedCaptureEnvelopeV1,
+  parseVerifiedCaptureEnvelopeJsonV1,
   type SuppliedCaptureDraftV1,
 } from "@coredrill/capture-core";
+import { entityId, generateEntityId } from "@coredrill/domain";
 import {
   createEmptyOutboxState,
   createTransferAcknowledgement,
@@ -18,7 +24,9 @@ import {
   type TransferPullRequestV1,
 } from "@coredrill/extension-bridge";
 import {
+  createCaptureReviewRepository,
   sqlStatement,
+  type CaptureReviewItemRecord,
   type DatabasePort,
   type DatabaseSession,
   type QueryRow,
@@ -49,6 +57,21 @@ export interface CaptureInboxReceipt {
   readonly duplicateSuggestions: readonly CaptureDuplicateSuggestionV1[];
 }
 
+export interface CaptureReviewMergeTarget {
+  readonly jobId: string;
+  readonly title: string;
+  readonly companyName: string | null;
+  readonly reasons: readonly string[];
+}
+
+export interface CaptureReviewQueueReceipt extends CaptureInboxReceipt {
+  readonly reviewState: "pending" | "snoozed";
+  readonly snoozedUntil: string | null;
+  readonly reviewRowVersion: number;
+  readonly preparation: CaptureReviewPreparationV1;
+  readonly mergeTargets: readonly CaptureReviewMergeTarget[];
+}
+
 export interface ExtensionMessageTransport {
   send(extensionId: string, message: unknown): Promise<unknown>;
 }
@@ -65,6 +88,12 @@ interface CaptureInboxRow extends QueryRow {
   readonly received_at: string;
   readonly received_via: "external_message" | "manual_export";
   readonly envelope_json: string;
+}
+
+interface CaptureReviewQueueRow extends CaptureInboxRow {
+  readonly review_state: "pending" | "snoozed";
+  readonly snoozed_until: string | null;
+  readonly review_row_version: number;
 }
 
 interface CaptureDuplicateCandidateRow extends QueryRow {
@@ -120,6 +149,11 @@ function requestId(): string {
   const bytes = new Uint8Array(18);
   crypto.getRandomValues(bytes);
   return base64Url(bytes);
+}
+
+async function sha256Text(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 function assertExtensionId(extensionId: string): void {
@@ -244,6 +278,30 @@ function storedDuplicateSuggestions(
       "Durable capture and saved-job identity data failed duplicate analysis.",
     );
   }
+}
+
+async function verifiedEnvelope(envelopeJson: string) {
+  const result = await parseVerifiedCaptureEnvelopeJsonV1(envelopeJson);
+  if (!result.success) {
+    throw new ExtensionTransferError(result.code, result.issue);
+  }
+  return result.envelope;
+}
+
+async function loadReceipt(database: DatabasePort, envelopeId: string): Promise<CaptureInboxRow> {
+  const rows = await database.query<CaptureInboxRow>(
+    sqlStatement(
+      `SELECT envelope_id, content_hash, envelope_checksum, sender_id, sender_sequence,
+              sender_nonce, captured_at, expires_at, received_at, received_via, envelope_json
+       FROM capture_inbox WHERE envelope_id = ?`,
+      [entityId("capture-envelope", envelopeId)],
+    ),
+  );
+  const row = rows[0];
+  if (rows.length !== 1 || row === undefined) {
+    throw new ExtensionTransferError("review_not_found", "Capture review item was not found.");
+  }
+  return row;
 }
 
 async function storeItem(
@@ -570,6 +628,157 @@ export function createExtensionInbox(
           duplicateSuggestions: storedDuplicateSuggestions(row.envelope_json, candidates),
         }),
       );
+    },
+
+    listReviewItems: async (): Promise<readonly CaptureReviewQueueReceipt[]> => {
+      const client = await database();
+      const { rows, candidates } = await client.transaction(async (transaction) => ({
+        rows: await transaction.query<CaptureReviewQueueRow>(
+          sqlStatement(
+            `SELECT receipt.envelope_id, receipt.content_hash, receipt.envelope_checksum,
+                    receipt.sender_id, receipt.sender_sequence, receipt.sender_nonce,
+                    receipt.captured_at, receipt.expires_at, receipt.received_at,
+                    receipt.received_via, receipt.envelope_json,
+                    review.state AS review_state, review.snoozed_until,
+                    review.row_version AS review_row_version
+             FROM capture_review_item AS review
+             INNER JOIN capture_inbox AS receipt ON receipt.envelope_id = review.envelope_id
+             WHERE review.state IN ('pending', 'snoozed')
+             ORDER BY receipt.envelope_id`,
+          ),
+        ),
+        candidates: await loadDuplicateCandidates(transaction),
+      }));
+      const candidateByJob = new Map(candidates.map((candidate) => [candidate.jobId, candidate]));
+      const queue: CaptureReviewQueueReceipt[] = [];
+      for (const row of rows) {
+        const envelope = await verifiedEnvelope(row.envelope_json);
+        const suggestions = findCaptureDuplicateSuggestionsV1(envelope, candidates);
+        const preparation = prepareCaptureReviewPromotionV1(envelope, () =>
+          generateEntityId("field-conflict"),
+        );
+        queue.push(
+          Object.freeze({
+            envelopeId: row.envelope_id,
+            contentHash: row.content_hash,
+            envelopeChecksum: row.envelope_checksum,
+            senderId: row.sender_id,
+            senderSequence: row.sender_sequence,
+            senderNonce: row.sender_nonce,
+            capturedAt: row.captured_at,
+            expiresAt: row.expires_at,
+            receivedAt: row.received_at,
+            receivedVia: row.received_via,
+            envelopeJson: row.envelope_json,
+            duplicateSuggestions: suggestions,
+            reviewState: row.review_state,
+            snoozedUntil: row.snoozed_until,
+            reviewRowVersion: row.review_row_version,
+            preparation,
+            mergeTargets: Object.freeze(
+              suggestions.flatMap((suggestion) => {
+                const candidate = candidateByJob.get(suggestion.jobId);
+                return candidate === undefined
+                  ? []
+                  : [
+                      Object.freeze({
+                        jobId: suggestion.jobId,
+                        title: candidate.title,
+                        companyName: candidate.companyName,
+                        reasons: Object.freeze([...suggestion.reasons]),
+                      }),
+                    ];
+              }),
+            ),
+          }),
+        );
+      }
+      return Object.freeze(queue);
+    },
+
+    getReviewItem: async (envelopeId: string): Promise<CaptureReviewItemRecord | null> => {
+      const client = await database();
+      const expected = entityId("capture-envelope", envelopeId);
+      return (
+        (await createCaptureReviewRepository(client).list()).find(
+          (item) => item.envelopeId === expected,
+        ) ?? null
+      );
+    },
+
+    snoozeReview: async (
+      input: { readonly envelopeId: string; readonly expectedRowVersion: number },
+      now = new Date(),
+    ): Promise<CaptureReviewItemRecord> => {
+      const client = await database();
+      return createCaptureReviewRepository(client).snooze({
+        envelopeId: entityId("capture-envelope", input.envelopeId),
+        expectedRowVersion: input.expectedRowVersion,
+        updatedAt: now.toISOString(),
+        snoozedUntil: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1_000).toISOString(),
+      });
+    },
+
+    wakeReview: async (
+      input: { readonly envelopeId: string; readonly expectedRowVersion: number },
+      now = new Date(),
+    ): Promise<CaptureReviewItemRecord> => {
+      const client = await database();
+      return createCaptureReviewRepository(client).wake({
+        envelopeId: entityId("capture-envelope", input.envelopeId),
+        expectedRowVersion: input.expectedRowVersion,
+        updatedAt: now.toISOString(),
+      });
+    },
+
+    discardReview: async (
+      input: { readonly envelopeId: string; readonly expectedRowVersion: number },
+      now = new Date(),
+    ) => {
+      const client = await database();
+      return createCaptureReviewRepository(client).discard({
+        envelopeId: entityId("capture-envelope", input.envelopeId),
+        expectedRowVersion: input.expectedRowVersion,
+        undoTokenId: generateEntityId("capture-review-discard-undo"),
+        discardedAt: now.toISOString(),
+      });
+    },
+
+    undoDiscardReview: async (undoTokenId: string, now = new Date()) => {
+      const client = await database();
+      return createCaptureReviewRepository(client).undoDiscard({
+        undoTokenId: entityId("capture-review-discard-undo", undoTokenId),
+        restoredAt: now.toISOString(),
+      });
+    },
+
+    promoteReview: async (
+      input: {
+        readonly envelopeId: string;
+        readonly expectedRowVersion: number;
+        readonly acceptedCandidateIds: readonly string[];
+        readonly resolution: CaptureReviewPromotionResolutionV1;
+      },
+      now = new Date(),
+    ): Promise<CaptureReviewItemRecord> => {
+      const client = await database();
+      const row = await loadReceipt(client, input.envelopeId);
+      const envelope = await verifiedEnvelope(row.envelope_json);
+      const promotion = await materializeCaptureReviewPromotionV1(
+        {
+          specVersion: 1,
+          envelope,
+          expectedReviewRowVersion: input.expectedRowVersion,
+          acceptedCandidateIds: input.acceptedCandidateIds,
+          resolution: input.resolution,
+        },
+        {
+          createId: (entity) => generateEntityId(entity),
+          hashConfirmedValue: sha256Text,
+          initiatedAt: now.toISOString(),
+        },
+      );
+      return createCaptureReviewRepository(client).promote(promotion);
     },
   });
 }

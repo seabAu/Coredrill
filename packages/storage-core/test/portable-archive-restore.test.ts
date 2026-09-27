@@ -21,7 +21,7 @@ const GENERATED_AT = "2026-08-29T23:30:00.000Z";
 const VAULT_ID = "0198e102-0000-7000-8000-000000000101";
 const OTHER_VAULT_ID = "0198e102-0000-7000-8000-000000000102";
 const ARCHIVE_ID = "0198e102-0000-7000-8000-000000000103";
-const SCHEMA_VERSION = 92;
+const SCHEMA_VERSION = 101;
 
 const digest = (bytes: Uint8Array): string => createHash("sha256").update(bytes).digest("hex");
 

@@ -21,6 +21,21 @@ export {
   type TransactionContractProbe,
 } from "./contract-harness.js";
 export {
+  CaptureReviewRepository,
+  CaptureReviewRepositoryError,
+  createCaptureReviewRepository,
+  type CaptureReviewDiscardUndoRecord,
+  type CaptureReviewItemRecord,
+  type CaptureReviewNewJob,
+  type CaptureReviewPromotionCandidate,
+  type CaptureReviewPromotionInput,
+  type CaptureReviewPromotionSnapshot,
+  type CaptureReviewPromotionSource,
+  type CaptureReviewRepositoryErrorCode,
+  type CaptureReviewResolutionKind,
+  type CaptureReviewState,
+} from "./capture-review-repository.js";
+export {
   createPipelineRepositoryContractSuite,
   type PipelineRepositoryContractSetup,
 } from "./pipeline-contract-harness.js";

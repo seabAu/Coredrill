@@ -249,6 +249,17 @@ The Phase 0 `EXT-004` through `EXT-006` implementation proves this boundary with
 
 `CAP-004` reads the existing durable envelope JSON only while the Pipeline Inbox is active. `@coredrill/capture-core` strictly revalidates the envelope and recomputes its semantic content hash before projecting preview sections or field evidence; one invalid or hash-drifted receipt fails the preview closed. Retained HTML requires a caller-provided detached text renderer, and the web renderer removes executable, embedding, media, SVG/MathML, style, and metadata elements before returning normalized text. The UI receives strings and renders them through React text nodes only. Section paths and candidate provenance pointers remain explicit, and activating either one focuses the inert source region and highlights a matching excerpt when retained. Previewing never fetches the source, mutates durable records, or creates a second canonical store, so schema 92 remains unchanged.
 
+`REV-004` adds an adapter-neutral capture-review repository over schema 101.
+The immutable `capture_inbox` receipt remains the replay/deduplication source;
+`capture_review_item` owns pending, snoozed, discarded, and resolved lifecycle
+state. Save and Merge materialize validated envelope evidence only after a fresh
+semantic-hash check, then atomically write source/snapshot/provenance/candidates,
+explicit confirmations, the new or selected job relationship, and resolved
+queue state. Merge never rewrites the target job's canonical fields. Row-version
+and content-hash preconditions reject replay or stale UI state. Snooze, wake,
+discard, and single-use undo are independent guarded transactions. None of
+these paths fetches or refreshes a source.
+
 ## Application use cases
 
 Commands are explicit and transactional:

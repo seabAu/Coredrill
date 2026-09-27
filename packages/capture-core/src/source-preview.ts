@@ -57,6 +57,44 @@ export interface CaptureSourcePreviewOptions {
   readonly sanitizedHtmlToText?: (html: string) => string;
 }
 
+export type VerifiedCaptureEnvelopeJsonResultV1 =
+  | { readonly success: true; readonly envelope: CaptureEnvelopeV1 }
+  | {
+      readonly success: false;
+      readonly code: "preview_invalid" | "content_hash_mismatch";
+      readonly issue: string;
+    };
+
+/** Strictly parses durable envelope JSON and verifies its semantic content hash. */
+export async function parseVerifiedCaptureEnvelopeJsonV1(
+  envelopeJson: string,
+): Promise<VerifiedCaptureEnvelopeJsonResultV1> {
+  try {
+    const parsed = safeParseCaptureEnvelopeV1(JSON.parse(envelopeJson) as unknown);
+    if (!parsed.success) {
+      return {
+        success: false,
+        code: "preview_invalid",
+        issue: "The stored capture envelope is not valid review input.",
+      };
+    }
+    if (!(await verifyCaptureEnvelopeContentHashV1(parsed.data))) {
+      return {
+        success: false,
+        code: "content_hash_mismatch",
+        issue: "The stored capture content hash does not match its review evidence.",
+      };
+    }
+    return { success: true, envelope: parsed.data };
+  } catch {
+    return {
+      success: false,
+      code: "preview_invalid",
+      issue: "The stored capture envelope is not valid review input.",
+    };
+  }
+}
+
 export type CaptureSourcePreviewResultV1 =
   | { readonly success: true; readonly preview: CaptureSourcePreviewV1 }
   | {

@@ -40,6 +40,19 @@ const HOSTILE_ITEM = Object.freeze({
     }),
   ]),
   evidence: Object.freeze([HOSTILE_EVIDENCE]),
+  reviewState: "pending",
+  snoozedUntil: null,
+  reviewRowVersion: 1,
+  eligibleCandidateIds: Object.freeze([HOSTILE_EVIDENCE.id]),
+  reviewDecisions: Object.freeze([
+    Object.freeze({
+      fieldName: "title",
+      selectedCandidateId: HOSTILE_EVIDENCE.id,
+      disposition: "accept",
+      reasons: Object.freeze([]),
+    }),
+  ]),
+  mergeTargets: Object.freeze([]),
 } as const satisfies CaptureInboxPreviewItem);
 
 describe("CaptureInboxReview", () => {
@@ -51,6 +64,10 @@ describe("CaptureInboxReview", () => {
     expect(markup).toContain("Review captured evidence");
     expect(markup).toContain("1 capture awaiting review");
     expect(markup).toContain("Reviewing 1 of 1");
+    expect(markup).toContain("Accept high-confidence fields");
+    expect(markup).toContain("Save as new job");
+    expect(markup).toContain("Snooze one week");
+    expect(markup).toContain("Discard");
     expect(markup).toContain('aria-controls="');
     expect(markup).toContain('aria-labelledby="');
     expect(markup).toContain("&lt;img src=&quot;https://tracker.invalid/title&quot;");

@@ -13,6 +13,19 @@ export {
   type CaptureIngestionErrorCode,
 } from "./capture-ingestion.js";
 export {
+  CAPTURE_REVIEW_PROMOTION_LIMITS,
+  CaptureReviewPromotionError,
+  materializeCaptureReviewPromotionV1,
+  prepareCaptureReviewPromotionV1,
+  type CaptureReviewPreparationV1,
+  type CaptureReviewPromotionDependenciesV1,
+  type CaptureReviewPromotionEntityV1,
+  type CaptureReviewPromotionErrorCode,
+  type CaptureReviewPromotionResolutionV1,
+  type MaterializedCaptureReviewPromotionV1,
+  type MaterializeCaptureReviewPromotionInputV1,
+} from "./capture-review-promotion.js";
+export {
   FIELD_CANDIDATE_RECONCILIATION_ERROR_CODES,
   FIELD_CANDIDATE_RECONCILIATION_LIMITS,
   FieldCandidateReconciliationError,

@@ -14,7 +14,7 @@ import {
 } from "./database-port.js";
 import type { PortableArchiveDataFileSourceV1 } from "./portable-archive-writer.js";
 
-export const PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION = 92 as const;
+export const PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION = 101 as const;
 export const PORTABLE_DATA_EXPORT_WRITER_LIMITS = Object.freeze({
   maxCellBytes: 16 * 1024 * 1024,
   maxEntryBytes: 128 * 1024 * 1024,
@@ -94,6 +94,20 @@ export const PORTABLE_DATA_EXPORT_DATASETS: readonly DatasetSpec[] = Object.free
       "envelope_json",
     ],
     jsonColumns: ["envelope_json"],
+    orderBy: ["envelope_id"],
+  }),
+  dataset({
+    name: "capture_review_item",
+    table: "capture_review_item",
+    columns: [
+      "envelope_id",
+      "state",
+      "snoozed_until",
+      "resolution_kind",
+      "resolved_job_id",
+      "updated_at",
+      "row_version",
+    ],
     orderBy: ["envelope_id"],
   }),
   dataset({
@@ -515,6 +529,7 @@ export const PORTABLE_DATA_EXPORT_DATASETS: readonly DatasetSpec[] = Object.free
 ]);
 
 export const PORTABLE_DATA_EXPORT_EXCLUDED_TABLES = Object.freeze([
+  "capture_review_discard_undo_token",
   "coredrill_schema_migration",
   "device",
   "diagnostic_event",

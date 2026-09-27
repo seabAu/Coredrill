@@ -53,11 +53,50 @@ export interface CaptureInboxPreviewItem {
   readonly sourceUrl: string | null;
   readonly sections: readonly CaptureInboxPreviewSection[];
   readonly evidence: readonly CaptureInboxEvidence[];
+  readonly reviewState: "pending" | "snoozed";
+  readonly snoozedUntil: string | null;
+  readonly reviewRowVersion: number;
+  readonly eligibleCandidateIds: readonly string[];
+  readonly reviewDecisions: readonly {
+    readonly fieldName: string;
+    readonly selectedCandidateId: string;
+    readonly disposition: "accept" | "preserve" | "review_required";
+    readonly reasons: readonly string[];
+  }[];
+  readonly mergeTargets: readonly {
+    readonly jobId: string;
+    readonly title: string;
+    readonly companyName: string | null;
+    readonly reasons: readonly string[];
+  }[];
 }
+
+export type CaptureInboxReviewAction =
+  | {
+      readonly kind: "save_new";
+      readonly envelopeId: string;
+      readonly expectedRowVersion: number;
+      readonly acceptedCandidateIds: readonly string[];
+    }
+  | {
+      readonly kind: "merge_existing";
+      readonly envelopeId: string;
+      readonly expectedRowVersion: number;
+      readonly acceptedCandidateIds: readonly string[];
+      readonly targetJobId: string;
+    }
+  | {
+      readonly kind: "snooze" | "wake" | "discard";
+      readonly envelopeId: string;
+      readonly expectedRowVersion: number;
+    };
 
 export interface CaptureInboxReviewProps {
   readonly items: readonly CaptureInboxPreviewItem[];
   readonly state?: "loading" | "ready" | "error";
+  readonly onAction?: (action: CaptureInboxReviewAction) => Promise<void>;
+  readonly discardUndo?: { readonly tokenId: string; readonly label: string } | null;
+  readonly onUndoDiscard?: (tokenId: string) => Promise<void>;
 }
 
 const FIELD_GROUP_LABELS: Readonly<Record<CaptureInboxFieldGroupId, string>> = Object.freeze({
@@ -100,6 +139,15 @@ function validateItems(items: readonly CaptureInboxPreviewItem[]): void {
       item.evidence.length > 256 ||
       sectionIds.size !== item.sections.length ||
       evidenceIds.size !== item.evidence.length ||
+      !["pending", "snoozed"].includes(item.reviewState) ||
+      (item.reviewState === "pending" && item.snoozedUntil !== null) ||
+      (item.reviewState === "snoozed" && item.snoozedUntil === null) ||
+      !Number.isSafeInteger(item.reviewRowVersion) ||
+      item.reviewRowVersion < 1 ||
+      item.eligibleCandidateIds.length > 256 ||
+      new Set(item.eligibleCandidateIds).size !== item.eligibleCandidateIds.length ||
+      item.reviewDecisions.length > 256 ||
+      item.mergeTargets.length > 256 ||
       (item.sourceUrl !== null && !safeHttpUrl(item.sourceUrl))
     ) {
       throw new RangeError("Capture preview item is invalid.");
@@ -162,7 +210,13 @@ function highlightedText(text: string, excerpt: string | undefined): ReactNode {
   );
 }
 
-export function CaptureInboxReview({ items, state = "ready" }: CaptureInboxReviewProps) {
+export function CaptureInboxReview({
+  items,
+  state = "ready",
+  onAction,
+  discardUndo = null,
+  onUndoDiscard,
+}: CaptureInboxReviewProps) {
   validateItems(items);
   const headingId = useId();
   const previewId = `${headingId}-preview`;
@@ -178,6 +232,12 @@ export function CaptureInboxReview({ items, state = "ready" }: CaptureInboxRevie
   );
   const [selectedEvidenceId, setSelectedEvidenceId] = useState<string | null>(null);
   const [navigationVersion, setNavigationVersion] = useState(0);
+  const [acceptedByEnvelope, setAcceptedByEnvelope] = useState<
+    Readonly<Record<string, readonly string[]>>
+  >({});
+  const [mergeTargetId, setMergeTargetId] = useState("");
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [actionState, setActionState] = useState<"idle" | "busy" | "error">("idle");
   const selectedSection =
     selectedItem?.sections.find(({ id }) => id === selectedSectionId) ??
     selectedItem?.sections[0] ??
@@ -193,10 +253,29 @@ export function CaptureInboxReview({ items, state = "ready" }: CaptureInboxRevie
           label: FIELD_GROUP_LABELS[id],
           evidence: selectedItem.evidence.filter(({ fieldGroup }) => fieldGroup === id),
         })).filter(({ evidence }) => evidence.length > 0);
+  const acceptedCandidateIds =
+    selectedItem === null ? [] : (acceptedByEnvelope[selectedItem.envelopeId] ?? []);
+  const acceptedCandidateSet = new Set(acceptedCandidateIds);
+  const acceptedTitle =
+    selectedItem?.reviewDecisions.some(
+      (decision) =>
+        decision.fieldName === "title" &&
+        acceptedCandidateSet.has(decision.selectedCandidateId) &&
+        decision.disposition === "accept",
+    ) ?? false;
+  const remainingReviewDecisions =
+    selectedItem?.reviewDecisions.filter(
+      (decision) => decision.disposition === "review_required",
+    ) ?? [];
 
   useEffect(() => {
     if (navigationVersion > 0) previewTarget.current?.focus();
   }, [navigationVersion]);
+
+  useEffect(() => {
+    setMergeTargetId(selectedItem?.mergeTargets[0]?.jobId ?? "");
+    setConfirmDiscard(false);
+  }, [selectedItem?.envelopeId, selectedItem?.mergeTargets]);
 
   const navigate = (sectionId: string | null, evidenceId: string | null): void => {
     setSelectedSectionId(sectionId);
@@ -208,6 +287,21 @@ export function CaptureInboxReview({ items, state = "ready" }: CaptureInboxRevie
     setSelectedEnvelopeId(item.envelopeId);
     setSelectedSectionId(item.sections[0]?.id ?? null);
     setSelectedEvidenceId(null);
+    setMergeTargetId(item.mergeTargets[0]?.jobId ?? "");
+    setConfirmDiscard(false);
+    setActionState("idle");
+  };
+
+  const runAction = async (action: CaptureInboxReviewAction): Promise<void> => {
+    if (onAction === undefined || actionState === "busy") return;
+    setActionState("busy");
+    try {
+      await onAction(action);
+      setActionState("idle");
+      setConfirmDiscard(false);
+    } catch {
+      setActionState("error");
+    }
   };
 
   const moveQueueSelection = (
@@ -243,6 +337,28 @@ export function CaptureInboxReview({ items, state = "ready" }: CaptureInboxRevie
 
   return (
     <section aria-labelledby={headingId} className="cd-capture-review" data-testid="capture-review">
+      {discardUndo === null ? null : (
+        <div className="cd-capture-review__undo" role="status">
+          <span>{discardUndo.label} was discarded.</span>
+          <button
+            disabled={actionState === "busy" || onUndoDiscard === undefined}
+            onClick={() => {
+              if (onUndoDiscard === undefined) return;
+              setActionState("busy");
+              void onUndoDiscard(discardUndo.tokenId)
+                .then(() => {
+                  setActionState("idle");
+                })
+                .catch(() => {
+                  setActionState("error");
+                });
+            }}
+            type="button"
+          >
+            Undo discard
+          </button>
+        </div>
+      )}
       <div className="cd-capture-review__heading">
         <div>
           <p className="cd-eyebrow">Durable local inbox</p>
@@ -303,6 +419,7 @@ export function CaptureInboxReview({ items, state = "ready" }: CaptureInboxRevie
                     <strong>{item.label}</strong>
                     <span>{titleCase(item.sourceKind)}</span>
                     <small>{item.capturedAt}</small>
+                    {item.reviewState === "snoozed" ? <small>Snoozed</small> : null}
                   </button>
                 </li>
               ))}
@@ -319,8 +436,177 @@ export function CaptureInboxReview({ items, state = "ready" }: CaptureInboxRevie
                 <p className="cd-eyebrow">{titleCase(selectedItem.captureMethod)} capture</p>
                 <h4 id={`${headingId}-preview-title`}>{selectedItem.label}</h4>
               </div>
-              <span className="cd-evidence-chip">Review required</span>
+              <span className="cd-evidence-chip">
+                {selectedItem.reviewState === "snoozed" ? "Snoozed" : "Review required"}
+              </span>
             </header>
+
+            <section aria-label="Review actions" className="cd-capture-review__actions">
+              {selectedItem.reviewState === "snoozed" ? (
+                <>
+                  <p>
+                    Snoozed until {selectedItem.snoozedUntil}. Return it to the inbox before saving
+                    or merging.
+                  </p>
+                  <button
+                    disabled={actionState === "busy" || onAction === undefined}
+                    onClick={() => {
+                      void runAction({
+                        kind: "wake",
+                        envelopeId: selectedItem.envelopeId,
+                        expectedRowVersion: selectedItem.reviewRowVersion,
+                      });
+                    }}
+                    type="button"
+                  >
+                    Return to inbox
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    disabled={
+                      actionState === "busy" || selectedItem.eligibleCandidateIds.length === 0
+                    }
+                    onClick={() => {
+                      setAcceptedByEnvelope((current) => ({
+                        ...current,
+                        [selectedItem.envelopeId]: selectedItem.eligibleCandidateIds,
+                      }));
+                    }}
+                    type="button"
+                  >
+                    Accept high-confidence fields
+                  </button>
+                  <button
+                    disabled={actionState === "busy" || onAction === undefined || !acceptedTitle}
+                    onClick={() => {
+                      void runAction({
+                        kind: "save_new",
+                        envelopeId: selectedItem.envelopeId,
+                        expectedRowVersion: selectedItem.reviewRowVersion,
+                        acceptedCandidateIds,
+                      });
+                    }}
+                    type="button"
+                  >
+                    Save as new job
+                  </button>
+                  {selectedItem.mergeTargets.length === 0 ? (
+                    <p>No explainable duplicate suggestion is available for merge.</p>
+                  ) : (
+                    <label>
+                      Merge target
+                      <select
+                        onChange={(event) => {
+                          setMergeTargetId(event.target.value);
+                        }}
+                        value={
+                          mergeTargetId.length > 0
+                            ? mergeTargetId
+                            : selectedItem.mergeTargets[0]?.jobId
+                        }
+                      >
+                        {selectedItem.mergeTargets.map((target) => (
+                          <option key={target.jobId} value={target.jobId}>
+                            {target.title}
+                            {target.companyName === null ? "" : ` at ${target.companyName}`}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        disabled={actionState === "busy" || onAction === undefined}
+                        onClick={() => {
+                          const targetJobId =
+                            mergeTargetId.length > 0
+                              ? mergeTargetId
+                              : (selectedItem.mergeTargets[0]?.jobId ?? "");
+                          if (targetJobId.length === 0) return;
+                          void runAction({
+                            kind: "merge_existing",
+                            envelopeId: selectedItem.envelopeId,
+                            expectedRowVersion: selectedItem.reviewRowVersion,
+                            acceptedCandidateIds,
+                            targetJobId,
+                          });
+                        }}
+                        type="button"
+                      >
+                        Merge into selected job
+                      </button>
+                    </label>
+                  )}
+                  <button
+                    disabled={actionState === "busy" || onAction === undefined}
+                    onClick={() => {
+                      void runAction({
+                        kind: "snooze",
+                        envelopeId: selectedItem.envelopeId,
+                        expectedRowVersion: selectedItem.reviewRowVersion,
+                      });
+                    }}
+                    type="button"
+                  >
+                    Snooze one week
+                  </button>
+                </>
+              )}
+              {confirmDiscard ? (
+                <div role="alert">
+                  <span>Discard this review item? You can undo immediately.</span>
+                  <button
+                    disabled={actionState === "busy" || onAction === undefined}
+                    onClick={() => {
+                      void runAction({
+                        kind: "discard",
+                        envelopeId: selectedItem.envelopeId,
+                        expectedRowVersion: selectedItem.reviewRowVersion,
+                      });
+                    }}
+                    type="button"
+                  >
+                    Confirm discard
+                  </button>
+                  <button
+                    onClick={() => {
+                      setConfirmDiscard(false);
+                    }}
+                    type="button"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    setConfirmDiscard(true);
+                  }}
+                  type="button"
+                >
+                  Discard
+                </button>
+              )}
+              {remainingReviewDecisions.length === 0 ? null : (
+                <details>
+                  <summary>
+                    {remainingReviewDecisions.length} field
+                    {remainingReviewDecisions.length === 1 ? "" : "s"} still need review
+                  </summary>
+                  <ul>
+                    {remainingReviewDecisions.map((decision) => (
+                      <li key={`${decision.fieldName}:${decision.selectedCandidateId}`}>
+                        {titleCase(decision.fieldName)}: {decision.reasons.join(", ")}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+              {actionState === "error" ? (
+                <p aria-live="assertive" className="is-error" role="alert">
+                  The review action failed safely. Refresh the local queue and try again.
+                </p>
+              ) : null}
+            </section>
 
             <dl className="cd-capture-review__metadata">
               <div>
@@ -443,6 +729,28 @@ export function CaptureInboxReview({ items, state = "ready" }: CaptureInboxRevie
                               )}
                             </div>
                             <blockquote>{evidence.sourceExcerpt}</blockquote>
+                            {selectedItem.eligibleCandidateIds.includes(evidence.id) ? (
+                              <label>
+                                <input
+                                  checked={acceptedCandidateSet.has(evidence.id)}
+                                  onChange={(event) => {
+                                    setAcceptedByEnvelope((current) => {
+                                      const selected = new Set(
+                                        current[selectedItem.envelopeId] ?? [],
+                                      );
+                                      if (event.target.checked) selected.add(evidence.id);
+                                      else selected.delete(evidence.id);
+                                      return {
+                                        ...current,
+                                        [selectedItem.envelopeId]: [...selected],
+                                      };
+                                    });
+                                  }}
+                                  type="checkbox"
+                                />
+                                Accept for save
+                              </label>
+                            ) : null}
                             <button
                               aria-pressed={evidence.id === selectedEvidence?.id}
                               onClick={() => {

@@ -4,7 +4,7 @@
 
 This document is the normative field-mapping record for the D-051 human-readable export implemented by `BKP-002`. It defines the paired `data/<dataset>.json` and `data/<dataset>.csv` projections carried by the version-1 portable archive. The archive's `database.sqlite3` remains the lossless restore source; these projections provide inspectability and migration independence without pretending that CSV preserves every SQLite distinction.
 
-Version 1 reads one consistent transaction from database schema `92`. A schema change must either preserve this mapping deliberately or introduce a reviewed export version. The stored `vault.schema_version` is the schema at vault creation and need only be a positive integer; it is not the current migration level.
+Version 1 reads one consistent transaction from database schema `101`. A schema change must either preserve this mapping deliberately or introduce a reviewed export version. The stored `vault.schema_version` is the schema at vault creation and need only be a positive integer; it is not the current migration level.
 
 ## Dataset envelope
 
@@ -14,7 +14,7 @@ Each JSON file is a strict UTF-8 JSON object with:
 - `dataset`: the dataset name below;
 - `generatedAt`: the archive generation instant;
 - `vaultId`: the selected vault UUID;
-- `sourceSchemaVersion`: `92`;
+- `sourceSchemaVersion`: `101`;
 - `columns`: the ordered field names below;
 - `rowCount`: the exact number of rows;
 - `rows`: objects containing exactly those fields in that order; and
@@ -43,6 +43,7 @@ Rows use the stable ordering in the final column. Every listed field is projecte
 | `vault` | `id`, `name`, `schema_version`, `created_at`, `last_opened_at` | `id` |
 | `app_setting` | `key`, `json_value`, `updated_at`, `row_version` | `key` |
 | `capture_inbox` | `envelope_id`, `content_hash`, `envelope_checksum`, `sender_id`, `sender_sequence`, `sender_nonce`, `captured_at`, `expires_at`, `received_at`, `received_via`, `envelope_json` | `envelope_id` |
+| `capture_review_item` | `envelope_id`, `state`, `snoozed_until`, `resolution_kind`, `resolved_job_id`, `updated_at`, `row_version` | `envelope_id` |
 | `location` | `id`, `label`, `address_locality`, `region`, `postal_code`, `country_code`, `latitude`, `longitude`, `precision`, `source`, `created_at`, `updated_at`, `row_version` | `id` |
 | `company` | `id`, `canonical_name`, `website_url`, `domain`, `location_id`, `notes`, `archived_at`, `created_at`, `updated_at`, `row_version` | `id` |
 | `contact` | `id`, `company_id`, `name`, `role`, `email`, `phone`, `public_profile_url`, `confidence`, `user_confirmed`, `notes`, `archived_at`, `created_at`, `updated_at`, `row_version` | `id` |
@@ -72,10 +73,10 @@ Rows use the stable ordering in the final column. Every listed field is projecte
 
 ## Explicit exclusions
 
-The following are runtime, derived, diagnostic, or migration machinery and do not belong in the human-readable projection: `coredrill_schema_migration`, `device`, `diagnostic_event`, `job_fts`, `job_search_identity`, `job_search_state`, `mutation_undo_token`, and SQLite internal tables. The portable archive still carries the complete SQLite database, so these exclusions do not remove restore state.
+The following are runtime, derived, diagnostic, short-lived undo, or migration machinery and do not belong in the human-readable projection: `capture_review_discard_undo_token`, `coredrill_schema_migration`, `device`, `diagnostic_event`, `job_fts`, `job_search_identity`, `job_search_state`, `mutation_undo_token`, and SQLite internal tables. The portable archive still carries the complete SQLite database, so these exclusions do not remove restore state.
 
 ## Limits and failure behavior
 
 The writer accepts at most 64 columns and 250,000 rows per dataset. It rejects a cell above 16 MiB, a generated data file above 128 MiB, or combined JSON/CSV data above 384 MiB. Invalid caller UUID/timestamp input fails before opening a transaction. Schema drift, a missing or mismatched vault, query failure, invalid JSON/boolean/binary/non-finite data, contract failure, or size overflow yields a stable redacted typed error and no successful partial bundle.
 
-All 29 queries execute within one `DatabasePort` transaction. Only after every dataset validates are the 58 ordered files returned to the portable archive writer.
+All 30 queries execute within one `DatabasePort` transaction. Only after every dataset validates are the 60 ordered files returned to the portable archive writer.

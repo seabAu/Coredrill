@@ -23,9 +23,11 @@ export {
 } from "./envelope.js";
 export {
   parseCaptureSourcePreviewJsonV1,
+  parseVerifiedCaptureEnvelopeJsonV1,
   type CaptureSourceEvidenceV1,
   type CaptureSourcePreviewOptions,
   type CaptureSourcePreviewResultV1,
   type CaptureSourcePreviewSectionV1,
   type CaptureSourcePreviewV1,
+  type VerifiedCaptureEnvelopeJsonResultV1,
 } from "./source-preview.js";

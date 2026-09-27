@@ -71,6 +71,18 @@ remain explicitly queued for review. Existing user confirmations are preserved;
 the rule returns an immutable plan and never writes, saves, or silently resolves
 anything.
 
+`REV-004` composes that rule into explicit local actions. Accept high-confidence
+selects eligible candidates in the review UI but creates no durable trust until
+the user chooses Save or Merge. Save requires an accepted title and creates the
+job, optional company, source, immutable snapshot, provenance, retained field
+candidates, confirmations, and resolved queue state in one transaction. Merge
+adds the captured source and evidence to the selected existing job without
+overwriting its canonical fields. Snooze records a fixed one-week return time;
+Return to inbox restores pending state. Discard requires confirmation and
+creates a durable, single-use undo token that restores the exact prior pending
+or snoozed state. Remaining conflicts and unknown fields stay visible but do not
+block a save when the required title is explicitly accepted.
+
 ### Pipeline: Board and Table
 
 Views:

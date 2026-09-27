@@ -149,7 +149,7 @@ const fixtureRows = (): Map<string, readonly QueryRow[]> =>
 class FixtureDatabase implements DatabasePort {
   public readonly statements: string[] = [];
   public transactions = 0;
-  public schemaVersion: number | bigint = 92;
+  public schemaVersion: number | bigint = 101;
   public failQuery = false;
 
   public constructor(public readonly rows = fixtureRows()) {}
@@ -232,19 +232,20 @@ describe("portable human-readable data export", () => {
 
     expect(bundle).toMatchObject({
       specVersion: 1,
-      sourceSchemaVersion: 92,
+      sourceSchemaVersion: 101,
       generatedAt: GENERATED_AT,
       vaultId: VAULT_ID,
       datasetCount: PORTABLE_DATA_EXPORT_DATASETS.length,
       rowCount: 6,
     });
-    expect(bundle.datasetCount).toBe(29);
-    expect(bundle.dataFiles).toHaveLength(58);
+    expect(bundle.datasetCount).toBe(30);
+    expect(bundle.dataFiles).toHaveLength(60);
     const excludedTables = new Set<string>(PORTABLE_DATA_EXPORT_EXCLUDED_TABLES);
     expect(PORTABLE_DATA_EXPORT_DATASETS.filter((item) => excludedTables.has(item.table))).toEqual(
       [],
     );
     expect(PORTABLE_DATA_EXPORT_EXCLUDED_TABLES).toEqual([
+      "capture_review_discard_undo_token",
       "coredrill_schema_migration",
       "device",
       "diagnostic_event",
@@ -254,7 +255,7 @@ describe("portable human-readable data export", () => {
       "mutation_undo_token",
     ]);
     expect(database.transactions).toBe(1);
-    expect(database.statements).toHaveLength(30);
+    expect(database.statements).toHaveLength(31);
     expect(bundle.datasets.find((item) => item.dataset === "job_source")?.rows[0]).toMatchObject({
       is_primary: true,
     });
@@ -284,23 +285,23 @@ describe("portable human-readable data export", () => {
       createdByVersion: "0.0.0",
       vault: {
         id: VAULT_ID,
-        schemaVersion: 92,
+        schemaVersion: 101,
         migrationHistory: [
           {
-            version: 92,
+            version: 101,
             name: "portable-data",
             appliedAt: GENERATED_AT,
             sha256,
           },
         ],
       },
-      database: { schemaVersion: 92, byteLength: bytes.byteLength, sha256, bytes },
+      database: { schemaVersion: 101, byteLength: bytes.byteLength, sha256, bytes },
       dataFiles: bundle.dataFiles,
       attachments: [],
       readAttachment: () => Promise.resolve(undefined),
     });
 
-    expect(archive.manifest.dataFiles).toHaveLength(58);
+    expect(archive.manifest.dataFiles).toHaveLength(60);
     expect(archive.manifest.dataFiles.map((entry) => entry.path)).toEqual(
       [...bundle.dataFiles].map((file) => file.path).sort(),
     );
@@ -308,7 +309,7 @@ describe("portable human-readable data export", () => {
 
   it("fails closed on unsupported schema, vault drift, and adapter failures", async () => {
     const unsupported = new FixtureDatabase();
-    unsupported.schemaVersion = 93;
+    unsupported.schemaVersion = 102;
     await expectCode(
       createPortableDataExportV1({
         database: unsupported,
