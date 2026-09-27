@@ -91,6 +91,7 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
 - **Status:** Accepted
 - **Decision:** Present Strength/Partial/Gap/Unknown by requirement plus separate literal-term and parseability checks. Do not predict hiring chance or call a composite an employer ATS score.
 - **Why:** These are different measurable questions; a single score creates false certainty and encourages dishonest keyword insertion.
+- **Phase 3 evidence (2026-09-27):** `MAT-004` implements deterministic, explained Strength/Partial/Unknown/Not Applicable decisions plus explicit user-reviewed Gap and override decisions. User judgments remain durable and become visibly stale when their requirement/evidence basis changes; reset returns to the current automatic rule. No aggregate score is calculated or shown. Rule, application, repository, export/recovery, UI, accessibility, current/previous Chrome and Firefox, and native lanes passed in [Foundation CI run 36341158160](https://github.com/seabAu/Coredrill/actions/runs/36341158160); see [requirement coverage verification](../../proof/phase-3-requirement-coverage-verification.md).
 - **Revisit when:** Terminology may change after comprehension tests; the explainability rule does not.
 
 ### D-014 — Calm, non-gamified design language
