@@ -20,7 +20,9 @@ const IDS = Object.freeze({
   snapshot: entityId("source-snapshot", "0199a740-0000-7000-8000-000000000003"),
   provenance: entityId("provenance", "0199a740-0000-7000-8000-000000000004"),
   requirement: entityId("job-requirement", "0199a740-0000-7000-8000-000000000005"),
+  sensitiveRequirement: entityId("job-requirement", "0199a740-0000-7000-8000-000000000009"),
   skill: entityId("skill", "0199a740-0000-7000-8000-000000000006"),
+  sensitiveSkill: entityId("skill", "0199a740-0000-7000-8000-000000000010"),
   employment: entityId("experience", "0199a740-0000-7000-8000-000000000007"),
   skillEvidence: entityId("skill-evidence", "0199a740-0000-7000-8000-000000000008"),
 });
@@ -63,8 +65,20 @@ const seed = async (database: DatabasePort): Promise<void> => {
   );
   await database.execute(
     sqlStatement(
+      "INSERT INTO job_requirement(id, job_id, category, source_category, normalized_text, raw_text, provenance_id, confidence, user_confirmed, sort_order, created_at, updated_at) VALUES (?, ?, 'required', 'required', 'Legally authorized to work in the United States', 'Are you legally authorized to work in the United States?', ?, 1, 1, 1, ?, ?)",
+      [IDS.sensitiveRequirement, IDS.job, IDS.provenance, CREATED_AT, CREATED_AT],
+    ),
+  );
+  await database.execute(
+    sqlStatement(
       "INSERT INTO skill(id, canonical_name, category, aliases_json, verification_state, created_at, updated_at) VALUES (?, 'TypeScript', 'language', '[\"TS\"]', 'user_confirmed', ?, ?)",
       [IDS.skill, CREATED_AT, CREATED_AT],
+    ),
+  );
+  await database.execute(
+    sqlStatement(
+      "INSERT INTO skill(id, canonical_name, category, aliases_json, verification_state, created_at, updated_at) VALUES (?, 'United States work authorization', 'other', '[\"legally authorized to work\"]', 'user_confirmed', ?, ?)",
+      [IDS.sensitiveSkill, CREATED_AT, CREATED_AT],
     ),
   );
   await database.execute(
@@ -180,6 +194,72 @@ const assertCoverageBehavior = async (database: DatabasePort): Promise<void> => 
   );
 };
 
+const assertSensitiveAnswerBehavior = async (database: DatabasePort): Promise<void> => {
+  const repository = await openRequirementEvidenceRepository(database, { disableFts5: true });
+  const retrieval = await repository.retrieve({
+    requirementId: IDS.sensitiveRequirement,
+    limit: 5,
+  });
+  assertContract(
+    retrieval.answerPolicy.handling === "direct-private-answer" &&
+      retrieval.answerPolicy.kind === "work-authorization-legal",
+    "Sensitive work authorization was not classified as a direct private answer.",
+  );
+  assertContract(
+    retrieval.queryTerms.length === 0 &&
+      retrieval.candidates.length === 0 &&
+      retrieval.selectedEvidence.length === 0,
+    "Sensitive work authorization leaked inferred evidence retrieval.",
+  );
+  assertContract(
+    retrieval.coverage.state === "unknown" && retrieval.coverage.source === "deterministic-rule",
+    "Sensitive work authorization did not remain explicitly unanswered.",
+  );
+
+  let selectionRejected = false;
+  try {
+    await repository.select({
+      requirementId: IDS.sensitiveRequirement,
+      evidenceKind: "skill",
+      evidenceId: IDS.sensitiveSkill,
+      selectedAt: CREATED_AT,
+    });
+  } catch (error) {
+    selectionRejected = error instanceof TypeError;
+  }
+  assertContract(selectionRejected, "Sensitive work authorization accepted inferred evidence.");
+
+  let coverageRejected = false;
+  try {
+    await repository.setCoverageDecision({
+      requirementId: IDS.sensitiveRequirement,
+      state: "strength",
+      expectedRowVersion: null,
+      decidedAt: CREATED_AT,
+    });
+  } catch (error) {
+    coverageRejected = error instanceof TypeError;
+  }
+  assertContract(coverageRejected, "Sensitive work authorization accepted inferred coverage.");
+
+  const selectionRows = await database.query<{ readonly count: number }>(
+    sqlStatement(
+      "SELECT COUNT(*) AS count FROM job_requirement_evidence_selection WHERE requirement_id = ?",
+      [IDS.sensitiveRequirement],
+    ),
+  );
+  const coverageRows = await database.query<{ readonly count: number }>(
+    sqlStatement(
+      "SELECT COUNT(*) AS count FROM job_requirement_coverage_decision WHERE requirement_id = ?",
+      [IDS.sensitiveRequirement],
+    ),
+  );
+  assertContract(
+    selectionRows[0]?.count === 0 && coverageRows[0]?.count === 0,
+    "Rejected sensitive inference produced a durable write.",
+  );
+};
+
 export const createRequirementEvidenceContractSuite = (
   setup: RequirementEvidenceContractSetup,
 ): DatabaseContractSuite =>
@@ -211,6 +291,15 @@ export const createRequirementEvidenceContractSuite = (
           await setup.migrate(database);
           await seed(database);
           await assertCoverageBehavior(database);
+        },
+      },
+      {
+        name: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components.requirementEvidence.cases
+          .blockSensitiveAnswerInference,
+        run: async (database) => {
+          await setup.migrate(database);
+          await seed(database);
+          await assertSensitiveAnswerBehavior(database);
         },
       },
     ],

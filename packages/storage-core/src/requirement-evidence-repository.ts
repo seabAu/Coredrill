@@ -3,6 +3,7 @@ import {
   REQUIREMENT_EVIDENCE_KINDS,
   REQUIREMENT_EVIDENCE_REASONS,
   RequirementEvidenceError,
+  classifyApplicationQuestion,
   deriveRequirementCoverageDecision,
   requirementCoverageSelectionBasis,
   type RequirementCoverageDecisionDto,
@@ -522,9 +523,31 @@ export class RequirementEvidenceRepository implements RequirementEvidencePort {
       throw new TypeError("Requirement evidence limit is invalid.");
     }
     const requirement = await readRequirement(this.database, input.requirementId);
-    const terms = normalizeRequirementEvidenceTerms(
-      `${requirement.normalized_text} ${requirement.raw_text}`,
-    );
+    const requirementText = `${requirement.normalized_text} ${requirement.raw_text}`;
+    const answerPolicy = classifyApplicationQuestion(requirementText);
+    if (answerPolicy.handling === "direct-private-answer") {
+      const selectedEvidence = Object.freeze(
+        (await readSelections(this.database, input.requirementId)).map((selected) =>
+          withSelectionSignals(selected, undefined),
+        ),
+      );
+      return Object.freeze({
+        answerPolicy,
+        candidates: Object.freeze([]),
+        capability: Object.freeze({ mode: this.mode, fallbackReason: this.fallbackReason }),
+        coverage: deriveRequirementCoverageDecision({
+          category: requirementCategory(requirement.category),
+          requirementText,
+          requirementRowVersion: requirement.row_version,
+          selectedEvidence,
+          storedDecision: await readCoverageDecision(this.database, input.requirementId),
+        }),
+        queryTerms: Object.freeze([]),
+        requirementId: entityId("job-requirement", requirement.id),
+        selectedEvidence,
+      });
+    }
+    const terms = normalizeRequirementEvidenceTerms(requirementText);
     const contentRows = await loadAllContent(this.database);
     const contentByKey = new Map(
       contentRows.map((row) => [contentKey(evidenceKind(row.evidence_kind), row.evidence_id), row]),
@@ -671,10 +694,12 @@ export class RequirementEvidenceRepository implements RequirementEvidencePort {
       .slice(0, input.limit);
 
     return Object.freeze({
+      answerPolicy,
       candidates: Object.freeze(candidates),
       capability: Object.freeze({ mode: this.mode, fallbackReason: this.fallbackReason }),
       coverage: deriveRequirementCoverageDecision({
         category: requirementCategory(requirement.category),
+        requirementText,
         requirementRowVersion: requirement.row_version,
         selectedEvidence,
         storedDecision: await readCoverageDecision(this.database, input.requirementId),
@@ -694,7 +719,13 @@ export class RequirementEvidenceRepository implements RequirementEvidencePort {
     const kind = evidenceKind(input.evidenceKind);
     instant(input.selectedAt);
     return this.database.transaction(async (transaction) => {
-      await readRequirement(transaction, input.requirementId);
+      const requirement = await readRequirement(transaction, input.requirementId);
+      if (
+        classifyApplicationQuestion(`${requirement.normalized_text} ${requirement.raw_text}`)
+          .handling === "direct-private-answer"
+      ) {
+        throw new TypeError("Private application answers cannot use inferred evidence.");
+      }
       const targetRows = await transaction.query<EvidenceContentRow>(
         sqlStatement(
           `SELECT evidence_kind, evidence_id, label, searchable_text, verification_state,
@@ -773,6 +804,10 @@ export class RequirementEvidenceRepository implements RequirementEvidencePort {
 
     return this.database.transaction(async (transaction) => {
       const requirement = await readRequirement(transaction, input.requirementId);
+      const requirementText = `${requirement.normalized_text} ${requirement.raw_text}`;
+      if (classifyApplicationQuestion(requirementText).handling === "direct-private-answer") {
+        throw new TypeError("Private application answers cannot use inferred coverage.");
+      }
       const selectedEvidence = await readSelections(transaction, input.requirementId);
       if ((state === "strength" || state === "partial") && selectedEvidence.length === 0) {
         throw new TypeError("Strength and Partial coverage require selected evidence.");
@@ -832,6 +867,7 @@ export class RequirementEvidenceRepository implements RequirementEvidencePort {
         throw new Error("Stored requirement coverage decision is missing.");
       return deriveRequirementCoverageDecision({
         category: requirementCategory(requirement.category),
+        requirementText,
         requirementRowVersion: requirement.row_version,
         selectedEvidence,
         storedDecision,

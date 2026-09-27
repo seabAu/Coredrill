@@ -74,6 +74,8 @@ import {
 } from "@coredrill/source-policy";
 import { parseCaptureSourcePreviewJsonV1 } from "@coredrill/capture-core";
 import {
+  REQUIREMENT_COVERAGE_RULE_VERSION,
+  classifyApplicationQuestion,
   evaluateCaptureSourceStateV1,
   parseJobRequirementProposals,
   type CaptureDuplicateSuggestionV1,
@@ -1183,6 +1185,19 @@ const NORTHSTAR_REQUIREMENTS = Object.freeze([
     userConfirmed: false,
     rowVersion: 1,
   }),
+  Object.freeze({
+    id: "requirement-northstar-work-authorization",
+    category: "required" as const,
+    sourceCategory: "required" as const,
+    normalizedText: "Are you legally authorized to work in the United States?",
+    rawText: "Are you legally authorized to work in the United States?",
+    sourcePointer: "/application/work-authorization",
+    sourceExcerpt: "Are you legally authorized to work in the United States?",
+    extractionMethod: "application-question",
+    confidence: 1,
+    userConfirmed: true,
+    rowVersion: 1,
+  }),
 ] as const satisfies JobWorkspaceContentModel["requirements"]);
 
 const NORTHSTAR_REQUIREMENT_PROPOSALS = Object.freeze(
@@ -1246,15 +1261,28 @@ const proofCoverageLabel = (state: RequirementCoverageState): string =>
 
 const automaticProofCoverage = (
   category: JobWorkspaceContentModel["requirements"][number]["category"],
+  requirementText: string,
   selectedEvidence: ProofSelectedEvidence,
 ): ProofCoverage => {
+  if (classifyApplicationQuestion(requirementText).handling === "direct-private-answer") {
+    return Object.freeze({
+      decidedAt: null,
+      explanation:
+        "This eligibility or demographic question requires your direct private answer. Coredrill will not infer it from Career Profile, evidence, documents, or saved answers.",
+      rowVersion: null,
+      ruleVersion: REQUIREMENT_COVERAGE_RULE_VERSION,
+      source: "deterministic-rule",
+      stale: false,
+      state: "unknown",
+    });
+  }
   if (category === "context") {
     return Object.freeze({
       decidedAt: null,
       explanation:
         "This is job context rather than a qualification, so no qualification evidence is expected.",
       rowVersion: null,
-      ruleVersion: "requirement-coverage-v1",
+      ruleVersion: REQUIREMENT_COVERAGE_RULE_VERSION,
       source: "deterministic-rule",
       stale: false,
       state: "not_applicable",
@@ -1266,7 +1294,7 @@ const automaticProofCoverage = (
       explanation:
         "No evidence is selected. Coverage is Unknown—not a Gap—until you review or add evidence.",
       rowVersion: null,
-      ruleVersion: "requirement-coverage-v1",
+      ruleVersion: REQUIREMENT_COVERAGE_RULE_VERSION,
       source: "deterministic-rule",
       stale: false,
       state: "unknown",
@@ -1284,7 +1312,7 @@ const automaticProofCoverage = (
         ? "Selected evidence is relevant but does not combine a structured relation with reviewed verification. Coverage is Partial."
         : `${strong.label} has a structured relation and reviewed verification. This supports Strength, not a hiring probability.`,
     rowVersion: null,
-    ruleVersion: "requirement-coverage-v1",
+    ruleVersion: REQUIREMENT_COVERAGE_RULE_VERSION,
     source: "deterministic-rule",
     stale: false,
     state: strong === undefined ? "partial" : "strength",
@@ -1303,7 +1331,7 @@ const reviewedProofCoverage = (
         ? "You marked this as a Gap after review. No selected evidence currently supports the requirement."
         : `You marked this as ${proofCoverageLabel(state)} after reviewing ${String(selectedEvidence.length)} selected evidence item${selectedEvidence.length === 1 ? "" : "s"}. This is your evidence judgment, not a hiring probability.`,
     rowVersion,
-    ruleVersion: "requirement-coverage-v1",
+    ruleVersion: REQUIREMENT_COVERAGE_RULE_VERSION,
     source: "user-confirmed",
     stale: false,
     state,
@@ -1320,7 +1348,12 @@ const staleProofCoverage = (coverage: ProofCoverage): ProofCoverage =>
 
 const NORTHSTAR_REQUIREMENT_EVIDENCE = Object.freeze([
   Object.freeze({
-    coverage: automaticProofCoverage("required", Object.freeze([])),
+    answerPolicy: classifyApplicationQuestion("Lead cross-functional delivery"),
+    coverage: automaticProofCoverage(
+      "required",
+      "Lead cross-functional delivery",
+      Object.freeze([]),
+    ),
     requirementId: "requirement-northstar-delivery",
     retrievalMode: "fts5" as const,
     queryTerms: Object.freeze(["cross-functional", "delivery", "product", "operations"]),
@@ -1349,10 +1382,26 @@ const NORTHSTAR_REQUIREMENT_EVIDENCE = Object.freeze([
     ]),
   }),
   Object.freeze({
-    coverage: automaticProofCoverage("desired", Object.freeze([])),
+    answerPolicy: classifyApplicationQuestion("Healthcare domain experience"),
+    coverage: automaticProofCoverage("desired", "Healthcare domain experience", Object.freeze([])),
     requirementId: "requirement-northstar-healthcare",
     retrievalMode: "normalized-token" as const,
     queryTerms: Object.freeze(["healthcare", "domain", "experience"]),
+    selectedEvidence: Object.freeze([]),
+    candidates: Object.freeze([]),
+  }),
+  Object.freeze({
+    answerPolicy: classifyApplicationQuestion(
+      "Are you legally authorized to work in the United States?",
+    ),
+    coverage: automaticProofCoverage(
+      "required",
+      "Are you legally authorized to work in the United States?",
+      Object.freeze([]),
+    ),
+    requirementId: "requirement-northstar-work-authorization",
+    retrievalMode: "normalized-token" as const,
+    queryTerms: Object.freeze([]),
     selectedEvidence: Object.freeze([]),
     candidates: Object.freeze([]),
   }),
@@ -2629,7 +2678,11 @@ const AppShellCatalog = () => {
                     coverage:
                       review.coverage.source === "user-confirmed"
                         ? staleProofCoverage(review.coverage)
-                        : automaticProofCoverage(request.category, review.selectedEvidence),
+                        : automaticProofCoverage(
+                            request.category,
+                            target.normalizedText,
+                            review.selectedEvidence,
+                          ),
                   })
                 : review,
             ),
@@ -2656,6 +2709,12 @@ const AppShellCatalog = () => {
         return;
       }
       const selecting = request.id === "select-requirement-evidence";
+      if (selecting && review.answerPolicy.handling === "direct-private-answer") {
+        setLastActivity(
+          "This private application question requires your direct answer; Coredrill did not infer or select evidence.",
+        );
+        return;
+      }
       const source = selecting ? review.candidates : review.selectedEvidence;
       const target = source.find(({ id }) => id === request.targetId);
       if (target === undefined) {
@@ -2667,22 +2726,25 @@ const AppShellCatalog = () => {
         : Object.freeze(review.selectedEvidence.filter(({ id }) => id !== request.targetId));
       const candidates = selecting
         ? Object.freeze(review.candidates.filter(({ id }) => id !== request.targetId))
-        : Object.freeze([
-            ...review.candidates,
-            Object.freeze({
-              ...target,
-              reasons: Object.freeze(["previously-selected"]),
-              matchedTerms: Object.freeze([]),
-            }),
-          ]);
-      const requirementCategory =
-        (jobRequirements[workspaceRoute.jobId] ?? Object.freeze([])).find(
-          ({ id }) => id === request.requirementId,
-        )?.category ?? "required";
+        : review.answerPolicy.handling === "direct-private-answer"
+          ? Object.freeze([])
+          : Object.freeze([
+              ...review.candidates,
+              Object.freeze({
+                ...target,
+                reasons: Object.freeze(["previously-selected"]),
+                matchedTerms: Object.freeze([]),
+              }),
+            ]);
+      const requirement = (jobRequirements[workspaceRoute.jobId] ?? Object.freeze([])).find(
+        ({ id }) => id === request.requirementId,
+      );
+      const requirementCategory = requirement?.category ?? "required";
+      const requirementText = requirement?.normalizedText ?? "Unknown requirement";
       const coverage =
         review.coverage.source === "user-confirmed"
           ? staleProofCoverage(review.coverage)
-          : automaticProofCoverage(requirementCategory, selectedEvidence);
+          : automaticProofCoverage(requirementCategory, requirementText, selectedEvidence);
       setJobRequirementEvidence(
         Object.freeze({
           ...jobRequirementEvidence,
@@ -2720,9 +2782,19 @@ const AppShellCatalog = () => {
         );
         return;
       }
+      if (review.answerPolicy.handling === "direct-private-answer") {
+        setLastActivity(
+          "This private application question remains unanswered; Coredrill did not infer or save a coverage decision.",
+        );
+        return;
+      }
       const coverage =
         request.id === "reset-requirement-coverage"
-          ? automaticProofCoverage(requirement.category, review.selectedEvidence)
+          ? automaticProofCoverage(
+              requirement.category,
+              requirement.normalizedText,
+              review.selectedEvidence,
+            )
           : reviewedProofCoverage(
               request.state,
               review.selectedEvidence,
@@ -2788,8 +2860,13 @@ const AppShellCatalog = () => {
           [workspaceRoute.jobId]: Object.freeze([
             ...reviews,
             Object.freeze({
+              answerPolicy: classifyApplicationQuestion(proposal.normalizedText),
               candidates: Object.freeze([]),
-              coverage: automaticProofCoverage(request.category, Object.freeze([])),
+              coverage: automaticProofCoverage(
+                request.category,
+                proposal.normalizedText,
+                Object.freeze([]),
+              ),
               queryTerms: Object.freeze([]),
               requirementId: acceptedRequirementId,
               retrievalMode: "normalized-token" as const,

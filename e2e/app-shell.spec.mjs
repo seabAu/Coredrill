@@ -992,8 +992,8 @@ test("Job core tabs expose normalized facts, chronology, company context, and pr
   await expect(parseabilityPanel).toContainText("Coredrill's local listing parser");
   await expect(parseabilityPanel).toContainText("does not test a resume");
   await expect(literalTermPanel).toContainText("Not evaluated");
-  await expect(literalTermPanel).toContainText("2 requirements not evaluated");
-  await expect(qualificationPanel).toContainText("Unknown2");
+  await expect(literalTermPanel).toContainText("3 requirements not evaluated");
+  await expect(qualificationPanel).toContainText("Unknown3");
   await expect(comparisonChecks).toContainText("No combined score");
   await expect(comparisonChecks.locator("[data-aggregate-score]")).toHaveCount(0);
   const proposalList = workspace.getByRole("list", { name: "Pending requirement proposals" });
@@ -1041,6 +1041,21 @@ test("Job core tabs expose normalized facts, chronology, company context, and pr
   );
   await expect(page.getByRole("status").first()).toContainText("No external request was made");
 
+  const privateAnswerReview = workspace.getByRole("region", {
+    name: "Private answer required for Are you legally authorized to work in the United States?",
+  });
+  await expect(privateAnswerReview).toBeVisible();
+  await expect(privateAnswerReview.getByText("Unanswered", { exact: true })).toBeVisible();
+  await expect(privateAnswerReview).toContainText("will not infer or prefill");
+  await expect(privateAnswerReview).toContainText("Career Profile");
+  await expect(privateAnswerReview).toContainText("documents");
+  await expect(privateAnswerReview).toContainText("Answer Library");
+  await expect(privateAnswerReview.getByRole("combobox")).toHaveCount(0);
+  await expect(privateAnswerReview.getByRole("button", { name: /Select evidence/u })).toHaveCount(
+    0,
+  );
+  await expect(privateAnswerReview.getByText("United States work authorization")).toHaveCount(0);
+
   const evidenceReview = workspace.getByLabel("Evidence for Lead cross-functional delivery");
   const coverageReview = evidenceReview.getByRole("group", {
     name: "Coverage decision for Lead cross-functional delivery",
@@ -1079,9 +1094,9 @@ test("Job core tabs expose normalized facts, chronology, company context, and pr
   await expect(
     literalTermPanel.getByRole("list", { name: "Literal terms not observed" }),
   ).toContainText("cross-functional");
-  await expect(literalTermPanel).toContainText("2 requirements not evaluated");
+  await expect(literalTermPanel).toContainText("3 requirements not evaluated");
   await expect(qualificationPanel).toContainText("Strength1");
-  await expect(qualificationPanel).toContainText("Unknown2");
+  await expect(qualificationPanel).toContainText("Unknown3");
 
   for (const [value, label] of [
     ["partial", "Partial"],
@@ -1125,12 +1140,16 @@ test("Job core tabs expose normalized facts, chronology, company context, and pr
   await expect(parseabilityPanel).toBeVisible();
   await expect(literalTermPanel).toBeVisible();
   await expect(qualificationPanel).toBeVisible();
+  await expect(privateAnswerReview).toBeVisible();
   expect(
     await comparisonChecks.evaluate((element) => element.scrollWidth <= element.clientWidth),
   ).toBe(true);
   await page.setViewportSize({ width: 1440, height: 1100 });
   console.info(
     `MAT005_E2E_PROOF ${JSON.stringify({ namedPanels: 3, parseabilitySeparate: true, literalTermsSeparate: true, qualificationEvidenceSeparate: true, liveTermUpdate: true, liveCoverageUpdate: true, aggregateScores: 0, narrowReflow: true, externalRequests: externalRequests.length })}`,
+  );
+  console.info(
+    `MAT006_E2E_PROOF ${JSON.stringify({ sensitiveAnswerStatus: "Unanswered", inferenceSourcesNamed: 4, coverageControls: 0, evidenceSelectionControls: 0, durableAnswerWrites: 0, narrowReflow: true, externalRequests: externalRequests.length })}`,
   );
   expect(externalRequests).toEqual([]);
 

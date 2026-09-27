@@ -18,6 +18,10 @@ import {
   type ApplicationError,
   type ApplicationResult,
 } from "./result.js";
+import {
+  classifyApplicationQuestion,
+  type ApplicationQuestionPolicyDto,
+} from "./application-question-policy.js";
 
 export const REQUIREMENT_EVIDENCE_KINDS = Object.freeze([
   "employment",
@@ -54,7 +58,7 @@ export const REQUIREMENT_COVERAGE_STATES = Object.freeze([
   "not_applicable",
 ] as const);
 export type RequirementCoverageState = (typeof REQUIREMENT_COVERAGE_STATES)[number];
-export const REQUIREMENT_COVERAGE_RULE_VERSION = "requirement-coverage-v1" as const;
+export const REQUIREMENT_COVERAGE_RULE_VERSION = "requirement-coverage-v2" as const;
 export type RequirementCoverageSource = "deterministic-rule" | "user-confirmed";
 
 export interface RequirementEvidenceItemDto {
@@ -100,12 +104,14 @@ export interface RequirementCoverageDecisionDto {
 
 export interface DeriveRequirementCoverageInput {
   readonly category: JobRequirementCategory;
+  readonly requirementText: string;
   readonly requirementRowVersion: number;
   readonly selectedEvidence: readonly SelectedRequirementEvidenceDto[];
   readonly storedDecision: StoredRequirementCoverageDecisionDto | null;
 }
 
 export interface RequirementEvidenceRetrievalDto {
+  readonly answerPolicy: ApplicationQuestionPolicyDto;
   readonly candidates: readonly RequirementEvidenceCandidateDto[];
   readonly capability: {
     readonly fallbackReason: RequirementEvidenceFallbackReason | null;
@@ -331,8 +337,21 @@ const manualExplanation = (
 
 const deterministicCoverage = (
   category: JobRequirementCategory,
+  requirementText: string,
   selectedEvidence: readonly SelectedRequirementEvidenceDto[],
 ): RequirementCoverageDecisionDto => {
+  if (classifyApplicationQuestion(requirementText).handling === "direct-private-answer") {
+    return Object.freeze({
+      decidedAt: null,
+      explanation:
+        "This eligibility or demographic question requires your direct private answer. Coredrill will not infer it from Career Profile, evidence, documents, or saved answers.",
+      ruleVersion: REQUIREMENT_COVERAGE_RULE_VERSION,
+      rowVersion: null,
+      source: "deterministic-rule",
+      stale: false,
+      state: "unknown",
+    });
+  }
   if (category === "context") {
     return Object.freeze({
       decidedAt: null,
@@ -392,7 +411,12 @@ export const deriveRequirementCoverageDecision = (
   if (!Number.isSafeInteger(input.requirementRowVersion) || input.requirementRowVersion < 1) {
     throw new TypeError("Requirement coverage input row version is invalid.");
   }
-  const automatic = deterministicCoverage(input.category, input.selectedEvidence);
+  const answerPolicy = classifyApplicationQuestion(input.requirementText);
+  const automatic = deterministicCoverage(
+    input.category,
+    input.requirementText,
+    input.selectedEvidence,
+  );
   if (input.storedDecision === null) return automatic;
 
   const state = coverageState(input.storedDecision.state);
@@ -400,9 +424,12 @@ export const deriveRequirementCoverageDecision = (
     input.storedDecision.requirementRowVersion !== input.requirementRowVersion ||
     input.storedDecision.selectionBasis !==
       requirementCoverageSelectionBasis(input.selectedEvidence);
-  const explanation = stale
-    ? `You previously marked this as ${state.replaceAll("_", " ")}, but the requirement or selected evidence changed afterward. Review the decision; Coredrill has not overwritten it.`
-    : manualExplanation(state, input.selectedEvidence);
+  const explanation =
+    answerPolicy.handling === "direct-private-answer"
+      ? `A previous ${state.replaceAll("_", " ")} coverage label is retained for review, but it is not an answer. Coredrill will not infer or prefill this private question.`
+      : stale
+        ? `You previously marked this as ${state.replaceAll("_", " ")}, but the requirement or selected evidence changed afterward. Review the decision; Coredrill has not overwritten it.`
+        : manualExplanation(state, input.selectedEvidence);
   return Object.freeze({
     decidedAt: instant(input.storedDecision.decidedAt),
     explanation,

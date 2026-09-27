@@ -1,5 +1,19 @@
 /** Use-case orchestration and query DTOs over domain ports. */
 export {
+  APPLICATION_QUESTION_HANDLING,
+  APPLICATION_QUESTION_KINDS,
+  APPLICATION_QUESTION_POLICY_VERSION,
+  classifyApplicationQuestion,
+  resolveApplicationQuestionAnswer,
+  type ApplicationAnswerCandidateInput,
+  type ApplicationAnswerSource,
+  type ApplicationQuestionAnswerResolutionDto,
+  type ApplicationQuestionHandling,
+  type ApplicationQuestionKind,
+  type ApplicationQuestionPolicyDto,
+  type ResolveApplicationQuestionAnswerInput,
+} from "./application-question-policy.js";
+export {
   CAPTURE_DUPLICATE_LIMITS,
   CAPTURE_DUPLICATE_REASONS,
   CAPTURE_INGESTION_ERROR_CODES,

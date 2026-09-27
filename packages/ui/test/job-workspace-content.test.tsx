@@ -25,11 +25,19 @@ const MODEL = Object.freeze({
   jobId: "job-northstar",
   requirementEvidence: Object.freeze([
     Object.freeze({
+      answerPolicy: Object.freeze({
+        allowsGeneratedDraft: true,
+        allowsProfileProposal: false,
+        handling: "draftable" as const,
+        kind: "experience-evidence" as const,
+        requiresDirectUserAnswer: false,
+        ruleVersion: "application-question-policy-v1",
+      }),
       coverage: Object.freeze({
         decidedAt: null,
         explanation: "No evidence is selected. Coverage is Unknown—not a Gap—until review.",
         rowVersion: null,
-        ruleVersion: "requirement-coverage-v1",
+        ruleVersion: "requirement-coverage-v2",
         source: "deterministic-rule" as const,
         stale: false,
         state: "unknown" as const,
@@ -258,6 +266,61 @@ describe("JobWorkspaceContent contract", () => {
     expect(markup).toContain("0 requirements not evaluated for literal terms");
     expect(markup).toMatch(/<dt>Strength<\/dt><dd>1<\/dd>/u);
     expect(markup).not.toContain("100% match");
+  });
+
+  it("renders sensitive eligibility as unanswered without inference controls", () => {
+    const sensitiveText = "Are you legally authorized to work in the United States?";
+    const markup = renderContent("requirements", {
+      ...MODEL,
+      requirements: Object.freeze([
+        ...MODEL.requirements,
+        Object.freeze({
+          ...MODEL.requirements[0]!,
+          id: "requirement-work-authorization",
+          normalizedText: sensitiveText,
+          rawText: sensitiveText,
+          sourcePointer: "/application/work-authorization",
+        }),
+      ]),
+      requirementEvidence: Object.freeze([
+        ...MODEL.requirementEvidence,
+        Object.freeze({
+          answerPolicy: Object.freeze({
+            allowsGeneratedDraft: false,
+            allowsProfileProposal: false,
+            handling: "direct-private-answer" as const,
+            kind: "work-authorization-legal" as const,
+            requiresDirectUserAnswer: true,
+            ruleVersion: "application-question-policy-v1",
+          }),
+          coverage: Object.freeze({
+            decidedAt: null,
+            explanation: "A direct private answer is required.",
+            rowVersion: null,
+            ruleVersion: "requirement-coverage-v2",
+            source: "deterministic-rule" as const,
+            stale: false,
+            state: "unknown" as const,
+          }),
+          requirementId: "requirement-work-authorization",
+          retrievalMode: "fts5" as const,
+          queryTerms: Object.freeze([]),
+          selectedEvidence: Object.freeze([]),
+          candidates: Object.freeze([]),
+        }),
+      ]),
+    });
+    const privateRegion = markup.match(
+      /<section aria-label="Private answer required for Are you legally authorized to work in the United States\?"[\s\S]*?<\/section>/u,
+    )?.[0];
+
+    expect(privateRegion).toBeDefined();
+    expect(privateRegion).toContain("Unanswered");
+    expect(privateRegion).toContain("will not infer or prefill");
+    expect(privateRegion).toContain("Career Profile");
+    expect(privateRegion).toContain("Answer Library");
+    expect(privateRegion).not.toContain("Coverage decision");
+    expect(privateRegion).not.toContain("Select evidence");
   });
 
   it("renders normalized facts, attention, notes, and a bounded quick timeline entry", () => {

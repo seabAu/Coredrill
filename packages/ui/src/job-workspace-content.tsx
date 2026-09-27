@@ -1,5 +1,7 @@
 import { useState, type ChangeEvent, type SyntheticEvent } from "react";
 import {
+  APPLICATION_QUESTION_HANDLING,
+  APPLICATION_QUESTION_KINDS,
   JOB_REQUIREMENT_CATEGORIES,
   REQUIREMENT_COVERAGE_STATES,
   type JobRequirementCategory,
@@ -103,6 +105,14 @@ export interface JobWorkspaceTimelineItem {
 export interface JobWorkspaceContentModel {
   readonly jobId: string;
   readonly requirementEvidence: readonly {
+    readonly answerPolicy: {
+      readonly allowsGeneratedDraft: boolean;
+      readonly allowsProfileProposal: boolean;
+      readonly handling: (typeof APPLICATION_QUESTION_HANDLING)[number];
+      readonly kind: (typeof APPLICATION_QUESTION_KINDS)[number];
+      readonly requiresDirectUserAnswer: boolean;
+      readonly ruleVersion: string;
+    };
     readonly coverage: {
       readonly decidedAt: string | null;
       readonly explanation: string;
@@ -323,6 +333,16 @@ const validateModel = (model: JobWorkspaceContentModel): void => {
       review.queryTerms.length > 24 ||
       review.selectedEvidence.length > 32 ||
       review.candidates.length > 50 ||
+      !APPLICATION_QUESTION_KINDS.includes(review.answerPolicy.kind) ||
+      !APPLICATION_QUESTION_HANDLING.includes(review.answerPolicy.handling) ||
+      review.answerPolicy.ruleVersion.trim().length === 0 ||
+      !isBoundedText(review.answerPolicy.ruleVersion, 128) ||
+      (review.answerPolicy.handling === "direct-private-answer" &&
+        (!review.answerPolicy.requiresDirectUserAnswer ||
+          review.answerPolicy.allowsGeneratedDraft ||
+          review.answerPolicy.allowsProfileProposal ||
+          review.queryTerms.length > 0 ||
+          review.candidates.length > 0)) ||
       new Set(evidence.map(({ id, kind }) => `${kind}:${id}`)).size !== evidence.length ||
       review.queryTerms.some((term) => term.trim().length === 0 || !isBoundedText(term, 128)) ||
       !REQUIREMENT_COVERAGE_STATES.includes(coverage.state) ||
@@ -955,6 +975,66 @@ function RequirementEvidenceReview({
       >
         <h5>Evidence candidates</h5>
         <p>No evidence candidates have been retrieved for this requirement yet.</p>
+      </section>
+    );
+  }
+  if (review.answerPolicy.handling === "direct-private-answer") {
+    return (
+      <section
+        aria-label={`Private answer required for ${requirement.normalizedText}`}
+        className="cd-requirement-evidence"
+      >
+        <div className="cd-requirement-evidence__heading">
+          <div>
+            <h5>Private answer required</h5>
+            <p>
+              Answer this eligibility or demographic question directly in the application. Coredrill
+              will not infer or prefill it from Career Profile, evidence, documents, or the Answer
+              Library.
+            </p>
+          </div>
+          <output
+            aria-label={`Private answer status for ${requirement.normalizedText}`}
+            className="cd-chip"
+          >
+            Unanswered
+          </output>
+        </div>
+        <p className="cd-job-requirements__boundary">
+          No candidate search or automatic coverage decision is used for this question. Only your
+          direct answer can supply a value.
+        </p>
+        {review.selectedEvidence.length > 0 ? (
+          <div aria-label={`Ignored legacy evidence for ${requirement.normalizedText}`}>
+            <h6>Ignored legacy evidence</h6>
+            <p>
+              These older links are retained for review but cannot answer this question. Remove them
+              when ready.
+            </p>
+            {review.selectedEvidence.map((item) => (
+              <article className="cd-requirement-evidence__item" key={`${item.kind}:${item.id}`}>
+                <div>
+                  <strong>{item.label}</strong>
+                  <p>{item.summary}</p>
+                </div>
+                <button
+                  aria-label={`Remove ${item.label} from ${requirement.normalizedText}`}
+                  className="cd-button cd-button-secondary"
+                  onClick={() => {
+                    onAction?.({
+                      id: "remove-requirement-evidence",
+                      requirementId: requirement.id,
+                      targetId: item.id,
+                    });
+                  }}
+                  type="button"
+                >
+                  Remove selection
+                </button>
+              </article>
+            ))}
+          </div>
+        ) : null}
       </section>
     );
   }

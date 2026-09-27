@@ -55,6 +55,8 @@ const PHASE_1_REPOSITORY_CONTRACT_COMPONENTS = Object.freeze({
       "preserves equivalent bounded evidence retrieval and explicit selection without FTS5",
     preserveCoverageDecisions:
       "preserves explainable coverage decisions and detects changed evidence without overwriting review",
+    blockSensitiveAnswerInference:
+      "keeps sensitive eligibility answers unset and blocks unrelated evidence or coverage writes",
   }),
 });
 
@@ -65,8 +67,8 @@ const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
 );
 
 export const PHASE_1_REPOSITORY_CONTRACT_MANIFEST = Object.freeze({
-  schemaVersion: 5 as const,
-  suiteName: "phase-1-repository-contracts-v5",
+  schemaVersion: 6 as const,
+  suiteName: "phase-1-repository-contracts-v6",
   components: PHASE_1_REPOSITORY_CONTRACT_COMPONENTS,
   caseNames: PHASE_1_REPOSITORY_CONTRACT_CASES,
 });

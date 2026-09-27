@@ -2,6 +2,7 @@ import { entityId, instant } from "@coredrill/domain";
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  classifyApplicationQuestion,
   createRequirementEvidenceOperations,
   deriveRequirementCoverageDecision,
   requirementCoverageSelectionBasis,
@@ -41,6 +42,7 @@ const selected = (
 
 const automaticUnknown = deriveRequirementCoverageDecision({
   category: "required",
+  requirementText: "TypeScript experience",
   requirementRowVersion: 1,
   selectedEvidence: Object.freeze([]),
   storedDecision: null,
@@ -48,6 +50,7 @@ const automaticUnknown = deriveRequirementCoverageDecision({
 
 const retrieval = (): RequirementEvidenceRetrievalDto =>
   Object.freeze({
+    answerPolicy: classifyApplicationQuestion("TypeScript experience"),
     requirementId: entityId("job-requirement", IDS.requirement),
     queryTerms: Object.freeze(["typescript"]),
     capability: Object.freeze({ mode: "fts5", fallbackReason: null }),
@@ -71,6 +74,7 @@ const setup = () => {
     setCoverageDecision: vi.fn(async ({ state }) =>
       deriveRequirementCoverageDecision({
         category: "required",
+        requirementText: "TypeScript experience",
         requirementRowVersion: 1,
         selectedEvidence: Object.freeze([selected()]),
         storedDecision: {
@@ -85,6 +89,7 @@ const setup = () => {
     resetCoverageDecision: vi.fn(async () =>
       deriveRequirementCoverageDecision({
         category: "required",
+        requirementText: "TypeScript experience",
         requirementRowVersion: 1,
         selectedEvidence: Object.freeze([selected()]),
         storedDecision: null,
@@ -189,6 +194,7 @@ describe("Requirement coverage rules", () => {
     expect(
       deriveRequirementCoverageDecision({
         category: "context",
+        requirementText: "Healthcare industry context",
         requirementRowVersion: 1,
         selectedEvidence: Object.freeze([]),
         storedDecision: null,
@@ -202,6 +208,7 @@ describe("Requirement coverage rules", () => {
     expect(
       deriveRequirementCoverageDecision({
         category: "required",
+        requirementText: "TypeScript experience",
         requirementRowVersion: 1,
         selectedEvidence: Object.freeze([selected()]),
         storedDecision: null,
@@ -210,6 +217,7 @@ describe("Requirement coverage rules", () => {
     expect(
       deriveRequirementCoverageDecision({
         category: "required",
+        requirementText: "TypeScript experience",
         requirementRowVersion: 1,
         selectedEvidence: Object.freeze([
           selected({ reasons: Object.freeze(["lexical"]), verificationState: "imported" }),
@@ -225,6 +233,7 @@ describe("Requirement coverage rules", () => {
       const evidence = state === "strength" || state === "partial" ? [selected()] : [];
       const decision = deriveRequirementCoverageDecision({
         category: "required",
+        requirementText: "TypeScript experience",
         requirementRowVersion: 3,
         selectedEvidence: Object.freeze(evidence),
         storedDecision: {
@@ -243,6 +252,7 @@ describe("Requirement coverage rules", () => {
   it("marks a user decision stale instead of silently replacing it", () => {
     const decision = deriveRequirementCoverageDecision({
       category: "required",
+      requirementText: "TypeScript experience",
       requirementRowVersion: 2,
       selectedEvidence: Object.freeze([selected()]),
       storedDecision: {
@@ -255,5 +265,22 @@ describe("Requirement coverage rules", () => {
     });
     expect(decision).toMatchObject({ state: "gap", source: "user-confirmed", stale: true });
     expect(decision.explanation).toContain("has not overwritten");
+  });
+
+  it("keeps sensitive eligibility coverage Unknown despite unrelated selected evidence", () => {
+    const decision = deriveRequirementCoverageDecision({
+      category: "required",
+      requirementText: "Are you legally authorized to work in the United States?",
+      requirementRowVersion: 1,
+      selectedEvidence: Object.freeze([selected()]),
+      storedDecision: null,
+    });
+
+    expect(decision).toMatchObject({
+      source: "deterministic-rule",
+      state: "unknown",
+    });
+    expect(decision.explanation).toContain("direct private answer");
+    expect(decision.explanation).toContain("will not infer");
   });
 });
