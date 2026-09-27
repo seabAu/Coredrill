@@ -10,19 +10,22 @@ test("runs the Career Profile repository contract in browser SQLite", async ({ p
   );
 
   expect(proof.manifest).toEqual({
-    schemaVersion: 2,
-    suiteName: "phase-3-career-repositories-v2",
+    schemaVersion: 3,
+    suiteName: "phase-3-career-repositories-v3",
     cases: {
       roundTripAll:
         "round-trips employment education project skill accomplishment certification publication volunteer story and preferences",
       rollbackInvalidAggregate:
         "rolls back a career aggregate when a related source document is missing",
       rejectUnsafePrivacyTags: "rejects unsafe Career Profile story privacy tags",
+      storyEvidenceLinks:
+        "creates and edits a situation action result story with atomic canonical evidence links",
     },
     caseNames: [
       "round-trips employment education project skill accomplishment certification publication volunteer story and preferences",
       "rolls back a career aggregate when a related source document is missing",
       "rejects unsafe Career Profile story privacy tags",
+      "creates and edits a situation action result story with atomic canonical evidence links",
     ],
   });
   expect(proof.run).toEqual({

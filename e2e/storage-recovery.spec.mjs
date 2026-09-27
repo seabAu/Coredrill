@@ -40,7 +40,7 @@ test("restores the committed Phase 1 vault and attachment into clean browser sto
   const sourcePage = await openHarness(sourceContext);
   await callHarness(sourcePage, "delete");
   const opened = await callHarness(sourcePage, "openAndMigrate");
-  expect(opened.diagnostics.schemaVersion).toBe(119);
+  expect(opened.diagnostics.schemaVersion).toBe(120);
   await callHarness(sourcePage, "writeVault", {
     id: recoveryInput.vaultId,
     name: "BKP-007 representative vault",

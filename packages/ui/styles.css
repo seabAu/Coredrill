@@ -736,6 +736,62 @@ textarea {
   grid-column: 1 / -1;
 }
 
+.cd-career-story-evidence {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: var(--space-2);
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+
+.cd-career-story-evidence legend {
+  padding: 0 var(--space-1);
+  font-weight: 700;
+}
+
+.cd-career-story-evidence > p {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.cd-career-story-evidence ul {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cd-career-story-evidence label {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+
+.cd-career-story-evidence input {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: 0.125rem;
+}
+
+.cd-career-story-evidence label span,
+.cd-career-story-card-actions {
+  display: grid;
+  gap: 0.125rem;
+}
+
+.cd-career-story-evidence small {
+  color: var(--color-text-muted);
+}
+
 .cd-career-field label {
   color: var(--color-text);
   font-weight: 700;
@@ -829,6 +885,14 @@ textarea {
   gap: 0.125rem;
 }
 
+.cd-career-saved .cd-career-story-card {
+  align-items: flex-start;
+}
+
+.cd-career-story-card-actions {
+  justify-items: end;
+}
+
 .cd-career-saved li span:not(.cd-career-verification-badge),
 .cd-career-empty {
   color: var(--color-text-muted);
@@ -889,6 +953,10 @@ textarea {
   }
 
   .cd-career-form {
+    grid-template-columns: 1fr;
+  }
+
+  .cd-career-story-evidence ul {
     grid-template-columns: 1fr;
   }
 

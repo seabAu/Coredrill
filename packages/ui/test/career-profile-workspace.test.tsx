@@ -1,5 +1,6 @@
 import {
   applicationFailure,
+  type CareerStoryDto,
   type CareerProfileEntryDto,
   type ResumeImportQueueItemDto,
 } from "@coredrill/application";
@@ -30,23 +31,36 @@ const MODEL = Object.freeze({
   loading: false,
   entries: Object.freeze([ENTRY]),
   imports: Object.freeze([]),
+  stories: Object.freeze([]),
 } as const satisfies CareerProfileWorkspaceModel);
 
 const renderWorkspace = (model: CareerProfileWorkspaceModel = MODEL) =>
   renderToStaticMarkup(
     createElement(CareerProfileWorkspace, {
       model,
+      onCreateStory: async () =>
+        applicationFailure<CareerStoryDto>({
+          code: "internal",
+          message: "unused",
+          retryable: false,
+        }),
       onImport: async () =>
         applicationFailure({ code: "internal", message: "unused", retryable: false }),
       onResolve: async () =>
         applicationFailure({ code: "internal", message: "unused", retryable: false }),
       onSave: async () =>
         applicationFailure({ code: "internal", message: "unused", retryable: false }),
+      onUpdateStory: async () =>
+        applicationFailure<CareerStoryDto>({
+          code: "internal",
+          message: "unused",
+          retryable: false,
+        }),
     }),
   );
 
 describe("CareerProfileWorkspace", () => {
-  it("freezes the manual section vocabulary without pulling later story or AI work forward", () => {
+  it("adds the reviewed story section without pulling later Answer Library or AI work forward", () => {
     expect(CAREER_PROFILE_EDITOR_SECTIONS.map(({ id }) => id)).toEqual([
       "basics",
       "employment",
@@ -57,10 +71,12 @@ describe("CareerProfileWorkspace", () => {
       "certification",
       "publication",
       "volunteer",
+      "story",
     ]);
     const markup = renderWorkspace();
     expect(markup).not.toContain("accepting or resolving import conflicts");
-    expect(markup).toContain("story/evidence linking");
+    expect(markup).toContain("Stories");
+    expect(markup).toContain("Answer Library");
     expect(markup).toContain("AI-assisted drafting");
   });
 

@@ -60,6 +60,16 @@ export type {
   VolunteerRecord,
 } from "./career-records.js";
 export {
+  CAREER_STORY_EVIDENCE_KINDS,
+  CareerStoryEvidenceRepository,
+  createCareerStoryRepository,
+  type CareerStoryEvidenceKind,
+  type CareerStoryEvidenceLinkInput,
+  type CareerStoryEvidenceLinkRecord,
+  type CareerStoryWithEvidence,
+  type UpdateCareerStoryRecordInput,
+} from "./career-story-repository.js";
+export {
   CAREER_REPOSITORY_CONTRACT_CASE_NAMES,
   CAREER_REPOSITORY_CONTRACT_MANIFEST,
   createCareerRepositoryContractSuite,

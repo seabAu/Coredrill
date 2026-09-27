@@ -77,9 +77,12 @@ import {
   evaluateCaptureSourceStateV1,
   type CaptureDuplicateSuggestionV1,
   type CareerProfileEntryDto,
+  type CareerStoryDto,
+  type CreateCareerStoryInput,
   type CreateManualCareerProfileEntryInput,
   type ResolveResumeImportGroupInput,
   type ResumeImportQueueItemDto,
+  type UpdateCareerStoryInput,
   type DeleteVaultInput,
   type VaultDeletionPreviewDto,
   type VaultDeletionResultDto,
@@ -1414,6 +1417,7 @@ const AppShellCatalog = () => {
   const [careerProfileImports, setCareerProfileImports] = useState<
     readonly ResumeImportQueueItemDto[]
   >([]);
+  const [careerStories, setCareerStories] = useState<readonly CareerStoryDto[]>([]);
   const [careerProfileLoaded, setCareerProfileLoaded] = useState(false);
   const [careerProfileLoading, setCareerProfileLoading] = useState(false);
   const [networkTab, setNetworkTab] = useState<NetworkTabId>(
@@ -1821,15 +1825,19 @@ const AppShellCatalog = () => {
     void Promise.all([
       globalThis.coredrillStorageSpike.listManualCareerProfileEntries(),
       globalThis.coredrillStorageSpike.listPendingResumeImports(),
+      globalThis.coredrillStorageSpike.listCareerStories(),
     ])
-      .then(([entries, imports]) => {
+      .then(([entries, imports, stories]) => {
         if (!entries.ok) {
           setLastActivity(entries.error.message);
         } else if (!imports.ok) {
           setLastActivity(imports.error.message);
+        } else if (!stories.ok) {
+          setLastActivity(stories.error.message);
         } else {
           setCareerProfileEntries(entries.value);
           setCareerProfileImports(imports.value);
+          setCareerStories(stories.value);
           setLastActivity("Loaded the local Career Profile.");
         }
       })
@@ -1847,6 +1855,32 @@ const AppShellCatalog = () => {
     if (result.ok) {
       setCareerProfileEntries((current) => Object.freeze([result.value, ...current]));
       setLastActivity("Saved a user-confirmed Career Profile entry locally.");
+    } else {
+      setLastActivity(result.error.message);
+    }
+    return result;
+  };
+
+  const createCareerStory = async (input: CreateCareerStoryInput) => {
+    const result = await globalThis.coredrillStorageSpike.createCareerStory(input);
+    if (result.ok) {
+      setCareerStories((current) => Object.freeze([result.value, ...current]));
+      setLastActivity("Saved a user-confirmed Career Profile story locally.");
+    } else {
+      setLastActivity(result.error.message);
+    }
+    return result;
+  };
+
+  const updateCareerStory = async (input: UpdateCareerStoryInput) => {
+    const result = await globalThis.coredrillStorageSpike.updateCareerStory(input);
+    if (result.ok) {
+      setCareerStories((current) =>
+        Object.freeze(
+          current.map((story) => (story.id === result.value.id ? result.value : story)),
+        ),
+      );
+      setLastActivity("Updated a Career Profile story and its evidence links locally.");
     } else {
       setLastActivity(result.error.message);
     }
@@ -2965,10 +2999,13 @@ const AppShellCatalog = () => {
               entries: careerProfileEntries,
               imports: careerProfileImports,
               loading: careerProfileLoading,
+              stories: careerStories,
             }}
+            onCreateStory={createCareerStory}
             onImport={importResume}
             onResolve={resolveResumeImport}
             onSave={saveCareerProfileEntry}
+            onUpdateStory={updateCareerStory}
           />
         ) : activeDestination === "network" ? (
           <NetworkWorkspace

@@ -1,7 +1,9 @@
 import {
   BROWSER_EXPORT_REMINDER_SETTING_KEY,
+  CareerStoryError,
   VaultDeletionError,
   createCareerProfileOperations,
+  createCareerStoryOperations,
   createDefaultBrowserExportReminderPreference,
   createResumeImportOperations,
   createResumeImportReviewOperations,
@@ -17,6 +19,10 @@ import {
   type ApplicationResult,
   type CareerProfileEntryDto,
   type CareerProfilePort,
+  type CareerStoryDto,
+  type CareerStoryPort,
+  type CreateCareerStoryInput,
+  type CreateCareerStoryPortInput,
   type CreateManualCareerProfileEntryInput,
   type CreateManualCareerProfilePortInput,
   type DeleteVaultPortInput,
@@ -30,6 +36,8 @@ import {
   type ResumeImportResolutionDto,
   type ResumeImportResolutionPortInput,
   type ResumeImportReviewPort,
+  type UpdateCareerStoryInput,
+  type UpdateCareerStoryPortInput,
   type VaultDeletionPort,
   type VaultDeletionPreviewDto,
   type VaultDeletionResultDto,
@@ -54,6 +62,7 @@ import {
   createPortableVaultContentHashV1,
   createCareerRepositoryContractSuite,
   createCareerRepositories,
+  createCareerStoryRepository,
   createResumeImportRepository,
   createResumeImportResolutionRepository,
   createPhase1RepositoryContractSuite,
@@ -69,6 +78,7 @@ import {
   writePortableArchiveV1,
   type DatabaseContractRunResult,
   type DatabasePort,
+  type CareerStoryWithEvidence,
   type CareerRepositoryContractManifest,
   type Phase1RepositoryContractManifest,
   type Phase1CanonicalJourneyProof,
@@ -304,6 +314,9 @@ export interface CoredrillStorageSpikeApi {
     input: CreateManualCareerProfileEntryInput,
   ): Promise<ApplicationResult<CareerProfileEntryDto>>;
   listManualCareerProfileEntries(): Promise<ApplicationResult<readonly CareerProfileEntryDto[]>>;
+  createCareerStory(input: CreateCareerStoryInput): Promise<ApplicationResult<CareerStoryDto>>;
+  updateCareerStory(input: UpdateCareerStoryInput): Promise<ApplicationResult<CareerStoryDto>>;
+  listCareerStories(): Promise<ApplicationResult<readonly CareerStoryDto[]>>;
   listPendingResumeImports(): Promise<ApplicationResult<readonly ResumeImportQueueItemDto[]>>;
   queueResumeImport(
     input: LocalDocumentInput,
@@ -1088,6 +1101,92 @@ const careerProfileOperations = createCareerProfileOperations({
   createId: (kind) => generateEntityId(CAREER_ENTITY_TYPE_BY_KIND[kind]),
 });
 
+const getCareerStoryRepository = async () => {
+  const client = await getDatabase();
+  await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
+  return createCareerStoryRepository(client);
+};
+
+const careerStoryDto = (value: CareerStoryWithEvidence): CareerStoryDto =>
+  Object.freeze({
+    id: value.id,
+    title: value.title,
+    situation: value.situation,
+    action: value.action,
+    result: value.result,
+    tags: Object.freeze([...value.tags]),
+    privacyTags: Object.freeze([...value.privacyTags]),
+    linkedEvidence: Object.freeze(
+      value.linkedEvidence.map(({ evidenceId, evidenceKind }) =>
+        Object.freeze({ evidenceId, evidenceKind }),
+      ),
+    ),
+    sourceDocumentId: value.sourceDocumentId,
+    verificationState: value.verificationState,
+    createdAt: value.createdAt,
+    updatedAt: value.updatedAt,
+    rowVersion: value.rowVersion,
+  });
+
+const careerStoryPort: CareerStoryPort = Object.freeze({
+  createStory: async (input: CreateCareerStoryPortInput) => {
+    const repository = await getCareerStoryRepository();
+    const stored = await repository.create(
+      {
+        id: input.id,
+        title: input.title,
+        situation: input.situation,
+        action: input.action,
+        result: input.result,
+        tags: input.tags,
+        privacyTags: input.privacyTags,
+        sourceDocumentId: input.sourceDocumentId,
+        verificationState: input.verificationState,
+        archivedAt: input.archivedAt,
+        createdAt: input.createdAt,
+        updatedAt: input.updatedAt,
+      },
+      input.linkedEvidence.map(({ evidenceId, evidenceKind }) => ({ evidenceId, evidenceKind })),
+    );
+    return careerStoryDto(stored);
+  },
+  updateStory: async (input: UpdateCareerStoryPortInput) => {
+    const repository = await getCareerStoryRepository();
+    try {
+      return careerStoryDto(
+        await repository.update(
+          {
+            id: input.id,
+            title: input.title,
+            situation: input.situation,
+            action: input.action,
+            result: input.result,
+            tags: input.tags,
+            privacyTags: input.privacyTags,
+            expectedRowVersion: input.expectedRowVersion,
+            updatedAt: input.updatedAt,
+          },
+          input.linkedEvidence.map(({ evidenceId, evidenceKind }) => ({
+            evidenceId,
+            evidenceKind,
+          })),
+        ),
+      );
+    } catch {
+      throw new CareerStoryError("conflict");
+    }
+  },
+  listStories: async () => {
+    const repository = await getCareerStoryRepository();
+    return Object.freeze((await repository.listActive()).map(careerStoryDto));
+  },
+});
+
+const careerStoryOperations = createCareerStoryOperations({
+  careerStories: careerStoryPort,
+  createId: () => generateEntityId("anecdote"),
+});
+
 const resumeImportPort: ResumeImportPort = Object.freeze({
   enqueue: async (input: ResumeImportPortInput) => {
     const client = await getDatabase();
@@ -1640,6 +1739,8 @@ const createBrowserContractAdapter = () => {
 };
 
 const api: CoredrillStorageSpikeApi = {
+  createCareerStory: async (input) =>
+    careerStoryOperations.createStoryCommand.execute(input, careerProfileOperationContext()),
   createManualCareerProfileEntry: async (input) =>
     careerProfileOperations.createManualEntryCommand.execute(
       input,
@@ -1650,6 +1751,8 @@ const api: CoredrillStorageSpikeApi = {
       undefined,
       careerProfileOperationContext(),
     ),
+  listCareerStories: async () =>
+    careerStoryOperations.listStoriesQuery.execute(undefined, careerProfileOperationContext()),
   listPendingResumeImports: async () =>
     resumeImportOperations.listPendingQuery.execute(undefined, careerProfileOperationContext()),
   queueResumeImport: async (input) => {
@@ -1671,6 +1774,8 @@ const api: CoredrillStorageSpikeApi = {
   },
   resolveResumeImportGroup: async (input) =>
     resumeImportReviewOperations.resolveCommand.execute(input, careerProfileOperationContext()),
+  updateCareerStory: async (input) =>
+    careerStoryOperations.updateStoryCommand.execute(input, careerProfileOperationContext()),
   openAndMigrate: async (options = {}) => {
     const client = await getDatabase(options);
     const result = await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);

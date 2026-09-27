@@ -300,6 +300,8 @@ The `EVD-004` import panel accepts one local PDF, DOCX, Markdown, or text resume
 
 The `EVD-005` review card groups related fields, names each detected duplicate/date/skill conflict, preserves expandable source excerpts and pointers, and exposes explicit Accept as imported, Merge with candidate, and Reject proposal actions. Employment acceptance includes a required date-decision control with exact date inputs or an explicit unknown choice. Status text explains the resulting evidence state; imported saved rows remain visually distinct from user-confirmed rows. Merge removes the resolved proposal from the pending queue while leaving the candidate’s displayed values and user-confirmed badge unchanged across reload.
 
+The `EVD-006` Stories section provides a bounded Situation/Action/Result form with ordinary tags, optional privacy tags, and a selector over existing canonical Career Profile evidence. Linked items are identified by kind and label; checking an item creates only a relationship, never a copied evidence record. Story cards expose privacy, verification, and link count, and enter an explicit edit mode whose save replaces the link set atomically. Validation remains attached to the form, and saved edits survive reload without an account, network, or AI.
+
 ### Documents
 
 Views: All, Resumes, Cover letters, Answers, Templates, Submitted. Each item shows base/template lineage, related job, last edited, export status, and whether it contains unresolved claims.

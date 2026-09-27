@@ -1,16 +1,22 @@
 import {
   MANUAL_CAREER_PROFILE_KINDS,
   analyzeResumeImportReviewQueue,
+  validateCareerStory,
   validateManualCareerProfileEntry,
   type ApplicationResult,
   type CareerProfileEntryDto,
   type CareerProfileValidationIssue,
+  type CareerStoryDto,
+  type CareerStoryEvidenceKind,
+  type CareerStoryValidationIssue,
+  type CreateCareerStoryInput,
   type CreateManualCareerProfileEntryInput,
   type ManualCareerProfileKind,
   type ResumeImportQueueItemDto,
   type ResolveResumeImportGroupInput,
   type ResumeImportResolutionDto,
   type ResumeImportReviewGroupDto,
+  type UpdateCareerStoryInput,
 } from "@coredrill/application";
 import {
   useId,
@@ -30,14 +36,18 @@ export const CAREER_PROFILE_EDITOR_SECTIONS = Object.freeze([
   { id: "certification", label: "Certifications" },
   { id: "publication", label: "Publications" },
   { id: "volunteer", label: "Volunteering" },
+  { id: "story", label: "Stories" },
 ] as const satisfies readonly {
-  readonly id: ManualCareerProfileKind;
+  readonly id: CareerProfileSectionKind;
   readonly label: string;
 }[]);
+
+export type CareerProfileSectionKind = ManualCareerProfileKind | "story";
 
 export interface CareerProfileWorkspaceModel {
   readonly entries: readonly CareerProfileEntryDto[];
   readonly imports: readonly ResumeImportQueueItemDto[];
+  readonly stories: readonly CareerStoryDto[];
   readonly loading: boolean;
 }
 
@@ -58,11 +68,17 @@ export interface CareerProfileWorkspaceProps {
   readonly onSave: (
     input: CreateManualCareerProfileEntryInput,
   ) => Promise<ApplicationResult<CareerProfileEntryDto>>;
+  readonly onCreateStory: (
+    input: CreateCareerStoryInput,
+  ) => Promise<ApplicationResult<CareerStoryDto>>;
+  readonly onUpdateStory: (
+    input: UpdateCareerStoryInput,
+  ) => Promise<ApplicationResult<CareerStoryDto>>;
 }
 
-const LABEL_BY_KIND: Readonly<Record<ManualCareerProfileKind, string>> = Object.freeze(
+const LABEL_BY_KIND: Readonly<Record<CareerProfileSectionKind, string>> = Object.freeze(
   Object.fromEntries(CAREER_PROFILE_EDITOR_SECTIONS.map(({ id, label }) => [id, label])) as Record<
-    ManualCareerProfileKind,
+    CareerProfileSectionKind,
     string
   >,
 );
@@ -398,33 +414,158 @@ const dateLabel = (entry: CareerProfileEntryDto): string | null => {
   return `${entry.startDate} – ${entry.endDate}`;
 };
 
+const storyEvidenceKey = (kind: string, id: string): string => `${kind}:${id}`;
+
+const StoryEditorFields = ({
+  entries,
+  issues,
+  story,
+}: {
+  readonly entries: readonly CareerProfileEntryDto[];
+  readonly issues: ReadonlyMap<string, CareerStoryValidationIssue>;
+  readonly story: CareerStoryDto | null;
+}) => {
+  const selected = new Set(
+    story?.linkedEvidence.map(({ evidenceId, evidenceKind }) =>
+      storyEvidenceKey(evidenceKind, evidenceId),
+    ) ?? [],
+  );
+  const linkable = entries.filter(({ kind }) => kind !== "basics");
+  return (
+    <>
+      <div className="cd-career-field cd-career-field-wide">
+        <label htmlFor="story-title">Story title *</label>
+        <input
+          aria-invalid={issues.has("title") || undefined}
+          defaultValue={story?.title ?? ""}
+          id="story-title"
+          maxLength={512}
+          name="title"
+          required
+          type="text"
+        />
+        {issues.has("title") ? (
+          <p className="cd-career-field-error">{issues.get("title")?.message}</p>
+        ) : null}
+      </div>
+      {(["situation", "action", "result"] as const).map((field) => (
+        <div className="cd-career-field cd-career-field-wide" key={field}>
+          <label htmlFor={`story-${field}`}>
+            {field[0]?.toUpperCase()}
+            {field.slice(1)} *
+          </label>
+          <textarea
+            aria-invalid={issues.has(field) || undefined}
+            defaultValue={story?.[field] ?? ""}
+            id={`story-${field}`}
+            maxLength={20_000}
+            name={field}
+            required
+            rows={4}
+          />
+          {issues.has(field) ? (
+            <p className="cd-career-field-error">{issues.get(field)?.message}</p>
+          ) : null}
+        </div>
+      ))}
+      <Field hint="Separate reusable topic or skill labels with commas." label="Tags" name="tags">
+        <input defaultValue={story?.tags.join(", ") ?? ""} id="tags" name="tags" type="text" />
+      </Field>
+      <Field
+        hint="Optional content-free labels such as nda or confidential-client. Tagged stories stay out of later external AI context by default."
+        issue={issues.get("privacyTags")}
+        label="Privacy tags"
+        name="privacyTags"
+      >
+        <input
+          aria-invalid={issues.has("privacyTags") || undefined}
+          defaultValue={story?.privacyTags.join(", ") ?? ""}
+          id="privacyTags"
+          name="privacyTags"
+          type="text"
+        />
+      </Field>
+      <fieldset className="cd-career-story-evidence">
+        <legend>Linked Career Profile evidence</legend>
+        <p>
+          Choose the canonical records that support this story. Linking never copies or changes
+          those records.
+        </p>
+        {linkable.length === 0 ? (
+          <p className="cd-career-empty">Add Career Profile evidence before linking a story.</p>
+        ) : (
+          <ul>
+            {linkable.map((entry) => {
+              const key = storyEvidenceKey(entry.kind, entry.id);
+              return (
+                <li key={key}>
+                  <label>
+                    <input
+                      defaultChecked={selected.has(key)}
+                      name="linkedEvidence"
+                      type="checkbox"
+                      value={key}
+                    />
+                    <span>
+                      <strong>{entry.primaryLabel}</strong>
+                      <small>
+                        {LABEL_BY_KIND[entry.kind]}
+                        {entry.secondaryLabel === null ? "" : ` · ${entry.secondaryLabel}`} ·{" "}
+                        {entry.verificationState === "imported"
+                          ? "Imported · not confirmed"
+                          : "User-confirmed"}
+                      </small>
+                    </span>
+                  </label>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        {issues.has("linkedEvidence") ? (
+          <p className="cd-career-field-error">{issues.get("linkedEvidence")?.message}</p>
+        ) : null}
+      </fieldset>
+    </>
+  );
+};
+
 export const CareerProfileWorkspace = ({
   model,
+  onCreateStory,
   onImport,
   onResolve,
   onSave,
+  onUpdateStory,
 }: CareerProfileWorkspaceProps) => {
   const panelId = useId();
-  const [activeKind, setActiveKind] = useState<ManualCareerProfileKind>("basics");
+  const [activeKind, setActiveKind] = useState<CareerProfileSectionKind>("basics");
   const [issues, setIssues] = useState<readonly CareerProfileValidationIssue[]>([]);
+  const [storyIssues, setStoryIssues] = useState<readonly CareerStoryValidationIssue[]>([]);
+  const [editingStoryId, setEditingStoryId] = useState<string | null>(null);
   const [status, setStatus] = useState("");
   const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importStatus, setImportStatus] = useState("");
   const [resolvingGroup, setResolvingGroup] = useState<string | null>(null);
   const issueMap = new Map(issues.map((value) => [value.field, value]));
-  const visibleEntries = model.entries.filter(({ kind }) => kind === activeKind);
+  const storyIssueMap = new Map(storyIssues.map((value) => [value.field, value]));
+  const visibleEntries = model.entries.filter(
+    ({ kind }) => activeKind !== "story" && kind === activeKind,
+  );
+  const editingStory = model.stories.find(({ id }) => id === editingStoryId) ?? null;
   const reviewGroups = analyzeResumeImportReviewQueue(model.imports, model.entries);
 
-  const selectKind = (kind: ManualCareerProfileKind): void => {
+  const selectKind = (kind: CareerProfileSectionKind): void => {
     setActiveKind(kind);
     setIssues([]);
+    setStoryIssues([]);
     setStatus("");
   };
 
   const moveSectionFocus = (
     event: ReactKeyboardEvent<HTMLButtonElement>,
-    kind: ManualCareerProfileKind,
+    kind: CareerProfileSectionKind,
   ): void => {
     const currentIndex = CAREER_PROFILE_EDITOR_SECTIONS.findIndex(({ id }) => id === kind);
     let nextIndex: number | null = null;
@@ -450,9 +591,11 @@ export const CareerProfileWorkspace = ({
 
   if (
     model.entries.length > 10_000 ||
+    model.stories.length > 10_000 ||
     model.imports.length > 1_000 ||
     new Set(model.entries.map(({ id }) => id)).size !== model.entries.length ||
-    model.entries.some(({ kind }) => !MANUAL_CAREER_PROFILE_KINDS.includes(kind))
+    model.entries.some(({ kind }) => !MANUAL_CAREER_PROFILE_KINDS.includes(kind)) ||
+    new Set(model.stories.map(({ id }) => id)).size !== model.stories.length
   ) {
     throw new RangeError("Career Profile workspace model is invalid.");
   }
@@ -542,6 +685,7 @@ export const CareerProfileWorkspace = ({
 
   const submit = async (event: SyntheticEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
+    if (activeKind === "story") return;
     setStatus("");
     const form = event.currentTarget;
     const input = buildInput(activeKind, new FormData(form));
@@ -562,6 +706,61 @@ export const CareerProfileWorkspace = ({
     }
     form.reset();
     setStatus(`${LABEL_BY_KIND[activeKind]} saved locally as user-confirmed information.`);
+  };
+
+  const submitStory = async (event: SyntheticEvent<HTMLFormElement>): Promise<void> => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const input: CreateCareerStoryInput = {
+      title: inputValue(data, "title"),
+      situation: inputValue(data, "situation"),
+      action: inputValue(data, "action"),
+      result: inputValue(data, "result"),
+      tags: listValue(data, "tags"),
+      privacyTags: listValue(data, "privacyTags"),
+      linkedEvidence: Object.freeze(
+        data
+          .getAll("linkedEvidence")
+          .filter((value): value is string => typeof value === "string")
+          .map((value) => {
+            const separator = value.indexOf(":");
+            return Object.freeze({
+              evidenceKind: value.slice(0, separator) as CareerStoryEvidenceKind,
+              evidenceId: value.slice(separator + 1),
+            });
+          }),
+      ),
+    };
+    const validation = validateCareerStory(input);
+    if (!validation.ok) {
+      setStoryIssues(validation.issues);
+      setStatus("Review the highlighted story fields.");
+      return;
+    }
+
+    setStoryIssues([]);
+    setSaving(true);
+    const result =
+      editingStory === null
+        ? await onCreateStory(input)
+        : await onUpdateStory({
+            ...input,
+            id: editingStory.id,
+            expectedRowVersion: editingStory.rowVersion,
+          });
+    setSaving(false);
+    if (!result.ok) {
+      setStatus(result.error.message);
+      return;
+    }
+    form.reset();
+    setEditingStoryId(null);
+    setStatus(
+      editingStory === null
+        ? "Story saved locally as user-confirmed evidence."
+        : "Story and its evidence links updated locally.",
+    );
   };
 
   return (
@@ -819,9 +1018,15 @@ export const CareerProfileWorkspace = ({
             >
               <span>{label}</span>
               <span
-                aria-label={`${String(model.entries.filter(({ kind }) => kind === id).length)} entries`}
+                aria-label={`${String(
+                  id === "story"
+                    ? model.stories.length
+                    : model.entries.filter(({ kind }) => kind === id).length,
+                )} entries`}
               >
-                {model.entries.filter(({ kind }) => kind === id).length}
+                {id === "story"
+                  ? model.stories.length
+                  : model.entries.filter(({ kind }) => kind === id).length}
               </span>
             </button>
           ))}
@@ -833,71 +1038,177 @@ export const CareerProfileWorkspace = ({
           id={panelId}
           role="tabpanel"
         >
-          <div className="cd-career-panel-heading">
-            <div>
-              <p className="cd-eyebrow">Manual editor</p>
-              <h3>{LABEL_BY_KIND[activeKind]}</h3>
-            </div>
-            <span className="cd-career-verification-badge">User-confirmed on save</span>
-          </div>
+          {activeKind === "story" ? (
+            <>
+              <div className="cd-career-panel-heading">
+                <div>
+                  <p className="cd-eyebrow">Situation / Action / Result</p>
+                  <h3>{editingStory === null ? "Add a story" : "Edit story"}</h3>
+                </div>
+                <span className="cd-career-verification-badge">
+                  {editingStory?.verificationState === "source_backed"
+                    ? "Source-backed state retained"
+                    : "User-confirmed on save"}
+                </span>
+              </div>
+              <form
+                className="cd-career-form"
+                key={editingStory?.id ?? "new-story"}
+                noValidate
+                onSubmit={(event) => void submitStory(event)}
+              >
+                <StoryEditorFields
+                  entries={model.entries}
+                  issues={storyIssueMap}
+                  story={editingStory}
+                />
+                <div className="cd-career-form-actions">
+                  <button className="cd-button cd-button-primary" disabled={saving} type="submit">
+                    {saving
+                      ? "Saving locally…"
+                      : editingStory === null
+                        ? "Save story"
+                        : "Update story"}
+                  </button>
+                  {editingStory === null ? null : (
+                    <button
+                      className="cd-button cd-button-secondary"
+                      onClick={() => {
+                        setEditingStoryId(null);
+                        setStoryIssues([]);
+                        setStatus("");
+                      }}
+                      type="button"
+                    >
+                      Cancel editing
+                    </button>
+                  )}
+                  <p aria-live="polite" className="cd-career-status" role="status">
+                    {status}
+                  </p>
+                </div>
+              </form>
+              <section aria-labelledby={`${panelId}-stories-heading`} className="cd-career-saved">
+                <div className="cd-career-saved-heading">
+                  <h4 id={`${panelId}-stories-heading`}>Saved stories</h4>
+                  <span>
+                    {model.loading
+                      ? "Loading local records…"
+                      : `${String(model.stories.length)} stored`}
+                  </span>
+                </div>
+                {model.stories.length === 0 ? (
+                  <p className="cd-career-empty">No local stories yet.</p>
+                ) : (
+                  <ul>
+                    {model.stories.map((story) => (
+                      <li className="cd-career-story-card" key={story.id}>
+                        <div>
+                          <strong>{story.title}</strong>
+                          <span>Situation: {story.situation}</span>
+                          <span>Action: {story.action}</span>
+                          <span>Result: {story.result}</span>
+                          <span>
+                            {String(story.linkedEvidence.length)} linked evidence record
+                            {story.linkedEvidence.length === 1 ? "" : "s"}
+                          </span>
+                          {story.privacyTags.length === 0 ? null : (
+                            <span>Privacy: {story.privacyTags.join(", ")}</span>
+                          )}
+                        </div>
+                        <div className="cd-career-story-card-actions">
+                          <span className="cd-career-verification-badge">
+                            {story.verificationState.replaceAll("_", " ")}
+                          </span>
+                          <button
+                            className="cd-button cd-button-secondary"
+                            onClick={() => {
+                              setEditingStoryId(story.id);
+                              setStoryIssues([]);
+                              setStatus("");
+                            }}
+                            type="button"
+                          >
+                            Edit story
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            </>
+          ) : (
+            <>
+              <div className="cd-career-panel-heading">
+                <div>
+                  <p className="cd-eyebrow">Manual editor</p>
+                  <h3>{LABEL_BY_KIND[activeKind]}</h3>
+                </div>
+                <span className="cd-career-verification-badge">User-confirmed on save</span>
+              </div>
 
-          <form
-            className="cd-career-form"
-            key={activeKind}
-            noValidate
-            onSubmit={(event) => void submit(event)}
-          >
-            <EditorFields issues={issueMap} kind={activeKind} />
-            <div className="cd-career-form-actions">
-              <button className="cd-button cd-button-primary" disabled={saving} type="submit">
-                {saving ? "Saving locally…" : `Save ${LABEL_BY_KIND[activeKind]}`}
-              </button>
-              <p aria-live="polite" className="cd-career-status" role="status">
-                {status}
-              </p>
-            </div>
-          </form>
+              <form
+                className="cd-career-form"
+                key={activeKind}
+                noValidate
+                onSubmit={(event) => void submit(event)}
+              >
+                <EditorFields issues={issueMap} kind={activeKind} />
+                <div className="cd-career-form-actions">
+                  <button className="cd-button cd-button-primary" disabled={saving} type="submit">
+                    {saving ? "Saving locally…" : `Save ${LABEL_BY_KIND[activeKind]}`}
+                  </button>
+                  <p aria-live="polite" className="cd-career-status" role="status">
+                    {status}
+                  </p>
+                </div>
+              </form>
 
-          <section aria-labelledby={`${panelId}-saved-heading`} className="cd-career-saved">
-            <div className="cd-career-saved-heading">
-              <h4 id={`${panelId}-saved-heading`}>
-                Saved {LABEL_BY_KIND[activeKind].toLowerCase()}
-              </h4>
-              <span>
-                {model.loading
-                  ? "Loading local records…"
-                  : `${String(visibleEntries.length)} stored`}
-              </span>
-            </div>
-            {visibleEntries.length === 0 ? (
-              <p className="cd-career-empty">No local entries in this section yet.</p>
-            ) : (
-              <ul>
-                {visibleEntries.map((entry) => (
-                  <li key={entry.id}>
-                    <div>
-                      <strong>{entry.primaryLabel}</strong>
-                      {entry.secondaryLabel === null ? null : <span>{entry.secondaryLabel}</span>}
-                      {dateLabel(entry) === null ? null : <span>{dateLabel(entry)}</span>}
-                    </div>
-                    {entry.verificationState === null ? null : (
-                      <span className="cd-career-verification-badge">
-                        {entry.verificationState === "imported"
-                          ? "Imported · not confirmed"
-                          : "User-confirmed"}
-                      </span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+              <section aria-labelledby={`${panelId}-saved-heading`} className="cd-career-saved">
+                <div className="cd-career-saved-heading">
+                  <h4 id={`${panelId}-saved-heading`}>
+                    Saved {LABEL_BY_KIND[activeKind].toLowerCase()}
+                  </h4>
+                  <span>
+                    {model.loading
+                      ? "Loading local records…"
+                      : `${String(visibleEntries.length)} stored`}
+                  </span>
+                </div>
+                {visibleEntries.length === 0 ? (
+                  <p className="cd-career-empty">No local entries in this section yet.</p>
+                ) : (
+                  <ul>
+                    {visibleEntries.map((entry) => (
+                      <li key={entry.id}>
+                        <div>
+                          <strong>{entry.primaryLabel}</strong>
+                          {entry.secondaryLabel === null ? null : (
+                            <span>{entry.secondaryLabel}</span>
+                          )}
+                          {dateLabel(entry) === null ? null : <span>{dateLabel(entry)}</span>}
+                        </div>
+                        {entry.verificationState === null ? null : (
+                          <span className="cd-career-verification-badge">
+                            {entry.verificationState === "imported"
+                              ? "Imported · not confirmed"
+                              : "User-confirmed"}
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            </>
+          )}
         </div>
       </div>
 
       <aside className="cd-career-later" aria-label="Later Career Profile capabilities">
-        <strong>Kept for later reviewed slices:</strong> story/evidence linking, the Answer Library,
-        and any AI-assisted drafting.
+        <strong>Kept for later reviewed slices:</strong> the Answer Library and any AI-assisted
+        drafting.
       </aside>
     </section>
   );

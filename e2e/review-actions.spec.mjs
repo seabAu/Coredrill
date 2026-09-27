@@ -130,7 +130,7 @@ test("save, merge, snooze, discard, and undo remain explicit local transactions"
 
   console.info(
     `REV004_E2E_PROOF ${JSON.stringify({
-      schemaVersion: 119,
+      schemaVersion: 120,
       saveNew: true,
       mergeExisting: true,
       snoozeAndWake: true,

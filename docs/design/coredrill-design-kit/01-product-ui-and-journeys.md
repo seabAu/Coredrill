@@ -154,6 +154,8 @@ Each generated sentence is either linked to evidence, labeled non-factual/style-
 
 `EVD-005` groups those pending fields into reviewable employment and skill proposals, exposes duplicate roles, organization/date overlap, ambiguous dates, and normalized skill aliases, and keeps the exact source excerpts and pointers visible during the decision. The user must explicitly accept, merge, or reject a group. Employment acceptance also requires exact dates or an explicit “dates unknown” choice. A merge records the evidence relationship without changing the existing user-confirmed row; an accepted row remains labeled imported and not user-confirmed. Every decision survives reload in the local resolution ledger.
 
+`EVD-006` adds local Situation/Action/Result story authoring and editing to Career Profile. A story can carry ordinary tags, optional reviewed privacy tags, and links to existing employment, education, project, skill, accomplishment, certification, publication, or volunteer evidence. Those links reference canonical records rather than copying their values, and an edit replaces the selected link set atomically while retaining the story's existing source and verification state. Creation, editing, and reload remain accountless, offline-capable, and useful without AI.
+
 ### Network: Companies & Contacts
 
 - Company overview, official domains, saved jobs, interactions, outcomes, notes, sources.

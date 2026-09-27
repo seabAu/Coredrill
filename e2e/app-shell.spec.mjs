@@ -70,7 +70,7 @@ test("runs and records the complete accountless browser recovery journey", async
       version: 1,
       runtime: "browser",
       adapterName: "official-sqlite-wasm-opfs-sahpool",
-      schemaVersion: 119,
+      schemaVersion: 120,
       vaultName: "Canonical local job search",
       jobTitle: "Research Operations Lead",
       finalStage: "Interviewing",
@@ -1529,6 +1529,106 @@ test("Career Profile validates ranges and persists user-confirmed manual evidenc
     })),
   ).toEqual({ clientWidth: 320, scrollWidth: 320 });
   await attachAxe(page, testInfo, "career-profile-manual-evidence-mobile");
+  expect(externalRequests).toEqual([]);
+});
+
+test("Career Profile creates and edits STAR stories with durable canonical evidence links", async ({
+  page,
+}, testInfo) => {
+  const externalRequests = [];
+  page.on("request", (request) => {
+    if (!request.url().startsWith("http://127.0.0.1:4178/")) externalRequests.push(request.url());
+  });
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await openShell(page);
+  await page
+    .getByRole("navigation", { name: "Primary" })
+    .getByRole("link", { name: "Career Profile" })
+    .click();
+
+  const workspace = page.getByTestId("career-profile-workspace");
+  await workspace.getByRole("tab", { name: /Work/u }).click();
+  await workspace.getByLabel("Organization *").fill("Coredrill Labs");
+  await workspace.getByLabel("Role *").fill("Product Engineer");
+  await workspace.getByRole("button", { name: "Save Work" }).click();
+  await expect(workspace.locator(".cd-career-form").getByRole("status")).toContainText(
+    "Work saved locally as user-confirmed information.",
+  );
+
+  await workspace.getByRole("tab", { name: /Skills/u }).click();
+  await workspace.getByLabel("Skill *").fill("TypeScript");
+  await workspace.getByRole("button", { name: "Save Skills" }).click();
+  await expect(workspace.locator(".cd-career-form").getByRole("status")).toContainText(
+    "Skills saved locally as user-confirmed information.",
+  );
+
+  await workspace.getByRole("tab", { name: /Stories/u }).click();
+  await workspace.getByLabel("Story title *").fill("Recovered a risky migration");
+  await workspace.getByLabel("Situation *").fill("A release migration failed validation.");
+  await workspace
+    .getByLabel("Action *")
+    .fill("I preserved the source and repaired the storage boundary.");
+  await workspace.getByLabel("Result *").fill("The retry completed without data loss.");
+  await workspace.getByLabel("Tags", { exact: true }).fill("ownership, recovery");
+  await workspace.getByLabel("Privacy tags").fill("confidential-client");
+  await workspace.getByLabel(/Product Engineer/u).check();
+  await workspace.getByLabel(/TypeScript/u).check();
+  await workspace.getByRole("button", { name: "Save story" }).click();
+  await expect(workspace.locator(".cd-career-form").getByRole("status")).toContainText(
+    "Story saved locally as user-confirmed evidence.",
+  );
+
+  const storyCard = workspace.locator(".cd-career-story-card").filter({
+    hasText: "Recovered a risky migration",
+  });
+  await expect(storyCard).toContainText("Situation: A release migration failed validation.");
+  await expect(storyCard).toContainText("Result: The retry completed without data loss.");
+  await expect(storyCard).toContainText("2 linked evidence records");
+  await expect(storyCard).toContainText("Privacy: confidential-client");
+  await expect(storyCard).toContainText("user confirmed");
+
+  await storyCard.getByRole("button", { name: "Edit story" }).click();
+  await workspace
+    .getByLabel("Result *")
+    .fill("The retry completed without data loss and the rollback path stayed available.");
+  await workspace.getByLabel(/TypeScript/u).uncheck();
+  await workspace.getByRole("button", { name: "Update story" }).click();
+  await expect(workspace.locator(".cd-career-form").getByRole("status")).toContainText(
+    "Story and its evidence links updated locally.",
+  );
+  await expect(storyCard).toContainText("rollback path stayed available");
+  await expect(storyCard).toContainText("1 linked evidence record");
+
+  const storedStories = await page.evaluate(() =>
+    globalThis.coredrillStorageSpike.listCareerStories(),
+  );
+  expect(storedStories).toMatchObject({
+    ok: true,
+    value: [
+      {
+        verificationState: "user_confirmed",
+        sourceDocumentId: null,
+        privacyTags: ["confidential-client"],
+        linkedEvidence: [{ evidenceKind: "employment" }],
+        rowVersion: 2,
+      },
+    ],
+  });
+
+  await page.reload();
+  await page.waitForFunction(() => globalThis.coredrillAppShell !== undefined);
+  const reloadedWorkspace = page.getByTestId("career-profile-workspace");
+  await reloadedWorkspace.getByRole("tab", { name: /Stories/u }).click();
+  const reloadedStory = reloadedWorkspace.locator(".cd-career-story-card").filter({
+    hasText: "Recovered a risky migration",
+  });
+  await expect(reloadedStory).toContainText("rollback path stayed available");
+  await expect(reloadedStory).toContainText("1 linked evidence record");
+  await expect(reloadedStory).toContainText("Privacy: confidential-client");
+
+  await attachAxe(page, testInfo, "career-profile-story-evidence-links");
+  await attachAriaSnapshot(reloadedWorkspace, testInfo, "career-profile-story-evidence-links");
+  await attachProof(page, testInfo, "career-profile-story-evidence-links");
   expect(externalRequests).toEqual([]);
 });
 

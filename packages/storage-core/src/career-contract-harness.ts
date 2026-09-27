@@ -1,6 +1,7 @@
 import { dateOnly, entityId, instant, webUrl } from "@coredrill/domain";
 
 import { createCareerRepositories } from "./career-repositories.js";
+import { createCareerStoryRepository } from "./career-story-repository.js";
 import {
   DatabaseContractViolation,
   defineDatabaseContractSuite,
@@ -14,16 +15,19 @@ const CAREER_REPOSITORY_CONTRACT_CASES = Object.freeze({
   rollbackInvalidAggregate:
     "rolls back a career aggregate when a related source document is missing",
   rejectUnsafePrivacyTags: "rejects unsafe Career Profile story privacy tags",
+  storyEvidenceLinks:
+    "creates and edits a situation action result story with atomic canonical evidence links",
 });
 
 export const CAREER_REPOSITORY_CONTRACT_MANIFEST = Object.freeze({
-  schemaVersion: 2 as const,
-  suiteName: "phase-3-career-repositories-v2",
+  schemaVersion: 3 as const,
+  suiteName: "phase-3-career-repositories-v3",
   cases: CAREER_REPOSITORY_CONTRACT_CASES,
   caseNames: Object.freeze([
     CAREER_REPOSITORY_CONTRACT_CASES.roundTripAll,
     CAREER_REPOSITORY_CONTRACT_CASES.rollbackInvalidAggregate,
     CAREER_REPOSITORY_CONTRACT_CASES.rejectUnsafePrivacyTags,
+    CAREER_REPOSITORY_CONTRACT_CASES.storyEvidenceLinks,
   ]),
 });
 
@@ -49,6 +53,10 @@ const IDS = Object.freeze({
   rollbackEmployment: entityId("experience", "0199a300-0000-7000-8000-00000000000c"),
   missingDocument: entityId("document", "0199a300-0000-7000-8000-00000000000d"),
   invalidPrivacyStory: entityId("anecdote", "0199a300-0000-7000-8000-00000000000e"),
+  linkedStory: entityId("anecdote", "0199a300-0000-7000-8000-00000000000f"),
+  linkedEmployment: entityId("experience", "0199a300-0000-7000-8000-000000000010"),
+  linkedSkill: entityId("skill", "0199a300-0000-7000-8000-000000000011"),
+  missingLinkedSkill: entityId("skill", "0199a300-0000-7000-8000-000000000012"),
 });
 
 const CREATED_AT = instant("2026-09-27T12:00:00.000Z");
@@ -313,6 +321,106 @@ export const createCareerRepositoryContractSuite = (
           sqlStatement("SELECT id FROM anecdote WHERE id = ?", [IDS.invalidPrivacyStory]),
         );
         assertContract(rows.length === 0, "Rejected career story must not be persisted.");
+      },
+    },
+    {
+      name: CAREER_REPOSITORY_CONTRACT_MANIFEST.cases.storyEvidenceLinks,
+      run: async (database) => {
+        await setup.migrate(database);
+        const repositories = createCareerRepositories(database);
+        await repositories.employment.insert({
+          id: IDS.linkedEmployment,
+          organization: "Contract Company",
+          role: "Systems lead",
+          startDate: null,
+          endDate: null,
+          current: false,
+          description: "Canonical story evidence.",
+          sourceDocumentId: null,
+          verificationState: "user_confirmed",
+          archivedAt: null,
+          createdAt: CREATED_AT,
+          updatedAt: CREATED_AT,
+        });
+        await repositories.skills.insert({
+          id: IDS.linkedSkill,
+          canonicalName: "SQLite",
+          category: "database",
+          aliases: Object.freeze([]),
+          sourceDocumentId: null,
+          verificationState: "imported",
+          archivedAt: null,
+          createdAt: CREATED_AT,
+          updatedAt: CREATED_AT,
+        });
+        const storyRepository = createCareerStoryRepository(database);
+        const created = await storyRepository.create(
+          {
+            id: IDS.linkedStory,
+            title: "Recovered a local migration",
+            situation: "A local migration failed during validation.",
+            action: "Preserved the source and repaired the boundary.",
+            result: "The retry completed without data loss.",
+            tags: Object.freeze(["recovery"]),
+            privacyTags: Object.freeze(["confidential-client"]),
+            sourceDocumentId: null,
+            verificationState: "user_confirmed",
+            archivedAt: null,
+            createdAt: CREATED_AT,
+            updatedAt: CREATED_AT,
+          },
+          [{ evidenceKind: "employment", evidenceId: IDS.linkedEmployment }],
+        );
+        const updated = await storyRepository.update(
+          {
+            id: IDS.linkedStory,
+            title: created.title,
+            situation: created.situation,
+            action: created.action,
+            result: "The retry completed and the rollback path remained available.",
+            tags: created.tags,
+            privacyTags: created.privacyTags,
+            expectedRowVersion: created.rowVersion,
+            updatedAt: UPDATED_AT,
+          },
+          [{ evidenceKind: "skill", evidenceId: IDS.linkedSkill }],
+        );
+        assertContract(
+          updated.rowVersion === 2 &&
+            updated.verificationState === "user_confirmed" &&
+            updated.privacyTags[0] === "confidential-client" &&
+            updated.linkedEvidence.length === 1 &&
+            updated.linkedEvidence[0]?.evidenceId === IDS.linkedSkill,
+          "Career story content, privacy state, and evidence-link replacement did not round-trip.",
+        );
+
+        let rejected = false;
+        try {
+          await storyRepository.update(
+            {
+              id: IDS.linkedStory,
+              title: updated.title,
+              situation: updated.situation,
+              action: updated.action,
+              result: "This update must roll back.",
+              tags: updated.tags,
+              privacyTags: updated.privacyTags,
+              expectedRowVersion: updated.rowVersion,
+              updatedAt: UPDATED_AT,
+            },
+            [{ evidenceKind: "skill", evidenceId: IDS.missingLinkedSkill }],
+          );
+        } catch {
+          rejected = true;
+        }
+        const afterFailure = (await storyRepository.listActive())[0];
+        assertContract(rejected, "A missing story evidence target must reject the transaction.");
+        assertContract(
+          afterFailure?.result === updated.result &&
+            afterFailure.rowVersion === updated.rowVersion &&
+            afterFailure.linkedEvidence[0]?.evidenceId === IDS.linkedSkill,
+          "Rejected Career story evidence replacement did not roll back atomically.",
+        );
       },
     },
   ]);
