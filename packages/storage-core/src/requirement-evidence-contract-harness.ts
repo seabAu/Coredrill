@@ -1,4 +1,8 @@
 import { entityId, instant } from "@coredrill/domain";
+import {
+  captureRequirementCoverageSnapshotV1,
+  compareRequirementCoverageRunsV1,
+} from "@coredrill/application";
 
 import {
   DatabaseContractViolation,
@@ -25,8 +29,12 @@ const IDS = Object.freeze({
   sensitiveSkill: entityId("skill", "0199a740-0000-7000-8000-000000000010"),
   employment: entityId("experience", "0199a740-0000-7000-8000-000000000007"),
   skillEvidence: entityId("skill-evidence", "0199a740-0000-7000-8000-000000000008"),
+  sourceDocument: entityId("document", "0199a740-0000-7000-8000-000000000011"),
+  sourceVersion1: entityId("document-version", "0199a740-0000-7000-8000-000000000012"),
+  sourceVersion2: entityId("document-version", "0199a740-0000-7000-8000-000000000013"),
 });
 const CREATED_AT = instant("2026-09-27T23:00:00.000Z");
+const UPDATED_AT = instant("2026-09-27T23:30:00.000Z");
 
 const assertContract = (condition: boolean, message: string): void => {
   if (!condition) throw new DatabaseContractViolation(message);
@@ -83,8 +91,29 @@ const seed = async (database: DatabasePort): Promise<void> => {
   );
   await database.execute(
     sqlStatement(
-      "INSERT INTO experience(id, organization, role, description, verification_state, created_at, updated_at) VALUES (?, 'Coredrill Labs', 'Platform Engineer', 'Built offline product delivery.', 'user_confirmed', ?, ?)",
-      [IDS.employment, CREATED_AT, CREATED_AT],
+      "INSERT INTO document(id, kind, title, source, created_at, updated_at) VALUES (?, 'resume', 'Source resume', 'local_import', ?, ?)",
+      [IDS.sourceDocument, CREATED_AT, CREATED_AT],
+    ),
+  );
+  await database.execute(
+    sqlStatement(
+      `INSERT INTO document_version(
+         id, document_id, version_number, content_ir_version, content_ir_json, content_plain,
+         created_by, created_at, parent_version_id, content_hash
+       ) VALUES (?, ?, 1, 1, ?, 'Initial TypeScript experience', 'user', ?, NULL, ?)`,
+      [
+        IDS.sourceVersion1,
+        IDS.sourceDocument,
+        JSON.stringify({ specVersion: 1, document: { type: "doc", content: [] } }),
+        CREATED_AT,
+        "c".repeat(64),
+      ],
+    ),
+  );
+  await database.execute(
+    sqlStatement(
+      "INSERT INTO experience(id, organization, role, description, source_document_id, verification_state, created_at, updated_at) VALUES (?, 'Coredrill Labs', 'Platform Engineer', 'Built offline product delivery.', ?, 'user_confirmed', ?, ?)",
+      [IDS.employment, IDS.sourceDocument, CREATED_AT, CREATED_AT],
     ),
   );
   await database.execute(
@@ -92,6 +121,76 @@ const seed = async (database: DatabasePort): Promise<void> => {
       "INSERT INTO skill_evidence(id, skill_id, evidence_kind, evidence_id, experience_id, narrative, verification_state, created_at) VALUES (?, ?, 'employment', ?, ?, 'Used TypeScript in this role.', 'user_confirmed', ?)",
       [IDS.skillEvidence, IDS.skill, IDS.employment, IDS.employment, CREATED_AT],
     ),
+  );
+};
+
+const assertRerunDiffBehavior = async (database: DatabasePort): Promise<void> => {
+  const repository = await openRequirementEvidenceRepository(database, { disableFts5: true });
+  await repository.select({
+    requirementId: IDS.requirement,
+    evidenceKind: "employment",
+    evidenceId: IDS.employment,
+    selectedAt: CREATED_AT,
+  });
+  await repository.setCoverageDecision({
+    requirementId: IDS.requirement,
+    state: "gap",
+    expectedRowVersion: null,
+    decidedAt: CREATED_AT,
+  });
+  const baselineRetrieval = await repository.retrieve({ requirementId: IDS.requirement, limit: 5 });
+  const baseline = captureRequirementCoverageSnapshotV1(baselineRetrieval);
+
+  await database.execute(
+    sqlStatement(
+      "UPDATE experience SET description = 'Led offline TypeScript delivery.', verification_state = 'imported', updated_at = ?, row_version = row_version + 1 WHERE id = ?",
+      [UPDATED_AT, IDS.employment],
+    ),
+  );
+  await database.execute(
+    sqlStatement(
+      `INSERT INTO document_version(
+         id, document_id, version_number, content_ir_version, content_ir_json, content_plain,
+         created_by, created_at, parent_version_id, content_hash
+       ) VALUES (?, ?, 2, 1, ?, 'Revised TypeScript experience', 'user', ?, ?, ?)`,
+      [
+        IDS.sourceVersion2,
+        IDS.sourceDocument,
+        JSON.stringify({ specVersion: 1, document: { type: "doc", content: [] } }),
+        UPDATED_AT,
+        IDS.sourceVersion1,
+        "d".repeat(64),
+      ],
+    ),
+  );
+
+  const currentRetrieval = await repository.retrieve({ requirementId: IDS.requirement, limit: 5 });
+  const diff = compareRequirementCoverageRunsV1(
+    baseline,
+    captureRequirementCoverageSnapshotV1(currentRetrieval),
+  );
+  assertContract(
+    currentRetrieval.coverage.state === "gap" &&
+      currentRetrieval.coverage.source === "user-confirmed" &&
+      currentRetrieval.coverage.stale &&
+      currentRetrieval.coverage.rowVersion === baselineRetrieval.coverage.rowVersion,
+    "Coverage re-run overwrote the user-reviewed decision after evidence or document edits.",
+  );
+  assertContract(
+    diff.userDecisionPreserved &&
+      diff.changes.some(({ target, field }) => target === "evidence" && field === "summary") &&
+      diff.changes.some(
+        ({ target, field }) => target === "source-document" && field === "contentHash",
+      ),
+    "Coverage re-run did not expose a field-level evidence and source-document diff.",
+  );
+  const baselineSource = diff.baseline.selectedEvidence[0]?.sourceDocument;
+  const currentSource = diff.current.selectedEvidence[0]?.sourceDocument;
+  assertContract(
+    baselineSource?.documentId === IDS.sourceDocument &&
+      currentSource?.documentId === IDS.sourceDocument &&
+      currentSource.latestVersion?.id === IDS.sourceVersion2,
+    "Coverage re-run did not retain source-document provenance across the diff.",
   );
 };
 
@@ -300,6 +399,15 @@ export const createRequirementEvidenceContractSuite = (
           await setup.migrate(database);
           await seed(database);
           await assertSensitiveAnswerBehavior(database);
+        },
+      },
+      {
+        name: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components.requirementEvidence.cases
+          .rerunCoverageAfterSourceEdits,
+        run: async (database) => {
+          await setup.migrate(database);
+          await seed(database);
+          await assertRerunDiffBehavior(database);
         },
       },
     ],

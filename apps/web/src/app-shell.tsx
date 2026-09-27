@@ -75,7 +75,9 @@ import {
 import { parseCaptureSourcePreviewJsonV1 } from "@coredrill/capture-core";
 import {
   REQUIREMENT_COVERAGE_RULE_VERSION,
+  REQUIREMENT_COVERAGE_RERUN_VERSION,
   classifyApplicationQuestion,
+  compareRequirementCoverageRunsV1,
   evaluateCaptureSourceStateV1,
   parseJobRequirementProposals,
   type CaptureDuplicateSuggestionV1,
@@ -87,6 +89,7 @@ import {
   type CreateManualCareerProfileEntryInput,
   type ResolveResumeImportGroupInput,
   type RequirementCoverageState,
+  type RequirementCoverageSnapshotV1,
   type ResumeImportQueueItemDto,
   type UpdateCareerStoryInput,
   type UpdateAnswerLibraryEntryInput,
@@ -1345,6 +1348,51 @@ const staleProofCoverage = (coverage: ProofCoverage): ProofCoverage =>
         explanation: `You previously marked this as ${proofCoverageLabel(coverage.state)}, but the requirement or selected evidence changed afterward. Review the decision; Coredrill has not overwritten it.`,
         stale: true,
       });
+
+const proofCoverageSnapshot = (
+  review: JobWorkspaceContentModel["requirementEvidence"][number],
+  coverage: ProofCoverage,
+  version: 1 | 2,
+): RequirementCoverageSnapshotV1 =>
+  Object.freeze({
+    coverage: Object.freeze({
+      rowVersion: coverage.rowVersion,
+      source: coverage.source,
+      stale: coverage.stale,
+      state: coverage.state,
+    }),
+    requirementId: review.requirementId,
+    selectedEvidence: Object.freeze(
+      review.selectedEvidence.map((evidence) =>
+        Object.freeze({
+          evidenceId: evidence.id,
+          evidenceKind: evidence.kind,
+          evidenceUpdatedAt:
+            version === 1 ? "2026-09-27T23:30:00.000Z" : "2026-09-27T23:45:00.000Z",
+          label: evidence.label,
+          sourceDocument: Object.freeze({
+            documentId: entityId("document", "0199a760-0000-7000-8000-000000000001"),
+            latestVersion: Object.freeze({
+              contentHash: (version === 1 ? "e" : "f").repeat(64),
+              id: entityId(
+                "document-version",
+                version === 1
+                  ? "0199a760-0000-7000-8000-000000000002"
+                  : "0199a760-0000-7000-8000-000000000003",
+              ),
+              versionNumber: version,
+            }),
+          }),
+          summary:
+            version === 1
+              ? evidence.summary
+              : `${evidence.summary} Revised after reviewing the latest source document.`,
+          verificationState: evidence.verificationState,
+        }),
+      ),
+    ),
+    version: REQUIREMENT_COVERAGE_RERUN_VERSION,
+  });
 
 const NORTHSTAR_REQUIREMENT_EVIDENCE = Object.freeze([
   Object.freeze({
@@ -2691,6 +2739,38 @@ const AppShellCatalog = () => {
       );
       setLastActivity(
         `Saved the user-confirmed requirement category as ${request.category}. No external request was made.`,
+      );
+      return;
+    }
+    if (request.id === "rerun-requirement-coverage") {
+      if (workspaceRoute === null) {
+        setLastActivity("No local Job workspace is available for this coverage re-run.");
+        return;
+      }
+      const reviews = jobRequirementEvidence[workspaceRoute.jobId] ?? Object.freeze([]);
+      const review = reviews.find(({ requirementId }) => requirementId === request.requirementId);
+      if (review === undefined || review.selectedEvidence.length === 0) {
+        setLastActivity("Select evidence before re-running and comparing coverage.");
+        return;
+      }
+      const coverage = staleProofCoverage(review.coverage);
+      const baseline = proofCoverageSnapshot(review, review.coverage, 1);
+      const current = proofCoverageSnapshot(review, coverage, 2);
+      const coverageComparison = compareRequirementCoverageRunsV1(baseline, current);
+      setJobRequirementEvidence(
+        Object.freeze({
+          ...jobRequirementEvidence,
+          [workspaceRoute.jobId]: Object.freeze(
+            reviews.map((candidate) =>
+              candidate.requirementId === request.requirementId
+                ? Object.freeze({ ...candidate, coverage, coverageComparison })
+                : candidate,
+            ),
+          ),
+        }),
+      );
+      setLastActivity(
+        "Re-ran local coverage and compared evidence and source-document fields without overwriting the reviewed decision or provenance.",
       );
       return;
     }

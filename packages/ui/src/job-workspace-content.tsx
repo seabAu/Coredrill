@@ -8,6 +8,7 @@ import {
   type ListingSnapshotCompensationV1,
   type ListingSnapshotDiffV1,
   type ListingSnapshotValueChangeV1,
+  type RequirementCoverageRerunDiffV1,
   type RequirementCoverageState,
 } from "@coredrill/application";
 
@@ -41,6 +42,7 @@ export const JOB_WORKSPACE_CONTENT_ACTIONS = Object.freeze([
   "remove-requirement-evidence",
   "set-requirement-coverage",
   "reset-requirement-coverage",
+  "rerun-requirement-coverage",
 ] as const);
 export type JobWorkspaceContentActionId = (typeof JOB_WORKSPACE_CONTENT_ACTIONS)[number];
 
@@ -77,6 +79,10 @@ export type JobWorkspaceContentActionRequest =
       readonly requirementId: string;
     }
   | {
+      readonly id: "rerun-requirement-coverage";
+      readonly requirementId: string;
+    }
+  | {
       readonly id: Exclude<
         JobWorkspaceContentActionId,
         | "accept-requirement-proposal"
@@ -84,6 +90,7 @@ export type JobWorkspaceContentActionRequest =
         | "correct-requirement-category"
         | "remove-requirement-evidence"
         | "reset-requirement-coverage"
+        | "rerun-requirement-coverage"
         | "select-requirement-evidence"
         | "set-requirement-coverage"
       >;
@@ -122,6 +129,7 @@ export interface JobWorkspaceContentModel {
       readonly stale: boolean;
       readonly state: RequirementCoverageState;
     };
+    readonly coverageComparison?: RequirementCoverageRerunDiffV1;
     readonly requirementId: string;
     readonly retrievalMode: "fts5" | "normalized-token";
     readonly queryTerms: readonly string[];
@@ -359,6 +367,26 @@ const validateModel = (model: JobWorkspaceContentModel): void => {
           (coverage.rowVersion ?? 0) < 1))
     ) {
       throw new RangeError("Job workspace requirement evidence is invalid.");
+    }
+    const comparison = review.coverageComparison;
+    if (
+      comparison !== undefined &&
+      (comparison.baseline.requirementId !== review.requirementId ||
+        comparison.current.requirementId !== review.requirementId ||
+        comparison.changes.length > 320 ||
+        comparison.changed !== comparison.changes.length > 0 ||
+        comparison.changes.some(
+          ({ after, before, field, target, targetId }) =>
+            !["coverage", "evidence", "source-document"].includes(target) ||
+            field.trim().length === 0 ||
+            !isBoundedText(field, 128) ||
+            targetId.trim().length === 0 ||
+            !isBoundedText(targetId, 128) ||
+            (before !== null && !isBoundedText(before, 2_048)) ||
+            (after !== null && !isBoundedText(after, 2_048)),
+        ))
+    ) {
+      throw new RangeError("Job workspace coverage comparison is invalid.");
     }
     for (const item of evidence) {
       if (
@@ -602,6 +630,12 @@ const coverageLabel = (state: RequirementCoverageState): string =>
   state === "not_applicable"
     ? "Not Applicable"
     : `${state.slice(0, 1).toLocaleUpperCase()}${state.slice(1)}`;
+
+const coverageChangeLabel = (field: string): string =>
+  field
+    .replaceAll(/([a-z])([A-Z])/gu, "$1 $2")
+    .replaceAll("Id", "ID")
+    .replace(/^./u, (value) => value.toLocaleUpperCase());
 
 const uniqueTerms = (terms: readonly string[]): readonly string[] => {
   const seen = new Set<string>();
@@ -1108,6 +1142,60 @@ function RequirementEvidenceReview({
           {review.coverage.stale ? " · Review needed after evidence or requirement changes" : ""} ·
           No aggregate score
         </small>
+        <div className="cd-job-inline-actions">
+          <button
+            className="cd-button cd-button-secondary"
+            onClick={() => {
+              onAction?.({
+                id: "rerun-requirement-coverage",
+                requirementId: requirement.id,
+              });
+            }}
+            type="button"
+          >
+            Re-run and compare
+          </button>
+        </div>
+        {review.coverageComparison === undefined ? null : (
+          <section
+            aria-label={`Coverage changes for ${requirement.normalizedText}`}
+            className="cd-requirement-coverage-diff"
+          >
+            <div className="cd-requirement-evidence__heading">
+              <div>
+                <h6>Coverage changes since the last run</h6>
+                <p>
+                  {review.coverageComparison.userDecisionPreserved
+                    ? "Your reviewed decision was preserved."
+                    : "The prior reviewed decision is no longer present; review before continuing."}{" "}
+                  This comparison does not edit evidence, documents, or provenance.
+                </p>
+              </div>
+              <span className="cd-chip">
+                {review.coverageComparison.changes.length} field
+                {review.coverageComparison.changes.length === 1 ? "" : "s"} changed
+              </span>
+            </div>
+            {review.coverageComparison.changes.length === 0 ? (
+              <p>No evidence, source-document, or coverage fields changed.</p>
+            ) : (
+              <dl className="cd-requirement-coverage-diff__fields">
+                {review.coverageComparison.changes.map((change, index) => (
+                  <div key={`${change.target}:${change.targetId}:${change.field}:${String(index)}`}>
+                    <dt>
+                      {coverageChangeLabel(change.target.replaceAll("-", " "))} ·{" "}
+                      {coverageChangeLabel(change.field)}
+                    </dt>
+                    <dd>
+                      <span>Before: {change.before ?? "Not recorded"}</span>
+                      <span>After: {change.after ?? "Not recorded"}</span>
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+          </section>
+        )}
       </div>
       <div className="cd-requirement-evidence__heading">
         <div>

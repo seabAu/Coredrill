@@ -364,7 +364,10 @@ export {
   type RequirementEvidenceReason,
   type RequirementEvidenceRetrievalDto,
   type RequirementEvidenceSearchMode,
+  type RequirementEvidenceSourceDocumentDto,
   type RequirementEvidenceVerificationState,
+  type RerunRequirementCoverageDto,
+  type RerunRequirementCoverageInput,
   type ResetRequirementCoverageDecisionInput,
   type RetrieveRequirementEvidenceInput,
   type SetRequirementCoverageDecisionInput,
@@ -372,6 +375,17 @@ export {
   type SelectedRequirementEvidenceDto,
   type StoredRequirementCoverageDecisionDto,
 } from "./requirement-evidence.js";
+export {
+  REQUIREMENT_COVERAGE_RERUN_VERSION,
+  captureRequirementCoverageSnapshotV1,
+  compareRequirementCoverageRunsV1,
+  type RequirementCoverageRerunChangeKindV1,
+  type RequirementCoverageRerunDiffV1,
+  type RequirementCoverageRerunFieldChangeV1,
+  type RequirementCoverageRerunTargetV1,
+  type RequirementCoverageSnapshotEvidenceV1,
+  type RequirementCoverageSnapshotV1,
+} from "./requirement-coverage-rerun.js";
 export {
   CAREER_PROFILE_ERROR_CODES,
   MANUAL_CAREER_PROFILE_KINDS,

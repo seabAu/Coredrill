@@ -195,6 +195,7 @@ describe("JobWorkspaceContent contract", () => {
       "remove-requirement-evidence",
       "set-requirement-coverage",
       "reset-requirement-coverage",
+      "rerun-requirement-coverage",
     ]);
     expect(isJobWorkspaceContentTab("source")).toBe(true);
     expect(isJobWorkspaceContentTab("documents")).toBe(false);
@@ -266,6 +267,57 @@ describe("JobWorkspaceContent contract", () => {
     expect(markup).toContain("0 requirements not evaluated for literal terms");
     expect(markup).toMatch(/<dt>Strength<\/dt><dd>1<\/dd>/u);
     expect(markup).not.toContain("100% match");
+  });
+
+  it("renders a field-level coverage re-run diff without claiming a mutation", () => {
+    const baseline = Object.freeze({
+      coverage: Object.freeze({
+        rowVersion: 2,
+        source: "user-confirmed" as const,
+        stale: false,
+        state: "gap" as const,
+      }),
+      requirementId: "requirement-delivery",
+      selectedEvidence: Object.freeze([]),
+      version: "requirement-coverage-rerun-v1" as const,
+    });
+    const current = Object.freeze({
+      ...baseline,
+      coverage: Object.freeze({ ...baseline.coverage, stale: true }),
+    });
+    const markup = renderContent("requirements", {
+      ...MODEL,
+      requirementEvidence: Object.freeze([
+        Object.freeze({
+          ...MODEL.requirementEvidence[0]!,
+          coverageComparison: Object.freeze({
+            baseline,
+            changed: true,
+            changes: Object.freeze([
+              Object.freeze({
+                after: "Revised source text",
+                before: "Original source text",
+                field: "summary",
+                kind: "changed" as const,
+                target: "evidence" as const,
+                targetId: "evidence-project-1",
+              }),
+            ]),
+            current,
+            mutationPerformed: false as const,
+            userDecisionPreserved: true,
+            version: "requirement-coverage-rerun-v1" as const,
+          }),
+        }),
+      ]),
+    });
+
+    expect(markup).toContain("Re-run and compare");
+    expect(markup).toContain("Coverage changes since the last run");
+    expect(markup).toContain("Your reviewed decision was preserved");
+    expect(markup).toContain("This comparison does not edit evidence");
+    expect(markup).toContain("Before: Original source text");
+    expect(markup).toContain("After: Revised source text");
   });
 
   it("renders sensitive eligibility as unanswered without inference controls", () => {

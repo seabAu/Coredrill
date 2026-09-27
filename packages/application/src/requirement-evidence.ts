@@ -22,6 +22,10 @@ import {
   classifyApplicationQuestion,
   type ApplicationQuestionPolicyDto,
 } from "./application-question-policy.js";
+import type {
+  RequirementCoverageRerunDiffV1,
+  RequirementCoverageSnapshotV1,
+} from "./requirement-coverage-rerun.js";
 
 export const REQUIREMENT_EVIDENCE_KINDS = Object.freeze([
   "employment",
@@ -82,6 +86,16 @@ export interface SelectedRequirementEvidenceDto extends RequirementEvidenceItemD
   readonly reasons: readonly RequirementEvidenceReason[];
   readonly requirementId: EntityId<"job-requirement">;
   readonly selectedAt: Instant;
+  readonly sourceDocument: RequirementEvidenceSourceDocumentDto | null;
+}
+
+export interface RequirementEvidenceSourceDocumentDto {
+  readonly documentId: EntityId<"document">;
+  readonly latestVersion: {
+    readonly contentHash: string;
+    readonly id: EntityId<"document-version">;
+    readonly versionNumber: number;
+  } | null;
 }
 
 export interface StoredRequirementCoverageDecisionDto {
@@ -145,6 +159,16 @@ export interface SetRequirementCoverageDecisionInput {
 export interface ResetRequirementCoverageDecisionInput {
   readonly expectedRowVersion: number;
   readonly requirementId: string;
+}
+
+export interface RerunRequirementCoverageInput {
+  readonly baseline: RequirementCoverageSnapshotV1;
+  readonly requirementId: string;
+}
+
+export interface RerunRequirementCoverageDto {
+  readonly comparison: RequirementCoverageRerunDiffV1;
+  readonly current: RequirementEvidenceRetrievalDto;
 }
 
 export interface RequirementEvidencePort {
@@ -212,6 +236,10 @@ export interface RequirementEvidenceOperations {
   readonly resetCoverageDecisionCommand: ApplicationCommand<
     ResetRequirementCoverageDecisionInput,
     RequirementCoverageDecisionDto
+  >;
+  readonly rerunCoverageQuery: ApplicationQuery<
+    RerunRequirementCoverageInput,
+    RerunRequirementCoverageDto
   >;
 }
 
@@ -299,8 +327,19 @@ export const requirementCoverageSelectionBasis = (
 ): string =>
   [...selectedEvidence]
     .map(
-      ({ evidenceId, evidenceKind: kind, evidenceUpdatedAt, verificationState }) =>
-        `${kind}:${evidenceId}:${evidenceUpdatedAt}:${verificationState}`,
+      ({
+        evidenceId,
+        evidenceKind: kind,
+        evidenceUpdatedAt,
+        sourceDocument,
+        verificationState,
+      }) => {
+        const sourceBasis =
+          sourceDocument === null
+            ? "no-source-document"
+            : `${sourceDocument.documentId}:${sourceDocument.latestVersion?.id ?? "no-version"}:${sourceDocument.latestVersion?.contentHash ?? "no-content"}`;
+        return `${kind}:${evidenceId}:${evidenceUpdatedAt}:${verificationState}:${sourceBasis}`;
+      },
     )
     .sort()
     .join("|");
@@ -557,11 +596,38 @@ export const createRequirementEvidenceOperations = (
     }
   });
 
+  const rerunCoverageQuery = defineQuery<
+    RerunRequirementCoverageInput,
+    RerunRequirementCoverageDto
+  >("RerunRequirementCoverageQuery", async (input) => {
+    if (!isRecord(input) || !isRecord(input.baseline)) {
+      return applicationFailure(VALIDATION_ERROR);
+    }
+    try {
+      const requirementId = entityId("job-requirement", input.requirementId);
+      const current = await dependencies.evidence.retrieve({ requirementId, limit: 12 });
+      const { captureRequirementCoverageSnapshotV1, compareRequirementCoverageRunsV1 } =
+        await import("./requirement-coverage-rerun.js");
+      return applicationSuccess(
+        Object.freeze({
+          comparison: compareRequirementCoverageRunsV1(
+            input.baseline,
+            captureRequirementCoverageSnapshotV1(current),
+          ),
+          current,
+        }),
+      );
+    } catch (error) {
+      return error instanceof TypeError ? applicationFailure(VALIDATION_ERROR) : failureFrom(error);
+    }
+  });
+
   return Object.freeze({
     retrieveCandidatesQuery,
     selectEvidenceCommand,
     removeEvidenceCommand,
     setCoverageDecisionCommand,
     resetCoverageDecisionCommand,
+    rerunCoverageQuery,
   });
 };

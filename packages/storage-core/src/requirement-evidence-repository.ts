@@ -65,6 +65,17 @@ interface SelectionRow extends EvidenceContentRow {
   readonly selected_at: string;
 }
 
+interface EvidenceSourceDocumentRow extends QueryRow {
+  readonly source_document_id: string | null;
+}
+
+interface LatestDocumentVersionRow extends QueryRow {
+  readonly content_hash: string | null;
+  readonly document_id: string;
+  readonly version_id: string | null;
+  readonly version_number: number | null;
+}
+
 interface CoverageDecisionRow extends QueryRow {
   readonly coverage_state: string;
   readonly decided_at: string;
@@ -127,15 +138,31 @@ const STOP_TERMS = new Set([
 const TERM_PATTERN = /[\p{L}\p{N}][\p{L}\p{N}+#.-]*/gu;
 
 const TARGET_BY_KIND = Object.freeze({
-  employment: Object.freeze({ column: "experience_id", entity: "experience" }),
-  education: Object.freeze({ column: "education_id", entity: "education" }),
-  project: Object.freeze({ column: "project_id", entity: "project" }),
-  skill: Object.freeze({ column: "skill_id", entity: "skill" }),
-  accomplishment: Object.freeze({ column: "accomplishment_id", entity: "accomplishment" }),
-  certification: Object.freeze({ column: "certification_id", entity: "certification" }),
-  publication: Object.freeze({ column: "publication_id", entity: "publication" }),
-  volunteer: Object.freeze({ column: "volunteer_experience_id", entity: "volunteer-experience" }),
-  story: Object.freeze({ column: "anecdote_id", entity: "anecdote" }),
+  employment: Object.freeze({ column: "experience_id", entity: "experience", table: "experience" }),
+  education: Object.freeze({ column: "education_id", entity: "education", table: "education" }),
+  project: Object.freeze({ column: "project_id", entity: "project", table: "project" }),
+  skill: Object.freeze({ column: "skill_id", entity: "skill", table: "skill" }),
+  accomplishment: Object.freeze({
+    column: "accomplishment_id",
+    entity: "accomplishment",
+    table: "accomplishment",
+  }),
+  certification: Object.freeze({
+    column: "certification_id",
+    entity: "certification",
+    table: "certification",
+  }),
+  publication: Object.freeze({
+    column: "publication_id",
+    entity: "publication",
+    table: "publication",
+  }),
+  volunteer: Object.freeze({
+    column: "volunteer_experience_id",
+    entity: "volunteer-experience",
+    table: "volunteer_experience",
+  }),
+  story: Object.freeze({ column: "anecdote_id", entity: "anecdote", table: "anecdote" }),
 } as const);
 
 const SELECTION_COLUMNS = Object.freeze([
@@ -414,6 +441,68 @@ const readCoverageDecision = async (
   });
 };
 
+const readEvidenceSourceDocument = async (
+  database: DatabaseSession,
+  kind: RequirementEvidenceKind,
+  evidenceId: string,
+): Promise<SelectedRequirementEvidenceDto["sourceDocument"]> => {
+  const target = TARGET_BY_KIND[kind];
+  const sourceRows = await database.query<EvidenceSourceDocumentRow>(
+    sqlStatement(`SELECT source_document_id FROM ${target.table} WHERE id = ?`, [evidenceId]),
+  );
+  if (sourceRows.length !== 1 || sourceRows[0] === undefined) {
+    throw new Error("Selected evidence source record is missing.");
+  }
+  if (sourceRows[0].source_document_id === null) return null;
+  const documentId = entityId("document", sourceRows[0].source_document_id);
+  const versionRows = await database.query<LatestDocumentVersionRow>(
+    sqlStatement(
+      `SELECT document.id AS document_id, version.id AS version_id,
+              version.version_number, version.content_hash
+       FROM document
+       LEFT JOIN document_version AS version
+         ON version.id = (
+           SELECT latest.id FROM document_version AS latest
+           WHERE latest.document_id = document.id
+           ORDER BY latest.version_number DESC LIMIT 1
+         )
+       WHERE document.id = ?`,
+      [documentId],
+    ),
+  );
+  const row = versionRows[0];
+  if (versionRows.length !== 1 || row === undefined) {
+    throw new Error("Selected evidence source document is missing.");
+  }
+  if (
+    row.document_id !== documentId ||
+    (row.version_id !== null) !== (row.version_number !== null && row.content_hash !== null)
+  ) {
+    throw new Error("Selected evidence source document version is invalid.");
+  }
+  const latestVersion =
+    row.version_id === null
+      ? null
+      : Object.freeze({
+          contentHash: (() => {
+            const value = boundedText(row.content_hash, "Source document content hash", 64);
+            if (!/^[a-f0-9]{64}$/u.test(value)) {
+              throw new Error("Selected evidence source document hash is invalid.");
+            }
+            return value;
+          })(),
+          id: entityId("document-version", row.version_id),
+          versionNumber: (() => {
+            const value = row.version_number;
+            if (value === null || !Number.isSafeInteger(value) || value < 1) {
+              throw new Error("Selected evidence source document version is invalid.");
+            }
+            return value;
+          })(),
+        });
+  return Object.freeze({ documentId, latestVersion });
+};
+
 const readSelections = async (
   database: DatabaseSession,
   requirementId: EntityId<"job-requirement">,
@@ -435,14 +524,21 @@ const readSelections = async (
     throw new Error("Requirement evidence selection exceeds its reviewed bound.");
   }
   return Object.freeze(
-    rows.map((row) =>
-      Object.freeze({
-        ...mapItem(row),
-        matchedTerms: Object.freeze([]),
-        reasons: Object.freeze([]),
-        requirementId: entityId("job-requirement", row.requirement_id),
-        selectedAt: instant(row.selected_at),
-      }),
+    await Promise.all(
+      rows.map(async (row) =>
+        Object.freeze({
+          ...mapItem(row),
+          matchedTerms: Object.freeze([]),
+          reasons: Object.freeze([]),
+          requirementId: entityId("job-requirement", row.requirement_id),
+          selectedAt: instant(row.selected_at),
+          sourceDocument: await readEvidenceSourceDocument(
+            database,
+            evidenceKind(row.evidence_kind),
+            row.evidence_id,
+          ),
+        }),
+      ),
     ),
   );
 };

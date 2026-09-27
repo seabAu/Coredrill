@@ -1119,6 +1119,22 @@ test("Job core tabs expose normalized facts, chronology, company context, and pr
   );
 
   await coverageDecision.selectOption("gap");
+  await coverageReview.getByRole("button", { name: "Re-run and compare" }).click();
+  const coverageChanges = coverageReview.getByRole("region", {
+    name: "Coverage changes for Lead cross-functional delivery",
+  });
+  await expect(coverageChanges).toBeVisible();
+  await expect(coverageChanges).toContainText("Your reviewed decision was preserved");
+  await expect(coverageChanges).toContainText("This comparison does not edit evidence");
+  await expect(coverageChanges).toContainText("Evidence · Summary");
+  await expect(coverageChanges).toContainText("Source document · Latest Version ID");
+  await expect(coverageChanges).toContainText("Before:");
+  await expect(coverageChanges).toContainText("After:");
+  await expect(coverageState).toHaveText("Gap");
+  await expect(coverageReview).toContainText("Review needed after evidence or requirement changes");
+  await expect(page.getByRole("status").first()).toContainText(
+    "without overwriting the reviewed decision or provenance",
+  );
   await evidenceReview
     .getByRole("button", {
       name: "Remove Portfolio launch from Lead cross-functional delivery",
@@ -1141,6 +1157,7 @@ test("Job core tabs expose normalized facts, chronology, company context, and pr
   await expect(literalTermPanel).toBeVisible();
   await expect(qualificationPanel).toBeVisible();
   await expect(privateAnswerReview).toBeVisible();
+  await expect(coverageChanges).toBeVisible();
   expect(
     await comparisonChecks.evaluate((element) => element.scrollWidth <= element.clientWidth),
   ).toBe(true);
@@ -1150,6 +1167,9 @@ test("Job core tabs expose normalized facts, chronology, company context, and pr
   );
   console.info(
     `MAT006_E2E_PROOF ${JSON.stringify({ sensitiveAnswerStatus: "Unanswered", inferenceSourcesNamed: 4, coverageControls: 0, evidenceSelectionControls: 0, durableAnswerWrites: 0, narrowReflow: true, externalRequests: externalRequests.length })}`,
+  );
+  console.info(
+    `MAT007_E2E_PROOF ${JSON.stringify({ fieldDiffVisible: true, userDecisionPreserved: true, provenanceCompared: true, coverageWrites: 0, narrowReflow: true, externalRequests: externalRequests.length })}`,
   );
   expect(externalRequests).toEqual([]);
 

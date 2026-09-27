@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   classifyApplicationQuestion,
+  captureRequirementCoverageSnapshotV1,
   createRequirementEvidenceOperations,
   deriveRequirementCoverageDecision,
   requirementCoverageSelectionBasis,
@@ -37,6 +38,7 @@ const selected = (
     matchedTerms: Object.freeze(["typescript"]),
     reasons: Object.freeze(["exact-skill"] as const),
     selectedAt: NOW,
+    sourceDocument: null,
     ...overrides,
   });
 
@@ -111,6 +113,24 @@ describe("Requirement evidence application boundary", () => {
     expect(port.retrieve).toHaveBeenCalledOnce();
     expect(port.select).not.toHaveBeenCalled();
     expect(port.remove).not.toHaveBeenCalled();
+  });
+
+  it("re-runs the durable query and returns an immutable comparison", async () => {
+    const { port, operations } = setup();
+    const baseline = captureRequirementCoverageSnapshotV1(retrieval());
+    const result = await operations.rerunCoverageQuery.execute(
+      { baseline, requirementId: IDS.requirement },
+      context,
+    );
+
+    expect(result).toMatchObject({
+      ok: true,
+      value: {
+        comparison: { changed: false, mutationPerformed: false, userDecisionPreserved: true },
+      },
+    });
+    expect(port.retrieve).toHaveBeenCalledOnce();
+    expect(port.setCoverageDecision).not.toHaveBeenCalled();
   });
 
   it("changes selection only through explicit select and remove commands", async () => {
