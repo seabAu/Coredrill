@@ -2,7 +2,7 @@
 
 Date: 2026-09-26  
 Checklist item: `REV-004`  
-Status: implementation verified locally; hosted clean-commit proof pending
+Status: complete
 
 ## Outcome
 
@@ -71,6 +71,14 @@ REV004_E2E_PROOF {"schemaVersion":101,"saveNew":true,"mergeExisting":true,"snooz
 - Native Rust storage core: 11 passed with one secure-store harness-only test
   intentionally ignored; native SQLite parity: 12/12 passing.
 - Web build, TypeScript, and lint: passing.
+- Implementation commit: `bcffdd137082119ffd9d920d0d47b442435f63bf`.
+- Firefox proof-count alignment commit:
+  `d5575191f38a58caa6eb96a590890881bb542932`.
+- Hosted clean-commit verification:
+  [Foundation CI run 36282127338](https://github.com/seabAu/Coredrill/actions/runs/36282127338),
+  passing across the aggregate foundation gate, exact Chrome 151/152 and
+  Firefox 153/154 browser-storage lanes, extension transfer, full-history
+  secret scan, and Windows, macOS, and Ubuntu native package lanes.
 
 ## Decision impact
 
