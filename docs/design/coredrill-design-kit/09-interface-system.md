@@ -430,6 +430,15 @@ recapture action, and the bounded local note reports its character count and
 provisional status. Queueing disables further edits, and all retained evidence
 remains local until the existing acknowledgement or expiry boundary acts.
 
+`PEX-003` realizes the queued recovery facts. The compact outbox summary shows
+count, bytes, earliest expiry, and the next scheduled retry when one exists.
+A text status warning appears when one or more captures are within 24 hours of
+expiry and names export as the recovery path; a separate alert reports
+exhausted automatic retries without implying data loss. Disclosed expiry
+cleanup reports how many captures were removed. These states retain the same
+export and open-workspace actions, use text rather than color alone, and never
+claim that an unacknowledged capture reached the Inbox.
+
 ## 8. Network and AI preflight
 
 Before the first use of each provider/connector, show:

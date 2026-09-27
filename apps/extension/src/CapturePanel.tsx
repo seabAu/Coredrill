@@ -21,7 +21,10 @@ import { COREDRILL_PHASE0_APP_ORIGIN } from "./transfer-policy";
 interface OutboxSummary {
   readonly count: number;
   readonly bytes: number;
-  readonly earliestExpiry?: string;
+  readonly earliestExpiry: string | null;
+  readonly expiringSoonCount: number;
+  readonly nextRetryAt: string | null;
+  readonly retryExhaustedCount: number;
 }
 
 function formatBytes(bytes: number): string {
@@ -47,7 +50,14 @@ export function CapturePanel(): React.JSX.Element {
   const [title, setTitle] = useState("");
   const [company, setCompany] = useState("");
   const [note, setNote] = useState("");
-  const [outbox, setOutbox] = useState<OutboxSummary>({ count: 0, bytes: 0 });
+  const [outbox, setOutbox] = useState<OutboxSummary>({
+    count: 0,
+    bytes: 0,
+    earliestExpiry: null,
+    expiringSoonCount: 0,
+    nextRetryAt: null,
+    retryExhaustedCount: 0,
+  });
   const [captureState, setCaptureState] = useState<ProductionExtensionStateKind>();
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string>();
@@ -55,16 +65,22 @@ export function CapturePanel(): React.JSX.Element {
 
   useEffect(() => {
     let active = true;
-    void sendRequest({ type: "outbox.status.v1" }).then((response) => {
+    void sendRequest({ type: "outbox.status.v2" }).then((response) => {
       if (!active) return;
-      if (response.success && response.type === "outbox.status.v1") {
+      if (response.success && response.type === "outbox.status.v2") {
         setOutbox({
           count: response.outboxCount,
           bytes: response.outboxBytes,
-          ...(response.earliestExpiry === undefined
-            ? {}
-            : { earliestExpiry: response.earliestExpiry }),
+          earliestExpiry: response.earliestExpiry,
+          expiringSoonCount: response.expiringSoonCount,
+          nextRetryAt: response.nextRetryAt,
+          retryExhaustedCount: response.retryExhaustedCount,
         });
+        if (response.removedExpired > 0) {
+          setNotice(
+            `${String(response.removedExpired)} expired capture${response.removedExpired === 1 ? " was" : "s were"} removed from the bounded outbox.`,
+          );
+        }
         if (response.outboxCount > 0) {
           setCaptureState(
             resolveProductionExtensionStateV1({
@@ -157,7 +173,14 @@ export function CapturePanel(): React.JSX.Element {
     }
     const response = await sendRequest({ type: "capture.queue-draft.v1", draft: parsedDraft.data });
     if (response.success && response.type === "capture.queued.v1") {
-      setOutbox({ count: response.outboxCount, bytes: response.outboxBytes });
+      setOutbox({
+        count: response.outboxCount,
+        bytes: response.outboxBytes,
+        earliestExpiry: response.expiresAt,
+        expiringSoonCount: 0,
+        nextRetryAt: null,
+        retryExhaustedCount: 0,
+      });
       setNotice(`Queued locally until ${new Date(response.expiresAt).toLocaleString()}.`);
       setCaptureState(
         resolveProductionExtensionStateV1({
@@ -261,10 +284,27 @@ export function CapturePanel(): React.JSX.Element {
       <section className="outbox-summary" aria-label="Local outbox status">
         <span>{outbox.count} queued</span>
         <span>{formatBytes(outbox.bytes)}</span>
-        {outbox.earliestExpiry === undefined ? null : (
+        {outbox.earliestExpiry === null ? null : (
           <span>Earliest expiry {new Date(outbox.earliestExpiry).toLocaleDateString()}</span>
         )}
+        {outbox.nextRetryAt === null ? null : (
+          <span>Next transfer retry {new Date(outbox.nextRetryAt).toLocaleTimeString()}</span>
+        )}
       </section>
+
+      {outbox.expiringSoonCount === 0 ? null : (
+        <p className="notice" role="status">
+          {outbox.expiringSoonCount === 1
+            ? "One queued capture expires within 24 hours. Export it now if Coredrill cannot acknowledge it."
+            : `${String(outbox.expiringSoonCount)} queued captures expire within 24 hours. Export them now if Coredrill cannot acknowledge them.`}
+        </p>
+      )}
+      {outbox.retryExhaustedCount === 0 ? null : (
+        <p className="error" role="alert">
+          Automatic retries are exhausted for {String(outbox.retryExhaustedCount)} capture
+          {outbox.retryExhaustedCount === 1 ? "" : "s"}. Export remains available.
+        </p>
+      )}
 
       {captureState === undefined ? (
         <button className="primary" type="button" disabled={busy} onClick={() => void capture()}>

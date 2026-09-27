@@ -5,15 +5,21 @@ import {
   type CaptureEnvelopeBuildResult,
 } from "@coredrill/capture-core";
 import {
-  acknowledgeOutboxTransfer,
+  acknowledgeScheduledOutboxTransfer,
   createEmptyOutboxState,
+  createOutboxRetryState,
   createOutboxExport,
+  describeOutboxLifecycle,
   parseExternalTransferRequest,
-  prepareNextOutboxTransfer,
+  prepareNextScheduledOutboxTransfer,
+  pruneExpiredOutboxLifecycle,
   queueCaptureEnvelope,
+  safeParseOutboxRetryState,
   safeParseOutboxState,
+  synchronizeOutboxRetryState,
   transferErrorResponse,
   type ExternalTransferResponseV1,
+  type OutboxRetryStateV1,
   type OutboxStateV1,
 } from "@coredrill/extension-bridge";
 import { browser, type Browser } from "wxt/browser";
@@ -24,16 +30,22 @@ import { errorResponse, parseExtensionRequest, type ExtensionResponse } from "..
 import { isTrustedHostedAppSender } from "../src/transfer-policy";
 
 const STORAGE_KEY = "coredrill.extension.state.v1";
-const STORED_STATE_SPEC_VERSION = 1 as const;
+const LEGACY_STORED_STATE_SPEC_VERSION = 1 as const;
+const STORED_STATE_SPEC_VERSION = 2 as const;
 
-interface StoredExtensionStateV1 {
+interface StoredExtensionStateV2 {
   readonly specVersion: typeof STORED_STATE_SPEC_VERSION;
   readonly nextSequence: number;
   readonly outbox: OutboxStateV1;
+  readonly retry: OutboxRetryStateV1;
 }
 
 type StoredStateReadResult =
-  | { readonly success: true; readonly state: StoredExtensionStateV1 }
+  | {
+      readonly success: true;
+      readonly state: StoredExtensionStateV2;
+      readonly migrationRequired: boolean;
+    }
   | { readonly success: false; readonly response: ExtensionResponse };
 
 let queueTail: Promise<void> = Promise.resolve();
@@ -61,23 +73,24 @@ function isTrustedExtensionPage(sender: Browser.runtime.MessageSender): boolean 
   }
 }
 
-async function readStoredState(): Promise<StoredStateReadResult> {
+async function readStoredState(now = new Date()): Promise<StoredStateReadResult> {
   const values = await browser.storage.local.get(STORAGE_KEY);
   const input = values[STORAGE_KEY];
   if (input === undefined) {
+    const outbox = createEmptyOutboxState();
     return {
       success: true,
       state: {
         specVersion: STORED_STATE_SPEC_VERSION,
         nextSequence: 0,
-        outbox: createEmptyOutboxState(),
+        outbox,
+        retry: createOutboxRetryState(outbox),
       },
+      migrationRequired: false,
     };
   }
   if (
     !isRecord(input) ||
-    !exactKeys(input, ["specVersion", "nextSequence", "outbox"]) ||
-    input["specVersion"] !== STORED_STATE_SPEC_VERSION ||
     !Number.isSafeInteger(input["nextSequence"]) ||
     (input["nextSequence"] as number) < 0
   ) {
@@ -99,13 +112,52 @@ async function readStoredState(): Promise<StoredStateReadResult> {
       ),
     };
   }
+  if (
+    input["specVersion"] === LEGACY_STORED_STATE_SPEC_VERSION &&
+    exactKeys(input, ["specVersion", "nextSequence", "outbox"])
+  ) {
+    return {
+      success: true,
+      state: {
+        specVersion: STORED_STATE_SPEC_VERSION,
+        nextSequence: input["nextSequence"] as number,
+        outbox: parsedOutbox.state,
+        retry: createOutboxRetryState(parsedOutbox.state, now.toISOString()),
+      },
+      migrationRequired: true,
+    };
+  }
+  if (
+    input["specVersion"] !== STORED_STATE_SPEC_VERSION ||
+    !exactKeys(input, ["specVersion", "nextSequence", "outbox", "retry"])
+  ) {
+    return {
+      success: false,
+      response: errorResponse(
+        "storage_corrupt",
+        "The extension outbox metadata is invalid. It was preserved for recovery.",
+      ),
+    };
+  }
+  const parsedRetry = await safeParseOutboxRetryState(input["retry"], parsedOutbox.state);
+  if (!parsedRetry.success) {
+    return {
+      success: false,
+      response: errorResponse(
+        parsedRetry.code,
+        "The extension retry metadata failed validation. It was preserved for recovery.",
+      ),
+    };
+  }
   return {
     success: true,
     state: {
       specVersion: STORED_STATE_SPEC_VERSION,
       nextSequence: input["nextSequence"] as number,
       outbox: parsedOutbox.state,
+      retry: parsedRetry.state,
     },
+    migrationRequired: false,
   };
 }
 
@@ -181,21 +233,29 @@ async function captureActiveTabDraft(): Promise<ExtensionResponse> {
 async function queueBuiltCapture(
   build: (sequence: number, now: Date) => Promise<CaptureEnvelopeBuildResult>,
 ): Promise<ExtensionResponse> {
-  const loaded = await readStoredState();
+  const now = new Date();
+  const loaded = await readStoredState(now);
   if (!loaded.success) return loaded.response;
   if (loaded.state.nextSequence >= Number.MAX_SAFE_INTEGER) {
     return errorResponse("sequence_exhausted", "The extension sequence counter is exhausted.");
   }
-  const now = new Date();
   const built = await build(loaded.state.nextSequence, now);
   if (!built.success) return errorResponse(built.code, built.issue);
 
   const queued = await queueCaptureEnvelope(loaded.state.outbox, built.envelope, now);
   if (!queued.success) return errorResponse(queued.code, queued.issue);
-  const nextState: StoredExtensionStateV1 = {
+  const retry = await synchronizeOutboxRetryState(
+    loaded.state.outbox,
+    loaded.state.retry,
+    queued.state,
+    now,
+  );
+  if (!retry.success) return errorResponse(retry.code, retry.issue);
+  const nextState: StoredExtensionStateV2 = {
     specVersion: STORED_STATE_SPEC_VERSION,
     nextSequence: loaded.state.nextSequence + 1,
     outbox: queued.state,
+    retry: retry.state,
   };
   try {
     await browser.storage.local.set({ [STORAGE_KEY]: nextState });
@@ -233,24 +293,23 @@ async function queueDraft(draft: unknown): Promise<ExtensionResponse> {
   );
 }
 
-async function outboxStatus(): Promise<ExtensionResponse> {
-  const loaded = await readStoredState();
+async function outboxStatus(version: 1 | 2): Promise<ExtensionResponse> {
+  const now = new Date();
+  const loaded = await readStoredState(now);
   if (!loaded.success) return loaded.response;
-  const now = Date.now();
-  const activeItems = loaded.state.outbox.items.filter((item) => Date.parse(item.expiresAt) > now);
-  const parsed = await safeParseOutboxState({
-    specVersion: loaded.state.outbox.specVersion,
-    items: activeItems,
-  });
+  const pruned = await pruneExpiredOutboxLifecycle(loaded.state.outbox, loaded.state.retry, now);
+  if (!pruned.success) return errorResponse(pruned.code, pruned.issue);
+  const parsed = await safeParseOutboxState(pruned.state);
   if (!parsed.success) return errorResponse(parsed.code, parsed.issue);
-  if (activeItems.length !== loaded.state.outbox.items.length) {
+  if (loaded.migrationRequired || pruned.removedExpired > 0) {
     try {
       await browser.storage.local.set({
         [STORAGE_KEY]: {
           specVersion: STORED_STATE_SPEC_VERSION,
           nextSequence: loaded.state.nextSequence,
           outbox: parsed.state,
-        } satisfies StoredExtensionStateV1,
+          retry: pruned.retryState,
+        } satisfies StoredExtensionStateV2,
       });
     } catch {
       return errorResponse(
@@ -260,25 +319,43 @@ async function outboxStatus(): Promise<ExtensionResponse> {
     }
   }
   const earliestExpiry = parsed.state.items.map((item) => item.expiresAt).sort()[0];
+  if (version === 1) {
+    return {
+      success: true,
+      type: "outbox.status.v1",
+      outboxCount: parsed.state.items.length,
+      outboxBytes: parsed.encodedBytes,
+      ...(earliestExpiry === undefined ? {} : { earliestExpiry }),
+    };
+  }
+  const described = await describeOutboxLifecycle(parsed.state, pruned.retryState, now);
+  if (!described.success) return errorResponse(described.code, described.issue);
   return {
     success: true,
-    type: "outbox.status.v1",
+    type: "outbox.status.v2",
     outboxCount: parsed.state.items.length,
     outboxBytes: parsed.encodedBytes,
-    ...(earliestExpiry === undefined ? {} : { earliestExpiry }),
+    earliestExpiry: described.summary.earliestExpiry,
+    expiringSoonCount: described.summary.expiringSoonCount,
+    nextRetryAt: described.summary.nextRetryAt,
+    retryExhaustedCount: described.summary.exhaustedCount,
+    removedExpired: pruned.removedExpired,
   };
 }
 
 async function exportOutbox(): Promise<ExtensionResponse> {
-  const loaded = await readStoredState();
-  if (!loaded.success) return loaded.response;
   const now = new Date();
-  const exported = await createOutboxExport(loaded.state.outbox, now);
+  const loaded = await readStoredState(now);
+  if (!loaded.success) return loaded.response;
+  const pruned = await pruneExpiredOutboxLifecycle(loaded.state.outbox, loaded.state.retry, now);
+  if (!pruned.success) return errorResponse(pruned.code, pruned.issue);
+  const exported = await createOutboxExport(pruned.state, now);
   if (!exported.success) return errorResponse(exported.code, exported.issue);
-  const nextState: StoredExtensionStateV1 = {
+  const nextState: StoredExtensionStateV2 = {
     specVersion: STORED_STATE_SPEC_VERSION,
     nextSequence: loaded.state.nextSequence,
     outbox: { specVersion: exported.data.specVersion, items: exported.data.items },
+    retry: pruned.retryState,
   };
   try {
     await browser.storage.local.set({ [STORAGE_KEY]: nextState });
@@ -312,7 +389,8 @@ async function handleExternalMessage(
   if (request === undefined) {
     return transferErrorResponse("message_invalid", "Transfer message contract is invalid.");
   }
-  const loaded = await readStoredState();
+  const now = new Date();
+  const loaded = await readStoredState(now);
   if (!loaded.success) {
     return transferErrorResponse(
       loaded.response.success ? "storage_corrupt" : loaded.response.code,
@@ -322,8 +400,18 @@ async function handleExternalMessage(
   }
   const result =
     request.type === "capture.transfer.pull.v1"
-      ? await prepareNextOutboxTransfer(loaded.state.outbox, request)
-      : await acknowledgeOutboxTransfer(loaded.state.outbox, request);
+      ? await prepareNextScheduledOutboxTransfer(
+          loaded.state.outbox,
+          loaded.state.retry,
+          request,
+          now,
+        )
+      : await acknowledgeScheduledOutboxTransfer(
+          loaded.state.outbox,
+          loaded.state.retry,
+          request,
+          now,
+        );
   if (!result.success) {
     return transferErrorResponse(result.code, result.issue, request.requestId);
   }
@@ -333,7 +421,8 @@ async function handleExternalMessage(
         specVersion: STORED_STATE_SPEC_VERSION,
         nextSequence: loaded.state.nextSequence,
         outbox: result.state,
-      } satisfies StoredExtensionStateV1,
+        retry: result.retryState,
+      } satisfies StoredExtensionStateV2,
     });
   } catch {
     return transferErrorResponse(
@@ -378,7 +467,9 @@ async function handleMessage(
     case "capture.queue-draft.v1":
       return serializeQueueOperation(() => queueDraft(request.draft));
     case "outbox.status.v1":
-      return serializeQueueOperation(outboxStatus);
+      return serializeQueueOperation(() => outboxStatus(1));
+    case "outbox.status.v2":
+      return serializeQueueOperation(() => outboxStatus(2));
     case "outbox.export.v1":
       return serializeQueueOperation(exportOutbox);
   }

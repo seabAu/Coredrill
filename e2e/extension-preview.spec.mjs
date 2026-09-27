@@ -181,7 +181,7 @@ test("previews, corrects, recaptures selected text, and queues only after explic
     expect(httpRequests.filter((url) => !url.startsWith("https://jobs.example.test/"))).toEqual([]);
     const previewProof = await popup.evaluate(() => globalThis.coredrillPreviewProof.proofRequests);
     expect(previewProof.map((request) => request.type)).toEqual([
-      "outbox.status.v1",
+      "outbox.status.v2",
       "capture.active-tab.v2",
       "capture.active-tab.v2",
       "capture.queue-draft.v1",

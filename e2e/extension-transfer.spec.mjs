@@ -64,21 +64,27 @@ const sendExternal = (page, extensionId, message) =>
     { id: extensionId, payload: message },
   );
 
-test("durably stores before acknowledgement and safely retries the exact Chromium transfer", async () => {
-  const userDataDirectory = await mkdtemp(path.join(tmpdir(), "coredrill-extension-e2e-"));
-  const context = await chromium.launchPersistentContext(userDataDirectory, {
+const launchExtensionContext = (userDataDirectory) =>
+  chromium.launchPersistentContext(userDataDirectory, {
     channel: "chromium",
     headless: true,
     args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`],
   });
-  try {
-    await context.route(`${appOrigin}/**`, async (route) => {
-      const requested = new URL(route.request().url());
-      const response = await route.fetch({
-        url: `${localAppOrigin}${requested.pathname}${requested.search}`,
-      });
-      await route.fulfill({ response });
+
+const routeHostedApp = (context) =>
+  context.route(`${appOrigin}/**`, async (route) => {
+    const requested = new URL(route.request().url());
+    const response = await route.fetch({
+      url: `${localAppOrigin}${requested.pathname}${requested.search}`,
     });
+    await route.fulfill({ response });
+  });
+
+test("durably stores before acknowledgement and safely retries the exact Chromium transfer", async () => {
+  const userDataDirectory = await mkdtemp(path.join(tmpdir(), "coredrill-extension-e2e-"));
+  let context = await launchExtensionContext(userDataDirectory);
+  try {
+    await routeHostedApp(context);
     let serviceWorker = context.serviceWorkers()[0];
     serviceWorker ??= await context.waitForEvent("serviceworker");
     const extensionId = new URL(serviceWorker.url()).host;
@@ -122,6 +128,39 @@ test("durably stores before acknowledgement and safely retries the exact Chromiu
       receivedVia: "external_message",
     });
 
+    const earlyRetry = await app.evaluate(async (id) => {
+      try {
+        await globalThis.coredrillExtensionInbox.pullAndStore(id);
+        return { success: true };
+      } catch (error) {
+        return {
+          success: false,
+          code:
+            typeof error === "object" && error !== null && "code" in error ? error.code : "unknown",
+        };
+      }
+    }, extensionId);
+    expect(earlyRetry).toEqual({ success: false, code: "retry_not_due" });
+
+    const persistedBeforeRestart = await popup.evaluate(async () => {
+      const values = await globalThis.chrome.storage.local.get("coredrill.extension.state.v1");
+      return values["coredrill.extension.state.v1"];
+    });
+    expect(persistedBeforeRestart).toMatchObject({
+      specVersion: 2,
+      outbox: { items: [{ attemptCount: 1 }] },
+      retry: {
+        specVersion: 1,
+        items: [
+          {
+            lastAttemptAt: expect.any(String),
+            nextAttemptAt: expect.any(String),
+            lastErrorCode: "acknowledgement_pending",
+          },
+        ],
+      },
+    });
+
     const oversized = await sendExternal(app, extensionId, {
       specVersion: 1,
       type: "capture.transfer.pull.v1",
@@ -149,9 +188,40 @@ test("durably stores before acknowledgement and safely retries the exact Chromiu
     });
 
     await callStorage(app, "close");
-    await app.reload();
-    await app.waitForFunction(() => globalThis.coredrillExtensionInbox !== undefined);
-    const retry = await callInbox(app, "pullAndStore", extensionId);
+    await context.close();
+
+    context = await launchExtensionContext(userDataDirectory);
+    await routeHostedApp(context);
+    serviceWorker = context.serviceWorkers()[0];
+    serviceWorker ??= await context.waitForEvent("serviceworker");
+    const restartedExtensionId = new URL(serviceWorker.url()).host;
+    expect(restartedExtensionId).toBe(extensionId);
+
+    const restartedPopup = await context.newPage();
+    await restartedPopup.goto(`chrome-extension://${extensionId}/popup.html`);
+    const restartStatus = await restartedPopup.evaluate(async () =>
+      globalThis.chrome.runtime.sendMessage({ type: "outbox.status.v2" }),
+    );
+    expect(restartStatus).toMatchObject({
+      success: true,
+      type: "outbox.status.v2",
+      outboxCount: 1,
+      nextRetryAt: persistedBeforeRestart.retry.items[0].nextAttemptAt,
+    });
+
+    const restartedApp = await context.newPage();
+    await restartedApp.goto(`${appOrigin}/`);
+    await restartedApp.waitForFunction(
+      () =>
+        globalThis.coredrillStorageSpike !== undefined &&
+        globalThis.coredrillExtensionInbox !== undefined,
+    );
+    const waitMilliseconds = Math.max(
+      0,
+      Date.parse(persistedBeforeRestart.retry.items[0].nextAttemptAt) - Date.now() + 100,
+    );
+    await new Promise((resolve) => globalThis.setTimeout(resolve, waitMilliseconds));
+    const retry = await callInbox(restartedApp, "pullAndStore", extensionId);
     expect(retry).toMatchObject({
       status: "stored",
       envelopeId: receipts[0].envelopeId,
@@ -162,9 +232,9 @@ test("durably stores before acknowledgement and safely retries the exact Chromiu
       acknowledged: true,
       remainingCount: 0,
     });
-    await expect(callInbox(app, "listReceipts")).resolves.toHaveLength(1);
+    await expect(callInbox(restartedApp, "listReceipts")).resolves.toHaveLength(1);
 
-    const replay = await sendExternal(app, extensionId, {
+    const replay = await sendExternal(restartedApp, extensionId, {
       specVersion: 1,
       type: "capture.transfer.ack.v1",
       requestId: "replayed_ack_request_abc",
@@ -179,12 +249,12 @@ test("durably stores before acknowledgement and safely retries the exact Chromiu
       code: "replay_or_unknown_ack",
     });
 
-    const status = await popup.evaluate(async () =>
+    const status = await restartedPopup.evaluate(async () =>
       globalThis.chrome.runtime.sendMessage({ type: "outbox.status.v1" }),
     );
     expect(status).toMatchObject({ success: true, type: "outbox.status.v1", outboxCount: 0 });
 
-    const repeatedContent = await popup.evaluate(
+    const repeatedContent = await restartedPopup.evaluate(
       async (value) =>
         globalThis.chrome.runtime.sendMessage({ type: "capture.queue.v1", snapshot: value }),
       snapshot,
@@ -194,7 +264,7 @@ test("durably stores before acknowledgement and safely retries the exact Chromiu
       type: "capture.queued.v1",
       outboxCount: 1,
     });
-    const semanticDuplicate = await callInbox(app, "pullAndStore", extensionId);
+    const semanticDuplicate = await callInbox(restartedApp, "pullAndStore", extensionId);
     expect(semanticDuplicate).toMatchObject({
       status: "stored",
       duplicate: true,
@@ -203,7 +273,7 @@ test("durably stores before acknowledgement and safely retries the exact Chromiu
       acknowledged: true,
       remainingCount: 0,
     });
-    await expect(callInbox(app, "listReceipts")).resolves.toHaveLength(1);
+    await expect(callInbox(restartedApp, "listReceipts")).resolves.toHaveLength(1);
 
     const attacker = await context.newPage();
     await attacker.route("https://attacker.example/**", (route) =>
@@ -214,13 +284,15 @@ test("durably stores before acknowledgement and safely retries the exact Chromiu
       attacker.evaluate(() => globalThis.chrome?.runtime?.sendMessage !== undefined),
     ).resolves.toBe(false);
 
-    await callStorage(app, "delete");
+    await callStorage(restartedApp, "delete");
     console.info(
       `EXT_TRANSFER_PROOF ${JSON.stringify({
         browser: context.browser()?.version(),
         extensionId,
         appOrigin,
         durableBeforeAck: true,
+        immediateRetryDeferred: true,
+        browserRestartRecovered: true,
         retryAttempt: retry.attempt,
         semanticContentDeduplicated: true,
         duplicateReceipts: 0,
@@ -228,6 +300,118 @@ test("durably stores before acknowledgement and safely retries the exact Chromiu
         oversizedRejected: true,
         wrongIdRejected: true,
         replayRejected: true,
+      })}`,
+    );
+  } finally {
+    await context.close();
+    await rm(userDataDirectory, { recursive: true, force: true });
+  }
+});
+
+test("preserves the existing outbox when browser storage rejects a later queue write", async () => {
+  const userDataDirectory = await mkdtemp(path.join(tmpdir(), "coredrill-extension-quota-"));
+  const context = await launchExtensionContext(userDataDirectory);
+  try {
+    let serviceWorker = context.serviceWorkers()[0];
+    serviceWorker ??= await context.waitForEvent("serviceworker");
+    const extensionId = new URL(serviceWorker.url()).host;
+    const popup = await context.newPage();
+    await popup.goto(`chrome-extension://${extensionId}/popup.html`);
+
+    const first = await popup.evaluate(
+      async (value) =>
+        globalThis.chrome.runtime.sendMessage({ type: "capture.queue.v1", snapshot: value }),
+      snapshot,
+    );
+    expect(first).toMatchObject({ success: true, type: "capture.queued.v1", outboxCount: 1 });
+    const current = await popup.evaluate(async () => {
+      const values = await globalThis.chrome.storage.local.get("coredrill.extension.state.v1");
+      return values["coredrill.extension.state.v1"];
+    });
+    await popup.evaluate(async (state) => {
+      await globalThis.chrome.storage.local.set({
+        "coredrill.extension.state.v1": {
+          specVersion: 1,
+          nextSequence: state.nextSequence,
+          outbox: state.outbox,
+        },
+      });
+    }, current);
+    const migratedStatus = await popup.evaluate(async () =>
+      globalThis.chrome.runtime.sendMessage({ type: "outbox.status.v2" }),
+    );
+    expect(migratedStatus).toMatchObject({
+      success: true,
+      type: "outbox.status.v2",
+      outboxCount: 1,
+    });
+    const before = await popup.evaluate(async () => {
+      const values = await globalThis.chrome.storage.local.get("coredrill.extension.state.v1");
+      return values["coredrill.extension.state.v1"];
+    });
+    expect(before).toMatchObject({
+      specVersion: 2,
+      outbox: { items: [{ attemptCount: 0 }] },
+      retry: { items: [{ lastAttemptAt: null, lastErrorCode: null }] },
+    });
+
+    const quotaUse = await popup.evaluate(async () => {
+      const quotaBytes = 10 * 1024 * 1024;
+      const currentBytes = await globalThis.chrome.storage.local.getBytesInUse(null);
+      const fillLength = Math.max(1, quotaBytes - currentBytes - 64 * 1024);
+      await globalThis.chrome.storage.local.set({ pex003QuotaFill: "q".repeat(fillLength) });
+      return {
+        quotaBytes,
+        usedBytes: await globalThis.chrome.storage.local.getBytesInUse(null),
+      };
+    });
+    expect(quotaUse.usedBytes).toBeGreaterThan(quotaUse.quotaBytes - 96 * 1024);
+
+    const paddedSnapshot = {
+      ...snapshot,
+      url: "https://jobs.example.test/openings/storage-failure",
+      canonicalUrl: "https://jobs.example.test/openings/storage-failure",
+      pageTitle: "Storage failure witness",
+      jsonLd: [
+        {
+          "@context": "https://schema.org",
+          "@type": "JobPosting",
+          title: "Storage failure witness",
+          description: "x".repeat(256 * 1024),
+        },
+      ],
+    };
+    const rejected = await popup.evaluate(
+      async (value) =>
+        globalThis.chrome.runtime.sendMessage({ type: "capture.queue.v1", snapshot: value }),
+      paddedSnapshot,
+    );
+    expect(rejected).toMatchObject({
+      success: false,
+      type: "extension.error.v1",
+      code: "storage_failed",
+    });
+
+    const after = await popup.evaluate(async () => {
+      const values = await globalThis.chrome.storage.local.get("coredrill.extension.state.v1");
+      return values["coredrill.extension.state.v1"];
+    });
+    expect(after).toEqual(before);
+    await popup.evaluate(async () => globalThis.chrome.storage.local.remove("pex003QuotaFill"));
+    const status = await popup.evaluate(async () =>
+      globalThis.chrome.runtime.sendMessage({ type: "outbox.status.v2" }),
+    );
+    expect(status).toMatchObject({
+      success: true,
+      type: "outbox.status.v2",
+      outboxCount: 1,
+    });
+    console.info(
+      `PEX003_STORAGE_FAILURE_PROOF ${JSON.stringify({
+        browser: context.browser()?.version(),
+        originalOutboxCount: before.outbox.items.length,
+        rejectedCode: rejected.code,
+        retainedAfterFailure: true,
       })}`,
     );
   } finally {

@@ -12,6 +12,7 @@ export type ExtensionRequest =
   | { readonly type: "capture.queue.v1"; readonly snapshot: unknown }
   | { readonly type: "capture.queue-draft.v1"; readonly draft: unknown }
   | { readonly type: "outbox.status.v1" }
+  | { readonly type: "outbox.status.v2" }
   | { readonly type: "outbox.export.v1" };
 
 export type ExtensionResponse =
@@ -38,6 +39,17 @@ export type ExtensionResponse =
       readonly outboxCount: number;
       readonly outboxBytes: number;
       readonly earliestExpiry?: string;
+    }
+  | {
+      readonly success: true;
+      readonly type: "outbox.status.v2";
+      readonly outboxCount: number;
+      readonly outboxBytes: number;
+      readonly earliestExpiry: string | null;
+      readonly expiringSoonCount: number;
+      readonly nextRetryAt: string | null;
+      readonly retryExhaustedCount: number;
+      readonly removedExpired: number;
     }
   | {
       readonly success: true;
@@ -81,6 +93,7 @@ export function parseExtensionRequest(input: unknown): ExtensionRequest | undefi
     (input["type"] === "capture.active-tab.v1" ||
       input["type"] === "capture.active-tab.v2" ||
       input["type"] === "outbox.status.v1" ||
+      input["type"] === "outbox.status.v2" ||
       input["type"] === "outbox.export.v1") &&
     Object.keys(input).length === 1
   ) {
@@ -153,6 +166,28 @@ export function isExtensionResponse(input: unknown): input is ExtensionResponse 
       isCount(input["outboxCount"]) &&
       isCount(input["outboxBytes"]) &&
       (input["earliestExpiry"] === undefined || isInstant(input["earliestExpiry"]))
+    );
+  }
+  if (input["type"] === "outbox.status.v2") {
+    return (
+      hasExactKeys(input, [
+        "success",
+        "type",
+        "outboxCount",
+        "outboxBytes",
+        "earliestExpiry",
+        "expiringSoonCount",
+        "nextRetryAt",
+        "retryExhaustedCount",
+        "removedExpired",
+      ]) &&
+      isCount(input["outboxCount"]) &&
+      isCount(input["outboxBytes"]) &&
+      (input["earliestExpiry"] === null || isInstant(input["earliestExpiry"])) &&
+      isCount(input["expiringSoonCount"]) &&
+      (input["nextRetryAt"] === null || isInstant(input["nextRetryAt"])) &&
+      isCount(input["retryExhaustedCount"]) &&
+      isCount(input["removedExpired"])
     );
   }
   if (input["type"] === "outbox.export.v1") {

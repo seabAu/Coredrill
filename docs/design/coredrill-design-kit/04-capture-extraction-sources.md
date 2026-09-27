@@ -51,6 +51,17 @@ V1 validates strict object shapes and safe HTTP(S) source URLs, and caps the UTF
 
 `CAP-005` makes candidate reconciliation explicit before approved extractors arrive. Trusted existing candidates and untrusted incoming proposals are separate inputs; an incoming proposal cannot self-declare a durable confirmation. Every candidate is revalidated and retained, normalized JSON values are compared canonically, and differing values produce a bounded unresolved `FieldConflictV1`. A single trusted existing confirmation always remains selected. Otherwise user-authored evidence ranks above API/JSON-LD, selector, readability, heuristic, and LLM evidence, with confidence/time/ID used only for deterministic ties; this selection is a review suggestion, never confirmation or an automatic entity write. Ambiguous confirmation state, reused IDs, invalid conflict IDs, or an oversized conflict fails closed.
 
+`PEX-003` retains `CaptureEnvelopeV1` and `OutboxStateV1` while adding strict
+per-envelope retry metadata in the extension's private storage aggregate.
+The schedule is deterministic, bounded, and validated against the exact
+checksummed outbox membership. A pull can offer only a due item with fewer
+than ten attempts; successful acknowledgement must match the offered envelope
+identity, checksum, content hash, nonce, and sequence before outbox and retry
+facts are removed together. Lost acknowledgement, full browser restart, and a
+rejected storage write leave the item available for an idempotent later pull
+or checksummed export. Expired records are the only non-acknowledgement cleanup
+path and are pruned from both structures with an explicit removed count.
+
 ## Extraction result
 
 ```ts

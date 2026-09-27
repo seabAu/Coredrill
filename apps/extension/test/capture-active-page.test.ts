@@ -118,6 +118,9 @@ describe("extension message boundary", () => {
     expect(parseExtensionRequest({ type: "outbox.export.v1" })).toEqual({
       type: "outbox.export.v1",
     });
+    expect(parseExtensionRequest({ type: "outbox.status.v2" })).toEqual({
+      type: "outbox.status.v2",
+    });
   });
 
   it("rejects response impostors and unexpected properties", () => {
@@ -152,6 +155,32 @@ describe("extension message boundary", () => {
         bytes: 2,
       }),
     ).toBe(true);
+    expect(
+      isExtensionResponse({
+        success: true,
+        type: "outbox.status.v2",
+        outboxCount: 1,
+        outboxBytes: 2048,
+        earliestExpiry: "2026-08-31T17:00:00.000Z",
+        expiringSoonCount: 1,
+        nextRetryAt: "2026-08-24T18:00:05.000Z",
+        retryExhaustedCount: 0,
+        removedExpired: 0,
+      }),
+    ).toBe(true);
+    expect(
+      isExtensionResponse({
+        success: true,
+        type: "outbox.status.v2",
+        outboxCount: 1,
+        outboxBytes: 2048,
+        earliestExpiry: null,
+        expiringSoonCount: 0,
+        nextRetryAt: "immediately",
+        retryExhaustedCount: 0,
+        removedExpired: 0,
+      }),
+    ).toBe(false);
   });
 
   it("accepts only the exact top-level non-incognito hosted-app sender", () => {

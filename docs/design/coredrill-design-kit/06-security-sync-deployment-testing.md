@@ -42,6 +42,18 @@ Chrome recommends minimal permissions, strict externally-connectable origins, an
 
 The Phase 0 transfer proof requires sender origin and URL to agree with the single reserved HTTPS app origin, a top-level ordinary tab, strict request/response contracts, bounded messages, and an exact extension ID on receipt. SQLite commits the complete validated envelope before acknowledgement. A dropped acknowledgement retries the same item; exact duplicates are acknowledged idempotently, while ID/hash/nonce/sequence collisions fail as replay conflicts. Wrong origins, child/opaque frames, extension/native senders, oversized/extra-field messages, wrong IDs, changed checksums, expired captures, and acknowledgement replays are rejected. Firefox adds no content script or externally-connectable match and uses explicit checksummed JSON export/import.
 
+`PEX-003` persists exact retry timestamps and stable error codes beside each
+outbox item, validates one-to-one membership, and caps deterministic
+exponential retries at ten attempts. The oldest due, non-exhausted item is
+offered without letting an exhausted item block the queue. State is written
+before an offer is returned; a failed browser-storage write returns a typed
+error without acknowledging or mutating the previously durable value. Exact
+acknowledgement removes both records, while expiry pruning is separately
+counted and the panel warns within 24 hours with checksummed export available.
+Persistent-browser-profile restart and real extension-storage quota pressure
+prove recovery without adding permissions, content scripts, remote code,
+secrets, navigation observation, or a full vault.
+
 ### Local fetch/SSRF
 
 Any URL fetcher enforces scheme/port, DNS and redirect revalidation, private/link-local/metadata IP blocks, size/time/type limits, and approved connector domains. Browser extension does not expose a general fetch oracle to pages.

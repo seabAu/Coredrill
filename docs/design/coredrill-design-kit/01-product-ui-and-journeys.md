@@ -223,6 +223,18 @@ adds edits and the note as separate provisional `user` candidates with no
 only the retained snapshot, performs no source fetch, and adds no permission,
 navigation observation, trust promotion, or automatic submission behavior.
 
+`PEX-003` makes the queued state durable and recoverable without turning the
+extension into a second vault. Versioned retry metadata stores the last
+attempt, next eligible attempt, and stable pending-error fact beside each
+checksummed item. Pulls use deterministic exponential backoff from five
+seconds to five minutes and stop after ten automatic attempts, while another
+eligible item can continue instead of being blocked. The panel shows the
+earliest expiry, next retry, a 24-hour expiry warning, exhausted-retry recovery
+copy, and the existing checksummed export. Exact acknowledgement removes the
+item and its retry record; storage rejection leaves the previously durable
+state unchanged, and expiry pruning is reported rather than presented as an
+acknowledgement.
+
 ## Mobile/PWA experience
 
 The hosted PWA is responsive and can act as a mobile-local vault, but it is a different device vault until sync exists. The bottom navigation is Home, Pipeline, Add, Documents, and More. Mobile supports:

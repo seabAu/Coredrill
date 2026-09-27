@@ -39,3 +39,23 @@ export {
   type TransferOfferV1,
   type TransferPullRequestV1,
 } from "./transfer.js";
+
+export {
+  OUTBOX_RETRY_ITEM_SPEC_VERSION,
+  OUTBOX_RETRY_POLICY,
+  OUTBOX_RETRY_SPEC_VERSION,
+  acknowledgeScheduledOutboxTransfer,
+  createOutboxRetryState,
+  describeOutboxLifecycle,
+  prepareNextScheduledOutboxTransfer,
+  pruneExpiredOutboxLifecycle,
+  safeParseOutboxRetryState,
+  synchronizeOutboxRetryState,
+  type AcknowledgeScheduledTransferResult,
+  type OutboxLifecycleSummaryV1,
+  type OutboxRetryErrorCode,
+  type OutboxRetryItemV1,
+  type OutboxRetryStateV1,
+  type OutboxRetryValidationResult,
+  type PrepareScheduledTransferResult,
+} from "./retry.js";
