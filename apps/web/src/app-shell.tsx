@@ -5,6 +5,7 @@ import {
   CaptureInboxReview,
   ConnectorRegistrySettings,
   deriveBrowserExportReminder,
+  DocumentsWorkspace,
   HomeDashboard,
   JobWorkspaceContent,
   JobWorkspaceFrame,
@@ -30,6 +31,7 @@ import {
   type CaptureInboxPreviewItem,
   type CaptureInboxReviewAction,
   type DensityMode,
+  type DocumentsWorkspaceModel,
   type HomeAgendaItem,
   type HomeAttentionItem,
   type HomeDashboardActionId,
@@ -94,6 +96,7 @@ import {
   type UpdateCareerStoryInput,
   type UpdateAnswerLibraryEntryInput,
   type DeleteVaultInput,
+  type DocumentWorkspaceItemDto,
   type VaultDeletionPreviewDto,
   type VaultDeletionResultDto,
 } from "@coredrill/application";
@@ -179,6 +182,8 @@ interface AppShellCatalogState {
   readonly careerProfileEntryCount: number;
   readonly careerProfileProposalCount: number;
   readonly density: DensityMode;
+  readonly documentCount: number;
+  readonly documentsLoaded: boolean;
   readonly homeMode: HomeDashboardModel["state"];
   readonly homeSnapshotVisible: boolean;
   readonly lastActivity: string;
@@ -1730,6 +1735,10 @@ const AppShellCatalog = () => {
   >(null);
   const [vaultDeletionSubmitCount, setVaultDeletionSubmitCount] = useState(0);
   const [networkInteractionDraftCount, setNetworkInteractionDraftCount] = useState(0);
+  const [documents, setDocuments] = useState<readonly DocumentWorkspaceItemDto[]>([]);
+  const [documentsLoaded, setDocumentsLoaded] = useState(false);
+  const [documentsLoading, setDocumentsLoading] = useState(false);
+  const [documentsError, setDocumentsError] = useState<string | null>(null);
   const [careerProfileEntries, setCareerProfileEntries] = useState<
     readonly CareerProfileEntryDto[]
   >([]);
@@ -2184,6 +2193,37 @@ const AppShellCatalog = () => {
       });
   }, [activeDestination, careerProfileLoaded, careerProfileLoading]);
 
+  useEffect(() => {
+    if (activeDestination !== "documents" || documentsLoaded || documentsLoading) return;
+
+    setDocumentsLoading(true);
+    setDocumentsError(null);
+    void globalThis.coredrillStorageSpike
+      .listDocumentsWorkspace()
+      .then((result) => {
+        if (result.ok) {
+          setDocuments(result.value);
+          setLastActivity(
+            `Loaded ${String(result.value.length)} versioned local document${
+              result.value.length === 1 ? "" : "s"
+            }.`,
+          );
+        } else {
+          setDocumentsError(result.error.message);
+          setLastActivity(result.error.message);
+        }
+      })
+      .catch(() => {
+        const message = "The local Documents workspace could not be loaded.";
+        setDocumentsError(message);
+        setLastActivity(message);
+      })
+      .finally(() => {
+        setDocumentsLoaded(true);
+        setDocumentsLoading(false);
+      });
+  }, [activeDestination, documentsLoaded, documentsLoading]);
+
   const saveCareerProfileEntry = async (input: CreateManualCareerProfileEntryInput) => {
     const result = await globalThis.coredrillStorageSpike.createManualCareerProfileEntry(input);
     if (result.ok) {
@@ -2318,6 +2358,8 @@ const AppShellCatalog = () => {
             0,
           ),
           density: appearance.density,
+          documentCount: documents.length,
+          documentsLoaded,
           homeMode: appearance.homeMode,
           homeSnapshotVisible,
           lastActivity,
@@ -2358,6 +2400,8 @@ const AppShellCatalog = () => {
     captureDialogMode,
     careerProfileEntries.length,
     careerProfileImports,
+    documents.length,
+    documentsLoaded,
     browserStorageEnvironment,
     exportReminder.state,
     homeSnapshotVisible,
@@ -3689,6 +3733,20 @@ const AppShellCatalog = () => {
             onMarkAnswerUsed={markAnswerLibraryEntryUsed}
             onUpdateAnswer={updateAnswerLibraryEntry}
             onUpdateStory={updateCareerStory}
+          />
+        ) : activeDestination === "documents" ? (
+          <DocumentsWorkspace
+            model={
+              {
+                items: documents,
+                loading: documentsLoading,
+                error: documentsError,
+              } satisfies DocumentsWorkspaceModel
+            }
+            onOpenDocument={(document) => {
+              window.history.pushState(null, "", `/documents/${document.id}`);
+              setLastActivity(`Opened local document: ${document.title}.`);
+            }}
           />
         ) : activeDestination === "network" ? (
           <NetworkWorkspace

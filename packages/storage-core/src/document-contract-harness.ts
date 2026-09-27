@@ -11,6 +11,7 @@ import { PHASE_1_REPOSITORY_CONTRACT_MANIFEST } from "./repository-contract-mani
 import {
   DocumentRepositoryConflictError,
   createDocumentRepositories,
+  createDocumentWorkspaceRepository,
   createSubmittedSnapshotRepository,
 } from "./document-repositories.js";
 import { createPipelineRepositories } from "./pipeline-repositories.js";
@@ -575,6 +576,31 @@ export const createDocumentRepositoryContractSuite = (
             submitted.items[0]?.contentId === ATTACHMENT_HASH &&
             submitted.items[1]?.documentVersionId === IDS.answerVersion,
           "Exact submitted file and answer identities did not round-trip.",
+        );
+        const workspace = await createDocumentWorkspaceRepository(database).listActive();
+        const derivativeView = workspace.find(({ id }) => id === IDS.derivativeDocument);
+        const answerView = workspace.find(({ id }) => id === IDS.answerDocument);
+        assertContract(
+          workspace.length === 4 &&
+            derivativeView?.lineageRole === "job_derivative" &&
+            derivativeView.baseDocumentTitle === "Reusable resume base" &&
+            derivativeView.templateDocumentTitle === "Resume template" &&
+            derivativeView.relatedJob?.id === IDS.job &&
+            derivativeView.latestVersion?.id === IDS.derivativeVersion &&
+            derivativeView.searchText.includes("Exact submitted content") &&
+            derivativeView.exportStatus === "exported" &&
+            derivativeView.submission?.versionId === IDS.derivativeVersion &&
+            derivativeView.submission.versionNumber === 1 &&
+            derivativeView.submission.format === "file",
+          "The Documents workspace did not retain derivative, job, version, export, and submission metadata.",
+        );
+        assertContract(
+          answerView?.kind === "application_answer" &&
+            answerView.relatedJob?.id === IDS.job &&
+            answerView.submission?.versionId === IDS.answerVersion &&
+            answerView.submission.role === "answer" &&
+            answerView.submission.format === "plain_text",
+          "The Documents workspace did not retain the exact submitted answer metadata.",
         );
 
         await expectFailure(

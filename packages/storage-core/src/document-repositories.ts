@@ -1,4 +1,5 @@
 import type { JsonValue } from "@coredrill/contracts";
+import type { DocumentWorkspaceItemDto } from "@coredrill/application";
 import { entityId, instant, type EntityId, type Instant } from "@coredrill/domain";
 
 import { auditTimestamps } from "./audit-integrity.js";
@@ -138,6 +139,35 @@ interface SubmittedSnapshotItemRow extends QueryRow {
   readonly attachment_purpose: string | null;
   readonly sort_order: number;
   readonly created_at: string;
+}
+
+interface DocumentWorkspaceRow extends QueryRow {
+  readonly document_id: string;
+  readonly document_kind: string;
+  readonly document_title: string;
+  readonly document_updated_at: string;
+  readonly latest_version_id: string | null;
+  readonly latest_version_number: number | null;
+  readonly latest_version_label: string | null;
+  readonly latest_version_created_at: string | null;
+  readonly latest_content_plain: string | null;
+  readonly linked_evidence_text: string;
+  readonly lineage_role: string | null;
+  readonly base_document_id: string | null;
+  readonly base_document_title: string | null;
+  readonly template_document_id: string | null;
+  readonly template_document_title: string | null;
+  readonly related_job_id: string | null;
+  readonly related_job_title: string | null;
+  readonly related_company_name: string | null;
+  readonly export_attachment_count: number;
+  readonly submitted_application_id: string | null;
+  readonly submitted_version_id: string | null;
+  readonly submitted_version_number: number | null;
+  readonly submitted_at: string | null;
+  readonly submitted_channel: string | null;
+  readonly submitted_role: string | null;
+  readonly submitted_format: string | null;
 }
 
 interface LatestVersionRow extends QueryRow {
@@ -382,6 +412,108 @@ const mapSubmittedSnapshotItem = (row: SubmittedSnapshotItemRow): SubmittedSnaps
     sortOrder: nonnegativeInteger(row.sort_order, "Stored snapshot item sort order"),
     createdAt: instant(row.created_at),
   });
+
+const mapDocumentWorkspaceItem = (row: DocumentWorkspaceRow): DocumentWorkspaceItemDto => {
+  const hasLatestVersion = row.latest_version_id !== null;
+  if (
+    hasLatestVersion !== (row.latest_version_number !== null) ||
+    hasLatestVersion !== (row.latest_version_created_at !== null)
+  ) {
+    throw new Error("Stored latest document version is incomplete.");
+  }
+  const hasRelatedJob = row.related_job_id !== null;
+  if (
+    hasRelatedJob !== (row.related_job_title !== null) ||
+    (!hasRelatedJob && row.related_company_name !== null)
+  ) {
+    throw new Error("Stored related document job is incomplete.");
+  }
+  const hasSubmission = row.submitted_application_id !== null;
+  if (
+    hasSubmission !== (row.submitted_version_id !== null) ||
+    hasSubmission !== (row.submitted_version_number !== null) ||
+    hasSubmission !== (row.submitted_at !== null) ||
+    hasSubmission !== (row.submitted_role !== null) ||
+    hasSubmission !== (row.submitted_format !== null)
+  ) {
+    throw new Error("Stored document submission is incomplete.");
+  }
+  const relatedJob =
+    row.related_job_id === null || row.related_job_title === null
+      ? null
+      : Object.freeze({
+          id: entityId("job", row.related_job_id),
+          title: boundedText(row.related_job_title, "Stored related job title", 1_024, true),
+          companyName: optionalText(row.related_company_name, "Stored related company name", 512),
+        });
+  const latestVersion =
+    row.latest_version_id === null || row.latest_version_number === null
+      ? null
+      : Object.freeze({
+          id: entityId("document-version", row.latest_version_id),
+          versionNumber: positiveInteger(
+            row.latest_version_number,
+            "Stored latest document version number",
+          ),
+          label: optionalText(
+            row.latest_version_label,
+            "Stored latest document version label",
+            256,
+          ),
+        });
+  const submission =
+    row.submitted_application_id === null ||
+    row.submitted_version_id === null ||
+    row.submitted_version_number === null ||
+    row.submitted_at === null ||
+    row.submitted_role === null ||
+    row.submitted_format === null
+      ? null
+      : Object.freeze({
+          applicationId: entityId("application", row.submitted_application_id),
+          versionId: entityId("document-version", row.submitted_version_id),
+          versionNumber: positiveInteger(
+            row.submitted_version_number,
+            "Stored submitted document version number",
+          ),
+          submittedAt: instant(row.submitted_at),
+          channel: optionalText(row.submitted_channel, "Stored submission channel", 128),
+          role: submittedSnapshotItemRole(row.submitted_role),
+          format: submittedSnapshotFormat(row.submitted_format),
+        });
+  return Object.freeze({
+    id: entityId("document", row.document_id),
+    kind: documentKind(row.document_kind),
+    title: boundedText(row.document_title, "Stored document title", 512, true),
+    lineageRole: row.lineage_role === null ? null : documentLineageRole(row.lineage_role),
+    baseDocumentId:
+      row.base_document_id === null ? null : entityId("document", row.base_document_id),
+    baseDocumentTitle: optionalText(row.base_document_title, "Stored base document title", 512),
+    templateDocumentId:
+      row.template_document_id === null ? null : entityId("document", row.template_document_id),
+    templateDocumentTitle: optionalText(
+      row.template_document_title,
+      "Stored template document title",
+      512,
+    ),
+    relatedJob,
+    lastEditedAt: instant(row.latest_version_created_at ?? row.document_updated_at),
+    searchText: boundedText(
+      [row.latest_content_plain ?? "", row.linked_evidence_text]
+        .filter((value) => value.length > 0)
+        .join("\n"),
+      "Stored document search text",
+      2_200_001,
+    ),
+    latestVersion,
+    exportStatus:
+      nonnegativeInteger(row.export_attachment_count, "Stored export attachment count") > 0
+        ? "exported"
+        : "not_exported",
+    claimStatus: "not_evaluated",
+    submission,
+  });
+};
 
 export class DocumentRepository {
   public constructor(private readonly session: DatabaseSession) {}
@@ -827,6 +959,151 @@ export class SubmittedSnapshotRepository {
   }
 }
 
+export class DocumentWorkspaceRepository {
+  public constructor(private readonly session: DatabaseSession) {}
+
+  public async listActive(): Promise<readonly DocumentWorkspaceItemDto[]> {
+    const rows = await this.session.query<DocumentWorkspaceRow>(
+      sqlStatement(
+        `WITH ranked_version AS (
+           SELECT document_version.*,
+                  row_number() OVER (
+                    PARTITION BY document_version.document_id
+                    ORDER BY document_version.version_number DESC, document_version.id
+                  ) AS version_rank
+           FROM document_version
+         ),
+         ranked_submission AS (
+           SELECT submitted_snapshot.application_id,
+                  submitted_snapshot.submitted_at,
+                  submitted_snapshot.channel,
+                  application.job_id,
+                  submitted_snapshot_item.document_version_id,
+                  document_version.document_id,
+                  document_version.version_number,
+                  submitted_snapshot_item.role,
+                  submitted_snapshot_item.submission_format,
+                  row_number() OVER (
+                    PARTITION BY document_version.document_id
+                    ORDER BY submitted_snapshot.submitted_at DESC,
+                             submitted_snapshot.id,
+                             submitted_snapshot_item.sort_order
+                  ) AS submission_rank
+           FROM submitted_snapshot_item
+           INNER JOIN submitted_snapshot
+             ON submitted_snapshot.id = submitted_snapshot_item.submitted_snapshot_id
+           INNER JOIN application ON application.id = submitted_snapshot.application_id
+           INNER JOIN document_version
+             ON document_version.id = submitted_snapshot_item.document_version_id
+         ),
+         linked_evidence AS (
+           SELECT source_document_id AS document_id,
+                  substr(group_concat(search_text, ' '), 1, 200000) AS search_text
+           FROM (
+             SELECT source_document_id,
+                    organization || ' ' || role || ' ' || description AS search_text
+             FROM experience
+             WHERE source_document_id IS NOT NULL AND archived_at IS NULL
+             UNION ALL
+             SELECT source_document_id,
+                    institution || ' ' || credential || ' ' || coalesce(field, '') || ' ' || details
+             FROM education
+             WHERE source_document_id IS NOT NULL AND archived_at IS NULL
+             UNION ALL
+             SELECT source_document_id, name || ' ' || summary
+             FROM project
+             WHERE source_document_id IS NOT NULL AND archived_at IS NULL
+             UNION ALL
+             SELECT source_document_id,
+                    canonical_name || ' ' || coalesce(category, '') || ' ' || aliases_json
+             FROM skill
+             WHERE source_document_id IS NOT NULL AND archived_at IS NULL
+             UNION ALL
+             SELECT source_document_id, action || ' ' || result
+             FROM accomplishment
+             WHERE source_document_id IS NOT NULL AND archived_at IS NULL
+             UNION ALL
+             SELECT source_document_id, name || ' ' || issuer
+             FROM certification
+             WHERE source_document_id IS NOT NULL AND archived_at IS NULL
+             UNION ALL
+             SELECT source_document_id, title || ' ' || coalesce(publisher, '') || ' ' || summary
+             FROM publication
+             WHERE source_document_id IS NOT NULL AND archived_at IS NULL
+             UNION ALL
+             SELECT source_document_id, organization || ' ' || role || ' ' || description
+             FROM volunteer_experience
+             WHERE source_document_id IS NOT NULL AND archived_at IS NULL
+             UNION ALL
+             SELECT source_document_id, title || ' ' || situation || ' ' || action || ' ' || result
+             FROM anecdote
+             WHERE source_document_id IS NOT NULL AND archived_at IS NULL
+           ) AS evidence_search
+           GROUP BY source_document_id
+         )
+         SELECT document.id AS document_id,
+                document.kind AS document_kind,
+                document.title AS document_title,
+                document.updated_at AS document_updated_at,
+                latest.id AS latest_version_id,
+                latest.version_number AS latest_version_number,
+                latest.label AS latest_version_label,
+                latest.created_at AS latest_version_created_at,
+                latest.content_plain AS latest_content_plain,
+                coalesce(linked_evidence.search_text, '') AS linked_evidence_text,
+                document_lineage.role AS lineage_role,
+                document_lineage.base_document_id,
+                base_document.title AS base_document_title,
+                document_lineage.template_document_id,
+                template_document.title AS template_document_title,
+                job.id AS related_job_id,
+                job.title AS related_job_title,
+                company.canonical_name AS related_company_name,
+                (
+                  SELECT count(*)
+                  FROM document_version_attachment
+                  WHERE document_version_attachment.document_version_id = latest.id
+                    AND document_version_attachment.purpose GLOB 'export.*'
+                ) AS export_attachment_count,
+                submitted.application_id AS submitted_application_id,
+                submitted.document_version_id AS submitted_version_id,
+                submitted.version_number AS submitted_version_number,
+                submitted.submitted_at,
+                submitted.channel AS submitted_channel,
+                submitted.role AS submitted_role,
+                submitted.submission_format AS submitted_format
+         FROM document
+         LEFT JOIN ranked_version AS latest
+           ON latest.document_id = document.id AND latest.version_rank = 1
+         LEFT JOIN linked_evidence ON linked_evidence.document_id = document.id
+         LEFT JOIN document_lineage ON document_lineage.document_id = document.id
+         LEFT JOIN document AS base_document
+           ON base_document.id = document_lineage.base_document_id
+         LEFT JOIN document AS template_document
+           ON template_document.id = document_lineage.template_document_id
+         LEFT JOIN ranked_submission AS submitted
+           ON submitted.document_id = document.id AND submitted.submission_rank = 1
+         LEFT JOIN job ON job.id = coalesce(
+           document_lineage.job_id,
+           (
+             SELECT document_job_link.job_id
+             FROM document_job_link
+             WHERE document_job_link.document_id = document.id
+             ORDER BY document_job_link.created_at DESC,
+                      document_job_link.job_id
+             LIMIT 1
+           ),
+           submitted.job_id
+         )
+         LEFT JOIN company ON company.id = job.company_id
+         WHERE document.archived_at IS NULL
+         ORDER BY coalesce(latest.created_at, document.updated_at) DESC, document.id`,
+      ),
+    );
+    return Object.freeze(rows.map(mapDocumentWorkspaceItem));
+  }
+}
+
 export interface DocumentRepositories {
   readonly attachments: AttachmentManifestRepository;
   readonly documents: DocumentRepository;
@@ -845,3 +1122,7 @@ export const createDocumentRepositories = (session: DatabaseSession): DocumentRe
 export const createSubmittedSnapshotRepository = (
   database: DatabasePort,
 ): SubmittedSnapshotRepository => new SubmittedSnapshotRepository(database);
+
+export const createDocumentWorkspaceRepository = (
+  session: DatabaseSession,
+): DocumentWorkspaceRepository => new DocumentWorkspaceRepository(session);

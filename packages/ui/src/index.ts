@@ -4,6 +4,7 @@ export * from "./capture-inbox-review.js";
 export * from "./career-profile-workspace.js";
 export * from "./contrast.js";
 export * from "./connector-registry-settings.js";
+export * from "./documents-workspace.js";
 export * from "./first-run.js";
 export * from "./foundations.js";
 export * from "./home-dashboard.js";

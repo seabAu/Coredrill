@@ -6,6 +6,7 @@ import {
   createCareerProfileOperations,
   createCareerStoryOperations,
   createAnswerLibraryOperations,
+  createDocumentsWorkspaceOperations,
   createDefaultBrowserExportReminderPreference,
   createResumeImportOperations,
   createResumeImportReviewOperations,
@@ -36,6 +37,8 @@ import {
   type CreateManualCareerProfilePortInput,
   type DeleteVaultPortInput,
   type DeleteVaultInput,
+  type DocumentWorkspaceItemDto,
+  type DocumentsWorkspacePort,
   type PreviewVaultDeletionPortInput,
   type QueueResumeImportInput,
   type ResolveResumeImportGroupInput,
@@ -73,6 +76,7 @@ import {
   createCareerRepositories,
   createCareerStoryRepository,
   createAnswerLibraryRepository,
+  createDocumentWorkspaceRepository,
   createResumeImportRepository,
   createResumeImportResolutionRepository,
   createPhase1RepositoryContractSuite,
@@ -154,6 +158,7 @@ import statusEventUpdateGuardMigrationSql from "../../../migrations/0043_status_
 import interactionUpdateGuardMigrationSql from "../../../migrations/0044_interaction_update_guard.sql?raw";
 import attachmentManifestUpdateGuardMigrationSql from "../../../migrations/0045_attachment_manifest_update_guard.sql?raw";
 import { createExtensionInbox, type ExtensionInboxApi } from "./extension-transfer.js";
+import { installDocumentsWorkspaceReferenceFixture } from "./documents-reference-fixture.js";
 import {
   runJobSearchBenchmark,
   runStorageBenchmark,
@@ -357,6 +362,8 @@ export interface CoredrillStorageSpikeApi {
     input: MarkAnswerLibraryEntryUsedInput,
   ): Promise<ApplicationResult<AnswerLibraryEntryDto>>;
   listAnswerLibraryEntries(): Promise<ApplicationResult<readonly AnswerLibraryEntryDto[]>>;
+  listDocumentsWorkspace(): Promise<ApplicationResult<readonly DocumentWorkspaceItemDto[]>>;
+  installDocumentsWorkspaceReferenceFixture(): Promise<void>;
   createManualCareerProfileEntry(
     input: CreateManualCareerProfileEntryInput,
   ): Promise<ApplicationResult<CareerProfileEntryDto>>;
@@ -1146,6 +1153,18 @@ const CAREER_ENTITY_TYPE_BY_KIND = Object.freeze({
 const careerProfileOperations = createCareerProfileOperations({
   careerProfile: careerProfilePort,
   createId: (kind) => generateEntityId(CAREER_ENTITY_TYPE_BY_KIND[kind]),
+});
+
+const documentsWorkspacePort: DocumentsWorkspacePort = Object.freeze({
+  listDocuments: async () => {
+    const client = await getDatabase();
+    await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
+    return createDocumentWorkspaceRepository(client).listActive();
+  },
+});
+
+const documentsWorkspaceOperations = createDocumentsWorkspaceOperations({
+  documents: documentsWorkspacePort,
 });
 
 const getCareerStoryRepository = async () => {
@@ -2385,6 +2404,16 @@ const api: CoredrillStorageSpikeApi = {
     careerStoryOperations.listStoriesQuery.execute(undefined, careerProfileOperationContext()),
   listAnswerLibraryEntries: async () =>
     answerLibraryOperations.listAnswersQuery.execute(undefined, careerProfileOperationContext()),
+  listDocumentsWorkspace: async () =>
+    documentsWorkspaceOperations.listDocumentsQuery.execute(
+      undefined,
+      careerProfileOperationContext(),
+    ),
+  installDocumentsWorkspaceReferenceFixture: async () => {
+    const client = await getDatabase();
+    await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
+    await installDocumentsWorkspaceReferenceFixture(client, await getAttachmentStore());
+  },
   listPendingResumeImports: async () =>
     resumeImportOperations.listPendingQuery.execute(undefined, careerProfileOperationContext()),
   queueResumeImport: async (input) => {

@@ -326,6 +326,8 @@ Views: All, Resumes, Cover letters, Answers, Templates, Submitted. Each item sho
 
 `DOC-001` establishes the durable distinctions needed by these views: each document may be classified once as a reusable base, template, or job-specific derivative, and every submitted item retains its exact immutable document version plus content-addressed file identity when a file was used. It does not render the Documents views or invoke Mark Applied; those remain `DOC-002` and `DOC-007`.
 
+`DOC-002` renders the six accepted views from durable local SQLite records. Cards name the current immutable version, base/template/job lineage, related job and company, last edit, latest-version export availability, and the exact older submitted version when the current draft has advanced. Search covers titles, lineage, jobs, current document text, and Career Profile evidence whose provenance points to the document. Until the claim ledger exists, every card says **Claims not evaluated** rather than implying that claims are resolved. The surface is explicitly local and read-only; it adds no account, network request, AI dependency, editing, generation, export orchestration, or Mark Applied action.
+
 ### Network
 
 Tabs: Companies, Contacts, Interactions.

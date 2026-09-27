@@ -1,5 +1,21 @@
 /** Use-case orchestration and query DTOs over domain ports. */
 export {
+  DOCUMENTS_WORKSPACE_VIEW_IDS,
+  createDocumentsWorkspaceOperations,
+  validateDocumentWorkspaceItems,
+  type DocumentWorkspaceClaimStatus,
+  type DocumentWorkspaceExportStatus,
+  type DocumentWorkspaceItemDto,
+  type DocumentWorkspaceJobDto,
+  type DocumentWorkspaceKind,
+  type DocumentWorkspaceLineageRole,
+  type DocumentWorkspaceSubmissionDto,
+  type DocumentWorkspaceVersionDto,
+  type DocumentsWorkspaceOperations,
+  type DocumentsWorkspacePort,
+  type DocumentsWorkspaceViewId,
+} from "./documents-workspace.js";
+export {
   APPLICATION_QUESTION_HANDLING,
   APPLICATION_QUESTION_KINDS,
   APPLICATION_QUESTION_POLICY_VERSION,

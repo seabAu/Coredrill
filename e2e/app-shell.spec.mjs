@@ -2093,6 +2093,151 @@ test("resume conflicts expose source excerpts and merge without overwriting user
   expect(externalRequests).toEqual([]);
 });
 
+test("Documents exposes six durable local views with exact submitted-version lineage", async ({
+  page,
+}, testInfo) => {
+  const externalRequests = [];
+  page.on("request", (request) => {
+    if (!request.url().startsWith("http://127.0.0.1:4178/")) externalRequests.push(request.url());
+  });
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await openShell(page);
+  await page.evaluate(() =>
+    globalThis.coredrillStorageSpike.installDocumentsWorkspaceReferenceFixture(),
+  );
+  await page
+    .getByRole("navigation", { name: "Primary" })
+    .getByRole("link", { name: "Documents" })
+    .click();
+
+  const workspace = page.locator(".cd-documents-workspace");
+  const panel = workspace.getByRole("tabpanel");
+  await expect(page.getByTestId("page-title")).toHaveText("Documents");
+  await expect(panel).toHaveAttribute("data-documents-active-view", "all");
+  await expect(panel.locator(".cd-document-card")).toHaveCount(6);
+  await expect(workspace).toContainText("Nothing here uploads or submits a document");
+  await expect(workspace.getByLabel("Documents capability boundary")).toContainText(
+    "Local read-only view",
+  );
+
+  for (const [label, count] of [
+    ["All", 6],
+    ["Resumes", 3],
+    ["Cover letters", 2],
+    ["Answers", 1],
+    ["Templates", 1],
+    ["Submitted", 3],
+  ]) {
+    await expect(workspace.getByRole("tab", { name: new RegExp(`^${label}`, "u") })).toContainText(
+      String(count),
+    );
+  }
+
+  const resumeCard = panel.locator(".cd-document-card").filter({ hasText: "Northstar resume" });
+  await expect(resumeCard).toHaveCount(1);
+  await expect(resumeCard).toContainText("Job derivative");
+  await expect(resumeCard).toContainText("Base: Product operations base");
+  await expect(resumeCard).toContainText("Template: Concise resume template");
+  await expect(resumeCard).toContainText("Product Operations Lead");
+  await expect(resumeCard).toContainText("Northstar Health");
+  await expect(resumeCard).toContainText("Version 2");
+  await expect(resumeCard).toContainText("Export available");
+  await expect(resumeCard).toContainText("Claims not evaluated");
+  await expect(resumeCard).toContainText("Submitted version 1");
+  await expect(resumeCard).toContainText("exact file");
+
+  const allTab = workspace.getByRole("tab", { name: /^All/u });
+  const resumesTab = workspace.getByRole("tab", { name: /^Resumes/u });
+  const submittedTab = workspace.getByRole("tab", { name: /^Submitted/u });
+  await allTab.focus();
+  await allTab.press("ArrowRight");
+  await expect(resumesTab).toBeFocused();
+  await expect(resumesTab).toHaveAttribute("aria-selected", "true");
+  await expect(panel.locator(".cd-document-card")).toHaveCount(3);
+  await resumesTab.press("End");
+  await expect(submittedTab).toBeFocused();
+  await expect(submittedTab).toHaveAttribute("aria-selected", "true");
+  await expect(panel).toHaveAttribute("data-documents-active-view", "submitted");
+  await expect(panel.locator(".cd-document-card")).toHaveCount(3);
+  await expect(panel).toContainText("Northstar resume");
+  await expect(panel).toContainText("Northstar cover letter");
+  await expect(panel).toContainText("Why Northstar?");
+
+  await allTab.click();
+  await workspace
+    .getByRole("searchbox", { name: "Search documents" })
+    .fill("Concise resume template");
+  await expect(panel.locator(".cd-document-card")).toHaveCount(2);
+  await expect(panel).toContainText("Northstar resume");
+  await expect(panel).toContainText("Concise resume template");
+  const searchbox = workspace.getByRole("searchbox", { name: "Search documents" });
+  await searchbox.fill("post-submission notes");
+  await expect(panel.locator(".cd-document-card")).toHaveCount(1);
+  await expect(panel).toContainText("Northstar resume");
+  await searchbox.fill("Linked evidence search sentinel");
+  await expect(panel.locator(".cd-document-card")).toHaveCount(1);
+  await expect(panel).toContainText("Northstar resume");
+  await searchbox.fill("");
+
+  const stored = await page.evaluate(() =>
+    globalThis.coredrillStorageSpike.listDocumentsWorkspace(),
+  );
+  expect(stored).toMatchObject({ ok: true });
+  if (!stored.ok) throw new Error(stored.error.message);
+  expect(stored.value).toHaveLength(6);
+  const storedResume = stored.value.find(({ title }) => title === "Northstar resume");
+  expect(storedResume).toMatchObject({
+    lineageRole: "job_derivative",
+    exportStatus: "exported",
+    claimStatus: "not_evaluated",
+    latestVersion: { versionNumber: 2 },
+    submission: { versionNumber: 1, role: "resume", format: "file" },
+  });
+  expect(storedResume?.searchText).toContain("post-submission notes");
+  expect(storedResume?.searchText).toContain("Linked evidence search sentinel");
+  const proof = {
+    views: {
+      all: 6,
+      resumes: 3,
+      coverLetters: 2,
+      answers: 1,
+      templates: 1,
+      submitted: 3,
+    },
+    currentResumeVersion: storedResume?.latestVersion?.versionNumber,
+    submittedResumeVersion: storedResume?.submission?.versionNumber,
+    lineageRole: storedResume?.lineageRole,
+    exportStatus: storedResume?.exportStatus,
+    claimStatus: storedResume?.claimStatus,
+    contentSearch: true,
+    linkedEvidenceSearch: true,
+    accountRequired: false,
+    networkRequired: false,
+    aiRequired: false,
+  };
+  const proofPath = testInfo.outputPath("documents-workspace-proof.json");
+  await writeFile(proofPath, `${JSON.stringify(proof, null, 2)}\n`, "utf8");
+  await testInfo.attach("documents-workspace-proof.json", {
+    path: proofPath,
+    contentType: "application/json",
+  });
+
+  await page.setViewportSize({ width: 320, height: 900 });
+  expect(
+    await page.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+    })),
+  ).toEqual({ clientWidth: 320, scrollWidth: 320 });
+  await expect(workspace.getByRole("searchbox", { name: "Search documents" })).toBeVisible();
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await attachAxe(page, testInfo, "documents-workspace");
+  await attachAriaSnapshot(workspace, testInfo, "documents-workspace");
+  await attachProof(page, testInfo, "documents-workspace");
+  console.info(`DOC002_E2E_PROOF ${JSON.stringify({ ...proof, externalRequests: 0 })}`);
+  expect(externalRequests).toEqual([]);
+});
+
 test("compact rail keeps every destination and vault state named", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 800, height: 900 });
   await openShell(page, { health: "offline" });
