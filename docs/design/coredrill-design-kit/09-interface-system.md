@@ -407,6 +407,19 @@ States:
 
 The button never says “Apply” unless a future, separately designed autofill feature is active. Baseline labels are Capture job and Send to Workspace.
 
+`PEX-001` realizes this list as the immutable
+`PRODUCTION_EXTENSION_STATE_CATALOG_V1`. A strict assertion requires every
+reviewed action: selected-text/manual/close for unrecognized pages; explicit
+send for recognized pages; correction/manual review for needs-input;
+retry/export/open for queued work; the durable Inbox destination for
+transferred work; and exact temporary access plus manual fallback for
+permission-needed. `ProductionExtensionState` renders a named semantic
+section, available/unavailable boundaries, exact permission definition, a
+local-work note, and 44-pixel action targets that reflow inside the 320-pixel
+panel and remain visible in forced colors. State resolution and snapshot
+classification are pure and versioned; no catalog entry claims an application
+was submitted.
+
 ## 8. Network and AI preflight
 
 Before the first use of each provider/connector, show:

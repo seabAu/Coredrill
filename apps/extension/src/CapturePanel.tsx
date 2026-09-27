@@ -2,7 +2,16 @@ import { safeParsePageCaptureSnapshot, type PageCaptureSnapshot } from "@coredri
 import { useEffect, useState } from "react";
 import { browser } from "wxt/browser";
 
+import {
+  PRODUCTION_EXTENSION_STATE_CATALOG_V1,
+  ProductionExtensionState,
+  classifyCapturedPageV1,
+  resolveProductionExtensionStateV1,
+  type ProductionExtensionStateAction,
+  type ProductionExtensionStateKind,
+} from "./capture-state";
 import { isExtensionResponse, type ExtensionResponse } from "./messages";
+import { COREDRILL_PHASE0_APP_ORIGIN } from "./transfer-policy";
 
 interface OutboxSummary {
   readonly count: number;
@@ -31,6 +40,7 @@ async function sendRequest(message: unknown): Promise<ExtensionResponse> {
 export function CapturePanel(): React.JSX.Element {
   const [snapshot, setSnapshot] = useState<PageCaptureSnapshot>();
   const [outbox, setOutbox] = useState<OutboxSummary>({ count: 0, bytes: 0 });
+  const [captureState, setCaptureState] = useState<ProductionExtensionStateKind>();
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string>();
   const [error, setError] = useState<string>();
@@ -47,6 +57,16 @@ export function CapturePanel(): React.JSX.Element {
             ? {}
             : { earliestExpiry: response.earliestExpiry }),
         });
+        if (response.outboxCount > 0) {
+          setCaptureState(
+            resolveProductionExtensionStateV1({
+              specVersion: 1,
+              permission: "available",
+              recognition: "unrecognized",
+              transfer: "queued",
+            }),
+          );
+        }
       } else if (!response.success) {
         setError(response.message);
       }
@@ -63,10 +83,29 @@ export function CapturePanel(): React.JSX.Element {
     const response = await sendRequest({ type: "capture.active-tab.v1" });
     if (response.success && response.type === "capture.preview.v1") {
       const parsed = safeParsePageCaptureSnapshot(response.snapshot);
-      if (parsed.success) setSnapshot(parsed.data);
-      else setError("The capture preview failed validation.");
+      if (parsed.success) {
+        setSnapshot(parsed.data);
+        setCaptureState(
+          resolveProductionExtensionStateV1({
+            specVersion: 1,
+            permission: "available",
+            recognition: classifyCapturedPageV1(parsed.data),
+            transfer: "idle",
+          }),
+        );
+      } else setError("The capture preview failed validation.");
     } else if (!response.success) {
       setError(response.message);
+      if (response.code === "capture_permission_needed") {
+        setCaptureState(
+          resolveProductionExtensionStateV1({
+            specVersion: 1,
+            permission: "needed",
+            recognition: "unrecognized",
+            transfer: "idle",
+          }),
+        );
+      }
     }
     setBusy(false);
   };
@@ -80,10 +119,48 @@ export function CapturePanel(): React.JSX.Element {
     if (response.success && response.type === "capture.queued.v1") {
       setOutbox({ count: response.outboxCount, bytes: response.outboxBytes });
       setNotice(`Queued locally until ${new Date(response.expiresAt).toLocaleString()}.`);
+      setCaptureState(
+        resolveProductionExtensionStateV1({
+          specVersion: 1,
+          permission: "available",
+          recognition: "unrecognized",
+          transfer: "queued",
+        }),
+      );
     } else if (!response.success) {
       setError(response.message);
     }
     setBusy(false);
+  };
+
+  const openWorkspace = async (): Promise<void> => {
+    await browser.tabs.create({ url: `${COREDRILL_PHASE0_APP_ORIGIN}/pipeline?view=inbox` });
+  };
+
+  const handleStateAction = (action: ProductionExtensionStateAction): void => {
+    switch (action.id) {
+      case "capture-selected-text":
+      case "choose-page-text":
+      case "request-temporary-access":
+        void capture();
+        break;
+      case "capture-page-manually":
+      case "send-to-workspace":
+        void queue();
+        break;
+      case "export-capture":
+        void exportOutbox();
+        break;
+      case "retry-transfer":
+      case "open-workspace":
+      case "open-inbox":
+      case "continue-manually":
+        void openWorkspace();
+        break;
+      case "close":
+        window.close();
+        break;
+    }
   };
 
   const exportOutbox = async (): Promise<void> => {
@@ -126,18 +203,17 @@ export function CapturePanel(): React.JSX.Element {
         )}
       </section>
 
-      <button
-        className="secondary"
-        type="button"
-        disabled={busy || outbox.count === 0}
-        onClick={() => void exportOutbox()}
-      >
-        Export queued captures (.json)
-      </button>
-
-      <button className="primary" type="button" disabled={busy} onClick={() => void capture()}>
-        {busy ? "Working…" : "Capture active job page"}
-      </button>
+      {captureState === undefined ? (
+        <button className="primary" type="button" disabled={busy} onClick={() => void capture()}>
+          {busy ? "Working…" : "Capture active job page"}
+        </button>
+      ) : (
+        <ProductionExtensionState
+          busy={busy}
+          model={PRODUCTION_EXTENSION_STATE_CATALOG_V1[captureState]}
+          onAction={handleStateAction}
+        />
+      )}
 
       {snapshot === undefined ? (
         <section className="empty-state" aria-label="Capture preview">
@@ -164,9 +240,6 @@ export function CapturePanel(): React.JSX.Element {
             <span>Selected text</span>
             <p>{snapshot.selectedText ?? "None selected"}</p>
           </div>
-          <button className="secondary" type="button" disabled={busy} onClick={() => void queue()}>
-            Queue this capture
-          </button>
         </section>
       )}
 

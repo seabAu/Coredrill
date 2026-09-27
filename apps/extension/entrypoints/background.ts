@@ -107,9 +107,28 @@ async function readStoredState(): Promise<StoredStateReadResult> {
 async function captureActiveTab(): Promise<ExtensionResponse> {
   try {
     const tabs = await browser.tabs.query({ active: true, currentWindow: true });
-    const tabId = tabs[0]?.id;
-    if (tabId === undefined) {
+    const activeTab = tabs[0];
+    if (activeTab?.id === undefined) {
       return errorResponse("active_tab_missing", "No active browser tab is available.");
+    }
+    const tabId = activeTab.id;
+    if (activeTab.url === undefined) {
+      return errorResponse(
+        "capture_permission_needed",
+        "Temporary access to the current HTTP(S) page is needed before Coredrill can build a preview.",
+      );
+    }
+    let pageUrl: URL;
+    try {
+      pageUrl = new URL(activeTab.url);
+    } catch {
+      return errorResponse("capture_unavailable", "The active page URL is invalid.");
+    }
+    if (pageUrl.protocol !== "http:" && pageUrl.protocol !== "https:") {
+      return errorResponse(
+        "capture_unavailable",
+        "Coredrill captures only the HTTP(S) page you explicitly choose.",
+      );
     }
     const results = await browser.scripting.executeScript({
       target: { tabId },
@@ -123,10 +142,19 @@ async function captureActiveTab(): Promise<ExtensionResponse> {
       );
     }
     return { success: true, type: "capture.preview.v1", snapshot: parsed.data };
-  } catch {
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.includes("Selected text exceeds the capture boundary.")
+    ) {
+      return errorResponse(
+        "selected_text_too_large",
+        "The selected text is too large for one capture. Select a smaller job section and try again.",
+      );
+    }
     return errorResponse(
-      "capture_unavailable",
-      "Coredrill cannot capture this page. Open an HTTP(S) job page and invoke the extension again.",
+      "capture_permission_needed",
+      "Temporary access to the current HTTP(S) page is needed. Re-open Coredrill Capture from that page or continue manually.",
     );
   }
 }

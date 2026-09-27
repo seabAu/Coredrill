@@ -194,6 +194,21 @@ The action popup is intentionally small:
 
 No automatic capture on navigation. Incognito capture is off by default and never persisted unless the user explicitly enables and confirms it.
 
+`PEX-001` implements the six-state production-extension presentation as a
+strict version-1 catalog: not recognized, recognized, needs input, queued,
+transferred, and permission needed. Each state names what is and is not
+available, what remains local, and the bounded next actions required by the
+interface contract. Recognition requires a validated job-posting signal plus
+title and company; incomplete recognized evidence remains needs-input, and a
+generic page is never relabeled as recognized merely because it has a heading.
+Permission copy names temporary `activeTab` plus current-page scripting and
+the manual fallback without requesting site-wide access. The live panel uses
+the catalog for current preview, queue, and permission facts; the existing
+acknowledgement boundary can select the rendered transferred state when the
+later transfer slice supplies that fact. No Apply label, navigation capture,
+host-permission expansion, trusted-field promotion, or background page read is
+introduced.
+
 ## Mobile/PWA experience
 
 The hosted PWA is responsive and can act as a mobile-local vault, but it is a different device vault until sync exists. The bottom navigation is Home, Pipeline, Add, Documents, and More. Mobile supports:

@@ -158,6 +158,13 @@ Refresh never overwrites a confirmed field. It creates a new snapshot and a comp
 
 Capture only after the user clicks the extension or supplies content. This is a personal workflow, not an unattended crawler. Site-specific prohibitions still apply; the extension maintains a denylist/policy registry and shows manual-entry fallback.
 
+The `PEX-001` panel classifier treats only the already-validated current-page
+snapshot as input. A retained `JobPosting` signal with title and company is
+recognized; the same signal with either minimum field absent needs input; and
+the absence of that signal is unrecognized even if generic selector fallback
+found page text. This classification changes presentation only. It performs no
+fetch, source-policy bypass, candidate confirmation, or durable write.
+
 The shipped `XTR-003` baseline keeps this last-resort path pure, local, and bounded:
 
 - explicit selected text produces one high-confidence description candidate while retaining the exact selected string as raw evidence;

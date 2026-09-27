@@ -241,6 +241,15 @@ Security requirements:
 
 The Phase 0 `EXT-004` through `EXT-006` implementation proves this boundary without selecting a public product domain. Chromium's production test artifact permits only the reserved `https://app.coredrill.test` origin and requires matching sender origin, URL origin, top-level frame, ordinary tab, and non-incognito context. Pull increments the stored attempt before returning an offer; the web receiver revalidates the exact extension ID, request, envelope, checksum, expiry, nonce, and sequence, commits migration-0002 `capture_inbox` data to SQLite, and only then acknowledges. Exact retries deduplicate; conflicting replay identifiers fail closed. Firefox has no external origin or content script and uses a bounded checksummed JSON export/import fallback with the same durable inbox rules. The reserved test origin must be replaced by the selected isolated public app origin and reproven before release.
 
+`PEX-001` adds a pure, exact-shape version-1 state resolver above that bridge.
+Permission-needed takes precedence over transfer facts, an acknowledged
+transfer takes precedence over queued work, and queued work takes precedence
+over page recognition. The companion catalog is immutable and fails closed
+when state copy, action IDs, permission detail, or required recovery paths are
+missing. It neither reads the outbox nor invents an acknowledgement; runtime
+facts remain owned by the existing privileged boundary and later production
+transfer slice.
+
 `CAP-001` centralizes capture-version dispatch at those outbox and receiver boundaries. V1 is currently both the current and only accepted version; adding V2 must retain a V1 reader so the accepted set becomes current plus previous. The envelope UUID is the pre-ingestion source-snapshot identity used by every candidate provenance reference, expiry must follow capture time, and the semantic content checksum is independently reproducible. This semantic checksum intentionally excludes envelope/replay identity, while the existing transport checksum authenticates the complete canonical envelope.
 
 `CAP-002` extends the same schema-92 receiver transaction without adding a second canonical store. The `capture_inbox` uniqueness constraints classify exact transport retries, fresh envelopes with already-durable semantic content, and conflicting replay identities separately; both safe duplicate classes can be acknowledged, while conflicts roll back. The receiver returns the incoming envelope identity plus the durable receipt identity when they differ. It reads saved `job`/`company`/`job_source`/`source_snapshot` identity data through parameterized SQLite queries and passes neutral candidates to a bounded, deterministic `@coredrill/application` policy. That policy returns reason-coded suggestions for source ID, canonical URL, content hash, and transparent title/company similarity only. It has no adapter dependency and performs no merge, confirmation, or trusted-field mutation.
