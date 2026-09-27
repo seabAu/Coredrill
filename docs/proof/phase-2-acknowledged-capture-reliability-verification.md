@@ -2,7 +2,9 @@
 
 Date: 2026-09-27  
 Checklist item: `Q2-002`  
-Status: local fault injection complete; hosted clean-commit proof pending
+Implementation commit: `7c193ed67b05d4e137527885979627f1833c4ae4`  
+Hosted run: [Foundation CI 36299203941](https://github.com/seabAu/Coredrill/actions/runs/36299203941)  
+Status: complete
 
 ## Outcome
 
@@ -84,7 +86,17 @@ license, secret, npm advisory, Rust advisory, and Changesets gates. npm and
 Rust had zero known vulnerabilities; the seven existing reviewed Rust
 warnings remain.
 
-The hosted clean-commit matrix is recorded after the implementation commit.
+## Hosted clean-commit verification
+
+Foundation CI run 36299203941 passed from the implementation commit. All ten
+required lanes completed successfully: the aggregate foundation gate, the
+production Chromium/Firefox extension transfer and fallback matrix, Chrome
+151 and 152, Firefox 153 and 154, native Windows/macOS/Ubuntu package proof,
+and the full-history secret scan. The dedicated extension lane rebuilt and
+inspected both store packages, reproduced Firefox from the source-review ZIP,
+ran the acknowledged-transfer fault injection, and uploaded immutable proof.
+The pull-request-only dependency review was correctly skipped for the direct
+`main` push.
 
 ## Residual scope
 

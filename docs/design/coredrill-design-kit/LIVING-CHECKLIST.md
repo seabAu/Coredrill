@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-09-27
 Current milestone: Phase 2 — capture and approved extraction (`GATE-0` and `GATE-1` external-evidence blockers remain open)
-Current work item: `Q2-002` — verify acknowledged-capture durability across browser/app crash and upgrade
-Next recommended slice: `Q2-004` after `Q2-002`; retain `Q2-001`, `PEX-005`, and `PEX-006` as explicit external-evidence/permission/deployment blockers
+Current work item: `Q2-004` — audit connector source policy, attribution, retention, rate limits, and kill switches
+Next recommended slice: `Q2-005` after `Q2-004`; retain `Q2-001`, `Q2-003`, `PEX-005`, and `PEX-006` as explicit external-evidence/manual-review/permission/deployment blockers
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `Q2-004` after `Q2-002`; retain `Q2-001`, `PEX-005`, and
 | Field | Value |
 |---|---|
 | Milestone | Phase 2, with the independent Phase 0 and Phase 1 evidence gates retained below |
-| Item range | `Q2-002` |
+| Item range | `Q2-004` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-09-26 |
-| Expected proof | Fault injection proves an app/browser crash before acknowledgement retains one retryable extension item and one idempotent durable receipt, a crash after acknowledgement retains the durable receipt while the outbox stays empty, and upgrading both the legacy extension aggregate and a schema-2 acknowledged receipt to current versions loses or duplicates nothing |
-| Blocker | None for `Q2-002`. `Q2-001` requires representative usability sessions that measure human capture-to-reviewed-record time and correction rate; deterministic automation or the synthetic extraction corpus cannot honestly substitute for participants. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
-| Next handoff | Extend the production Chromium persistent-profile fixture through a second post-ack browser/app restart, add a migration regression that seeds an acknowledged receipt at schema 2 and upgrades it to the current schema, and retain the existing pre-ack crash/retry plus legacy extension-state migration proof. Do not weaken durable-before-ack ordering or treat an unacknowledged outbox item as loss. |
+| Expected proof | A reviewed inventory maps every enabled production connector to its current source-policy record, exact transport boundary, required attribution, stored-data/retention behavior, enforced rate limit, and tested targeted/global kill switch; prohibited or unreviewed sources remain absent or disabled and manual capture remains available |
+| Blocker | None for the repository-side `Q2-004` audit. Current external source and API policies must be rechecked against primary documentation before closure. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
+| Next handoff | Inventory production source-policy and transport records for Greenhouse, Lever, and USAJOBS; compare them with current primary source rules and implementation behavior; exercise attribution, retention, rate-limit, stale-review, targeted-disable, global-disable, and prohibited-source cases; document and close any gaps without adding a connector or broadening permissions. |
 
 ## Milestone status
 
@@ -252,7 +252,7 @@ Next recommended slice: `Q2-004` after `Q2-002`; retain `Q2-001`, `PEX-005`, and
 ## Phase 2 quality
 
 - [ ] **Q2-001** Measure capture-to-reviewed-record median and correction rate in representative tests. — Proof: _usability/accuracy report_
-- [ ] **Q2-002** Verify no acknowledged capture is lost across browser/app crash and upgrade. — Proof: _fault-injection test_
+- [x] **Q2-002** Verify no acknowledged capture is lost across browser/app crash and upgrade. — Proof: [pre-ack and post-ack persistent-profile restarts, schema-2-to-schema-101 receipt preservation, legacy extension-state migration, and hosted clean-commit verification](../../proof/phase-2-acknowledged-capture-reliability-verification.md)
 - [ ] **Q2-003** Pass review Inbox keyboard/screen-reader and mobile workflows. — Proof: _a11y report_
 - [ ] **Q2-004** Pass connector source-policy, attribution, retention, rate-limit, and kill-switch audit. — Proof: _audit_
 - [ ] **Q2-005** Run canonical journey: extension capture → outbox → Inbox review/conflict → save → source diff → manual correction. — Proof: _recorded E2E artifact_
