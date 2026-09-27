@@ -114,6 +114,7 @@ jobs:
             apps/extension/.output/firefox-mv3
             apps/extension/.output/*.zip
             test-results/extension-transfer.json
+            test-results/extension-transfer/**
           if-no-files-found: error
           include-hidden-files: true
           retention-days: 30

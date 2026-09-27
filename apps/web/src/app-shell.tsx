@@ -90,6 +90,7 @@ import "./app-shell.css";
 import "./main.js";
 import { CanonicalJourneyPanel } from "./canonical-journey-panel.js";
 import { CaptureEntryDialog } from "./capture-entry-dialog.js";
+import type { SavedJobEvidence, SavedJobSourceComparison } from "./extension-transfer.js";
 import { initializeOfflineShell, OfflineShellNotice } from "./offline-shell.js";
 import { sourceTextFromHtml } from "./source-text.js";
 import type { SuppliedCaptureMode } from "./supplied-capture.js";
@@ -1460,6 +1461,15 @@ const AppShellCatalog = () => {
     readonly tokenId: string;
     readonly label: string;
   } | null>(null);
+  const [captureResolvedEvidence, setCaptureResolvedEvidence] = useState<SavedJobEvidence | null>(
+    null,
+  );
+  const [captureSourceComparison, setCaptureSourceComparison] =
+    useState<SavedJobSourceComparison | null>(null);
+  const [captureCorrectionTitle, setCaptureCorrectionTitle] = useState("");
+  const [captureCorrectionState, setCaptureCorrectionState] = useState<
+    "idle" | "busy" | "saved" | "error"
+  >("idle");
   const [workspaceRoute, setWorkspaceRoute] = useState<JobRouteState | null>(initialJobRoute);
   const [workspaceWidth, setWorkspaceWidth] = useState(640);
   const [lastActivity, setLastActivity] = useState(
@@ -1701,22 +1711,42 @@ const AppShellCatalog = () => {
     };
   }, [capturePreviewRefreshVersion, pipelineView, suppliedCaptureCount]);
 
+  const loadCaptureResolvedEvidence = async (jobId: string): Promise<void> => {
+    const evidence = await globalThis.coredrillExtensionInbox.getSavedJobEvidence(jobId);
+    let comparison: SavedJobSourceComparison | null = null;
+    if (evidence.snapshots.length >= 2) {
+      try {
+        comparison = await globalThis.coredrillExtensionInbox.compareSavedJobSourceSnapshots(jobId);
+      } catch {
+        comparison = null;
+      }
+    }
+    setCaptureResolvedEvidence(evidence);
+    setCaptureSourceComparison(comparison);
+    setCaptureCorrectionTitle(evidence.title);
+    setCaptureCorrectionState("idle");
+  };
+
   const handleCaptureReviewAction = async (action: CaptureInboxReviewAction): Promise<void> => {
     if (action.kind === "save_new") {
-      await globalThis.coredrillExtensionInbox.promoteReview({
+      const resolved = await globalThis.coredrillExtensionInbox.promoteReview({
         envelopeId: action.envelopeId,
         expectedRowVersion: action.expectedRowVersion,
         acceptedCandidateIds: action.acceptedCandidateIds,
         resolution: { kind: "save_new" },
       });
+      if (resolved.resolvedJobId !== null)
+        await loadCaptureResolvedEvidence(resolved.resolvedJobId);
       setLastActivity("Saved the reviewed capture as a local job with provenance.");
     } else if (action.kind === "merge_existing") {
-      await globalThis.coredrillExtensionInbox.promoteReview({
+      const resolved = await globalThis.coredrillExtensionInbox.promoteReview({
         envelopeId: action.envelopeId,
         expectedRowVersion: action.expectedRowVersion,
         acceptedCandidateIds: action.acceptedCandidateIds,
         resolution: { kind: "merge_existing", jobId: action.targetJobId },
       });
+      if (resolved.resolvedJobId !== null)
+        await loadCaptureResolvedEvidence(resolved.resolvedJobId);
       setLastActivity("Merged the reviewed evidence into the selected local job.");
     } else if (action.kind === "snooze") {
       await globalThis.coredrillExtensionInbox.snoozeReview({
@@ -1742,6 +1772,23 @@ const AppShellCatalog = () => {
       setLastActivity("Discarded the capture review. Undo remains available in this session.");
     }
     setCapturePreviewRefreshVersion((version) => version + 1);
+  };
+
+  const submitCaptureTitleCorrection = async (): Promise<void> => {
+    if (captureResolvedEvidence === null || captureCorrectionState === "busy") return;
+    setCaptureCorrectionState("busy");
+    try {
+      const correction = await globalThis.coredrillExtensionInbox.correctConfirmedJobTitle({
+        jobId: captureResolvedEvidence.jobId,
+        title: captureCorrectionTitle,
+      });
+      setCaptureResolvedEvidence(correction.evidence);
+      setCaptureCorrectionTitle(correction.evidence.title);
+      setCaptureCorrectionState("saved");
+      setLastActivity("Replaced the confirmed title and retained its prior value and provenance.");
+    } catch {
+      setCaptureCorrectionState("error");
+    }
   };
 
   const undoCaptureDiscard = async (tokenId: string): Promise<void> => {
@@ -2628,22 +2675,115 @@ const AppShellCatalog = () => {
                 }}
               >
                 {pipelineView === "inbox" ? (
-                  <CaptureInboxReview
-                    discardUndo={captureDiscardUndo}
-                    items={capturePreviews}
-                    onAction={handleCaptureReviewAction}
-                    onManualFallback={({ mode, sourceUrl }) => {
-                      setCaptureDialogSourceUrl(sourceUrl ?? "");
-                      setCaptureDialogMode(mode);
-                      setLastActivity(
-                        mode === "manual"
-                          ? "Opened manual entry from a source-condition fallback."
-                          : "Opened paste entry from a source-condition fallback.",
-                      );
-                    }}
-                    onUndoDiscard={undoCaptureDiscard}
-                    state={capturePreviewState}
-                  />
+                  <>
+                    <CaptureInboxReview
+                      discardUndo={captureDiscardUndo}
+                      items={capturePreviews}
+                      onAction={handleCaptureReviewAction}
+                      onManualFallback={({ mode, sourceUrl }) => {
+                        setCaptureDialogSourceUrl(sourceUrl ?? "");
+                        setCaptureDialogMode(mode);
+                        setLastActivity(
+                          mode === "manual"
+                            ? "Opened manual entry from a source-condition fallback."
+                            : "Opened paste entry from a source-condition fallback.",
+                        );
+                      }}
+                      onUndoDiscard={undoCaptureDiscard}
+                      state={capturePreviewState}
+                    />
+                    {captureResolvedEvidence === null ? null : (
+                      <section
+                        className="cd-capture-follow-up cd-shell-page-card"
+                        data-testid="capture-resolution-follow-up"
+                      >
+                        <div>
+                          <p className="cd-eyebrow">Saved evidence follow-up</p>
+                          <h3>{captureResolvedEvidence.title}</h3>
+                          <p>
+                            The durable job retains {captureResolvedEvidence.snapshots.length}{" "}
+                            immutable source
+                            {captureResolvedEvidence.snapshots.length === 1
+                              ? " snapshot"
+                              : " snapshots"}
+                            . Confirmed values change only through an explicit replacement.
+                          </p>
+                        </div>
+                        {captureSourceComparison === null ? null : (
+                          <div
+                            className="cd-capture-follow-up__diff"
+                            aria-label="Saved source diff"
+                          >
+                            <div>
+                              <p className="cd-eyebrow">Read-only source comparison</p>
+                              <h4>Source content changed</h4>
+                              <p>
+                                {captureSourceComparison.diff.changeCount} retained source change.
+                                Confirmed fields were not overwritten.
+                              </p>
+                            </div>
+                            <dl>
+                              <div>
+                                <dt>Before</dt>
+                                <dd>
+                                  {captureSourceComparison.baselineText ?? "No retained text"}
+                                </dd>
+                              </div>
+                              <div>
+                                <dt>After</dt>
+                                <dd>{captureSourceComparison.currentText ?? "No retained text"}</dd>
+                              </div>
+                            </dl>
+                          </div>
+                        )}
+                        <form
+                          className="cd-capture-follow-up__correction"
+                          onSubmit={(event) => {
+                            event.preventDefault();
+                            void submitCaptureTitleCorrection();
+                          }}
+                        >
+                          <label htmlFor="capture-confirmed-title-correction">
+                            Correct confirmed title
+                          </label>
+                          <div>
+                            <input
+                              disabled={captureCorrectionState === "busy"}
+                              id="capture-confirmed-title-correction"
+                              maxLength={1024}
+                              onChange={(event) => {
+                                setCaptureCorrectionTitle(event.target.value);
+                                setCaptureCorrectionState("idle");
+                              }}
+                              required
+                              type="text"
+                              value={captureCorrectionTitle}
+                            />
+                            <button
+                              className="cd-button cd-button-primary"
+                              disabled={
+                                captureCorrectionState === "busy" ||
+                                captureCorrectionTitle.trim() === "" ||
+                                captureCorrectionTitle === captureResolvedEvidence.title
+                              }
+                              type="submit"
+                            >
+                              {captureCorrectionState === "busy"
+                                ? "Applying correction…"
+                                : "Apply manual correction"}
+                            </button>
+                          </div>
+                          <p aria-live="polite" role="status">
+                            {captureCorrectionState === "saved"
+                              ? "Correction saved. The prior confirmed title and provenance remain in history."
+                              : captureCorrectionState === "error"
+                                ? "The correction was not saved. Reload the durable job and try again."
+                                : "This explicitly replaces the confirmed title; it never edits a source snapshot."}
+                          </p>
+                        </form>
+                      </section>
+                    )}
+                  </>
                 ) : pipelineView === "board" ? (
                   <PipelineBoard
                     announcement={boardAnnouncement}

@@ -27,9 +27,9 @@ Next recommended slice: `EVD-001` after `Q2-005`; retain `Q2-001`, `Q2-003`, `PE
 | Item range | `Q2-005` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-09-26 |
-| Expected proof | One retained real-browser artifact drives a production-packaged extension capture through its outbox and acknowledgement into the durable Inbox, resolves an explicit candidate conflict, saves the reviewed job, re-ingests changed source evidence without overwriting confirmed data, shows the source diff, applies a manual correction, and proves the final durable record after reload with zero unapproved network activity |
+| Expected proof | One retained real-browser artifact drives a production-packaged extension capture through its outbox and acknowledgement into the durable Inbox, exposes and retains an explicit candidate conflict, saves the reviewed job, re-ingests changed source evidence without overwriting confirmed data, shows the source diff, applies a manual correction, and proves the final durable record after reload with zero unapproved network activity |
 | Blocker | None for the repository-side `Q2-005` journey. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-2`, `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
-| Next handoff | Compose the existing production extension capture/outbox/acknowledgement, durable Inbox review/conflict/save, changed-source diff, and manual-correction boundaries into one deterministic persistent-browser journey; retain machine-readable proof and screenshots, assert final repository/provenance state after reload, and add no new connector, host permission, account, AI, or network dependency. |
+| Next handoff | Run the full local gate, push the exact `Q2-005` implementation commit, retain the hosted extension-transfer artifact and complete Foundation CI result, then close `Q2-005` only if that proof stays green. |
 
 ## Milestone status
 

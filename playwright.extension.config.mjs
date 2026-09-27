@@ -6,11 +6,13 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   timeout: 120_000,
+  outputDir: "test-results/extension-transfer",
   reporter: [["list"], ["json", { outputFile: "test-results/extension-transfer.json" }]],
   projects: [
     {
       name: "chromium-extension-transfer",
       testMatch: [
+        "extension-canonical-journey.spec.mjs",
         "extension-transfer.spec.mjs",
         "extension-preview.spec.mjs",
         "extension-security.spec.mjs",

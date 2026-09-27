@@ -1,4 +1,5 @@
 import {
+  compareListingSnapshotsV1,
   findCaptureDuplicateSuggestionsV1,
   materializeCaptureReviewPromotionV1,
   prepareCaptureReviewPromotionV1,
@@ -6,6 +7,7 @@ import {
   type CaptureDuplicateSuggestionV1,
   type CaptureReviewPreparationV1,
   type CaptureReviewPromotionResolutionV1,
+  type ListingSnapshotDiffV1,
 } from "@coredrill/application";
 import {
   buildSuppliedCaptureEnvelopeV1,
@@ -110,6 +112,65 @@ interface CaptureDuplicateCandidateRow extends QueryRow {
   readonly snapshot_content_hash: string | null;
 }
 
+interface SavedJobRow extends QueryRow {
+  readonly id: string;
+  readonly title: string;
+  readonly updated_at: string;
+  readonly row_version: number;
+}
+
+interface SavedJobSnapshotRow extends QueryRow {
+  readonly id: string;
+  readonly captured_at: string;
+  readonly content_hash: string;
+  readonly raw_text: string | null;
+}
+
+interface SavedJobTitleValueRow extends QueryRow {
+  readonly id: string;
+  readonly normalized_json: string;
+  readonly provenance_id: string;
+  readonly extraction_method: string;
+  readonly is_user_confirmed: number;
+  readonly superseded_by_id: string | null;
+}
+
+export interface SavedJobEvidence {
+  readonly jobId: string;
+  readonly title: string;
+  readonly updatedAt: string;
+  readonly rowVersion: number;
+  readonly snapshots: readonly {
+    readonly id: string;
+    readonly capturedAt: string;
+    readonly contentHash: string;
+    readonly rawText: string | null;
+  }[];
+  readonly titleValues: readonly {
+    readonly id: string;
+    readonly value: unknown;
+    readonly provenanceId: string;
+    readonly extractionMethod: string;
+    readonly userConfirmed: boolean;
+    readonly supersededById: string | null;
+  }[];
+}
+
+export interface SavedJobSourceComparison {
+  readonly jobId: string;
+  readonly baselineText: string | null;
+  readonly currentText: string | null;
+  readonly diff: ListingSnapshotDiffV1;
+}
+
+export interface ConfirmedJobTitleCorrection {
+  readonly evidence: SavedJobEvidence;
+  readonly previousFieldValueId: string;
+  readonly replacementFieldValueId: string;
+  readonly provenanceId: string;
+  readonly sourceSnapshotId: string;
+}
+
 export type CaptureInboxDuplicateKind = "none" | "exact_retry" | "content_hash";
 
 export interface SuppliedCaptureStoreResult {
@@ -156,6 +217,95 @@ function requestId(): string {
 async function sha256Text(value: string): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function parseStoredJson(value: string): unknown {
+  try {
+    return JSON.parse(value) as unknown;
+  } catch {
+    throw new ExtensionTransferError(
+      "saved_job_evidence_invalid",
+      "Saved job evidence contains invalid JSON.",
+    );
+  }
+}
+
+async function readSavedJobEvidence(
+  session: DatabaseSession,
+  inputJobId: string,
+): Promise<SavedJobEvidence> {
+  const jobId = entityId("job", inputJobId);
+  const jobs = await session.query<SavedJobRow>(
+    sqlStatement("SELECT id, title, updated_at, row_version FROM job WHERE id = ?", [jobId]),
+  );
+  const job = jobs[0];
+  if (jobs.length !== 1 || job === undefined) {
+    throw new ExtensionTransferError("saved_job_not_found", "Saved job was not found.");
+  }
+  const snapshots = await session.query<SavedJobSnapshotRow>(
+    sqlStatement(
+      `SELECT source_snapshot.id, source_snapshot.captured_at,
+              source_snapshot.content_hash, source_snapshot.raw_text
+       FROM source_snapshot
+       INNER JOIN job_source ON job_source.id = source_snapshot.job_source_id
+       WHERE job_source.job_id = ?
+       ORDER BY source_snapshot.captured_at, source_snapshot.id`,
+      [jobId],
+    ),
+  );
+  const titleValues = await session.query<SavedJobTitleValueRow>(
+    sqlStatement(
+      `SELECT field_value.id, field_value.normalized_json, field_value.provenance_id,
+              provenance.extraction_method, field_value.is_user_confirmed,
+              field_value.superseded_by_id
+       FROM field_value
+       INNER JOIN provenance ON provenance.id = field_value.provenance_id
+       WHERE field_value.entity_type = 'job' AND field_value.entity_id = ?
+         AND field_value.field_name = 'title'
+       ORDER BY field_value.created_at, field_value.id`,
+      [jobId],
+    ),
+  );
+  return Object.freeze({
+    jobId: job.id,
+    title: job.title,
+    updatedAt: job.updated_at,
+    rowVersion: job.row_version,
+    snapshots: Object.freeze(
+      snapshots.map((snapshot) =>
+        Object.freeze({
+          id: snapshot.id,
+          capturedAt: snapshot.captured_at,
+          contentHash: snapshot.content_hash,
+          rawText: snapshot.raw_text,
+        }),
+      ),
+    ),
+    titleValues: Object.freeze(
+      titleValues.map((fieldValue) =>
+        Object.freeze({
+          id: fieldValue.id,
+          value: parseStoredJson(fieldValue.normalized_json),
+          provenanceId: fieldValue.provenance_id,
+          extractionMethod: fieldValue.extraction_method,
+          userConfirmed: fieldValue.is_user_confirmed === 1,
+          supersededById: fieldValue.superseded_by_id,
+        }),
+      ),
+    ),
+  });
+}
+
+function comparableSnapshot(snapshot: SavedJobEvidence["snapshots"][number]) {
+  return Object.freeze({
+    id: snapshot.id,
+    capturedAt: snapshot.capturedAt,
+    contentHash: snapshot.contentHash,
+    requirements: Object.freeze([]),
+    compensation: null,
+    deadline: null,
+    locations: Object.freeze([]),
+  });
 }
 
 function assertExtensionId(extensionId: string): void {
@@ -737,6 +887,205 @@ export function createExtensionInbox(
           (item) => item.envelopeId === expected,
         ) ?? null
       );
+    },
+
+    getSavedJobEvidence: async (jobId: string): Promise<SavedJobEvidence> => {
+      const client = await database();
+      return readSavedJobEvidence(client, jobId);
+    },
+
+    compareSavedJobSourceSnapshots: async (jobId: string): Promise<SavedJobSourceComparison> => {
+      const client = await database();
+      const evidence = await readSavedJobEvidence(client, jobId);
+      const baseline = evidence.snapshots[0];
+      const current = evidence.snapshots.at(-1);
+      if (baseline === undefined || current === undefined || baseline.id === current.id) {
+        throw new ExtensionTransferError(
+          "source_comparison_unavailable",
+          "Two retained source snapshots are required for comparison.",
+        );
+      }
+      return Object.freeze({
+        jobId: evidence.jobId,
+        baselineText: baseline.rawText,
+        currentText: current.rawText,
+        diff: compareListingSnapshotsV1({
+          specVersion: 1,
+          baseline: comparableSnapshot(baseline),
+          current: comparableSnapshot(current),
+        }),
+      });
+    },
+
+    correctConfirmedJobTitle: async (
+      input: { readonly jobId: string; readonly title: string },
+      now = new Date(),
+    ): Promise<ConfirmedJobTitleCorrection> => {
+      const jobId = entityId("job", input.jobId);
+      const title = input.title.trim();
+      if (title.length === 0 || title.length > 1_024 || title !== input.title) {
+        throw new ExtensionTransferError(
+          "manual_correction_invalid",
+          "Manual title correction is invalid.",
+        );
+      }
+      const correctedAt = now.toISOString();
+      const normalizedTitle = title.normalize("NFKC").replace(/\s+/gu, " ").toLowerCase();
+      const normalizedJson = JSON.stringify(title);
+      const replacementFieldValueId = generateEntityId("field-value");
+      const provenanceId = generateEntityId("provenance");
+      const confirmationId = generateEntityId("field-confirmation");
+      const confirmedValueHash = await sha256Text(normalizedJson);
+      const client = await database();
+      const correction = await client.transaction(async (transaction) => {
+        const jobs = await transaction.query<SavedJobRow>(
+          sqlStatement("SELECT id, title, updated_at, row_version FROM job WHERE id = ?", [jobId]),
+        );
+        const job = jobs[0];
+        if (jobs.length !== 1 || job === undefined) {
+          throw new ExtensionTransferError("saved_job_not_found", "Saved job was not found.");
+        }
+        if (job.title === title) {
+          throw new ExtensionTransferError(
+            "manual_correction_unchanged",
+            "Manual correction must replace the current confirmed title with a different value.",
+          );
+        }
+        const currentValues = await transaction.query<SavedJobTitleValueRow>(
+          sqlStatement(
+            `SELECT field_value.id, field_value.normalized_json, field_value.provenance_id,
+                    provenance.extraction_method, field_value.is_user_confirmed,
+                    field_value.superseded_by_id
+             FROM field_value
+             INNER JOIN provenance ON provenance.id = field_value.provenance_id
+             WHERE field_value.entity_type = 'job' AND field_value.entity_id = ?
+               AND field_value.field_name = 'title' AND field_value.is_user_confirmed = 1
+               AND field_value.superseded_by_id IS NULL
+             ORDER BY field_value.confirmed_at DESC, field_value.id`,
+            [jobId],
+          ),
+        );
+        const currentValue = currentValues[0];
+        if (
+          currentValues.length !== 1 ||
+          currentValue === undefined ||
+          parseStoredJson(currentValue.normalized_json) !== job.title
+        ) {
+          throw new ExtensionTransferError(
+            "confirmed_title_ambiguous",
+            "Saved job does not have one unambiguous confirmed title to replace.",
+          );
+        }
+        const snapshots = await transaction.query<SavedJobSnapshotRow>(
+          sqlStatement(
+            `SELECT source_snapshot.id, source_snapshot.captured_at,
+                    source_snapshot.content_hash, source_snapshot.raw_text
+             FROM source_snapshot
+             INNER JOIN job_source ON job_source.id = source_snapshot.job_source_id
+             WHERE job_source.job_id = ?
+             ORDER BY source_snapshot.captured_at DESC, source_snapshot.id DESC
+             LIMIT 1`,
+            [jobId],
+          ),
+        );
+        const sourceSnapshot = snapshots[0];
+        if (sourceSnapshot === undefined) {
+          throw new ExtensionTransferError(
+            "source_snapshot_missing",
+            "Manual correction requires retained source evidence.",
+          );
+        }
+
+        const provenance = await transaction.execute(
+          sqlStatement(
+            `INSERT INTO provenance(
+               id, source_snapshot_id, extraction_method, source_pointer, source_excerpt,
+               confidence, captured_at, license_note, created_at, row_version
+             ) VALUES (?, ?, 'user', '/manual-corrections/title', ?, 1, ?, NULL, ?, 1)`,
+            [provenanceId, sourceSnapshot.id, title, correctedAt, correctedAt],
+          ),
+        );
+        const replacement = await transaction.execute(
+          sqlStatement(
+            `INSERT INTO field_value(
+               id, entity_type, entity_id, field_name, normalized_json, raw_json,
+               provenance_id, is_user_confirmed, user_confirmation_id, confirmed_at,
+               confirmed_value_hash, superseded_by_id, created_at, updated_at, row_version
+             ) VALUES (?, 'job', ?, 'title', ?, ?, ?, 0, NULL, NULL, NULL, NULL, ?, ?, 1)`,
+            [
+              replacementFieldValueId,
+              jobId,
+              normalizedJson,
+              normalizedJson,
+              provenanceId,
+              correctedAt,
+              correctedAt,
+            ],
+          ),
+        );
+        const confirmed = await transaction.execute(
+          sqlStatement(
+            `UPDATE field_value
+             SET is_user_confirmed = 1, user_confirmation_id = ?, confirmed_at = ?,
+                 confirmed_value_hash = ?, updated_at = ?, row_version = row_version + 1
+             WHERE id = ? AND is_user_confirmed = 0 AND superseded_by_id IS NULL
+               AND EXISTS (
+                 SELECT 1 FROM field_value AS current
+                 WHERE current.id = ? AND current.is_user_confirmed = 1
+                   AND current.superseded_by_id IS NULL
+                   AND current.entity_type = field_value.entity_type
+                   AND current.entity_id = field_value.entity_id
+                   AND current.field_name = field_value.field_name
+               )`,
+            [
+              confirmationId,
+              correctedAt,
+              confirmedValueHash,
+              correctedAt,
+              replacementFieldValueId,
+              currentValue.id,
+            ],
+          ),
+        );
+        const superseded = await transaction.execute(
+          sqlStatement(
+            `UPDATE field_value
+             SET superseded_by_id = ?, updated_at = ?, row_version = row_version + 1
+             WHERE id = ? AND is_user_confirmed = 1 AND superseded_by_id IS NULL`,
+            [replacementFieldValueId, correctedAt, currentValue.id],
+          ),
+        );
+        const jobUpdated = await transaction.execute(
+          sqlStatement(
+            `UPDATE job
+             SET title = ?, normalized_title = ?, updated_at = ?, row_version = row_version + 1
+             WHERE id = ? AND title = ? AND row_version = ?`,
+            [title, normalizedTitle, correctedAt, jobId, job.title, job.row_version],
+          ),
+        );
+        if (
+          provenance.rowsAffected !== 1 ||
+          replacement.rowsAffected !== 1 ||
+          confirmed.rowsAffected !== 1 ||
+          superseded.rowsAffected !== 1 ||
+          jobUpdated.rowsAffected !== 1
+        ) {
+          throw new ExtensionTransferError(
+            "manual_correction_conflict",
+            "Manual correction conflicted with newer durable job state.",
+          );
+        }
+        return Object.freeze({
+          previousFieldValueId: currentValue.id,
+          replacementFieldValueId,
+          provenanceId,
+          sourceSnapshotId: sourceSnapshot.id,
+        });
+      });
+      return Object.freeze({
+        ...correction,
+        evidence: await readSavedJobEvidence(client, jobId),
+      });
     },
 
     snoozeReview: async (
