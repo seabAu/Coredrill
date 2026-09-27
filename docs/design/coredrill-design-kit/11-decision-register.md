@@ -197,6 +197,7 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
 - **Status:** Accepted
 - **Decision:** Every extracted candidate records source, excerpt/path, method, extractor version, time, and confidence; user confirmation is durable.
 - **Why:** Trust, correction, debugging, source change, and AI evidence.
+- **Phase 3 evidence (2026-09-27):** `MAT-001` persists each job requirement with an exact source excerpt, same-job provenance, extraction method and confidence, immutable extracted category, explicit user-corrected category, durable confirmation, and optimistic row version. Schema 129, current/previous Chrome and Firefox, native recovery, export, and accessibility proof passed in [Foundation CI run 36328542049](https://github.com/seabAu/Coredrill/actions/runs/36328542049); see [job-requirements verification](../../proof/phase-3-job-requirements-verification.md).
 - **Revisit when:** Never remove; storage representation may evolve through migration.
 
 ### D-031 — Layered deterministic extraction
