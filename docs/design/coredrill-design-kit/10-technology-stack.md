@@ -295,6 +295,8 @@ Modes:
 
 `MAT-003` implements the first line without adding a dependency: reviewed SQLite migrations provide typed skill/evidence and requirement/selection relations plus a normalized evidence-content view. `@coredrill/storage-core` performs a real FTS5 probe, creates a rebuildable local acceleration artifact when supported, and otherwise uses escaped bound normalized-token predicates. Exact skill aliases and structured relation traversal are evaluated independently of FTS. A frozen evaluation and the shared browser/native contract require bounded deterministic results and explainable reasons; embeddings and AI reranking remain deferred.
 
+`MAT-004` adds no dependency or hosted service. `@coredrill/application` owns the pure versioned coverage rule and validated commands; SQLite schema 133 owns explicit user decisions and their optimistic evidence basis; React renders the explanation and five-state review control. The same TypeScript rule runs with AI disabled, and browser/native adapters execute the shared version-5 repository contract.
+
 ## 11. Testing stack
 
 | Layer | Tools | Required focus |

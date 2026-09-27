@@ -335,6 +335,7 @@ interface Phase3RecoveryInventory {
   readonly storyEvidenceLinks: number;
   readonly skillEvidenceLinks: number;
   readonly requirementEvidenceSelections: number;
+  readonly requirementCoverageDecisions: number;
   readonly importRuns: number;
   readonly importProposals: number;
   readonly importResolutions: number;
@@ -1591,6 +1592,10 @@ const readPhase3RecoveryInventory = async (
       client,
       "SELECT count(*) AS count FROM job_requirement_evidence_selection",
     ),
+    requirementCoverageDecisions: await readCount(
+      client,
+      "SELECT count(*) AS count FROM job_requirement_coverage_decision",
+    ),
     importRuns: await readCount(client, "SELECT count(*) AS count FROM import_run"),
     importProposals: await readCount(
       client,
@@ -2121,6 +2126,20 @@ const seedRepresentativePhase1Vault = async (
            requirement_id, evidence_kind, evidence_id, experience_id, selected_at
          ) VALUES (?, 'employment', ?, ?, ?)`,
         [requirementId, experienceId, experienceId, createdAt],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO job_requirement_coverage_decision(
+           requirement_id, coverage_state, requirement_row_version, selection_basis,
+           decided_at, updated_at, row_version
+         ) VALUES (?, 'partial', 1, ?, ?, ?, 1)`,
+        [
+          requirementId,
+          `employment:${experienceId}:${createdAt}:source_backed`,
+          createdAt,
+          createdAt,
+        ],
       ),
     );
     await transaction.execute(

@@ -326,11 +326,19 @@ export {
 } from "./job-requirement-parser.js";
 export { JOB_REQUIREMENT_CATEGORIES, type JobRequirementCategory } from "@coredrill/domain";
 export {
+  REQUIREMENT_COVERAGE_RULE_VERSION,
+  REQUIREMENT_COVERAGE_STATES,
   REQUIREMENT_EVIDENCE_KINDS,
   REQUIREMENT_EVIDENCE_REASONS,
   RequirementEvidenceError,
   createRequirementEvidenceOperations,
+  deriveRequirementCoverageDecision,
+  requirementCoverageSelectionBasis,
+  type DeriveRequirementCoverageInput,
   type RemoveRequirementEvidenceInput,
+  type RequirementCoverageDecisionDto,
+  type RequirementCoverageSource,
+  type RequirementCoverageState,
   type RequirementEvidenceCandidateDto,
   type RequirementEvidenceErrorCode,
   type RequirementEvidenceFallbackReason,
@@ -343,9 +351,12 @@ export {
   type RequirementEvidenceRetrievalDto,
   type RequirementEvidenceSearchMode,
   type RequirementEvidenceVerificationState,
+  type ResetRequirementCoverageDecisionInput,
   type RetrieveRequirementEvidenceInput,
+  type SetRequirementCoverageDecisionInput,
   type SelectRequirementEvidenceInput,
   type SelectedRequirementEvidenceDto,
+  type StoredRequirementCoverageDecisionDto,
 } from "./requirement-evidence.js";
 export {
   CAREER_PROFILE_ERROR_CODES,

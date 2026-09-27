@@ -72,7 +72,7 @@ class NodeRequirementDatabase implements DatabasePort {
       health: "ready",
       persistence: "memory",
       readOnly: false,
-      schemaVersion: 132,
+      schemaVersion: 133,
     });
   }
   public close() {

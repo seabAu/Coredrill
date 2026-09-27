@@ -3875,6 +3875,28 @@ textarea {
   overflow-wrap: anywhere;
 }
 
+.cd-requirement-coverage {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+}
+
+.cd-requirement-coverage label {
+  display: grid;
+  gap: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.cd-requirement-coverage select {
+  min-block-size: 2.75rem;
+  max-inline-size: 20rem;
+}
+
 .cd-requirement-evidence__item {
   margin-block-start: var(--space-2);
   padding: var(--space-3);

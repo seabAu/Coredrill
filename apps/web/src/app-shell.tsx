@@ -84,6 +84,7 @@ import {
   type CreateAnswerLibraryEntryInput,
   type CreateManualCareerProfileEntryInput,
   type ResolveResumeImportGroupInput,
+  type RequirementCoverageState,
   type ResumeImportQueueItemDto,
   type UpdateCareerStoryInput,
   type UpdateAnswerLibraryEntryInput,
@@ -1234,8 +1235,92 @@ const NORTHSTAR_REQUIREMENT_PROPOSALS = Object.freeze(
   ),
 );
 
+type ProofCoverage = JobWorkspaceContentModel["requirementEvidence"][number]["coverage"];
+type ProofSelectedEvidence =
+  JobWorkspaceContentModel["requirementEvidence"][number]["selectedEvidence"];
+
+const proofCoverageLabel = (state: RequirementCoverageState): string =>
+  state === "not_applicable"
+    ? "Not Applicable"
+    : `${state.charAt(0).toUpperCase()}${state.slice(1)}`;
+
+const automaticProofCoverage = (
+  category: JobWorkspaceContentModel["requirements"][number]["category"],
+  selectedEvidence: ProofSelectedEvidence,
+): ProofCoverage => {
+  if (category === "context") {
+    return Object.freeze({
+      decidedAt: null,
+      explanation:
+        "This is job context rather than a qualification, so no qualification evidence is expected.",
+      rowVersion: null,
+      ruleVersion: "requirement-coverage-v1",
+      source: "deterministic-rule",
+      stale: false,
+      state: "not_applicable",
+    });
+  }
+  if (selectedEvidence.length === 0) {
+    return Object.freeze({
+      decidedAt: null,
+      explanation:
+        "No evidence is selected. Coverage is Unknown—not a Gap—until you review or add evidence.",
+      rowVersion: null,
+      ruleVersion: "requirement-coverage-v1",
+      source: "deterministic-rule",
+      stale: false,
+      state: "unknown",
+    });
+  }
+  const strong = selectedEvidence.find(
+    ({ reasons, verificationState }) =>
+      (verificationState === "user_confirmed" || verificationState === "source_backed") &&
+      reasons.some((reason) => reason !== "lexical"),
+  );
+  return Object.freeze({
+    decidedAt: null,
+    explanation:
+      strong === undefined
+        ? "Selected evidence is relevant but does not combine a structured relation with reviewed verification. Coverage is Partial."
+        : `${strong.label} has a structured relation and reviewed verification. This supports Strength, not a hiring probability.`,
+    rowVersion: null,
+    ruleVersion: "requirement-coverage-v1",
+    source: "deterministic-rule",
+    stale: false,
+    state: strong === undefined ? "partial" : "strength",
+  });
+};
+
+const reviewedProofCoverage = (
+  state: RequirementCoverageState,
+  selectedEvidence: ProofSelectedEvidence,
+  rowVersion: number,
+): ProofCoverage =>
+  Object.freeze({
+    decidedAt: "2026-09-27T23:30:00.000Z",
+    explanation:
+      state === "gap" && selectedEvidence.length === 0
+        ? "You marked this as a Gap after review. No selected evidence currently supports the requirement."
+        : `You marked this as ${proofCoverageLabel(state)} after reviewing ${String(selectedEvidence.length)} selected evidence item${selectedEvidence.length === 1 ? "" : "s"}. This is your evidence judgment, not a hiring probability.`,
+    rowVersion,
+    ruleVersion: "requirement-coverage-v1",
+    source: "user-confirmed",
+    stale: false,
+    state,
+  });
+
+const staleProofCoverage = (coverage: ProofCoverage): ProofCoverage =>
+  coverage.source === "deterministic-rule"
+    ? coverage
+    : Object.freeze({
+        ...coverage,
+        explanation: `You previously marked this as ${proofCoverageLabel(coverage.state)}, but the requirement or selected evidence changed afterward. Review the decision; Coredrill has not overwritten it.`,
+        stale: true,
+      });
+
 const NORTHSTAR_REQUIREMENT_EVIDENCE = Object.freeze([
   Object.freeze({
+    coverage: automaticProofCoverage("required", Object.freeze([])),
     requirementId: "requirement-northstar-delivery",
     retrievalMode: "fts5" as const,
     queryTerms: Object.freeze(["cross-functional", "delivery", "product", "operations"]),
@@ -1264,6 +1349,7 @@ const NORTHSTAR_REQUIREMENT_EVIDENCE = Object.freeze([
     ]),
   }),
   Object.freeze({
+    coverage: automaticProofCoverage("desired", Object.freeze([])),
     requirementId: "requirement-northstar-healthcare",
     retrievalMode: "normalized-token" as const,
     queryTerms: Object.freeze(["healthcare", "domain", "experience"]),
@@ -2531,6 +2617,25 @@ const AppShellCatalog = () => {
           ),
         }),
       );
+      const reviews = jobRequirementEvidence[workspaceRoute.jobId] ?? Object.freeze([]);
+      setJobRequirementEvidence(
+        Object.freeze({
+          ...jobRequirementEvidence,
+          [workspaceRoute.jobId]: Object.freeze(
+            reviews.map((review) =>
+              review.requirementId === request.targetId
+                ? Object.freeze({
+                    ...review,
+                    coverage:
+                      review.coverage.source === "user-confirmed"
+                        ? staleProofCoverage(review.coverage)
+                        : automaticProofCoverage(request.category, review.selectedEvidence),
+                  })
+                : review,
+            ),
+          ),
+        }),
+      );
       setLastActivity(
         `Saved the user-confirmed requirement category as ${request.category}. No external request was made.`,
       );
@@ -2570,13 +2675,21 @@ const AppShellCatalog = () => {
               matchedTerms: Object.freeze([]),
             }),
           ]);
+      const requirementCategory =
+        (jobRequirements[workspaceRoute.jobId] ?? Object.freeze([])).find(
+          ({ id }) => id === request.requirementId,
+        )?.category ?? "required";
+      const coverage =
+        review.coverage.source === "user-confirmed"
+          ? staleProofCoverage(review.coverage)
+          : automaticProofCoverage(requirementCategory, selectedEvidence);
       setJobRequirementEvidence(
         Object.freeze({
           ...jobRequirementEvidence,
           [workspaceRoute.jobId]: Object.freeze(
             reviews.map((candidate) =>
               candidate.requirementId === request.requirementId
-                ? Object.freeze({ ...candidate, selectedEvidence, candidates })
+                ? Object.freeze({ ...candidate, coverage, selectedEvidence, candidates })
                 : candidate,
             ),
           ),
@@ -2584,6 +2697,53 @@ const AppShellCatalog = () => {
       );
       setLastActivity(
         `${selecting ? "Selected" : "Removed"} requirement evidence by explicit local action. No external request was made.`,
+      );
+      return;
+    }
+    if (request.id === "set-requirement-coverage" || request.id === "reset-requirement-coverage") {
+      if (workspaceRoute === null) {
+        setLastActivity("No local Job workspace is available for this coverage decision.");
+        return;
+      }
+      const reviews = jobRequirementEvidence[workspaceRoute.jobId] ?? Object.freeze([]);
+      const review = reviews.find(({ requirementId }) => requirementId === request.requirementId);
+      if (review?.coverage.rowVersion !== request.expectedRowVersion) {
+        setLastActivity("The coverage decision changed before this action. Reload before saving.");
+        return;
+      }
+      const requirement = (jobRequirements[workspaceRoute.jobId] ?? Object.freeze([])).find(
+        ({ id }) => id === request.requirementId,
+      );
+      if (requirement === undefined) {
+        setLastActivity(
+          "The requirement changed before this coverage decision. Reload before saving.",
+        );
+        return;
+      }
+      const coverage =
+        request.id === "reset-requirement-coverage"
+          ? automaticProofCoverage(requirement.category, review.selectedEvidence)
+          : reviewedProofCoverage(
+              request.state,
+              review.selectedEvidence,
+              (review.coverage.rowVersion ?? 0) + 1,
+            );
+      setJobRequirementEvidence(
+        Object.freeze({
+          ...jobRequirementEvidence,
+          [workspaceRoute.jobId]: Object.freeze(
+            reviews.map((candidate) =>
+              candidate.requirementId === request.requirementId
+                ? Object.freeze({ ...candidate, coverage })
+                : candidate,
+            ),
+          ),
+        }),
+      );
+      setLastActivity(
+        request.id === "reset-requirement-coverage"
+          ? `Reset coverage to the deterministic ${proofCoverageLabel(coverage.state)} decision. No external request was made.`
+          : `Saved the user-reviewed ${proofCoverageLabel(coverage.state)} coverage decision. No external request was made.`,
       );
       return;
     }
@@ -2599,13 +2759,14 @@ const AppShellCatalog = () => {
         return;
       }
       const requirements = jobRequirements[workspaceRoute.jobId] ?? Object.freeze([]);
+      const acceptedRequirementId = `accepted-${proposal.id}`;
       setJobRequirements(
         Object.freeze({
           ...jobRequirements,
           [workspaceRoute.jobId]: Object.freeze([
             ...requirements,
             Object.freeze({
-              id: `accepted-${proposal.id}`,
+              id: acceptedRequirementId,
               category: request.category,
               sourceCategory: proposal.sourceCategory,
               normalizedText: proposal.normalizedText,
@@ -2616,6 +2777,23 @@ const AppShellCatalog = () => {
               confidence: proposal.confidence,
               userConfirmed: true,
               rowVersion: 1,
+            }),
+          ]),
+        }),
+      );
+      const reviews = jobRequirementEvidence[workspaceRoute.jobId] ?? Object.freeze([]);
+      setJobRequirementEvidence(
+        Object.freeze({
+          ...jobRequirementEvidence,
+          [workspaceRoute.jobId]: Object.freeze([
+            ...reviews,
+            Object.freeze({
+              candidates: Object.freeze([]),
+              coverage: automaticProofCoverage(request.category, Object.freeze([])),
+              queryTerms: Object.freeze([]),
+              requirementId: acceptedRequirementId,
+              retrievalMode: "normalized-token" as const,
+              selectedEvidence: Object.freeze([]),
             }),
           ]),
         }),

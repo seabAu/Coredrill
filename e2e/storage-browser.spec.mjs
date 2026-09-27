@@ -63,6 +63,7 @@ const humanReadableDatasetNames = Object.freeze([
   "anecdote_evidence_link",
   "skill_evidence",
   "job_requirement_evidence_selection",
+  "job_requirement_coverage_decision",
   "answer_library_entry",
   "answer_library_version",
 ]);
@@ -116,10 +117,10 @@ test("opens official SQLite in a Worker, persists transactions, and restores a c
 
   await callHarness(sourcePage, "delete");
   const opened = await callHarness(sourcePage, "openAndMigrate");
-  expect(opened.appliedVersions).toEqual(Array.from({ length: 132 }, (_, index) => index + 1));
+  expect(opened.appliedVersions).toEqual(Array.from({ length: 133 }, (_, index) => index + 1));
   expect(opened.diagnostics).toMatchObject({
     adapterName: "official-sqlite-wasm-opfs-sahpool",
-    schemaVersion: 132,
+    schemaVersion: 133,
   });
   expect(["ready", "degraded"]).toContain(opened.diagnostics.health);
   expect(["best-effort", "durable"]).toContain(opened.diagnostics.persistence);
@@ -156,15 +157,15 @@ test("opens official SQLite in a Worker, persists transactions, and restores a c
     vaultId: committedVault.id,
   });
   expect(humanReadable).toEqual({
-    dataFileCount: 100,
-    datasetCount: 50,
+    dataFileCount: 102,
+    datasetCount: 51,
     datasetNames: humanReadableDatasetNames,
-    jsonFiles: 50,
-    csvFiles: 50,
+    jsonFiles: 51,
+    csvFiles: 51,
     rowCount: 1,
-    sourceSchemaVersion: 132,
+    sourceSchemaVersion: 133,
   });
-  expect(portable.schemaVersion).toBe(132);
+  expect(portable.schemaVersion).toBe(133);
   expect(portable.byteLength).toBeGreaterThan(0);
   expect(portable.sha256).toMatch(/^[a-f0-9]{64}$/u);
   const archiveRestore = await callHarness(sourcePage, "runPortableArchiveRestoreProof", {
@@ -175,7 +176,7 @@ test("opens official SQLite in a Worker, persists transactions, and restores a c
     staleName: "Stale target",
   });
   expect(archiveRestore).toMatchObject({
-    dataFileCount: 100,
+    dataFileCount: 102,
     attachmentCount: 0,
     corruptionRejected: true,
     corruptionPreservedTarget: true,

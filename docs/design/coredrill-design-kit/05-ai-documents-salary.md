@@ -61,6 +61,8 @@ The AI-disabled baseline parses bounded provenance-linked heading, list-item, an
 
 The AI-disabled evidence-retrieval baseline then proposes bounded candidates from exact canonical/alias skill matches, explicit skill/story/accomplishment relations, and lexical search across canonical Career Profile evidence. Each suggestion exposes its evidence kind, label, verification state, matched terms, retrieval mode, and reason codes. Suggestions do not imply coverage and do not enter a context plan automatically. Only evidence the user deliberately selects is stored for the requirement; unlinking is equally explicit. FTS5 is acceleration only, with deterministic normalized-token fallback and no embedding or network dependency.
 
+The AI-disabled coverage baseline applies `requirement-coverage-v1` only after that selection boundary. Context is Not Applicable; no selected evidence is Unknown rather than an inferred Gap; reviewed evidence with a structured relation can be Strength; other selected evidence is Partial. Gap is never inferred from failed retrieval. The user may explicitly choose any state, although Strength and Partial require selected evidence. Every state has a plain-language explanation, and stored user decisions retain the requirement/evidence basis so later changes request review without silently replacing the decision. This is evidence coverage, not employer verification, an ATS score, or a hiring probability.
+
 Never inflate years by double-counting overlapping projects/jobs. A deterministic interval union provides the initial estimate, then the user confirms it.
 
 ## Context plan

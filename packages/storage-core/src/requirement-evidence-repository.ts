@@ -1,6 +1,12 @@
 import {
+  REQUIREMENT_COVERAGE_STATES,
   REQUIREMENT_EVIDENCE_KINDS,
   REQUIREMENT_EVIDENCE_REASONS,
+  RequirementEvidenceError,
+  deriveRequirementCoverageDecision,
+  requirementCoverageSelectionBasis,
+  type RequirementCoverageDecisionDto,
+  type RequirementCoverageState,
   type RequirementEvidenceCandidateDto,
   type RequirementEvidenceFallbackReason,
   type RequirementEvidenceItemDto,
@@ -11,8 +17,9 @@ import {
   type RequirementEvidenceSearchMode,
   type RequirementEvidenceVerificationState,
   type SelectedRequirementEvidenceDto,
+  type StoredRequirementCoverageDecisionDto,
 } from "@coredrill/application";
-import { entityId, instant, type EntityId } from "@coredrill/domain";
+import { entityId, instant, type EntityId, type JobRequirementCategory } from "@coredrill/domain";
 
 import {
   sqlStatement,
@@ -45,14 +52,24 @@ interface EvidenceContentRow extends QueryRow {
 }
 
 interface RequirementRow extends QueryRow {
+  readonly category: string;
   readonly id: string;
   readonly normalized_text: string;
   readonly raw_text: string;
+  readonly row_version: number;
 }
 
 interface SelectionRow extends EvidenceContentRow {
   readonly requirement_id: string;
   readonly selected_at: string;
+}
+
+interface CoverageDecisionRow extends QueryRow {
+  readonly coverage_state: string;
+  readonly decided_at: string;
+  readonly requirement_row_version: number;
+  readonly row_version: number;
+  readonly selection_basis: string;
 }
 
 interface SkillRow extends QueryRow {
@@ -169,6 +186,28 @@ const verificationState = (value: string): RequirementEvidenceVerificationState 
   return value as RequirementEvidenceVerificationState;
 };
 
+const REQUIREMENT_CATEGORIES = new Set<JobRequirementCategory>([
+  "required",
+  "desired",
+  "responsibility",
+  "context",
+  "constraint",
+]);
+
+const requirementCategory = (value: string): JobRequirementCategory => {
+  if (!REQUIREMENT_CATEGORIES.has(value as JobRequirementCategory)) {
+    throw new Error("Stored requirement category is invalid.");
+  }
+  return value as JobRequirementCategory;
+};
+
+const requirementCoverageState = (value: string): RequirementCoverageState => {
+  if (!REQUIREMENT_COVERAGE_STATES.includes(value as RequirementCoverageState)) {
+    throw new Error("Stored requirement coverage state is invalid.");
+  }
+  return value as RequirementCoverageState;
+};
+
 const boundedText = (value: unknown, label: string, maximum: number): string => {
   if (
     typeof value !== "string" ||
@@ -215,6 +254,7 @@ const mapItem = (row: EvidenceContentRow): RequirementEvidenceItemDto => {
   return Object.freeze({
     evidenceId: entityId(TARGET_BY_KIND[kind].entity, row.evidence_id),
     evidenceKind: kind,
+    evidenceUpdatedAt: instant(row.updated_at),
     label: boundedText(row.label, "Stored evidence label", 1_024),
     summary,
     verificationState: verificationState(row.verification_state),
@@ -328,15 +368,49 @@ const readRequirement = async (
   requirementId: EntityId<"job-requirement">,
 ): Promise<RequirementRow> => {
   const rows = await database.query<RequirementRow>(
-    sqlStatement("SELECT id, normalized_text, raw_text FROM job_requirement WHERE id = ?", [
-      requirementId,
-    ]),
+    sqlStatement(
+      "SELECT id, category, normalized_text, raw_text, row_version FROM job_requirement WHERE id = ?",
+      [requirementId],
+    ),
   );
   const row = rows[0];
   if (rows.length !== 1 || row === undefined) {
     throw new TypeError("Requirement evidence retrieval target is missing.");
   }
   return row;
+};
+
+const readCoverageDecision = async (
+  database: DatabaseSession,
+  requirementId: EntityId<"job-requirement">,
+): Promise<StoredRequirementCoverageDecisionDto | null> => {
+  const rows = await database.query<CoverageDecisionRow>(
+    sqlStatement(
+      `SELECT coverage_state, requirement_row_version, selection_basis, decided_at, row_version
+       FROM job_requirement_coverage_decision
+       WHERE requirement_id = ?`,
+      [requirementId],
+    ),
+  );
+  if (rows.length > 1) throw new Error("Requirement coverage decision is not unique.");
+  const row = rows[0];
+  if (row === undefined) return null;
+  if (
+    !Number.isSafeInteger(row.requirement_row_version) ||
+    row.requirement_row_version < 1 ||
+    !Number.isSafeInteger(row.row_version) ||
+    row.row_version < 1 ||
+    row.selection_basis.length > 4_096
+  ) {
+    throw new Error("Stored requirement coverage decision is invalid.");
+  }
+  return Object.freeze({
+    decidedAt: instant(row.decided_at),
+    requirementRowVersion: row.requirement_row_version,
+    rowVersion: row.row_version,
+    selectionBasis: row.selection_basis,
+    state: requirementCoverageState(row.coverage_state),
+  });
 };
 
 const readSelections = async (
@@ -363,6 +437,8 @@ const readSelections = async (
     rows.map((row) =>
       Object.freeze({
         ...mapItem(row),
+        matchedTerms: Object.freeze([]),
+        reasons: Object.freeze([]),
         requirementId: entityId("job-requirement", row.requirement_id),
         selectedAt: instant(row.selected_at),
       }),
@@ -413,6 +489,22 @@ const toCandidate = (candidate: CandidateAccumulator): RequirementEvidenceCandid
       ),
     ),
     score: scoreCandidate(candidate),
+  });
+
+const withSelectionSignals = (
+  selected: SelectedRequirementEvidenceDto,
+  candidate: CandidateAccumulator | undefined,
+): SelectedRequirementEvidenceDto =>
+  Object.freeze({
+    ...selected,
+    matchedTerms: Object.freeze(candidate === undefined ? [] : [...candidate.matchedTerms].sort()),
+    reasons: Object.freeze(
+      candidate === undefined
+        ? []
+        : [...candidate.reasons].sort(
+            (left, right) => (REASON_ORDER.get(left) ?? 99) - (REASON_ORDER.get(right) ?? 99),
+          ),
+    ),
   });
 
 export class RequirementEvidenceRepository implements RequirementEvidencePort {
@@ -553,7 +645,14 @@ export class RequirementEvidenceRepository implements RequirementEvidencePort {
       }
     }
 
-    const selectedEvidence = await readSelections(this.database, input.requirementId);
+    const selectedEvidence = Object.freeze(
+      (await readSelections(this.database, input.requirementId)).map((selected) =>
+        withSelectionSignals(
+          selected,
+          accumulators.get(contentKey(selected.evidenceKind, selected.evidenceId)),
+        ),
+      ),
+    );
     const selectedKeys = new Set(
       selectedEvidence.map(({ evidenceKind: kind, evidenceId }) => contentKey(kind, evidenceId)),
     );
@@ -574,6 +673,12 @@ export class RequirementEvidenceRepository implements RequirementEvidencePort {
     return Object.freeze({
       candidates: Object.freeze(candidates),
       capability: Object.freeze({ mode: this.mode, fallbackReason: this.fallbackReason }),
+      coverage: deriveRequirementCoverageDecision({
+        category: requirementCategory(requirement.category),
+        requirementRowVersion: requirement.row_version,
+        selectedEvidence,
+        storedDecision: await readCoverageDecision(this.database, input.requirementId),
+      }),
       queryTerms: terms,
       requirementId: entityId("job-requirement", requirement.id),
       selectedEvidence,
@@ -649,6 +754,110 @@ export class RequirementEvidenceRepository implements RequirementEvidencePort {
       ),
     );
     return result.rowsAffected === 1;
+  }
+
+  public async setCoverageDecision(input: {
+    readonly decidedAt: string;
+    readonly expectedRowVersion: number | null;
+    readonly requirementId: EntityId<"job-requirement">;
+    readonly state: RequirementCoverageState;
+  }): Promise<RequirementCoverageDecisionDto> {
+    const decidedAt = instant(input.decidedAt);
+    const state = requirementCoverageState(input.state);
+    if (
+      input.expectedRowVersion !== null &&
+      (!Number.isSafeInteger(input.expectedRowVersion) || input.expectedRowVersion < 1)
+    ) {
+      throw new TypeError("Expected requirement coverage row version is invalid.");
+    }
+
+    return this.database.transaction(async (transaction) => {
+      const requirement = await readRequirement(transaction, input.requirementId);
+      const selectedEvidence = await readSelections(transaction, input.requirementId);
+      if ((state === "strength" || state === "partial") && selectedEvidence.length === 0) {
+        throw new TypeError("Strength and Partial coverage require selected evidence.");
+      }
+      const current = await readCoverageDecision(transaction, input.requirementId);
+      if (
+        (current === null && input.expectedRowVersion !== null) ||
+        (current !== null && current.rowVersion !== input.expectedRowVersion)
+      ) {
+        throw new RequirementEvidenceError("conflict");
+      }
+      const selectionBasis = requirementCoverageSelectionBasis(selectedEvidence);
+      if (current === null) {
+        const inserted = await transaction.execute(
+          sqlStatement(
+            `INSERT INTO job_requirement_coverage_decision(
+               requirement_id, coverage_state, requirement_row_version, selection_basis,
+               decided_at, updated_at, row_version
+             ) VALUES (?, ?, ?, ?, ?, ?, 1)`,
+            [
+              input.requirementId,
+              state,
+              requirement.row_version,
+              selectionBasis,
+              decidedAt,
+              decidedAt,
+            ],
+          ),
+        );
+        if (inserted.rowsAffected !== 1) {
+          throw new RequirementEvidenceError("conflict");
+        }
+      } else {
+        const updated = await transaction.execute(
+          sqlStatement(
+            `UPDATE job_requirement_coverage_decision
+             SET coverage_state = ?, requirement_row_version = ?, selection_basis = ?,
+                 decided_at = ?, updated_at = ?, row_version = row_version + 1
+             WHERE requirement_id = ? AND row_version = ?`,
+            [
+              state,
+              requirement.row_version,
+              selectionBasis,
+              decidedAt,
+              decidedAt,
+              input.requirementId,
+              current.rowVersion,
+            ],
+          ),
+        );
+        if (updated.rowsAffected !== 1) {
+          throw new RequirementEvidenceError("conflict");
+        }
+      }
+      const storedDecision = await readCoverageDecision(transaction, input.requirementId);
+      if (storedDecision === null)
+        throw new Error("Stored requirement coverage decision is missing.");
+      return deriveRequirementCoverageDecision({
+        category: requirementCategory(requirement.category),
+        requirementRowVersion: requirement.row_version,
+        selectedEvidence,
+        storedDecision,
+      });
+    });
+  }
+
+  public async resetCoverageDecision(input: {
+    readonly expectedRowVersion: number;
+    readonly requirementId: EntityId<"job-requirement">;
+  }): Promise<RequirementCoverageDecisionDto> {
+    if (!Number.isSafeInteger(input.expectedRowVersion) || input.expectedRowVersion < 1) {
+      throw new TypeError("Expected requirement coverage row version is invalid.");
+    }
+    await this.database.transaction(async (transaction) => {
+      await readRequirement(transaction, input.requirementId);
+      const deleted = await transaction.execute(
+        sqlStatement(
+          `DELETE FROM job_requirement_coverage_decision
+           WHERE requirement_id = ? AND row_version = ?`,
+          [input.requirementId, input.expectedRowVersion],
+        ),
+      );
+      if (deleted.rowsAffected !== 1) throw new RequirementEvidenceError("conflict");
+    });
+    return (await this.retrieve({ requirementId: input.requirementId, limit: 1 })).coverage;
   }
 }
 

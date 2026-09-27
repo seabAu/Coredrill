@@ -132,6 +132,54 @@ const assertBehavior = async (
   );
 };
 
+const assertCoverageBehavior = async (database: DatabasePort): Promise<void> => {
+  const repository = await openRequirementEvidenceRepository(database, { disableFts5: true });
+  const unknown = await repository.retrieve({ requirementId: IDS.requirement, limit: 5 });
+  assertContract(
+    unknown.coverage.state === "unknown" && unknown.coverage.source === "deterministic-rule",
+    "Missing evidence did not remain explicitly Unknown.",
+  );
+  await repository.select({
+    requirementId: IDS.requirement,
+    evidenceKind: "skill",
+    evidenceId: IDS.skill,
+    selectedAt: CREATED_AT,
+  });
+  const strength = await repository.retrieve({ requirementId: IDS.requirement, limit: 5 });
+  assertContract(
+    strength.coverage.state === "strength" && strength.coverage.explanation.length > 30,
+    "Reliable structured evidence did not produce explainable Strength coverage.",
+  );
+  const gap = await repository.setCoverageDecision({
+    requirementId: IDS.requirement,
+    state: "gap",
+    expectedRowVersion: null,
+    decidedAt: CREATED_AT,
+  });
+  assertContract(
+    gap.state === "gap" && gap.source === "user-confirmed" && gap.rowVersion === 1,
+    "Explicit Gap coverage did not persist.",
+  );
+  await repository.remove({
+    requirementId: IDS.requirement,
+    evidenceKind: "skill",
+    evidenceId: IDS.skill,
+  });
+  const stale = await repository.retrieve({ requirementId: IDS.requirement, limit: 5 });
+  assertContract(
+    stale.coverage.state === "gap" && stale.coverage.stale,
+    "Changed evidence silently replaced the reviewed coverage decision.",
+  );
+  const reset = await repository.resetCoverageDecision({
+    requirementId: IDS.requirement,
+    expectedRowVersion: 1,
+  });
+  assertContract(
+    reset.state === "unknown" && reset.source === "deterministic-rule",
+    "Reset did not restore deterministic Unknown coverage.",
+  );
+};
+
 export const createRequirementEvidenceContractSuite = (
   setup: RequirementEvidenceContractSetup,
 ): DatabaseContractSuite =>
@@ -154,6 +202,15 @@ export const createRequirementEvidenceContractSuite = (
           await setup.migrate(database);
           await seed(database);
           await assertBehavior(database, true, "normalized-token");
+        },
+      },
+      {
+        name: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components.requirementEvidence.cases
+          .preserveCoverageDecisions,
+        run: async (database) => {
+          await setup.migrate(database);
+          await seed(database);
+          await assertCoverageBehavior(database);
         },
       },
     ],

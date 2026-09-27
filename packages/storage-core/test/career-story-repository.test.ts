@@ -87,7 +87,7 @@ class NodeCareerStoryDatabase implements DatabasePort {
       health: "ready",
       persistence: "memory",
       readOnly: false,
-      schemaVersion: 132,
+      schemaVersion: 133,
     });
   }
 

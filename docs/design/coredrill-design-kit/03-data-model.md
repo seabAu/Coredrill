@@ -108,6 +108,8 @@ until an explicit replacement command is implemented and invoked.
 
 `MAT-003` adds schemas `0130` through `0132`. `skill_evidence` records a validated typed relationship from one canonical skill to employment, education, project, accomplishment, certification, publication, volunteer, or story evidence using one concrete foreign key. `job_requirement_evidence_selection` records only user-selected requirement/evidence pairs across all nine evidence kinds. `career_evidence_search_content` is a noncanonical union view over active Career Profile evidence; its adapter-created FTS5 index is rebuildable and excluded from export. Both durable relation tables are included in the portable JSON/CSV projection, while retrieval candidates, match scores, terms, and reason codes remain ephemeral explanations.
 
+`MAT-004` adds schema `0133`. `job_requirement_coverage_decision` stores one optional user-reviewed Strength, Partial, Gap, Unknown, or Not Applicable state per requirement with optimistic row version, decision time, the requirement row version reviewed, and a canonical content-free snapshot of selected evidence identifiers. Deterministic default coverage and its explanation remain a versioned projection, not duplicated truth. Comparing the stored basis with current requirement/evidence state makes an override visibly stale without overwriting it. The new table is included in portable JSON/CSV export and clean recovery; no aggregate fit, ATS, or hiring-probability score is stored.
+
 ### Pipeline and interactions
 
 `status_definition(id, name, category, color, is_system, sort_order, terminal)`

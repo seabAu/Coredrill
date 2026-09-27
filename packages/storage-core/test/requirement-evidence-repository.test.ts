@@ -75,7 +75,7 @@ class NodeEvidenceDatabase implements DatabasePort {
       health: "ready",
       persistence: "memory",
       readOnly: false,
-      schemaVersion: 132,
+      schemaVersion: 133,
     });
   }
   public close(): void {
@@ -313,6 +313,11 @@ describe("RequirementEvidenceRepository", () => {
       limit: 5,
     });
     expect(before.selectedEvidence).toEqual([]);
+    expect(before.coverage).toMatchObject({
+      source: "deterministic-rule",
+      state: "unknown",
+      stale: false,
+    });
     await expect(
       database.query(sqlStatement("SELECT * FROM job_requirement_evidence_selection")),
     ).resolves.toEqual([]);
@@ -330,7 +335,37 @@ describe("RequirementEvidenceRepository", () => {
     });
     const after = await repository.retrieve({ requirementId: IDS.requirementTypeScript, limit: 5 });
     expect(after.selectedEvidence).toHaveLength(1);
+    expect(after.selectedEvidence[0]?.reasons).toEqual(
+      expect.arrayContaining(["exact-skill", "lexical"]),
+    );
+    expect(after.coverage).toMatchObject({
+      source: "deterministic-rule",
+      state: "strength",
+      stale: false,
+    });
     expect(after.candidates.some(({ evidenceId }) => evidenceId === IDS.skill)).toBe(false);
+
+    await expect(
+      repository.setCoverageDecision({
+        requirementId: IDS.requirementTypeScript,
+        state: "partial",
+        expectedRowVersion: null,
+        decidedAt: SELECTED_AT,
+      }),
+    ).resolves.toMatchObject({
+      source: "user-confirmed",
+      state: "partial",
+      stale: false,
+      rowVersion: 1,
+    });
+    await expect(
+      repository.setCoverageDecision({
+        requirementId: IDS.requirementTypeScript,
+        state: "gap",
+        expectedRowVersion: 1,
+        decidedAt: SELECTED_AT,
+      }),
+    ).resolves.toMatchObject({ state: "gap", rowVersion: 2, stale: false });
 
     await expect(
       repository.remove({
@@ -340,12 +375,82 @@ describe("RequirementEvidenceRepository", () => {
       }),
     ).resolves.toBe(true);
     await expect(
+      repository.retrieve({ requirementId: IDS.requirementTypeScript, limit: 5 }),
+    ).resolves.toMatchObject({
+      coverage: { source: "user-confirmed", state: "gap", stale: true, rowVersion: 2 },
+    });
+    await expect(
+      repository.resetCoverageDecision({
+        requirementId: IDS.requirementTypeScript,
+        expectedRowVersion: 2,
+      }),
+    ).resolves.toMatchObject({ source: "deterministic-rule", state: "unknown" });
+    await expect(
       repository.remove({
         requirementId: IDS.requirementTypeScript,
         evidenceKind: "skill",
         evidenceId: IDS.skill,
       }),
     ).resolves.toBe(false);
+  });
+
+  it("enforces evidence prerequisites and optimistic coverage writes", async () => {
+    const repository = await openRequirementEvidenceRepository(database, { disableFts5: true });
+    await expect(
+      repository.setCoverageDecision({
+        requirementId: IDS.requirementTypeScript,
+        state: "strength",
+        expectedRowVersion: null,
+        decidedAt: SELECTED_AT,
+      }),
+    ).rejects.toThrow("require selected evidence");
+    await repository.setCoverageDecision({
+      requirementId: IDS.requirementTypeScript,
+      state: "unknown",
+      expectedRowVersion: null,
+      decidedAt: SELECTED_AT,
+    });
+    await expect(
+      repository.setCoverageDecision({
+        requirementId: IDS.requirementTypeScript,
+        state: "gap",
+        expectedRowVersion: null,
+        decidedAt: SELECTED_AT,
+      }),
+    ).rejects.toMatchObject({ code: "conflict" });
+    await expect(
+      repository.resetCoverageDecision({
+        requirementId: IDS.requirementTypeScript,
+        expectedRowVersion: 99,
+      }),
+    ).rejects.toMatchObject({ code: "conflict" });
+  });
+
+  it("marks a reviewed decision stale when selected evidence itself changes", async () => {
+    const repository = await openRequirementEvidenceRepository(database, { disableFts5: true });
+    await repository.select({
+      requirementId: IDS.requirementTypeScript,
+      evidenceKind: "skill",
+      evidenceId: IDS.skill,
+      selectedAt: SELECTED_AT,
+    });
+    await repository.setCoverageDecision({
+      requirementId: IDS.requirementTypeScript,
+      state: "strength",
+      expectedRowVersion: null,
+      decidedAt: SELECTED_AT,
+    });
+    await database.execute(
+      sqlStatement(
+        "UPDATE skill SET verification_state = 'stale', updated_at = ?, row_version = row_version + 1 WHERE id = ?",
+        [SELECTED_AT, IDS.skill],
+      ),
+    );
+    await expect(
+      repository.retrieve({ requirementId: IDS.requirementTypeScript, limit: 5 }),
+    ).resolves.toMatchObject({
+      coverage: { source: "user-confirmed", state: "strength", stale: true },
+    });
   });
 
   it("rejects cross-kind identifiers and inactive evidence at the database boundary", async () => {

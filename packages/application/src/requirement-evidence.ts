@@ -1,4 +1,10 @@
-import { entityId, instant, type EntityId, type Instant } from "@coredrill/domain";
+import {
+  entityId,
+  instant,
+  type EntityId,
+  type Instant,
+  type JobRequirementCategory,
+} from "@coredrill/domain";
 
 import {
   defineCommand,
@@ -40,9 +46,21 @@ export type RequirementEvidenceSearchMode = "fts5" | "normalized-token";
 export type RequirementEvidenceFallbackReason =
   "fts5-initialization-failed" | "fts5-query-failed" | "module-unavailable" | "policy-disabled";
 
+export const REQUIREMENT_COVERAGE_STATES = Object.freeze([
+  "strength",
+  "partial",
+  "gap",
+  "unknown",
+  "not_applicable",
+] as const);
+export type RequirementCoverageState = (typeof REQUIREMENT_COVERAGE_STATES)[number];
+export const REQUIREMENT_COVERAGE_RULE_VERSION = "requirement-coverage-v1" as const;
+export type RequirementCoverageSource = "deterministic-rule" | "user-confirmed";
+
 export interface RequirementEvidenceItemDto {
   readonly evidenceId: EntityId;
   readonly evidenceKind: RequirementEvidenceKind;
+  readonly evidenceUpdatedAt: Instant;
   readonly label: string;
   readonly summary: string;
   readonly verificationState: RequirementEvidenceVerificationState;
@@ -56,8 +74,35 @@ export interface RequirementEvidenceCandidateDto extends RequirementEvidenceItem
 }
 
 export interface SelectedRequirementEvidenceDto extends RequirementEvidenceItemDto {
+  readonly matchedTerms: readonly string[];
+  readonly reasons: readonly RequirementEvidenceReason[];
   readonly requirementId: EntityId<"job-requirement">;
   readonly selectedAt: Instant;
+}
+
+export interface StoredRequirementCoverageDecisionDto {
+  readonly decidedAt: Instant;
+  readonly requirementRowVersion: number;
+  readonly rowVersion: number;
+  readonly selectionBasis: string;
+  readonly state: RequirementCoverageState;
+}
+
+export interface RequirementCoverageDecisionDto {
+  readonly decidedAt: Instant | null;
+  readonly explanation: string;
+  readonly ruleVersion: typeof REQUIREMENT_COVERAGE_RULE_VERSION;
+  readonly rowVersion: number | null;
+  readonly source: RequirementCoverageSource;
+  readonly stale: boolean;
+  readonly state: RequirementCoverageState;
+}
+
+export interface DeriveRequirementCoverageInput {
+  readonly category: JobRequirementCategory;
+  readonly requirementRowVersion: number;
+  readonly selectedEvidence: readonly SelectedRequirementEvidenceDto[];
+  readonly storedDecision: StoredRequirementCoverageDecisionDto | null;
 }
 
 export interface RequirementEvidenceRetrievalDto {
@@ -68,6 +113,7 @@ export interface RequirementEvidenceRetrievalDto {
   };
   readonly queryTerms: readonly string[];
   readonly requirementId: EntityId<"job-requirement">;
+  readonly coverage: RequirementCoverageDecisionDto;
   readonly selectedEvidence: readonly SelectedRequirementEvidenceDto[];
 }
 
@@ -83,6 +129,17 @@ export interface SelectRequirementEvidenceInput {
 }
 
 export type RemoveRequirementEvidenceInput = SelectRequirementEvidenceInput;
+
+export interface SetRequirementCoverageDecisionInput {
+  readonly expectedRowVersion: number | null;
+  readonly requirementId: string;
+  readonly state: RequirementCoverageState;
+}
+
+export interface ResetRequirementCoverageDecisionInput {
+  readonly expectedRowVersion: number;
+  readonly requirementId: string;
+}
 
 export interface RequirementEvidencePort {
   retrieve(input: {
@@ -100,6 +157,16 @@ export interface RequirementEvidencePort {
     readonly evidenceKind: RequirementEvidenceKind;
     readonly evidenceId: EntityId;
   }): Promise<boolean>;
+  setCoverageDecision(input: {
+    readonly decidedAt: Instant;
+    readonly expectedRowVersion: number | null;
+    readonly requirementId: EntityId<"job-requirement">;
+    readonly state: RequirementCoverageState;
+  }): Promise<RequirementCoverageDecisionDto>;
+  resetCoverageDecision(input: {
+    readonly expectedRowVersion: number;
+    readonly requirementId: EntityId<"job-requirement">;
+  }): Promise<RequirementCoverageDecisionDto>;
 }
 
 export type RequirementEvidenceErrorCode =
@@ -132,6 +199,14 @@ export interface RequirementEvidenceOperations {
     SelectedRequirementEvidenceDto
   >;
   readonly removeEvidenceCommand: ApplicationCommand<RemoveRequirementEvidenceInput, boolean>;
+  readonly setCoverageDecisionCommand: ApplicationCommand<
+    SetRequirementCoverageDecisionInput,
+    RequirementCoverageDecisionDto
+  >;
+  readonly resetCoverageDecisionCommand: ApplicationCommand<
+    ResetRequirementCoverageDecisionInput,
+    RequirementCoverageDecisionDto
+  >;
 }
 
 const VALIDATION_ERROR: ApplicationError = Object.freeze({
@@ -193,6 +268,152 @@ const evidenceKind = (value: unknown): RequirementEvidenceKind => {
   return value as RequirementEvidenceKind;
 };
 
+const coverageState = (value: unknown): RequirementCoverageState => {
+  if (
+    typeof value !== "string" ||
+    !REQUIREMENT_COVERAGE_STATES.includes(value as RequirementCoverageState)
+  ) {
+    throw new TypeError("Requirement coverage state is invalid.");
+  }
+  return value as RequirementCoverageState;
+};
+
+function positiveRowVersion(value: unknown, allowNull: false): number;
+function positiveRowVersion(value: unknown, allowNull: true): number | null;
+function positiveRowVersion(value: unknown, allowNull: boolean): number | null {
+  if (allowNull && value === null) return null;
+  if (!Number.isSafeInteger(value) || (value as number) < 1) {
+    throw new TypeError("Requirement coverage row version is invalid.");
+  }
+  return value as number;
+}
+
+export const requirementCoverageSelectionBasis = (
+  selectedEvidence: readonly SelectedRequirementEvidenceDto[],
+): string =>
+  [...selectedEvidence]
+    .map(
+      ({ evidenceId, evidenceKind: kind, evidenceUpdatedAt, verificationState }) =>
+        `${kind}:${evidenceId}:${evidenceUpdatedAt}:${verificationState}`,
+    )
+    .sort()
+    .join("|");
+
+const evidenceLabel = (items: readonly SelectedRequirementEvidenceDto[]): string => {
+  const first = items[0];
+  if (first === undefined) return "No selected evidence";
+  if (items.length === 1) return `“${first.label}”`;
+  return `“${first.label}” and ${String(items.length - 1)} other selected evidence item${items.length === 2 ? "" : "s"}`;
+};
+
+const manualExplanation = (
+  state: RequirementCoverageState,
+  selectedEvidence: readonly SelectedRequirementEvidenceDto[],
+): string => {
+  const evidence = evidenceLabel(selectedEvidence);
+  switch (state) {
+    case "strength":
+      return `You marked this as Strength using ${evidence}. This is your evidence judgment, not employer verification or a hiring probability.`;
+    case "partial":
+      return `You marked this as Partial using ${evidence}. The linked evidence supports only part of the requirement.`;
+    case "gap":
+      return selectedEvidence.length === 0
+        ? "You marked this as a Gap after review. No selected evidence currently supports the requirement."
+        : `You marked this as a Gap after reviewing ${evidence}; it remains linked only as truthful transferable context.`;
+    case "unknown":
+      return selectedEvidence.length === 0
+        ? "You marked this as Unknown because available information does not establish whether the requirement is covered."
+        : `You marked this as Unknown after reviewing ${evidence}; the selected evidence does not establish a decision yet.`;
+    case "not_applicable":
+      return "You marked this requirement Not Applicable. It is excluded from qualification evidence coverage without being deleted.";
+  }
+};
+
+const deterministicCoverage = (
+  category: JobRequirementCategory,
+  selectedEvidence: readonly SelectedRequirementEvidenceDto[],
+): RequirementCoverageDecisionDto => {
+  if (category === "context") {
+    return Object.freeze({
+      decidedAt: null,
+      explanation:
+        "This is job context rather than a qualification, so no qualification evidence is expected.",
+      ruleVersion: REQUIREMENT_COVERAGE_RULE_VERSION,
+      rowVersion: null,
+      source: "deterministic-rule",
+      stale: false,
+      state: "not_applicable",
+    });
+  }
+  if (selectedEvidence.length === 0) {
+    return Object.freeze({
+      decidedAt: null,
+      explanation:
+        "No evidence is selected. Coverage is Unknown—not a Gap—until you review or add evidence.",
+      ruleVersion: REQUIREMENT_COVERAGE_RULE_VERSION,
+      rowVersion: null,
+      source: "deterministic-rule",
+      stale: false,
+      state: "unknown",
+    });
+  }
+
+  const strong = selectedEvidence.find(
+    ({ reasons, verificationState }) =>
+      (verificationState === "user_confirmed" || verificationState === "source_backed") &&
+      reasons.some((reason) => reason !== "lexical"),
+  );
+  if (strong !== undefined) {
+    return Object.freeze({
+      decidedAt: null,
+      explanation: `${evidenceLabel([strong])} has a structured requirement relation and is ${strong.verificationState.replaceAll("_", " ")}. This supports Strength, not a hiring probability.`,
+      ruleVersion: REQUIREMENT_COVERAGE_RULE_VERSION,
+      rowVersion: null,
+      source: "deterministic-rule",
+      stale: false,
+      state: "strength",
+    });
+  }
+
+  return Object.freeze({
+    decidedAt: null,
+    explanation: `${evidenceLabel(selectedEvidence)} is relevant, but the selected evidence does not combine a structured relation with user-confirmed or source-backed verification. Coverage is Partial.`,
+    ruleVersion: REQUIREMENT_COVERAGE_RULE_VERSION,
+    rowVersion: null,
+    source: "deterministic-rule",
+    stale: false,
+    state: "partial",
+  });
+};
+
+export const deriveRequirementCoverageDecision = (
+  input: DeriveRequirementCoverageInput,
+): RequirementCoverageDecisionDto => {
+  if (!Number.isSafeInteger(input.requirementRowVersion) || input.requirementRowVersion < 1) {
+    throw new TypeError("Requirement coverage input row version is invalid.");
+  }
+  const automatic = deterministicCoverage(input.category, input.selectedEvidence);
+  if (input.storedDecision === null) return automatic;
+
+  const state = coverageState(input.storedDecision.state);
+  const stale =
+    input.storedDecision.requirementRowVersion !== input.requirementRowVersion ||
+    input.storedDecision.selectionBasis !==
+      requirementCoverageSelectionBasis(input.selectedEvidence);
+  const explanation = stale
+    ? `You previously marked this as ${state.replaceAll("_", " ")}, but the requirement or selected evidence changed afterward. Review the decision; Coredrill has not overwritten it.`
+    : manualExplanation(state, input.selectedEvidence);
+  return Object.freeze({
+    decidedAt: instant(input.storedDecision.decidedAt),
+    explanation,
+    ruleVersion: REQUIREMENT_COVERAGE_RULE_VERSION,
+    rowVersion: positiveRowVersion(input.storedDecision.rowVersion, false),
+    source: "user-confirmed",
+    stale,
+    state,
+  });
+};
+
 const failureFrom = <Value>(error: unknown): ApplicationResult<Value> =>
   applicationFailure(
     error instanceof RequirementEvidenceError ? PORT_ERRORS[error.code] : UNKNOWN_ERROR,
@@ -206,7 +427,9 @@ export const createRequirementEvidenceOperations = (
     !isRecord(dependencies.evidence) ||
     typeof dependencies.evidence.retrieve !== "function" ||
     typeof dependencies.evidence.select !== "function" ||
-    typeof dependencies.evidence.remove !== "function"
+    typeof dependencies.evidence.remove !== "function" ||
+    typeof dependencies.evidence.setCoverageDecision !== "function" ||
+    typeof dependencies.evidence.resetCoverageDecision !== "function"
   ) {
     throw new TypeError("Requirement evidence operations require a complete local port.");
   }
@@ -271,9 +494,47 @@ export const createRequirementEvidenceOperations = (
     },
   );
 
+  const setCoverageDecisionCommand = defineCommand<
+    SetRequirementCoverageDecisionInput,
+    RequirementCoverageDecisionDto
+  >("SetRequirementCoverageDecisionCommand", async (input, context) => {
+    if (!isRecord(input)) return applicationFailure(VALIDATION_ERROR);
+    try {
+      return applicationSuccess(
+        await dependencies.evidence.setCoverageDecision({
+          decidedAt: instant(context.initiatedAt),
+          expectedRowVersion: positiveRowVersion(input.expectedRowVersion, true),
+          requirementId: entityId("job-requirement", input.requirementId),
+          state: coverageState(input.state),
+        }),
+      );
+    } catch (error) {
+      return error instanceof TypeError ? applicationFailure(VALIDATION_ERROR) : failureFrom(error);
+    }
+  });
+
+  const resetCoverageDecisionCommand = defineCommand<
+    ResetRequirementCoverageDecisionInput,
+    RequirementCoverageDecisionDto
+  >("ResetRequirementCoverageDecisionCommand", async (input) => {
+    if (!isRecord(input)) return applicationFailure(VALIDATION_ERROR);
+    try {
+      return applicationSuccess(
+        await dependencies.evidence.resetCoverageDecision({
+          expectedRowVersion: positiveRowVersion(input.expectedRowVersion, false),
+          requirementId: entityId("job-requirement", input.requirementId),
+        }),
+      );
+    } catch (error) {
+      return error instanceof TypeError ? applicationFailure(VALIDATION_ERROR) : failureFrom(error);
+    }
+  });
+
   return Object.freeze({
     retrieveCandidatesQuery,
     selectEvidenceCommand,
     removeEvidenceCommand,
+    setCoverageDecisionCommand,
+    resetCoverageDecisionCommand,
   });
 };

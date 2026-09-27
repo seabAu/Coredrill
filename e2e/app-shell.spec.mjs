@@ -70,7 +70,7 @@ test("runs and records the complete accountless browser recovery journey", async
       version: 1,
       runtime: "browser",
       adapterName: "official-sqlite-wasm-opfs-sahpool",
-      schemaVersion: 132,
+      schemaVersion: 133,
       vaultName: "Canonical local job search",
       jobTitle: "Research Operations Lead",
       finalStage: "Interviewing",
@@ -1023,6 +1023,18 @@ test("Job core tabs expose normalized facts, chronology, company context, and pr
   await expect(page.getByRole("status").first()).toContainText("No external request was made");
 
   const evidenceReview = workspace.getByLabel("Evidence for Lead cross-functional delivery");
+  const coverageReview = evidenceReview.getByRole("group", {
+    name: "Coverage decision for Lead cross-functional delivery",
+  });
+  const coverageDecision = coverageReview.getByRole("combobox", {
+    name: "Coverage decision for Lead cross-functional delivery",
+  });
+  const coverageState = coverageReview.getByLabel(
+    "Current evidence coverage for Lead cross-functional delivery",
+  );
+  await expect(coverageState).toHaveText("Unknown");
+  await expect(coverageReview).toContainText("Unknown—not a Gap");
+  await expect(coverageDecision).toHaveValue("automatic");
   await expect(evidenceReview.getByText("FTS5", { exact: false })).toBeVisible();
   await expect(evidenceReview.getByText("structured relations", { exact: false })).toBeVisible();
   await expect(evidenceReview.getByText("Portfolio launch", { exact: true })).toBeVisible();
@@ -1040,6 +1052,30 @@ test("Job core tabs expose normalized facts, chronology, company context, and pr
   await expect(page.getByRole("status").first()).toContainText(
     "Selected requirement evidence by explicit local action",
   );
+  await expect(coverageState).toHaveText("Strength");
+  await expect(coverageReview).toContainText("not a hiring probability");
+
+  for (const [value, label] of [
+    ["partial", "Partial"],
+    ["gap", "Gap"],
+    ["unknown", "Unknown"],
+    ["not_applicable", "Not Applicable"],
+  ]) {
+    await coverageDecision.selectOption(value);
+    await expect(coverageDecision).toHaveValue(value);
+    await expect(coverageState).toHaveText(label);
+    await expect(page.getByRole("status").first()).toContainText(
+      `Saved the user-reviewed ${label} coverage decision`,
+    );
+  }
+  await coverageDecision.selectOption("automatic");
+  await expect(coverageDecision).toHaveValue("automatic");
+  await expect(coverageState).toHaveText("Strength");
+  await expect(page.getByRole("status").first()).toContainText(
+    "Reset coverage to the deterministic Strength decision",
+  );
+
+  await coverageDecision.selectOption("gap");
   await evidenceReview
     .getByRole("button", {
       name: "Remove Portfolio launch from Lead cross-functional delivery",
@@ -1051,6 +1087,12 @@ test("Job core tabs expose normalized facts, chronology, company context, and pr
   await expect(page.getByRole("status").first()).toContainText(
     "Removed requirement evidence by explicit local action",
   );
+  await expect(coverageState).toHaveText("Gap");
+  await expect(coverageReview).toContainText("Review needed after evidence or requirement changes");
+  await expect(coverageReview).toContainText("has not overwritten it");
+  await coverageDecision.selectOption("automatic");
+  await expect(coverageState).toHaveText("Unknown");
+  await expect(coverageReview).toContainText("Unknown—not a Gap");
   expect(externalRequests).toEqual([]);
 
   const privateNote = "Private question about portfolio ownership";

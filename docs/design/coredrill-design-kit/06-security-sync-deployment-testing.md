@@ -332,6 +332,8 @@ The native checkpoint runs the reusable callback-transaction suite and shared va
 
 `MAT-003` adds a frozen retrieval evaluation covering TypeScript, recovery engineering, and AWS requirements in both FTS5 and forced-fallback modes. It requires recall@5 of 1 for the expected evidence and zero known-excluded links, and it checks that suggestions remain read-only until explicit selection. The version-4 shared repository aggregate exercises exact skill matching, typed relation expansion, FTS acceleration, normalized-token fallback, durable selection, and explicit removal in Node, browser SQLite/OPFS, and native rusqlite. UI and browser tests keep reasons and retrieval mode visible, prove only deliberate actions change the selected set, record zero external requests, and retain accessibility and responsive behavior.
 
+`MAT-004` adds pure rule tests for all five coverage states, application tests for explicit optimistic override/reset commands, repository tests for durable decisions and stale-basis detection, and the version-5 shared repository case across Node, browser, and native adapters. The browser journey exercises automatic Unknown and Strength, every user-reviewed state, reset, and a selection change that preserves but marks the prior decision stale; it asserts no external request and no aggregate score. Schema-133 portable export and the regenerated two-attachment recovery fixture include the decision row, while invalid states, evidence-free Strength/Partial, and stale row versions fail closed.
+
 `Q2-004` adds an adversarial runtime audit above the existing connector
 fixtures. The transport rejects unknown descriptor keys and any drift in method,
 credential mode, headers, destination shape, or fixed policy fields before an

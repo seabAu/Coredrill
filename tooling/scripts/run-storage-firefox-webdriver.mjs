@@ -260,16 +260,16 @@ try {
     proof.typedVaultDeletionPreview !== true ||
     proof.typedVaultDeletionRejectedSafely !== true ||
     proof.typedVaultDeletionCleanProfile !== true ||
-    proof.repositoryContractCases !== 20 ||
+    proof.repositoryContractCases !== 21 ||
     proof.careerRepositoryContractCases !== 4 ||
-    proof.humanReadableDataFiles !== 100 ||
-    proof.humanReadableDatasets !== 50 ||
-    humanReadable.csvFiles !== 50 ||
-    humanReadable.jsonFiles !== 50 ||
+    proof.humanReadableDataFiles !== 102 ||
+    proof.humanReadableDatasets !== 51 ||
+    humanReadable.csvFiles !== 51 ||
+    humanReadable.jsonFiles !== 51 ||
     humanReadable.rowCount !== 2 ||
     humanReadable.sourceSchemaVersion !== expectedSchemaVersion ||
     archiveRestore.attachmentCount !== 0 ||
-    archiveRestore.dataFileCount !== 100 ||
+    archiveRestore.dataFileCount !== 102 ||
     archiveRestore.corruptionRejected !== true ||
     archiveRestore.corruptionPreservedTarget !== true ||
     archiveRestore.conflict !== "same_vault_replace" ||

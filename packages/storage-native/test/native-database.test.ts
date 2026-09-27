@@ -338,11 +338,11 @@ describe("native SQLite repository and migration contracts", () => {
         name: "applies the shared migration and reopens its ledger",
         run: async (database) => {
           await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
-            schemaVersion: 132,
-            appliedVersions: Array.from({ length: 132 }, (_, index) => index + 1),
+            schemaVersion: 133,
+            appliedVersions: Array.from({ length: 133 }, (_, index) => index + 1),
           });
           await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
-            schemaVersion: 132,
+            schemaVersion: 133,
             appliedVersions: [],
           });
         },
@@ -392,8 +392,8 @@ describe("native SQLite repository and migration contracts", () => {
         await applySqlMigrations(database, migrations(), APPLIED_AT);
       },
     });
-    expect(PHASE_1_REPOSITORY_CONTRACT_MANIFEST.schemaVersion).toBe(4);
-    expect(PHASE_1_REPOSITORY_CONTRACT_CASE_NAMES).toHaveLength(20);
+    expect(PHASE_1_REPOSITORY_CONTRACT_MANIFEST.schemaVersion).toBe(5);
+    expect(PHASE_1_REPOSITORY_CONTRACT_CASE_NAMES).toHaveLength(21);
     await expect(runDatabaseContractSuite(nativeAdapter, suite)).resolves.toEqual({
       adapterName: "native-rusqlite-candidate",
       suiteName: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.suiteName,
@@ -449,7 +449,7 @@ describe("native SQLite repository and migration contracts", () => {
       adapterName: "native-rusqlite-candidate",
       health: "ready",
       persistence: "durable",
-      schemaVersion: 132,
+      schemaVersion: 133,
     });
     await expect(reopened.delete()).resolves.toBe(true);
   });
@@ -469,7 +469,7 @@ describe("native SQLite repository and migration contracts", () => {
     });
     await applySqlMigrations(database, migrations(), APPLIED_AT);
     await expect(database.exportPortable()).resolves.toMatchObject({
-      schemaVersion: 132,
+      schemaVersion: 133,
       byteLength: expect.any(Number),
       sha256: expect.stringMatching(/^[a-f0-9]{64}$/u),
     });
@@ -479,7 +479,7 @@ describe("native SQLite repository and migration contracts", () => {
       retentionCount: 7,
       knownGoodBackups: 1,
       cleanupPending: false,
-      archive: { schemaVersion: 132, sha256: expect.stringMatching(/^[a-f0-9]{64}$/u) },
+      archive: { schemaVersion: 133, sha256: expect.stringMatching(/^[a-f0-9]{64}$/u) },
     });
     await database.delete();
   });
@@ -581,6 +581,7 @@ describe("native SQLite repository and migration contracts", () => {
                (SELECT count(*) FROM anecdote_evidence_link) AS storyEvidenceLinks,
                (SELECT count(*) FROM skill_evidence) AS skillEvidenceLinks,
                (SELECT count(*) FROM job_requirement_evidence_selection) AS requirementEvidenceSelections,
+               (SELECT count(*) FROM job_requirement_coverage_decision) AS requirementCoverageDecisions,
                (SELECT count(*) FROM import_run) AS importRuns,
                (SELECT count(*) FROM career_import_proposal) AS importProposals,
                (SELECT count(*) FROM career_import_resolution) AS importResolutions,
@@ -721,7 +722,7 @@ describe("native SQLite repository and migration contracts", () => {
           version: 1,
           runtime: "windows-native",
           adapterName: "native-rusqlite-candidate",
-          schemaVersion: 132,
+          schemaVersion: 133,
           vaultName: "Canonical local job search",
           jobTitle: "Research Operations Lead",
           finalStage: "Interviewing",

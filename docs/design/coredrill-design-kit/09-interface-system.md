@@ -267,6 +267,9 @@ US work authorization               Required   Unknown    Answer privately
 - Before coverage classification exists, each requirement separates **Selected evidence** from **Suggested evidence**. Suggestions show their evidence type, verification state, retrieval mode, matched terms, and plain-language reasons.
 - Retrieval is read-only. A suggestion moves into the requirement evidence set only after the user activates **Select evidence**; **Remove selection** reverses that explicit relation without deleting Career Profile evidence.
 - Suggested candidates never display Strength, Partial, Gap, or a score during `MAT-003`; those decisions belong to `MAT-004` and must remain independently explainable.
+- `MAT-004` places an **Evidence coverage** decision and explanation above selected/suggested evidence for every requirement. Automatic decisions are visibly labeled; the user can choose Strength, Partial, Gap, Unknown, or Not Applicable and can return to the deterministic rule.
+- Strength and Partial controls remain unavailable until evidence is selected. Missing evidence reads **Unknown—not a Gap**. If the requirement or selected evidence changes after a user decision, the prior state remains visible with a review-needed explanation; it is never silently recalculated.
+- Coverage uses neutral labels and text, never red/green candidate judgment, a circular fit score, an employer ATS claim, or hiring probability.
 
 ### Document studio
 

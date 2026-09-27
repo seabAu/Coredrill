@@ -25,6 +25,15 @@ const MODEL = Object.freeze({
   jobId: "job-northstar",
   requirementEvidence: Object.freeze([
     Object.freeze({
+      coverage: Object.freeze({
+        decidedAt: null,
+        explanation: "No evidence is selected. Coverage is Unknown—not a Gap—until review.",
+        rowVersion: null,
+        ruleVersion: "requirement-coverage-v1",
+        source: "deterministic-rule" as const,
+        stale: false,
+        state: "unknown" as const,
+      }),
       requirementId: "requirement-delivery",
       retrievalMode: "fts5" as const,
       queryTerms: Object.freeze(["cross-functional", "delivery"]),
@@ -176,6 +185,8 @@ describe("JobWorkspaceContent contract", () => {
       "correct-requirement-category",
       "select-requirement-evidence",
       "remove-requirement-evidence",
+      "set-requirement-coverage",
+      "reset-requirement-coverage",
     ]);
     expect(isJobWorkspaceContentTab("source")).toBe(true);
     expect(isJobWorkspaceContentTab("documents")).toBe(false);
@@ -202,6 +213,11 @@ describe("JobWorkspaceContent contract", () => {
     expect(markup).toContain("Portfolio launch");
     expect(markup).toContain("Suggestions are explainable and read-only");
     expect(markup).toContain("Select evidence");
+    expect(markup).toContain("Evidence coverage");
+    expect(markup).toContain("Unknown—not a Gap");
+    expect(markup).toContain("Use automatic decision");
+    expect(markup).toContain("Not Applicable");
+    expect(markup).toContain("No aggregate score");
     expect(markup).toContain("not employer verification or hiring probability");
   });
 

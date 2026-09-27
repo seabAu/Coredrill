@@ -1,10 +1,12 @@
 import { useState, type ChangeEvent, type SyntheticEvent } from "react";
 import {
   JOB_REQUIREMENT_CATEGORIES,
+  REQUIREMENT_COVERAGE_STATES,
   type JobRequirementCategory,
   type ListingSnapshotCompensationV1,
   type ListingSnapshotDiffV1,
   type ListingSnapshotValueChangeV1,
+  type RequirementCoverageState,
 } from "@coredrill/application";
 
 export const JOB_WORKSPACE_CONTENT_TABS = Object.freeze([
@@ -35,6 +37,8 @@ export const JOB_WORKSPACE_CONTENT_ACTIONS = Object.freeze([
   "correct-requirement-category",
   "select-requirement-evidence",
   "remove-requirement-evidence",
+  "set-requirement-coverage",
+  "reset-requirement-coverage",
 ] as const);
 export type JobWorkspaceContentActionId = (typeof JOB_WORKSPACE_CONTENT_ACTIONS)[number];
 
@@ -60,13 +64,26 @@ export type JobWorkspaceContentActionRequest =
       readonly requirementId: string;
     }
   | {
+      readonly id: "set-requirement-coverage";
+      readonly expectedRowVersion: number | null;
+      readonly requirementId: string;
+      readonly state: RequirementCoverageState;
+    }
+  | {
+      readonly id: "reset-requirement-coverage";
+      readonly expectedRowVersion: number;
+      readonly requirementId: string;
+    }
+  | {
       readonly id: Exclude<
         JobWorkspaceContentActionId,
         | "accept-requirement-proposal"
         | "add-timeline-note"
         | "correct-requirement-category"
         | "remove-requirement-evidence"
+        | "reset-requirement-coverage"
         | "select-requirement-evidence"
+        | "set-requirement-coverage"
       >;
       readonly targetId?: string;
     };
@@ -86,6 +103,15 @@ export interface JobWorkspaceTimelineItem {
 export interface JobWorkspaceContentModel {
   readonly jobId: string;
   readonly requirementEvidence: readonly {
+    readonly coverage: {
+      readonly decidedAt: string | null;
+      readonly explanation: string;
+      readonly rowVersion: number | null;
+      readonly ruleVersion: string;
+      readonly source: "deterministic-rule" | "user-confirmed";
+      readonly stale: boolean;
+      readonly state: RequirementCoverageState;
+    };
     readonly requirementId: string;
     readonly retrievalMode: "fts5" | "normalized-token";
     readonly queryTerms: readonly string[];
@@ -96,6 +122,8 @@ export interface JobWorkspaceContentModel {
       readonly summary: string;
       readonly verificationState: string;
       readonly privacyTags: readonly string[];
+      readonly reasons: readonly string[];
+      readonly matchedTerms: readonly string[];
     }[];
     readonly candidates: readonly {
       readonly id: string;
@@ -279,7 +307,7 @@ const validateModel = (model: JobWorkspaceContentModel): void => {
   }
 
   if (
-    model.requirementEvidence.length > model.requirements.length ||
+    model.requirementEvidence.length !== model.requirements.length ||
     new Set(model.requirementEvidence.map(({ requirementId }) => requirementId)).size !==
       model.requirementEvidence.length
   ) {
@@ -288,13 +316,26 @@ const validateModel = (model: JobWorkspaceContentModel): void => {
   const requirementIds = new Set(model.requirements.map(({ id }) => id));
   for (const review of model.requirementEvidence) {
     const evidence = [...review.selectedEvidence, ...review.candidates];
+    const { coverage } = review;
     if (
       !requirementIds.has(review.requirementId) ||
       !["fts5", "normalized-token"].includes(review.retrievalMode) ||
       review.queryTerms.length > 24 ||
       review.selectedEvidence.length > 32 ||
       review.candidates.length > 50 ||
-      new Set(evidence.map(({ id, kind }) => `${kind}:${id}`)).size !== evidence.length
+      new Set(evidence.map(({ id, kind }) => `${kind}:${id}`)).size !== evidence.length ||
+      !REQUIREMENT_COVERAGE_STATES.includes(coverage.state) ||
+      !["deterministic-rule", "user-confirmed"].includes(coverage.source) ||
+      coverage.explanation.trim().length === 0 ||
+      !isBoundedText(coverage.explanation, 2_048) ||
+      coverage.ruleVersion.trim().length === 0 ||
+      (coverage.source === "deterministic-rule" &&
+        (coverage.rowVersion !== null || coverage.decidedAt !== null || coverage.stale)) ||
+      (coverage.source === "user-confirmed" &&
+        (coverage.decidedAt === null ||
+          coverage.decidedAt.trim().length === 0 ||
+          !Number.isSafeInteger(coverage.rowVersion) ||
+          (coverage.rowVersion ?? 0) < 1))
     ) {
       throw new RangeError("Job workspace requirement evidence is invalid.");
     }
@@ -305,7 +346,11 @@ const validateModel = (model: JobWorkspaceContentModel): void => {
         item.label.trim().length === 0 ||
         !isBoundedText(item.summary, 512) ||
         item.verificationState.trim().length === 0 ||
-        item.privacyTags.length > 16
+        item.privacyTags.length > 16 ||
+        item.reasons.length > 8 ||
+        item.matchedTerms.length > 24 ||
+        item.reasons.some((reason) => reason.trim().length === 0) ||
+        item.matchedTerms.some((term) => term.trim().length === 0)
       ) {
         throw new RangeError("Job workspace requirement evidence item is invalid.");
       }
@@ -532,6 +577,11 @@ const OverviewPanel = ({ model, onAction }: JobWorkspaceContentPanelProps) => {
 const categoryLabel = (category: JobRequirementCategory): string =>
   `${category.slice(0, 1).toLocaleUpperCase()}${category.slice(1)}`;
 
+const coverageLabel = (state: RequirementCoverageState): string =>
+  state === "not_applicable"
+    ? "Not Applicable"
+    : `${state.slice(0, 1).toLocaleUpperCase()}${state.slice(1)}`;
+
 const RequirementsPanel = ({ model, onAction }: JobWorkspaceContentPanelProps) => {
   const acceptProposal = (
     event: SyntheticEvent<HTMLFormElement>,
@@ -746,6 +796,72 @@ function RequirementEvidenceReview({
       aria-label={`Evidence for ${requirement.normalizedText}`}
       className="cd-requirement-evidence"
     >
+      <div
+        aria-label={`Coverage decision for ${requirement.normalizedText}`}
+        className="cd-requirement-coverage"
+        role="group"
+      >
+        <div className="cd-requirement-evidence__heading">
+          <div>
+            <h5>Evidence coverage</h5>
+            <p>{review.coverage.explanation}</p>
+          </div>
+          <output
+            aria-label={`Current evidence coverage for ${requirement.normalizedText}`}
+            className="cd-chip"
+          >
+            {coverageLabel(review.coverage.state)}
+          </output>
+        </div>
+        <label>
+          Coverage decision for {requirement.normalizedText}
+          <select
+            aria-label={`Coverage decision for ${requirement.normalizedText}`}
+            onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+              if (event.target.value === "automatic") {
+                if (review.coverage.rowVersion !== null) {
+                  onAction?.({
+                    id: "reset-requirement-coverage",
+                    expectedRowVersion: review.coverage.rowVersion,
+                    requirementId: requirement.id,
+                  });
+                }
+                return;
+              }
+              onAction?.({
+                id: "set-requirement-coverage",
+                expectedRowVersion: review.coverage.rowVersion,
+                requirementId: requirement.id,
+                state: event.target.value as RequirementCoverageState,
+              });
+            }}
+            value={
+              review.coverage.source === "deterministic-rule" ? "automatic" : review.coverage.state
+            }
+          >
+            <option value="automatic">Use automatic decision</option>
+            {REQUIREMENT_COVERAGE_STATES.map((state) => (
+              <option
+                disabled={
+                  review.selectedEvidence.length === 0 &&
+                  (state === "strength" || state === "partial")
+                }
+                key={state}
+                value={state}
+              >
+                {coverageLabel(state)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <small>
+          {review.coverage.source === "deterministic-rule"
+            ? "Automatic deterministic rule"
+            : "User-reviewed decision"}
+          {review.coverage.stale ? " · Review needed after evidence or requirement changes" : ""} ·
+          No aggregate score
+        </small>
+      </div>
       <div className="cd-requirement-evidence__heading">
         <div>
           <h5>Evidence candidates</h5>
@@ -772,6 +888,7 @@ function RequirementEvidenceReview({
                 <p>{item.summary}</p>
                 <small>
                   {item.kind} · {item.verificationState.replaceAll("_", " ")}
+                  {item.reasons.length === 0 ? "" : ` · ${item.reasons.join(", ")}`}
                 </small>
               </div>
               <button

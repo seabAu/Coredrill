@@ -14,7 +14,7 @@ import {
 } from "./database-port.js";
 import type { PortableArchiveDataFileSourceV1 } from "./portable-archive-writer.js";
 
-export const PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION = 132 as const;
+export const PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION = 133 as const;
 export const PORTABLE_DATA_EXPORT_SUPPORTED_SOURCE_SCHEMA_VERSIONS = Object.freeze([
   101,
   111,
@@ -22,6 +22,7 @@ export const PORTABLE_DATA_EXPORT_SUPPORTED_SOURCE_SCHEMA_VERSIONS = Object.free
   115,
   126,
   129,
+  132,
   PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION,
 ] as const);
 export const PORTABLE_DATA_EXPORT_WRITER_LIMITS = Object.freeze({
@@ -902,6 +903,21 @@ export const PORTABLE_DATA_EXPORT_DATASETS: readonly DatasetSpec[] = Object.free
     ],
     orderBy: ["requirement_id", "evidence_kind", "evidence_id"],
     minimumSourceSchemaVersion: 131,
+  }),
+  dataset({
+    name: "job_requirement_coverage_decision",
+    table: "job_requirement_coverage_decision",
+    columns: [
+      "requirement_id",
+      "coverage_state",
+      "requirement_row_version",
+      "selection_basis",
+      "decided_at",
+      "updated_at",
+      "row_version",
+    ],
+    orderBy: ["requirement_id"],
+    minimumSourceSchemaVersion: 133,
   }),
   dataset({
     name: "answer_library_entry",
