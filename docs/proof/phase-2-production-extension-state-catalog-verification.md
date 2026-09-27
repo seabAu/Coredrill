@@ -2,7 +2,7 @@
 
 Date: 2026-09-26  
 Checklist item: `PEX-001`  
-Status: implementation complete; hosted clean-commit proof pending
+Status: complete; local and hosted clean-commit proof passing
 
 ## Outcome
 
@@ -71,6 +71,17 @@ PEX001_STATE_CATALOG_PROOF {"states":6,"recognized":true,"unrecognized":true,"ne
   and store package, passing from the frozen offline dependency graph.
 - Format, foundation-record, import-boundary, Changesets, and repository secret
   checks: passing.
+
+## Hosted verification
+
+- Implementation commit:
+  [`db32dd29ba4f3da9bff62ecf8c2622936d2ea3d4`](https://github.com/seabAu/Coredrill/commit/db32dd29ba4f3da9bff62ecf8c2622936d2ea3d4)
+- [Foundation CI run 36287389246](https://github.com/seabAu/Coredrill/actions/runs/36287389246):
+  passing on the aggregate build/static/test/policy gate, exact Chrome 151 and
+  152 storage/application journeys, exact Firefox 153 and 154 storage
+  journeys, Chromium/Firefox extension transfer and package proof,
+  full-history secret scan, and Windows, macOS, and Ubuntu native storage and
+  package lanes. The push-only dependency-review job was correctly skipped.
 
 ## Decision impact
 

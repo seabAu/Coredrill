@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-09-26
 Current milestone: Phase 2 — capture and approved extraction (`GATE-0` and `GATE-1` external-evidence blockers remain open)
-Current work item: `PEX-001` — implement the production-extension state catalog
-Next recommended slice: `PEX-002` after `PEX-001` proof
+Current work item: `PEX-002` — implement the production side-panel preview and correction surface
+Next recommended slice: `PEX-003` after `PEX-002` proof
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `PEX-002` after `PEX-001` proof
 | Field | Value |
 |---|---|
 | Milestone | Phase 2, with the independent Phase 0 and Phase 1 evidence gates retained below |
-| Item range | `PEX-001` |
+| Item range | `PEX-002` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-09-26 |
-| Expected proof | A deterministic production-extension state catalog and focused UI tests cover recognized, unrecognized, needs-input, queued, transferred, and permission states with truthful status, recovery, and next-action copy; no background capture, host-permission broadening, or premature preview/transfer implementation is introduced |
-| Blocker | None for `PEX-001`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
-| Next handoff | Read the accepted production-extension UX, capture, permission, source-policy, and transfer contracts end to end; audit the existing Phase 0 extension shell and message boundary; then implement the smallest versioned state catalog and semantic state presentation without broadening permissions or absorbing `PEX-002` through `PEX-004`. |
+| Expected proof | Production side-panel browser E2E proves a bounded provisional preview with title, company, location, salary, detected source, confidence, and freshness; the user can recapture selected page text, correct the preview, and add a bounded local note before explicit queueing, with no navigation capture, source fetch, trusted-field promotion, or permission broadening |
+| Blocker | None for `PEX-002`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
+| Next handoff | Read the current `PageCaptureSnapshot`, `CaptureEnvelopeV1`, field-evidence, source/freshness, side-panel, and production-package contracts end to end. The snapshot currently has no note or corrected-preview fields: define a bounded versioned representation with compatibility proof before editing the panel, keep every correction explicitly user-authored and provisional, and leave outbox retry/expiry, handshake, and hosted-transfer work to `PEX-003` through `PEX-005`. |
 
 ## Milestone status
 
@@ -240,7 +240,7 @@ Next recommended slice: `PEX-002` after `PEX-001` proof
 
 ## Production extension
 
-- [ ] **PEX-001** Implement recognized/unrecognized/needs-input/queued/transferred/permission states. — Proof: _state catalog_
+- [x] **PEX-001** Implement recognized/unrecognized/needs-input/queued/transferred/permission states. — Proof: [strict six-state catalog, deterministic resolver/classifier, semantic panel, least-privilege package inspection, browser regression, and hosted cross-platform verification](../../proof/phase-2-production-extension-state-catalog-verification.md)
 - [ ] **PEX-002** Implement side-panel preview, page-selection correction, note, and source/freshness display. — Proof: _browser E2E_
 - [ ] **PEX-003** Implement bounded persistent outbox, retry/backoff, expiry warning, export, and post-ack cleanup. — Proof: _crash/restart tests_
 - [ ] **PEX-004** Implement exact app-origin/extension-ID validation and compatibility handshake. — Proof: _security tests_
