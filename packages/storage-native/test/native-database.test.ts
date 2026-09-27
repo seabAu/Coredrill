@@ -338,11 +338,11 @@ describe("native SQLite repository and migration contracts", () => {
         name: "applies the shared migration and reopens its ledger",
         run: async (database) => {
           await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
-            schemaVersion: 126,
-            appliedVersions: Array.from({ length: 126 }, (_, index) => index + 1),
+            schemaVersion: 129,
+            appliedVersions: Array.from({ length: 129 }, (_, index) => index + 1),
           });
           await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
-            schemaVersion: 126,
+            schemaVersion: 129,
             appliedVersions: [],
           });
         },
@@ -449,7 +449,7 @@ describe("native SQLite repository and migration contracts", () => {
       adapterName: "native-rusqlite-candidate",
       health: "ready",
       persistence: "durable",
-      schemaVersion: 126,
+      schemaVersion: 129,
     });
     await expect(reopened.delete()).resolves.toBe(true);
   });
@@ -469,7 +469,7 @@ describe("native SQLite repository and migration contracts", () => {
     });
     await applySqlMigrations(database, migrations(), APPLIED_AT);
     await expect(database.exportPortable()).resolves.toMatchObject({
-      schemaVersion: 126,
+      schemaVersion: 129,
       byteLength: expect.any(Number),
       sha256: expect.stringMatching(/^[a-f0-9]{64}$/u),
     });
@@ -479,7 +479,7 @@ describe("native SQLite repository and migration contracts", () => {
       retentionCount: 7,
       knownGoodBackups: 1,
       cleanupPending: false,
-      archive: { schemaVersion: 126, sha256: expect.stringMatching(/^[a-f0-9]{64}$/u) },
+      archive: { schemaVersion: 129, sha256: expect.stringMatching(/^[a-f0-9]{64}$/u) },
     });
     await database.delete();
   });
@@ -568,6 +568,7 @@ describe("native SQLite repository and migration contracts", () => {
         database.query<QueryRow>(
           sqlStatement(
             `SELECT
+               (SELECT count(*) FROM job_requirement) AS jobRequirements,
                (SELECT count(*) FROM experience) +
                (SELECT count(*) FROM education) +
                (SELECT count(*) FROM project) +
@@ -718,7 +719,7 @@ describe("native SQLite repository and migration contracts", () => {
           version: 1,
           runtime: "windows-native",
           adapterName: "native-rusqlite-candidate",
-          schemaVersion: 126,
+          schemaVersion: 129,
           vaultName: "Canonical local job search",
           jobTitle: "Research Operations Lead",
           finalStage: "Interviewing",

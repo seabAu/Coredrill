@@ -4,6 +4,7 @@ export const DOMAIN_VALIDATION_CODES = [
   "invalid_date_only",
   "invalid_entity_id",
   "invalid_instant",
+  "invalid_job_requirement_category",
   "invalid_minor_units",
   "invalid_money_rate",
   "invalid_source_reference",

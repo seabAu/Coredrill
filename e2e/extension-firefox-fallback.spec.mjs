@@ -64,8 +64,8 @@ test("imports the checksummed Firefox JSON fallback idempotently into durable SQ
   await page.waitForFunction(() => globalThis.coredrillExtensionInbox !== undefined);
   await callStorage(page, "delete");
   await expect(callStorage(page, "openAndMigrate")).resolves.toMatchObject({
-    appliedVersions: Array.from({ length: 126 }, (_, index) => index + 1),
-    diagnostics: { schemaVersion: 126 },
+    appliedVersions: Array.from({ length: 129 }, (_, index) => index + 1),
+    diagnostics: { schemaVersion: 129 },
   });
 
   const json = JSON.stringify(exported);

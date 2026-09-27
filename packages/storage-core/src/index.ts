@@ -7,6 +7,7 @@ export {
 export {
   createDatabaseJobActivityPort,
   createDatabaseJobPipelinePort,
+  createDatabaseJobRequirementPort,
   createDatabaseVaultLifecyclePort,
 } from "./application-ports.js";
 export {
@@ -21,6 +22,13 @@ export {
   type CreateAnswerLibraryEntryRecordInput,
   type UpdateAnswerLibraryEntryRecordInput,
 } from "./answer-library-repository.js";
+export {
+  JobRequirementRepository,
+  createJobRequirementRepository,
+  type CorrectJobRequirementRecordInput,
+  type CreateJobRequirementRecordInput,
+  type JobRequirementRecord,
+} from "./job-requirement-repository.js";
 export {
   createTransactionSemanticsSuite,
   DatabaseContractViolation,

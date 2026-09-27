@@ -8,6 +8,11 @@ export {
 } from "./errors.js";
 export { entityId, generateEntityId, isEntityId, type EntityId } from "./identifiers.js";
 export {
+  JOB_REQUIREMENT_CATEGORIES,
+  jobRequirementCategory,
+  type JobRequirementCategory,
+} from "./job-requirement.js";
+export {
   MONEY_RATE_INTERVALS,
   currencyCode,
   minorUnits,

@@ -70,7 +70,7 @@ test("runs and records the complete accountless browser recovery journey", async
       version: 1,
       runtime: "browser",
       adapterName: "official-sqlite-wasm-opfs-sahpool",
-      schemaVersion: 126,
+      schemaVersion: 129,
       vaultName: "Canonical local job search",
       jobTitle: "Research Operations Lead",
       finalStage: "Interviewing",
@@ -974,7 +974,27 @@ test("Job core tabs expose normalized facts, chronology, company context, and pr
   await expect(workspace.getByText("Application deadline", { exact: true })).toBeVisible();
   await expect(workspace.getByText("Review source fields", { exact: true })).toBeVisible();
 
+  await workspace.getByRole("button", { name: "Requirements", exact: true }).click();
+  await expect(page).toHaveURL(/\/jobs\/board-northstar\/requirements$/u);
+  await expect(workspace.locator('[data-job-content-tab="requirements"]')).toBeVisible();
+  await expect(workspace.getByText("91% extraction confidence", { exact: true })).toBeVisible();
+  await expect(
+    workspace.getByText("You will lead cross-functional delivery across product and operations."),
+  ).toBeVisible();
+  const deliveryCategory = workspace.getByLabel("Category for Lead cross-functional delivery");
+  await expect(deliveryCategory).toHaveValue("required");
+  await deliveryCategory.selectOption("responsibility");
+  await expect(deliveryCategory).toHaveValue("responsibility");
+  await expect(
+    workspace.getByText(/User-confirmed category · extracted as Required/u),
+  ).toBeVisible();
+  await expect(page.getByRole("status").first()).toContainText(
+    "Saved the user-confirmed requirement category as responsibility",
+  );
+  await expect(page.getByRole("status").first()).toContainText("No external request was made");
+
   const privateNote = "Private question about portfolio ownership";
+  await workspace.getByRole("button", { name: "Overview", exact: true }).click();
   await workspace.getByRole("textbox", { name: "Add a local note" }).fill(privateNote);
   await workspace.getByRole("button", { name: "Add timeline note" }).click();
   const activity = page.getByRole("status").first();

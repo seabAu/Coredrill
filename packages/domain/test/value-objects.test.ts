@@ -14,6 +14,7 @@ import {
   instant,
   instantFromDate,
   isEntityId,
+  jobRequirementCategory,
   minorUnits,
   money,
   moneyRate,
@@ -243,5 +244,14 @@ describe("web URLs, source references, and confidence", () => {
         expect.objectContaining({ code: "invalid_confidence" }),
       );
     }
+  });
+
+  it("keeps the reviewed requirement categories explicit", () => {
+    for (const category of ["required", "desired", "responsibility", "context", "constraint"]) {
+      expect(jobRequirementCategory(category)).toBe(category);
+    }
+    expect(() => jobRequirementCategory("preferred")).toThrowError(
+      expect.objectContaining({ code: "invalid_job_requirement_category" }),
+    );
   });
 });

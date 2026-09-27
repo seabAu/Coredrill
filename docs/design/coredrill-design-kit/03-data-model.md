@@ -77,9 +77,9 @@ A contact field is nullable and never guessed. Store public data only when sourc
 
 `source_snapshot(id, job_source_id, captured_at, extractor_id, extractor_version, raw_text, sanitized_html, structured_json, content_hash, retention_class)`
 
-`job_requirement(id, job_id, kind, normalized_text, raw_text, skill_id, required_level, years_min, years_max, confidence, user_confirmed, sort_order)`
+`job_requirement(id, job_id, category, source_category, normalized_text, raw_text, provenance_id, confidence, user_confirmed, sort_order, created_at, updated_at, row_version)`
 
-Requirement kind: `required`, `preferred`, `responsibility`, `education`, `certification`, `work_authorization`, `other`.
+Requirement category: `required`, `desired`, `responsibility`, `context`, or `constraint`. Education, certification, work authorization, skill, years, and seniority remain separate extracted mappings or constraint details rather than competing top-level UI categories.
 
 `job_tag(job_id, tag_id)` and `tag(id, name, color)`.
 
@@ -101,6 +101,8 @@ snapshot rows; user-confirmed current values therefore remain authoritative
 until an explicit replacement command is implemented and invoked.
 
 `CAP-005` keeps that rule on schema 92 rather than adding a speculative conflict table. The application reconciliation boundary accepts trusted existing candidates separately from untrusted incoming proposals; incoming data carrying an embedded `userConfirmation` is rejected. It revalidates every candidate, preserves the complete bounded set, compares normalized JSON canonically, and emits a version-1 unresolved conflict when one field has differing values. An existing active confirmation remains selected regardless of method or confidence. Without one, the documented source-method ladder produces a deterministic suggestion only, and the result still requires user review. Multiple active confirmations, reused candidate/conflict IDs, and a conflict too large for the 32-candidate contract fail closed before persistence. The existing repository boundary continues to reject generic supersession of a confirmed `field_value`; only `replaceConfirmedFieldValue` can confirm the replacement and link the prior value in one transaction, preserving both history rows.
+
+`MAT-001` adds schema versions `127`–`129`. Each `job_requirement` belongs to one job and one provenance row whose immutable snapshot chain belongs to that same job. Storage copies the bounded extraction confidence while the joined provenance supplies the exact non-null source excerpt, source pointer, and extraction method. `source_category`, raw/normalized text, provenance, confidence, ordering, and creation time are trigger-protected source facts. A user correction updates only the current `category`, sets durable `user_confirmed`, and advances the optimistic row version; it never rewrites the extracted category or source evidence. The five-category vocabulary is shared with the accepted Requirements interface. Deterministic parsing, evidence retrieval, and coverage decisions remain `MAT-002` through `MAT-004`.
 
 ### Pipeline and interactions
 
@@ -236,9 +238,12 @@ Validate maximum depth/count and field/operator compatibility. Compile to parame
   does not match its manifest facts.
 - The version-1 human-readable projection reads a reviewed schema milestone
   once and emits every user-owned dataset available at that milestone as paired
-  JSON/CSV files. Schema 126 emits 47 datasets and 94 files, including Career
+  JSON/CSV files. Schema 126 emits 47 datasets and 94 files. Schema 129 adds
+  the provenance-bound `job_requirement` dataset and emits 48 datasets and 96
+  files, including Career
   Profile evidence, source/verification state, import proposals/resolutions,
-  story-evidence relationships, Answer Library provenance/version history, and
+  story-evidence relationships, Answer Library provenance/version history,
+  requirement correction/source facts, and
   attachment manifests/links. It retains row versions, nulls, and Unicode while
   excluding migration, device, diagnostic, derived-search, undo, and
   SQLite-internal tables. The SQLite member remains authoritative for restore.

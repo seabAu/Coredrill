@@ -16,6 +16,7 @@ const recoveryInput = Object.freeze({
 });
 
 const expectedPhase3Inventory = Object.freeze({
+  jobRequirements: 1,
   careerEvidence: 8,
   stories: 1,
   storyEvidenceLinks: 8,
@@ -54,7 +55,7 @@ test("restores complete evidence relationships and attachments into clean browse
   const sourcePage = await openHarness(sourceContext);
   await callHarness(sourcePage, "delete");
   const opened = await callHarness(sourcePage, "openAndMigrate");
-  expect(opened.diagnostics.schemaVersion).toBe(126);
+  expect(opened.diagnostics.schemaVersion).toBe(129);
   await callHarness(sourcePage, "writeVault", {
     id: recoveryInput.vaultId,
     name: "BKP-007 representative vault",
@@ -63,7 +64,7 @@ test("restores complete evidence relationships and attachments into clean browse
   });
   const source = await callHarness(sourcePage, "createPortableRecoveryFixture", recoveryInput);
   expect(source).toMatchObject({
-    dataFileCount: 94,
+    dataFileCount: 96,
     attachmentCount: 2,
     phase3Inventory: expectedPhase3Inventory,
   });

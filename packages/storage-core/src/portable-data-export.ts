@@ -14,12 +14,13 @@ import {
 } from "./database-port.js";
 import type { PortableArchiveDataFileSourceV1 } from "./portable-archive-writer.js";
 
-export const PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION = 126 as const;
+export const PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION = 129 as const;
 export const PORTABLE_DATA_EXPORT_SUPPORTED_SOURCE_SCHEMA_VERSIONS = Object.freeze([
   101,
   111,
   112,
   115,
+  126,
   PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION,
 ] as const);
 export const PORTABLE_DATA_EXPORT_WRITER_LIMITS = Object.freeze({
@@ -263,6 +264,28 @@ export const PORTABLE_DATA_EXPORT_DATASETS: readonly DatasetSpec[] = Object.free
       "row_version",
     ],
     orderBy: ["source_snapshot_id", "captured_at", "id"],
+  }),
+  dataset({
+    name: "job_requirement",
+    table: "job_requirement",
+    columns: [
+      "id",
+      "job_id",
+      "category",
+      "source_category",
+      "normalized_text",
+      "raw_text",
+      "provenance_id",
+      "confidence",
+      "user_confirmed",
+      "sort_order",
+      "created_at",
+      "updated_at",
+      "row_version",
+    ],
+    booleanColumns: ["user_confirmed"],
+    orderBy: ["job_id", "sort_order", "id"],
+    minimumSourceSchemaVersion: 129,
   }),
   dataset({
     name: "company_alias",

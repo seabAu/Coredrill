@@ -298,6 +298,21 @@ export {
   type UpdateAnswerLibraryEntryPortInput,
 } from "./answer-library.js";
 export {
+  JobRequirementError,
+  createJobRequirementOperations,
+  type CorrectJobRequirementInput,
+  type CorrectJobRequirementPortInput,
+  type JobRequirementDto,
+  type JobRequirementErrorCode,
+  type JobRequirementOperationDependencies,
+  type JobRequirementOperations,
+  type JobRequirementPort,
+  type ListJobRequirementsInput,
+  type RecordJobRequirementInput,
+  type RecordJobRequirementPortInput,
+} from "./job-requirements.js";
+export { JOB_REQUIREMENT_CATEGORIES, type JobRequirementCategory } from "@coredrill/domain";
+export {
   CAREER_PROFILE_ERROR_CODES,
   MANUAL_CAREER_PROFILE_KINDS,
   CareerProfileError,

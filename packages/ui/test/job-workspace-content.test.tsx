@@ -23,6 +23,21 @@ const MODEL = Object.freeze({
     websiteUrl: "https://northstar.example",
   }),
   jobId: "job-northstar",
+  requirements: Object.freeze([
+    Object.freeze({
+      id: "requirement-delivery",
+      category: "responsibility" as const,
+      sourceCategory: "required" as const,
+      normalizedText: "Lead cross-functional delivery",
+      rawText: "You will lead cross-functional delivery.",
+      sourcePointer: "/description/requirements/0",
+      sourceExcerpt: "You will lead cross-functional delivery.",
+      extractionMethod: "jsonld",
+      confidence: 0.91,
+      userConfirmed: true,
+      rowVersion: 2,
+    }),
+  ]),
   overview: Object.freeze({
     application: Object.freeze({
       appliedAtLabel: "2026-08-21",
@@ -103,7 +118,13 @@ const renderContent = (
 
 describe("JobWorkspaceContent contract", () => {
   it("freezes the reviewed core tabs and local action vocabulary", () => {
-    expect(JOB_WORKSPACE_CONTENT_TABS).toEqual(["overview", "timeline", "company", "source"]);
+    expect(JOB_WORKSPACE_CONTENT_TABS).toEqual([
+      "overview",
+      "requirements",
+      "timeline",
+      "company",
+      "source",
+    ]);
     expect(JOB_WORKSPACE_CONTENT_ACTIONS).toEqual([
       "add-timeline-note",
       "edit-job-notes",
@@ -118,9 +139,23 @@ describe("JobWorkspaceContent contract", () => {
       "open-source-snapshot",
       "compare-source",
       "refresh-source",
+      "correct-requirement-category",
     ]);
     expect(isJobWorkspaceContentTab("source")).toBe(true);
     expect(isJobWorkspaceContentTab("documents")).toBe(false);
+  });
+
+  it("renders provenance-bound requirements and explicit manual category correction", () => {
+    const markup = renderContent("requirements");
+
+    expect(markup).toContain('data-job-content-tab="requirements"');
+    expect(markup).toContain('aria-label="Job requirements"');
+    expect(markup).toContain("Lead cross-functional delivery");
+    expect(markup).toContain("91% extraction confidence");
+    expect(markup).toContain("You will lead cross-functional delivery.");
+    expect(markup).toContain("extracted as Required");
+    expect(markup).toContain("Category for Lead cross-functional delivery");
+    expect(markup).toContain("not employer verification or hiring probability");
   });
 
   it("renders normalized facts, attention, notes, and a bounded quick timeline entry", () => {

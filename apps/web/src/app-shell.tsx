@@ -1154,9 +1154,39 @@ const tableRowsFromBoard = (columns: readonly BoardColumn[]): readonly PipelineT
 const STANDARD_TABLE_ROWS = tableRowsFromBoard(STANDARD_BOARD_COLUMNS);
 const STANDARD_BOARD_JOBS = Object.freeze(STANDARD_BOARD_COLUMNS.flatMap(({ items }) => items));
 
+const NORTHSTAR_REQUIREMENTS = Object.freeze([
+  Object.freeze({
+    id: "requirement-northstar-delivery",
+    category: "required" as const,
+    sourceCategory: "required" as const,
+    normalizedText: "Lead cross-functional delivery",
+    rawText: "You will lead cross-functional delivery across product and operations.",
+    sourcePointer: "/description/requirements/0",
+    sourceExcerpt: "You will lead cross-functional delivery across product and operations.",
+    extractionMethod: "jsonld",
+    confidence: 0.91,
+    userConfirmed: false,
+    rowVersion: 1,
+  }),
+  Object.freeze({
+    id: "requirement-northstar-healthcare",
+    category: "desired" as const,
+    sourceCategory: "desired" as const,
+    normalizedText: "Healthcare domain experience",
+    rawText: "Healthcare domain experience is helpful.",
+    sourcePointer: "/description/qualifications/2",
+    sourceExcerpt: "Healthcare domain experience is helpful.",
+    extractionMethod: "selector",
+    confidence: 0.78,
+    userConfirmed: false,
+    rowVersion: 1,
+  }),
+] as const satisfies JobWorkspaceContentModel["requirements"]);
+
 const jobWorkspaceContentFor = (
   job: PipelineTableJob,
   relatedJobs: readonly PipelineTableJob[],
+  requirements: JobWorkspaceContentModel["requirements"],
 ): JobWorkspaceContentModel => {
   const boardRecord = STANDARD_BOARD_JOBS.find(({ id }) => id === job.id);
   const timelineItems: JobWorkspaceContentModel["timeline"]["items"] = Object.freeze([
@@ -1227,6 +1257,7 @@ const jobWorkspaceContentFor = (
       websiteUrl: null,
     }),
     jobId: job.id,
+    requirements,
     overview: Object.freeze({
       application:
         job.appliedDate === null
@@ -1391,6 +1422,9 @@ const AppShellCatalog = () => {
           : "home",
   );
   const [boardAnnouncement, setBoardAnnouncement] = useState("");
+  const [jobRequirements, setJobRequirements] = useState<
+    Readonly<Record<string, JobWorkspaceContentModel["requirements"]>>
+  >(() => Object.freeze({ "board-northstar": NORTHSTAR_REQUIREMENTS }));
   const [boardColumns, setBoardColumns] = useState<readonly BoardColumn[]>(
     appearance.boardMode === "reference"
       ? REFERENCE_BOARD_COLUMNS
@@ -1621,7 +1655,13 @@ const AppShellCatalog = () => {
           title: workspaceJob.title,
         });
   const workspaceContentModel =
-    workspaceJob === undefined ? null : jobWorkspaceContentFor(workspaceJob, tableRows);
+    workspaceJob === undefined
+      ? null
+      : jobWorkspaceContentFor(
+          workspaceJob,
+          tableRows,
+          jobRequirements[workspaceJob.id] ?? Object.freeze([]),
+        );
   const page = canonicalJourneyMode
     ? Object.freeze({ eyebrow: "Phase 1 local proof", title: "Accountless recovery journey" })
     : workspaceRoute?.mode === "full-page" && workspaceModel !== null
@@ -2357,6 +2397,41 @@ const AppShellCatalog = () => {
     if (request.id === "add-timeline-note") {
       setLastActivity(
         `Prepared a ${String(request.value.length)}-character local timeline note. No durable write occurs in this proof host.`,
+      );
+      return;
+    }
+    if (request.id === "correct-requirement-category") {
+      if (workspaceRoute === null) {
+        setLastActivity("No local Job workspace is available for this correction.");
+        return;
+      }
+      const requirements = jobRequirements[workspaceRoute.jobId] ?? Object.freeze([]);
+      const target = requirements.find(({ id }) => id === request.targetId);
+      if (target?.rowVersion !== request.expectedRowVersion) {
+        setLastActivity(
+          "The requirement changed before the correction could commit. Reload before saving.",
+        );
+        return;
+      }
+      setJobRequirements(
+        Object.freeze({
+          ...jobRequirements,
+          [workspaceRoute.jobId]: Object.freeze(
+            requirements.map((requirement) =>
+              requirement.id === request.targetId
+                ? Object.freeze({
+                    ...requirement,
+                    category: request.category,
+                    userConfirmed: true,
+                    rowVersion: requirement.rowVersion + 1,
+                  })
+                : requirement,
+            ),
+          ),
+        }),
+      );
+      setLastActivity(
+        `Saved the user-confirmed requirement category as ${request.category}. No external request was made.`,
       );
       return;
     }

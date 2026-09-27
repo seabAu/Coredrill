@@ -329,6 +329,7 @@ interface PortableRecoveryRestoreProof {
 }
 
 interface Phase3RecoveryInventory {
+  readonly jobRequirements: number;
   readonly careerEvidence: number;
   readonly stories: number;
   readonly storyEvidenceLinks: number;
@@ -1565,6 +1566,7 @@ const readPhase3RecoveryInventory = async (
   client: DatabasePort,
 ): Promise<Phase3RecoveryInventory> =>
   Object.freeze({
+    jobRequirements: await readCount(client, "SELECT count(*) AS count FROM job_requirement"),
     careerEvidence: await readCount(
       client,
       `SELECT
@@ -1666,6 +1668,10 @@ const seedRepresentativePhase1Vault = async (
   const skillResolutionId = "0198d9d4-0000-7000-8000-000000000019";
   const answerDocumentId = "0198d9d4-0000-7000-8000-00000000001a";
   const answerVersionId = "0198d9d4-0000-7000-8000-00000000001b";
+  const jobSourceId = "0198d9d4-0000-7000-8000-00000000001c";
+  const sourceSnapshotId = "0198d9d4-0000-7000-8000-00000000001d";
+  const provenanceId = "0198d9d4-0000-7000-8000-00000000001e";
+  const requirementId = "0198d9d4-0000-7000-8000-00000000001f";
   await client.transaction(async (transaction) => {
     await transaction.execute(
       sqlStatement(
@@ -1726,6 +1732,72 @@ const seedRepresentativePhase1Vault = async (
           jobId,
           statusId,
           "Prepare a tailored local application.",
+          createdAt,
+          createdAt,
+        ],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO job_source(
+           id, job_id, connector_id, external_id, canonical_url, first_seen_at,
+           last_seen_at, content_hash, is_primary, created_at, updated_at
+         ) VALUES (?, ?, 'fixture', 'platform-engineer', ?, ?, ?, ?, 1, ?, ?)`,
+        [
+          jobSourceId,
+          jobId,
+          "https://northstar.example/jobs/platform-engineer",
+          createdAt,
+          createdAt,
+          "c".repeat(64),
+          createdAt,
+          createdAt,
+        ],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO source_snapshot(
+           id, job_source_id, captured_at, extractor_id, extractor_version, raw_text,
+           content_hash, retention_class, created_at
+         ) VALUES (?, ?, ?, 'fixture-jsonld', '1.0.0', ?, ?, 'standard', ?)`,
+        [
+          sourceSnapshotId,
+          jobSourceId,
+          createdAt,
+          "You will lead cross-functional delivery.",
+          "d".repeat(64),
+          createdAt,
+        ],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO provenance(
+           id, source_snapshot_id, extraction_method, source_pointer, source_excerpt,
+           confidence, captured_at, created_at
+         ) VALUES (?, ?, 'jsonld', '/description/requirements/0', ?, 0.91, ?, ?)`,
+        [
+          provenanceId,
+          sourceSnapshotId,
+          "You will lead cross-functional delivery.",
+          createdAt,
+          createdAt,
+        ],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO job_requirement(
+           id, job_id, category, source_category, normalized_text, raw_text,
+           provenance_id, confidence, user_confirmed, sort_order, created_at, updated_at
+         ) VALUES (?, ?, 'responsibility', 'required', ?, ?, ?, 0.91, 1, 0, ?, ?)`,
+        [
+          requirementId,
+          jobId,
+          "Lead cross-functional delivery",
+          "You will lead cross-functional delivery.",
+          provenanceId,
           createdAt,
           createdAt,
         ],

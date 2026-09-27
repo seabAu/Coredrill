@@ -1,12 +1,15 @@
-import { useState, type SyntheticEvent } from "react";
-import type {
-  ListingSnapshotCompensationV1,
-  ListingSnapshotDiffV1,
-  ListingSnapshotValueChangeV1,
+import { useState, type ChangeEvent, type SyntheticEvent } from "react";
+import {
+  JOB_REQUIREMENT_CATEGORIES,
+  type JobRequirementCategory,
+  type ListingSnapshotCompensationV1,
+  type ListingSnapshotDiffV1,
+  type ListingSnapshotValueChangeV1,
 } from "@coredrill/application";
 
 export const JOB_WORKSPACE_CONTENT_TABS = Object.freeze([
   "overview",
+  "requirements",
   "timeline",
   "company",
   "source",
@@ -27,6 +30,7 @@ export const JOB_WORKSPACE_CONTENT_ACTIONS = Object.freeze([
   "open-source-snapshot",
   "compare-source",
   "refresh-source",
+  "correct-requirement-category",
 ] as const);
 export type JobWorkspaceContentActionId = (typeof JOB_WORKSPACE_CONTENT_ACTIONS)[number];
 
@@ -36,7 +40,16 @@ export type JobWorkspaceContentActionRequest =
       readonly value: string;
     }
   | {
-      readonly id: Exclude<JobWorkspaceContentActionId, "add-timeline-note">;
+      readonly id: "correct-requirement-category";
+      readonly targetId: string;
+      readonly category: JobRequirementCategory;
+      readonly expectedRowVersion: number;
+    }
+  | {
+      readonly id: Exclude<
+        JobWorkspaceContentActionId,
+        "add-timeline-note" | "correct-requirement-category"
+      >;
       readonly targetId?: string;
     };
 
@@ -54,6 +67,19 @@ export interface JobWorkspaceTimelineItem {
 
 export interface JobWorkspaceContentModel {
   readonly jobId: string;
+  readonly requirements: readonly {
+    readonly id: string;
+    readonly category: JobRequirementCategory;
+    readonly sourceCategory: JobRequirementCategory;
+    readonly normalizedText: string;
+    readonly rawText: string;
+    readonly sourcePointer: string;
+    readonly sourceExcerpt: string;
+    readonly extractionMethod: string;
+    readonly confidence: number;
+    readonly userConfirmed: boolean;
+    readonly rowVersion: number;
+  }[];
   readonly overview: {
     readonly application: {
       readonly appliedAtLabel: string | null;
@@ -168,6 +194,36 @@ const validateModel = (model: JobWorkspaceContentModel): void => {
       (item.editable && item.kind !== "note")
     ) {
       throw new RangeError("Job workspace timeline item is invalid.");
+    }
+  }
+
+  if (
+    model.requirements.length > 512 ||
+    new Set(model.requirements.map(({ id }) => id)).size !== model.requirements.length
+  ) {
+    throw new RangeError("Job workspace requirements are invalid.");
+  }
+  for (const requirement of model.requirements) {
+    if (
+      requirement.id.trim().length === 0 ||
+      !JOB_REQUIREMENT_CATEGORIES.includes(requirement.category) ||
+      !JOB_REQUIREMENT_CATEGORIES.includes(requirement.sourceCategory) ||
+      requirement.normalizedText.trim().length === 0 ||
+      !isBoundedText(requirement.normalizedText, 4_096) ||
+      requirement.rawText.trim().length === 0 ||
+      !isBoundedText(requirement.rawText, 16_384) ||
+      requirement.sourcePointer.trim().length === 0 ||
+      !isBoundedText(requirement.sourcePointer, 2_048) ||
+      requirement.sourceExcerpt.trim().length === 0 ||
+      !isBoundedText(requirement.sourceExcerpt, 4_096) ||
+      requirement.extractionMethod.trim().length === 0 ||
+      !Number.isFinite(requirement.confidence) ||
+      requirement.confidence < 0 ||
+      requirement.confidence > 1 ||
+      !Number.isSafeInteger(requirement.rowVersion) ||
+      requirement.rowVersion < 1
+    ) {
+      throw new RangeError("Job workspace requirement is invalid.");
     }
   }
 
@@ -356,6 +412,98 @@ const OverviewPanel = ({ model, onAction }: JobWorkspaceContentPanelProps) => {
           Add timeline note
         </button>
       </form>
+    </div>
+  );
+};
+
+const categoryLabel = (category: JobRequirementCategory): string =>
+  `${category.slice(0, 1).toLocaleUpperCase()}${category.slice(1)}`;
+
+const RequirementsPanel = ({ model, onAction }: JobWorkspaceContentPanelProps) => {
+  const correctCategory = (
+    event: ChangeEvent<HTMLSelectElement>,
+    requirement: JobWorkspaceContentModel["requirements"][number],
+  ): void => {
+    const category = event.currentTarget.value as JobRequirementCategory;
+    if (!JOB_REQUIREMENT_CATEGORIES.includes(category) || category === requirement.category) return;
+    onAction?.({
+      id: "correct-requirement-category",
+      targetId: requirement.id,
+      category,
+      expectedRowVersion: requirement.rowVersion,
+    });
+  };
+
+  return (
+    <div className="cd-job-requirements" data-job-content-tab="requirements">
+      <section aria-labelledby="job-requirements-heading" className="cd-job-content-section">
+        <div className="cd-job-content-section-heading">
+          <div>
+            <p className="cd-eyebrow">Source-backed interpretation</p>
+            <h3 id="job-requirements-heading">Requirements</h3>
+          </div>
+          <span className="cd-chip">{model.requirements.length} recorded</span>
+        </div>
+        <p className="cd-job-requirements__boundary">
+          Category and confidence describe extraction evidence, not employer verification or hiring
+          probability. Coverage and evidence matching are separate review steps.
+        </p>
+        {model.requirements.length === 0 ? (
+          <div className="cd-job-empty-state">
+            <h4>No requirements recorded</h4>
+            <p>A validated source extraction can add reviewable requirements here.</p>
+          </div>
+        ) : (
+          <ol aria-label="Job requirements" className="cd-job-requirement-list">
+            {model.requirements.map((requirement) => (
+              <li className="cd-job-requirement" key={requirement.id}>
+                <div className="cd-job-requirement__heading">
+                  <div>
+                    <h4>{requirement.normalizedText}</h4>
+                    <p>
+                      {requirement.userConfirmed
+                        ? "User-confirmed category"
+                        : "Needs category review"}
+                      {requirement.category !== requirement.sourceCategory
+                        ? ` · extracted as ${categoryLabel(requirement.sourceCategory)}`
+                        : ""}
+                    </p>
+                  </div>
+                  <span className="cd-chip">
+                    {Math.round(requirement.confidence * 100)}% extraction confidence
+                  </span>
+                </div>
+                <label className="cd-job-requirement__category">
+                  <span>Category for {requirement.normalizedText}</span>
+                  <select
+                    onChange={(event) => {
+                      correctCategory(event, requirement);
+                    }}
+                    value={requirement.category}
+                  >
+                    {JOB_REQUIREMENT_CATEGORIES.map((category) => (
+                      <option key={category} value={category}>
+                        {categoryLabel(category)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <blockquote>{requirement.sourceExcerpt}</blockquote>
+                <dl className="cd-job-requirement__provenance">
+                  <div>
+                    <dt>Method</dt>
+                    <dd>{requirement.extractionMethod}</dd>
+                  </div>
+                  <div>
+                    <dt>Source path</dt>
+                    <dd>{requirement.sourcePointer}</dd>
+                  </div>
+                </dl>
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
     </div>
   );
 };
@@ -808,6 +956,7 @@ export const JobWorkspaceContent = ({ activeTab, model, onAction }: JobWorkspace
   }
 
   if (activeTab === "overview") return <OverviewPanel model={model} onAction={onAction} />;
+  if (activeTab === "requirements") return <RequirementsPanel model={model} onAction={onAction} />;
   if (activeTab === "timeline") return <TimelinePanel model={model} onAction={onAction} />;
   if (activeTab === "company") return <CompanyPanel model={model} onAction={onAction} />;
   return <SourcePanel model={model} onAction={onAction} />;

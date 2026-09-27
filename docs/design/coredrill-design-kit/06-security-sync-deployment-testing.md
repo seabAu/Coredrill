@@ -208,10 +208,11 @@ that must preserve the prior usable vault on failure. Errors are typed and
 content-free. See [portable archive restore version 1](portable-archive-restore-v1.md).
 
 `BKP-007`, extended by `EVD-008`, exercises that boundary with one committed
-synthetic schema-126 vault in empty production browser and native targets. The
+synthetic schema-129 vault in empty production browser and native targets. The
 fixture includes canonical Career Profile evidence, every story-evidence link
 kind, resume-import proposal/resolution links, Answer Library provenance and
-version metadata, and two independently checksummed attachment relationships.
+version metadata, one provenance-bound user-corrected job requirement, and two
+independently checksummed attachment relationships.
 The archive member checksum
 continues to protect exact SQLite transport, while the version-1 canonical
 content hash compares regenerated JSON projections and separately reread,

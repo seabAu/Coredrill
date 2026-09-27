@@ -1,9 +1,11 @@
 import {
   JobActivityError,
   JobPipelineError,
+  JobRequirementError,
   VaultLifecycleError,
   type JobActivityPort,
   type JobPipelinePort,
+  type JobRequirementPort,
   type VaultDiagnosticsDto,
   type VaultLifecyclePort,
   type VaultSessionDto,
@@ -17,6 +19,42 @@ import {
   setNextAction,
 } from "./pipeline-repositories.js";
 import { createTrackerRepositories } from "./tracker-repositories.js";
+import { createJobRequirementRepository } from "./job-requirement-repository.js";
+
+/** Concrete SQLite composition for provenance-bound requirement review and correction. */
+export const createDatabaseJobRequirementPort = (database: DatabasePort): JobRequirementPort => {
+  const repository = createJobRequirementRepository(database);
+  const mapFailure = (error: unknown): never => {
+    if (error instanceof Error && error.message.includes("stale")) {
+      throw new JobRequirementError("conflict");
+    }
+    if (error instanceof TypeError) throw new JobRequirementError("invalid_state");
+    throw error;
+  };
+  return Object.freeze({
+    recordRequirement: async (input: Parameters<JobRequirementPort["recordRequirement"]>[0]) => {
+      try {
+        return await repository.create(input);
+      } catch (error) {
+        return mapFailure(error);
+      }
+    },
+    correctRequirement: async (input: Parameters<JobRequirementPort["correctRequirement"]>[0]) => {
+      try {
+        return await repository.correct(input);
+      } catch (error) {
+        return mapFailure(error);
+      }
+    },
+    listRequirements: async (jobId: Parameters<JobRequirementPort["listRequirements"]>[0]) => {
+      try {
+        return await repository.listForJob(jobId);
+      } catch (error) {
+        return mapFailure(error);
+      }
+    },
+  });
+};
 
 const diagnosticsDto = (diagnostics: StorageDiagnostics): VaultDiagnosticsDto => {
   const issueCodes = new Set<VaultDiagnosticsDto["issueCodes"][number]>();
