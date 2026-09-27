@@ -8,21 +8,25 @@ import {
 } from "./contract-harness.js";
 import { sqlStatement, type DatabasePort } from "./database-port.js";
 
+const CAREER_REPOSITORY_CONTRACT_CASES = Object.freeze({
+  roundTripAll:
+    "round-trips employment education project skill accomplishment certification publication volunteer story and preferences",
+  rollbackInvalidAggregate:
+    "rolls back a career aggregate when a related source document is missing",
+});
+
 export const CAREER_REPOSITORY_CONTRACT_MANIFEST = Object.freeze({
   schemaVersion: 1 as const,
   suiteName: "phase-3-career-repositories-v1",
-  cases: Object.freeze({
-    roundTripAll:
-      "round-trips employment education project skill accomplishment certification publication volunteer story and preferences",
-    rollbackInvalidAggregate:
-      "rolls back a career aggregate when a related source document is missing",
-  }),
+  cases: CAREER_REPOSITORY_CONTRACT_CASES,
+  caseNames: Object.freeze([
+    CAREER_REPOSITORY_CONTRACT_CASES.roundTripAll,
+    CAREER_REPOSITORY_CONTRACT_CASES.rollbackInvalidAggregate,
+  ]),
 });
 
 export type CareerRepositoryContractManifest = typeof CAREER_REPOSITORY_CONTRACT_MANIFEST;
-export const CAREER_REPOSITORY_CONTRACT_CASE_NAMES = Object.freeze(
-  Object.values(CAREER_REPOSITORY_CONTRACT_MANIFEST.cases),
-);
+export const CAREER_REPOSITORY_CONTRACT_CASE_NAMES = CAREER_REPOSITORY_CONTRACT_MANIFEST.caseNames;
 
 export interface CareerRepositoryContractSetup {
   readonly migrate: (database: DatabasePort) => Promise<void>;

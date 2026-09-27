@@ -18,10 +18,14 @@ test("runs the Career Profile repository contract in browser SQLite", async ({ p
       rollbackInvalidAggregate:
         "rolls back a career aggregate when a related source document is missing",
     },
+    caseNames: [
+      "round-trips employment education project skill accomplishment certification publication volunteer story and preferences",
+      "rolls back a career aggregate when a related source document is missing",
+    ],
   });
   expect(proof.run).toEqual({
     adapterName: "official-sqlite-wasm-opfs-sahpool",
     suiteName: proof.manifest.suiteName,
-    completedCases: Object.values(proof.manifest.cases),
+    completedCases: proof.manifest.caseNames,
   });
 });

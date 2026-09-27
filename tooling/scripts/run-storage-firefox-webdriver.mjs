@@ -215,7 +215,7 @@ try {
   const careerRepositoryContracts = await executeHarness("runCareerRepositoryContracts");
   const archiveWriter = await executeHarness("runPortableArchiveWriterProof");
   const repositoryCases = repositoryContracts.manifest.caseNames;
-  const careerRepositoryCases = Object.values(careerRepositoryContracts.manifest.cases);
+  const careerRepositoryCases = careerRepositoryContracts.manifest.caseNames;
 
   const proof = {
     appliedVersions: opened.appliedVersions,
