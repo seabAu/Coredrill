@@ -261,7 +261,7 @@ try {
     proof.typedVaultDeletionRejectedSafely !== true ||
     proof.typedVaultDeletionCleanProfile !== true ||
     proof.repositoryContractCases !== 18 ||
-    proof.careerRepositoryContractCases !== 2 ||
+    proof.careerRepositoryContractCases !== 3 ||
     proof.humanReadableDataFiles !== 60 ||
     proof.humanReadableDatasets !== 30 ||
     humanReadable.csvFiles !== 30 ||

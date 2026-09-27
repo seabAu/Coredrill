@@ -10,6 +10,7 @@ export default defineConfig({
         "packages/domain/src/**/*.ts",
         "packages/application/src/**/*.ts",
         "packages/capture-core/src/**/*.ts",
+        "packages/career-evidence/src/**/*.ts",
         "packages/extension-bridge/src/**/*.ts",
         "packages/extractors/src/**/*.ts",
         "packages/observability/src/**/*.ts",

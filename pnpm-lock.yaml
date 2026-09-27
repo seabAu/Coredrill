@@ -160,7 +160,11 @@ importers:
         specifier: workspace:*
         version: link:../contracts
 
-  packages/career-evidence: {}
+  packages/career-evidence:
+    dependencies:
+      '@coredrill/domain':
+        specifier: workspace:*
+        version: link:../domain
 
   packages/contracts:
     dependencies:

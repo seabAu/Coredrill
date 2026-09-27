@@ -13,15 +13,17 @@ const CAREER_REPOSITORY_CONTRACT_CASES = Object.freeze({
     "round-trips employment education project skill accomplishment certification publication volunteer story and preferences",
   rollbackInvalidAggregate:
     "rolls back a career aggregate when a related source document is missing",
+  rejectUnsafePrivacyTags: "rejects unsafe Career Profile story privacy tags",
 });
 
 export const CAREER_REPOSITORY_CONTRACT_MANIFEST = Object.freeze({
-  schemaVersion: 1 as const,
-  suiteName: "phase-3-career-repositories-v1",
+  schemaVersion: 2 as const,
+  suiteName: "phase-3-career-repositories-v2",
   cases: CAREER_REPOSITORY_CONTRACT_CASES,
   caseNames: Object.freeze([
     CAREER_REPOSITORY_CONTRACT_CASES.roundTripAll,
     CAREER_REPOSITORY_CONTRACT_CASES.rollbackInvalidAggregate,
+    CAREER_REPOSITORY_CONTRACT_CASES.rejectUnsafePrivacyTags,
   ]),
 });
 
@@ -46,6 +48,7 @@ const IDS = Object.freeze({
   rollbackSkill: entityId("skill", "0199a300-0000-7000-8000-00000000000b"),
   rollbackEmployment: entityId("experience", "0199a300-0000-7000-8000-00000000000c"),
   missingDocument: entityId("document", "0199a300-0000-7000-8000-00000000000d"),
+  invalidPrivacyStory: entityId("anecdote", "0199a300-0000-7000-8000-00000000000e"),
 });
 
 const CREATED_AT = instant("2026-09-27T12:00:00.000Z");
@@ -175,6 +178,7 @@ export const createCareerRepositoryContractSuite = (
           action: "Preserved the source and repaired the boundary.",
           result: "The retry completed without data loss.",
           tags: Object.freeze(["recovery", "ownership"]),
+          privacyTags: Object.freeze(["nda", "confidential-client"]),
           sourceDocumentId: null,
           verificationState: "user_confirmed",
           archivedAt: null,
@@ -209,6 +213,7 @@ export const createCareerRepositoryContractSuite = (
         );
         const employment = await repositories.employment.findById(IDS.employment);
         const accomplishment = await repositories.accomplishments.findById(IDS.accomplishment);
+        const story = await repositories.stories.findById(IDS.story);
         const preferences = await repositories.preferences.get();
         assertContract(
           employment?.organization === "Coredrill Labs'); DROP TABLE experience; --",
@@ -217,6 +222,10 @@ export const createCareerRepositoryContractSuite = (
         assertContract(
           accomplishment?.metrics["adapters"] === 3,
           "Accomplishment metrics did not round-trip.",
+        );
+        assertContract(
+          story?.privacyTags[0] === "confidential-client" && story.privacyTags[1] === "nda",
+          "Career story privacy tags did not round-trip.",
         );
         assertContract(
           preferences?.targetRoles[0] === "Staff Software Engineer" &&
@@ -269,6 +278,37 @@ export const createCareerRepositoryContractSuite = (
           sqlStatement("SELECT id FROM skill WHERE id = ?", [IDS.rollbackSkill]),
         );
         assertContract(rows.length === 0, "Rejected career transaction did not roll back.");
+      },
+    },
+    {
+      name: CAREER_REPOSITORY_CONTRACT_MANIFEST.cases.rejectUnsafePrivacyTags,
+      run: async (database) => {
+        await setup.migrate(database);
+        const repositories = createCareerRepositories(database);
+        let rejected = false;
+        try {
+          await repositories.stories.insert({
+            id: IDS.invalidPrivacyStory,
+            title: "Unsafe privacy label",
+            situation: "A caller supplied content instead of a privacy identifier.",
+            action: "The storage boundary rejected it.",
+            result: "No story row was written.",
+            tags: Object.freeze([]),
+            privacyTags: Object.freeze(["Contains private client details"]),
+            sourceDocumentId: null,
+            verificationState: "user_confirmed",
+            archivedAt: null,
+            createdAt: CREATED_AT,
+            updatedAt: CREATED_AT,
+          });
+        } catch {
+          rejected = true;
+        }
+        assertContract(rejected, "Unsafe career privacy tag content must be rejected.");
+        const rows = await database.query(
+          sqlStatement("SELECT id FROM anecdote WHERE id = ?", [IDS.invalidPrivacyStory]),
+        );
+        assertContract(rows.length === 0, "Rejected career story must not be persisted.");
       },
     },
   ]);

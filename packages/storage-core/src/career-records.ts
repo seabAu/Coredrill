@@ -108,6 +108,7 @@ export interface CareerStoryRecord extends CareerAuditFields {
   readonly action: string;
   readonly result: string;
   readonly tags: readonly string[];
+  readonly privacyTags: readonly string[];
   readonly sourceDocumentId: EntityId<"document"> | null;
   readonly verificationState: CareerVerificationState;
 }

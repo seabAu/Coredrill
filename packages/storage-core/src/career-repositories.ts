@@ -142,6 +142,7 @@ interface CareerStoryRow extends AuditRow {
   readonly action: string;
   readonly result: string;
   readonly tags_json: string;
+  readonly privacy_tags_json: string;
   readonly source_document_id: string | null;
   readonly verification_state: string;
 }
@@ -165,6 +166,7 @@ const VERIFICATION_STATES = new Set<CareerVerificationState>([
   "stale",
   "user_confirmed",
 ]);
+const CAREER_PRIVACY_TAG_PATTERN = /^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$/u;
 const ACCOMPLISHMENT_PARENT_TYPES = new Set<AccomplishmentParentType>([
   "education",
   "experience",
@@ -284,6 +286,42 @@ const parseStringArray = (value: string, label: string): readonly string[] => {
     throw new Error(`Stored ${label} must be a string array.`);
   }
   return Object.freeze([...parsed]) as readonly string[];
+};
+
+const serializePrivacyTags = (value: unknown): string => {
+  if (
+    !Array.isArray(value) ||
+    value.length > 16 ||
+    value.some(
+      (item: unknown) =>
+        typeof item !== "string" || item.length > 64 || !CAREER_PRIVACY_TAG_PATTERN.test(item),
+    )
+  ) {
+    throw new TypeError(
+      "Career story privacy tags must be at most 16 lowercase content-free identifiers.",
+    );
+  }
+  const tags = value as readonly string[];
+  if (new Set(tags).size !== tags.length) {
+    throw new TypeError("Career story privacy tags cannot contain duplicates.");
+  }
+  return serializeJson([...tags].sort(), "Career story privacy tags");
+};
+
+const parsePrivacyTags = (value: string): readonly string[] => {
+  const parsed = parseJson(value);
+  if (
+    !Array.isArray(parsed) ||
+    parsed.length > 16 ||
+    parsed.some(
+      (item) =>
+        typeof item !== "string" || item.length > 64 || !CAREER_PRIVACY_TAG_PATTERN.test(item),
+    ) ||
+    new Set(parsed).size !== parsed.length
+  ) {
+    throw new Error("Stored career story privacy tags are invalid.");
+  }
+  return Object.freeze([...parsed].sort()) as readonly string[];
 };
 
 const serializeObject = (value: unknown, label: string): string => {
@@ -739,9 +777,9 @@ const careerStoryDefinition: ActiveRepositoryDefinition<
 > = {
   table: "anecdote",
   select:
-    "SELECT id, title, situation, action, result, tags_json, source_document_id, verification_state, archived_at, created_at, updated_at, row_version FROM anecdote",
+    "SELECT id, title, situation, action, result, tags_json, privacy_tags_json, source_document_id, verification_state, archived_at, created_at, updated_at, row_version FROM anecdote",
   insert:
-    "INSERT INTO anecdote(id, title, situation, action, result, tags_json, source_document_id, verification_state, archived_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "INSERT INTO anecdote(id, title, situation, action, result, tags_json, privacy_tags_json, source_document_id, verification_state, archived_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
   id: (value) => entityId("anecdote", value.id),
   parameters: (value) => {
     assertAudit(value.createdAt, value.updatedAt, value.archivedAt);
@@ -752,6 +790,7 @@ const careerStoryDefinition: ActiveRepositoryDefinition<
       requiredText(value.action, "Career story action", 20_000),
       requiredText(value.result, "Career story result", 20_000),
       serializeStringArray(value.tags, "Career story tags"),
+      serializePrivacyTags(value.privacyTags),
       value.sourceDocumentId,
       verificationState(value.verificationState),
       value.archivedAt,
@@ -767,6 +806,7 @@ const careerStoryDefinition: ActiveRepositoryDefinition<
       action: requiredText(row.action, "Stored career story action", 20_000),
       result: requiredText(row.result, "Stored career story result", 20_000),
       tags: parseStringArray(row.tags_json, "career story tags"),
+      privacyTags: parsePrivacyTags(row.privacy_tags_json),
       sourceDocumentId: optionalEntityId("document", row.source_document_id),
       verificationState: verificationState(row.verification_state),
       ...auditFields(row),
