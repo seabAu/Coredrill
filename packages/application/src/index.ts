@@ -277,6 +277,27 @@ export {
   type VaultDeletionStorageMode,
 } from "./vault-deletion.js";
 export {
+  ANSWER_SENSITIVITIES,
+  ANSWER_SOURCE_KINDS,
+  AnswerLibraryError,
+  createAnswerLibraryOperations,
+  validateAnswerLibraryEntry,
+  type AnswerLibraryEntryDto,
+  type AnswerLibraryErrorCode,
+  type AnswerLibraryOperationDependencies,
+  type AnswerLibraryOperations,
+  type AnswerLibraryPort,
+  type AnswerLibraryValidationIssue,
+  type AnswerLibraryVersionDto,
+  type AnswerSensitivity,
+  type AnswerSourceKind,
+  type CreateAnswerLibraryEntryInput,
+  type CreateAnswerLibraryEntryPortInput,
+  type MarkAnswerLibraryEntryUsedInput,
+  type UpdateAnswerLibraryEntryInput,
+  type UpdateAnswerLibraryEntryPortInput,
+} from "./answer-library.js";
+export {
   CAREER_PROFILE_ERROR_CODES,
   MANUAL_CAREER_PROFILE_KINDS,
   CareerProfileError,

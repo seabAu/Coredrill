@@ -248,7 +248,7 @@ describe("capture review repository", () => {
     const database = new TestDatabase();
     try {
       await applySqlMigrations(database, migrations, NOW);
-      await expect(database.diagnostics()).resolves.toMatchObject({ schemaVersion: 120 });
+      await expect(database.diagnostics()).resolves.toMatchObject({ schemaVersion: 126 });
       const receipt = await insertReceipt(database, 1);
       const envelopeId = entityId("capture-envelope", receipt.envelopeId);
       const repository = createCaptureReviewRepository(database);
@@ -477,7 +477,7 @@ describe("capture review repository", () => {
       );
       console.info(
         `REV004_TRANSACTION_PROOF ${JSON.stringify({
-          schemaVersion: 120,
+          schemaVersion: 126,
           durableQueueTransitions: true,
           singleUseUndo: true,
           saveAtomic: true,

@@ -108,8 +108,8 @@ test("durably stores before acknowledgement and safely retries the exact Chromiu
     );
     await callStorage(app, "delete");
     await expect(callStorage(app, "openAndMigrate")).resolves.toMatchObject({
-      appliedVersions: Array.from({ length: 120 }, (_, index) => index + 1),
-      diagnostics: { schemaVersion: 120 },
+      appliedVersions: Array.from({ length: 126 }, (_, index) => index + 1),
+      diagnostics: { schemaVersion: 126 },
     });
 
     const compatibilityRequest = {

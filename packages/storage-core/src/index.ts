@@ -10,6 +10,18 @@ export {
   createDatabaseVaultLifecyclePort,
 } from "./application-ports.js";
 export {
+  ANSWER_SENSITIVITIES,
+  ANSWER_SOURCE_KINDS,
+  AnswerLibraryRepository,
+  createAnswerLibraryRepository,
+  type AnswerLibraryEntryRecord,
+  type AnswerLibraryVersionRecord,
+  type AnswerSensitivity,
+  type AnswerSourceKind,
+  type CreateAnswerLibraryEntryRecordInput,
+  type UpdateAnswerLibraryEntryRecordInput,
+} from "./answer-library-repository.js";
+export {
   createTransactionSemanticsSuite,
   DatabaseContractViolation,
   defineDatabaseContractSuite,

@@ -70,7 +70,7 @@ test("runs and records the complete accountless browser recovery journey", async
       version: 1,
       runtime: "browser",
       adapterName: "official-sqlite-wasm-opfs-sahpool",
-      schemaVersion: 120,
+      schemaVersion: 126,
       vaultName: "Canonical local job search",
       jobTitle: "Research Operations Lead",
       finalStage: "Interviewing",
@@ -1475,6 +1475,7 @@ test("Career Profile validates ranges and persists user-confirmed manual evidenc
     .getByRole("navigation", { name: "Primary" })
     .getByRole("link", { name: "Career Profile" })
     .click();
+  await expect(page.getByText("Loaded the local Career Profile.", { exact: true })).toBeVisible();
 
   const workspace = page.getByTestId("career-profile-workspace");
   await expect(workspace.getByRole("heading", { name: "Build your Career Profile" })).toBeVisible();
@@ -1629,6 +1630,102 @@ test("Career Profile creates and edits STAR stories with durable canonical evide
   await attachAxe(page, testInfo, "career-profile-story-evidence-links");
   await attachAriaSnapshot(reloadedWorkspace, testInfo, "career-profile-story-evidence-links");
   await attachProof(page, testInfo, "career-profile-story-evidence-links");
+  expect(externalRequests).toEqual([]);
+});
+
+test("Answer Library preserves sensitivity provenance last-used state and immutable history", async ({
+  page,
+}, testInfo) => {
+  const externalRequests = [];
+  page.on("request", (request) => {
+    if (!request.url().startsWith("http://127.0.0.1:4178/")) externalRequests.push(request.url());
+  });
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await openShell(page);
+  await page
+    .getByRole("navigation", { name: "Primary" })
+    .getByRole("link", { name: "Career Profile" })
+    .click();
+  await expect(page.getByText("Loaded the local Career Profile.", { exact: true })).toBeVisible();
+
+  const workspace = page.getByTestId("career-profile-workspace");
+  await workspace.getByRole("tab", { name: /Answer Library/u }).click();
+  await workspace.getByLabel("Application question *").fill("Why are you interested in this role?");
+  await workspace
+    .getByLabel("Reusable answer *")
+    .fill("I value local-first products, transparent evidence, and deliberate user control.");
+  await workspace.getByLabel("Sensitivity *").selectOption("standard");
+  await workspace.getByLabel("Source context").fill("Prepared manually in Career Profile");
+  await workspace.getByRole("button", { name: "Save answer" }).click();
+  await expect(workspace.locator(".cd-career-form").getByRole("status")).toContainText(
+    "Answer saved locally with explicit sensitivity and provenance.",
+  );
+
+  const card = workspace.locator(".cd-career-story-card").filter({
+    hasText: "Why are you interested in this role?",
+  });
+  await expect(card).toContainText("Prepared manually in Career Profile");
+  await expect(card).toContainText("Last used: Never");
+  await expect(card).toContainText("Version 1");
+  await expect(card).toContainText("standard");
+
+  await card.getByRole("button", { name: "Edit answer" }).click();
+  await workspace
+    .getByLabel("Reusable answer *")
+    .fill(
+      "I value local-first products, transparent evidence, durable provenance, and user control.",
+    );
+  await workspace.getByLabel("Sensitivity *").selectOption("sensitive");
+  await workspace.getByRole("button", { name: "Save new version" }).click();
+  await expect(workspace.locator(".cd-career-form").getByRole("status")).toContainText(
+    "A new immutable answer version was saved locally.",
+  );
+  await expect(card).toContainText("Version 2");
+  await expect(card).toContainText("sensitive");
+  await card.getByText(/Version history/u).click();
+  await expect(card.getByText("Version 1", { exact: true })).toBeVisible();
+  await expect(card.getByText("Version 2", { exact: true })).toBeVisible();
+
+  await card.getByRole("button", { name: "Mark used now" }).click();
+  await expect(workspace.locator(".cd-career-form").getByRole("status")).toContainText(
+    "Recorded explicit local reuse.",
+  );
+  await expect(card).not.toContainText("Last used: Never");
+
+  const stored = await page.evaluate(() =>
+    globalThis.coredrillStorageSpike.listAnswerLibraryEntries(),
+  );
+  expect(stored).toMatchObject({
+    ok: true,
+    value: [
+      {
+        sourceKind: "manual",
+        sourceJobId: null,
+        sourceContext: "Prepared manually in Career Profile",
+        rowVersion: 3,
+        currentVersion: { versionNumber: 2, sensitivity: "sensitive" },
+        versions: [
+          { versionNumber: 1, sensitivity: "standard" },
+          { versionNumber: 2, sensitivity: "sensitive" },
+        ],
+      },
+    ],
+  });
+
+  await page.reload();
+  await page.waitForFunction(() => globalThis.coredrillAppShell !== undefined);
+  const reloadedWorkspace = page.getByTestId("career-profile-workspace");
+  await reloadedWorkspace.getByRole("tab", { name: /Answer Library/u }).click();
+  const reloadedCard = reloadedWorkspace.locator(".cd-career-story-card").filter({
+    hasText: "Why are you interested in this role?",
+  });
+  await expect(reloadedCard).toContainText("durable provenance");
+  await expect(reloadedCard).toContainText("Version 2");
+  await expect(reloadedCard).toContainText("Prepared manually in Career Profile");
+
+  await attachAxe(page, testInfo, "answer-library-version-history");
+  await attachAriaSnapshot(reloadedWorkspace, testInfo, "answer-library-version-history");
+  await attachProof(page, testInfo, "answer-library-version-history");
   expect(externalRequests).toEqual([]);
 });
 

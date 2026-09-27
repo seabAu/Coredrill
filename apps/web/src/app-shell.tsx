@@ -76,13 +76,16 @@ import { parseCaptureSourcePreviewJsonV1 } from "@coredrill/capture-core";
 import {
   evaluateCaptureSourceStateV1,
   type CaptureDuplicateSuggestionV1,
+  type AnswerLibraryEntryDto,
   type CareerProfileEntryDto,
   type CareerStoryDto,
   type CreateCareerStoryInput,
+  type CreateAnswerLibraryEntryInput,
   type CreateManualCareerProfileEntryInput,
   type ResolveResumeImportGroupInput,
   type ResumeImportQueueItemDto,
   type UpdateCareerStoryInput,
+  type UpdateAnswerLibraryEntryInput,
   type DeleteVaultInput,
   type VaultDeletionPreviewDto,
   type VaultDeletionResultDto,
@@ -1418,6 +1421,9 @@ const AppShellCatalog = () => {
     readonly ResumeImportQueueItemDto[]
   >([]);
   const [careerStories, setCareerStories] = useState<readonly CareerStoryDto[]>([]);
+  const [answerLibraryEntries, setAnswerLibraryEntries] = useState<
+    readonly AnswerLibraryEntryDto[]
+  >([]);
   const [careerProfileLoaded, setCareerProfileLoaded] = useState(false);
   const [careerProfileLoading, setCareerProfileLoading] = useState(false);
   const [networkTab, setNetworkTab] = useState<NetworkTabId>(
@@ -1826,18 +1832,22 @@ const AppShellCatalog = () => {
       globalThis.coredrillStorageSpike.listManualCareerProfileEntries(),
       globalThis.coredrillStorageSpike.listPendingResumeImports(),
       globalThis.coredrillStorageSpike.listCareerStories(),
+      globalThis.coredrillStorageSpike.listAnswerLibraryEntries(),
     ])
-      .then(([entries, imports, stories]) => {
+      .then(([entries, imports, stories, answers]) => {
         if (!entries.ok) {
           setLastActivity(entries.error.message);
         } else if (!imports.ok) {
           setLastActivity(imports.error.message);
         } else if (!stories.ok) {
           setLastActivity(stories.error.message);
+        } else if (!answers.ok) {
+          setLastActivity(answers.error.message);
         } else {
           setCareerProfileEntries(entries.value);
           setCareerProfileImports(imports.value);
           setCareerStories(stories.value);
+          setAnswerLibraryEntries(answers.value);
           setLastActivity("Loaded the local Career Profile.");
         }
       })
@@ -1881,6 +1891,50 @@ const AppShellCatalog = () => {
         ),
       );
       setLastActivity("Updated a Career Profile story and its evidence links locally.");
+    } else {
+      setLastActivity(result.error.message);
+    }
+    return result;
+  };
+
+  const createAnswerLibraryEntry = async (input: CreateAnswerLibraryEntryInput) => {
+    const result = await globalThis.coredrillStorageSpike.createAnswerLibraryEntry(input);
+    if (result.ok) {
+      setAnswerLibraryEntries((current) => Object.freeze([result.value, ...current]));
+      setLastActivity("Saved a reusable Answer Library entry locally.");
+    } else {
+      setLastActivity(result.error.message);
+    }
+    return result;
+  };
+
+  const updateAnswerLibraryEntry = async (input: UpdateAnswerLibraryEntryInput) => {
+    const result = await globalThis.coredrillStorageSpike.updateAnswerLibraryEntry(input);
+    if (result.ok) {
+      setAnswerLibraryEntries((current) =>
+        Object.freeze(
+          current.map((answer) => (answer.id === result.value.id ? result.value : answer)),
+        ),
+      );
+      setLastActivity("Appended an immutable Answer Library version locally.");
+    } else {
+      setLastActivity(result.error.message);
+    }
+    return result;
+  };
+
+  const markAnswerLibraryEntryUsed = async (id: string, expectedRowVersion: number) => {
+    const result = await globalThis.coredrillStorageSpike.markAnswerLibraryEntryUsed({
+      id,
+      expectedRowVersion,
+    });
+    if (result.ok) {
+      setAnswerLibraryEntries((current) =>
+        Object.freeze(
+          current.map((answer) => (answer.id === result.value.id ? result.value : answer)),
+        ),
+      );
+      setLastActivity("Recorded explicit local Answer Library reuse.");
     } else {
       setLastActivity(result.error.message);
     }
@@ -2996,15 +3050,19 @@ const AppShellCatalog = () => {
         ) : activeDestination === "profile" ? (
           <CareerProfileWorkspace
             model={{
+              answers: answerLibraryEntries,
               entries: careerProfileEntries,
               imports: careerProfileImports,
               loading: careerProfileLoading,
               stories: careerStories,
             }}
             onCreateStory={createCareerStory}
+            onCreateAnswer={createAnswerLibraryEntry}
             onImport={importResume}
             onResolve={resolveResumeImport}
             onSave={saveCareerProfileEntry}
+            onMarkAnswerUsed={markAnswerLibraryEntryUsed}
+            onUpdateAnswer={updateAnswerLibraryEntry}
             onUpdateStory={updateCareerStory}
           />
         ) : activeDestination === "network" ? (

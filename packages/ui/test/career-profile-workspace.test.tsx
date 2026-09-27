@@ -1,5 +1,6 @@
 import {
   applicationFailure,
+  type AnswerLibraryEntryDto,
   type CareerStoryDto,
   type CareerProfileEntryDto,
   type ResumeImportQueueItemDto,
@@ -28,6 +29,7 @@ const ENTRY: CareerProfileEntryDto = Object.freeze({
 });
 
 const MODEL = Object.freeze({
+  answers: Object.freeze([]),
   loading: false,
   entries: Object.freeze([ENTRY]),
   imports: Object.freeze([]),
@@ -38,6 +40,12 @@ const renderWorkspace = (model: CareerProfileWorkspaceModel = MODEL) =>
   renderToStaticMarkup(
     createElement(CareerProfileWorkspace, {
       model,
+      onCreateAnswer: async () =>
+        applicationFailure<AnswerLibraryEntryDto>({
+          code: "internal",
+          message: "unused",
+          retryable: false,
+        }),
       onCreateStory: async () =>
         applicationFailure<CareerStoryDto>({
           code: "internal",
@@ -50,6 +58,18 @@ const renderWorkspace = (model: CareerProfileWorkspaceModel = MODEL) =>
         applicationFailure({ code: "internal", message: "unused", retryable: false }),
       onSave: async () =>
         applicationFailure({ code: "internal", message: "unused", retryable: false }),
+      onMarkAnswerUsed: async () =>
+        applicationFailure<AnswerLibraryEntryDto>({
+          code: "internal",
+          message: "unused",
+          retryable: false,
+        }),
+      onUpdateAnswer: async () =>
+        applicationFailure<AnswerLibraryEntryDto>({
+          code: "internal",
+          message: "unused",
+          retryable: false,
+        }),
       onUpdateStory: async () =>
         applicationFailure<CareerStoryDto>({
           code: "internal",
@@ -60,7 +80,7 @@ const renderWorkspace = (model: CareerProfileWorkspaceModel = MODEL) =>
   );
 
 describe("CareerProfileWorkspace", () => {
-  it("adds the reviewed story section without pulling later Answer Library or AI work forward", () => {
+  it("adds the reviewed story and Answer Library sections without pulling AI work forward", () => {
     expect(CAREER_PROFILE_EDITOR_SECTIONS.map(({ id }) => id)).toEqual([
       "basics",
       "employment",
@@ -72,6 +92,7 @@ describe("CareerProfileWorkspace", () => {
       "publication",
       "volunteer",
       "story",
+      "answer",
     ]);
     const markup = renderWorkspace();
     expect(markup).not.toContain("accepting or resolving import conflicts");

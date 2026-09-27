@@ -122,6 +122,8 @@ Rules:
 - Signature/acknowledgment is never auto-completed.
 - Accepted answers enter a versioned answer library with job/context tags; sensitive answers are excluded by default.
 
+`EVD-007` implements the non-AI Answer Library foundation using the existing `application_answer` document lineage. Each saved version retains its question, content, and explicit `standard`, `sensitive`, or `restricted` classification; the entry retains immutable manual/application provenance plus optional source-job/context and an explicit last-used timestamp. Sensitive entries are excluded from later automatic reuse by default, while restricted entries require direct manual review/use. Creation, editing, history display, and “mark used” remain local explicit actions. Drafting and job-specific reuse stay deferred to `CLM-006`.
+
 ## Claim ledger and QA
 
 Post-generation processing identifies claims and classifies them:

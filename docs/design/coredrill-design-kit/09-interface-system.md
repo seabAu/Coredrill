@@ -302,6 +302,8 @@ The `EVD-005` review card groups related fields, names each detected duplicate/d
 
 The `EVD-006` Stories section provides a bounded Situation/Action/Result form with ordinary tags, optional privacy tags, and a selector over existing canonical Career Profile evidence. Linked items are identified by kind and label; checking an item creates only a relationship, never a copied evidence record. Story cards expose privacy, verification, and link count, and enter an explicit edit mode whose save replaces the link set atomically. Validation remains attached to the form, and saved edits survive reload without an account, network, or AI.
 
+The `EVD-007` Answer Library section provides a bounded question/answer editor, an explicit Standard/Sensitive/Restricted selector, and an optional manual provenance note. Saved cards show their immutable original source, current classification, version number, last-used timestamp or “Never,” and expandable version history. Editing visibly saves a new version rather than overwriting prior content; provenance is read-only in edit mode. “Mark used now” is an explicit local action. Sensitive entries are described as excluded from later reuse by default, restricted entries as manual-review-only, and no automatic reuse or AI drafting occurs in this slice.
+
 ### Documents
 
 Views: All, Resumes, Cover letters, Answers, Templates, Submitted. Each item shows base/template lineage, related job, last edited, export status, and whether it contains unresolved claims.

@@ -1,9 +1,11 @@
 import {
   BROWSER_EXPORT_REMINDER_SETTING_KEY,
+  AnswerLibraryError,
   CareerStoryError,
   VaultDeletionError,
   createCareerProfileOperations,
   createCareerStoryOperations,
+  createAnswerLibraryOperations,
   createDefaultBrowserExportReminderPreference,
   createResumeImportOperations,
   createResumeImportReviewOperations,
@@ -17,6 +19,13 @@ import {
   type BrowserExportReminderPreferenceV1,
   type ApplicationOperationContext,
   type ApplicationResult,
+  type AnswerLibraryEntryDto,
+  type AnswerLibraryPort,
+  type CreateAnswerLibraryEntryInput,
+  type CreateAnswerLibraryEntryPortInput,
+  type MarkAnswerLibraryEntryUsedInput,
+  type UpdateAnswerLibraryEntryInput,
+  type UpdateAnswerLibraryEntryPortInput,
   type CareerProfileEntryDto,
   type CareerProfilePort,
   type CareerStoryDto,
@@ -63,6 +72,7 @@ import {
   createCareerRepositoryContractSuite,
   createCareerRepositories,
   createCareerStoryRepository,
+  createAnswerLibraryRepository,
   createResumeImportRepository,
   createResumeImportResolutionRepository,
   createPhase1RepositoryContractSuite,
@@ -78,6 +88,7 @@ import {
   writePortableArchiveV1,
   type DatabaseContractRunResult,
   type DatabasePort,
+  type AnswerLibraryEntryRecord,
   type CareerStoryWithEvidence,
   type CareerRepositoryContractManifest,
   type Phase1RepositoryContractManifest,
@@ -89,7 +100,13 @@ import {
   type QueryRow,
   type StorageDiagnostics,
 } from "@coredrill/storage-core";
-import { entityId, generateEntityId, instant } from "@coredrill/domain";
+import {
+  entityId,
+  generateEntityId,
+  instant,
+  type EntityId,
+  type Instant,
+} from "@coredrill/domain";
 
 import initialMigrationSql from "../../../migrations/0001_vault.sql?raw";
 import captureInboxMigrationSql from "../../../migrations/0002_capture_inbox.sql?raw";
@@ -310,6 +327,16 @@ interface PortableRecoveryRestoreProof {
 }
 
 export interface CoredrillStorageSpikeApi {
+  createAnswerLibraryEntry(
+    input: CreateAnswerLibraryEntryInput,
+  ): Promise<ApplicationResult<AnswerLibraryEntryDto>>;
+  updateAnswerLibraryEntry(
+    input: UpdateAnswerLibraryEntryInput,
+  ): Promise<ApplicationResult<AnswerLibraryEntryDto>>;
+  markAnswerLibraryEntryUsed(
+    input: MarkAnswerLibraryEntryUsedInput,
+  ): Promise<ApplicationResult<AnswerLibraryEntryDto>>;
+  listAnswerLibraryEntries(): Promise<ApplicationResult<readonly AnswerLibraryEntryDto[]>>;
   createManualCareerProfileEntry(
     input: CreateManualCareerProfileEntryInput,
   ): Promise<ApplicationResult<CareerProfileEntryDto>>;
@@ -1187,6 +1214,57 @@ const careerStoryOperations = createCareerStoryOperations({
   createId: () => generateEntityId("anecdote"),
 });
 
+const getAnswerLibraryRepository = async () => {
+  const client = await getDatabase();
+  await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
+  return createAnswerLibraryRepository(client);
+};
+
+const answerLibraryDto = (value: AnswerLibraryEntryRecord): AnswerLibraryEntryDto =>
+  Object.freeze({
+    ...value,
+    currentVersion: Object.freeze({ ...value.currentVersion }),
+    versions: Object.freeze(value.versions.map((version) => Object.freeze({ ...version }))),
+  });
+
+const answerLibraryPort: AnswerLibraryPort = Object.freeze({
+  createAnswer: async (input: CreateAnswerLibraryEntryPortInput) => {
+    const repository = await getAnswerLibraryRepository();
+    return answerLibraryDto(await repository.create(input));
+  },
+  updateAnswer: async (input: UpdateAnswerLibraryEntryPortInput) => {
+    const repository = await getAnswerLibraryRepository();
+    try {
+      return answerLibraryDto(await repository.update(input));
+    } catch {
+      throw new AnswerLibraryError("conflict");
+    }
+  },
+  markAnswerUsed: async (id: EntityId<"document">, expectedRowVersion: number, usedAt: Instant) => {
+    const repository = await getAnswerLibraryRepository();
+    try {
+      return answerLibraryDto(await repository.markUsed(id, expectedRowVersion, usedAt));
+    } catch {
+      throw new AnswerLibraryError("conflict");
+    }
+  },
+  listAnswers: async () => {
+    const repository = await getAnswerLibraryRepository();
+    return Object.freeze((await repository.listActive()).map(answerLibraryDto));
+  },
+});
+
+const hashText = async (value: string): Promise<string> => {
+  const bytes = await globalThis.crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return [...new Uint8Array(bytes)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+};
+
+const answerLibraryOperations = createAnswerLibraryOperations({
+  answers: answerLibraryPort,
+  createId: (kind) => generateEntityId(kind),
+  hashText,
+});
+
 const resumeImportPort: ResumeImportPort = Object.freeze({
   enqueue: async (input: ResumeImportPortInput) => {
     const client = await getDatabase();
@@ -1739,6 +1817,8 @@ const createBrowserContractAdapter = () => {
 };
 
 const api: CoredrillStorageSpikeApi = {
+  createAnswerLibraryEntry: async (input) =>
+    answerLibraryOperations.createAnswerCommand.execute(input, careerProfileOperationContext()),
   createCareerStory: async (input) =>
     careerStoryOperations.createStoryCommand.execute(input, careerProfileOperationContext()),
   createManualCareerProfileEntry: async (input) =>
@@ -1753,6 +1833,8 @@ const api: CoredrillStorageSpikeApi = {
     ),
   listCareerStories: async () =>
     careerStoryOperations.listStoriesQuery.execute(undefined, careerProfileOperationContext()),
+  listAnswerLibraryEntries: async () =>
+    answerLibraryOperations.listAnswersQuery.execute(undefined, careerProfileOperationContext()),
   listPendingResumeImports: async () =>
     resumeImportOperations.listPendingQuery.execute(undefined, careerProfileOperationContext()),
   queueResumeImport: async (input) => {
@@ -1774,6 +1856,10 @@ const api: CoredrillStorageSpikeApi = {
   },
   resolveResumeImportGroup: async (input) =>
     resumeImportReviewOperations.resolveCommand.execute(input, careerProfileOperationContext()),
+  markAnswerLibraryEntryUsed: async (input) =>
+    answerLibraryOperations.markAnswerUsedCommand.execute(input, careerProfileOperationContext()),
+  updateAnswerLibraryEntry: async (input) =>
+    answerLibraryOperations.updateAnswerCommand.execute(input, careerProfileOperationContext()),
   updateCareerStory: async (input) =>
     careerStoryOperations.updateStoryCommand.execute(input, careerProfileOperationContext()),
   openAndMigrate: async (options = {}) => {

@@ -1,15 +1,21 @@
 import {
   MANUAL_CAREER_PROFILE_KINDS,
+  ANSWER_SENSITIVITIES,
   analyzeResumeImportReviewQueue,
+  validateAnswerLibraryEntry,
   validateCareerStory,
   validateManualCareerProfileEntry,
   type ApplicationResult,
+  type AnswerLibraryEntryDto,
+  type AnswerLibraryValidationIssue,
+  type AnswerSensitivity,
   type CareerProfileEntryDto,
   type CareerProfileValidationIssue,
   type CareerStoryDto,
   type CareerStoryEvidenceKind,
   type CareerStoryValidationIssue,
   type CreateCareerStoryInput,
+  type CreateAnswerLibraryEntryInput,
   type CreateManualCareerProfileEntryInput,
   type ManualCareerProfileKind,
   type ResumeImportQueueItemDto,
@@ -17,6 +23,7 @@ import {
   type ResumeImportResolutionDto,
   type ResumeImportReviewGroupDto,
   type UpdateCareerStoryInput,
+  type UpdateAnswerLibraryEntryInput,
 } from "@coredrill/application";
 import {
   useId,
@@ -37,14 +44,16 @@ export const CAREER_PROFILE_EDITOR_SECTIONS = Object.freeze([
   { id: "publication", label: "Publications" },
   { id: "volunteer", label: "Volunteering" },
   { id: "story", label: "Stories" },
+  { id: "answer", label: "Answer Library" },
 ] as const satisfies readonly {
   readonly id: CareerProfileSectionKind;
   readonly label: string;
 }[]);
 
-export type CareerProfileSectionKind = ManualCareerProfileKind | "story";
+export type CareerProfileSectionKind = ManualCareerProfileKind | "story" | "answer";
 
 export interface CareerProfileWorkspaceModel {
+  readonly answers: readonly AnswerLibraryEntryDto[];
   readonly entries: readonly CareerProfileEntryDto[];
   readonly imports: readonly ResumeImportQueueItemDto[];
   readonly stories: readonly CareerStoryDto[];
@@ -71,6 +80,16 @@ export interface CareerProfileWorkspaceProps {
   readonly onCreateStory: (
     input: CreateCareerStoryInput,
   ) => Promise<ApplicationResult<CareerStoryDto>>;
+  readonly onCreateAnswer: (
+    input: CreateAnswerLibraryEntryInput,
+  ) => Promise<ApplicationResult<AnswerLibraryEntryDto>>;
+  readonly onUpdateAnswer: (
+    input: UpdateAnswerLibraryEntryInput,
+  ) => Promise<ApplicationResult<AnswerLibraryEntryDto>>;
+  readonly onMarkAnswerUsed: (
+    id: string,
+    expectedRowVersion: number,
+  ) => Promise<ApplicationResult<AnswerLibraryEntryDto>>;
   readonly onUpdateStory: (
     input: UpdateCareerStoryInput,
   ) => Promise<ApplicationResult<CareerStoryDto>>;
@@ -530,19 +549,98 @@ const StoryEditorFields = ({
   );
 };
 
+const AnswerEditorFields = ({
+  answer,
+  issues,
+}: {
+  readonly answer: AnswerLibraryEntryDto | null;
+  readonly issues: ReadonlyMap<string, AnswerLibraryValidationIssue>;
+}) => (
+  <>
+    <div className="cd-career-field cd-career-field-wide">
+      <label htmlFor="answer-question">Application question *</label>
+      <textarea
+        aria-invalid={issues.has("question") || undefined}
+        defaultValue={answer?.currentVersion.question ?? ""}
+        id="answer-question"
+        maxLength={512}
+        name="question"
+        required
+        rows={3}
+      />
+      {issues.has("question") ? (
+        <p className="cd-career-field-error">{issues.get("question")?.message}</p>
+      ) : null}
+    </div>
+    <div className="cd-career-field cd-career-field-wide">
+      <label htmlFor="answer-content">Reusable answer *</label>
+      <textarea
+        aria-invalid={issues.has("answer") || undefined}
+        defaultValue={answer?.currentVersion.answer ?? ""}
+        id="answer-content"
+        maxLength={200_000}
+        name="answer"
+        required
+        rows={7}
+      />
+      {issues.has("answer") ? (
+        <p className="cd-career-field-error">{issues.get("answer")?.message}</p>
+      ) : null}
+    </div>
+    <div className="cd-career-field">
+      <label htmlFor="answer-sensitivity">Sensitivity *</label>
+      <select
+        defaultValue={answer?.currentVersion.sensitivity ?? "standard"}
+        id="answer-sensitivity"
+        name="sensitivity"
+        required
+      >
+        {ANSWER_SENSITIVITIES.map((value) => (
+          <option key={value} value={value}>
+            {value[0]?.toUpperCase()}
+            {value.slice(1)}
+          </option>
+        ))}
+      </select>
+      <p className="cd-career-field-hint">
+        Sensitive answers are excluded from later reuse by default. Restricted answers always
+        require direct review and manual use.
+      </p>
+    </div>
+    {answer === null ? (
+      <Field
+        hint="Optional provenance note, such as where or why you prepared this answer."
+        label="Source context"
+        name="sourceContext"
+      />
+    ) : (
+      <div className="cd-career-field">
+        <span>Original source</span>
+        <strong>{answer.sourceContext ?? "Manual Career Profile entry"}</strong>
+        <p className="cd-career-field-hint">Provenance stays fixed when a new version is saved.</p>
+      </div>
+    )}
+  </>
+);
+
 export const CareerProfileWorkspace = ({
   model,
+  onCreateAnswer,
   onCreateStory,
   onImport,
   onResolve,
   onSave,
+  onMarkAnswerUsed,
+  onUpdateAnswer,
   onUpdateStory,
 }: CareerProfileWorkspaceProps) => {
   const panelId = useId();
   const [activeKind, setActiveKind] = useState<CareerProfileSectionKind>("basics");
   const [issues, setIssues] = useState<readonly CareerProfileValidationIssue[]>([]);
   const [storyIssues, setStoryIssues] = useState<readonly CareerStoryValidationIssue[]>([]);
+  const [answerIssues, setAnswerIssues] = useState<readonly AnswerLibraryValidationIssue[]>([]);
   const [editingStoryId, setEditingStoryId] = useState<string | null>(null);
+  const [editingAnswerId, setEditingAnswerId] = useState<string | null>(null);
   const [status, setStatus] = useState("");
   const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -550,16 +648,19 @@ export const CareerProfileWorkspace = ({
   const [resolvingGroup, setResolvingGroup] = useState<string | null>(null);
   const issueMap = new Map(issues.map((value) => [value.field, value]));
   const storyIssueMap = new Map(storyIssues.map((value) => [value.field, value]));
+  const answerIssueMap = new Map(answerIssues.map((value) => [value.field, value]));
   const visibleEntries = model.entries.filter(
-    ({ kind }) => activeKind !== "story" && kind === activeKind,
+    ({ kind }) => activeKind !== "story" && activeKind !== "answer" && kind === activeKind,
   );
   const editingStory = model.stories.find(({ id }) => id === editingStoryId) ?? null;
+  const editingAnswer = model.answers.find(({ id }) => id === editingAnswerId) ?? null;
   const reviewGroups = analyzeResumeImportReviewQueue(model.imports, model.entries);
 
   const selectKind = (kind: CareerProfileSectionKind): void => {
     setActiveKind(kind);
     setIssues([]);
     setStoryIssues([]);
+    setAnswerIssues([]);
     setStatus("");
   };
 
@@ -592,10 +693,12 @@ export const CareerProfileWorkspace = ({
   if (
     model.entries.length > 10_000 ||
     model.stories.length > 10_000 ||
+    model.answers.length > 10_000 ||
     model.imports.length > 1_000 ||
     new Set(model.entries.map(({ id }) => id)).size !== model.entries.length ||
     model.entries.some(({ kind }) => !MANUAL_CAREER_PROFILE_KINDS.includes(kind)) ||
-    new Set(model.stories.map(({ id }) => id)).size !== model.stories.length
+    new Set(model.stories.map(({ id }) => id)).size !== model.stories.length ||
+    new Set(model.answers.map(({ id }) => id)).size !== model.answers.length
   ) {
     throw new RangeError("Career Profile workspace model is invalid.");
   }
@@ -685,7 +788,7 @@ export const CareerProfileWorkspace = ({
 
   const submit = async (event: SyntheticEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
-    if (activeKind === "story") return;
+    if (activeKind === "story" || activeKind === "answer") return;
     setStatus("");
     const form = event.currentTarget;
     const input = buildInput(activeKind, new FormData(form));
@@ -760,6 +863,49 @@ export const CareerProfileWorkspace = ({
       editingStory === null
         ? "Story saved locally as user-confirmed evidence."
         : "Story and its evidence links updated locally.",
+    );
+  };
+
+  const submitAnswer = async (event: SyntheticEvent<HTMLFormElement>): Promise<void> => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const draft = {
+      question: inputValue(data, "question"),
+      answer: inputValue(data, "answer"),
+      sensitivity: inputValue(data, "sensitivity") as AnswerSensitivity,
+    };
+    const validation = validateAnswerLibraryEntry(draft);
+    if (!validation.ok) {
+      setAnswerIssues(validation.issues);
+      setStatus("Review the highlighted Answer Library fields.");
+      return;
+    }
+    setAnswerIssues([]);
+    setSaving(true);
+    const result =
+      editingAnswer === null
+        ? await onCreateAnswer({
+            ...validation.value,
+            sourceKind: "manual",
+            sourceContext: inputValue(data, "sourceContext") || null,
+          })
+        : await onUpdateAnswer({
+            ...validation.value,
+            id: editingAnswer.id,
+            expectedRowVersion: editingAnswer.rowVersion,
+          });
+    setSaving(false);
+    if (!result.ok) {
+      setStatus(result.error.message);
+      return;
+    }
+    form.reset();
+    setEditingAnswerId(null);
+    setStatus(
+      editingAnswer === null
+        ? "Answer saved locally with explicit sensitivity and provenance."
+        : "A new immutable answer version was saved locally.",
     );
   };
 
@@ -1021,12 +1167,16 @@ export const CareerProfileWorkspace = ({
                 aria-label={`${String(
                   id === "story"
                     ? model.stories.length
-                    : model.entries.filter(({ kind }) => kind === id).length,
+                    : id === "answer"
+                      ? model.answers.length
+                      : model.entries.filter(({ kind }) => kind === id).length,
                 )} entries`}
               >
                 {id === "story"
                   ? model.stories.length
-                  : model.entries.filter(({ kind }) => kind === id).length}
+                  : id === "answer"
+                    ? model.answers.length
+                    : model.entries.filter(({ kind }) => kind === id).length}
               </span>
             </button>
           ))}
@@ -1038,7 +1188,130 @@ export const CareerProfileWorkspace = ({
           id={panelId}
           role="tabpanel"
         >
-          {activeKind === "story" ? (
+          {activeKind === "answer" ? (
+            <>
+              <div className="cd-career-panel-heading">
+                <div>
+                  <p className="cd-eyebrow">Reusable, versioned, and local</p>
+                  <h3>{editingAnswer === null ? "Add an answer" : "Edit answer"}</h3>
+                </div>
+                <span className="cd-career-verification-badge">
+                  {editingAnswer === null
+                    ? "Manual provenance on save"
+                    : `Version ${String(editingAnswer.currentVersion.versionNumber + 1)} on save`}
+                </span>
+              </div>
+              <form
+                className="cd-career-form"
+                key={editingAnswer?.id ?? "new-answer"}
+                noValidate
+                onSubmit={(event) => void submitAnswer(event)}
+              >
+                <AnswerEditorFields answer={editingAnswer} issues={answerIssueMap} />
+                <div className="cd-career-form-actions">
+                  <button className="cd-button cd-button-primary" disabled={saving} type="submit">
+                    {saving
+                      ? "Saving locally…"
+                      : editingAnswer === null
+                        ? "Save answer"
+                        : "Save new version"}
+                  </button>
+                  {editingAnswer === null ? null : (
+                    <button
+                      className="cd-button cd-button-secondary"
+                      onClick={() => {
+                        setEditingAnswerId(null);
+                        setAnswerIssues([]);
+                        setStatus("");
+                      }}
+                      type="button"
+                    >
+                      Cancel editing
+                    </button>
+                  )}
+                  <p aria-live="polite" className="cd-career-status" role="status">
+                    {status}
+                  </p>
+                </div>
+              </form>
+              <section aria-labelledby={`${panelId}-answers-heading`} className="cd-career-saved">
+                <div className="cd-career-saved-heading">
+                  <h4 id={`${panelId}-answers-heading`}>Saved answers</h4>
+                  <span>
+                    {model.loading
+                      ? "Loading local records…"
+                      : `${String(model.answers.length)} stored`}
+                  </span>
+                </div>
+                {model.answers.length === 0 ? (
+                  <p className="cd-career-empty">No reusable answers yet.</p>
+                ) : (
+                  <ul>
+                    {model.answers.map((answer) => (
+                      <li className="cd-career-story-card" key={answer.id}>
+                        <div>
+                          <strong>{answer.currentVersion.question}</strong>
+                          <span>{answer.currentVersion.answer}</span>
+                          <span>
+                            Source: {answer.sourceKind}
+                            {answer.sourceContext === null ? "" : ` · ${answer.sourceContext}`}
+                          </span>
+                          <span>
+                            Last used: {answer.lastUsedAt ?? "Never"} · Version{" "}
+                            {String(answer.currentVersion.versionNumber)}
+                          </span>
+                          <details>
+                            <summary>Version history ({String(answer.versions.length)})</summary>
+                            <ol>
+                              {[...answer.versions].reverse().map((version) => (
+                                <li key={version.id}>
+                                  <strong>Version {String(version.versionNumber)}</strong>
+                                  <span>{version.createdAt}</span>
+                                  <span>{version.sensitivity}</span>
+                                  <span>{version.question}</span>
+                                </li>
+                              ))}
+                            </ol>
+                          </details>
+                        </div>
+                        <div className="cd-career-story-card-actions">
+                          <span className="cd-career-verification-badge">
+                            {answer.currentVersion.sensitivity}
+                          </span>
+                          <button
+                            className="cd-button cd-button-secondary"
+                            onClick={() => {
+                              setEditingAnswerId(answer.id);
+                              setAnswerIssues([]);
+                              setStatus("");
+                            }}
+                            type="button"
+                          >
+                            Edit answer
+                          </button>
+                          <button
+                            className="cd-button cd-button-quiet"
+                            onClick={() => {
+                              void onMarkAnswerUsed(answer.id, answer.rowVersion).then((result) => {
+                                setStatus(
+                                  result.ok
+                                    ? "Recorded explicit local reuse."
+                                    : result.error.message,
+                                );
+                              });
+                            }}
+                            type="button"
+                          >
+                            Mark used now
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            </>
+          ) : activeKind === "story" ? (
             <>
               <div className="cd-career-panel-heading">
                 <div>
@@ -1207,8 +1480,8 @@ export const CareerProfileWorkspace = ({
       </div>
 
       <aside className="cd-career-later" aria-label="Later Career Profile capabilities">
-        <strong>Kept for later reviewed slices:</strong> the Answer Library and any AI-assisted
-        drafting.
+        <strong>Kept for later reviewed slices:</strong> AI-assisted drafting and automatic answer
+        reuse. This library records only explicit local actions.
       </aside>
     </section>
   );
