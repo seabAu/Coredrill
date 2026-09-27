@@ -212,8 +212,10 @@ try {
   const rowsAfterDeletion = await executeHarness("listVaults");
   await executeHarness("delete");
   const repositoryContracts = await executeHarness("runPhase1RepositoryContracts");
+  const careerRepositoryContracts = await executeHarness("runCareerRepositoryContracts");
   const archiveWriter = await executeHarness("runPortableArchiveWriterProof");
   const repositoryCases = repositoryContracts.manifest.caseNames;
+  const careerRepositoryCases = Object.values(careerRepositoryContracts.manifest.cases);
 
   const proof = {
     appliedVersions: opened.appliedVersions,
@@ -242,6 +244,9 @@ try {
     repositoryContractCases: repositoryCases.length,
     repositoryContractSuite: repositoryContracts.run.suiteName,
     repositoryContractVersion: repositoryContracts.manifest.schemaVersion,
+    careerRepositoryContractCases: careerRepositoryCases.length,
+    careerRepositoryContractSuite: careerRepositoryContracts.run.suiteName,
+    careerRepositoryContractVersion: careerRepositoryContracts.manifest.schemaVersion,
     schemaVersion: portable.schemaVersion,
     sha256: portable.sha256,
     sqlite: opened.diagnostics.details.find((detail) => detail.startsWith("sqlite-version:")),
@@ -256,6 +261,7 @@ try {
     proof.typedVaultDeletionRejectedSafely !== true ||
     proof.typedVaultDeletionCleanProfile !== true ||
     proof.repositoryContractCases !== 18 ||
+    proof.careerRepositoryContractCases !== 2 ||
     proof.humanReadableDataFiles !== 60 ||
     proof.humanReadableDatasets !== 30 ||
     humanReadable.csvFiles !== 30 ||
@@ -280,6 +286,13 @@ try {
     !/^[a-f0-9]{64}$/u.test(archiveRestore.archiveSha256) ||
     proof.repositoryContractSuite !== repositoryContracts.manifest.suiteName ||
     proof.repositoryContractVersion !== 3 ||
+    proof.careerRepositoryContractVersion !== 1 ||
+    proof.careerRepositoryContractSuite !== careerRepositoryContracts.manifest.suiteName ||
+    !Array.isArray(careerRepositoryContracts.run.completedCases) ||
+    careerRepositoryContracts.run.completedCases.length !== careerRepositoryCases.length ||
+    careerRepositoryContracts.run.completedCases.some(
+      (caseName, index) => caseName !== careerRepositoryCases[index],
+    ) ||
     proof.portableArchiveWriterSha256 !==
       "47b18f1854ae6a608cffb4753895afc0fead06f3399818326e61142579a5fcde" ||
     !Array.isArray(repositoryContracts.run.completedCases) ||

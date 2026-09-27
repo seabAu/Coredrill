@@ -8,10 +8,13 @@ import { spawn, spawnSync, type ChildProcessWithoutNullStreams } from "node:chil
 
 import {
   applySqlMigrations,
+  CAREER_REPOSITORY_CONTRACT_CASE_NAMES,
+  CAREER_REPOSITORY_CONTRACT_MANIFEST,
   commitPortableArchiveRestoreV1,
   createPortableArchiveContentHashV1,
   createPortableArchiveRestorePreviewV1,
   createPortableVaultContentHashV1,
+  createCareerRepositoryContractSuite,
   createPhase1RepositoryContractSuite,
   createTransactionSemanticsSuite,
   defineDatabaseContractSuite,
@@ -335,11 +338,11 @@ describe("native SQLite repository and migration contracts", () => {
         name: "applies the shared migration and reopens its ledger",
         run: async (database) => {
           await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
-            schemaVersion: 101,
-            appliedVersions: Array.from({ length: 101 }, (_, index) => index + 1),
+            schemaVersion: 111,
+            appliedVersions: Array.from({ length: 111 }, (_, index) => index + 1),
           });
           await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
-            schemaVersion: 101,
+            schemaVersion: 111,
             appliedVersions: [],
           });
         },
@@ -398,6 +401,19 @@ describe("native SQLite repository and migration contracts", () => {
     });
   }, 60_000);
 
+  it("passes the Career Profile repository contract manifest", async () => {
+    const suite = createCareerRepositoryContractSuite({
+      migrate: async (database) => {
+        await applySqlMigrations(database, migrations(), APPLIED_AT);
+      },
+    });
+    await expect(runDatabaseContractSuite(nativeAdapter, suite)).resolves.toEqual({
+      adapterName: "native-rusqlite-candidate",
+      suiteName: CAREER_REPOSITORY_CONTRACT_MANIFEST.suiteName,
+      completedCases: CAREER_REPOSITORY_CONTRACT_CASE_NAMES,
+    });
+  }, 60_000);
+
   it("persists the migrated vault across native close and reopen", async () => {
     const databaseName = nextDatabaseName();
     const first = await openNativeSqliteDatabase({ databaseName, transport });
@@ -433,7 +449,7 @@ describe("native SQLite repository and migration contracts", () => {
       adapterName: "native-rusqlite-candidate",
       health: "ready",
       persistence: "durable",
-      schemaVersion: 101,
+      schemaVersion: 111,
     });
     await expect(reopened.delete()).resolves.toBe(true);
   });
@@ -453,7 +469,7 @@ describe("native SQLite repository and migration contracts", () => {
     });
     await applySqlMigrations(database, migrations(), APPLIED_AT);
     await expect(database.exportPortable()).resolves.toMatchObject({
-      schemaVersion: 101,
+      schemaVersion: 111,
       byteLength: expect.any(Number),
       sha256: expect.stringMatching(/^[a-f0-9]{64}$/u),
     });
@@ -463,7 +479,7 @@ describe("native SQLite repository and migration contracts", () => {
       retentionCount: 7,
       knownGoodBackups: 1,
       cleanupPending: false,
-      archive: { schemaVersion: 101, sha256: expect.stringMatching(/^[a-f0-9]{64}$/u) },
+      archive: { schemaVersion: 111, sha256: expect.stringMatching(/^[a-f0-9]{64}$/u) },
     });
     await database.delete();
   });
@@ -676,7 +692,7 @@ describe("native SQLite repository and migration contracts", () => {
           version: 1,
           runtime: "windows-native",
           adapterName: "native-rusqlite-candidate",
-          schemaVersion: 101,
+          schemaVersion: 111,
           vaultName: "Canonical local job search",
           jobTitle: "Research Operations Lead",
           finalStage: "Interviewing",

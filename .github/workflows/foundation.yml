@@ -371,6 +371,13 @@ jobs:
           COREDRILL_TEST_MATCH: storage-tracker-repositories.spec.mjs
         run: pnpm test:storage-browser
 
+      - name: Prove Career Profile repository parity in browser SQLite
+        env:
+          COREDRILL_BROWSER_EXECUTABLE_PATH: ${{ steps.chrome.outputs.chrome-path }}
+          COREDRILL_EXPECTED_BROWSER_VERSION: ${{ matrix.chrome }}
+          COREDRILL_TEST_MATCH: storage-career-repositories.spec.mjs
+        run: pnpm test:storage-browser
+
       - name: Prove local document editing and imports
         env:
           COREDRILL_BROWSER_EXECUTABLE_PATH: ${{ steps.chrome.outputs.chrome-path }}

@@ -4,7 +4,7 @@
 
 This document is the normative field-mapping record for the D-051 human-readable export implemented by `BKP-002`. It defines the paired `data/<dataset>.json` and `data/<dataset>.csv` projections carried by the version-1 portable archive. The archive's `database.sqlite3` remains the lossless restore source; these projections provide inspectability and migration independence without pretending that CSV preserves every SQLite distinction.
 
-Version 1 reads one consistent transaction from database schema `101`. A schema change must either preserve this mapping deliberately or introduce a reviewed export version. The stored `vault.schema_version` is the schema at vault creation and need only be a positive integer; it is not the current migration level.
+Version 1 reads one consistent transaction from current database schema `111` and keeps schema `101` readable for restore verification of existing Phase 2 archives. The mapping deliberately remains the complete Phase 1 user-owned projection; the authoritative SQLite member already includes schema-111 Career Profile tables, while `EVD-008` owns adding their reviewed human-readable relationships and deletion mapping. A later schema change must either preserve this mapping deliberately or introduce a reviewed export version. The stored `vault.schema_version` is the schema at vault creation and need only be a positive integer; it is not the current migration level.
 
 ## Dataset envelope
 
@@ -14,7 +14,7 @@ Each JSON file is a strict UTF-8 JSON object with:
 - `dataset`: the dataset name below;
 - `generatedAt`: the archive generation instant;
 - `vaultId`: the selected vault UUID;
-- `sourceSchemaVersion`: `101`;
+- `sourceSchemaVersion`: `111`;
 - `columns`: the ordered field names below;
 - `rowCount`: the exact number of rows;
 - `rows`: objects containing exactly those fields in that order; and

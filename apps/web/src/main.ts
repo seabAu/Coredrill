@@ -36,9 +36,11 @@ import {
   createPortableDataExportV1,
   createPortableArchiveRestorePreviewV1,
   createPortableVaultContentHashV1,
+  createCareerRepositoryContractSuite,
   createPhase1RepositoryContractSuite,
   createTrackerRepositories,
   defineSqlMigrations,
+  CAREER_REPOSITORY_CONTRACT_MANIFEST,
   PHASE_1_REPOSITORY_CONTRACT_MANIFEST,
   PortableArchiveRestoreError,
   runDatabaseContractSuite,
@@ -48,6 +50,7 @@ import {
   writePortableArchiveV1,
   type DatabaseContractRunResult,
   type DatabasePort,
+  type CareerRepositoryContractManifest,
   type Phase1RepositoryContractManifest,
   type Phase1CanonicalJourneyProof,
   type PortableArchiveRestoreCommitPayloadV1,
@@ -197,6 +200,11 @@ interface Phase1RepositoryContractProof {
   readonly run: DatabaseContractRunResult;
 }
 
+interface CareerRepositoryContractProof {
+  readonly manifest: CareerRepositoryContractManifest;
+  readonly run: DatabaseContractRunResult;
+}
+
 interface HumanReadableExportInput {
   readonly generatedAt: string;
   readonly vaultId: string;
@@ -298,6 +306,7 @@ export interface CoredrillStorageSpikeApi {
   runBenchmark(input: StorageBenchmarkInput): Promise<StorageBenchmarkResult>;
   runJobSearchBenchmark(input: StorageBenchmarkInput): Promise<JobSearchBenchmarkResult>;
   runPhase1RepositoryContracts(): Promise<Phase1RepositoryContractProof>;
+  runCareerRepositoryContracts(): Promise<CareerRepositoryContractProof>;
   runPhase1CanonicalJourney(): Promise<Phase1CanonicalJourneyProof>;
   runPortableArchiveWriterProof(): Promise<PortableArchiveBrowserProof>;
   exportHumanReadable(input: HumanReadableExportInput): Promise<HumanReadableExportProof>;
@@ -1540,6 +1549,22 @@ const api: CoredrillStorageSpikeApi = {
     );
     return Object.freeze({
       manifest: PHASE_1_REPOSITORY_CONTRACT_MANIFEST,
+      run,
+    });
+  },
+  runCareerRepositoryContracts: async () => {
+    await api.close();
+    const reviewedMigrations = await migrations();
+    const run = await runDatabaseContractSuite(
+      createBrowserContractAdapter(),
+      createCareerRepositoryContractSuite({
+        migrate: async (client) => {
+          await applySqlMigrations(client, reviewedMigrations, MIGRATION_APPLIED_AT);
+        },
+      }),
+    );
+    return Object.freeze({
+      manifest: CAREER_REPOSITORY_CONTRACT_MANIFEST,
       run,
     });
   },

@@ -14,7 +14,11 @@ import {
 } from "./database-port.js";
 import type { PortableArchiveDataFileSourceV1 } from "./portable-archive-writer.js";
 
-export const PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION = 101 as const;
+export const PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION = 111 as const;
+export const PORTABLE_DATA_EXPORT_SUPPORTED_SOURCE_SCHEMA_VERSIONS = Object.freeze([
+  101,
+  PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION,
+] as const);
 export const PORTABLE_DATA_EXPORT_WRITER_LIMITS = Object.freeze({
   maxCellBytes: 16 * 1024 * 1024,
   maxEntryBytes: 128 * 1024 * 1024,
@@ -547,7 +551,7 @@ export interface PortableDataExportWriterInputV1 {
 
 export interface PortableDataExportBundleV1 {
   readonly specVersion: 1;
-  readonly sourceSchemaVersion: typeof PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION;
+  readonly sourceSchemaVersion: (typeof PORTABLE_DATA_EXPORT_SUPPORTED_SOURCE_SCHEMA_VERSIONS)[number];
   readonly generatedAt: string;
   readonly vaultId: string;
   readonly datasetCount: number;
@@ -681,23 +685,28 @@ const checkedBytes = (bytes: Uint8Array): Uint8Array => {
 
 const readSchemaVersion = async (
   database: DatabaseTransaction,
-): Promise<typeof PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION> => {
+): Promise<(typeof PORTABLE_DATA_EXPORT_SUPPORTED_SOURCE_SCHEMA_VERSIONS)[number]> => {
   const rows = await database.query(sqlStatement("PRAGMA user_version"));
   const value = rows[0]?.["user_version"];
   if (rows.length !== 1 || (typeof value !== "number" && typeof value !== "bigint")) {
     throw exportError("schema_mismatch");
   }
   const schemaVersion = normalizeInteger(value);
-  if (schemaVersion !== PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION) {
+  if (
+    !PORTABLE_DATA_EXPORT_SUPPORTED_SOURCE_SCHEMA_VERSIONS.includes(
+      schemaVersion as (typeof PORTABLE_DATA_EXPORT_SUPPORTED_SOURCE_SCHEMA_VERSIONS)[number],
+    )
+  ) {
     throw exportError("schema_mismatch");
   }
-  return PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION;
+  return schemaVersion as (typeof PORTABLE_DATA_EXPORT_SUPPORTED_SOURCE_SCHEMA_VERSIONS)[number];
 };
 
 const createDataset = async (
   database: DatabaseTransaction,
   spec: DatasetSpec,
   input: Pick<PortableDataExportWriterInputV1, "generatedAt" | "vaultId">,
+  sourceSchemaVersion: (typeof PORTABLE_DATA_EXPORT_SUPPORTED_SOURCE_SCHEMA_VERSIONS)[number],
 ): Promise<{
   readonly dataset: PortableDataExportV1;
   readonly files: readonly PortableArchiveDataFileSourceV1[];
@@ -713,7 +722,7 @@ const createDataset = async (
     dataset: spec.name,
     generatedAt: input.generatedAt,
     vaultId: input.vaultId,
-    sourceSchemaVersion: PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION,
+    sourceSchemaVersion,
     columns: spec.columns,
     rowCount: rows.length,
     rows,
@@ -768,7 +777,7 @@ export const createPortableDataExportV1 = async (
       const sourceSchemaVersion = await readSchemaVersion(database);
       const results = [];
       for (const spec of PORTABLE_DATA_EXPORT_DATASETS) {
-        results.push(await createDataset(database, spec, input));
+        results.push(await createDataset(database, spec, input, sourceSchemaVersion));
       }
 
       const vaultResult = results[0];
