@@ -54,6 +54,16 @@ Persistent-browser-profile restart and real extension-storage quota pressure
 prove recovery without adding permissions, content scripts, remote code,
 secrets, navigation observation, or a full vault.
 
+`Q2-002` injects crashes on both sides of acknowledgement. A first complete
+browser/app restart proves the unacknowledged extension item and the one
+durable SQLite receipt survive for an exact idempotent retry. After the retry
+is acknowledged, a second complete restart proves the outbox stays empty and
+the same receipt remains. A migration regression seeds that receipt at schema
+2 and upgrades it through schema 101 with exact selected-row equality; the
+existing extension-state regression separately upgrades the legacy aggregate
+from version 1 to version 2. No acknowledged capture is deleted or duplicated
+by either restart or upgrade path.
+
 `PEX-004` makes compatibility an explicit fail-closed precondition for
 Chromium transfer. The extension first authenticates the exact sender origin,
 URL origin, frame, tab, and incognito state, then compares the request's app

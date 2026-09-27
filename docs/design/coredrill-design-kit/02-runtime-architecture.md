@@ -274,6 +274,16 @@ mismatches fail closed. The reserved `.test` origin remains evidence-only;
 public hosted-app selection and end-to-end deployment compatibility remain
 owned by `PEX-005`.
 
+`Q2-002` extends that persistent-profile proof through a second full restart
+after acknowledgement. The reopened extension must retain an empty outbox,
+while the reopened app must retain exactly one receipt with the original
+envelope ID, checksum, and semantic content hash. A separate SQLite regression
+creates that acknowledged receipt at schema 2 and upgrades through schema 101,
+requiring exact selected-row equality and one receipt afterward. Combined with
+the version-1-to-version-2 extension-state migration, this covers both durable
+stores across crash and upgrade without treating an unacknowledged retry item
+as data loss.
+
 `PEX-007` adds no bridge capability. It hardens the serialized active-page
 function with iterative bounded JSON-LD discovery and extends the Chromium
 matrix across malicious/prompt-shaped text, deep and oversized pages,

@@ -315,6 +315,71 @@ describe("Phase 1 tracker repository contracts", () => {
     }
   });
 
+  it("preserves an acknowledged capture receipt from schema 2 through the current schema", async () => {
+    const database = new NodeSqliteTestDatabase();
+    try {
+      await applySqlMigrations(database, migrations.slice(0, 2), APPLIED_AT);
+      await database.execute(
+        sqlStatement(
+          `INSERT INTO capture_inbox(
+             envelope_id,
+             content_hash,
+             envelope_checksum,
+             sender_id,
+             sender_sequence,
+             sender_nonce,
+             captured_at,
+             expires_at,
+             received_at,
+             received_via,
+             envelope_json
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            "0198f000-0000-7000-8000-000000000001",
+            "a".repeat(64),
+            "b".repeat(64),
+            "abcdefghijklmnopabcdefghijklmnop",
+            0,
+            "q2-upgrade-nonce-000001",
+            "2026-09-27T12:00:00.000Z",
+            "2026-09-28T12:00:00.000Z",
+            "2026-09-27T12:00:01.000Z",
+            "external_message",
+            '{"specVersion":1,"proof":"Q2-002"}',
+          ],
+        ),
+      );
+
+      const selectReceipt = () =>
+        database.query(
+          sqlStatement(
+            `SELECT
+               envelope_id AS envelopeId,
+               content_hash AS contentHash,
+               envelope_checksum AS envelopeChecksum,
+               sender_id AS senderId,
+               sender_sequence AS senderSequence,
+               sender_nonce AS senderNonce,
+               captured_at AS capturedAt,
+               expires_at AS expiresAt,
+               received_at AS receivedAt,
+               received_via AS receivedVia,
+               envelope_json AS envelopeJson
+             FROM capture_inbox`,
+          ),
+        );
+      const receiptBeforeUpgrade = await selectReceipt();
+      expect(receiptBeforeUpgrade).toHaveLength(1);
+
+      await applySqlMigrations(database, migrations, "2026-09-27T12:01:00.000Z");
+
+      await expect(database.diagnostics()).resolves.toMatchObject({ schemaVersion: 101 });
+      await expect(selectReceipt()).resolves.toEqual(receiptBeforeUpgrade);
+    } finally {
+      database.close();
+    }
+  });
+
   it("passes the versioned Phase 1 repository contract manifest in fast SQLite", async () => {
     const suite = createPhase1RepositoryContractSuite({
       expectedFts5: true,

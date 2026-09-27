@@ -332,6 +332,41 @@ test("durably stores before acknowledgement and safely retries the exact Chromiu
     });
     await expect(callInbox(restartedApp, "listReceipts")).resolves.toHaveLength(1);
 
+    await callStorage(restartedApp, "close");
+    await context.close();
+
+    context = await launchExtensionContext(userDataDirectory);
+    await routeHostedApp(context);
+    serviceWorker = context.serviceWorkers()[0];
+    serviceWorker ??= await context.waitForEvent("serviceworker");
+    expect(new URL(serviceWorker.url()).host).toBe(extensionId);
+
+    const postAckPopup = await context.newPage();
+    await postAckPopup.goto(`chrome-extension://${extensionId}/popup.html`);
+    const postAckStatus = await postAckPopup.evaluate(async () =>
+      globalThis.chrome.runtime.sendMessage({ type: "outbox.status.v2" }),
+    );
+    expect(postAckStatus).toMatchObject({
+      success: true,
+      type: "outbox.status.v2",
+      outboxCount: 0,
+    });
+
+    const postAckApp = await context.newPage();
+    await postAckApp.goto(`${appOrigin}/`);
+    await postAckApp.waitForFunction(
+      () =>
+        globalThis.coredrillStorageSpike !== undefined &&
+        globalThis.coredrillExtensionInbox !== undefined,
+    );
+    const postAckReceipts = await callInbox(postAckApp, "listReceipts");
+    expect(postAckReceipts).toHaveLength(1);
+    expect(postAckReceipts[0]).toMatchObject({
+      envelopeId: receipts[0].envelopeId,
+      envelopeChecksum: receipts[0].envelopeChecksum,
+      contentHash: receipts[0].contentHash,
+    });
+
     const attacker = await context.newPage();
     await attacker.route("https://attacker.example/**", (route) =>
       route.fulfill({ contentType: "text/html", body: "<!doctype html><title>attacker</title>" }),
@@ -341,7 +376,7 @@ test("durably stores before acknowledgement and safely retries the exact Chromiu
       attacker.evaluate(() => globalThis.chrome?.runtime?.sendMessage !== undefined),
     ).resolves.toBe(false);
 
-    await callStorage(restartedApp, "delete");
+    await callStorage(postAckApp, "delete");
     console.info(
       `EXT_TRANSFER_PROOF ${JSON.stringify({
         browser: context.browser()?.version(),
@@ -355,6 +390,8 @@ test("durably stores before acknowledgement and safely retries the exact Chromiu
         durableBeforeAck: true,
         immediateRetryDeferred: true,
         browserRestartRecovered: true,
+        acknowledgedReceiptSurvivedRestart: true,
+        acknowledgedOutboxStayedEmpty: true,
         retryAttempt: retry.attempt,
         semanticContentDeduplicated: true,
         duplicateReceipts: 0,
