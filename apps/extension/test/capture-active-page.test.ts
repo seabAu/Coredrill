@@ -88,6 +88,36 @@ describe("user-invoked active-page capture fixture", () => {
 
     expect(() => captureActivePage()).toThrow(/capture boundary/);
   });
+
+  it("skips oversized and over-deep JSON-LD without recursive traversal failure", () => {
+    const boundedPosting = {
+      "@context": "https://schema.org",
+      "@type": "JobPosting",
+      title: "Bounded platform engineer",
+      hiringOrganization: { "@type": "Organization", name: "Synthetic Systems" },
+    };
+    let overDeep: unknown = boundedPosting;
+    for (let depth = 0; depth < 40; depth += 1) overDeep = [overDeep];
+    replaceGlobal("document", {
+      title: "Bounded capture",
+      querySelectorAll: () => [
+        { textContent: JSON.stringify({ description: "x".repeat(512 * 1024) }) },
+        { textContent: JSON.stringify(overDeep) },
+        { textContent: JSON.stringify(boundedPosting) },
+      ],
+      querySelector: () => null,
+    });
+    replaceGlobal("location", { href: fixture.url });
+    replaceGlobal("window", { getSelection: () => ({ toString: () => "" }) });
+
+    const snapshot = captureActivePage();
+    expect(snapshot.jsonLd).toEqual([boundedPosting]);
+    expect(snapshot.fields).toMatchObject({
+      title: { value: "Bounded platform engineer", method: "jsonld" },
+      company: { value: "Synthetic Systems", method: "jsonld" },
+    });
+    expect(safeParsePageCaptureSnapshot(snapshot).success).toBe(true);
+  });
 });
 
 describe("extension message boundary", () => {

@@ -274,6 +274,14 @@ mismatches fail closed. The reserved `.test` origin remains evidence-only;
 public hosted-app selection and end-to-end deployment compatibility remain
 owned by `PEX-005`.
 
+`PEX-007` adds no bridge capability. It hardens the serialized active-page
+function with iterative bounded JSON-LD discovery and extends the Chromium
+matrix across malicious/prompt-shaped text, deep and oversized pages,
+redirected top-level identity, cross-origin iframe isolation, and SPA changes.
+The previously queued envelope remains immutable, while the existing bridge
+fixture continues to reject replay after acknowledgement. Host and optional
+host permissions remain empty.
+
 `CAP-001` centralizes capture-version dispatch at those outbox and receiver boundaries. V1 is currently both the current and only accepted version; adding V2 must retain a V1 reader so the accepted set becomes current plus previous. The envelope UUID is the pre-ingestion source-snapshot identity used by every candidate provenance reference, expiry must follow capture time, and the semantic content checksum is independently reproducible. This semantic checksum intentionally excludes envelope/replay identity, while the existing transport checksum authenticates the complete canonical envelope.
 
 `CAP-002` extends the same schema-92 receiver transaction without adding a second canonical store. The `capture_inbox` uniqueness constraints classify exact transport retries, fresh envelopes with already-durable semantic content, and conflicting replay identities separately; both safe duplicate classes can be acknowledged, while conflicts roll back. The receiver returns the incoming envelope identity plus the durable receipt identity when they differ. It reads saved `job`/`company`/`job_source`/`source_snapshot` identity data through parameterized SQLite queries and passes neutral candidates to a bounded, deterministic `@coredrill/application` policy. That policy returns reason-coded suggestions for source ID, canonical URL, content hash, and transparent title/company similarity only. It has no adapter dependency and performs no merge, confirmation, or trusted-field mutation.

@@ -66,6 +66,17 @@ pull. Wrong origin, wrong ID, unsupported version, capability mismatch,
 unknown fields, and altered responses all fail without outbox or SQLite
 mutation. No manifest permission or Firefox fallback behavior changes.
 
+`PEX-007` exercises the page boundary with actual hostile browser documents.
+JSON-LD discovery is non-recursive and bounded by script count, aggregate text,
+per-script traversal count, depth, and retained posting count. Instruction-like
+text and markup-shaped strings remain inert source evidence and cause no
+request. Redirects bind capture to the final top-level URL; cross-origin iframe
+postings are ignored; and a later SPA capture cannot rewrite the immutable
+snapshot already queued. Oversized selection rejects atomically, while
+oversized or over-deep JSON-LD contributes no partial posting. The existing
+transfer matrix separately proves acknowledgement replay rejection. These
+fixtures add no host permission, content script, source fetch, or remote code.
+
 ### Local fetch/SSRF
 
 Any URL fetcher enforces scheme/port, DNS and redirect revalidation, private/link-local/metadata IP blocks, size/time/type limits, and approved connector domains. Browser extension does not expose a general fetch oracle to pages.

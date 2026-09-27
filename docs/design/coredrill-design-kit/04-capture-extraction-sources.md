@@ -71,6 +71,18 @@ identity echoes; mismatch never downgrades, broadens permissions, or falls
 through to transfer. The Firefox checksummed export/import contract is
 unchanged.
 
+`PEX-007` bounds hostile current-page discovery before the strict snapshot
+validator. The injected capture function inspects at most 256 JSON-LD scripts
+and 512 KiB of JSON-LD text; each script is traversed iteratively with a
+10,000-value and 32-level ceiling, so deep wrappers cannot exhaust the call
+stack or contribute a partial result. Oversized selected text still rejects the
+capture instead of truncating. Real Chromium fixtures prove instruction-shaped
+text remains inert evidence, redirected captures use the final top-level URL,
+cross-origin iframe postings are excluded, an SPA recapture reads the current
+document without mutating an already queued envelope, and existing transfer
+replay rejection remains effective. No permission or acquisition behavior is
+added.
+
 ## Extraction result
 
 ```ts

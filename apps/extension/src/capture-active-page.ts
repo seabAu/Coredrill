@@ -5,6 +5,9 @@ export function captureActivePage(): PageCaptureSnapshot {
   const maximumSelectedText = 64 * 1024;
   const maximumJsonLdItems = 64;
   const maximumJsonLdCharacters = 512 * 1024;
+  const maximumJsonLdScripts = 256;
+  const maximumJsonLdTraversalDepth = 32;
+  const maximumJsonLdTraversalValues = 10_000;
 
   const boundedText = (value: unknown, maximum: number): string | undefined => {
     if (typeof value !== "string") return undefined;
@@ -20,25 +23,47 @@ export function captureActivePage(): PageCaptureSnapshot {
   };
   const jobPostings: Record<string, unknown>[] = [];
   let parsedCharacters = 0;
-  const consider = (value: unknown): void => {
-    if (jobPostings.length >= maximumJsonLdItems) return;
-    if (isJobPosting(value)) {
-      jobPostings.push(value);
-      return;
-    }
-    if (Array.isArray(value)) {
-      for (const item of value) {
-        consider(item);
-        if (jobPostings.length >= maximumJsonLdItems) return;
+  const collectJobPostings = (
+    value: unknown,
+    maximum: number,
+  ): readonly Record<string, unknown>[] | undefined => {
+    const found: Record<string, unknown>[] = [];
+    const pending: { readonly value: unknown; readonly depth: number }[] = [{ value, depth: 0 }];
+    let traversedValues = 0;
+
+    while (pending.length > 0 && found.length < maximum) {
+      const current = pending.pop();
+      if (current === undefined) break;
+      traversedValues += 1;
+      if (
+        traversedValues > maximumJsonLdTraversalValues ||
+        current.depth > maximumJsonLdTraversalDepth
+      ) {
+        return undefined;
       }
-      return;
+      if (isJobPosting(current.value)) {
+        found.push(current.value);
+        continue;
+      }
+      const children = Array.isArray(current.value)
+        ? current.value
+        : isRecord(current.value) && Array.isArray(current.value["@graph"])
+          ? current.value["@graph"]
+          : undefined;
+      if (children === undefined) continue;
+      for (let index = children.length - 1; index >= 0; index -= 1) {
+        pending.push({ value: children[index], depth: current.depth + 1 });
+      }
     }
-    if (isRecord(value) && Array.isArray(value["@graph"])) consider(value["@graph"]);
+    return found;
   };
 
+  let inspectedScripts = 0;
   for (const script of document.querySelectorAll<HTMLScriptElement>(
     'script[type="application/ld+json"]',
   )) {
+    inspectedScripts += 1;
+    if (inspectedScripts > maximumJsonLdScripts) break;
     const text = script.textContent;
     if (
       text.length === 0 ||
@@ -49,7 +74,11 @@ export function captureActivePage(): PageCaptureSnapshot {
     }
     parsedCharacters += text.length;
     try {
-      consider(JSON.parse(text) as unknown);
+      const found = collectJobPostings(
+        JSON.parse(text) as unknown,
+        maximumJsonLdItems - jobPostings.length,
+      );
+      if (found !== undefined) jobPostings.push(...found);
     } catch {
       // A malformed page-owned JSON-LD block is ignored; no page exception crosses the boundary.
     }

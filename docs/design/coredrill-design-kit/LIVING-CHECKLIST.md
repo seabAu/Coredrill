@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-09-27
 Current milestone: Phase 2 — capture and approved extraction (`GATE-0` and `GATE-1` external-evidence blockers remain open)
-Current work item: `PEX-005` — implement hosted app transfer and Firefox/manual fallback
-Next recommended slice: `PEX-006` after `PEX-005` proof
+Current work item: `PEX-007` — run adversarial extension fixtures
+Next recommended slice: `PEX-008` after `PEX-007` proof; retain `PEX-005` and `PEX-006` as explicit permission/deployment blockers
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `PEX-006` after `PEX-005` proof
 | Field | Value |
 |---|---|
 | Milestone | Phase 2, with the independent Phase 0 and Phase 1 evidence gates retained below |
-| Item range | `PEX-005` |
+| Item range | `PEX-007` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-09-26 |
-| Expected proof | A production browser matrix proves the deployed isolated hosted app can complete the exact-identity Chromium handshake, durable pull/ack journey, retry and failure states with the release extension identity, while Firefox completes the documented checksummed manual fallback; manifests, CSP, permissions, storage isolation, offline behavior, and clean-profile recovery remain within accepted boundaries |
-| Blocker | The isolated public app origin, deployment target, and release extension identity are not selected in the repository. Inspect all existing deployment and release records first; if they remain unresolved, `PEX-005` requires an owner decision and access to the selected external targets. `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
-| Next handoff | Audit current hosting, origin, service-worker scope, extension release identity, store-package, and browser-matrix records without treating the reserved `.test` origin as production. Complete any target-independent hardening and evidence first. If no approved public origin/deployment target exists, present the smallest exact owner decision needed for the real hosted proof; retain the Firefox checksummed manual fallback and do not add permissions or a content-script bridge for convenience. |
+| Expected proof | A real-browser security matrix exercises malicious-page content, prompt-injection text, bounded huge/deep input, SPA changes, cross-origin iframe isolation, redirects, and replay while proving inert capture, current top-level source identity, immutable queued evidence, bounded failure, and unchanged least-privilege packages |
+| Blocker | None for `PEX-007`. `PEX-005` still requires an owner-selected isolated public app origin, deployment target, and release extension identity. `PEX-006` has no reviewed extension-specific source adapter that needs persistent host access: the current reviewed Greenhouse, Lever, and USAJOBS connectors belong to the hosted/desktop connector layer, while user-invoked extension capture already uses temporary `activeTab`; do not manufacture a broader permission merely to close the checkbox. `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
+| Next handoff | Harden the injected capture traversal and execute the adversarial Chromium extension matrix using synthetic routes only. Reuse the existing exact replay proof where it already covers the same production boundary, add missing browser fixtures without introducing network/source behavior, and retain empty host/optional permissions in both production manifests. |
 
 ## Milestone status
 
