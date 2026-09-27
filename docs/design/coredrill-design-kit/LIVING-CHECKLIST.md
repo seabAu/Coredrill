@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-09-27
 Current milestone: Phase 2 — capture and approved extraction (`GATE-0` and `GATE-1` external-evidence blockers remain open)
-Current work item: `PEX-008` — draft accurate extension privacy disclosure and store listing from actual build permissions
-Next recommended slice: Phase 2 quality after `PEX-008`; retain `PEX-005` and `PEX-006` as explicit permission/deployment blockers
+Current work item: `Q2-002` — verify acknowledged-capture durability across browser/app crash and upgrade
+Next recommended slice: `Q2-004` after `Q2-002`; retain `Q2-001`, `PEX-005`, and `PEX-006` as explicit external-evidence/permission/deployment blockers
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: Phase 2 quality after `PEX-008`; retain `PEX-005` and `P
 | Field | Value |
 |---|---|
 | Milestone | Phase 2, with the independent Phase 0 and Phase 1 evidence gates retained below |
-| Item range | `PEX-008` |
+| Item range | `Q2-002` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-09-26 |
-| Expected proof | A reviewed Chrome Web Store and Firefox listing/privacy draft maps every claim to the inspected production manifests and tested behavior, explains each permission, accurately discloses local data handling and the user-initiated app transfer/manual export paths, and names all unresolved pre-publication facts without inventing them |
-| Blocker | None for the `PEX-008` draft. Actual publication remains blocked on trademark/domain clearance, store identities/accounts, an owner-selected isolated public app origin and hosting target, a release Chromium identity, support/privacy-policy URLs, and final listing assets. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
-| Next handoff | Derive the listing, single-purpose statement, permission rationales, data-use answers, and privacy disclosure from the inspected Chromium and Firefox packages plus tested transfer behavior. Cite current official store policies, distinguish local storage from transmission, preserve the Firefox `none` declaration, and label every owner-supplied publishing field instead of guessing. |
+| Expected proof | Fault injection proves an app/browser crash before acknowledgement retains one retryable extension item and one idempotent durable receipt, a crash after acknowledgement retains the durable receipt while the outbox stays empty, and upgrading both the legacy extension aggregate and a schema-2 acknowledged receipt to current versions loses or duplicates nothing |
+| Blocker | None for `Q2-002`. `Q2-001` requires representative usability sessions that measure human capture-to-reviewed-record time and correction rate; deterministic automation or the synthetic extraction corpus cannot honestly substitute for participants. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
+| Next handoff | Extend the production Chromium persistent-profile fixture through a second post-ack browser/app restart, add a migration regression that seeds an acknowledged receipt at schema 2 and upgrades it to the current schema, and retain the existing pre-ack crash/retry plus legacy extension-state migration proof. Do not weaken durable-before-ack ordering or treat an unacknowledged outbox item as loss. |
 
 ## Milestone status
 
@@ -247,7 +247,7 @@ Next recommended slice: Phase 2 quality after `PEX-008`; retain `PEX-005` and `P
 - [ ] **PEX-005** Implement hosted app transfer and Firefox/manual fallback. — Proof: _browser matrix_
 - [ ] **PEX-006** Add optional source permissions only through policy-reviewed enable flow. — Proof: _manifest/settings test_
 - [x] **PEX-007** Run malicious-page, prompt-injection-text, huge-page, SPA-change, iframe, redirect, and replay fixtures. — Proof: [bounded non-recursive capture, real-browser hostile/huge/redirect/iframe/SPA/replay matrix, unchanged least-privilege packages, and hosted clean-commit verification](../../proof/phase-2-production-extension-adversarial-security-verification.md)
-- [ ] **PEX-008** Draft accurate extension privacy disclosure and store listing from actual build permissions. — Proof: _reviewed draft_
+- [x] **PEX-008** Draft accurate extension privacy disclosure and store listing from actual build permissions. — Proof: [manifest-derived Chrome/Firefox listing copy, permission rationales, conservative data-use answers, candidate public privacy policy, explicit publication blockers, and hosted clean-commit verification](../../proof/phase-2-production-extension-store-privacy-draft-verification.md)
 
 ## Phase 2 quality
 

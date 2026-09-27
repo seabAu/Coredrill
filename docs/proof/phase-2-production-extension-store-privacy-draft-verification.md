@@ -2,7 +2,7 @@
 
 Date: 2026-09-27  
 Checklist item: `PEX-008`  
-Status: draft and local review complete; hosted clean-commit proof pending
+Status: complete
 
 ## Outcome
 
@@ -80,7 +80,20 @@ All four commands passed. The package inspectors confirmed:
 - a 57-file source-review ZIP with zero secret findings and SHA-256
   `e5c33b27bea4f3fa6e35296efb39f0f6cbcfc8df07c0567b0087a5aa118b2979`.
 
-The hosted clean-commit matrix is recorded after the implementation commit.
+## Hosted clean-commit verification
+
+Implementation commit `ff2aaa717453ae2946eceec87df4f33404d71787`
+passed [Foundation CI run 36297895043](https://github.com/seabAu/Coredrill/actions/runs/36297895043)
+on 2026-09-27. All ten lanes completed successfully. The dedicated extension
+lane rebuilt and inspected both production packages, reproduced Firefox from
+the source-review ZIP, passed the complete six-test Chromium/Firefox matrix,
+and uploaded immutable proof. The aggregate policy gate, full-history secret
+scan, current/previous Chrome and Firefox lanes, and Windows/macOS/Linux native
+package lanes also passed.
+
+The preceding PEX-007 documentation-only closure run was superseded and
+cancelled by the newer push under the workflow concurrency policy. The later
+green commit contains that closure unchanged, so no proof gap remains.
 
 ## Decision status and residual blockers
 
