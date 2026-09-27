@@ -198,6 +198,10 @@ export {
   createResumeImportRepository,
 } from "./resume-import-repository.js";
 export {
+  ResumeImportResolutionRepository,
+  createResumeImportResolutionRepository,
+} from "./resume-import-resolution-repository.js";
+export {
   JOB_SEARCH_LIMITS,
   JobSearchRepository,
   normalizeJobSearchTokens,

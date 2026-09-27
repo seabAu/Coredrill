@@ -210,11 +210,12 @@ const mapProposal = (row: ProposalRow): ResumeEvidenceProposalDto => {
 };
 
 const PROPOSALS_FOR_RUN = `
-  SELECT id, import_run_id, target_kind, field_name, group_key, proposed_value,
-         source_pointer, source_excerpt, confidence, evidence_status, review_state
-  FROM career_import_proposal
-  WHERE import_run_id = ? AND review_state = 'pending'
-  ORDER BY created_at, id
+  SELECT p.id, p.import_run_id, p.target_kind, p.field_name, p.group_key, p.proposed_value,
+         p.source_pointer, p.source_excerpt, p.confidence, p.evidence_status, p.review_state
+  FROM career_import_proposal p
+  LEFT JOIN career_import_resolution_proposal rp ON rp.proposal_id = p.id
+  WHERE p.import_run_id = ? AND p.review_state = 'pending' AND rp.proposal_id IS NULL
+  ORDER BY p.created_at, p.id
 `;
 
 export class ResumeImportRepository {
@@ -334,7 +335,14 @@ export class ResumeImportRepository {
         `SELECT id, source_name, source_format, source_media_type, source_byte_length,
                 source_hash, completed_at, status, summary_json
          FROM import_run
-         WHERE kind = 'resume' AND status = 'completed'
+         WHERE kind = 'resume' AND status = 'completed' AND (
+           json_extract(summary_json, '$.proposalCount') = 0 OR EXISTS (
+             SELECT 1
+             FROM career_import_proposal p
+             LEFT JOIN career_import_resolution_proposal rp ON rp.proposal_id = p.id
+             WHERE p.import_run_id = import_run.id AND rp.proposal_id IS NULL
+           )
+         )
          ORDER BY completed_at DESC, id`,
       ),
     );
@@ -351,7 +359,7 @@ export class ResumeImportRepository {
     );
     const proposals = Object.freeze(proposalRows.map(mapProposal));
     const summary = parseSummary(row.summary_json);
-    if (summary.proposalCount !== proposals.length) {
+    if (summary.proposalCount < proposals.length) {
       throw new Error("Stored resume import proposal count is invalid.");
     }
     const sha256 = text(row.source_hash, 64, "Stored resume import hash");

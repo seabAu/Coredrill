@@ -88,6 +88,8 @@ interface SkillRow extends AuditRow {
   readonly canonical_name: string;
   readonly category: string | null;
   readonly aliases_json: string;
+  readonly source_document_id: string | null;
+  readonly verification_state: string;
 }
 
 interface AccomplishmentRow extends AuditRow {
@@ -563,9 +565,9 @@ const skillDefinition: ActiveRepositoryDefinition<
 > = {
   table: "skill",
   select:
-    "SELECT id, canonical_name, category, aliases_json, archived_at, created_at, updated_at, row_version FROM skill",
+    "SELECT id, canonical_name, category, aliases_json, source_document_id, verification_state, archived_at, created_at, updated_at, row_version FROM skill",
   insert:
-    "INSERT INTO skill(id, canonical_name, category, aliases_json, archived_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    "INSERT INTO skill(id, canonical_name, category, aliases_json, source_document_id, verification_state, archived_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
   id: (value) => entityId("skill", value.id),
   parameters: (value) => {
     assertAudit(value.createdAt, value.updatedAt, value.archivedAt);
@@ -574,6 +576,8 @@ const skillDefinition: ActiveRepositoryDefinition<
       requiredText(value.canonicalName, "Skill name", 512),
       optionalText(value.category, "Skill category", 256),
       serializeStringArray(value.aliases, "Skill aliases"),
+      value.sourceDocumentId,
+      verificationState(value.verificationState),
       value.archivedAt,
       value.createdAt,
       value.updatedAt,
@@ -585,6 +589,8 @@ const skillDefinition: ActiveRepositoryDefinition<
       canonicalName: requiredText(row.canonical_name, "Stored skill name", 512),
       category: optionalText(row.category, "Stored skill category", 256),
       aliases: parseStringArray(row.aliases_json, "skill aliases"),
+      sourceDocumentId: optionalEntityId("document", row.source_document_id),
+      verificationState: verificationState(row.verification_state),
       ...auditFields(row),
     }),
 };

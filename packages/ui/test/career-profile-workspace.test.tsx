@@ -38,6 +38,8 @@ const renderWorkspace = (model: CareerProfileWorkspaceModel = MODEL) =>
       model,
       onImport: async () =>
         applicationFailure({ code: "internal", message: "unused", retryable: false }),
+      onResolve: async () =>
+        applicationFailure({ code: "internal", message: "unused", retryable: false }),
       onSave: async () =>
         applicationFailure({ code: "internal", message: "unused", retryable: false }),
     }),
@@ -57,7 +59,7 @@ describe("CareerProfileWorkspace", () => {
       "volunteer",
     ]);
     const markup = renderWorkspace();
-    expect(markup).toContain("accepting or resolving import conflicts");
+    expect(markup).not.toContain("accepting or resolving import conflicts");
     expect(markup).toContain("story/evidence linking");
     expect(markup).toContain("AI-assisted drafting");
   });
@@ -115,6 +117,9 @@ describe("CareerProfileWorkspace", () => {
     expect(markup).toContain("extraction confidence 82%");
     expect(markup).toContain("Coredrill Labs — Product Engineer — 2024–2026");
     expect(markup).toContain("/word/document.xml#paragraph=8");
+    expect(markup).toContain("Source excerpts");
+    expect(markup).toContain("Reject proposal");
+    expect(markup).toContain("Incomplete imported fields can be rejected");
     expect(markup).not.toContain("Imported as user-confirmed");
   });
 

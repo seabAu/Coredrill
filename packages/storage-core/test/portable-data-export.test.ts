@@ -149,7 +149,7 @@ const fixtureRows = (): Map<string, readonly QueryRow[]> =>
 class FixtureDatabase implements DatabasePort {
   public readonly statements: string[] = [];
   public transactions = 0;
-  public schemaVersion: number | bigint = 115;
+  public schemaVersion: number | bigint = 119;
   public failQuery = false;
 
   public constructor(public readonly rows = fixtureRows()) {}
@@ -232,7 +232,7 @@ describe("portable human-readable data export", () => {
 
     expect(bundle).toMatchObject({
       specVersion: 1,
-      sourceSchemaVersion: 115,
+      sourceSchemaVersion: 119,
       generatedAt: GENERATED_AT,
       vaultId: VAULT_ID,
       datasetCount: PORTABLE_DATA_EXPORT_DATASETS.length,

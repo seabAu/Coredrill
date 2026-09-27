@@ -177,7 +177,7 @@ export type CreateManualCareerProfilePortInput =
       readonly startDate: DateOnly | null;
       readonly endDate: DateOnly | null;
     })
-  | (CareerAuditPortInput & {
+  | (EvidencePortInput & {
       readonly kind: "skill";
       readonly id: EntityId<"skill">;
       readonly canonicalName: string;
@@ -230,7 +230,7 @@ export interface CareerProfileEntryDto {
   readonly startDate: DateOnly | null;
   readonly endDate: DateOnly | null;
   readonly current: boolean;
-  readonly verificationState: "user_confirmed" | null;
+  readonly verificationState: "imported" | "user_confirmed" | null;
   readonly createdAt: Instant;
   readonly rowVersion: number;
 }
@@ -652,7 +652,9 @@ const copyEntry = (
     primaryLabel.trim().length === 0 ||
     (secondaryLabel !== null && typeof secondaryLabel !== "string") ||
     typeof current !== "boolean" ||
-    (verificationState !== null && verificationState !== "user_confirmed") ||
+    (verificationState !== null &&
+      verificationState !== "imported" &&
+      verificationState !== "user_confirmed") ||
     !Number.isSafeInteger(rowVersion) ||
     (rowVersion as number) < 1
   ) {
@@ -701,7 +703,7 @@ export const createCareerProfileOperations = (
       const id = entityId(entityType, dependencies.createId(kind));
       const createdAt = instant(operationContext.initiatedAt);
       const evidence =
-        kind === "basics" || kind === "skill"
+        kind === "basics"
           ? {}
           : {
               sourceDocumentId: null,

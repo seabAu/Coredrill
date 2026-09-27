@@ -322,3 +322,19 @@ export {
   type ResumeImportQueueItemDto,
   type ResumeProposalTarget,
 } from "./resume-import.js";
+export {
+  RESUME_IMPORT_CONFLICT_KINDS,
+  RESUME_IMPORT_RESOLUTION_DECISIONS,
+  analyzeResumeImportReviewQueue,
+  createResumeImportReviewOperations,
+  type ResolveResumeImportGroupInput,
+  type ResumeImportConflictDto,
+  type ResumeImportConflictKind,
+  type ResumeImportResolutionDecision,
+  type ResumeImportResolutionDto,
+  type ResumeImportResolutionPortInput,
+  type ResumeImportReviewDependencies,
+  type ResumeImportReviewGroupDto,
+  type ResumeImportReviewOperations,
+  type ResumeImportReviewPort,
+} from "./resume-import-review.js";

@@ -1,5 +1,6 @@
 import {
   MANUAL_CAREER_PROFILE_KINDS,
+  analyzeResumeImportReviewQueue,
   validateManualCareerProfileEntry,
   type ApplicationResult,
   type CareerProfileEntryDto,
@@ -7,6 +8,9 @@ import {
   type CreateManualCareerProfileEntryInput,
   type ManualCareerProfileKind,
   type ResumeImportQueueItemDto,
+  type ResolveResumeImportGroupInput,
+  type ResumeImportResolutionDto,
+  type ResumeImportReviewGroupDto,
 } from "@coredrill/application";
 import {
   useId,
@@ -48,6 +52,9 @@ export interface CareerProfileWorkspaceProps {
   readonly onImport: (
     input: ResumeImportFileInput,
   ) => Promise<ApplicationResult<ResumeImportQueueItemDto>>;
+  readonly onResolve: (
+    input: ResolveResumeImportGroupInput,
+  ) => Promise<ApplicationResult<ResumeImportResolutionDto>>;
   readonly onSave: (
     input: CreateManualCareerProfileEntryInput,
   ) => Promise<ApplicationResult<CareerProfileEntryDto>>;
@@ -394,6 +401,7 @@ const dateLabel = (entry: CareerProfileEntryDto): string | null => {
 export const CareerProfileWorkspace = ({
   model,
   onImport,
+  onResolve,
   onSave,
 }: CareerProfileWorkspaceProps) => {
   const panelId = useId();
@@ -403,8 +411,10 @@ export const CareerProfileWorkspace = ({
   const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importStatus, setImportStatus] = useState("");
+  const [resolvingGroup, setResolvingGroup] = useState<string | null>(null);
   const issueMap = new Map(issues.map((value) => [value.field, value]));
   const visibleEntries = model.entries.filter(({ kind }) => kind === activeKind);
+  const reviewGroups = analyzeResumeImportReviewQueue(model.imports, model.entries);
 
   const selectKind = (kind: ManualCareerProfileKind): void => {
     setActiveKind(kind);
@@ -470,6 +480,64 @@ export const CareerProfileWorkspace = ({
       setImporting(false);
       input.value = "";
     }
+  };
+
+  const resolveGroup = async (
+    group: ResumeImportReviewGroupDto,
+    input: ResolveResumeImportGroupInput,
+  ): Promise<void> => {
+    const key = `${group.importRunId}:${group.groupKey}`;
+    setResolvingGroup(key);
+    setImportStatus("Saving the explicit proposal decision locally…");
+    try {
+      const result = await onResolve(input);
+      setImportStatus(
+        result.ok
+          ? result.value.decision === "rejected"
+            ? "Proposal rejected. Its source excerpt remains in the local resolution history."
+            : result.value.decision === "merged_existing"
+              ? "Proposal linked to the existing entry without overwriting it."
+              : "Proposal accepted as imported evidence. It is not user-confirmed."
+          : result.error.message,
+      );
+    } catch {
+      setImportStatus("The proposal decision could not be saved safely.");
+    } finally {
+      setResolvingGroup(null);
+    }
+  };
+
+  const acceptGroup = async (
+    event: SyntheticEvent<HTMLFormElement>,
+    group: ResumeImportReviewGroupDto,
+  ): Promise<void> => {
+    event.preventDefault();
+    if (group.target === "skill") {
+      await resolveGroup(group, {
+        decision: "accepted_new",
+        groupKey: group.groupKey,
+        importRunId: group.importRunId,
+        target: "skill",
+      });
+      return;
+    }
+    if (group.target !== "employment") return;
+    const data = new FormData(event.currentTarget);
+    const dateDecision = inputValue(data, "dateDecision");
+    if (dateDecision !== "explicit" && dateDecision !== "unknown") {
+      setImportStatus("Choose exact dates or explicitly keep the imported dates unknown.");
+      return;
+    }
+    await resolveGroup(group, {
+      current: data.get("current") === "on",
+      dateDecision,
+      decision: "accepted_new",
+      endDate: inputValue(data, "endDate") || null,
+      groupKey: group.groupKey,
+      importRunId: group.importRunId,
+      startDate: inputValue(data, "startDate") || null,
+      target: "employment",
+    });
   };
 
   const submit = async (event: SyntheticEvent<HTMLFormElement>): Promise<void> => {
@@ -567,22 +635,161 @@ export const CareerProfileWorkspace = ({
                   </p>
                 ) : (
                   <ul className="cd-career-proposals">
-                    {item.proposals.map((proposal) => (
-                      <li key={proposal.id}>
-                        <div>
-                          <strong>{proposal.proposedValue}</strong>
-                          <span>
-                            {proposal.target} · {proposal.fieldName} · extraction confidence{" "}
-                            {String(Math.round(proposal.confidence * 100))}%
-                          </span>
-                        </div>
-                        <details>
-                          <summary>Source</summary>
-                          <p>{proposal.sourceExcerpt}</p>
-                          <code>{proposal.sourcePointer}</code>
-                        </details>
-                      </li>
-                    ))}
+                    {reviewGroups
+                      .filter(({ importRunId }) => importRunId === item.id)
+                      .map((group) => {
+                        const key = `${group.importRunId}:${group.groupKey}`;
+                        const mergeCandidates = group.conflicts.filter(
+                          ({ candidateId, kind }) =>
+                            candidateId !== null &&
+                            (kind === "duplicate_role" ||
+                              kind === "duplicate_skill" ||
+                              kind === "ambiguous_skill"),
+                        );
+                        return (
+                          <li key={key}>
+                            <div className="cd-career-proposal-content">
+                              <strong>
+                                {group.proposals
+                                  .map(({ proposedValue }) => proposedValue)
+                                  .join(" · ")}
+                              </strong>
+                              <span>
+                                {group.target} · {String(group.proposals.length)} source-backed
+                                field
+                                {group.proposals.length === 1 ? "" : "s"}
+                              </span>
+                              <span>
+                                extraction confidence{" "}
+                                {Math.round(
+                                  Math.max(...group.proposals.map(({ confidence }) => confidence)) *
+                                    100,
+                                )}
+                                %
+                              </span>
+                              {group.conflicts.length === 0 ? (
+                                <span className="cd-career-conflict-clear">No conflict found</span>
+                              ) : (
+                                <ul className="cd-career-conflicts" aria-label="Detected conflicts">
+                                  {group.conflicts.map((item, index) => (
+                                    <li key={`${item.kind}:${item.candidateId ?? String(index)}`}>
+                                      <strong>{item.kind.replaceAll("_", " ")}</strong>
+                                      <span>
+                                        {item.message}
+                                        {item.candidateLabel === null
+                                          ? ""
+                                          : ` Existing: ${item.candidateLabel}.`}
+                                      </span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                              <details>
+                                <summary>Source excerpts</summary>
+                                {group.sourceExcerpts.map((excerpt) => (
+                                  <p key={excerpt}>{excerpt}</p>
+                                ))}
+                                {group.sourcePointers.map((pointer) => (
+                                  <code key={pointer}>{pointer}</code>
+                                ))}
+                              </details>
+                            </div>
+                            <div className="cd-career-resolution-actions">
+                              {group.actionable ? (
+                                <form onSubmit={(event) => void acceptGroup(event, group)}>
+                                  {group.target === "employment" ? (
+                                    <>
+                                      <label>
+                                        <span>Date decision</span>
+                                        <select defaultValue="" name="dateDecision">
+                                          <option disabled value="">
+                                            Review dates…
+                                          </option>
+                                          <option value="explicit">Use exact dates</option>
+                                          <option value="unknown">Keep dates unknown</option>
+                                        </select>
+                                      </label>
+                                      <label>
+                                        <span>Start date</span>
+                                        <input
+                                          defaultValue={group.suggestedDates.startDate ?? ""}
+                                          name="startDate"
+                                          type="date"
+                                        />
+                                      </label>
+                                      <label>
+                                        <span>End date</span>
+                                        <input
+                                          defaultValue={group.suggestedDates.endDate ?? ""}
+                                          name="endDate"
+                                          type="date"
+                                        />
+                                      </label>
+                                      <label className="cd-career-checkbox">
+                                        <input
+                                          defaultChecked={group.suggestedDates.current}
+                                          name="current"
+                                          type="checkbox"
+                                        />
+                                        <span>Current role</span>
+                                      </label>
+                                    </>
+                                  ) : null}
+                                  <button
+                                    className="cd-button cd-button-primary"
+                                    disabled={resolvingGroup === key}
+                                    type="submit"
+                                  >
+                                    Accept as imported
+                                  </button>
+                                </form>
+                              ) : (
+                                <p>
+                                  Incomplete imported fields can be rejected or retained for later
+                                  review.
+                                </p>
+                              )}
+                              {[
+                                ...new Map(
+                                  mergeCandidates.map((item) => [item.candidateId, item]),
+                                ).values(),
+                              ].map((candidate) => (
+                                <button
+                                  className="cd-button cd-button-secondary"
+                                  disabled={resolvingGroup === key}
+                                  key={candidate.candidateId}
+                                  onClick={() =>
+                                    void resolveGroup(group, {
+                                      decision: "merged_existing",
+                                      groupKey: group.groupKey,
+                                      importRunId: group.importRunId,
+                                      target: group.target as "employment" | "skill",
+                                      targetId: candidate.candidateId as string,
+                                    })
+                                  }
+                                  type="button"
+                                >
+                                  Merge with {candidate.candidateLabel}
+                                </button>
+                              ))}
+                              <button
+                                className="cd-button cd-button-quiet"
+                                disabled={resolvingGroup === key}
+                                onClick={() =>
+                                  void resolveGroup(group, {
+                                    decision: "rejected",
+                                    groupKey: group.groupKey,
+                                    importRunId: group.importRunId,
+                                  })
+                                }
+                                type="button"
+                              >
+                                Reject proposal
+                              </button>
+                            </div>
+                          </li>
+                        );
+                      })}
                   </ul>
                 )}
               </li>
@@ -674,7 +881,11 @@ export const CareerProfileWorkspace = ({
                       {dateLabel(entry) === null ? null : <span>{dateLabel(entry)}</span>}
                     </div>
                     {entry.verificationState === null ? null : (
-                      <span className="cd-career-verification-badge">User-confirmed</span>
+                      <span className="cd-career-verification-badge">
+                        {entry.verificationState === "imported"
+                          ? "Imported · not confirmed"
+                          : "User-confirmed"}
+                      </span>
                     )}
                   </li>
                 ))}
@@ -685,8 +896,8 @@ export const CareerProfileWorkspace = ({
       </div>
 
       <aside className="cd-career-later" aria-label="Later Career Profile capabilities">
-        <strong>Kept for later reviewed slices:</strong> accepting or resolving import conflicts,
-        story/evidence linking, the Answer Library, and any AI-assisted drafting.
+        <strong>Kept for later reviewed slices:</strong> story/evidence linking, the Answer Library,
+        and any AI-assisted drafting.
       </aside>
     </section>
   );

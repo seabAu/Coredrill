@@ -87,7 +87,7 @@ class NodeCareerDatabase implements DatabasePort {
       health: "ready",
       persistence: "memory",
       readOnly: false,
-      schemaVersion: 115,
+      schemaVersion: 119,
       details: Object.freeze(["unit-contract-only"]),
     });
   }
@@ -110,7 +110,7 @@ describe("Career Profile repository contracts", () => {
     const suite = createCareerRepositoryContractSuite({
       migrate: async (database) => {
         const result = await applySqlMigrations(database, migrations, "2026-09-27T12:00:00.000Z");
-        expect(result.schemaVersion).toBe(115);
+        expect(result.schemaVersion).toBe(119);
       },
     });
 

@@ -152,6 +152,8 @@ Each generated sentence is either linked to evidence, labeled non-factual/style-
 
 `EVD-004` adds an explicit local resume-import queue above those editors. PDF, DOCX, Markdown, and text files pass through the reviewed document boundary, then become field-level pending proposals with the source file hash, page/paragraph/line pointer, source excerpt, and extraction confidence. Imported proposals are visibly not verified, survive reload from SQLite, and cannot call the manual-entry port or overwrite a saved profile value. Proposal acceptance, date/duplicate/skill conflict resolution, and source-document promotion remain assigned to `EVD-005`. See [resume import proposal verification](../../proof/phase-3-resume-import-proposals-verification.md).
 
+`EVD-005` groups those pending fields into reviewable employment and skill proposals, exposes duplicate roles, organization/date overlap, ambiguous dates, and normalized skill aliases, and keeps the exact source excerpts and pointers visible during the decision. The user must explicitly accept, merge, or reject a group. Employment acceptance also requires exact dates or an explicit “dates unknown” choice. A merge records the evidence relationship without changing the existing user-confirmed row; an accepted row remains labeled imported and not user-confirmed. Every decision survives reload in the local resolution ledger.
+
 ### Network: Companies & Contacts
 
 - Company overview, official domains, saved jobs, interactions, outcomes, notes, sources.

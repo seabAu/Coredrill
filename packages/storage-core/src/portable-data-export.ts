@@ -14,11 +14,12 @@ import {
 } from "./database-port.js";
 import type { PortableArchiveDataFileSourceV1 } from "./portable-archive-writer.js";
 
-export const PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION = 115 as const;
+export const PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION = 119 as const;
 export const PORTABLE_DATA_EXPORT_SUPPORTED_SOURCE_SCHEMA_VERSIONS = Object.freeze([
   101,
   111,
   112,
+  115,
   PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION,
 ] as const);
 export const PORTABLE_DATA_EXPORT_WRITER_LIMITS = Object.freeze({

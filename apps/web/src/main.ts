@@ -4,6 +4,7 @@ import {
   createCareerProfileOperations,
   createDefaultBrowserExportReminderPreference,
   createResumeImportOperations,
+  createResumeImportReviewOperations,
   createVaultDeletionOperations,
   deriveBrowserExportReminderFromPreference,
   parseBrowserExportReminderPreference,
@@ -22,9 +23,13 @@ import {
   type DeleteVaultInput,
   type PreviewVaultDeletionPortInput,
   type QueueResumeImportInput,
+  type ResolveResumeImportGroupInput,
   type ResumeImportPort,
   type ResumeImportPortInput,
   type ResumeImportQueueItemDto,
+  type ResumeImportResolutionDto,
+  type ResumeImportResolutionPortInput,
+  type ResumeImportReviewPort,
   type VaultDeletionPort,
   type VaultDeletionPreviewDto,
   type VaultDeletionResultDto,
@@ -50,6 +55,7 @@ import {
   createCareerRepositoryContractSuite,
   createCareerRepositories,
   createResumeImportRepository,
+  createResumeImportResolutionRepository,
   createPhase1RepositoryContractSuite,
   createTrackerRepositories,
   defineSqlMigrations,
@@ -302,6 +308,9 @@ export interface CoredrillStorageSpikeApi {
   queueResumeImport(
     input: LocalDocumentInput,
   ): Promise<ApplicationResult<ResumeImportQueueItemDto>>;
+  resolveResumeImportGroup(
+    input: ResolveResumeImportGroupInput,
+  ): Promise<ApplicationResult<ResumeImportResolutionDto>>;
   openAndMigrate(options?: OpenOptions): Promise<OpenMigrationProof>;
   tryOpenAndMigrate(options?: OpenOptions): Promise<OpenAttempt>;
   writeVault(input: VaultInput): Promise<void>;
@@ -812,11 +821,22 @@ const careerProfilePort: CareerProfilePort = Object.freeze({
           canonicalName: input.canonicalName,
           category: input.category,
           aliases: input.aliases,
+          sourceDocumentId: input.sourceDocumentId,
+          verificationState: input.verificationState,
           archivedAt: input.archivedAt,
           createdAt: input.createdAt,
           updatedAt: input.updatedAt,
         });
-        return careerEntryDto(stored, "skill", stored.canonicalName, stored.category);
+        return careerEntryDto(
+          stored,
+          "skill",
+          stored.canonicalName,
+          stored.category,
+          null,
+          null,
+          false,
+          stored.verificationState === "imported" ? "imported" : "user_confirmed",
+        );
       }
       case "accomplishment": {
         const stored = await repositories.accomplishments.insert({
@@ -983,7 +1003,16 @@ const careerProfilePort: CareerProfilePort = Object.freeze({
         ),
       ),
       ...skills.map((stored) =>
-        careerEntryDto(stored, "skill", stored.canonicalName, stored.category),
+        careerEntryDto(
+          stored,
+          "skill",
+          stored.canonicalName,
+          stored.category,
+          null,
+          null,
+          false,
+          stored.verificationState === "imported" ? "imported" : "user_confirmed",
+        ),
       ),
       ...accomplishments.map((stored) =>
         careerEntryDto(
@@ -1075,6 +1104,19 @@ const resumeImportPort: ResumeImportPort = Object.freeze({
 const resumeImportOperations = createResumeImportOperations({
   createId: (kind) => generateEntityId(kind),
   resumeImports: resumeImportPort,
+});
+
+const resumeImportReviewPort: ResumeImportReviewPort = Object.freeze({
+  resolve: async (input: ResumeImportResolutionPortInput) => {
+    const client = await getDatabase();
+    await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
+    return createResumeImportResolutionRepository(client).resolve(input);
+  },
+});
+
+const resumeImportReviewOperations = createResumeImportReviewOperations({
+  createId: (kind) => generateEntityId(kind),
+  review: resumeImportReviewPort,
 });
 
 const careerProfileOperationContext = (): ApplicationOperationContext =>
@@ -1627,6 +1669,8 @@ const api: CoredrillStorageSpikeApi = {
     }
     return resumeImportOperations.queueCommand.execute(normalized, careerProfileOperationContext());
   },
+  resolveResumeImportGroup: async (input) =>
+    resumeImportReviewOperations.resolveCommand.execute(input, careerProfileOperationContext()),
   openAndMigrate: async (options = {}) => {
     const client = await getDatabase(options);
     const result = await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);

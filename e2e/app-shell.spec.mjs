@@ -70,7 +70,7 @@ test("runs and records the complete accountless browser recovery journey", async
       version: 1,
       runtime: "browser",
       adapterName: "official-sqlite-wasm-opfs-sahpool",
-      schemaVersion: 115,
+      schemaVersion: 119,
       vaultName: "Canonical local job search",
       jobTitle: "Research Operations Lead",
       finalStage: "Interviewing",
@@ -1610,6 +1610,89 @@ test("resume PDF, DOCX, and text imports stay durable pending proposals with pro
   }));
   expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
   await attachProof(page, testInfo, "career-profile-resume-proposals-320");
+  expect(externalRequests).toEqual([]);
+});
+
+test("resume conflicts expose source excerpts and merge without overwriting user-confirmed work", async ({
+  page,
+}, testInfo) => {
+  const externalRequests = [];
+  page.on("request", (request) => {
+    if (!request.url().startsWith("http://127.0.0.1:4178/")) externalRequests.push(request.url());
+  });
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await openShell(page);
+  await page
+    .getByRole("navigation", { name: "Primary" })
+    .getByRole("link", { name: "Career Profile" })
+    .click();
+
+  const workspace = page.getByTestId("career-profile-workspace");
+  await workspace.getByRole("tab", { name: /Work/u }).click();
+  await workspace.getByLabel("Organization *").fill("Coredrill Labs");
+  await workspace.getByLabel("Role *").fill("Product Engineer");
+  await workspace.getByLabel("Start date").fill("2024-01-01");
+  await workspace.getByLabel("End date").fill("2026-12-31");
+  await workspace.getByRole("button", { name: "Save Work" }).click();
+  await expect(workspace.locator(".cd-career-form").getByRole("status")).toContainText(
+    "Work saved locally as user-confirmed information.",
+  );
+
+  const importPanel = workspace.locator(".cd-career-import");
+  await importPanel
+    .locator('input[type="file"]')
+    .setInputFiles(path.join(process.cwd(), "fixtures", "imports", "synthetic-resume.docx"));
+  await expect(importPanel.getByRole("status")).toContainText("7 proposals queued for review");
+
+  const duplicateRole = importPanel
+    .locator(".cd-career-proposals > li")
+    .filter({ hasText: "Coredrill Labs" })
+    .filter({ hasText: "Product Engineer" });
+  await expect(duplicateRole).toHaveCount(1);
+  await expect(duplicateRole).toContainText("duplicate role");
+  await expect(duplicateRole).toContainText("ambiguous date");
+  await expect(duplicateRole).toContainText("Source excerpts");
+  await expect(duplicateRole).toContainText("Coredrill Labs — Product Engineer");
+  await duplicateRole.getByRole("button", { name: /Merge with Product Engineer/u }).click();
+  await expect(importPanel.getByRole("status")).toContainText(
+    "linked to the existing entry without overwriting it",
+  );
+  await expect(duplicateRole).toHaveCount(0);
+
+  await expect
+    .poll(() =>
+      page.evaluate(() => globalThis.coredrillAppShell?.getState().careerProfileEntryCount),
+    )
+    .toBe(1);
+  await workspace.getByRole("tab", { name: /Work/u }).click();
+  const savedRole = workspace
+    .locator(".cd-career-saved li")
+    .filter({ hasText: "Product Engineer" });
+  await expect(savedRole).toContainText("Coredrill Labs");
+  await expect(savedRole).toContainText("2024-01-01 – 2026-12-31");
+  await expect(savedRole).toContainText("User-confirmed");
+
+  await page.reload();
+  await page.waitForFunction(() => globalThis.coredrillAppShell !== undefined);
+  const reloadedWorkspace = page.getByTestId("career-profile-workspace");
+  await reloadedWorkspace.getByRole("tab", { name: /Work/u }).click();
+  await expect(
+    reloadedWorkspace.locator(".cd-career-saved li").filter({ hasText: "Product Engineer" }),
+  ).toContainText("User-confirmed");
+  await expect(
+    reloadedWorkspace
+      .locator(".cd-career-proposals > li")
+      .filter({ hasText: "Coredrill Labs" })
+      .filter({ hasText: "Product Engineer" }),
+  ).toHaveCount(0);
+
+  await attachAxe(page, testInfo, "career-profile-resume-conflict-resolution");
+  await attachAriaSnapshot(
+    reloadedWorkspace.locator(".cd-career-import"),
+    testInfo,
+    "career-profile-resume-conflict-resolution",
+  );
+  await attachProof(page, testInfo, "career-profile-resume-conflict-resolution");
   expect(externalRequests).toEqual([]);
 });
 

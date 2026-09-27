@@ -78,6 +78,7 @@ import {
   type CaptureDuplicateSuggestionV1,
   type CareerProfileEntryDto,
   type CreateManualCareerProfileEntryInput,
+  type ResolveResumeImportGroupInput,
   type ResumeImportQueueItemDto,
   type DeleteVaultInput,
   type VaultDeletionPreviewDto,
@@ -1863,6 +1864,32 @@ const AppShellCatalog = () => {
     return result;
   };
 
+  const resolveResumeImport = async (input: ResolveResumeImportGroupInput) => {
+    const result = await globalThis.coredrillStorageSpike.resolveResumeImportGroup(input);
+    if (!result.ok) {
+      setLastActivity(result.error.message);
+      return result;
+    }
+    const [entries, imports] = await Promise.all([
+      globalThis.coredrillStorageSpike.listManualCareerProfileEntries(),
+      globalThis.coredrillStorageSpike.listPendingResumeImports(),
+    ]);
+    if (entries.ok && imports.ok) {
+      setCareerProfileEntries(entries.value);
+      setCareerProfileImports(imports.value);
+      setLastActivity("Saved the explicit resume proposal decision locally.");
+    } else {
+      setLastActivity(
+        entries.ok
+          ? imports.ok
+            ? "Saved the explicit resume proposal decision locally."
+            : imports.error.message
+          : entries.error.message,
+      );
+    }
+    return result;
+  };
+
   useEffect(() => {
     globalThis.coredrillAppShell = Object.freeze({
       getState: () =>
@@ -2940,6 +2967,7 @@ const AppShellCatalog = () => {
               loading: careerProfileLoading,
             }}
             onImport={importResume}
+            onResolve={resolveResumeImport}
             onSave={saveCareerProfileEntry}
           />
         ) : activeDestination === "network" ? (

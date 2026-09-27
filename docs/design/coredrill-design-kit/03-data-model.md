@@ -182,6 +182,8 @@ All estimates remain reproducible from input observations/dataset versions.
 
 `EVD-004` realizes the resume subset as schema versions `113`–`115`: `import_run` retains bounded local file metadata, SHA-256, the normalized source mapping, timestamps, completion state, and summary; `career_import_proposal` retains the proposed target/field/value, grouping key, source pointer, excerpt, extraction confidence, fixed `proposal` evidence state, and fixed `pending` review state. The queue is separate from all Career Profile evidence tables, so import cannot silently create or overwrite a verified fact. Review transitions and promotion are deferred to `EVD-005`. See [resume import proposal verification](../../proof/phase-3-resume-import-proposals-verification.md).
 
+`EVD-005` adds schema versions `116`–`119`. Skills now carry the same optional source-document and verification-state fields as other evidence rows. `career_import_resolution(id, import_run_id, group_key, target_kind, decision, target_id, resolved_values_json, resolved_at, row_version)` is the append-only decision ledger, and `career_import_resolution_proposal(resolution_id, proposal_id, linked_at)` fixes the exact immutable proposal membership. The unique import/group constraint prevents double resolution. Accepted entries use `verification_state = imported`; merge decisions point at an existing compatible row but do not update it; rejected groups create no evidence row. Pending queries exclude only proposals linked to a committed resolution.
+
 `connector(id, kind, display_name, version, enabled, policy_state, terms_url, policy_reviewed_at, last_success_at, kill_reason)`
 
 `connector_run(id, connector_id, started_at, completed_at, request_summary_json, status, result_count, error_code)`

@@ -547,6 +547,64 @@ textarea {
   overflow-wrap: anywhere;
 }
 
+.cd-career-proposal-content {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-2);
+}
+
+.cd-career-conflict-clear {
+  color: var(--color-success);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+.cd-career-conflicts {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cd-career-conflicts li {
+  display: grid;
+  gap: 0.125rem;
+  padding: var(--space-2);
+  border-left: 0.25rem solid var(--color-warning);
+  background: var(--color-warning-soft);
+}
+
+.cd-career-conflicts strong {
+  text-transform: capitalize;
+}
+
+.cd-career-resolution-actions,
+.cd-career-resolution-actions form {
+  display: grid;
+  min-width: min(18rem, 100%);
+  gap: var(--space-2);
+}
+
+.cd-career-resolution-actions label:not(.cd-career-checkbox) {
+  display: grid;
+  gap: 0.25rem;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.cd-career-resolution-actions p {
+  max-width: 20rem;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.cd-career-resolution-actions .cd-button {
+  justify-content: center;
+  width: 100%;
+}
+
 .cd-career-proposals details {
   min-width: 0;
   max-width: 24rem;

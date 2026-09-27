@@ -51,6 +51,8 @@ export interface SkillRecord extends CareerAuditFields {
   readonly canonicalName: string;
   readonly category: string | null;
   readonly aliases: readonly string[];
+  readonly sourceDocumentId: EntityId<"document"> | null;
+  readonly verificationState: CareerVerificationState;
 }
 
 export type AccomplishmentParentType =

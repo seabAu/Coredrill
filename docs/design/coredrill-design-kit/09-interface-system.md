@@ -298,6 +298,8 @@ The `EVD-003` manual workspace exposes the first nine sections above as a roving
 
 The `EVD-004` import panel accepts one local PDF, DOCX, Markdown, or text resume per explicit user action and labels every result “Proposal only · not verified.” Queue cards show the source file/format, pending count, value, proposed target and field, extraction confidence, expandable source excerpt, and exact page/paragraph/line pointer. Warnings remain visible, zero-text scanned files remain reviewable, and a reload reconstructs the queue from SQLite. No accept/reject/conflict action is shown before `EVD-005` owns those transitions. See [resume import proposal verification](../../proof/phase-3-resume-import-proposals-verification.md).
 
+The `EVD-005` review card groups related fields, names each detected duplicate/date/skill conflict, preserves expandable source excerpts and pointers, and exposes explicit Accept as imported, Merge with candidate, and Reject proposal actions. Employment acceptance includes a required date-decision control with exact date inputs or an explicit unknown choice. Status text explains the resulting evidence state; imported saved rows remain visually distinct from user-confirmed rows. Merge removes the resolved proposal from the pending queue while leaving the candidate’s displayed values and user-confirmed badge unchanged across reload.
+
 ### Documents
 
 Views: All, Resumes, Cover letters, Answers, Templates, Submitted. Each item shows base/template lineage, related job, last edited, export status, and whether it contains unresolved claims.

@@ -261,6 +261,8 @@ describe("Career Profile application boundary", () => {
       canonicalName: "TypeScript",
       category: null,
       aliases: [],
+      sourceDocumentId: null,
+      verificationState: "user_confirmed",
       archivedAt: null,
       createdAt: CREATED_AT,
       updatedAt: CREATED_AT,

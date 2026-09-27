@@ -9,7 +9,9 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
   applySqlMigrations,
+  createCareerRepositories,
   createResumeImportRepository,
+  createResumeImportResolutionRepository,
   defineSqlMigrations,
   sqlStatement,
   type DatabasePort,
@@ -87,7 +89,7 @@ class NodeResumeDatabase implements DatabasePort {
       health: "ready",
       persistence: "memory",
       readOnly: false,
-      schemaVersion: 115,
+      schemaVersion: 119,
     });
   }
 
@@ -150,7 +152,7 @@ describe("resume import proposal repository", () => {
     database = new NodeResumeDatabase();
     await expect(
       applySqlMigrations(database, migrations, "2026-09-27T15:00:00.000Z"),
-    ).resolves.toMatchObject({ schemaVersion: 115 });
+    ).resolves.toMatchObject({ schemaVersion: 119 });
   });
 
   afterEach(() => {
@@ -234,5 +236,190 @@ describe("resume import proposal repository", () => {
       proposalCount: 0,
       warnings: ["No extractable text was found; explicit local OCR is optional."],
     });
+  });
+
+  it("accepts a complete skill group as imported evidence and removes it from the pending queue", async () => {
+    const skillProposal: ResumeEvidenceProposalDto = Object.freeze({
+      ...proposal(),
+      fieldName: "canonicalName",
+      groupKey: "skill-1",
+      proposedValue: "TypeScript",
+      target: "skill",
+    });
+    const imports = createResumeImportRepository(database);
+    await imports.enqueue(input([skillProposal]));
+
+    const resolution = await createResumeImportResolutionRepository(database).resolve({
+      current: false,
+      decision: "accepted_new",
+      endDate: null,
+      groupKey: "skill-1",
+      importRunId: IMPORT_ID,
+      newTargetId: entityId("skill", "0199a210-0000-7000-8000-000000000010"),
+      resolutionId: entityId("career-import-resolution", "0199a210-0000-7000-8000-000000000011"),
+      resolvedAt: AT,
+      startDate: null,
+      target: "skill",
+      targetId: null,
+    });
+
+    expect(resolution).toMatchObject({ decision: "accepted_new", target: "skill" });
+    await expect(createCareerRepositories(database).skills.listActive()).resolves.toEqual([
+      expect.objectContaining({
+        canonicalName: "TypeScript",
+        sourceDocumentId: null,
+        verificationState: "imported",
+      }),
+    ]);
+    await expect(imports.listPending()).resolves.toEqual([]);
+    await expect(
+      database.query(
+        sqlStatement(
+          `SELECT p.source_excerpt, r.decision
+           FROM career_import_proposal p
+           JOIN career_import_resolution_proposal rp ON rp.proposal_id = p.id
+           JOIN career_import_resolution r ON r.id = rp.resolution_id`,
+        ),
+      ),
+    ).resolves.toEqual([{ decision: "accepted_new", source_excerpt: skillProposal.sourceExcerpt }]);
+  });
+
+  it("merges duplicate employment evidence without overwriting a user-confirmed record", async () => {
+    const existingId = entityId("experience", "0199a210-0000-7000-8000-000000000020");
+    const careers = createCareerRepositories(database);
+    const existing = await careers.employment.insert({
+      archivedAt: null,
+      createdAt: AT,
+      current: false,
+      description: "User-authored canonical description.",
+      endDate: null,
+      id: existingId,
+      organization: "Coredrill Labs",
+      role: "Product Engineer",
+      sourceDocumentId: null,
+      startDate: null,
+      updatedAt: AT,
+      verificationState: "user_confirmed",
+    });
+    const fields = [
+      ["organization", "Coredrill Labs"],
+      ["role", "Product Engineer"],
+      ["dateRange", "2024–2026"],
+    ] as const;
+    const proposals = fields.map(([fieldName, proposedValue], index): ResumeEvidenceProposalDto =>
+      Object.freeze({
+        ...proposal(
+          entityId(
+            "career-import-proposal",
+            `0199a210-0000-7000-8000-${String(index + 30).padStart(12, "0")}`,
+          ),
+        ),
+        fieldName,
+        groupKey: "employment-1",
+        proposedValue,
+        target: "employment",
+      }),
+    );
+    await createResumeImportRepository(database).enqueue(input(proposals));
+
+    await createResumeImportResolutionRepository(database).resolve({
+      current: false,
+      decision: "merged_existing",
+      endDate: null,
+      groupKey: "employment-1",
+      importRunId: IMPORT_ID,
+      newTargetId: null,
+      resolutionId: entityId("career-import-resolution", "0199a210-0000-7000-8000-000000000040"),
+      resolvedAt: AT,
+      startDate: null,
+      target: "employment",
+      targetId: existingId,
+    });
+
+    await expect(careers.employment.listActive()).resolves.toEqual([existing]);
+    await expect(
+      database.query(
+        sqlStatement(
+          "SELECT decision, target_id FROM career_import_resolution WHERE import_run_id = ?",
+          [IMPORT_ID],
+        ),
+      ),
+    ).resolves.toEqual([{ decision: "merged_existing", target_id: existingId }]);
+  });
+
+  it("rejects a group durably without creating Career Profile evidence or losing its excerpt", async () => {
+    const skillProposal: ResumeEvidenceProposalDto = Object.freeze({
+      ...proposal(),
+      fieldName: "canonicalName",
+      groupKey: "skill-1",
+      proposedValue: "Unreviewed Tool",
+      target: "skill",
+    });
+    const imports = createResumeImportRepository(database);
+    await imports.enqueue(input([skillProposal]));
+
+    await expect(
+      createResumeImportResolutionRepository(database).resolve({
+        current: false,
+        decision: "rejected",
+        endDate: null,
+        groupKey: "skill-1",
+        importRunId: IMPORT_ID,
+        newTargetId: null,
+        resolutionId: entityId("career-import-resolution", "0199a210-0000-7000-8000-000000000045"),
+        resolvedAt: AT,
+        startDate: null,
+        target: null,
+        targetId: null,
+      }),
+    ).resolves.toMatchObject({ decision: "rejected", target: null, targetId: null });
+
+    await expect(createCareerRepositories(database).skills.listActive()).resolves.toEqual([]);
+    await expect(imports.listPending()).resolves.toEqual([]);
+    await expect(
+      database.query(
+        sqlStatement(
+          `SELECT p.source_excerpt, r.decision
+           FROM career_import_proposal p
+           JOIN career_import_resolution_proposal rp ON rp.proposal_id = p.id
+           JOIN career_import_resolution r ON r.id = rp.resolution_id`,
+        ),
+      ),
+    ).resolves.toEqual([{ decision: "rejected", source_excerpt: skillProposal.sourceExcerpt }]);
+  });
+
+  it("rolls back an invalid merge and leaves every source-backed proposal pending", async () => {
+    const skillProposal: ResumeEvidenceProposalDto = Object.freeze({
+      ...proposal(),
+      fieldName: "canonicalName",
+      groupKey: "skill-1",
+      proposedValue: "TypeScript",
+      target: "skill",
+    });
+    const imports = createResumeImportRepository(database);
+    await imports.enqueue(input([skillProposal]));
+
+    await expect(
+      createResumeImportResolutionRepository(database).resolve({
+        current: false,
+        decision: "merged_existing",
+        endDate: null,
+        groupKey: "skill-1",
+        importRunId: IMPORT_ID,
+        newTargetId: null,
+        resolutionId: entityId("career-import-resolution", "0199a210-0000-7000-8000-000000000050"),
+        resolvedAt: AT,
+        startDate: null,
+        target: "skill",
+        targetId: entityId("skill", "0199a210-0000-7000-8000-000000000051"),
+      }),
+    ).rejects.toThrow("not a reviewed conflict candidate");
+
+    await expect(imports.listPending()).resolves.toEqual([
+      expect.objectContaining({ proposalCount: 1, proposals: [skillProposal] }),
+    ]);
+    await expect(
+      database.query(sqlStatement("SELECT count(*) AS total FROM career_import_resolution")),
+    ).resolves.toEqual([{ total: 0 }]);
   });
 });
