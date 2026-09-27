@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-09-26
 Current milestone: Phase 2 — capture and approved extraction (`GATE-0` and `GATE-1` external-evidence blockers remain open)
-Current work item: `PEX-002` — implement the production side-panel preview and correction surface
-Next recommended slice: `PEX-003` after `PEX-002` proof
+Current work item: `PEX-003` — implement the bounded persistent outbox lifecycle
+Next recommended slice: `PEX-004` after `PEX-003` proof
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `PEX-003` after `PEX-002` proof
 | Field | Value |
 |---|---|
 | Milestone | Phase 2, with the independent Phase 0 and Phase 1 evidence gates retained below |
-| Item range | `PEX-002` |
+| Item range | `PEX-003` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-09-26 |
-| Expected proof | Production side-panel browser E2E proves a bounded provisional preview with title, company, location, salary, detected source, confidence, and freshness; the user can recapture selected page text, correct the preview, and add a bounded local note before explicit queueing, with no navigation capture, source fetch, trusted-field promotion, or permission broadening |
-| Blocker | None for `PEX-002`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
-| Next handoff | Read the current `PageCaptureSnapshot`, `CaptureEnvelopeV1`, field-evidence, source/freshness, side-panel, and production-package contracts end to end. The snapshot currently has no note or corrected-preview fields: define a bounded versioned representation with compatibility proof before editing the panel, keep every correction explicitly user-authored and provisional, and leave outbox retry/expiry, handshake, and hosted-transfer work to `PEX-003` through `PEX-005`. |
+| Expected proof | Crash/restart and fault-injection tests prove a bounded persistent outbox, deterministic retry/backoff, an expiry warning and export path, cleanup only after acknowledgement, and preservation of queued items across storage errors; compatibility handshake, version-mismatch, and hosted-transfer behavior remain outside this slice |
+| Blocker | None for `PEX-003`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
+| Next handoff | Inspect the current extension bridge outbox, transfer, background, persistence, retry, and expiry contracts end to end. Define explicit persisted schedule and error facts before changing UI behavior; prove restart recovery, bounded retry/backoff, expiry warning/export, storage-failure retention, and cleanup only after acknowledgement. Keep origin/extension-ID handshake, version mismatch, and hosted transfer in `PEX-004` and `PEX-005`. |
 
 ## Milestone status
 
@@ -241,7 +241,7 @@ Next recommended slice: `PEX-003` after `PEX-002` proof
 ## Production extension
 
 - [x] **PEX-001** Implement recognized/unrecognized/needs-input/queued/transferred/permission states. — Proof: [strict six-state catalog, deterministic resolver/classifier, semantic panel, least-privilege package inspection, browser regression, and hosted cross-platform verification](../../proof/phase-2-production-extension-state-catalog-verification.md)
-- [ ] **PEX-002** Implement side-panel preview, page-selection correction, note, and source/freshness display. — Proof: _browser E2E_
+- [x] **PEX-002** Implement side-panel preview, page-selection correction, note, and source/freshness display. — Proof: [strict versioned draft, provenance-retaining corrections/note, production side-panel browser E2E, least-privilege package inspection, and hosted cross-platform verification](../../proof/phase-2-production-extension-preview-verification.md)
 - [ ] **PEX-003** Implement bounded persistent outbox, retry/backoff, expiry warning, export, and post-ack cleanup. — Proof: _crash/restart tests_
 - [ ] **PEX-004** Implement exact app-origin/extension-ID validation and compatibility handshake. — Proof: _security tests_
 - [ ] **PEX-005** Implement hosted app transfer and Firefox/manual fallback. — Proof: _browser matrix_

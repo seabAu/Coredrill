@@ -2,8 +2,8 @@
 
 Date: 2026-09-26  
 Checklist item: `PEX-002`  
-Implementation commit: pending  
-Hosted run: pending
+Implementation commit: `0aebd3447778a10934d0d3a37d87e40654b66c97`
+Hosted run: [Foundation CI 36289223729](https://github.com/seabAu/Coredrill/actions/runs/36289223729)
 
 ## Outcome
 
@@ -110,6 +110,15 @@ confirmation, automatic application, or outreach.
 - zero known npm or Rust vulnerabilities (seven pre-existing allowed Rust
   warnings); and
 - Changesets status.
+
+## Hosted verification
+
+Foundation CI run 36289223729 passed from the implementation commit. The
+foundation gate, full-history secret scan, Chromium/Firefox extension transfer
+matrix, Chrome 151 and 152 browser-storage jobs, Firefox 153 and 154
+browser-storage jobs, and native Windows, macOS, and Ubuntu jobs all completed
+successfully. The pull-request-only dependency review was correctly skipped on
+this direct `main` push.
 
 ## Residual scope
 
