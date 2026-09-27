@@ -23,6 +23,18 @@ const MODEL = Object.freeze({
     websiteUrl: "https://northstar.example",
   }),
   jobId: "job-northstar",
+  requirementProposals: Object.freeze([
+    Object.freeze({
+      id: "requirement-proposal-1",
+      category: "desired" as const,
+      sourceCategory: "desired" as const,
+      normalizedText: "Healthcare domain experience",
+      rawText: "Preferred: healthcare domain experience.",
+      sourcePointer: "/description/qualifications/2",
+      sourceExcerpt: "Preferred: healthcare domain experience.",
+      confidence: 0.88,
+    }),
+  ]),
   requirements: Object.freeze([
     Object.freeze({
       id: "requirement-delivery",
@@ -139,6 +151,8 @@ describe("JobWorkspaceContent contract", () => {
       "open-source-snapshot",
       "compare-source",
       "refresh-source",
+      "accept-requirement-proposal",
+      "reject-requirement-proposal",
       "correct-requirement-category",
     ]);
     expect(isJobWorkspaceContentTab("source")).toBe(true);
@@ -150,6 +164,12 @@ describe("JobWorkspaceContent contract", () => {
 
     expect(markup).toContain('data-job-content-tab="requirements"');
     expect(markup).toContain('aria-label="Job requirements"');
+    expect(markup).toContain('aria-label="Pending requirement proposals"');
+    expect(markup).toContain("Healthcare domain experience");
+    expect(markup).toContain("88% parse");
+    expect(markup).toContain("Accept requirement");
+    expect(markup).toContain("Reject proposal");
+    expect(markup).toContain("Nothing becomes a recorded requirement until");
     expect(markup).toContain("Lead cross-functional delivery");
     expect(markup).toContain("91% extraction confidence");
     expect(markup).toContain("You will lead cross-functional delivery.");

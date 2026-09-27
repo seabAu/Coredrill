@@ -22,6 +22,13 @@ import {
   type ApplicationError,
   type ApplicationResult,
 } from "./result.js";
+import {
+  parseJobRequirementProposals,
+  validateJobRequirementProposal,
+  type JobRequirementParseResultDto,
+  type JobRequirementProposalDto,
+  type ParseJobRequirementsInput,
+} from "./job-requirement-parser.js";
 
 export interface JobRequirementDto {
   readonly id: EntityId<"job-requirement">;
@@ -61,15 +68,22 @@ export interface ListJobRequirementsInput {
   readonly jobId: string;
 }
 
+export interface AcceptJobRequirementProposalInput {
+  readonly category: JobRequirementCategory;
+  readonly proposal: JobRequirementProposalDto;
+}
+
 export interface RecordJobRequirementPortInput {
   readonly id: EntityId<"job-requirement">;
   readonly jobId: EntityId<"job">;
   readonly category: JobRequirementCategory;
+  readonly sourceCategory: JobRequirementCategory;
   readonly normalizedText: string;
   readonly rawText: string;
   readonly provenanceId: EntityId<"provenance">;
   readonly sortOrder: number;
   readonly createdAt: Instant;
+  readonly userConfirmed: boolean;
 }
 
 export interface CorrectJobRequirementPortInput {
@@ -107,6 +121,14 @@ export interface JobRequirementOperations {
   >;
   readonly correctRequirementCommand: ApplicationCommand<
     CorrectJobRequirementInput,
+    JobRequirementDto
+  >;
+  readonly parseRequirementsQuery: ApplicationQuery<
+    ParseJobRequirementsInput,
+    JobRequirementParseResultDto
+  >;
+  readonly acceptRequirementProposalCommand: ApplicationCommand<
+    AcceptJobRequirementProposalInput,
     JobRequirementDto
   >;
   readonly listRequirementsQuery: ApplicationQuery<
@@ -261,11 +283,13 @@ export const createJobRequirementOperations = (
               id: entityId("job-requirement", dependencies.createId("job-requirement")),
               jobId: entityId("job", input.jobId),
               category,
+              sourceCategory: category,
               normalizedText,
               rawText,
               provenanceId: entityId("provenance", input.provenanceId),
               sortOrder,
               createdAt: instant(context.initiatedAt),
+              userConfirmed: false,
             }),
           ),
         );
@@ -326,9 +350,54 @@ export const createJobRequirementOperations = (
     },
   );
 
+  const parseRequirementsQuery = defineQuery<
+    ParseJobRequirementsInput,
+    JobRequirementParseResultDto
+  >("ParseJobRequirementsQuery", (input) => {
+    try {
+      return Promise.resolve(applicationSuccess(parseJobRequirementProposals(input)));
+    } catch (error) {
+      return Promise.resolve(
+        isInputValidationError(error) ? applicationFailure(VALIDATION_ERROR) : failureFrom(error),
+      );
+    }
+  });
+
+  const acceptRequirementProposalCommand = defineCommand<
+    AcceptJobRequirementProposalInput,
+    JobRequirementDto
+  >("AcceptJobRequirementProposalCommand", async (input, context) => {
+    if (!isRecord(input)) return applicationFailure(VALIDATION_ERROR);
+    try {
+      const proposal = validateJobRequirementProposal(input.proposal);
+      return applicationSuccess(
+        copyRequirement(
+          await dependencies.requirements.recordRequirement({
+            id: entityId("job-requirement", dependencies.createId("job-requirement")),
+            jobId: proposal.jobId,
+            category: jobRequirementCategory(input.category),
+            sourceCategory: proposal.sourceCategory,
+            normalizedText: proposal.normalizedText,
+            rawText: proposal.rawText,
+            provenanceId: proposal.provenanceId,
+            sortOrder: proposal.sortOrder,
+            createdAt: instant(context.initiatedAt),
+            userConfirmed: true,
+          }),
+        ),
+      );
+    } catch (error) {
+      return isInputValidationError(error)
+        ? applicationFailure(VALIDATION_ERROR)
+        : failureFrom(error);
+    }
+  });
+
   return Object.freeze({
+    acceptRequirementProposalCommand,
     recordRequirementCommand,
     correctRequirementCommand,
     listRequirementsQuery,
+    parseRequirementsQuery,
   });
 };

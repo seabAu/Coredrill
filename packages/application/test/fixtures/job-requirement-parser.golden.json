@@ -1,0 +1,131 @@
+{
+  "jobId": "0199a720-0000-7000-8000-000000000001",
+  "blocks": [
+    {
+      "kind": "heading",
+      "provenanceId": "0199a720-0000-7000-8000-000000000101",
+      "sourceExcerpt": "Minimum qualifications",
+      "sourcePointer": "/description/h2[1]",
+      "text": "Minimum qualifications"
+    },
+    {
+      "kind": "item",
+      "provenanceId": "0199a720-0000-7000-8000-000000000102",
+      "sourceExcerpt": "• 5+ years leading cross-functional programs.\n",
+      "sourcePointer": "/description/ul[1]/li[1]",
+      "text": "• 5+ years leading cross-functional programs."
+    },
+    {
+      "kind": "item",
+      "provenanceId": "0199a720-0000-7000-8000-000000000103",
+      "sourceExcerpt": "Must be authorized to work in the United States.",
+      "sourcePointer": "/description/ul[1]/li[2]",
+      "text": "Must be authorized to work in the United States."
+    },
+    {
+      "kind": "heading",
+      "provenanceId": "0199a720-0000-7000-8000-000000000104",
+      "sourceExcerpt": "Preferred qualifications",
+      "sourcePointer": "/description/h2[2]",
+      "text": "Preferred qualifications"
+    },
+    {
+      "kind": "item",
+      "provenanceId": "0199a720-0000-7000-8000-000000000105",
+      "sourceExcerpt": "Preferred: healthcare domain experience.",
+      "sourcePointer": "/description/ul[2]/li[1]",
+      "text": "Preferred: healthcare domain experience."
+    },
+    {
+      "kind": "heading",
+      "provenanceId": "0199a720-0000-7000-8000-000000000106",
+      "sourceExcerpt": "What you’ll do",
+      "sourcePointer": "/description/h2[3]",
+      "text": "What you’ll do"
+    },
+    {
+      "kind": "item",
+      "provenanceId": "0199a720-0000-7000-8000-000000000107",
+      "sourceExcerpt": "You will lead delivery across product and operations.",
+      "sourcePointer": "/description/ul[3]/li[1]",
+      "text": "You will lead delivery across product and operations."
+    },
+    {
+      "kind": "heading",
+      "provenanceId": "0199a720-0000-7000-8000-000000000108",
+      "sourceExcerpt": "About the role",
+      "sourcePointer": "/description/h2[4]",
+      "text": "About the role"
+    },
+    {
+      "kind": "paragraph",
+      "provenanceId": "0199a720-0000-7000-8000-000000000109",
+      "sourceExcerpt": "This role partners closely with the COO.",
+      "sourcePointer": "/description/p[4]",
+      "text": "This role partners closely with the COO."
+    },
+    {
+      "kind": "heading",
+      "provenanceId": "0199a720-0000-7000-8000-000000000110",
+      "sourceExcerpt": "Company values",
+      "sourcePointer": "/description/h2[5]",
+      "text": "Company values"
+    },
+    {
+      "kind": "paragraph",
+      "provenanceId": "0199a720-0000-7000-8000-000000000111",
+      "sourceExcerpt": "We value curiosity and kindness.",
+      "sourcePointer": "/description/p[5]",
+      "text": "We value curiosity and kindness."
+    },
+    {
+      "kind": "item",
+      "provenanceId": "0199a720-0000-7000-8000-000000000112",
+      "sourceExcerpt": "5+ years leading cross-functional programs.",
+      "sourcePointer": "/description/ul[4]/li[1]",
+      "text": "5+ years leading cross-functional programs."
+    }
+  ],
+  "expected": [
+    {
+      "id": "requirement-proposal-2",
+      "category": "required",
+      "confidence": 0.82,
+      "normalizedText": "5+ years leading cross-functional programs.",
+      "sourcePointer": "/description/ul[1]/li[1]",
+      "sourceExcerpt": "• 5+ years leading cross-functional programs.\n"
+    },
+    {
+      "id": "requirement-proposal-3",
+      "category": "constraint",
+      "confidence": 0.9,
+      "normalizedText": "Must be authorized to work in the United States.",
+      "sourcePointer": "/description/ul[1]/li[2]",
+      "sourceExcerpt": "Must be authorized to work in the United States."
+    },
+    {
+      "id": "requirement-proposal-5",
+      "category": "desired",
+      "confidence": 0.88,
+      "normalizedText": "healthcare domain experience.",
+      "sourcePointer": "/description/ul[2]/li[1]",
+      "sourceExcerpt": "Preferred: healthcare domain experience."
+    },
+    {
+      "id": "requirement-proposal-7",
+      "category": "responsibility",
+      "confidence": 0.86,
+      "normalizedText": "lead delivery across product and operations.",
+      "sourcePointer": "/description/ul[3]/li[1]",
+      "sourceExcerpt": "You will lead delivery across product and operations."
+    },
+    {
+      "id": "requirement-proposal-9",
+      "category": "context",
+      "confidence": 0.82,
+      "normalizedText": "This role partners closely with the COO.",
+      "sourcePointer": "/description/p[4]",
+      "sourceExcerpt": "This role partners closely with the COO."
+    }
+  ]
+}

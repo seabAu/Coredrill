@@ -50,12 +50,14 @@ The UI distinguishes a missing skill from missing evidence. It can ask “You ma
 For each requirement store:
 
 - raw excerpt and normalized meaning;
-- required/preferred/responsibility classification;
+- required, desired, responsibility, context, or constraint classification;
 - skill/credential/education/work-mode mapping;
 - explicit years/seniority and whether it is literal or inferred;
 - confidence and user confirmation;
 - matched evidence IDs with strength and rationale;
 - gap handling: omit, transferable evidence, truthful learning interest, or user question.
+
+The AI-disabled baseline parses bounded provenance-linked heading, list-item, and paragraph blocks with versioned deterministic rules. Parser output remains a pending proposal with an exact source excerpt, source pointer, category, and confidence; it is not a verified employer fact and cannot create a requirement by itself. The user must explicitly accept or reject each proposal and may select a different current category during acceptance. Acceptance preserves the parser category as the immutable source category and records the review as user-confirmed; rejection leaves the captured source unchanged.
 
 Never inflate years by double-counting overlapping projects/jobs. A deterministic interval union provides the initial estimate, then the user confirms it.
 
@@ -147,7 +149,7 @@ The app does not imply legal truth certification; the user remains responsible f
 
 ### None/template-only
 
-Rule-based requirement parsing where possible, selectable evidence blocks, and deterministic letter templates. This is the baseline and test oracle for graceful degradation.
+Versioned rule-based requirement proposals with explicit review, selectable evidence blocks, and deterministic letter templates. This is the baseline and test oracle for graceful degradation.
 
 ### Local
 

@@ -977,6 +977,32 @@ test("Job core tabs expose normalized facts, chronology, company context, and pr
   await workspace.getByRole("button", { name: "Requirements", exact: true }).click();
   await expect(page).toHaveURL(/\/jobs\/board-northstar\/requirements$/u);
   await expect(workspace.locator('[data-job-content-tab="requirements"]')).toBeVisible();
+  const proposalList = workspace.getByRole("list", { name: "Pending requirement proposals" });
+  await expect(proposalList.getByRole("listitem")).toHaveCount(2);
+  const experienceProposal = proposalList
+    .getByRole("listitem")
+    .filter({ hasText: "5+ years building data-intensive products." });
+  await expect(experienceProposal.getByText("82% parse", { exact: true })).toBeVisible();
+  await expect(
+    experienceProposal.getByText("5+ years building data-intensive products.", { exact: true }),
+  ).toHaveCount(2);
+  await experienceProposal.getByLabel("Category to record").selectOption("desired");
+  await experienceProposal.getByRole("button", { name: "Accept requirement" }).click();
+  await expect(proposalList.getByRole("listitem")).toHaveCount(1);
+  await expect(
+    workspace.getByLabel("Category for 5+ years building data-intensive products."),
+  ).toHaveValue("desired");
+  await expect(
+    workspace.getByText(/User-confirmed category · extracted as Required/u),
+  ).toBeVisible();
+  await expect(page.getByRole("status").first()).toContainText(
+    "Accepted the deterministic requirement proposal as desired",
+  );
+  await proposalList.getByRole("button", { name: "Reject proposal" }).click();
+  await expect(workspace.getByText("No pending proposals", { exact: true })).toBeVisible();
+  await expect(page.getByRole("status").first()).toContainText(
+    "Rejected the deterministic requirement proposal without altering its source",
+  );
   await expect(workspace.getByText("91% extraction confidence", { exact: true })).toBeVisible();
   await expect(
     workspace.getByText("You will lead cross-functional delivery across product and operations."),
@@ -986,7 +1012,10 @@ test("Job core tabs expose normalized facts, chronology, company context, and pr
   await deliveryCategory.selectOption("responsibility");
   await expect(deliveryCategory).toHaveValue("responsibility");
   await expect(
-    workspace.getByText(/User-confirmed category · extracted as Required/u),
+    workspace
+      .getByRole("listitem")
+      .filter({ hasText: "Lead cross-functional delivery" })
+      .getByText(/User-confirmed category · extracted as Required/u),
   ).toBeVisible();
   await expect(page.getByRole("status").first()).toContainText(
     "Saved the user-confirmed requirement category as responsibility",

@@ -75,6 +75,7 @@ import {
 import { parseCaptureSourcePreviewJsonV1 } from "@coredrill/capture-core";
 import {
   evaluateCaptureSourceStateV1,
+  parseJobRequirementProposals,
   type CaptureDuplicateSuggestionV1,
   type AnswerLibraryEntryDto,
   type CareerProfileEntryDto,
@@ -1183,9 +1184,60 @@ const NORTHSTAR_REQUIREMENTS = Object.freeze([
   }),
 ] as const satisfies JobWorkspaceContentModel["requirements"]);
 
+const NORTHSTAR_REQUIREMENT_PROPOSALS = Object.freeze(
+  parseJobRequirementProposals({
+    jobId: "0199a730-0000-7000-8000-000000000001",
+    blocks: [
+      {
+        kind: "heading",
+        provenanceId: "0199a730-0000-7000-8000-000000000101",
+        sourceExcerpt: "Minimum qualifications",
+        sourcePointer: "/description/h2[1]",
+        text: "Minimum qualifications",
+      },
+      {
+        kind: "item",
+        provenanceId: "0199a730-0000-7000-8000-000000000102",
+        sourceExcerpt: "5+ years building data-intensive products.",
+        sourcePointer: "/description/qualifications/0",
+        text: "5+ years building data-intensive products.",
+      },
+      {
+        kind: "item",
+        provenanceId: "0199a730-0000-7000-8000-000000000103",
+        sourceExcerpt: "Must be available for quarterly travel.",
+        sourcePointer: "/description/qualifications/1",
+        text: "Must be available for quarterly travel.",
+      },
+    ],
+  }).proposals.map(
+    ({
+      category,
+      confidence,
+      id,
+      normalizedText,
+      rawText,
+      sourceCategory,
+      sourceExcerpt,
+      sourcePointer,
+    }): JobWorkspaceContentModel["requirementProposals"][number] =>
+      Object.freeze({
+        category,
+        confidence,
+        id,
+        normalizedText,
+        rawText,
+        sourceCategory,
+        sourceExcerpt,
+        sourcePointer,
+      }),
+  ),
+);
+
 const jobWorkspaceContentFor = (
   job: PipelineTableJob,
   relatedJobs: readonly PipelineTableJob[],
+  requirementProposals: JobWorkspaceContentModel["requirementProposals"],
   requirements: JobWorkspaceContentModel["requirements"],
 ): JobWorkspaceContentModel => {
   const boardRecord = STANDARD_BOARD_JOBS.find(({ id }) => id === job.id);
@@ -1257,6 +1309,7 @@ const jobWorkspaceContentFor = (
       websiteUrl: null,
     }),
     jobId: job.id,
+    requirementProposals,
     requirements,
     overview: Object.freeze({
       application:
@@ -1425,6 +1478,9 @@ const AppShellCatalog = () => {
   const [jobRequirements, setJobRequirements] = useState<
     Readonly<Record<string, JobWorkspaceContentModel["requirements"]>>
   >(() => Object.freeze({ "board-northstar": NORTHSTAR_REQUIREMENTS }));
+  const [jobRequirementProposals, setJobRequirementProposals] = useState<
+    Readonly<Record<string, JobWorkspaceContentModel["requirementProposals"]>>
+  >(() => Object.freeze({ "board-northstar": NORTHSTAR_REQUIREMENT_PROPOSALS }));
   const [boardColumns, setBoardColumns] = useState<readonly BoardColumn[]>(
     appearance.boardMode === "reference"
       ? REFERENCE_BOARD_COLUMNS
@@ -1660,6 +1716,7 @@ const AppShellCatalog = () => {
       : jobWorkspaceContentFor(
           workspaceJob,
           tableRows,
+          jobRequirementProposals[workspaceJob.id] ?? Object.freeze([]),
           jobRequirements[workspaceJob.id] ?? Object.freeze([]),
         );
   const page = canonicalJourneyMode
@@ -2432,6 +2489,69 @@ const AppShellCatalog = () => {
       );
       setLastActivity(
         `Saved the user-confirmed requirement category as ${request.category}. No external request was made.`,
+      );
+      return;
+    }
+    if (request.id === "accept-requirement-proposal") {
+      if (workspaceRoute === null) {
+        setLastActivity("No local Job workspace is available for this proposal review.");
+        return;
+      }
+      const proposals = jobRequirementProposals[workspaceRoute.jobId] ?? Object.freeze([]);
+      const proposal = proposals.find(({ id }) => id === request.targetId);
+      if (proposal === undefined) {
+        setLastActivity("This requirement proposal is no longer pending review.");
+        return;
+      }
+      const requirements = jobRequirements[workspaceRoute.jobId] ?? Object.freeze([]);
+      setJobRequirements(
+        Object.freeze({
+          ...jobRequirements,
+          [workspaceRoute.jobId]: Object.freeze([
+            ...requirements,
+            Object.freeze({
+              id: `accepted-${proposal.id}`,
+              category: request.category,
+              sourceCategory: proposal.sourceCategory,
+              normalizedText: proposal.normalizedText,
+              rawText: proposal.rawText,
+              sourcePointer: proposal.sourcePointer,
+              sourceExcerpt: proposal.sourceExcerpt,
+              extractionMethod: "deterministic-requirement-parser-v1",
+              confidence: proposal.confidence,
+              userConfirmed: true,
+              rowVersion: 1,
+            }),
+          ]),
+        }),
+      );
+      setJobRequirementProposals(
+        Object.freeze({
+          ...jobRequirementProposals,
+          [workspaceRoute.jobId]: Object.freeze(proposals.filter(({ id }) => id !== proposal.id)),
+        }),
+      );
+      setLastActivity(
+        `Accepted the deterministic requirement proposal as ${request.category}. No external request was made.`,
+      );
+      return;
+    }
+    if (request.id === "reject-requirement-proposal") {
+      if (workspaceRoute === null) {
+        setLastActivity("No local Job workspace is available for this proposal review.");
+        return;
+      }
+      const proposals = jobRequirementProposals[workspaceRoute.jobId] ?? Object.freeze([]);
+      setJobRequirementProposals(
+        Object.freeze({
+          ...jobRequirementProposals,
+          [workspaceRoute.jobId]: Object.freeze(
+            proposals.filter(({ id }) => id !== request.targetId),
+          ),
+        }),
+      );
+      setLastActivity(
+        "Rejected the deterministic requirement proposal without altering its source.",
       );
       return;
     }

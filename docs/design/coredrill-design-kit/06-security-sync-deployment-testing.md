@@ -328,6 +328,8 @@ The native checkpoint runs the reusable callback-transaction suite and shared va
 - hostile HTML/JSON-LD, SSRF/redirect/size/time cases.
 - saved documented API payloads; live smoke tests separately and conservatively.
 
+`MAT-002` adds a deterministic requirement-parser golden fixture that fixes proposal ordering, five-category classification, confidence, duplicate suppression, and byte-exact source excerpts, including retained newline evidence. Application tests prove parsing performs no durable write and only explicit acceptance invokes the requirement port with `user_confirmed = true`, preserving the parser category separately from the reviewed current category. Repository tests prove those source facts survive creation, while browser tests cover recategorized acceptance, rejection without source mutation, zero external requests, narrow-screen reflow, and automated accessibility. Malformed provenance and bounded-input violations fail closed.
+
 `Q2-004` adds an adversarial runtime audit above the existing connector
 fixtures. The transport rejects unknown descriptor keys and any drift in method,
 credential mode, headers, destination shape, or fixed policy fields before an

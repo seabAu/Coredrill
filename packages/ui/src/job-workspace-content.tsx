@@ -30,6 +30,8 @@ export const JOB_WORKSPACE_CONTENT_ACTIONS = Object.freeze([
   "open-source-snapshot",
   "compare-source",
   "refresh-source",
+  "accept-requirement-proposal",
+  "reject-requirement-proposal",
   "correct-requirement-category",
 ] as const);
 export type JobWorkspaceContentActionId = (typeof JOB_WORKSPACE_CONTENT_ACTIONS)[number];
@@ -40,6 +42,11 @@ export type JobWorkspaceContentActionRequest =
       readonly value: string;
     }
   | {
+      readonly id: "accept-requirement-proposal";
+      readonly targetId: string;
+      readonly category: JobRequirementCategory;
+    }
+  | {
       readonly id: "correct-requirement-category";
       readonly targetId: string;
       readonly category: JobRequirementCategory;
@@ -48,7 +55,7 @@ export type JobWorkspaceContentActionRequest =
   | {
       readonly id: Exclude<
         JobWorkspaceContentActionId,
-        "add-timeline-note" | "correct-requirement-category"
+        "accept-requirement-proposal" | "add-timeline-note" | "correct-requirement-category"
       >;
       readonly targetId?: string;
     };
@@ -67,6 +74,16 @@ export interface JobWorkspaceTimelineItem {
 
 export interface JobWorkspaceContentModel {
   readonly jobId: string;
+  readonly requirementProposals: readonly {
+    readonly id: string;
+    readonly category: JobRequirementCategory;
+    readonly sourceCategory: JobRequirementCategory;
+    readonly normalizedText: string;
+    readonly rawText: string;
+    readonly sourcePointer: string;
+    readonly sourceExcerpt: string;
+    readonly confidence: number;
+  }[];
   readonly requirements: readonly {
     readonly id: string;
     readonly category: JobRequirementCategory;
@@ -224,6 +241,34 @@ const validateModel = (model: JobWorkspaceContentModel): void => {
       requirement.rowVersion < 1
     ) {
       throw new RangeError("Job workspace requirement is invalid.");
+    }
+  }
+
+  if (
+    model.requirementProposals.length > 256 ||
+    new Set(model.requirementProposals.map(({ id }) => id)).size !==
+      model.requirementProposals.length
+  ) {
+    throw new RangeError("Job workspace requirement proposals are invalid.");
+  }
+  for (const proposal of model.requirementProposals) {
+    if (
+      proposal.id.trim().length === 0 ||
+      !JOB_REQUIREMENT_CATEGORIES.includes(proposal.category) ||
+      !JOB_REQUIREMENT_CATEGORIES.includes(proposal.sourceCategory) ||
+      proposal.normalizedText.trim().length === 0 ||
+      !isBoundedText(proposal.normalizedText, 4_096) ||
+      proposal.rawText.trim().length === 0 ||
+      !isBoundedText(proposal.rawText, 16_384) ||
+      proposal.sourcePointer.trim().length === 0 ||
+      !isBoundedText(proposal.sourcePointer, 2_048) ||
+      proposal.sourceExcerpt.trim().length === 0 ||
+      !isBoundedText(proposal.sourceExcerpt, 4_096) ||
+      !Number.isFinite(proposal.confidence) ||
+      proposal.confidence < 0 ||
+      proposal.confidence > 1
+    ) {
+      throw new RangeError("Job workspace requirement proposal is invalid.");
     }
   }
 
@@ -420,6 +465,19 @@ const categoryLabel = (category: JobRequirementCategory): string =>
   `${category.slice(0, 1).toLocaleUpperCase()}${category.slice(1)}`;
 
 const RequirementsPanel = ({ model, onAction }: JobWorkspaceContentPanelProps) => {
+  const acceptProposal = (
+    event: SyntheticEvent<HTMLFormElement>,
+    proposal: JobWorkspaceContentModel["requirementProposals"][number],
+  ): void => {
+    event.preventDefault();
+    const category = new FormData(event.currentTarget).get("category");
+    if (!JOB_REQUIREMENT_CATEGORIES.includes(category as JobRequirementCategory)) return;
+    onAction?.({
+      id: "accept-requirement-proposal",
+      targetId: proposal.id,
+      category: category as JobRequirementCategory,
+    });
+  };
   const correctCategory = (
     event: ChangeEvent<HTMLSelectElement>,
     requirement: JobWorkspaceContentModel["requirements"][number],
@@ -436,6 +494,86 @@ const RequirementsPanel = ({ model, onAction }: JobWorkspaceContentPanelProps) =
 
   return (
     <div className="cd-job-requirements" data-job-content-tab="requirements">
+      <section
+        aria-labelledby="job-requirement-proposals-heading"
+        className="cd-job-content-section"
+      >
+        <div className="cd-job-content-section-heading">
+          <div>
+            <p className="cd-eyebrow">Deterministic parsing · review required</p>
+            <h3 id="job-requirement-proposals-heading">Pending proposals</h3>
+          </div>
+          <span className="cd-chip">{model.requirementProposals.length} pending</span>
+        </div>
+        <p className="cd-job-requirements__boundary">
+          Proposals are unconfirmed interpretations. Nothing becomes a recorded requirement until
+          you explicitly accept it, and rejecting a proposal does not alter the source.
+        </p>
+        {model.requirementProposals.length === 0 ? (
+          <div className="cd-job-empty-state">
+            <h4>No pending proposals</h4>
+            <p>The deterministic parser has no unreviewed suggestions for this job.</p>
+          </div>
+        ) : (
+          <ol aria-label="Pending requirement proposals" className="cd-job-requirement-list">
+            {model.requirementProposals.map((proposal) => (
+              <li className="cd-job-requirement cd-job-requirement--proposal" key={proposal.id}>
+                <div className="cd-job-requirement__heading">
+                  <div>
+                    <h4>{proposal.normalizedText}</h4>
+                    <p>
+                      Parser category: <strong>{categoryLabel(proposal.sourceCategory)}</strong>
+                    </p>
+                  </div>
+                  <span className="cd-chip">{Math.round(proposal.confidence * 100)}% parse</span>
+                </div>
+                <blockquote>{proposal.sourceExcerpt}</blockquote>
+                <dl className="cd-job-requirement__facts">
+                  <div>
+                    <dt>Source pointer</dt>
+                    <dd>{proposal.sourcePointer}</dd>
+                  </div>
+                  <div>
+                    <dt>Review state</dt>
+                    <dd>Pending · proposal only</dd>
+                  </div>
+                </dl>
+                <form
+                  className="cd-job-requirement__review"
+                  onSubmit={(event) => {
+                    acceptProposal(event, proposal);
+                  }}
+                >
+                  <label>
+                    Category to record
+                    <select defaultValue={proposal.category} name="category">
+                      {JOB_REQUIREMENT_CATEGORIES.map((category) => (
+                        <option key={category} value={category}>
+                          {categoryLabel(category)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className="cd-job-requirement__review-actions">
+                    <button className="cd-button cd-button-primary" type="submit">
+                      Accept requirement
+                    </button>
+                    <button
+                      className="cd-button cd-button-secondary"
+                      onClick={() => {
+                        onAction?.({ id: "reject-requirement-proposal", targetId: proposal.id });
+                      }}
+                      type="button"
+                    >
+                      Reject proposal
+                    </button>
+                  </div>
+                </form>
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
       <section aria-labelledby="job-requirements-heading" className="cd-job-content-section">
         <div className="cd-job-content-section-heading">
           <div>

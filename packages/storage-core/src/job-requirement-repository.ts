@@ -39,11 +39,13 @@ export interface CreateJobRequirementRecordInput {
   readonly id: EntityId<"job-requirement">;
   readonly jobId: EntityId<"job">;
   readonly category: JobRequirementCategory;
+  readonly sourceCategory: JobRequirementCategory;
   readonly normalizedText: string;
   readonly rawText: string;
   readonly provenanceId: EntityId<"provenance">;
   readonly sortOrder: number;
   readonly createdAt: Instant;
+  readonly userConfirmed: boolean;
 }
 
 export interface CorrectJobRequirementRecordInput {
@@ -172,11 +174,15 @@ export class JobRequirementRepository {
     const id = entityId("job-requirement", input.id);
     const jobId = entityId("job", input.jobId);
     const category = jobRequirementCategory(input.category);
+    const sourceCategory = jobRequirementCategory(input.sourceCategory);
     const normalizedText = checkedText(input.normalizedText, "Normalized requirement", 4_096);
     const rawText = checkedText(input.rawText, "Raw requirement", 16_384);
     const provenanceId = entityId("provenance", input.provenanceId);
     const sortOrder = nonnegativeInteger(input.sortOrder, "Requirement sort order");
     const createdAt = instant(input.createdAt);
+    if (typeof input.userConfirmed !== "boolean") {
+      throw new TypeError("Requirement confirmation state must be explicit.");
+    }
     return this.database.transaction(async (transaction) => {
       const result = await transaction.execute(
         sqlStatement(
@@ -185,7 +191,7 @@ export class JobRequirementRepository {
              provenance_id, confidence, user_confirmed, sort_order,
              created_at, updated_at
            )
-           SELECT ?, ?, ?, ?, ?, ?, provenance.id, provenance.confidence, 0, ?, ?, ?
+           SELECT ?, ?, ?, ?, ?, ?, provenance.id, provenance.confidence, ?, ?, ?, ?
            FROM provenance
            INNER JOIN source_snapshot ON source_snapshot.id = provenance.source_snapshot_id
            INNER JOIN job_source ON job_source.id = source_snapshot.job_source_id
@@ -195,9 +201,10 @@ export class JobRequirementRepository {
             id,
             jobId,
             category,
-            category,
+            sourceCategory,
             normalizedText,
             rawText,
+            input.userConfirmed ? 1 : 0,
             sortOrder,
             createdAt,
             createdAt,

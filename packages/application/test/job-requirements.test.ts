@@ -46,10 +46,11 @@ const setup = () => {
         id: input.id,
         jobId: input.jobId,
         category: input.category,
-        sourceCategory: input.category,
+        sourceCategory: input.sourceCategory,
         normalizedText: input.normalizedText,
         rawText: input.rawText,
         provenanceId: input.provenanceId,
+        userConfirmed: input.userConfirmed,
         sortOrder: input.sortOrder,
         createdAt: input.createdAt,
         updatedAt: input.createdAt,
@@ -117,6 +118,54 @@ describe("Job requirement application boundary", () => {
     });
     expect(port.correctRequirement).toHaveBeenCalledWith(
       expect.objectContaining({ category: "responsibility", expectedRowVersion: 1 }),
+    );
+  });
+
+  it("requires explicit proposal acceptance and preserves the parser category as a source fact", async () => {
+    const { operations, port } = setup();
+    const parsed = await operations.parseRequirementsQuery.execute(
+      {
+        jobId: IDS.job,
+        blocks: [
+          {
+            kind: "heading",
+            provenanceId: IDS.provenance,
+            sourceExcerpt: "Minimum qualifications",
+            sourcePointer: "/description/h2[1]",
+            text: "Minimum qualifications",
+          },
+          {
+            kind: "item",
+            provenanceId: IDS.provenance,
+            sourceExcerpt: "5+ years leading delivery.",
+            sourcePointer: "/description/ul[1]/li[1]",
+            text: "5+ years leading delivery.",
+          },
+        ],
+      },
+      context,
+    );
+
+    expect(port.recordRequirement).not.toHaveBeenCalled();
+    if (!parsed.ok) throw new Error("Expected deterministic requirement proposals.");
+    const proposal = parsed.value.proposals[0];
+    if (proposal === undefined) throw new Error("Expected one requirement proposal.");
+    const accepted = await operations.acceptRequirementProposalCommand.execute(
+      { category: "desired", proposal },
+      context,
+    );
+
+    expect(accepted).toMatchObject({
+      ok: true,
+      value: { category: "desired", sourceCategory: "required", userConfirmed: true },
+    });
+    expect(port.recordRequirement).toHaveBeenCalledWith(
+      expect.objectContaining({
+        category: "desired",
+        sourceCategory: "required",
+        userConfirmed: true,
+        provenanceId: IDS.provenance,
+      }),
     );
   });
 

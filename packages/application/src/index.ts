@@ -300,6 +300,7 @@ export {
 export {
   JobRequirementError,
   createJobRequirementOperations,
+  type AcceptJobRequirementProposalInput,
   type CorrectJobRequirementInput,
   type CorrectJobRequirementPortInput,
   type JobRequirementDto,
@@ -311,6 +312,18 @@ export {
   type RecordJobRequirementInput,
   type RecordJobRequirementPortInput,
 } from "./job-requirements.js";
+export {
+  JOB_REQUIREMENT_PARSE_LIMITS,
+  JOB_REQUIREMENT_PARSE_SPEC_VERSION,
+  JOB_REQUIREMENT_SOURCE_BLOCK_KINDS,
+  parseJobRequirementProposals,
+  validateJobRequirementProposal,
+  type JobRequirementParseResultDto,
+  type JobRequirementProposalDto,
+  type JobRequirementSourceBlockInput,
+  type JobRequirementSourceBlockKind,
+  type ParseJobRequirementsInput,
+} from "./job-requirement-parser.js";
 export { JOB_REQUIREMENT_CATEGORIES, type JobRequirementCategory } from "@coredrill/domain";
 export {
   CAREER_PROFILE_ERROR_CODES,

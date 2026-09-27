@@ -147,11 +147,13 @@ describe("JobRequirementRepository", () => {
       id: IDS.requirement,
       jobId: IDS.job,
       category: "required",
+      sourceCategory: "required",
       normalizedText: "Lead delivery",
       rawText: "You will lead delivery.",
       provenanceId: IDS.provenance,
       sortOrder: 0,
       createdAt: CREATED_AT,
+      userConfirmed: false,
     });
     expect(created).toMatchObject({
       category: "required",
@@ -178,17 +180,43 @@ describe("JobRequirementRepository", () => {
     await expect(repository.listForJob(IDS.job)).resolves.toEqual([corrected]);
   });
 
+  it("persists an explicitly reviewed parser proposal without rewriting its source category", async () => {
+    const repository = createJobRequirementRepository(database);
+    const created = await repository.create({
+      id: IDS.requirement,
+      jobId: IDS.job,
+      category: "desired",
+      sourceCategory: "required",
+      normalizedText: "Lead delivery",
+      rawText: "You will lead delivery.",
+      provenanceId: IDS.provenance,
+      sortOrder: 0,
+      createdAt: CREATED_AT,
+      userConfirmed: true,
+    });
+
+    expect(created).toMatchObject({
+      category: "desired",
+      sourceCategory: "required",
+      sourceExcerpt: "You will lead delivery.\n",
+      userConfirmed: true,
+      rowVersion: 1,
+    });
+  });
+
   it("rejects stale corrections and direct mutation of immutable source facts", async () => {
     const repository = createJobRequirementRepository(database);
     await repository.create({
       id: IDS.requirement,
       jobId: IDS.job,
       category: "required",
+      sourceCategory: "required",
       normalizedText: "Lead delivery",
       rawText: "You will lead delivery.",
       provenanceId: IDS.provenance,
       sortOrder: 0,
       createdAt: CREATED_AT,
+      userConfirmed: false,
     });
     await expect(
       repository.correct({
