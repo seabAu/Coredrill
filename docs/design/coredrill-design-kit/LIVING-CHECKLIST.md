@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-09-27
 Current milestone: Phase 3 — career evidence and versioned documents (`GATE-0`, `GATE-1`, and `GATE-2` external-evidence blockers remain open)
-Current work item: `EVD-001` — implement the complete Career Profile repository family
-Next recommended slice: `EVD-002` after `EVD-001`; retain `Q2-001`, `Q2-003`, `PEX-005`, `PEX-006`, and `GATE-2` as explicit external-evidence/manual-review/permission/deployment blockers
+Current work item: `EVD-002` — implement evidence source, verification, staleness, and privacy-tag state
+Next recommended slice: `EVD-003` after `EVD-002`; retain `Q2-001`, `Q2-003`, `PEX-005`, `PEX-006`, and `GATE-2` as explicit external-evidence/manual-review/permission/deployment blockers
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `EVD-002` after `EVD-001`; retain `Q2-001`, `Q2-003`, `P
 | Field | Value |
 |---|---|
 | Milestone | Phase 3, with the independent Phase 0, Phase 1, and Phase 2 evidence gates retained below |
-| Item range | `EVD-001` |
+| Item range | `EVD-002` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-09-27 |
-| Expected proof | Employment, education, project, skill, accomplishment, certification, publication, volunteer, story, and preference repositories have explicit schema/repository contracts, shared browser/native parity, transaction and constraint coverage, and rollback proof without starting unrelated import, editor, or AI work |
-| Blocker | None for repository-side `EVD-001`. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-2`, `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
-| Next handoff | Inspect the accepted Career Profile data model and existing shared repository manifest, then add only the `EVD-001` schema/repository surface and cross-runtime proof before advancing to evidence verification/staleness/privacy state in `EVD-002`. |
+| Expected proof | Evidence-source provenance, verification state, staleness state, and privacy tags have explicit domain/storage contracts with transition, validation, persistence, and cross-runtime tests while preserving user-confirmed values and avoiding editor, import, or AI scope |
+| Blocker | None for domain/storage-side `EVD-002`. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-2`, `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
+| Next handoff | Implement only the accepted evidence source, verification, staleness, and privacy-tag state for `EVD-002`, with domain and persistence proof; leave manual editors, resume import, conflict UI, and AI work to their later checklist slices. |
 
 ## Milestone status
 
@@ -264,7 +264,7 @@ Next recommended slice: `EVD-002` after `EVD-001`; retain `Q2-001`, `Q2-003`, `P
 
 ## Career profile and evidence
 
-- [ ] **EVD-001** Implement employment, education, project, skill, accomplishment, certification, publication, volunteer, story, and preference repositories. — Proof: _schema/repository tests_
+- [x] **EVD-001** Implement employment, education, project, skill, accomplishment, certification, publication, volunteer, story, and preference repositories. — Proof: [Career Profile repository verification](../../proof/phase-3-career-profile-repositories-verification.md)
 - [ ] **EVD-002** Implement evidence source/verification/staleness and privacy-tag state. — Proof: _domain tests_
 - [ ] **EVD-003** Implement manual Career Profile editors and safe date/range validation. — Proof: _component/E2E tests_
 - [ ] **EVD-004** Import PDF/DOCX/text resume into a proposal queue without auto-verification. — Proof: _golden import tests_
