@@ -1,6 +1,7 @@
 import {
   BROWSER_EXPORT_REMINDER_SETTING_KEY,
   VaultDeletionError,
+  createCareerProfileOperations,
   createDefaultBrowserExportReminderPreference,
   createVaultDeletionOperations,
   deriveBrowserExportReminderFromPreference,
@@ -12,6 +13,10 @@ import {
   type BrowserExportReminderPreferenceV1,
   type ApplicationOperationContext,
   type ApplicationResult,
+  type CareerProfileEntryDto,
+  type CareerProfilePort,
+  type CreateManualCareerProfileEntryInput,
+  type CreateManualCareerProfilePortInput,
   type DeleteVaultPortInput,
   type DeleteVaultInput,
   type PreviewVaultDeletionPortInput,
@@ -37,6 +42,7 @@ import {
   createPortableArchiveRestorePreviewV1,
   createPortableVaultContentHashV1,
   createCareerRepositoryContractSuite,
+  createCareerRepositories,
   createPhase1RepositoryContractSuite,
   createTrackerRepositories,
   defineSqlMigrations,
@@ -60,7 +66,7 @@ import {
   type QueryRow,
   type StorageDiagnostics,
 } from "@coredrill/storage-core";
-import { entityId, instant } from "@coredrill/domain";
+import { entityId, generateEntityId, instant } from "@coredrill/domain";
 
 import initialMigrationSql from "../../../migrations/0001_vault.sql?raw";
 import captureInboxMigrationSql from "../../../migrations/0002_capture_inbox.sql?raw";
@@ -281,6 +287,10 @@ interface PortableRecoveryRestoreProof {
 }
 
 export interface CoredrillStorageSpikeApi {
+  createManualCareerProfileEntry(
+    input: CreateManualCareerProfileEntryInput,
+  ): Promise<ApplicationResult<CareerProfileEntryDto>>;
+  listManualCareerProfileEntries(): Promise<ApplicationResult<readonly CareerProfileEntryDto[]>>;
   openAndMigrate(options?: OpenOptions): Promise<OpenMigrationProof>;
   tryOpenAndMigrate(options?: OpenOptions): Promise<OpenAttempt>;
   writeVault(input: VaultInput): Promise<void>;
@@ -655,6 +665,394 @@ const getDatabase = async (options: OpenOptions = {}): Promise<BrowserSqliteData
     if (database !== undefined) databaseOpen = undefined;
   }
 };
+
+interface CareerEntryRecordBase {
+  readonly id: CareerProfileEntryDto["id"];
+  readonly createdAt: CareerProfileEntryDto["createdAt"];
+  readonly rowVersion: number;
+}
+
+const careerEntryDto = (
+  record: CareerEntryRecordBase,
+  kind: CareerProfileEntryDto["kind"],
+  primaryLabel: string,
+  secondaryLabel: string | null,
+  startDate: CareerProfileEntryDto["startDate"] = null,
+  endDate: CareerProfileEntryDto["endDate"] = null,
+  current = false,
+  verificationState: CareerProfileEntryDto["verificationState"] = null,
+): CareerProfileEntryDto =>
+  Object.freeze({
+    id: record.id,
+    kind,
+    primaryLabel,
+    secondaryLabel,
+    startDate,
+    endDate,
+    current,
+    verificationState,
+    createdAt: record.createdAt,
+    rowVersion: record.rowVersion,
+  });
+
+const getCareerRepositories = async () => {
+  const client = await getDatabase();
+  await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
+  return createCareerRepositories(client);
+};
+
+const careerProfilePort: CareerProfilePort = Object.freeze({
+  createManualEntry: async (input: CreateManualCareerProfilePortInput) => {
+    const repositories = await getCareerRepositories();
+    switch (input.kind) {
+      case "basics": {
+        const stored = await repositories.preferences.insert({
+          id: input.id,
+          displayName: input.displayName,
+          summary: input.summary,
+          targetRoles: input.targetRoles,
+          locationId: input.locationId,
+          workPreferences: { workModes: [...input.workPreferences.workModes] },
+          createdAt: input.createdAt,
+          updatedAt: input.updatedAt,
+        });
+        return careerEntryDto(stored, "basics", stored.displayName, null);
+      }
+      case "employment": {
+        const stored = await repositories.employment.insert({
+          id: input.id,
+          organization: input.organization,
+          role: input.role,
+          startDate: input.startDate,
+          endDate: input.endDate,
+          current: input.current,
+          description: input.description,
+          sourceDocumentId: input.sourceDocumentId,
+          verificationState: input.verificationState,
+          archivedAt: input.archivedAt,
+          createdAt: input.createdAt,
+          updatedAt: input.updatedAt,
+        });
+        return careerEntryDto(
+          stored,
+          "employment",
+          stored.role,
+          stored.organization,
+          stored.startDate,
+          stored.endDate,
+          stored.current,
+          "user_confirmed",
+        );
+      }
+      case "education": {
+        const stored = await repositories.education.insert({
+          id: input.id,
+          institution: input.institution,
+          credential: input.credential,
+          field: input.field,
+          startDate: input.startDate,
+          endDate: input.endDate,
+          details: input.details,
+          sourceDocumentId: input.sourceDocumentId,
+          verificationState: input.verificationState,
+          archivedAt: input.archivedAt,
+          createdAt: input.createdAt,
+          updatedAt: input.updatedAt,
+        });
+        return careerEntryDto(
+          stored,
+          "education",
+          stored.credential,
+          stored.institution,
+          stored.startDate,
+          stored.endDate,
+          false,
+          "user_confirmed",
+        );
+      }
+      case "project": {
+        const stored = await repositories.projects.insert({
+          id: input.id,
+          name: input.name,
+          summary: input.summary,
+          url: input.url,
+          startDate: input.startDate,
+          endDate: input.endDate,
+          sourceDocumentId: input.sourceDocumentId,
+          verificationState: input.verificationState,
+          archivedAt: input.archivedAt,
+          createdAt: input.createdAt,
+          updatedAt: input.updatedAt,
+        });
+        return careerEntryDto(
+          stored,
+          "project",
+          stored.name,
+          null,
+          stored.startDate,
+          stored.endDate,
+          false,
+          "user_confirmed",
+        );
+      }
+      case "skill": {
+        const stored = await repositories.skills.insert({
+          id: input.id,
+          canonicalName: input.canonicalName,
+          category: input.category,
+          aliases: input.aliases,
+          archivedAt: input.archivedAt,
+          createdAt: input.createdAt,
+          updatedAt: input.updatedAt,
+        });
+        return careerEntryDto(stored, "skill", stored.canonicalName, stored.category);
+      }
+      case "accomplishment": {
+        const stored = await repositories.accomplishments.insert({
+          id: input.id,
+          parentType: input.parentType,
+          parentId: input.parentId,
+          action: input.action,
+          result: input.result,
+          metrics: input.metrics,
+          sourceDocumentId: input.sourceDocumentId,
+          verificationState: input.verificationState,
+          archivedAt: input.archivedAt,
+          createdAt: input.createdAt,
+          updatedAt: input.updatedAt,
+        });
+        return careerEntryDto(
+          stored,
+          "accomplishment",
+          stored.action,
+          stored.result,
+          null,
+          null,
+          false,
+          "user_confirmed",
+        );
+      }
+      case "certification": {
+        const stored = await repositories.certifications.insert({
+          id: input.id,
+          name: input.name,
+          issuer: input.issuer,
+          issuedDate: input.issuedDate,
+          expiresDate: input.expiresDate,
+          credentialUrl: input.credentialUrl,
+          sourceDocumentId: input.sourceDocumentId,
+          verificationState: input.verificationState,
+          archivedAt: input.archivedAt,
+          createdAt: input.createdAt,
+          updatedAt: input.updatedAt,
+        });
+        return careerEntryDto(
+          stored,
+          "certification",
+          stored.name,
+          stored.issuer,
+          stored.issuedDate,
+          stored.expiresDate,
+          false,
+          "user_confirmed",
+        );
+      }
+      case "publication": {
+        const stored = await repositories.publications.insert({
+          id: input.id,
+          title: input.title,
+          publisher: input.publisher,
+          publishedDate: input.publishedDate,
+          url: input.url,
+          summary: input.summary,
+          sourceDocumentId: input.sourceDocumentId,
+          verificationState: input.verificationState,
+          archivedAt: input.archivedAt,
+          createdAt: input.createdAt,
+          updatedAt: input.updatedAt,
+        });
+        return careerEntryDto(
+          stored,
+          "publication",
+          stored.title,
+          stored.publisher,
+          stored.publishedDate,
+          null,
+          false,
+          "user_confirmed",
+        );
+      }
+      case "volunteer": {
+        const stored = await repositories.volunteer.insert({
+          id: input.id,
+          organization: input.organization,
+          role: input.role,
+          startDate: input.startDate,
+          endDate: input.endDate,
+          current: input.current,
+          description: input.description,
+          sourceDocumentId: input.sourceDocumentId,
+          verificationState: input.verificationState,
+          archivedAt: input.archivedAt,
+          createdAt: input.createdAt,
+          updatedAt: input.updatedAt,
+        });
+        return careerEntryDto(
+          stored,
+          "volunteer",
+          stored.role,
+          stored.organization,
+          stored.startDate,
+          stored.endDate,
+          stored.current,
+          "user_confirmed",
+        );
+      }
+    }
+  },
+  listManualEntries: async () => {
+    const repositories = await getCareerRepositories();
+    const [
+      basics,
+      employment,
+      education,
+      projects,
+      skills,
+      accomplishments,
+      certifications,
+      publications,
+      volunteer,
+    ] = await Promise.all([
+      repositories.preferences.get(),
+      repositories.employment.listActive(),
+      repositories.education.listActive(),
+      repositories.projects.listActive(),
+      repositories.skills.listActive(),
+      repositories.accomplishments.listActive(),
+      repositories.certifications.listActive(),
+      repositories.publications.listActive(),
+      repositories.volunteer.listActive(),
+    ]);
+    const entries: CareerProfileEntryDto[] = [
+      ...(basics === null ? [] : [careerEntryDto(basics, "basics", basics.displayName, null)]),
+      ...employment.map((stored) =>
+        careerEntryDto(
+          stored,
+          "employment",
+          stored.role,
+          stored.organization,
+          stored.startDate,
+          stored.endDate,
+          stored.current,
+          "user_confirmed",
+        ),
+      ),
+      ...education.map((stored) =>
+        careerEntryDto(
+          stored,
+          "education",
+          stored.credential,
+          stored.institution,
+          stored.startDate,
+          stored.endDate,
+          false,
+          "user_confirmed",
+        ),
+      ),
+      ...projects.map((stored) =>
+        careerEntryDto(
+          stored,
+          "project",
+          stored.name,
+          null,
+          stored.startDate,
+          stored.endDate,
+          false,
+          "user_confirmed",
+        ),
+      ),
+      ...skills.map((stored) =>
+        careerEntryDto(stored, "skill", stored.canonicalName, stored.category),
+      ),
+      ...accomplishments.map((stored) =>
+        careerEntryDto(
+          stored,
+          "accomplishment",
+          stored.action,
+          stored.result,
+          null,
+          null,
+          false,
+          "user_confirmed",
+        ),
+      ),
+      ...certifications.map((stored) =>
+        careerEntryDto(
+          stored,
+          "certification",
+          stored.name,
+          stored.issuer,
+          stored.issuedDate,
+          stored.expiresDate,
+          false,
+          "user_confirmed",
+        ),
+      ),
+      ...publications.map((stored) =>
+        careerEntryDto(
+          stored,
+          "publication",
+          stored.title,
+          stored.publisher,
+          stored.publishedDate,
+          null,
+          false,
+          "user_confirmed",
+        ),
+      ),
+      ...volunteer.map((stored) =>
+        careerEntryDto(
+          stored,
+          "volunteer",
+          stored.role,
+          stored.organization,
+          stored.startDate,
+          stored.endDate,
+          stored.current,
+          "user_confirmed",
+        ),
+      ),
+    ];
+    entries.sort(
+      (left, right) =>
+        right.createdAt.localeCompare(left.createdAt) || left.id.localeCompare(right.id),
+    );
+    return Object.freeze(entries);
+  },
+});
+
+const CAREER_ENTITY_TYPE_BY_KIND = Object.freeze({
+  basics: "candidate-profile",
+  employment: "experience",
+  education: "education",
+  project: "project",
+  skill: "skill",
+  accomplishment: "accomplishment",
+  certification: "certification",
+  publication: "publication",
+  volunteer: "volunteer-experience",
+} as const);
+
+const careerProfileOperations = createCareerProfileOperations({
+  careerProfile: careerProfilePort,
+  createId: (kind) => generateEntityId(CAREER_ENTITY_TYPE_BY_KIND[kind]),
+});
+
+const careerProfileOperationContext = (): ApplicationOperationContext =>
+  Object.freeze({
+    operationId: generateEntityId("application-operation"),
+    initiatedAt: instant(new Date().toISOString()),
+  });
 
 const getAttachmentStore = async (): Promise<BrowserAttachmentStore> => {
   attachmentStore ??= await BrowserAttachmentStore.open();
@@ -1135,6 +1533,16 @@ const createBrowserContractAdapter = () => {
 };
 
 const api: CoredrillStorageSpikeApi = {
+  createManualCareerProfileEntry: async (input) =>
+    careerProfileOperations.createManualEntryCommand.execute(
+      input,
+      careerProfileOperationContext(),
+    ),
+  listManualCareerProfileEntries: async () =>
+    careerProfileOperations.listManualEntriesQuery.execute(
+      undefined,
+      careerProfileOperationContext(),
+    ),
   openAndMigrate: async (options = {}) => {
     const client = await getDatabase(options);
     const result = await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);

@@ -1461,6 +1461,76 @@ test("Pipeline search filters the current jobs and companies with exact local co
   expect(externalRequests).toEqual([]);
 });
 
+test("Career Profile validates ranges and persists user-confirmed manual evidence locally", async ({
+  page,
+}, testInfo) => {
+  const externalRequests = [];
+  page.on("request", (request) => {
+    if (!request.url().startsWith("http://127.0.0.1:4178/")) externalRequests.push(request.url());
+  });
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await openShell(page);
+  await page
+    .getByRole("navigation", { name: "Primary" })
+    .getByRole("link", { name: "Career Profile" })
+    .click();
+
+  const workspace = page.getByTestId("career-profile-workspace");
+  await expect(workspace.getByRole("heading", { name: "Build your Career Profile" })).toBeVisible();
+  await expect(workspace).toContainText("Manual entries stay on this device");
+  const basicsTab = workspace.getByRole("tab", { name: /Basics & preferences/u });
+  await basicsTab.focus();
+  await basicsTab.press("ArrowRight");
+  await expect(workspace.getByRole("tab", { name: /Work/u })).toBeFocused();
+  await expect(workspace.getByRole("tab", { name: /Work/u })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+
+  await workspace.getByLabel("Organization *").fill("Signal Harbor Labs");
+  await workspace.getByLabel("Role *").fill("Research Operations Lead");
+  await workspace.getByLabel("Start date").fill("2026-08-20");
+  await workspace.getByLabel("End date").fill("2026-08-19");
+  await workspace.getByRole("button", { name: "Save Work" }).click();
+  await expect(workspace).toContainText("End date cannot be earlier than start date.");
+  await expect(workspace.getByText("No local entries in this section yet.")).toBeVisible();
+
+  await workspace.getByLabel("End date").fill("2026-09-27");
+  await workspace.getByRole("button", { name: "Save Work" }).click();
+  await expect(workspace.getByRole("status")).toContainText(
+    "Work saved locally as user-confirmed information.",
+  );
+  await expect(workspace.getByRole("listitem")).toContainText("Research Operations Lead");
+  await expect(workspace.getByRole("listitem")).toContainText("Signal Harbor Labs");
+  await expect(workspace.getByRole("listitem")).toContainText("User-confirmed");
+  await expect
+    .poll(() =>
+      page.evaluate(() => globalThis.coredrillAppShell?.getState().careerProfileEntryCount),
+    )
+    .toBe(1);
+
+  await page.reload();
+  await page.waitForFunction(() => globalThis.coredrillAppShell !== undefined);
+  await expect(page.getByTestId("page-title")).toHaveText("Career Profile");
+  const reloadedWorkspace = page.getByTestId("career-profile-workspace");
+  await reloadedWorkspace.getByRole("tab", { name: /Work/u }).click();
+  await expect(reloadedWorkspace.getByRole("listitem")).toContainText("Research Operations Lead");
+  await expect(reloadedWorkspace.getByRole("listitem")).toContainText("User-confirmed");
+
+  await attachAxe(page, testInfo, "career-profile-manual-evidence");
+  await attachAriaSnapshot(workspace, testInfo, "career-profile-manual-evidence");
+  await attachProof(page, testInfo, "career-profile-manual-evidence");
+  await page.setViewportSize({ width: 320, height: 800 });
+  expect(
+    await page.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+    })),
+  ).toEqual({ clientWidth: 320, scrollWidth: 320 });
+  await attachAxe(page, testInfo, "career-profile-manual-evidence-mobile");
+  expect(externalRequests).toEqual([]);
+});
+
 test("compact rail keeps every destination and vault state named", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 800, height: 900 });
   await openShell(page, { health: "offline" });

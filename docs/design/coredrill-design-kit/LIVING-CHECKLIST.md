@@ -27,7 +27,7 @@ Next recommended slice: `EVD-004` after `EVD-003`; retain `Q2-001`, `Q2-003`, `P
 | Item range | `EVD-003` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-09-27 |
-| Expected proof | Manual Career Profile editors cover the accepted profile areas with safe partial-date/range validation, accessible field and error behavior, durable repository writes, and component/E2E proof without starting resume import or AI work |
+| Expected proof | Manual Career Profile editors cover the accepted profile areas with safe optional-date/range validation, accessible field and error behavior, durable repository writes, and component/E2E proof without starting resume import or AI work |
 | Blocker | None for `EVD-003`. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-2`, `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
 | Next handoff | Implement manual Career Profile editors and safe date/range validation for `EVD-003`, reusing the proven repositories and evidence-state policy; leave resume import, conflict resolution, story linking, Answer Library, and AI work to their later checklist slices. |
 

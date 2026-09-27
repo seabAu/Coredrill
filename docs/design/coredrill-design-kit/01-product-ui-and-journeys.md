@@ -148,6 +148,8 @@ Each generated sentence is either linked to evidence, labeled non-factual/style-
 - Evidence verification states: imported, user-confirmed, source-backed, stale.
 - Resume import is a proposal queue; users resolve dates, duplicate roles, and ambiguous skills.
 
+`EVD-003` supplies manual, local-only editors for basics/preferences, employment, education, projects, skills, accomplishments, certifications, publications, and volunteer work. Required text, bounded lists and URLs, real optional `YYYY-MM-DD` dates, non-inverted ranges, and current-role/end-date consistency are validated before persistence. Saved evidence-backed records carry no invented source and are explicitly user-confirmed. The section tablist supports arrow, Home, and End navigation; errors remain attached to their fields; and the workspace names resume import, stories/evidence linking, Answer Library work, and AI assistance as later reviewed slices.
+
 ### Network: Companies & Contacts
 
 - Company overview, official domains, saved jobs, interactions, outcomes, notes, sources.

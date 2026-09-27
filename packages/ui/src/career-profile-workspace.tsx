@@ -1,0 +1,575 @@
+import {
+  MANUAL_CAREER_PROFILE_KINDS,
+  validateManualCareerProfileEntry,
+  type ApplicationResult,
+  type CareerProfileEntryDto,
+  type CareerProfileValidationIssue,
+  type CreateManualCareerProfileEntryInput,
+  type ManualCareerProfileKind,
+} from "@coredrill/application";
+import {
+  useId,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type ReactNode,
+  type SyntheticEvent,
+} from "react";
+
+export const CAREER_PROFILE_EDITOR_SECTIONS = Object.freeze([
+  { id: "basics", label: "Basics & preferences" },
+  { id: "employment", label: "Work" },
+  { id: "education", label: "Education" },
+  { id: "project", label: "Projects" },
+  { id: "skill", label: "Skills" },
+  { id: "accomplishment", label: "Accomplishments" },
+  { id: "certification", label: "Certifications" },
+  { id: "publication", label: "Publications" },
+  { id: "volunteer", label: "Volunteering" },
+] as const satisfies readonly {
+  readonly id: ManualCareerProfileKind;
+  readonly label: string;
+}[]);
+
+export interface CareerProfileWorkspaceModel {
+  readonly entries: readonly CareerProfileEntryDto[];
+  readonly loading: boolean;
+}
+
+export interface CareerProfileWorkspaceProps {
+  readonly model: CareerProfileWorkspaceModel;
+  readonly onSave: (
+    input: CreateManualCareerProfileEntryInput,
+  ) => Promise<ApplicationResult<CareerProfileEntryDto>>;
+}
+
+const LABEL_BY_KIND: Readonly<Record<ManualCareerProfileKind, string>> = Object.freeze(
+  Object.fromEntries(CAREER_PROFILE_EDITOR_SECTIONS.map(({ id, label }) => [id, label])) as Record<
+    ManualCareerProfileKind,
+    string
+  >,
+);
+
+const inputValue = (data: FormData, name: string): string => {
+  const value = data.get(name);
+  return typeof value === "string" ? value : "";
+};
+
+const listValue = (data: FormData, name: string): readonly string[] =>
+  Object.freeze(
+    inputValue(data, name)
+      .split(",")
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0),
+  );
+
+const buildInput = (
+  kind: ManualCareerProfileKind,
+  data: FormData,
+): CreateManualCareerProfileEntryInput => {
+  switch (kind) {
+    case "basics":
+      return {
+        kind,
+        displayName: inputValue(data, "displayName"),
+        summary: inputValue(data, "summary"),
+        targetRoles: listValue(data, "targetRoles"),
+        workModes: listValue(data, "workModes"),
+      };
+    case "employment":
+    case "volunteer":
+      return {
+        kind,
+        organization: inputValue(data, "organization"),
+        role: inputValue(data, "role"),
+        startDate: inputValue(data, "startDate"),
+        endDate: inputValue(data, "endDate"),
+        current: data.get("current") === "on",
+        description: inputValue(data, "description"),
+      };
+    case "education":
+      return {
+        kind,
+        institution: inputValue(data, "institution"),
+        credential: inputValue(data, "credential"),
+        field: inputValue(data, "field"),
+        startDate: inputValue(data, "startDate"),
+        endDate: inputValue(data, "endDate"),
+        details: inputValue(data, "details"),
+      };
+    case "project":
+      return {
+        kind,
+        name: inputValue(data, "name"),
+        summary: inputValue(data, "summary"),
+        url: inputValue(data, "url"),
+        startDate: inputValue(data, "startDate"),
+        endDate: inputValue(data, "endDate"),
+      };
+    case "skill":
+      return {
+        kind,
+        canonicalName: inputValue(data, "canonicalName"),
+        category: inputValue(data, "category"),
+        aliases: listValue(data, "aliases"),
+      };
+    case "accomplishment":
+      return {
+        kind,
+        action: inputValue(data, "action"),
+        result: inputValue(data, "result"),
+      };
+    case "certification":
+      return {
+        kind,
+        name: inputValue(data, "name"),
+        issuer: inputValue(data, "issuer"),
+        issuedDate: inputValue(data, "issuedDate"),
+        expiresDate: inputValue(data, "expiresDate"),
+        credentialUrl: inputValue(data, "credentialUrl"),
+      };
+    case "publication":
+      return {
+        kind,
+        title: inputValue(data, "title"),
+        publisher: inputValue(data, "publisher"),
+        publishedDate: inputValue(data, "publishedDate"),
+        url: inputValue(data, "url"),
+        summary: inputValue(data, "summary"),
+      };
+  }
+};
+
+interface FieldProps {
+  readonly children?: ReactNode;
+  readonly hint?: string | undefined;
+  readonly issue?: CareerProfileValidationIssue | undefined;
+  readonly label: string;
+  readonly name: string;
+  readonly required?: boolean;
+  readonly type?: "date" | "text" | "url";
+}
+
+const Field = ({
+  children,
+  hint,
+  issue,
+  label,
+  name,
+  required = false,
+  type = "text",
+}: FieldProps) => {
+  const descriptionId = `${name}-description`;
+  return (
+    <div className="cd-career-field">
+      <label htmlFor={name}>
+        {label}
+        {required ? <span aria-hidden="true"> *</span> : null}
+      </label>
+      {children ?? (
+        <input
+          aria-describedby={hint !== undefined || issue !== undefined ? descriptionId : undefined}
+          aria-invalid={issue === undefined ? undefined : true}
+          id={name}
+          name={name}
+          required={required}
+          type={type}
+        />
+      )}
+      {issue !== undefined ? (
+        <p className="cd-career-field-error" id={descriptionId}>
+          {issue.message}
+        </p>
+      ) : hint !== undefined ? (
+        <p className="cd-career-field-hint" id={descriptionId}>
+          {hint}
+        </p>
+      ) : null}
+    </div>
+  );
+};
+
+const TextAreaField = ({
+  issue,
+  label,
+  name,
+  required = false,
+}: Pick<FieldProps, "issue" | "label" | "name" | "required">) => {
+  const descriptionId = `${name}-description`;
+  return (
+    <div className="cd-career-field cd-career-field-wide">
+      <label htmlFor={name}>
+        {label}
+        {required ? <span aria-hidden="true"> *</span> : null}
+      </label>
+      <textarea
+        aria-describedby={issue === undefined ? undefined : descriptionId}
+        aria-invalid={issue === undefined ? undefined : true}
+        id={name}
+        maxLength={200_000}
+        name={name}
+        required={required}
+        rows={4}
+      />
+      {issue !== undefined ? (
+        <p className="cd-career-field-error" id={descriptionId}>
+          {issue.message}
+        </p>
+      ) : null}
+    </div>
+  );
+};
+
+const DateRangeFields = ({
+  issues,
+}: {
+  readonly issues: ReadonlyMap<string, CareerProfileValidationIssue>;
+}) => (
+  <>
+    <Field issue={issues.get("startDate")} label="Start date" name="startDate" type="date" />
+    <Field issue={issues.get("endDate")} label="End date" name="endDate" type="date" />
+  </>
+);
+
+const EditorFields = ({
+  issues,
+  kind,
+}: {
+  readonly issues: ReadonlyMap<string, CareerProfileValidationIssue>;
+  readonly kind: ManualCareerProfileKind;
+}) => {
+  switch (kind) {
+    case "basics":
+      return (
+        <>
+          <Field
+            issue={issues.get("displayName")}
+            label="Display name"
+            name="displayName"
+            required
+          />
+          <Field
+            hint="Separate roles with commas."
+            issue={issues.get("targetRoles")}
+            label="Target roles"
+            name="targetRoles"
+          />
+          <Field
+            hint="For example: remote, hybrid, on-site."
+            issue={issues.get("workModes")}
+            label="Work modes"
+            name="workModes"
+          />
+          <TextAreaField
+            issue={issues.get("summary")}
+            label="Professional summary"
+            name="summary"
+          />
+        </>
+      );
+    case "employment":
+    case "volunteer":
+      return (
+        <>
+          <Field
+            issue={issues.get("organization")}
+            label="Organization"
+            name="organization"
+            required
+          />
+          <Field issue={issues.get("role")} label="Role" name="role" required />
+          <DateRangeFields issues={issues} />
+          <div className="cd-career-field cd-career-checkbox">
+            <input id="current" name="current" type="checkbox" />
+            <label htmlFor="current">This is current</label>
+          </div>
+          <TextAreaField issue={issues.get("description")} label="Description" name="description" />
+        </>
+      );
+    case "education":
+      return (
+        <>
+          <Field
+            issue={issues.get("institution")}
+            label="Institution"
+            name="institution"
+            required
+          />
+          <Field issue={issues.get("credential")} label="Credential" name="credential" required />
+          <Field issue={issues.get("field")} label="Field of study" name="field" />
+          <DateRangeFields issues={issues} />
+          <TextAreaField issue={issues.get("details")} label="Details" name="details" />
+        </>
+      );
+    case "project":
+      return (
+        <>
+          <Field issue={issues.get("name")} label="Project name" name="name" required />
+          <Field issue={issues.get("url")} label="Project URL" name="url" type="url" />
+          <DateRangeFields issues={issues} />
+          <TextAreaField issue={issues.get("summary")} label="Summary" name="summary" />
+        </>
+      );
+    case "skill":
+      return (
+        <>
+          <Field issue={issues.get("canonicalName")} label="Skill" name="canonicalName" required />
+          <Field issue={issues.get("category")} label="Category" name="category" />
+          <Field
+            hint="Separate aliases with commas."
+            issue={issues.get("aliases")}
+            label="Aliases"
+            name="aliases"
+          />
+        </>
+      );
+    case "accomplishment":
+      return (
+        <>
+          <TextAreaField issue={issues.get("action")} label="Action" name="action" required />
+          <TextAreaField issue={issues.get("result")} label="Result" name="result" required />
+        </>
+      );
+    case "certification":
+      return (
+        <>
+          <Field issue={issues.get("name")} label="Certification" name="name" required />
+          <Field issue={issues.get("issuer")} label="Issuer" name="issuer" required />
+          <Field
+            issue={issues.get("issuedDate")}
+            label="Issue date"
+            name="issuedDate"
+            type="date"
+          />
+          <Field
+            issue={issues.get("expiresDate")}
+            label="Expiration date"
+            name="expiresDate"
+            type="date"
+          />
+          <Field
+            issue={issues.get("credentialUrl")}
+            label="Credential URL"
+            name="credentialUrl"
+            type="url"
+          />
+        </>
+      );
+    case "publication":
+      return (
+        <>
+          <Field issue={issues.get("title")} label="Title" name="title" required />
+          <Field issue={issues.get("publisher")} label="Publisher" name="publisher" />
+          <Field
+            issue={issues.get("publishedDate")}
+            label="Publication date"
+            name="publishedDate"
+            type="date"
+          />
+          <Field issue={issues.get("url")} label="Publication URL" name="url" type="url" />
+          <TextAreaField issue={issues.get("summary")} label="Summary" name="summary" />
+        </>
+      );
+  }
+};
+
+const dateLabel = (entry: CareerProfileEntryDto): string | null => {
+  if (entry.startDate === null && entry.endDate === null && !entry.current) return null;
+  if (entry.current) return `${entry.startDate ?? "Start not recorded"} – Present`;
+  if (entry.startDate === null) return entry.endDate;
+  if (entry.endDate === null) return entry.startDate;
+  return `${entry.startDate} – ${entry.endDate}`;
+};
+
+export const CareerProfileWorkspace = ({ model, onSave }: CareerProfileWorkspaceProps) => {
+  const panelId = useId();
+  const [activeKind, setActiveKind] = useState<ManualCareerProfileKind>("basics");
+  const [issues, setIssues] = useState<readonly CareerProfileValidationIssue[]>([]);
+  const [status, setStatus] = useState("");
+  const [saving, setSaving] = useState(false);
+  const issueMap = new Map(issues.map((value) => [value.field, value]));
+  const visibleEntries = model.entries.filter(({ kind }) => kind === activeKind);
+
+  const selectKind = (kind: ManualCareerProfileKind): void => {
+    setActiveKind(kind);
+    setIssues([]);
+    setStatus("");
+  };
+
+  const moveSectionFocus = (
+    event: ReactKeyboardEvent<HTMLButtonElement>,
+    kind: ManualCareerProfileKind,
+  ): void => {
+    const currentIndex = CAREER_PROFILE_EDITOR_SECTIONS.findIndex(({ id }) => id === kind);
+    let nextIndex: number | null = null;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      nextIndex = (currentIndex + 1) % CAREER_PROFILE_EDITOR_SECTIONS.length;
+    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      nextIndex =
+        (currentIndex - 1 + CAREER_PROFILE_EDITOR_SECTIONS.length) %
+        CAREER_PROFILE_EDITOR_SECTIONS.length;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = CAREER_PROFILE_EDITOR_SECTIONS.length - 1;
+    }
+    if (nextIndex === null) return;
+
+    event.preventDefault();
+    const nextKind = CAREER_PROFILE_EDITOR_SECTIONS[nextIndex]?.id;
+    if (nextKind === undefined) return;
+    selectKind(nextKind);
+    document.getElementById(`${panelId}-${nextKind}-tab`)?.focus();
+  };
+
+  if (
+    model.entries.length > 10_000 ||
+    new Set(model.entries.map(({ id }) => id)).size !== model.entries.length ||
+    model.entries.some(({ kind }) => !MANUAL_CAREER_PROFILE_KINDS.includes(kind))
+  ) {
+    throw new RangeError("Career Profile workspace model is invalid.");
+  }
+
+  const submit = async (event: SyntheticEvent<HTMLFormElement>): Promise<void> => {
+    event.preventDefault();
+    setStatus("");
+    const form = event.currentTarget;
+    const input = buildInput(activeKind, new FormData(form));
+    const validation = validateManualCareerProfileEntry(input);
+    if (!validation.ok) {
+      setIssues(validation.issues);
+      setStatus("Review the highlighted fields.");
+      return;
+    }
+
+    setIssues([]);
+    setSaving(true);
+    const result = await onSave(input);
+    setSaving(false);
+    if (!result.ok) {
+      setStatus(result.error.message);
+      return;
+    }
+    form.reset();
+    setStatus(`${LABEL_BY_KIND[activeKind]} saved locally as user-confirmed information.`);
+  };
+
+  return (
+    <section className="cd-career-workspace" data-testid="career-profile-workspace">
+      <header className="cd-career-header">
+        <div>
+          <p className="cd-eyebrow">Local, user-confirmed evidence</p>
+          <h2>Build your Career Profile</h2>
+          <p>
+            Add only what you want to use. Manual entries stay on this device and never invent a
+            source, confidence value, or AI verification.
+          </p>
+        </div>
+        <div
+          className="cd-career-count"
+          aria-label={`${String(model.entries.length)} saved entries`}
+        >
+          <strong>{model.entries.length}</strong>
+          <span>saved entries</span>
+        </div>
+      </header>
+
+      <div className="cd-career-layout">
+        <nav aria-label="Career Profile sections" className="cd-career-sections" role="tablist">
+          {CAREER_PROFILE_EDITOR_SECTIONS.map(({ id, label }) => (
+            <button
+              aria-controls={panelId}
+              aria-selected={activeKind === id}
+              className="cd-career-section-button"
+              id={`${panelId}-${id}-tab`}
+              key={id}
+              onClick={() => {
+                selectKind(id);
+              }}
+              onKeyDown={(event) => {
+                moveSectionFocus(event, id);
+              }}
+              role="tab"
+              tabIndex={activeKind === id ? 0 : -1}
+              type="button"
+            >
+              <span>{label}</span>
+              <span
+                aria-label={`${String(model.entries.filter(({ kind }) => kind === id).length)} entries`}
+              >
+                {model.entries.filter(({ kind }) => kind === id).length}
+              </span>
+            </button>
+          ))}
+        </nav>
+
+        <div
+          aria-labelledby={`${panelId}-${activeKind}-tab`}
+          className="cd-career-panel"
+          id={panelId}
+          role="tabpanel"
+        >
+          <div className="cd-career-panel-heading">
+            <div>
+              <p className="cd-eyebrow">Manual editor</p>
+              <h3>{LABEL_BY_KIND[activeKind]}</h3>
+            </div>
+            <span className="cd-career-verification-badge">User-confirmed on save</span>
+          </div>
+
+          <form
+            className="cd-career-form"
+            key={activeKind}
+            noValidate
+            onSubmit={(event) => void submit(event)}
+          >
+            <EditorFields issues={issueMap} kind={activeKind} />
+            <div className="cd-career-form-actions">
+              <button className="cd-button cd-button-primary" disabled={saving} type="submit">
+                {saving ? "Saving locally…" : `Save ${LABEL_BY_KIND[activeKind]}`}
+              </button>
+              <p aria-live="polite" className="cd-career-status" role="status">
+                {status}
+              </p>
+            </div>
+          </form>
+
+          <section aria-labelledby={`${panelId}-saved-heading`} className="cd-career-saved">
+            <div className="cd-career-saved-heading">
+              <h4 id={`${panelId}-saved-heading`}>
+                Saved {LABEL_BY_KIND[activeKind].toLowerCase()}
+              </h4>
+              <span>
+                {model.loading
+                  ? "Loading local records…"
+                  : `${String(visibleEntries.length)} stored`}
+              </span>
+            </div>
+            {visibleEntries.length === 0 ? (
+              <p className="cd-career-empty">No local entries in this section yet.</p>
+            ) : (
+              <ul>
+                {visibleEntries.map((entry) => (
+                  <li key={entry.id}>
+                    <div>
+                      <strong>{entry.primaryLabel}</strong>
+                      {entry.secondaryLabel === null ? null : <span>{entry.secondaryLabel}</span>}
+                      {dateLabel(entry) === null ? null : <span>{dateLabel(entry)}</span>}
+                    </div>
+                    {entry.verificationState === null ? null : (
+                      <span className="cd-career-verification-badge">User-confirmed</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
+      </div>
+
+      <aside className="cd-career-later" aria-label="Later Career Profile capabilities">
+        <strong>Kept for later reviewed slices:</strong> resume-import proposals, story/evidence
+        linking, the Answer Library, and any AI-assisted drafting.
+      </aside>
+    </section>
+  );
+};

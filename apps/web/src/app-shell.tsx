@@ -1,6 +1,7 @@
 import {
   ApplicationShell,
   BrowserVaultBackupSettings,
+  CareerProfileWorkspace,
   CaptureInboxReview,
   ConnectorRegistrySettings,
   deriveBrowserExportReminder,
@@ -74,6 +75,8 @@ import { parseCaptureSourcePreviewJsonV1 } from "@coredrill/capture-core";
 import {
   evaluateCaptureSourceStateV1,
   type CaptureDuplicateSuggestionV1,
+  type CareerProfileEntryDto,
+  type CreateManualCareerProfileEntryInput,
   type DeleteVaultInput,
   type VaultDeletionPreviewDto,
   type VaultDeletionResultDto,
@@ -157,6 +160,7 @@ interface AppShellCatalogState {
   readonly boardUndoAvailable: boolean;
   readonly captureInboxCount: number;
   readonly captureDialogMode: SuppliedCaptureMode | null;
+  readonly careerProfileEntryCount: number;
   readonly density: DensityMode;
   readonly homeMode: HomeDashboardModel["state"];
   readonly homeSnapshotVisible: boolean;
@@ -1400,6 +1404,11 @@ const AppShellCatalog = () => {
   >(null);
   const [vaultDeletionSubmitCount, setVaultDeletionSubmitCount] = useState(0);
   const [networkInteractionDraftCount, setNetworkInteractionDraftCount] = useState(0);
+  const [careerProfileEntries, setCareerProfileEntries] = useState<
+    readonly CareerProfileEntryDto[]
+  >([]);
+  const [careerProfileLoaded, setCareerProfileLoaded] = useState(false);
+  const [careerProfileLoading, setCareerProfileLoading] = useState(false);
   const [networkTab, setNetworkTab] = useState<NetworkTabId>(
     initialLocation.kind === "network" ? initialLocation.tab : "companies",
   );
@@ -1799,6 +1808,40 @@ const AppShellCatalog = () => {
   };
 
   useEffect(() => {
+    if (activeDestination !== "profile" || careerProfileLoaded || careerProfileLoading) return;
+
+    setCareerProfileLoading(true);
+    void globalThis.coredrillStorageSpike
+      .listManualCareerProfileEntries()
+      .then((result) => {
+        if (result.ok) {
+          setCareerProfileEntries(result.value);
+          setLastActivity("Loaded the local Career Profile.");
+        } else {
+          setLastActivity(result.error.message);
+        }
+      })
+      .catch(() => {
+        setLastActivity("The local Career Profile could not be loaded.");
+      })
+      .finally(() => {
+        setCareerProfileLoaded(true);
+        setCareerProfileLoading(false);
+      });
+  }, [activeDestination, careerProfileLoaded, careerProfileLoading]);
+
+  const saveCareerProfileEntry = async (input: CreateManualCareerProfileEntryInput) => {
+    const result = await globalThis.coredrillStorageSpike.createManualCareerProfileEntry(input);
+    if (result.ok) {
+      setCareerProfileEntries((current) => Object.freeze([result.value, ...current]));
+      setLastActivity("Saved a user-confirmed Career Profile entry locally.");
+    } else {
+      setLastActivity(result.error.message);
+    }
+    return result;
+  };
+
+  useEffect(() => {
     globalThis.coredrillAppShell = Object.freeze({
       getState: () =>
         Object.freeze({
@@ -1808,6 +1851,7 @@ const AppShellCatalog = () => {
           boardUndoAvailable: boardUndo !== null,
           captureInboxCount,
           captureDialogMode,
+          careerProfileEntryCount: careerProfileEntries.length,
           density: appearance.density,
           homeMode: appearance.homeMode,
           homeSnapshotVisible,
@@ -1847,6 +1891,7 @@ const AppShellCatalog = () => {
     boardUndo,
     captureInboxCount,
     captureDialogMode,
+    careerProfileEntries.length,
     browserStorageEnvironment,
     exportReminder.state,
     homeSnapshotVisible,
@@ -2860,6 +2905,11 @@ const AppShellCatalog = () => {
               ) : null}
             </div>
           )
+        ) : activeDestination === "profile" ? (
+          <CareerProfileWorkspace
+            model={{ entries: careerProfileEntries, loading: careerProfileLoading }}
+            onSave={saveCareerProfileEntry}
+          />
         ) : activeDestination === "network" ? (
           <NetworkWorkspace
             activeTab={networkTab}
