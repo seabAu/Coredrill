@@ -126,23 +126,35 @@ export {
 export { DiagnosticEventRepository, LOCAL_DIAGNOSTIC_LOG_LIMITS } from "./diagnostic-repository.js";
 export {
   AttachmentManifestRepository,
+  DocumentLineageRepository,
   DocumentRepository,
   DocumentRepositoryConflictError,
   DocumentVersionRepository,
+  SubmittedSnapshotRepository,
   createDocumentRepositories,
+  createSubmittedSnapshotRepository,
   type DocumentRepositories,
   type DocumentRepositoryConflictCode,
   type NewAttachmentManifest,
   type NewDocument,
+  type NewDocumentLineage,
   type NewDocumentVersion,
   type NewDocumentVersionAttachment,
+  type NewSubmittedSnapshot,
+  type NewSubmittedSnapshotItem,
 } from "./document-repositories.js";
 export type {
   AttachmentManifestRecord,
   DocumentKind,
+  DocumentLineageRecord,
+  DocumentLineageRole,
   DocumentRecord,
   DocumentVersionAttachmentRecord,
   DocumentVersionRecord,
+  SubmittedSnapshotFormat,
+  SubmittedSnapshotItemRecord,
+  SubmittedSnapshotItemRole,
+  SubmittedSnapshotRecord,
 } from "./document-records.js";
 export {
   ApplicationRepository,

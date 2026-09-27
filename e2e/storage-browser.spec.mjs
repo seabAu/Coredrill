@@ -46,6 +46,9 @@ const humanReadableDatasetNames = Object.freeze([
   "attachment_manifest",
   "document_version_attachment",
   "document_style_example",
+  "document_lineage",
+  "submitted_snapshot",
+  "submitted_snapshot_item",
   "experience",
   "education",
   "project",
@@ -117,10 +120,10 @@ test("opens official SQLite in a Worker, persists transactions, and restores a c
 
   await callHarness(sourcePage, "delete");
   const opened = await callHarness(sourcePage, "openAndMigrate");
-  expect(opened.appliedVersions).toEqual(Array.from({ length: 133 }, (_, index) => index + 1));
+  expect(opened.appliedVersions).toEqual(Array.from({ length: 145 }, (_, index) => index + 1));
   expect(opened.diagnostics).toMatchObject({
     adapterName: "official-sqlite-wasm-opfs-sahpool",
-    schemaVersion: 133,
+    schemaVersion: 145,
   });
   expect(["ready", "degraded"]).toContain(opened.diagnostics.health);
   expect(["best-effort", "durable"]).toContain(opened.diagnostics.persistence);
@@ -157,15 +160,15 @@ test("opens official SQLite in a Worker, persists transactions, and restores a c
     vaultId: committedVault.id,
   });
   expect(humanReadable).toEqual({
-    dataFileCount: 102,
-    datasetCount: 51,
+    dataFileCount: 108,
+    datasetCount: 54,
     datasetNames: humanReadableDatasetNames,
-    jsonFiles: 51,
-    csvFiles: 51,
+    jsonFiles: 54,
+    csvFiles: 54,
     rowCount: 1,
-    sourceSchemaVersion: 133,
+    sourceSchemaVersion: 145,
   });
-  expect(portable.schemaVersion).toBe(133);
+  expect(portable.schemaVersion).toBe(145);
   expect(portable.byteLength).toBeGreaterThan(0);
   expect(portable.sha256).toMatch(/^[a-f0-9]{64}$/u);
   const archiveRestore = await callHarness(sourcePage, "runPortableArchiveRestoreProof", {
@@ -176,7 +179,7 @@ test("opens official SQLite in a Worker, persists transactions, and restores a c
     staleName: "Stale target",
   });
   expect(archiveRestore).toMatchObject({
-    dataFileCount: 102,
+    dataFileCount: 108,
     attachmentCount: 0,
     corruptionRejected: true,
     corruptionPreservedTarget: true,

@@ -32,6 +32,11 @@ const SNAPSHOT_ID = "0198e102-0000-7000-8000-000000000004";
 const PROVENANCE_ID = "0198e102-0000-7000-8000-000000000005";
 const FIELD_VALUE_ID = "0198e102-0000-7000-8000-000000000006";
 const REQUIREMENT_ID = "0198e102-0000-7000-8000-000000000007";
+const DOCUMENT_ID = "0198e102-0000-7000-8000-000000000008";
+const APPLICATION_ID = "0198e102-0000-7000-8000-000000000009";
+const SUBMITTED_SNAPSHOT_ID = "0198e102-0000-7000-8000-00000000000a";
+const SUBMITTED_ITEM_ID = "0198e102-0000-7000-8000-00000000000b";
+const DOCUMENT_VERSION_ID = "0198e102-0000-7000-8000-00000000000c";
 const HASH = "a".repeat(64);
 const repositoryRoot = path.resolve(import.meta.dirname, "..", "..", "..");
 const migrations = defineSqlMigrations(
@@ -180,12 +185,53 @@ const fixtureRows = (): Map<string, readonly QueryRow[]> =>
         },
       ],
     ],
+    [
+      "document_lineage",
+      [
+        {
+          document_id: DOCUMENT_ID,
+          role: "base",
+          base_document_id: null,
+          template_document_id: null,
+          job_id: null,
+          created_at: GENERATED_AT,
+        },
+      ],
+    ],
+    [
+      "submitted_snapshot",
+      [
+        {
+          id: SUBMITTED_SNAPSHOT_ID,
+          application_id: APPLICATION_ID,
+          submitted_at: GENERATED_AT,
+          channel: "company_portal",
+          created_at: GENERATED_AT,
+        },
+      ],
+    ],
+    [
+      "submitted_snapshot_item",
+      [
+        {
+          id: SUBMITTED_ITEM_ID,
+          submitted_snapshot_id: SUBMITTED_SNAPSHOT_ID,
+          role: "resume",
+          document_version_id: DOCUMENT_VERSION_ID,
+          submission_format: "file",
+          content_id: HASH,
+          attachment_purpose: "export.pdf",
+          sort_order: 0,
+          created_at: GENERATED_AT,
+        },
+      ],
+    ],
   ]);
 
 class FixtureDatabase implements DatabasePort {
   public readonly statements: string[] = [];
   public transactions = 0;
-  public schemaVersion: number | bigint = 133;
+  public schemaVersion: number | bigint = 145;
   public failQuery = false;
 
   public constructor(public readonly rows = fixtureRows()) {}
@@ -268,7 +314,7 @@ class SchemaInventoryDatabase implements DatabasePort {
       health: "ready",
       persistence: "memory",
       readOnly: false,
-      schemaVersion: 133,
+      schemaVersion: 145,
       details: [],
     });
   }
@@ -332,7 +378,7 @@ describe("portable human-readable data export", () => {
     }
   });
 
-  it("writes every reviewed user dataset available at schema 133 as paired deterministic JSON and CSV", async () => {
+  it("writes every reviewed user dataset available at schema 145 as paired deterministic JSON and CSV", async () => {
     const database = new FixtureDatabase();
     const bundle = await createPortableDataExportV1({
       database,
@@ -342,14 +388,14 @@ describe("portable human-readable data export", () => {
 
     expect(bundle).toMatchObject({
       specVersion: 1,
-      sourceSchemaVersion: 133,
+      sourceSchemaVersion: 145,
       generatedAt: GENERATED_AT,
       vaultId: VAULT_ID,
       datasetCount: PORTABLE_DATA_EXPORT_DATASETS.length,
-      rowCount: 7,
+      rowCount: 10,
     });
-    expect(bundle.datasetCount).toBe(51);
-    expect(bundle.dataFiles).toHaveLength(102);
+    expect(bundle.datasetCount).toBe(54);
+    expect(bundle.dataFiles).toHaveLength(108);
     const excludedTables = new Set<string>(PORTABLE_DATA_EXPORT_EXCLUDED_TABLES);
     expect(PORTABLE_DATA_EXPORT_DATASETS.filter((item) => excludedTables.has(item.table))).toEqual(
       [],
@@ -365,7 +411,7 @@ describe("portable human-readable data export", () => {
       "mutation_undo_token",
     ]);
     expect(database.transactions).toBe(1);
-    expect(database.statements).toHaveLength(52);
+    expect(database.statements).toHaveLength(55);
     expect(bundle.datasets.find((item) => item.dataset === "job_source")?.rows[0]).toMatchObject({
       is_primary: true,
     });
@@ -377,6 +423,18 @@ describe("portable human-readable data export", () => {
     expect(
       bundle.datasets.find((item) => item.dataset === "job_requirement_coverage_decision")?.rows[0],
     ).toMatchObject({ coverage_state: "gap", requirement_id: REQUIREMENT_ID, row_version: 1 });
+    expect(bundle.datasets.find((item) => item.dataset === "document_lineage")?.rows[0]).toEqual(
+      expect.objectContaining({ document_id: DOCUMENT_ID, role: "base" }),
+    );
+    expect(
+      bundle.datasets.find((item) => item.dataset === "submitted_snapshot_item")?.rows[0],
+    ).toEqual(
+      expect.objectContaining({
+        content_id: HASH,
+        document_version_id: DOCUMENT_VERSION_ID,
+        submission_format: "file",
+      }),
+    );
 
     expect(textFile(bundle, "data/job.json")).toBe(await fixtureText("job.json"));
     expect(textFile(bundle, "data/job.csv")).toBe(await csvFixtureText("job.csv"));
@@ -483,6 +541,21 @@ describe("portable human-readable data export", () => {
       "job_requirement_coverage_decision",
     );
 
+    const coverageDecisions = new FixtureDatabase();
+    coverageDecisions.schemaVersion = 133;
+    const coverageDecisionsBundle = await createPortableDataExportV1({
+      database: coverageDecisions,
+      generatedAt: GENERATED_AT,
+      vaultId: VAULT_ID,
+    });
+    expect(coverageDecisionsBundle.datasetCount).toBe(51);
+    expect(coverageDecisionsBundle.datasets.map((item) => item.dataset)).toContain(
+      "job_requirement_coverage_decision",
+    );
+    expect(coverageDecisionsBundle.datasets.map((item) => item.dataset)).not.toContain(
+      "document_lineage",
+    );
+
     const current = new FixtureDatabase();
     const currentBundle = await createPortableDataExportV1({
       database: current,
@@ -498,6 +571,9 @@ describe("portable human-readable data export", () => {
         "skill_evidence",
         "job_requirement_evidence_selection",
         "job_requirement_coverage_decision",
+        "document_lineage",
+        "submitted_snapshot",
+        "submitted_snapshot_item",
       ]),
     );
   });
@@ -532,7 +608,7 @@ describe("portable human-readable data export", () => {
       readAttachment: () => Promise.resolve(undefined),
     });
 
-    expect(archive.manifest.dataFiles).toHaveLength(102);
+    expect(archive.manifest.dataFiles).toHaveLength(108);
     expect(archive.manifest.dataFiles.map((entry) => entry.path)).toEqual(
       [...bundle.dataFiles].map((file) => file.path).sort(),
     );

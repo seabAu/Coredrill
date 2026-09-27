@@ -324,6 +324,8 @@ Views: All, Resumes, Cover letters, Answers, Templates, Submitted. Each item sho
 - Search includes text and linked evidence.
 - Destructive changes create recoverable revisions; permanent purge is explicit.
 
+`DOC-001` establishes the durable distinctions needed by these views: each document may be classified once as a reusable base, template, or job-specific derivative, and every submitted item retains its exact immutable document version plus content-addressed file identity when a file was used. It does not render the Documents views or invoke Mark Applied; those remain `DOC-002` and `DOC-007`.
+
 ### Network
 
 Tabs: Companies, Contacts, Interactions.

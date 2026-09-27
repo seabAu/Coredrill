@@ -46,3 +46,38 @@ export interface DocumentVersionAttachmentRecord extends AttachmentManifestRecor
   readonly sortOrder: number;
   readonly linkedAt: Instant;
 }
+
+export type DocumentLineageRole = "base" | "job_derivative" | "template";
+
+export interface DocumentLineageRecord {
+  readonly documentId: EntityId<"document">;
+  readonly role: DocumentLineageRole;
+  readonly baseDocumentId: EntityId<"document"> | null;
+  readonly templateDocumentId: EntityId<"document"> | null;
+  readonly jobId: EntityId<"job"> | null;
+  readonly createdAt: Instant;
+}
+
+export type SubmittedSnapshotItemRole = "answer" | "cover_letter" | "other" | "resume";
+export type SubmittedSnapshotFormat = "file" | "plain_text";
+
+export interface SubmittedSnapshotItemRecord {
+  readonly id: EntityId<"submitted-snapshot-item">;
+  readonly submittedSnapshotId: EntityId<"submitted-snapshot">;
+  readonly role: SubmittedSnapshotItemRole;
+  readonly documentVersionId: EntityId<"document-version">;
+  readonly submissionFormat: SubmittedSnapshotFormat;
+  readonly contentId: string | null;
+  readonly attachmentPurpose: string | null;
+  readonly sortOrder: number;
+  readonly createdAt: Instant;
+}
+
+export interface SubmittedSnapshotRecord {
+  readonly id: EntityId<"submitted-snapshot">;
+  readonly applicationId: EntityId<"application">;
+  readonly submittedAt: Instant;
+  readonly channel: string | null;
+  readonly createdAt: Instant;
+  readonly items: readonly SubmittedSnapshotItemRecord[];
+}

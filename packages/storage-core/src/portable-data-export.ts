@@ -14,7 +14,7 @@ import {
 } from "./database-port.js";
 import type { PortableArchiveDataFileSourceV1 } from "./portable-archive-writer.js";
 
-export const PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION = 133 as const;
+export const PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION = 145 as const;
 export const PORTABLE_DATA_EXPORT_SUPPORTED_SOURCE_SCHEMA_VERSIONS = Object.freeze([
   101,
   111,
@@ -23,6 +23,7 @@ export const PORTABLE_DATA_EXPORT_SUPPORTED_SOURCE_SCHEMA_VERSIONS = Object.free
   126,
   129,
   132,
+  133,
   PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION,
 ] as const);
 export const PORTABLE_DATA_EXPORT_WRITER_LIMITS = Object.freeze({
@@ -561,6 +562,44 @@ export const PORTABLE_DATA_EXPORT_DATASETS: readonly DatasetSpec[] = Object.free
     table: "document_style_example",
     columns: ["document_version_id", "created_at"],
     orderBy: ["document_version_id"],
+  }),
+  dataset({
+    name: "document_lineage",
+    table: "document_lineage",
+    columns: [
+      "document_id",
+      "role",
+      "base_document_id",
+      "template_document_id",
+      "job_id",
+      "created_at",
+    ],
+    orderBy: ["document_id"],
+    minimumSourceSchemaVersion: 145,
+  }),
+  dataset({
+    name: "submitted_snapshot",
+    table: "submitted_snapshot",
+    columns: ["id", "application_id", "submitted_at", "channel", "created_at"],
+    orderBy: ["submitted_at", "id"],
+    minimumSourceSchemaVersion: 145,
+  }),
+  dataset({
+    name: "submitted_snapshot_item",
+    table: "submitted_snapshot_item",
+    columns: [
+      "id",
+      "submitted_snapshot_id",
+      "role",
+      "document_version_id",
+      "submission_format",
+      "content_id",
+      "attachment_purpose",
+      "sort_order",
+      "created_at",
+    ],
+    orderBy: ["submitted_snapshot_id", "sort_order", "role", "id"],
+    minimumSourceSchemaVersion: 145,
   }),
   dataset({
     name: "experience",

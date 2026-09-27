@@ -11,7 +11,9 @@ import { PHASE_1_REPOSITORY_CONTRACT_MANIFEST } from "./repository-contract-mani
 import {
   DocumentRepositoryConflictError,
   createDocumentRepositories,
+  createSubmittedSnapshotRepository,
 } from "./document-repositories.js";
+import { createPipelineRepositories } from "./pipeline-repositories.js";
 import { createTrackerRepositories } from "./tracker-repositories.js";
 
 export interface DocumentRepositoryContractSetup {
@@ -26,6 +28,19 @@ const IDS = Object.freeze({
   otherVersion: entityId("document-version", "0198e105-0000-7000-8000-000000000005"),
   invalidVersion: entityId("document-version", "0198e105-0000-7000-8000-000000000006"),
   job: entityId("job", "0198e105-0000-7000-8000-000000000007"),
+  templateDocument: entityId("document", "0198e105-0000-7000-8000-000000000008"),
+  derivativeDocument: entityId("document", "0198e105-0000-7000-8000-000000000009"),
+  answerDocument: entityId("document", "0198e105-0000-7000-8000-00000000000a"),
+  templateVersion: entityId("document-version", "0198e105-0000-7000-8000-00000000000b"),
+  derivativeVersion: entityId("document-version", "0198e105-0000-7000-8000-00000000000c"),
+  answerVersion: entityId("document-version", "0198e105-0000-7000-8000-00000000000d"),
+  appliedStatus: entityId("status_definition", "0198e105-0000-7000-8000-00000000000e"),
+  application: entityId("application", "0198e105-0000-7000-8000-00000000000f"),
+  submittedSnapshot: entityId("submitted-snapshot", "0198e105-0000-7000-8000-000000000010"),
+  submittedResume: entityId("submitted-snapshot-item", "0198e105-0000-7000-8000-000000000011"),
+  submittedAnswer: entityId("submitted-snapshot-item", "0198e105-0000-7000-8000-000000000012"),
+  invalidSubmittedSnapshot: entityId("submitted-snapshot", "0198e105-0000-7000-8000-000000000013"),
+  invalidSubmittedItem: entityId("submitted-snapshot-item", "0198e105-0000-7000-8000-000000000014"),
 });
 
 const CREATED_AT = instant("2026-08-25T18:00:00.000Z");
@@ -348,6 +363,252 @@ export const createDocumentRepositoryContractSuite = (
             }),
           (error) => error instanceof TypeError,
           "An attachment content ID differed from its SHA-256.",
+        );
+      },
+    },
+    {
+      name: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components.document.cases
+        .snapshotSubmittedDocuments,
+      run: async (database) => {
+        await setup.migrate(database);
+        await createJob(database);
+        const repositories = createDocumentRepositories(database);
+        for (const document of [
+          {
+            id: IDS.document,
+            kind: "resume" as const,
+            title: "Reusable resume base",
+            source: "user",
+          },
+          {
+            id: IDS.templateDocument,
+            kind: "resume" as const,
+            title: "Resume template",
+            source: "document_template",
+          },
+          {
+            id: IDS.derivativeDocument,
+            kind: "resume" as const,
+            title: "Role-specific resume",
+            source: "job_derivative",
+          },
+          {
+            id: IDS.answerDocument,
+            kind: "application_answer" as const,
+            title: "Submitted application answer",
+            source: "user",
+          },
+        ]) {
+          await repositories.documents.create({
+            ...document,
+            archivedAt: null,
+            createdAt: CREATED_AT,
+            updatedAt: CREATED_AT,
+          });
+        }
+        await repositories.lineages.create({
+          documentId: IDS.document,
+          role: "base",
+          baseDocumentId: null,
+          templateDocumentId: null,
+          jobId: null,
+          createdAt: CREATED_AT,
+        });
+        await repositories.lineages.create({
+          documentId: IDS.templateDocument,
+          role: "template",
+          baseDocumentId: null,
+          templateDocumentId: null,
+          jobId: null,
+          createdAt: CREATED_AT,
+        });
+        await repositories.lineages.create({
+          documentId: IDS.derivativeDocument,
+          role: "job_derivative",
+          baseDocumentId: IDS.document,
+          templateDocumentId: IDS.templateDocument,
+          jobId: IDS.job,
+          createdAt: UPDATED_AT,
+        });
+
+        for (const version of [
+          { id: IDS.versionOne, documentId: IDS.document, createdBy: "user" },
+          {
+            id: IDS.templateVersion,
+            documentId: IDS.templateDocument,
+            createdBy: "document_template",
+          },
+          {
+            id: IDS.derivativeVersion,
+            documentId: IDS.derivativeDocument,
+            createdBy: "user",
+          },
+          { id: IDS.answerVersion, documentId: IDS.answerDocument, createdBy: "user" },
+        ]) {
+          await repositories.versions.create({
+            ...version,
+            versionNumber: 1,
+            contentIrVersion: 1,
+            contentIr: FIRST_IR,
+            contentPlain: "Exact submitted content",
+            templateId: null,
+            createdAt: CREATED_AT,
+            parentVersionId: null,
+            contentHash: FIRST_HASH,
+            label: null,
+          });
+        }
+        await repositories.attachments.register({
+          contentId: ATTACHMENT_HASH,
+          sha256: ATTACHMENT_HASH,
+          mediaType: "application/pdf",
+          byteLength: 2048,
+          createdAt: CREATED_AT,
+        });
+        await repositories.attachments.linkToVersion({
+          documentVersionId: IDS.derivativeVersion,
+          contentId: ATTACHMENT_HASH,
+          purpose: "export.pdf",
+          logicalName: "role-specific-resume.pdf",
+          sortOrder: 0,
+          linkedAt: UPDATED_AT,
+        });
+
+        const pipeline = createPipelineRepositories(database);
+        await pipeline.statusDefinitions.create({
+          id: IDS.appliedStatus,
+          name: "Submitted",
+          category: "applied",
+          color: "blue",
+          isSystem: false,
+          sortOrder: 10,
+          terminal: false,
+          archivedAt: null,
+          createdAt: CREATED_AT,
+          updatedAt: CREATED_AT,
+        });
+        await pipeline.applications.create({
+          id: IDS.application,
+          jobId: IDS.job,
+          appliedAt: UPDATED_AT,
+          channel: "company_portal",
+          currentStatusId: IDS.appliedStatus,
+          selectedResumeVersionId: IDS.derivativeVersion,
+          selectedCoverLetterVersionId: null,
+          notes: "",
+          archivedAt: null,
+          createdAt: CREATED_AT,
+          updatedAt: UPDATED_AT,
+        });
+
+        await expectFailure(
+          () =>
+            createSubmittedSnapshotRepository(database).create({
+              id: IDS.invalidSubmittedSnapshot,
+              applicationId: IDS.application,
+              submittedAt: UPDATED_AT,
+              channel: "company_portal",
+              createdAt: UPDATED_AT,
+              items: [
+                {
+                  id: IDS.invalidSubmittedItem,
+                  role: "resume",
+                  documentVersionId: IDS.versionOne,
+                  submissionFormat: "plain_text",
+                  contentId: null,
+                  attachmentPurpose: null,
+                  sortOrder: 0,
+                  createdAt: UPDATED_AT,
+                },
+              ],
+            }),
+          () => true,
+          "A submitted snapshot accepted a resume other than the selected exact version.",
+        );
+        const rolledBackSnapshots = await database.query<{ readonly total: number } & QueryRow>(
+          sqlStatement("SELECT count(*) AS total FROM submitted_snapshot"),
+        );
+        assertContract(
+          rolledBackSnapshots[0]?.total === 0,
+          "A rejected submitted snapshot left a partial header behind.",
+        );
+
+        const submitted = await createSubmittedSnapshotRepository(database).create({
+          id: IDS.submittedSnapshot,
+          applicationId: IDS.application,
+          submittedAt: UPDATED_AT,
+          channel: "company_portal",
+          createdAt: UPDATED_AT,
+          items: [
+            {
+              id: IDS.submittedResume,
+              role: "resume",
+              documentVersionId: IDS.derivativeVersion,
+              submissionFormat: "file",
+              contentId: ATTACHMENT_HASH,
+              attachmentPurpose: "export.pdf",
+              sortOrder: 0,
+              createdAt: UPDATED_AT,
+            },
+            {
+              id: IDS.submittedAnswer,
+              role: "answer",
+              documentVersionId: IDS.answerVersion,
+              submissionFormat: "plain_text",
+              contentId: null,
+              attachmentPurpose: null,
+              sortOrder: 1,
+              createdAt: UPDATED_AT,
+            },
+          ],
+        });
+        const derivative = await repositories.lineages.findForDocument(IDS.derivativeDocument);
+        assertContract(
+          derivative?.role === "job_derivative" &&
+            derivative.baseDocumentId === IDS.document &&
+            derivative.templateDocumentId === IDS.templateDocument &&
+            derivative.jobId === IDS.job,
+          "Typed base, template, and job-derivative lineage did not round-trip.",
+        );
+        assertContract(
+          submitted.items.length === 2 &&
+            submitted.items[0]?.contentId === ATTACHMENT_HASH &&
+            submitted.items[1]?.documentVersionId === IDS.answerVersion,
+          "Exact submitted file and answer identities did not round-trip.",
+        );
+
+        await expectFailure(
+          () =>
+            database.execute(
+              sqlStatement("UPDATE document_lineage SET role = 'template' WHERE document_id = ?", [
+                IDS.derivativeDocument,
+              ]),
+            ),
+          () => true,
+          "Immutable document lineage accepted an update.",
+        );
+        await expectFailure(
+          () =>
+            database.execute(
+              sqlStatement(
+                "UPDATE application SET selected_resume_version_id = NULL WHERE id = ?",
+                [IDS.application],
+              ),
+            ),
+          () => true,
+          "A submitted application silently changed its selected resume.",
+        );
+        await expectFailure(
+          () =>
+            database.execute(
+              sqlStatement(
+                `DELETE FROM document_version_attachment
+                 WHERE document_version_id = ? AND content_id = ? AND purpose = ?`,
+                [IDS.derivativeVersion, ATTACHMENT_HASH, "export.pdf"],
+              ),
+            ),
+          () => true,
+          "An exact submitted file identity was deleted from its version.",
         );
       },
     },

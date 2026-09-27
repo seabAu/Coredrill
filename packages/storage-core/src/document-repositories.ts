@@ -2,18 +2,35 @@ import type { JsonValue } from "@coredrill/contracts";
 import { entityId, instant, type EntityId, type Instant } from "@coredrill/domain";
 
 import { auditTimestamps } from "./audit-integrity.js";
-import { sqlStatement, type DatabaseSession, type QueryRow } from "./database-port.js";
+import {
+  sqlStatement,
+  type DatabasePort,
+  type DatabaseSession,
+  type QueryRow,
+} from "./database-port.js";
 import type {
   AttachmentManifestRecord,
   DocumentKind,
+  DocumentLineageRecord,
+  DocumentLineageRole,
   DocumentRecord,
   DocumentVersionAttachmentRecord,
   DocumentVersionRecord,
+  SubmittedSnapshotFormat,
+  SubmittedSnapshotItemRecord,
+  SubmittedSnapshotItemRole,
+  SubmittedSnapshotRecord,
 } from "./document-records.js";
 
 export type NewDocument = Omit<DocumentRecord, "rowVersion">;
 export type NewDocumentVersion = Omit<DocumentVersionRecord, "styleExample">;
 export type NewAttachmentManifest = AttachmentManifestRecord;
+export type NewDocumentLineage = DocumentLineageRecord;
+
+export type NewSubmittedSnapshotItem = Omit<SubmittedSnapshotItemRecord, "submittedSnapshotId">;
+export type NewSubmittedSnapshot = Omit<SubmittedSnapshotRecord, "items"> & {
+  readonly items: readonly NewSubmittedSnapshotItem[];
+};
 
 export interface NewDocumentVersionAttachment {
   readonly documentVersionId: EntityId<"document-version">;
@@ -26,16 +43,22 @@ export interface NewDocumentVersionAttachment {
 
 export type DocumentRepositoryConflictCode =
   | "attachment_manifest_conflict"
+  | "document_classification_conflict"
   | "document_lineage_conflict"
   | "record_not_found"
-  | "relationship_conflict";
+  | "relationship_conflict"
+  | "submitted_snapshot_conflict";
 
 const CONFLICT_MESSAGES: Readonly<Record<DocumentRepositoryConflictCode, string>> = Object.freeze({
   attachment_manifest_conflict:
     "The content-addressed attachment already has different immutable metadata.",
+  document_classification_conflict:
+    "The document does not have a valid immutable base, template, or job-derivative lineage.",
   document_lineage_conflict: "The document version does not extend valid immutable history.",
   record_not_found: "A required document record does not exist.",
   relationship_conflict: "The requested document relationship conflicts with stored metadata.",
+  submitted_snapshot_conflict:
+    "The submitted snapshot does not match the immutable applied application state.",
 });
 
 export class DocumentRepositoryConflictError extends Error {
@@ -88,6 +111,35 @@ interface DocumentVersionAttachmentRow extends AttachmentManifestRow {
   readonly linked_at: string;
 }
 
+interface DocumentLineageRow extends QueryRow {
+  readonly document_id: string;
+  readonly role: string;
+  readonly base_document_id: string | null;
+  readonly template_document_id: string | null;
+  readonly job_id: string | null;
+  readonly created_at: string;
+}
+
+interface SubmittedSnapshotRow extends QueryRow {
+  readonly id: string;
+  readonly application_id: string;
+  readonly submitted_at: string;
+  readonly channel: string | null;
+  readonly created_at: string;
+}
+
+interface SubmittedSnapshotItemRow extends QueryRow {
+  readonly id: string;
+  readonly submitted_snapshot_id: string;
+  readonly role: string;
+  readonly document_version_id: string;
+  readonly submission_format: string;
+  readonly content_id: string | null;
+  readonly attachment_purpose: string | null;
+  readonly sort_order: number;
+  readonly created_at: string;
+}
+
 interface LatestVersionRow extends QueryRow {
   readonly latest_version: number;
 }
@@ -103,6 +155,14 @@ const DOCUMENT_KINDS = new Set<DocumentKind>([
   "other",
   "resume",
 ]);
+const DOCUMENT_LINEAGE_ROLES = new Set<DocumentLineageRole>(["base", "job_derivative", "template"]);
+const SUBMITTED_SNAPSHOT_ITEM_ROLES = new Set<SubmittedSnapshotItemRole>([
+  "answer",
+  "cover_letter",
+  "other",
+  "resume",
+]);
+const SUBMITTED_SNAPSHOT_FORMATS = new Set<SubmittedSnapshotFormat>(["file", "plain_text"]);
 const IDENTIFIER_PATTERN = /^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$/u;
 const SHA256_PATTERN = /^[a-f0-9]{64}$/u;
 const MEDIA_TYPE_PATTERN = /^[a-z0-9][a-z0-9!#$&^_.+-]{0,126}\/[a-z0-9][a-z0-9!#$&^_.+-]{0,126}$/u;
@@ -156,6 +216,28 @@ const documentKind = (value: string): DocumentKind => {
   const kind = value as DocumentKind;
   if (!DOCUMENT_KINDS.has(kind)) throw new Error("Stored document kind is unsupported.");
   return kind;
+};
+
+const documentLineageRole = (value: string): DocumentLineageRole => {
+  const role = value as DocumentLineageRole;
+  if (!DOCUMENT_LINEAGE_ROLES.has(role)) throw new TypeError("Document lineage role is invalid.");
+  return role;
+};
+
+const submittedSnapshotItemRole = (value: string): SubmittedSnapshotItemRole => {
+  const role = value as SubmittedSnapshotItemRole;
+  if (!SUBMITTED_SNAPSHOT_ITEM_ROLES.has(role)) {
+    throw new TypeError("Submitted snapshot item role is invalid.");
+  }
+  return role;
+};
+
+const submittedSnapshotFormat = (value: string): SubmittedSnapshotFormat => {
+  const format = value as SubmittedSnapshotFormat;
+  if (!SUBMITTED_SNAPSHOT_FORMATS.has(format)) {
+    throw new TypeError("Submitted snapshot format is invalid.");
+  }
+  return format;
 };
 
 const sha256 = (value: string, label: string): string => {
@@ -271,6 +353,34 @@ const mapDocumentVersionAttachment = (
     logicalName: logicalName(row.logical_name),
     sortOrder: nonnegativeInteger(row.sort_order, "Stored attachment sort order"),
     linkedAt: instant(row.linked_at),
+  });
+
+const mapDocumentLineage = (row: DocumentLineageRow): DocumentLineageRecord =>
+  Object.freeze({
+    documentId: entityId("document", row.document_id),
+    role: documentLineageRole(row.role),
+    baseDocumentId:
+      row.base_document_id === null ? null : entityId("document", row.base_document_id),
+    templateDocumentId:
+      row.template_document_id === null ? null : entityId("document", row.template_document_id),
+    jobId: row.job_id === null ? null : entityId("job", row.job_id),
+    createdAt: instant(row.created_at),
+  });
+
+const mapSubmittedSnapshotItem = (row: SubmittedSnapshotItemRow): SubmittedSnapshotItemRecord =>
+  Object.freeze({
+    id: entityId("submitted-snapshot-item", row.id),
+    submittedSnapshotId: entityId("submitted-snapshot", row.submitted_snapshot_id),
+    role: submittedSnapshotItemRole(row.role),
+    documentVersionId: entityId("document-version", row.document_version_id),
+    submissionFormat: submittedSnapshotFormat(row.submission_format),
+    contentId: row.content_id === null ? null : sha256(row.content_id, "Stored content ID"),
+    attachmentPurpose:
+      row.attachment_purpose === null
+        ? null
+        : safeIdentifier(row.attachment_purpose, "Stored attachment purpose"),
+    sortOrder: nonnegativeInteger(row.sort_order, "Stored snapshot item sort order"),
+    createdAt: instant(row.created_at),
   });
 
 export class DocumentRepository {
@@ -574,9 +684,153 @@ export class AttachmentManifestRepository {
   }
 }
 
+export class DocumentLineageRepository {
+  public constructor(private readonly session: DatabaseSession) {}
+
+  public async create(record: NewDocumentLineage): Promise<void> {
+    const role = documentLineageRole(record.role);
+    const documentId = entityId("document", record.documentId);
+    const baseDocumentId =
+      record.baseDocumentId === null ? null : entityId("document", record.baseDocumentId);
+    const templateDocumentId =
+      record.templateDocumentId === null ? null : entityId("document", record.templateDocumentId);
+    const jobId = record.jobId === null ? null : entityId("job", record.jobId);
+    const isReusable = role === "base" || role === "template";
+    if (
+      (isReusable && (baseDocumentId !== null || templateDocumentId !== null || jobId !== null)) ||
+      (role === "job_derivative" && (baseDocumentId === null || jobId === null)) ||
+      documentId === baseDocumentId ||
+      documentId === templateDocumentId
+    ) {
+      throw new DocumentRepositoryConflictError("document_classification_conflict");
+    }
+    const result = await this.session.execute(
+      sqlStatement(
+        `INSERT INTO document_lineage(
+           document_id, role, base_document_id, template_document_id, job_id, created_at
+         ) VALUES (?, ?, ?, ?, ?, ?)`,
+        [documentId, role, baseDocumentId, templateDocumentId, jobId, instant(record.createdAt)],
+      ),
+    );
+    if (result.rowsAffected !== 1) {
+      throw new DocumentRepositoryConflictError("document_classification_conflict");
+    }
+  }
+
+  public async findForDocument(
+    documentId: EntityId<"document">,
+  ): Promise<DocumentLineageRecord | undefined> {
+    const rows = await this.session.query<DocumentLineageRow>(
+      sqlStatement(
+        `SELECT document_id, role, base_document_id, template_document_id, job_id, created_at
+         FROM document_lineage WHERE document_id = ?`,
+        [entityId("document", documentId)],
+      ),
+    );
+    return rows[0] === undefined ? undefined : mapDocumentLineage(rows[0]);
+  }
+}
+
+export class SubmittedSnapshotRepository {
+  public constructor(private readonly database: DatabasePort) {}
+
+  public async create(record: NewSubmittedSnapshot): Promise<SubmittedSnapshotRecord> {
+    const snapshotId = entityId("submitted-snapshot", record.id);
+    const applicationId = entityId("application", record.applicationId);
+    const submittedAt = instant(record.submittedAt);
+    const channel = optionalText(record.channel, "Submission channel", 128);
+    const createdAt = instant(record.createdAt);
+    await this.database.transaction(async (transaction) => {
+      const snapshot = await transaction.execute(
+        sqlStatement(
+          `INSERT INTO submitted_snapshot(id, application_id, submitted_at, channel, created_at)
+           VALUES (?, ?, ?, ?, ?)`,
+          [snapshotId, applicationId, submittedAt, channel, createdAt],
+        ),
+      );
+      if (snapshot.rowsAffected !== 1) {
+        throw new DocumentRepositoryConflictError("submitted_snapshot_conflict");
+      }
+      for (const item of record.items) {
+        const role = submittedSnapshotItemRole(item.role);
+        const format = submittedSnapshotFormat(item.submissionFormat);
+        const contentId =
+          item.contentId === null ? null : sha256(item.contentId, "Submitted content ID");
+        const attachmentPurpose =
+          item.attachmentPurpose === null
+            ? null
+            : safeIdentifier(item.attachmentPurpose, "Submitted attachment purpose");
+        if (
+          (format === "plain_text" && (contentId !== null || attachmentPurpose !== null)) ||
+          (format === "file" && (contentId === null || attachmentPurpose === null))
+        ) {
+          throw new DocumentRepositoryConflictError("submitted_snapshot_conflict");
+        }
+        const inserted = await transaction.execute(
+          sqlStatement(
+            `INSERT INTO submitted_snapshot_item(
+               id, submitted_snapshot_id, role, document_version_id, submission_format,
+               content_id, attachment_purpose, sort_order, created_at
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              entityId("submitted-snapshot-item", item.id),
+              snapshotId,
+              role,
+              entityId("document-version", item.documentVersionId),
+              format,
+              contentId,
+              attachmentPurpose,
+              nonnegativeInteger(item.sortOrder, "Submitted snapshot item sort order"),
+              instant(item.createdAt),
+            ],
+          ),
+        );
+        if (inserted.rowsAffected !== 1) {
+          throw new DocumentRepositoryConflictError("submitted_snapshot_conflict");
+        }
+      }
+    });
+    const stored = await this.findByApplication(applicationId);
+    if (stored === undefined) throw new DocumentRepositoryConflictError("record_not_found");
+    return stored;
+  }
+
+  public async findByApplication(
+    applicationId: EntityId<"application">,
+  ): Promise<SubmittedSnapshotRecord | undefined> {
+    const snapshots = await this.database.query<SubmittedSnapshotRow>(
+      sqlStatement(
+        `SELECT id, application_id, submitted_at, channel, created_at
+         FROM submitted_snapshot WHERE application_id = ?`,
+        [entityId("application", applicationId)],
+      ),
+    );
+    const snapshot = snapshots[0];
+    if (snapshot === undefined) return undefined;
+    const items = await this.database.query<SubmittedSnapshotItemRow>(
+      sqlStatement(
+        `SELECT id, submitted_snapshot_id, role, document_version_id, submission_format,
+                content_id, attachment_purpose, sort_order, created_at
+         FROM submitted_snapshot_item WHERE submitted_snapshot_id = ?
+         ORDER BY sort_order, role, id`,
+        [snapshot.id],
+      ),
+    );
+    return Object.freeze({
+      id: entityId("submitted-snapshot", snapshot.id),
+      applicationId: entityId("application", snapshot.application_id),
+      submittedAt: instant(snapshot.submitted_at),
+      channel: optionalText(snapshot.channel, "Stored submission channel", 128),
+      createdAt: instant(snapshot.created_at),
+      items: Object.freeze(items.map(mapSubmittedSnapshotItem)),
+    });
+  }
+}
+
 export interface DocumentRepositories {
   readonly attachments: AttachmentManifestRepository;
   readonly documents: DocumentRepository;
+  readonly lineages: DocumentLineageRepository;
   readonly versions: DocumentVersionRepository;
 }
 
@@ -584,5 +838,10 @@ export const createDocumentRepositories = (session: DatabaseSession): DocumentRe
   Object.freeze({
     attachments: new AttachmentManifestRepository(session),
     documents: new DocumentRepository(session),
+    lineages: new DocumentLineageRepository(session),
     versions: new DocumentVersionRepository(session),
   });
+
+export const createSubmittedSnapshotRepository = (
+  database: DatabasePort,
+): SubmittedSnapshotRepository => new SubmittedSnapshotRepository(database);

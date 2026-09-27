@@ -78,7 +78,7 @@ class NodeAnswerDatabase implements DatabasePort {
       health: "ready",
       persistence: "memory",
       readOnly: false,
-      schemaVersion: 133,
+      schemaVersion: 145,
     });
   }
 
