@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-09-27
 Current milestone: Phase 3 — career evidence and versioned documents (`GATE-0`, `GATE-1`, and `GATE-2` external-evidence blockers remain open)
-Current work item: `EVD-006` — implement Situation/Action/Result stories and evidence linking
-Next recommended slice: `EVD-007` after `EVD-006`; retain `Q2-001`, `Q2-003`, `PEX-005`, `PEX-006`, and `GATE-2` as explicit external-evidence/manual-review/permission/deployment blockers
+Current work item: `EVD-007` — implement the reusable Answer Library with sensitivity, provenance, last-used, and version history
+Next recommended slice: `EVD-008` after `EVD-007`; retain `Q2-001`, `Q2-003`, `PEX-005`, `PEX-006`, and `GATE-2` as explicit external-evidence/manual-review/permission/deployment blockers
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `EVD-007` after `EVD-006`; retain `Q2-001`, `Q2-003`, `P
 | Field | Value |
 |---|---|
 | Milestone | Phase 3, with the independent Phase 0, Phase 1, and Phase 2 evidence gates retained below |
-| Item range | `EVD-006` |
+| Item range | `EVD-007` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-09-27 |
-| Expected proof | Use-case, repository, and UI tests create and edit Situation/Action/Result stories, link them to durable Career Profile evidence without duplicating canonical records, preserve source/verification/privacy state, and remain local/accountless/offline-capable. |
-| Blocker | None for `EVD-006`. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-2`, `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
-| Next handoff | Implement Situation/Action/Result story authoring and evidence linking for `EVD-006`, retaining evidence source, verification, and privacy semantics; leave the reusable Answer Library to `EVD-007` and AI work to its later checklist slices. |
+| Expected proof | Use-case, repository, migration, and UI tests create and edit reusable Answer Library entries with explicit sensitivity classification, source/provenance, last-used state, and immutable version history while remaining local/accountless/offline-capable. |
+| Blocker | None for `EVD-007`. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-2`, `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
+| Next handoff | Implement the local reusable Answer Library for `EVD-007` with explicit sensitivity, provenance, last-used state, and append-only version history; keep deletion/export relationship coverage in `EVD-008` and AI work in its later checklist slices. |
 
 ## Milestone status
 
@@ -269,7 +269,7 @@ Next recommended slice: `EVD-007` after `EVD-006`; retain `Q2-001`, `Q2-003`, `P
 - [x] **EVD-003** Implement manual Career Profile editors and safe date/range validation. — Proof: [Manual Career Profile editor verification](../../proof/phase-3-career-profile-editors-verification.md)
 - [x] **EVD-004** Import PDF/DOCX/text resume into a proposal queue without auto-verification. — Proof: [Resume import proposal verification](../../proof/phase-3-resume-import-proposals-verification.md)
 - [x] **EVD-005** Implement duplicate role/date/skill conflict resolution and source excerpts. — Proof: [Resume import conflict-resolution verification](../../proof/phase-3-resume-import-conflict-resolution-verification.md)
-- [ ] **EVD-006** Implement Situation/Action/Result stories and evidence linking. — Proof: _use-case/UI tests_
+- [x] **EVD-006** Implement Situation/Action/Result stories and evidence linking. — Proof: [Career story and evidence-linking verification](../../proof/phase-3-career-story-evidence-linking-verification.md)
 - [ ] **EVD-007** Implement reusable Answer Library with sensitivity classification, source, last-used, and version history. — Proof: _tests_
 - [ ] **EVD-008** Ensure deletion/exports include all evidence relationships and attachments. — Proof: _recovery tests_
 
