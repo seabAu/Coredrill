@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-09-27
 Current milestone: Phase 3 — career evidence and versioned documents (`GATE-0`, `GATE-1`, and `GATE-2` external-evidence blockers remain open)
-Current work item: `MAT-002` — implement deterministic requirement parsing baseline and proposal review
-Next recommended slice: `MAT-003` after `MAT-002`; retain `Q2-001`, `Q2-003`, `PEX-005`, `PEX-006`, and `GATE-2` as explicit external-evidence/manual-review/permission/deployment blockers
+Current work item: `MAT-003` — implement evidence candidate retrieval using relations, FTS, and user selection
+Next recommended slice: `MAT-004` after `MAT-003`; retain `Q2-001`, `Q2-003`, `PEX-005`, `PEX-006`, and `GATE-2` as explicit external-evidence/manual-review/permission/deployment blockers
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `MAT-003` after `MAT-002`; retain `Q2-001`, `Q2-003`, `P
 | Field | Value |
 |---|---|
 | Milestone | Phase 3, with the independent Phase 0, Phase 1, and Phase 2 evidence gates retained below |
-| Item range | `MAT-002` |
+| Item range | `MAT-003` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-09-27 |
-| Expected proof | Golden fixtures, application/storage tests, and browser review journeys prove deterministic requirement parsing produces reproducible proposals with exact source excerpts, explicit categories and confidence, and requires user review before durable requirement creation. |
-| Blocker | None for `MAT-002`. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-2`, `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
-| Next handoff | Inspect the existing deterministic extractor, source text, proposal-review, provenance, and `MAT-001` persistence seams; define golden requirement fixtures and implement the smallest review-before-write baseline, then advance to `MAT-003`. |
+| Expected proof | A retrieval evaluation, application/storage tests, and browser selection journey prove structured relations and FTS produce bounded, explainable career-evidence candidates while only deliberate user selection changes the requirement evidence set. |
+| Blocker | None for `MAT-003`. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-2`, `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
+| Next handoff | Inspect the existing Career Profile relations, FTS/search boundary, requirement repository, and user-selection patterns; define a small synthetic retrieval evaluation and the narrowest explicit evidence-selection seam before implementing `MAT-003`. |
 
 ## Milestone status
 
@@ -276,7 +276,7 @@ Next recommended slice: `MAT-003` after `MAT-002`; retain `Q2-001`, `Q2-003`, `P
 ## Requirements and evidence coverage
 
 - [x] **MAT-001** Implement requirement categories, confidence, source excerpt, and manual correction. — Proof: [Job-requirements verification](../../proof/phase-3-job-requirements-verification.md)
-- [ ] **MAT-002** Implement deterministic requirement parsing baseline and proposal review. — Proof: _golden fixtures_
+- [x] **MAT-002** Implement deterministic requirement parsing baseline and proposal review. — Proof: [Requirement parsing and review verification](../../proof/phase-3-requirement-parsing-review-verification.md)
 - [ ] **MAT-003** Implement evidence candidate retrieval using relations, FTS, and user selection. — Proof: _retrieval eval_
 - [ ] **MAT-004** Implement Strength/Partial/Gap/Unknown/Not Applicable decisions with explanation. — Proof: _rule tests_
 - [ ] **MAT-005** Implement separate parseability, literal-term, and qualification-evidence panels. — Proof: _UI comprehension test_

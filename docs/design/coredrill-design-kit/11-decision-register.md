@@ -205,6 +205,7 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
 - **Status:** Accepted
 - **Decision:** Structured data/API → source-specific deterministic adapter → generic DOM/readability → heuristic/LLM proposal → manual review.
 - **Why:** Accuracy, reproducibility, policy control, and testability.
+- **Phase 3 evidence (2026-09-27):** `MAT-002` adds a versioned, bounded deterministic requirement parser whose immutable pending proposals retain exact excerpts, provenance, parser category, and confidence. Parsing cannot write; only explicit acceptance creates a user-confirmed requirement while preserving the parser category separately from the reviewed current category, and rejection leaves source evidence unchanged. Golden, application, repository, UI, accessibility, exact-browser, and native lanes passed in [Foundation CI run 36330863484](https://github.com/seabAu/Coredrill/actions/runs/36330863484); see [requirement parsing and review verification](../../proof/phase-3-requirement-parsing-review-verification.md).
 - **Revisit when:** Ordering may vary for a reviewed connector based on measured accuracy.
 
 ### D-032 — User-invoked extension and bounded outbox
