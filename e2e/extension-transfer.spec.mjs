@@ -112,6 +112,63 @@ test("durably stores before acknowledgement and safely retries the exact Chromiu
       diagnostics: { schemaVersion: 101 },
     });
 
+    const compatibilityRequest = {
+      specVersion: 1,
+      type: "capture.compatibility.handshake.v1",
+      requestId: "compatibility_request_abc",
+      appOrigin,
+      expectedExtensionId: extensionId,
+      supportedTransferVersions: [1],
+      supportedCaptureVersions: [1],
+      requiredCapabilities: ["capture.transfer.pull.v1", "capture.transfer.ack.v1"],
+    };
+    const compatible = await sendExternal(app, extensionId, compatibilityRequest);
+    expect(compatible).toEqual({
+      specVersion: 1,
+      type: "capture.compatibility.accepted.v1",
+      requestId: compatibilityRequest.requestId,
+      appOrigin,
+      extensionId,
+      selectedTransferVersion: 1,
+      selectedCaptureVersion: 1,
+      capabilities: ["capture.transfer.pull.v1", "capture.transfer.ack.v1"],
+    });
+    await expect(
+      sendExternal(app, extensionId, {
+        ...compatibilityRequest,
+        requestId: "wrong_origin_request_abcde",
+        appOrigin: "https://different.coredrill.test",
+      }),
+    ).resolves.toMatchObject({ code: "app_origin_mismatch" });
+    await expect(
+      sendExternal(app, extensionId, {
+        ...compatibilityRequest,
+        requestId: "wrong_extension_request_ab",
+        expectedExtensionId: "ponmlkjihgfedcbaponmlkjihgfedcba",
+      }),
+    ).resolves.toMatchObject({ code: "extension_id_mismatch" });
+    await expect(
+      sendExternal(app, extensionId, {
+        ...compatibilityRequest,
+        requestId: "wrong_version_request_abcd",
+        supportedTransferVersions: [2],
+      }),
+    ).resolves.toMatchObject({ code: "transfer_version_mismatch" });
+    await expect(
+      sendExternal(app, extensionId, {
+        ...compatibilityRequest,
+        requestId: "wrong_capability_request_ab",
+        requiredCapabilities: ["capture.transfer.delete.v1"],
+      }),
+    ).resolves.toMatchObject({ code: "capability_mismatch" });
+    await expect(
+      sendExternal(app, extensionId, {
+        ...compatibilityRequest,
+        requestId: "extra_field_request_abcdef",
+        unexpected: true,
+      }),
+    ).resolves.toMatchObject({ code: "message_invalid" });
+
     const first = await callInbox(app, "pullAndStore", extensionId, { acknowledge: false });
     expect(first).toMatchObject({
       status: "stored",
@@ -290,6 +347,11 @@ test("durably stores before acknowledgement and safely retries the exact Chromiu
         browser: context.browser()?.version(),
         extensionId,
         appOrigin,
+        compatibilityHandshake: true,
+        exactIdentityAgreement: true,
+        incompatibleVersionRejected: true,
+        capabilityMismatchRejected: true,
+        extraFieldRejected: true,
         durableBeforeAck: true,
         immediateRetryDeferred: true,
         browserRestartRecovered: true,

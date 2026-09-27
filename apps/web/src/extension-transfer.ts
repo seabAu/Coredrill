@@ -15,9 +15,11 @@ import {
 import { entityId, generateEntityId } from "@coredrill/domain";
 import {
   createEmptyOutboxState,
+  createCompatibilityHandshakeRequest,
   createTransferAcknowledgement,
   parseOutboxExportJson,
   queueCaptureEnvelope,
+  safeParseCompatibilityHandshakeResponse,
   safeParseTransferResponse,
   type OutboxItemV1,
   type TransferOfferV1,
@@ -498,10 +500,41 @@ export function createExtensionInbox(
 
     pullAndStore: async (
       extensionId: string,
-      options: { readonly acknowledge?: boolean; readonly now?: Date } = {},
+      options: {
+        readonly acknowledge?: boolean;
+        readonly now?: Date;
+      } = {},
     ): Promise<PullAndStoreResult> => {
       assertExtensionId(extensionId);
       const now = options.now ?? new Date();
+      const appOrigin = globalThis.location.origin;
+      let compatibilityRequest;
+      try {
+        compatibilityRequest = createCompatibilityHandshakeRequest({
+          requestId: requestId(),
+          appOrigin,
+          expectedExtensionId: extensionId,
+        });
+      } catch {
+        throw new ExtensionTransferError(
+          "app_origin_invalid",
+          "The app must use an exact HTTPS origin for extension transfer.",
+        );
+      }
+      const compatibilityInput = await transport.send(extensionId, compatibilityRequest);
+      const compatibilityResponse = safeParseCompatibilityHandshakeResponse(
+        compatibilityInput,
+        compatibilityRequest,
+      );
+      if (compatibilityResponse === undefined) {
+        throw new ExtensionTransferError(
+          "compatibility_response_invalid",
+          "The extension returned an invalid compatibility response.",
+        );
+      }
+      if (compatibilityResponse.type === "capture.transfer.error.v1") {
+        throw new ExtensionTransferError(compatibilityResponse.code, compatibilityResponse.message);
+      }
       const pullRequest: TransferPullRequestV1 = {
         specVersion: 1,
         type: "capture.transfer.pull.v1",

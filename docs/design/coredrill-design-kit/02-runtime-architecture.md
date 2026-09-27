@@ -261,8 +261,18 @@ attempt and schedule before returning an offer, removes outbox and retry facts
 only after an exact acknowledgement, and preserves the prior durable value if
 browser storage rejects a write. Full persistent-profile restart and quota
 fault tests exercise those boundaries. The version-1 Firefox export remains
-compatible; origin/extension-ID handshake and hosted-app compatibility remain
-owned by `PEX-004` and `PEX-005`.
+compatible. `PEX-004` adds a separate strict version-1 compatibility preflight
+before every Chromium pull. The web app sends its exact HTTPS origin, intended
+extension ID, accepted transfer and capture versions, and bounded required
+capabilities. The extension compares the declared origin with the
+authenticated external-message sender, compares the intended ID with its own
+runtime ID, selects only transfer version 1 and capture-envelope version 1,
+and returns the exact reviewed pull/ack capability set. The web receiver
+revalidates every echoed identity and negotiated fact before it can request
+outbox data. Unknown fields, unsupported versions/capabilities, and identity
+mismatches fail closed. The reserved `.test` origin remains evidence-only;
+public hosted-app selection and end-to-end deployment compatibility remain
+owned by `PEX-005`.
 
 `CAP-001` centralizes capture-version dispatch at those outbox and receiver boundaries. V1 is currently both the current and only accepted version; adding V2 must retain a V1 reader so the accepted set becomes current plus previous. The envelope UUID is the pre-ingestion source-snapshot identity used by every candidate provenance reference, expiry must follow capture time, and the semantic content checksum is independently reproducible. This semantic checksum intentionally excludes envelope/replay identity, while the existing transport checksum authenticates the complete canonical envelope.
 

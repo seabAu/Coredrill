@@ -10,6 +10,8 @@ import {
   createOutboxRetryState,
   createOutboxExport,
   describeOutboxLifecycle,
+  negotiateCompatibilityHandshake,
+  parseCompatibilityHandshakeRequest,
   parseExternalTransferRequest,
   prepareNextScheduledOutboxTransfer,
   pruneExpiredOutboxLifecycle,
@@ -19,6 +21,7 @@ import {
   synchronizeOutboxRetryState,
   transferErrorResponse,
   type ExternalTransferResponseV1,
+  type CompatibilityHandshakeResponseV1,
   type OutboxRetryStateV1,
   type OutboxStateV1,
 } from "@coredrill/extension-bridge";
@@ -378,12 +381,19 @@ async function exportOutbox(): Promise<ExtensionResponse> {
 async function handleExternalMessage(
   input: unknown,
   sender: Browser.runtime.MessageSender,
-): Promise<ExternalTransferResponseV1> {
+): Promise<ExternalTransferResponseV1 | CompatibilityHandshakeResponseV1> {
   if (!isTrustedHostedAppSender(sender)) {
     return transferErrorResponse(
       "untrusted_sender",
       "Only the exact Coredrill app origin may use this boundary.",
     );
+  }
+  const compatibilityRequest = parseCompatibilityHandshakeRequest(input);
+  if (compatibilityRequest !== undefined) {
+    return negotiateCompatibilityHandshake(compatibilityRequest, {
+      appOrigin: sender.origin ?? "",
+      extensionId: browser.runtime.id,
+    });
   }
   const request = parseExternalTransferRequest(input);
   if (request === undefined) {

@@ -54,6 +54,18 @@ Persistent-browser-profile restart and real extension-storage quota pressure
 prove recovery without adding permissions, content scripts, remote code,
 secrets, navigation observation, or a full vault.
 
+`PEX-004` makes compatibility an explicit fail-closed precondition for
+Chromium transfer. The extension first authenticates the exact sender origin,
+URL origin, frame, tab, and incognito state, then compares the request's app
+origin and expected extension ID with that authenticated origin and its own
+runtime ID. Version arrays and capability lists are small, unique, and
+strictly parsed; the current negotiation accepts only transfer version 1,
+capture-envelope version 1, and the reviewed pull/ack capabilities. The app
+validates the exact correlated response and all echoed facts before sending a
+pull. Wrong origin, wrong ID, unsupported version, capability mismatch,
+unknown fields, and altered responses all fail without outbox or SQLite
+mutation. No manifest permission or Firefox fallback behavior changes.
+
 ### Local fetch/SSRF
 
 Any URL fetcher enforces scheme/port, DNS and redirect revalidation, private/link-local/metadata IP blocks, size/time/type limits, and approved connector domains. Browser extension does not expose a general fetch oracle to pages.

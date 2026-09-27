@@ -2,7 +2,7 @@
 
 This file is the single progress ledger. `GOAL.md` defines the outcome; numbered design documents define behavior; `11-decision-register.md` defines accepted choices. This checklist records what is actually proven.
 
-Last design update: 2026-09-26
+Last design update: 2026-09-27
 Current milestone: Phase 2 — capture and approved extraction (`GATE-0` and `GATE-1` external-evidence blockers remain open)
 Current work item: `PEX-004` — implement exact app/extension identity validation and compatibility handshake
 Next recommended slice: `PEX-005` after `PEX-004` proof
@@ -29,7 +29,7 @@ Next recommended slice: `PEX-005` after `PEX-004` proof
 | Started | 2026-09-26 |
 | Expected proof | Strict security tests prove an explicit versioned compatibility handshake, exact app-origin and extension-ID agreement on both sides, bounded capabilities/version negotiation, and fail-closed mismatch behavior without permission broadening; the production hosted-transfer journey remains outside this slice |
 | Blocker | None for `PEX-004`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
-| Next handoff | Inspect the existing external-message sender policy, web receiver identity checks, manifest origin declaration, transfer versions, and production-state resolver end to end. Define the smallest strict handshake contract that binds exact app origin, exact extension identity, supported protocol versions, and reviewed capabilities; prove wrong-origin, wrong-ID, extra-field, unsupported-version, and capability-mismatch failures while retaining the manual fallback. Keep the hosted transfer journey and public deployment proof in `PEX-005`. |
+| Next handoff | Verify the implemented strict handshake through the complete local gate and hosted clean-commit CI. Record the exact proof before closing `PEX-004`, then move to the `PEX-005` hosted transfer and Firefox/manual-fallback browser matrix. The public app origin remains a `PEX-005` deployment decision; do not substitute the reserved `.test` evidence origin silently. |
 
 ## Milestone status
 

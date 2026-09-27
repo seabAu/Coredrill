@@ -62,6 +62,15 @@ rejected storage write leave the item available for an idempotent later pull
 or checksummed export. Expired records are the only non-acknowledgement cleanup
 path and are pruned from both structures with an explicit removed count.
 
+`PEX-004` gates the Chromium pull/ack path behind a bounded version-1
+compatibility handshake. Both sides agree on the exact HTTPS app origin,
+runtime extension ID, transfer version 1, capture-envelope version 1, and only
+the reviewed pull/ack capabilities before an outbox read can occur. The
+handshake is strict about keys, correlation, list size, uniqueness, and
+identity echoes; mismatch never downgrades, broadens permissions, or falls
+through to transfer. The Firefox checksummed export/import contract is
+unchanged.
+
 ## Extraction result
 
 ```ts

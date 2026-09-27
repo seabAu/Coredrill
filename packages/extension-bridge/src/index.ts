@@ -1,4 +1,17 @@
 /** Bounded outbox, pairing, transfer, acknowledgement, and compatibility protocol. */
+export {
+  COMPATIBILITY_CAPABILITIES,
+  COMPATIBILITY_LIMITS,
+  COMPATIBILITY_SPEC_VERSION,
+  createCompatibilityHandshakeRequest,
+  negotiateCompatibilityHandshake,
+  parseCompatibilityHandshakeRequest,
+  safeParseCompatibilityHandshakeResponse,
+  type CompatibilityAcceptedV1,
+  type CompatibilityHandshakeRequestV1,
+  type CompatibilityHandshakeResponseV1,
+} from "./compatibility.js";
+
 /** Integrity-checked, storage-neutral extension outbox contracts. */
 export {
   OUTBOX_ITEM_SPEC_VERSION,

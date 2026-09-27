@@ -235,6 +235,16 @@ item and its retry record; storage rejection leaves the previously durable
 state unchanged, and expiry pruning is reported rather than presented as an
 acknowledgement.
 
+`PEX-004` requires a strict compatibility handshake before the web app sends
+any Chromium pull. The app declares its exact HTTPS origin, intended extension
+ID, supported transfer and capture versions, and required reviewed
+capabilities; the extension compares those identities with the authenticated
+message sender and its own runtime ID, then echoes the negotiated result. Any
+identity, version, capability, correlation, or exact-shape mismatch stops the
+journey before SQLite or outbox mutation. This preflight adds no permission,
+content script, background observation, or source fetch, and the Firefox
+checksummed manual path remains available.
+
 ## Mobile/PWA experience
 
 The hosted PWA is responsive and can act as a mobile-local vault, but it is a different device vault until sync exists. The bottom navigation is Home, Pipeline, Add, Documents, and More. Mobile supports:
