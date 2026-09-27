@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-09-26
 Current milestone: Phase 2 — capture and approved extraction (`GATE-0` and `GATE-1` external-evidence blockers remain open)
-Current work item: `REV-005` — implement expired/changed/blocked source, unsupported page, and manual fallback states
-Next recommended slice: `REV-006` after `REV-005` proof
+Current work item: `REV-006` — implement listing freshness and source-diff representation without automatic trusted-field overwrite
+Next recommended slice: `PEX-001` after `REV-006` proof
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `REV-006` after `REV-005` proof
 | Field | Value |
 |---|---|
 | Milestone | Phase 2, with the independent Phase 0 and Phase 1 evidence gates retained below |
-| Item range | `REV-005` |
+| Item range | `REV-006` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-09-26 |
-| Expected proof | State fixtures and browser E2E tests prove that expired, changed, blocked, and unsupported sources remain explainable without hidden refresh; every affected item offers a usable manual fallback while preserving the original receipt, candidates, and provenance |
-| Blocker | None for `REV-005`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
-| Next handoff | Read the accepted source-failure, review, provenance, and network-preflight contracts end to end; define the smallest versioned state projection for expired, changed, blocked, and unsupported sources; then compose accessible manual-fallback controls and prove each state through deterministic fixtures and inert local E2E behavior before closing `REV-005`. |
+| Expected proof | Deterministic diff fixtures and component/browser tests prove listing freshness plus added, removed, and changed requirements, compensation, deadline, location, and content between explicit immutable snapshots; confirmed values remain unchanged and no automatic refresh is introduced |
+| Blocker | None for `REV-006`. `GATE-1` remains open because `Q1-001` and the manual portion of `Q1-003` require unavailable external targets; the participant study and `FND-001` also remain independently blocked. |
+| Next handoff | Read the accepted snapshot, provenance, confirmation-precedence, and Source-tab contracts end to end; define a bounded versioned pure snapshot-diff model before any UI work; then render its freshness and field/content changes from explicit local snapshots without adding refresh transport, persistence mutation, or trusted-field overwrite. |
 
 ## Milestone status
 
@@ -235,7 +235,7 @@ Next recommended slice: `REV-006` after `REV-005` proof
 - [x] **REV-002** Implement field groups with candidate, method, confidence, source excerpt, confirmation, and conflict UI. — Proof: [bounded grouped review projection, explicit confirmation/conflict presentation, inert exact-source routing, accessibility E2E, and hosted clean-commit matrix](../../proof/phase-2-review-field-groups-verification.md)
 - [x] **REV-003** Implement Accept high-confidence fields without accepting conflicts/unknowns. — Proof: [bounded deterministic acceptance planning, inclusive-threshold/conflict/unknown/confirmation rule tests, and hosted clean-commit matrix](../../proof/phase-2-review-high-confidence-acceptance-verification.md)
 - [x] **REV-004** Implement Merge, Snooze, Discard/undo, and Save job flows. — Proof: [schema-101 durable review lifecycle, atomic Save/Merge rollback, non-overwriting merge, explicit confirmation/provenance retention, browser E2E/accessibility/no-network proof, and hosted clean-commit matrix](../../proof/phase-2-review-actions-verification.md)
-- [ ] **REV-005** Implement expired/changed/blocked source, unsupported page, and manual fallback states. — Proof: _state fixtures_
+- [x] **REV-005** Implement expired/changed/blocked source, unsupported page, and manual fallback states. — Proof: [strict five-state projection, retained-evidence/manual-fallback UI, policy-gated promotion, frozen fixtures, accessibility/no-network browser proof, and hosted clean-commit matrix](../../proof/phase-2-review-source-states-verification.md)
 - [ ] **REV-006** Implement listing freshness and source-diff representation without automatic trusted-field overwrite. — Proof: _diff tests_
 
 ## Production extension

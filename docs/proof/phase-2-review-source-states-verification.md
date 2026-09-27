@@ -2,7 +2,7 @@
 
 Date: 2026-09-26  
 Checklist item: `REV-005`  
-Status: implementation complete; hosted clean-commit proof pending
+Status: complete
 
 ## Outcome
 
@@ -78,6 +78,12 @@ REV005_E2E_PROOF {"blocked":true,"unsupported":true,"manualFallbacks":true,"reta
 - Full 22-package production build: passing.
 - Import boundaries, foundation records, Changesets, secret scan, and repository
   formatting: passing.
+- Implementation commit: `bd5d95a5cedc638fbcd0c955eb0dc1e0200dec99`.
+- Hosted clean-commit verification:
+  [Foundation CI run 36283961379](https://github.com/seabAu/Coredrill/actions/runs/36283961379),
+  passing across the aggregate foundation gate, exact Chrome 151/152 and
+  Firefox 153/154 browser-storage lanes, extension transfer, full-history
+  secret scan, and Windows, macOS, and Ubuntu native package lanes.
 
 ## Decision impact
 
