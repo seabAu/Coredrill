@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-09-27
 Current milestone: Phase 3 — career evidence and versioned documents (`GATE-0`, `GATE-1`, and `GATE-2` external-evidence blockers remain open)
-Current work item: `MAT-006` — prevent automatic inference of sensitive eligibility/demographic answers
-Next recommended slice: `MAT-007` after `MAT-006`; retain `Q2-001`, `Q2-003`, `PEX-005`, `PEX-006`, and `GATE-2` as explicit external-evidence/manual-review/permission/deployment blockers
+Current work item: `MAT-007` — re-run and diff coverage after evidence/document edits
+Next recommended slice: `DOC-001` after `MAT-007`; retain `Q2-001`, `Q2-003`, `PEX-005`, `PEX-006`, and `GATE-2` as explicit external-evidence/manual-review/permission/deployment blockers
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `MAT-007` after `MAT-006`; retain `Q2-001`, `Q2-003`, `P
 | Field | Value |
 |---|---|
 | Milestone | Phase 3, with the independent Phase 0, Phase 1, and Phase 2 evidence gates retained below |
-| Item range | `MAT-006` |
+| Item range | `MAT-007` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-09-27 |
-| Expected proof | Negative application, component, and browser tests prove sensitive eligibility or demographic answers remain unset unless the user explicitly supplies them and cannot be inferred from unrelated Career Profile, evidence, requirement, or document data. |
-| Blocker | None for `MAT-006`. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-2`, `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
-| Next handoff | Inspect eligibility/demographic question presentation and every autofill or inference seam, then add the smallest fail-closed boundary and negative-test matrix for `MAT-006`; preserve explicit user control and do not derive sensitive answers from profile or evidence data. |
+| Expected proof | Integration tests edit selected evidence and source documents, re-run coverage, and show a truthful field-level diff while preserving user-confirmed decisions and provenance. |
+| Blocker | None for `MAT-007`. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-2`, `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
+| Next handoff | Inspect coverage freshness signals, document/evidence edit paths, and existing snapshot-diff vocabulary; add the smallest deterministic re-run and field-level diff seam that preserves user-confirmed decisions and provenance rather than overwriting them. |
 
 ## Milestone status
 
@@ -280,7 +280,7 @@ Next recommended slice: `MAT-007` after `MAT-006`; retain `Q2-001`, `Q2-003`, `P
 - [x] **MAT-003** Implement evidence candidate retrieval using relations, FTS, and user selection. — Proof: [Evidence candidate retrieval verification](../../proof/phase-3-evidence-candidate-retrieval-verification.md)
 - [x] **MAT-004** Implement Strength/Partial/Gap/Unknown/Not Applicable decisions with explanation. — Proof: [Requirement coverage verification](../../proof/phase-3-requirement-coverage-verification.md)
 - [x] **MAT-005** Implement separate parseability, literal-term, and qualification-evidence panels. — Proof: [Requirement comparison panels verification](../../proof/phase-3-requirement-comparison-panels-verification.md)
-- [ ] **MAT-006** Prevent automatic inference of sensitive eligibility/demographic answers. — Proof: _negative tests_
+- [x] **MAT-006** Prevent automatic inference of sensitive eligibility/demographic answers. — Proof: [Sensitive-answer inference verification](../../proof/phase-3-sensitive-answer-inference-verification.md)
 - [ ] **MAT-007** Re-run and diff coverage after evidence/document edits. — Proof: _integration test_
 
 ## Documents and versions

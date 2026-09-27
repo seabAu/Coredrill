@@ -272,6 +272,8 @@ US work authorization               Required   Unknown    Answer privately
 - Coverage uses neutral labels and text, never red/green candidate judgment, a circular fit score, an employer ATS claim, or hiring probability.
 - `MAT-005` adds three separately named comparison panels above the per-requirement workflow. **Listing parseability** describes only Coredrill's retained-listing parser, **Literal-term matching** compares requirement wording only with user-selected evidence, and **Qualification evidence** summarizes the existing five per-requirement coverage states.
 - Every panel states its own question and limitation. Literal terms update from explicit evidence selection independently of coverage decisions; unselected requirements remain not evaluated for wording. The panels never merge into a percentage, employer ATS score, or hiring probability and reflow without horizontal overflow at 320 CSS pixels.
+- `MAT-006` replaces evidence and coverage controls for a sensitive eligibility or demographic question with a named **Private answer required** region and visible **Unanswered** state. It explicitly names Career Profile, evidence, documents, and the Answer Library as prohibited inference sources.
+- The private region has no coverage selector, suggested candidates, selection action, or hidden answer value. Historical evidence links are labeled ignored and expose only removal. The browser proof reflows at 320 CSS pixels, passes automated accessibility checks, makes zero external requests, and performs no durable answer write. See [sensitive-answer inference verification](../../proof/phase-3-sensitive-answer-inference-verification.md).
 
 ### Document studio
 

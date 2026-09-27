@@ -128,6 +128,8 @@ Rules:
 - Signature/acknowledgment is never auto-completed.
 - Accepted answers enter a versioned answer library with job/context tags; sensitive answers are excluded by default.
 
+`MAT-006` implements the first deterministic classifier and fail-closed answer-resolution boundary as `application-question-policy-v1`. Work-authorization/legal and demographic/EEO/medical/disability questions are direct-private answers: Career Profile, evidence, documents, Answer Library entries, and generated candidates cannot populate them, while an explicitly supplied user answer remains the only accepted source. Logistics may expose an explicit profile setting only as an unconfirmed proposal; compensation, signatures/acknowledgments, and unknown questions remain unset. The Requirements UI does not capture or store the private answer in this slice; it shows **Unanswered** and directs the user to answer in the application. See [sensitive-answer inference verification](../../proof/phase-3-sensitive-answer-inference-verification.md).
+
 `EVD-007` implements the non-AI Answer Library foundation using the existing `application_answer` document lineage. Each saved version retains its question, content, and explicit `standard`, `sensitive`, or `restricted` classification; the entry retains immutable manual/application provenance plus optional source-job/context and an explicit last-used timestamp. Sensitive entries are excluded from later automatic reuse by default, while restricted entries require direct manual review/use. Creation, editing, history display, and “mark used” remain local explicit actions. Drafting and job-specific reuse stay deferred to `CLM-006`.
 
 ## Claim ledger and QA
