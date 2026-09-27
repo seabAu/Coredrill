@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-09-27
 Current milestone: Phase 2 — capture and approved extraction (`GATE-0` and `GATE-1` external-evidence blockers remain open)
-Current work item: `PEX-007` — run adversarial extension fixtures
-Next recommended slice: `PEX-008` after `PEX-007` proof; retain `PEX-005` and `PEX-006` as explicit permission/deployment blockers
+Current work item: `PEX-008` — draft accurate extension privacy disclosure and store listing from actual build permissions
+Next recommended slice: Phase 2 quality after `PEX-008`; retain `PEX-005` and `PEX-006` as explicit permission/deployment blockers
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `PEX-008` after `PEX-007` proof; retain `PEX-005` and `P
 | Field | Value |
 |---|---|
 | Milestone | Phase 2, with the independent Phase 0 and Phase 1 evidence gates retained below |
-| Item range | `PEX-007` |
+| Item range | `PEX-008` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-09-26 |
-| Expected proof | A real-browser security matrix exercises malicious-page content, prompt-injection text, bounded huge/deep input, SPA changes, cross-origin iframe isolation, redirects, and replay while proving inert capture, current top-level source identity, immutable queued evidence, bounded failure, and unchanged least-privilege packages |
-| Blocker | None for `PEX-007`. `PEX-005` still requires an owner-selected isolated public app origin, deployment target, and release extension identity. `PEX-006` has no reviewed extension-specific source adapter that needs persistent host access: the current reviewed Greenhouse, Lever, and USAJOBS connectors belong to the hosted/desktop connector layer, while user-invoked extension capture already uses temporary `activeTab`; do not manufacture a broader permission merely to close the checkbox. `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
-| Next handoff | Harden the injected capture traversal and execute the adversarial Chromium extension matrix using synthetic routes only. Reuse the existing exact replay proof where it already covers the same production boundary, add missing browser fixtures without introducing network/source behavior, and retain empty host/optional permissions in both production manifests. |
+| Expected proof | A reviewed Chrome Web Store and Firefox listing/privacy draft maps every claim to the inspected production manifests and tested behavior, explains each permission, accurately discloses local data handling and the user-initiated app transfer/manual export paths, and names all unresolved pre-publication facts without inventing them |
+| Blocker | None for the `PEX-008` draft. Actual publication remains blocked on trademark/domain clearance, store identities/accounts, an owner-selected isolated public app origin and hosting target, a release Chromium identity, support/privacy-policy URLs, and final listing assets. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
+| Next handoff | Derive the listing, single-purpose statement, permission rationales, data-use answers, and privacy disclosure from the inspected Chromium and Firefox packages plus tested transfer behavior. Cite current official store policies, distinguish local storage from transmission, preserve the Firefox `none` declaration, and label every owner-supplied publishing field instead of guessing. |
 
 ## Milestone status
 
@@ -246,7 +246,7 @@ Next recommended slice: `PEX-008` after `PEX-007` proof; retain `PEX-005` and `P
 - [x] **PEX-004** Implement exact app-origin/extension-ID validation and compatibility handshake. — Proof: [strict bounded handshake, bidirectional identity agreement, fail-closed version/capability negotiation, production-browser mismatch cases, unchanged permissions/fallback, and hosted clean-commit matrix](../../proof/phase-2-production-extension-compatibility-verification.md)
 - [ ] **PEX-005** Implement hosted app transfer and Firefox/manual fallback. — Proof: _browser matrix_
 - [ ] **PEX-006** Add optional source permissions only through policy-reviewed enable flow. — Proof: _manifest/settings test_
-- [ ] **PEX-007** Run malicious-page, prompt-injection-text, huge-page, SPA-change, iframe, redirect, and replay fixtures. — Proof: _security report_
+- [x] **PEX-007** Run malicious-page, prompt-injection-text, huge-page, SPA-change, iframe, redirect, and replay fixtures. — Proof: [bounded non-recursive capture, real-browser hostile/huge/redirect/iframe/SPA/replay matrix, unchanged least-privilege packages, and hosted clean-commit verification](../../proof/phase-2-production-extension-adversarial-security-verification.md)
 - [ ] **PEX-008** Draft accurate extension privacy disclosure and store listing from actual build permissions. — Proof: _reviewed draft_
 
 ## Phase 2 quality

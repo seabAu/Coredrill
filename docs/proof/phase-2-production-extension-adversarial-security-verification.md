@@ -2,7 +2,7 @@
 
 Date: 2026-09-27  
 Checklist item: `PEX-007`  
-Status: implementation and local browser proof complete; hosted clean-commit proof pending
+Status: complete
 
 ## Outcome
 
@@ -96,8 +96,23 @@ reviewed permissions remained:
 - Firefox: `activeTab`, `scripting`, and `storage`.
 
 The Chromium and Firefox store ZIPs were byte-identical to their inspected
-production directories. The hosted clean-commit matrix will be recorded after
-the implementation commit.
+production directories.
+
+## Hosted clean-commit verification
+
+Implementation commit `1e6d539cfe0d29590f001c5cc43ac6161a7da2b4`
+passed [Foundation CI run 36296811500](https://github.com/seabAu/Coredrill/actions/runs/36296811500)
+on 2026-09-27. All ten lanes completed successfully, including:
+
+- the dedicated Chromium/Firefox extension lane, which rebuilt and inspected
+  both production targets, rebuilt Firefox from the source-review ZIP, ran the
+  six-test transfer/security/fallback browser matrix, and uploaded immutable
+  proof;
+- the aggregate format, policy, typecheck, lint, unit, coverage, build,
+  package-inspection, license, secret, and dependency-advisory gate;
+- current and previous stable Chromium and Firefox storage/application lanes;
+  and
+- Windows, macOS, and Linux native storage/package lanes.
 
 ## Decision status
 
