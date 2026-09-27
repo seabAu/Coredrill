@@ -1,0 +1,78 @@
+{
+  "unchanged": {
+    "specVersion": 1,
+    "baseline": {
+      "id": "0199a100-0000-7000-8000-000000000001",
+      "capturedAt": "2026-09-20T12:00:00.000Z",
+      "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "requirements": [
+        { "key": "req-platform", "kind": "required", "text": "Build local-first systems" }
+      ],
+      "compensation": {
+        "minMinor": 12000000,
+        "maxMinor": 15000000,
+        "currency": "USD",
+        "interval": "year"
+      },
+      "deadline": "2026-10-31",
+      "locations": ["New York, NY", "Remote — United States"]
+    },
+    "current": {
+      "id": "0199a100-0000-7000-8000-000000000002",
+      "capturedAt": "2026-09-26T12:00:00.000Z",
+      "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "requirements": [
+        { "key": "req-platform", "kind": "required", "text": "Build local-first systems" }
+      ],
+      "compensation": {
+        "minMinor": 12000000,
+        "maxMinor": 15000000,
+        "currency": "USD",
+        "interval": "year"
+      },
+      "deadline": "2026-10-31",
+      "locations": ["New York, NY", "Remote — United States"]
+    }
+  },
+  "changed": {
+    "specVersion": 1,
+    "baseline": {
+      "id": "0199a100-0000-7000-8000-000000000003",
+      "capturedAt": "2026-09-20T12:00:00.000Z",
+      "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "requirements": [
+        { "key": "req-platform", "kind": "required", "text": "Build web systems" },
+        { "key": "req-travel", "kind": "preferred", "text": "Travel quarterly" }
+      ],
+      "compensation": {
+        "minMinor": 12000000,
+        "maxMinor": 15000000,
+        "currency": "USD",
+        "interval": "year"
+      },
+      "deadline": "2026-10-15",
+      "locations": ["New York, NY"]
+    },
+    "current": {
+      "id": "0199a100-0000-7000-8000-000000000004",
+      "capturedAt": "2026-09-26T12:00:00.000Z",
+      "contentHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "requirements": [
+        {
+          "key": "req-platform",
+          "kind": "required",
+          "text": "Build accessible local-first systems"
+        },
+        { "key": "req-security", "kind": "required", "text": "Lead threat modeling" }
+      ],
+      "compensation": {
+        "minMinor": 13000000,
+        "maxMinor": 16500000,
+        "currency": "USD",
+        "interval": "year"
+      },
+      "deadline": "2026-11-01",
+      "locations": ["Remote — United States"]
+    }
+  }
+}

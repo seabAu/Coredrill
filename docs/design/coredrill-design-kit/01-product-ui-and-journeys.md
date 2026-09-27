@@ -94,6 +94,15 @@ offer a manual or paste fallback through the existing Add dialog. A changed
 source never overwrites a confirmed field, and an unsupported URL is never
 fetched merely to make the preview complete.
 
+`REV-006` compares two explicit immutable listing snapshots without performing
+the refresh that produced either one. The Source tab shows capture times and
+itemized added, removed, and changed requirements; before/after compensation
+and deadline; added/removed locations; and whether retained content changed.
+Stable requirement keys avoid guessing equivalence from prose, while content
+uses existing hashes rather than duplicating source text. The comparison is
+read-only evidence: it cannot confirm, replace, or overwrite any current job
+field, and the interface repeats that boundary beside the diff.
+
 ### Pipeline: Board and Table
 
 Views:

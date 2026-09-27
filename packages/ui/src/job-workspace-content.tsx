@@ -1,4 +1,9 @@
 import { useState, type SyntheticEvent } from "react";
+import type {
+  ListingSnapshotCompensationV1,
+  ListingSnapshotDiffV1,
+  ListingSnapshotValueChangeV1,
+} from "@coredrill/application";
 
 export const JOB_WORKSPACE_CONTENT_TABS = Object.freeze([
   "overview",
@@ -91,6 +96,7 @@ export interface JobWorkspaceContentModel {
   readonly source: {
     readonly applyUrl: string | null;
     readonly canonicalUrl: string | null;
+    readonly comparison: ListingSnapshotDiffV1 | null;
     readonly comparisonLabel: string;
     readonly extractionLabel: string;
     readonly firstSeenAtLabel: string;
@@ -634,6 +640,10 @@ const SourcePanel = ({ model, onAction }: JobWorkspaceContentPanelProps) => (
           </section>
         </div>
 
+        {model.source.comparison === null ? null : (
+          <ListingSnapshotDiff comparison={model.source.comparison} />
+        )}
+
         <section aria-labelledby="job-provenance-heading" className="cd-job-content-section">
           <p className="cd-eyebrow">Current resolved fields</p>
           <h3 id="job-provenance-heading">Provenance summary</h3>
@@ -679,6 +689,117 @@ const SourcePanel = ({ model, onAction }: JobWorkspaceContentPanelProps) => (
     )}
   </div>
 );
+
+function compensationValue(value: ListingSnapshotCompensationV1 | null): string {
+  if (value === null) return "Not listed";
+  const amount = (minor: number | null): string =>
+    minor === null
+      ? "unspecified"
+      : `${value.currency} ${(minor / 100).toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+  const range =
+    value.minMinor !== null && value.maxMinor !== null
+      ? `${amount(value.minMinor)}–${amount(value.maxMinor)}`
+      : amount(value.minMinor ?? value.maxMinor);
+  return `${range} per ${value.interval}`;
+}
+
+function valueChangeText<T>(
+  change: ListingSnapshotValueChangeV1<T>,
+  format: (value: T | null) => string,
+): string {
+  if (change.kind === "unchanged") return "No change.";
+  if (change.kind === "added") return `Added: ${format(change.after)}`;
+  if (change.kind === "removed") return `Removed: ${format(change.before)}`;
+  return `Changed from ${format(change.before)} to ${format(change.after)}.`;
+}
+
+function ListingSnapshotDiff({ comparison }: { readonly comparison: ListingSnapshotDiffV1 }) {
+  const requirementChanges =
+    comparison.requirements.added.length +
+    comparison.requirements.removed.length +
+    comparison.requirements.changed.length;
+  const locationChanges = comparison.locations.added.length + comparison.locations.removed.length;
+  return (
+    <section aria-labelledby="job-source-diff-heading" className="cd-job-source-diff">
+      <div className="cd-job-source-diff__heading">
+        <div>
+          <p className="cd-eyebrow">Read-only snapshot comparison</p>
+          <h3 id="job-source-diff-heading">Listing changes</h3>
+        </div>
+        <strong>{comparison.changeCount} retained changes</strong>
+      </div>
+      <p>
+        Compared {comparison.baselineCapturedAt} with {comparison.currentCapturedAt}. This did not
+        refresh a source or update any trusted field.
+      </p>
+      <div className="cd-job-source-diff__grid">
+        <article data-change-count={requirementChanges}>
+          <h4>Requirements</h4>
+          {requirementChanges === 0 ? (
+            <p>No requirement changes.</p>
+          ) : (
+            <ul>
+              {comparison.requirements.added.map((item) => (
+                <li key={`added-${item.key}`}>
+                  <strong>Added:</strong> {item.text}
+                </li>
+              ))}
+              {comparison.requirements.removed.map((item) => (
+                <li key={`removed-${item.key}`}>
+                  <strong>Removed:</strong> {item.text}
+                </li>
+              ))}
+              {comparison.requirements.changed.map((item) => (
+                <li key={`changed-${item.key}`}>
+                  <strong>Changed:</strong> {item.before.text} → {item.after.text}
+                </li>
+              ))}
+            </ul>
+          )}
+        </article>
+        <article data-change-kind={comparison.compensation.kind}>
+          <h4>Compensation</h4>
+          <p>{valueChangeText(comparison.compensation, compensationValue)}</p>
+        </article>
+        <article data-change-kind={comparison.deadline.kind}>
+          <h4>Deadline</h4>
+          <p>{valueChangeText(comparison.deadline, (value) => value ?? "Not listed")}</p>
+        </article>
+        <article data-change-count={locationChanges}>
+          <h4>Locations</h4>
+          {locationChanges === 0 ? (
+            <p>No location changes.</p>
+          ) : (
+            <ul>
+              {comparison.locations.added.map((location) => (
+                <li key={`added-${location}`}>
+                  <strong>Added:</strong> {location}
+                </li>
+              ))}
+              {comparison.locations.removed.map((location) => (
+                <li key={`removed-${location}`}>
+                  <strong>Removed:</strong> {location}
+                </li>
+              ))}
+            </ul>
+          )}
+        </article>
+        <article data-change-kind={comparison.content.kind}>
+          <h4>Captured content</h4>
+          <p>
+            {comparison.content.kind === "changed"
+              ? "The retained content hash changed between snapshots. View both snapshots for exact source text."
+              : "The retained content hash is unchanged."}
+          </p>
+        </article>
+      </div>
+      <p className="cd-job-source-diff__boundary">
+        Comparison is evidence for review. Confirmed values remain unchanged until you explicitly
+        accept a replacement.
+      </p>
+    </section>
+  );
+}
 
 export const JobWorkspaceContent = ({ activeTab, model, onAction }: JobWorkspaceContentProps) => {
   validateModel(model);

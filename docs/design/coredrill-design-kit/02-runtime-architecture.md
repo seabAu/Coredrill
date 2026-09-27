@@ -271,6 +271,15 @@ renders the immutable result. Policy-blocked results prevent promotion, while
 the existing manual/paste dialog provides fallback without creating a second
 capture path or changing schema 101.
 
+`REV-006` adds a second pure version-1 application projection for two caller-
+supplied immutable snapshots. Exact IDs, increasing capture instants, hashes,
+unique bounded requirement keys, locations, deadline, and structured
+compensation are validated before comparison. The result is a deeply frozen
+DTO with stable added/removed/changed categories and literal false refresh and
+trusted-mutation flags. It depends on no adapter and creates no persistence or
+network port; the Source-tab component renders the DTO without deriving or
+writing canonical job truth.
+
 ## Application use cases
 
 Commands are explicit and transactional:

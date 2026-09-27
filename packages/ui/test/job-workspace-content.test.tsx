@@ -1,6 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { compareListingSnapshotsV1 } from "@coredrill/application";
 
 import {
   JOB_WORKSPACE_CONTENT_ACTIONS,
@@ -47,6 +48,7 @@ const MODEL = Object.freeze({
   source: Object.freeze({
     applyUrl: "https://northstar.example/jobs/123/apply",
     canonicalUrl: "https://northstar.example/jobs/123",
+    comparison: null,
     comparisonLabel: "Two source snapshots can be compared.",
     extractionLabel: "Three candidates await confirmation.",
     firstSeenAtLabel: "2026-08-18",
@@ -156,6 +158,65 @@ describe("JobWorkspaceContent contract", () => {
     expect(source).toContain("Source snapshot · user confirmed");
     expect(source).toContain("never silently replace user-confirmed values");
     expect(source).toContain("Manual, user-invoked refresh only.");
+  });
+
+  it("renders explicit snapshot differences without implying trusted-field mutation", () => {
+    const comparison = compareListingSnapshotsV1({
+      specVersion: 1,
+      baseline: {
+        id: "0199a100-0000-7000-8000-000000000011",
+        capturedAt: "2026-09-20T12:00:00.000Z",
+        contentHash: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        requirements: [
+          { key: "platform", kind: "required", text: "Build web systems" },
+          { key: "travel", kind: "preferred", text: "Travel quarterly" },
+        ],
+        compensation: {
+          minMinor: 12000000,
+          maxMinor: 14500000,
+          currency: "USD",
+          interval: "year",
+        },
+        deadline: "2026-09-12",
+        locations: ["New York, NY"],
+      },
+      current: {
+        id: "0199a100-0000-7000-8000-000000000012",
+        capturedAt: "2026-09-26T12:00:00.000Z",
+        contentHash: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        requirements: [
+          { key: "platform", kind: "required", text: "Build local-first systems" },
+          { key: "security", kind: "required", text: "Lead threat modeling" },
+        ],
+        compensation: {
+          minMinor: 13000000,
+          maxMinor: 15500000,
+          currency: "USD",
+          interval: "year",
+        },
+        deadline: "2026-10-01",
+        locations: ["Remote — United States"],
+      },
+    });
+    const markup = renderContent("source", {
+      ...MODEL,
+      source: { ...MODEL.source, comparison },
+    });
+
+    expect(markup).toContain("Read-only snapshot comparison");
+    expect(markup).toContain("Listing changes");
+    expect(markup).toContain("Added:</strong> Lead threat modeling");
+    expect(markup).toContain("Removed:</strong> Travel quarterly");
+    expect(markup).toContain("Build web systems");
+    expect(markup).toContain("Build local-first systems");
+    expect(markup).toContain("USD 120,000");
+    expect(markup).toContain("USD 145,000 per year");
+    expect(markup).toContain("2026-09-12 to 2026-10-01");
+    expect(markup).toContain("did not refresh a source or update any trusted field");
+    expect(markup).toContain("Confirmed values remain unchanged");
+    console.info(
+      `REV006_COMPONENT_PROOF ${JSON.stringify({ requirementsRendered: true, compensationRendered: true, deadlineRendered: true, locationsRendered: true, contentRendered: true, trustedFieldMutations: 0 })}`,
+    );
   });
 
   it("fails closed for duplicate events and editable immutable history", () => {

@@ -37,6 +37,22 @@ export {
   type CaptureSourceStateV1,
 } from "./capture-source-state.js";
 export {
+  LISTING_SNAPSHOT_COMPENSATION_INTERVALS_V1,
+  LISTING_SNAPSHOT_REQUIREMENT_KINDS_V1,
+  ListingSnapshotDiffError,
+  compareListingSnapshotsV1,
+  type ComparableListingSnapshotV1,
+  type ListingSnapshotCompensationIntervalV1,
+  type ListingSnapshotCompensationV1,
+  type ListingSnapshotDiffInputV1,
+  type ListingSnapshotDiffV1,
+  type ListingSnapshotRequirementChangeV1,
+  type ListingSnapshotRequirementKindV1,
+  type ListingSnapshotRequirementV1,
+  type ListingSnapshotValueChangeKindV1,
+  type ListingSnapshotValueChangeV1,
+} from "./listing-snapshot-diff.js";
+export {
   FIELD_CANDIDATE_RECONCILIATION_ERROR_CODES,
   FIELD_CANDIDATE_RECONCILIATION_LIMITS,
   FieldCandidateReconciliationError,

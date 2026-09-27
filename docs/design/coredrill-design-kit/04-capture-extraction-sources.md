@@ -204,6 +204,17 @@ delete a capture or job, and never treat freshness as verified fact. The user
 may choose the existing manual or paste path, which remains subject to the same
 validated local capture boundary.
 
+`REV-006` implements the comparison half of refresh while deliberately leaving
+acquisition out of scope. It accepts two already-retained immutable snapshot
+projections in chronological order and reports stable requirement,
+compensation, deadline, location, and content changes. Stable keys come from
+the caller's retained extraction identity; the comparator does not infer that
+similar prose is the same requirement. Content comparison uses existing
+lowercase SHA-256 hashes. The result is read-only, performs no fetch or storage
+write, and carries literal proof that no refresh or trusted-field mutation
+occurred. A later policy-authorized user action may create a new snapshot, but
+this diff can never apply its values automatically.
+
 #### Schema.org `JobPosting`
 
 Parse JSON-LD from a single job detail page. Validate `@context`, `@type`, title, description, hiring organization, location/remote fields, date, validity, identifier, employment type, and base salary. Treat it as untrusted page input and compare to visible content. Google documents the format and requires the structured data to represent the visible job page: [JobPosting documentation](https://developers.google.com/search/docs/appearance/structured-data/job-posting).

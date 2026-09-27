@@ -1244,6 +1244,7 @@ const jobWorkspaceContentFor = (
     source: Object.freeze({
       applyUrl: isCompanySource ? `https://careers.example.test/jobs/${job.id}` : null,
       canonicalUrl: isCompanySource ? `https://careers.example.test/jobs/${job.id}` : null,
+      comparison: null,
       comparisonLabel: "No newer snapshot is available for comparison.",
       extractionLabel: isCompanySource
         ? "Stored candidates await user confirmation."
