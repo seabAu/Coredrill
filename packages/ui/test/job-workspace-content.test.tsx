@@ -196,6 +196,17 @@ describe("JobWorkspaceContent contract", () => {
     const markup = renderContent("requirements");
 
     expect(markup).toContain('data-job-content-tab="requirements"');
+    expect(markup.match(/data-requirement-analysis-panel=/gu)).toHaveLength(3);
+    expect(markup).toContain("Requirements comparison checks");
+    expect(markup).toContain("Listing parseability");
+    expect(markup).toContain("Literal-term matching");
+    expect(markup).toContain("Qualification evidence");
+    expect(markup).toContain("No combined score");
+    expect(markup).toContain("Coredrill&#x27;s local listing parser");
+    expect(markup).toContain("does not establish a qualification");
+    expect(markup).toContain("not employer verification");
+    expect(markup).toContain("1 requirement not evaluated for literal terms");
+    expect(markup).toContain('aria-label="Qualification evidence states"');
     expect(markup).toContain('aria-label="Job requirements"');
     expect(markup).toContain('aria-label="Pending requirement proposals"');
     expect(markup).toContain("Healthcare domain experience");
@@ -219,6 +230,34 @@ describe("JobWorkspaceContent contract", () => {
     expect(markup).toContain("Not Applicable");
     expect(markup).toContain("No aggregate score");
     expect(markup).toContain("not employer verification or hiring probability");
+  });
+
+  it("keeps literal wording and qualification evidence independent after evidence selection", () => {
+    const selected = MODEL.requirementEvidence[0]!.candidates[0]!;
+    const markup = renderContent("requirements", {
+      ...MODEL,
+      requirementEvidence: Object.freeze([
+        Object.freeze({
+          ...MODEL.requirementEvidence[0]!,
+          candidates: Object.freeze([]),
+          coverage: Object.freeze({
+            ...MODEL.requirementEvidence[0]!.coverage,
+            explanation:
+              "Portfolio launch has a structured requirement relation and reviewed verification. This supports Strength, not a hiring probability.",
+            state: "strength" as const,
+          }),
+          selectedEvidence: Object.freeze([selected]),
+        }),
+      ]),
+    });
+
+    expect(markup).toContain('aria-label="Observed literal terms"');
+    expect(markup).toContain("delivery");
+    expect(markup).toContain('aria-label="Literal terms not observed"');
+    expect(markup).toContain("cross-functional");
+    expect(markup).toContain("0 requirements not evaluated for literal terms");
+    expect(markup).toMatch(/<dt>Strength<\/dt><dd>1<\/dd>/u);
+    expect(markup).not.toContain("100% match");
   });
 
   it("renders normalized facts, attention, notes, and a bounded quick timeline entry", () => {

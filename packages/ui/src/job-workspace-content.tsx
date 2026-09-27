@@ -324,6 +324,7 @@ const validateModel = (model: JobWorkspaceContentModel): void => {
       review.selectedEvidence.length > 32 ||
       review.candidates.length > 50 ||
       new Set(evidence.map(({ id, kind }) => `${kind}:${id}`)).size !== evidence.length ||
+      review.queryTerms.some((term) => term.trim().length === 0 || !isBoundedText(term, 128)) ||
       !REQUIREMENT_COVERAGE_STATES.includes(coverage.state) ||
       !["deterministic-rule", "user-confirmed"].includes(coverage.source) ||
       coverage.explanation.trim().length === 0 ||
@@ -350,7 +351,7 @@ const validateModel = (model: JobWorkspaceContentModel): void => {
         item.reasons.length > 8 ||
         item.matchedTerms.length > 24 ||
         item.reasons.some((reason) => reason.trim().length === 0) ||
-        item.matchedTerms.some((term) => term.trim().length === 0)
+        item.matchedTerms.some((term) => term.trim().length === 0 || !isBoundedText(term, 128))
       ) {
         throw new RangeError("Job workspace requirement evidence item is invalid.");
       }
@@ -582,6 +583,171 @@ const coverageLabel = (state: RequirementCoverageState): string =>
     ? "Not Applicable"
     : `${state.slice(0, 1).toLocaleUpperCase()}${state.slice(1)}`;
 
+const uniqueTerms = (terms: readonly string[]): readonly string[] => {
+  const seen = new Set<string>();
+  const unique: string[] = [];
+  for (const term of terms) {
+    const displayTerm = term.trim();
+    const key = displayTerm.toLocaleLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(displayTerm);
+  }
+  return Object.freeze(unique);
+};
+
+const RequirementAnalysisPanels = ({ model }: { readonly model: JobWorkspaceContentModel }) => {
+  const reviewedRequirements = model.requirements.filter(
+    ({ userConfirmed }) => userConfirmed,
+  ).length;
+  const literalReviews = model.requirementEvidence.filter(
+    ({ selectedEvidence }) => selectedEvidence.length > 0,
+  );
+  const analyzedTerms = uniqueTerms(literalReviews.flatMap(({ queryTerms }) => queryTerms));
+  const observedTermKeys = new Set(
+    literalReviews
+      .flatMap(({ selectedEvidence }) => selectedEvidence)
+      .flatMap(({ matchedTerms }) => matchedTerms)
+      .map((term) => term.toLocaleLowerCase()),
+  );
+  const observedTerms = analyzedTerms.filter((term) =>
+    observedTermKeys.has(term.toLocaleLowerCase()),
+  );
+  const notObservedTerms = analyzedTerms.filter(
+    (term) => !observedTermKeys.has(term.toLocaleLowerCase()),
+  );
+  const notEvaluatedRequirements = model.requirementEvidence.length - literalReviews.length;
+  const coverageCounts = REQUIREMENT_COVERAGE_STATES.map((state) =>
+    Object.freeze({
+      count: model.requirementEvidence.filter(({ coverage }) => coverage.state === state).length,
+      state,
+    }),
+  );
+
+  return (
+    <section aria-labelledby="job-requirement-analysis-heading" className="cd-job-content-section">
+      <div className="cd-job-content-section-heading">
+        <div>
+          <p className="cd-eyebrow">Three independent questions</p>
+          <h3 id="job-requirement-analysis-heading">Requirements comparison checks</h3>
+        </div>
+        <span className="cd-chip">No combined score</span>
+      </div>
+      <p className="cd-job-requirements__boundary">
+        Read these checks separately. Parsing, literal wording, and qualification evidence measure
+        different things and are never combined into an employer ATS score or hiring probability.
+      </p>
+      <div className="cd-requirement-analysis-panels">
+        <section
+          aria-labelledby="job-requirement-parseability-heading"
+          className="cd-requirement-analysis-panel"
+          data-requirement-analysis-panel="parseability"
+        >
+          <p className="cd-eyebrow">Saved listing</p>
+          <h4 id="job-requirement-parseability-heading">Listing parseability</h4>
+          <p>
+            Could Coredrill turn retained listing text into source-linked requirements for review?
+          </p>
+          <dl className="cd-requirement-analysis-facts">
+            <div>
+              <dt>Recorded</dt>
+              <dd>{model.requirements.length}</dd>
+            </div>
+            <div>
+              <dt>Pending review</dt>
+              <dd>{model.requirementProposals.length}</dd>
+            </div>
+            <div>
+              <dt>User-confirmed categories</dt>
+              <dd>{reviewedRequirements}</dd>
+            </div>
+          </dl>
+          <p className="cd-requirement-analysis-panel__limitation">
+            This describes Coredrill&apos;s local listing parser. It does not test a resume or
+            predict how an employer system will parse one; every proposal can still be wrong.
+          </p>
+        </section>
+
+        <section
+          aria-labelledby="job-requirement-literal-heading"
+          className="cd-requirement-analysis-panel"
+          data-requirement-analysis-panel="literal-terms"
+        >
+          <p className="cd-eyebrow">Selected evidence wording</p>
+          <h4 id="job-requirement-literal-heading">Literal-term matching</h4>
+          <p>Which analyzed requirement terms also appear in user-selected evidence?</p>
+          {literalReviews.length === 0 ? (
+            <p className="cd-requirement-analysis-panel__result">
+              Not evaluated: select evidence before comparing literal wording.
+            </p>
+          ) : (
+            <>
+              <div>
+                <strong>Observed literal terms</strong>
+                {observedTerms.length === 0 ? (
+                  <p>None observed in selected evidence.</p>
+                ) : (
+                  <ul aria-label="Observed literal terms" className="cd-requirement-term-list">
+                    {observedTerms.map((term) => (
+                      <li className="cd-chip" key={term}>
+                        {term}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div>
+                <strong>Not observed</strong>
+                {notObservedTerms.length === 0 ? (
+                  <p>No other analyzed terms for the selected evidence.</p>
+                ) : (
+                  <ul aria-label="Literal terms not observed" className="cd-requirement-term-list">
+                    {notObservedTerms.map((term) => (
+                      <li className="cd-chip" key={term}>
+                        {term}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </>
+          )}
+          <p className="cd-requirement-analysis-panel__status">
+            {notEvaluatedRequirements} requirement
+            {notEvaluatedRequirements === 1 ? "" : "s"} not evaluated for literal terms
+          </p>
+          <p className="cd-requirement-analysis-panel__limitation">
+            Literal overlap is wording evidence only. It does not establish a qualification, and a
+            missing term is never permission to add an unsupported skill or claim.
+          </p>
+        </section>
+
+        <section
+          aria-labelledby="job-requirement-qualification-heading"
+          className="cd-requirement-analysis-panel"
+          data-requirement-analysis-panel="qualification-evidence"
+        >
+          <p className="cd-eyebrow">Reviewed career evidence</p>
+          <h4 id="job-requirement-qualification-heading">Qualification evidence</h4>
+          <p>What does selected, reviewed career evidence support for each requirement?</p>
+          <dl aria-label="Qualification evidence states" className="cd-requirement-coverage-counts">
+            {coverageCounts.map(({ count, state }) => (
+              <div key={state}>
+                <dt>{coverageLabel(state)}</dt>
+                <dd>{count}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="cd-requirement-analysis-panel__limitation">
+            Coverage remains a per-requirement, explainable judgment. It is not employer
+            verification and does not predict interview or hiring outcomes.
+          </p>
+        </section>
+      </div>
+    </section>
+  );
+};
+
 const RequirementsPanel = ({ model, onAction }: JobWorkspaceContentPanelProps) => {
   const acceptProposal = (
     event: SyntheticEvent<HTMLFormElement>,
@@ -612,6 +778,7 @@ const RequirementsPanel = ({ model, onAction }: JobWorkspaceContentPanelProps) =
 
   return (
     <div className="cd-job-requirements" data-job-content-tab="requirements">
+      <RequirementAnalysisPanels model={model} />
       <section
         aria-labelledby="job-requirement-proposals-heading"
         className="cd-job-content-section"

@@ -977,6 +977,25 @@ test("Job core tabs expose normalized facts, chronology, company context, and pr
   await workspace.getByRole("button", { name: "Requirements", exact: true }).click();
   await expect(page).toHaveURL(/\/jobs\/board-northstar\/requirements$/u);
   await expect(workspace.locator('[data-job-content-tab="requirements"]')).toBeVisible();
+  const comparisonChecks = workspace.getByRole("region", {
+    name: "Requirements comparison checks",
+  });
+  const parseabilityPanel = comparisonChecks.getByRole("region", {
+    name: "Listing parseability",
+  });
+  const literalTermPanel = comparisonChecks.getByRole("region", {
+    name: "Literal-term matching",
+  });
+  const qualificationPanel = comparisonChecks.getByRole("region", {
+    name: "Qualification evidence",
+  });
+  await expect(parseabilityPanel).toContainText("Coredrill's local listing parser");
+  await expect(parseabilityPanel).toContainText("does not test a resume");
+  await expect(literalTermPanel).toContainText("Not evaluated");
+  await expect(literalTermPanel).toContainText("2 requirements not evaluated");
+  await expect(qualificationPanel).toContainText("Unknown2");
+  await expect(comparisonChecks).toContainText("No combined score");
+  await expect(comparisonChecks.locator("[data-aggregate-score]")).toHaveCount(0);
   const proposalList = workspace.getByRole("list", { name: "Pending requirement proposals" });
   await expect(proposalList.getByRole("listitem")).toHaveCount(2);
   const experienceProposal = proposalList
@@ -1054,6 +1073,15 @@ test("Job core tabs expose normalized facts, chronology, company context, and pr
   );
   await expect(coverageState).toHaveText("Strength");
   await expect(coverageReview).toContainText("not a hiring probability");
+  await expect(
+    literalTermPanel.getByRole("list", { name: "Observed literal terms" }),
+  ).toContainText("delivery");
+  await expect(
+    literalTermPanel.getByRole("list", { name: "Literal terms not observed" }),
+  ).toContainText("cross-functional");
+  await expect(literalTermPanel).toContainText("2 requirements not evaluated");
+  await expect(qualificationPanel).toContainText("Strength1");
+  await expect(qualificationPanel).toContainText("Unknown2");
 
   for (const [value, label] of [
     ["partial", "Partial"],
@@ -1093,6 +1121,17 @@ test("Job core tabs expose normalized facts, chronology, company context, and pr
   await coverageDecision.selectOption("automatic");
   await expect(coverageState).toHaveText("Unknown");
   await expect(coverageReview).toContainText("Unknown—not a Gap");
+  await page.setViewportSize({ width: 320, height: 900 });
+  await expect(parseabilityPanel).toBeVisible();
+  await expect(literalTermPanel).toBeVisible();
+  await expect(qualificationPanel).toBeVisible();
+  expect(
+    await comparisonChecks.evaluate((element) => element.scrollWidth <= element.clientWidth),
+  ).toBe(true);
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  console.info(
+    `MAT005_E2E_PROOF ${JSON.stringify({ namedPanels: 3, parseabilitySeparate: true, literalTermsSeparate: true, qualificationEvidenceSeparate: true, liveTermUpdate: true, liveCoverageUpdate: true, aggregateScores: 0, narrowReflow: true, externalRequests: externalRequests.length })}`,
+  );
   expect(externalRequests).toEqual([]);
 
   const privateNote = "Private question about portfolio ownership";
