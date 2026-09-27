@@ -63,6 +63,8 @@ The AI-disabled evidence-retrieval baseline then proposes bounded candidates fro
 
 The AI-disabled coverage baseline applies `requirement-coverage-v1` only after that selection boundary. Context is Not Applicable; no selected evidence is Unknown rather than an inferred Gap; reviewed evidence with a structured relation can be Strength; other selected evidence is Partial. Gap is never inferred from failed retrieval. The user may explicitly choose any state, although Strength and Partial require selected evidence. Every state has a plain-language explanation, and stored user decisions retain the requirement/evidence basis so later changes request review without silently replacing the decision. This is evidence coverage, not employer verification, an ATS score, or a hiring probability.
 
+`MAT-007` makes that review request inspectable. `requirement-coverage-rerun-v1` compares an immutable prior snapshot with fresh coverage, selected-evidence, and latest source-document-version facts, then returns a field-level before/after diff without writing anything. An evidence edit or new document version can therefore make a reviewed decision stale while preserving the user's exact state and row version; the user decides whether to revise or reset it. See [requirement-coverage rerun verification](../../proof/phase-3-requirement-coverage-rerun-verification.md).
+
 Never inflate years by double-counting overlapping projects/jobs. A deterministic interval union provides the initial estimate, then the user confirms it.
 
 ## Context plan

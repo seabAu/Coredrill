@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-09-27
 Current milestone: Phase 3 — career evidence and versioned documents (`GATE-0`, `GATE-1`, and `GATE-2` external-evidence blockers remain open)
-Current work item: `MAT-007` — re-run and diff coverage after evidence/document edits
-Next recommended slice: `DOC-001` after `MAT-007`; retain `Q2-001`, `Q2-003`, `PEX-005`, `PEX-006`, and `GATE-2` as explicit external-evidence/manual-review/permission/deployment blockers
+Current work item: `DOC-001` — document lineage, versions, attachments, derivatives, and submitted snapshots
+Next recommended slice: `DOC-002` after `DOC-001`; retain `Q2-001`, `Q2-003`, `PEX-005`, `PEX-006`, and `GATE-2` as explicit external-evidence/manual-review/permission/deployment blockers
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `DOC-001` after `MAT-007`; retain `Q2-001`, `Q2-003`, `P
 | Field | Value |
 |---|---|
 | Milestone | Phase 3, with the independent Phase 0, Phase 1, and Phase 2 evidence gates retained below |
-| Item range | `MAT-007` |
+| Item range | `DOC-001` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-09-27 |
-| Expected proof | Integration tests edit selected evidence and source documents, re-run coverage, and show a truthful field-level diff while preserving user-confirmed decisions and provenance. |
-| Blocker | None for `MAT-007`. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-2`, `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
-| Next handoff | Inspect coverage freshness signals, document/evidence edit paths, and existing snapshot-diff vocabulary; add the smallest deterministic re-run and field-level diff seam that preserves user-confirmed decisions and provenance rather than overwriting them. |
+| Expected proof | Repository tests prove document/base/template/job-derivative/version/attachment/submitted-snapshot lineage, immutable versions, valid ownership, export/recovery inclusion, and identical browser/native behavior. |
+| Blocker | None for `DOC-001`. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-2`, `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
+| Next handoff | Inspect the accepted document lineage model, existing schema-133 document tables, portable archive coverage, and editor/import repositories; add the smallest shared repository contract for immutable versions, typed derivatives, attachments, and exact submitted snapshots without beginning document views or generation. |
 
 ## Milestone status
 
@@ -281,7 +281,7 @@ Next recommended slice: `DOC-001` after `MAT-007`; retain `Q2-001`, `Q2-003`, `P
 - [x] **MAT-004** Implement Strength/Partial/Gap/Unknown/Not Applicable decisions with explanation. — Proof: [Requirement coverage verification](../../proof/phase-3-requirement-coverage-verification.md)
 - [x] **MAT-005** Implement separate parseability, literal-term, and qualification-evidence panels. — Proof: [Requirement comparison panels verification](../../proof/phase-3-requirement-comparison-panels-verification.md)
 - [x] **MAT-006** Prevent automatic inference of sensitive eligibility/demographic answers. — Proof: [Sensitive-answer inference verification](../../proof/phase-3-sensitive-answer-inference-verification.md)
-- [ ] **MAT-007** Re-run and diff coverage after evidence/document edits. — Proof: _integration test_
+- [x] **MAT-007** Re-run and diff coverage after evidence/document edits. — Proof: [Requirement-coverage rerun verification](../../proof/phase-3-requirement-coverage-rerun-verification.md)
 
 ## Documents and versions
 
