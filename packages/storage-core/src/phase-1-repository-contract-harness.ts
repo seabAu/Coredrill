@@ -3,6 +3,7 @@ import type { DatabasePort } from "./database-port.js";
 import { createDiagnosticRepositoryContractSuite } from "./diagnostic-contract-harness.js";
 import { createDocumentRepositoryContractSuite } from "./document-contract-harness.js";
 import { createJobSearchContractSuite } from "./job-search-contract-harness.js";
+import { createRequirementEvidenceContractSuite } from "./requirement-evidence-contract-harness.js";
 import { createPipelineRepositoryContractSuite } from "./pipeline-contract-harness.js";
 import {
   PHASE_1_REPOSITORY_CONTRACT_CASE_NAMES,
@@ -44,6 +45,7 @@ export const createPhase1RepositoryContractSuite = (
     [createDocumentRepositoryContractSuite(setup), components.document],
     [createJobSearchContractSuite(setup), components.jobSearch],
     [createDiagnosticRepositoryContractSuite(setup), components.diagnostic],
+    [createRequirementEvidenceContractSuite(setup), components.requirementEvidence],
   ] as const;
 
   for (const [suite, manifestComponent] of suites) {

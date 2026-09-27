@@ -1234,9 +1234,48 @@ const NORTHSTAR_REQUIREMENT_PROPOSALS = Object.freeze(
   ),
 );
 
+const NORTHSTAR_REQUIREMENT_EVIDENCE = Object.freeze([
+  Object.freeze({
+    requirementId: "requirement-northstar-delivery",
+    retrievalMode: "fts5" as const,
+    queryTerms: Object.freeze(["cross-functional", "delivery", "product", "operations"]),
+    selectedEvidence: Object.freeze([]),
+    candidates: Object.freeze([
+      Object.freeze({
+        id: "evidence-project-portfolio-launch",
+        kind: "project",
+        label: "Portfolio launch",
+        summary: "Led product and operations through a coordinated platform launch.",
+        verificationState: "user_confirmed",
+        privacyTags: Object.freeze([]),
+        reasons: Object.freeze(["lexical", "skill-relation"]),
+        matchedTerms: Object.freeze(["delivery", "product", "operations"]),
+      }),
+      Object.freeze({
+        id: "evidence-story-risky-migration",
+        kind: "story",
+        label: "Recovered a risky migration",
+        summary: "Coordinated a safe recovery across engineering and operations.",
+        verificationState: "source_backed",
+        privacyTags: Object.freeze([]),
+        reasons: Object.freeze(["story-relation"]),
+        matchedTerms: Object.freeze(["operations"]),
+      }),
+    ]),
+  }),
+  Object.freeze({
+    requirementId: "requirement-northstar-healthcare",
+    retrievalMode: "normalized-token" as const,
+    queryTerms: Object.freeze(["healthcare", "domain", "experience"]),
+    selectedEvidence: Object.freeze([]),
+    candidates: Object.freeze([]),
+  }),
+] as const satisfies JobWorkspaceContentModel["requirementEvidence"]);
+
 const jobWorkspaceContentFor = (
   job: PipelineTableJob,
   relatedJobs: readonly PipelineTableJob[],
+  requirementEvidence: JobWorkspaceContentModel["requirementEvidence"],
   requirementProposals: JobWorkspaceContentModel["requirementProposals"],
   requirements: JobWorkspaceContentModel["requirements"],
 ): JobWorkspaceContentModel => {
@@ -1309,6 +1348,7 @@ const jobWorkspaceContentFor = (
       websiteUrl: null,
     }),
     jobId: job.id,
+    requirementEvidence,
     requirementProposals,
     requirements,
     overview: Object.freeze({
@@ -1481,6 +1521,9 @@ const AppShellCatalog = () => {
   const [jobRequirementProposals, setJobRequirementProposals] = useState<
     Readonly<Record<string, JobWorkspaceContentModel["requirementProposals"]>>
   >(() => Object.freeze({ "board-northstar": NORTHSTAR_REQUIREMENT_PROPOSALS }));
+  const [jobRequirementEvidence, setJobRequirementEvidence] = useState<
+    Readonly<Record<string, JobWorkspaceContentModel["requirementEvidence"]>>
+  >(() => Object.freeze({ "board-northstar": NORTHSTAR_REQUIREMENT_EVIDENCE }));
   const [boardColumns, setBoardColumns] = useState<readonly BoardColumn[]>(
     appearance.boardMode === "reference"
       ? REFERENCE_BOARD_COLUMNS
@@ -1716,6 +1759,7 @@ const AppShellCatalog = () => {
       : jobWorkspaceContentFor(
           workspaceJob,
           tableRows,
+          jobRequirementEvidence[workspaceJob.id] ?? Object.freeze([]),
           jobRequirementProposals[workspaceJob.id] ?? Object.freeze([]),
           jobRequirements[workspaceJob.id] ?? Object.freeze([]),
         );
@@ -2489,6 +2533,57 @@ const AppShellCatalog = () => {
       );
       setLastActivity(
         `Saved the user-confirmed requirement category as ${request.category}. No external request was made.`,
+      );
+      return;
+    }
+    if (
+      request.id === "select-requirement-evidence" ||
+      request.id === "remove-requirement-evidence"
+    ) {
+      if (workspaceRoute === null) {
+        setLastActivity("No local Job workspace is available for this evidence selection.");
+        return;
+      }
+      const reviews = jobRequirementEvidence[workspaceRoute.jobId] ?? Object.freeze([]);
+      const review = reviews.find(({ requirementId }) => requirementId === request.requirementId);
+      if (review === undefined) {
+        setLastActivity("Evidence candidates changed before selection. Reload before saving.");
+        return;
+      }
+      const selecting = request.id === "select-requirement-evidence";
+      const source = selecting ? review.candidates : review.selectedEvidence;
+      const target = source.find(({ id }) => id === request.targetId);
+      if (target === undefined) {
+        setLastActivity("Evidence selection changed before this action. Reload before saving.");
+        return;
+      }
+      const selectedEvidence = selecting
+        ? Object.freeze([...review.selectedEvidence, target])
+        : Object.freeze(review.selectedEvidence.filter(({ id }) => id !== request.targetId));
+      const candidates = selecting
+        ? Object.freeze(review.candidates.filter(({ id }) => id !== request.targetId))
+        : Object.freeze([
+            ...review.candidates,
+            Object.freeze({
+              ...target,
+              reasons: Object.freeze(["previously-selected"]),
+              matchedTerms: Object.freeze([]),
+            }),
+          ]);
+      setJobRequirementEvidence(
+        Object.freeze({
+          ...jobRequirementEvidence,
+          [workspaceRoute.jobId]: Object.freeze(
+            reviews.map((candidate) =>
+              candidate.requirementId === request.requirementId
+                ? Object.freeze({ ...candidate, selectedEvidence, candidates })
+                : candidate,
+            ),
+          ),
+        }),
+      );
+      setLastActivity(
+        `${selecting ? "Selected" : "Removed"} requirement evidence by explicit local action. No external request was made.`,
       );
       return;
     }

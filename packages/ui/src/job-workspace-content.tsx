@@ -33,6 +33,8 @@ export const JOB_WORKSPACE_CONTENT_ACTIONS = Object.freeze([
   "accept-requirement-proposal",
   "reject-requirement-proposal",
   "correct-requirement-category",
+  "select-requirement-evidence",
+  "remove-requirement-evidence",
 ] as const);
 export type JobWorkspaceContentActionId = (typeof JOB_WORKSPACE_CONTENT_ACTIONS)[number];
 
@@ -53,9 +55,18 @@ export type JobWorkspaceContentActionRequest =
       readonly expectedRowVersion: number;
     }
   | {
+      readonly id: "select-requirement-evidence" | "remove-requirement-evidence";
+      readonly targetId: string;
+      readonly requirementId: string;
+    }
+  | {
       readonly id: Exclude<
         JobWorkspaceContentActionId,
-        "accept-requirement-proposal" | "add-timeline-note" | "correct-requirement-category"
+        | "accept-requirement-proposal"
+        | "add-timeline-note"
+        | "correct-requirement-category"
+        | "remove-requirement-evidence"
+        | "select-requirement-evidence"
       >;
       readonly targetId?: string;
     };
@@ -74,6 +85,29 @@ export interface JobWorkspaceTimelineItem {
 
 export interface JobWorkspaceContentModel {
   readonly jobId: string;
+  readonly requirementEvidence: readonly {
+    readonly requirementId: string;
+    readonly retrievalMode: "fts5" | "normalized-token";
+    readonly queryTerms: readonly string[];
+    readonly selectedEvidence: readonly {
+      readonly id: string;
+      readonly kind: string;
+      readonly label: string;
+      readonly summary: string;
+      readonly verificationState: string;
+      readonly privacyTags: readonly string[];
+    }[];
+    readonly candidates: readonly {
+      readonly id: string;
+      readonly kind: string;
+      readonly label: string;
+      readonly summary: string;
+      readonly verificationState: string;
+      readonly privacyTags: readonly string[];
+      readonly reasons: readonly string[];
+      readonly matchedTerms: readonly string[];
+    }[];
+  }[];
   readonly requirementProposals: readonly {
     readonly id: string;
     readonly category: JobRequirementCategory;
@@ -241,6 +275,40 @@ const validateModel = (model: JobWorkspaceContentModel): void => {
       requirement.rowVersion < 1
     ) {
       throw new RangeError("Job workspace requirement is invalid.");
+    }
+  }
+
+  if (
+    model.requirementEvidence.length > model.requirements.length ||
+    new Set(model.requirementEvidence.map(({ requirementId }) => requirementId)).size !==
+      model.requirementEvidence.length
+  ) {
+    throw new RangeError("Job workspace requirement evidence is invalid.");
+  }
+  const requirementIds = new Set(model.requirements.map(({ id }) => id));
+  for (const review of model.requirementEvidence) {
+    const evidence = [...review.selectedEvidence, ...review.candidates];
+    if (
+      !requirementIds.has(review.requirementId) ||
+      !["fts5", "normalized-token"].includes(review.retrievalMode) ||
+      review.queryTerms.length > 24 ||
+      review.selectedEvidence.length > 32 ||
+      review.candidates.length > 50 ||
+      new Set(evidence.map(({ id, kind }) => `${kind}:${id}`)).size !== evidence.length
+    ) {
+      throw new RangeError("Job workspace requirement evidence is invalid.");
+    }
+    for (const item of evidence) {
+      if (
+        item.id.trim().length === 0 ||
+        item.kind.trim().length === 0 ||
+        item.label.trim().length === 0 ||
+        !isBoundedText(item.summary, 512) ||
+        item.verificationState.trim().length === 0 ||
+        item.privacyTags.length > 16
+      ) {
+        throw new RangeError("Job workspace requirement evidence item is invalid.");
+      }
     }
   }
 
@@ -637,6 +705,13 @@ const RequirementsPanel = ({ model, onAction }: JobWorkspaceContentPanelProps) =
                     <dd>{requirement.sourcePointer}</dd>
                   </div>
                 </dl>
+                <RequirementEvidenceReview
+                  onAction={onAction}
+                  requirement={requirement}
+                  review={model.requirementEvidence.find(
+                    ({ requirementId }) => requirementId === requirement.id,
+                  )}
+                />
               </li>
             ))}
           </ol>
@@ -645,6 +720,114 @@ const RequirementsPanel = ({ model, onAction }: JobWorkspaceContentPanelProps) =
     </div>
   );
 };
+
+function RequirementEvidenceReview({
+  onAction,
+  requirement,
+  review,
+}: {
+  readonly onAction: JobWorkspaceContentPanelProps["onAction"];
+  readonly requirement: JobWorkspaceContentModel["requirements"][number];
+  readonly review: JobWorkspaceContentModel["requirementEvidence"][number] | undefined;
+}) {
+  if (review === undefined) {
+    return (
+      <section
+        aria-label={`Evidence for ${requirement.normalizedText}`}
+        className="cd-requirement-evidence"
+      >
+        <h5>Evidence candidates</h5>
+        <p>No evidence candidates have been retrieved for this requirement yet.</p>
+      </section>
+    );
+  }
+  return (
+    <section
+      aria-label={`Evidence for ${requirement.normalizedText}`}
+      className="cd-requirement-evidence"
+    >
+      <div className="cd-requirement-evidence__heading">
+        <div>
+          <h5>Evidence candidates</h5>
+          <p>
+            {review.retrievalMode === "fts5" ? "FTS5" : "Normalized-token fallback"} plus structured
+            relations · {review.queryTerms.length} query terms
+          </p>
+        </div>
+        <span className="cd-chip">{review.selectedEvidence.length} selected</span>
+      </div>
+      <p className="cd-job-requirements__boundary">
+        Suggestions are explainable and read-only. Only Select evidence or Remove selection changes
+        this requirement&apos;s durable evidence set.
+      </p>
+      <div aria-label={`Selected evidence for ${requirement.normalizedText}`}>
+        <h6>Selected evidence</h6>
+        {review.selectedEvidence.length === 0 ? (
+          <p>No evidence selected.</p>
+        ) : (
+          review.selectedEvidence.map((item) => (
+            <article className="cd-requirement-evidence__item" key={`${item.kind}:${item.id}`}>
+              <div>
+                <strong>{item.label}</strong>
+                <p>{item.summary}</p>
+                <small>
+                  {item.kind} · {item.verificationState.replaceAll("_", " ")}
+                </small>
+              </div>
+              <button
+                aria-label={`Remove ${item.label} from ${requirement.normalizedText}`}
+                className="cd-button cd-button-secondary"
+                onClick={() => {
+                  onAction?.({
+                    id: "remove-requirement-evidence",
+                    requirementId: requirement.id,
+                    targetId: item.id,
+                  });
+                }}
+                type="button"
+              >
+                Remove selection
+              </button>
+            </article>
+          ))
+        )}
+      </div>
+      <div aria-label={`Suggested evidence for ${requirement.normalizedText}`}>
+        <h6>Suggested evidence</h6>
+        {review.candidates.length === 0 ? (
+          <p>No unselected candidates matched.</p>
+        ) : (
+          review.candidates.map((item) => (
+            <article className="cd-requirement-evidence__item" key={`${item.kind}:${item.id}`}>
+              <div>
+                <strong>{item.label}</strong>
+                <p>{item.summary}</p>
+                <small>
+                  {item.kind} · {item.verificationState.replaceAll("_", " ")} ·{" "}
+                  {item.reasons.join(", ")}
+                </small>
+              </div>
+              <button
+                aria-label={`Select ${item.label} for ${requirement.normalizedText}`}
+                className="cd-button cd-button-secondary"
+                onClick={() => {
+                  onAction?.({
+                    id: "select-requirement-evidence",
+                    requirementId: requirement.id,
+                    targetId: item.id,
+                  });
+                }}
+                type="button"
+              >
+                Select evidence
+              </button>
+            </article>
+          ))
+        )}
+      </div>
+    </section>
+  );
+}
 
 const TimelinePanel = ({ model, onAction }: JobWorkspaceContentPanelProps) => (
   <div className="cd-job-timeline" data-job-content-tab="timeline">

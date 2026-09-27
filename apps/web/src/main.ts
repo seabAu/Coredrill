@@ -333,6 +333,8 @@ interface Phase3RecoveryInventory {
   readonly careerEvidence: number;
   readonly stories: number;
   readonly storyEvidenceLinks: number;
+  readonly skillEvidenceLinks: number;
+  readonly requirementEvidenceSelections: number;
   readonly importRuns: number;
   readonly importProposals: number;
   readonly importResolutions: number;
@@ -1584,6 +1586,11 @@ const readPhase3RecoveryInventory = async (
       client,
       "SELECT count(*) AS count FROM anecdote_evidence_link",
     ),
+    skillEvidenceLinks: await readCount(client, "SELECT count(*) AS count FROM skill_evidence"),
+    requirementEvidenceSelections: await readCount(
+      client,
+      "SELECT count(*) AS count FROM job_requirement_evidence_selection",
+    ),
     importRuns: await readCount(client, "SELECT count(*) AS count FROM import_run"),
     importProposals: await readCount(
       client,
@@ -1672,6 +1679,7 @@ const seedRepresentativePhase1Vault = async (
   const sourceSnapshotId = "0198d9d4-0000-7000-8000-00000000001d";
   const provenanceId = "0198d9d4-0000-7000-8000-00000000001e";
   const requirementId = "0198d9d4-0000-7000-8000-00000000001f";
+  const skillEvidenceId = "0198d9d4-0000-7000-8000-000000000020";
   await client.transaction(async (transaction) => {
     await transaction.execute(
       sqlStatement(
@@ -2091,6 +2099,30 @@ const seedRepresentativePhase1Vault = async (
         ),
       );
     }
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO skill_evidence(
+           id, skill_id, evidence_kind, evidence_id, experience_id,
+           narrative, verification_state, created_at
+         ) VALUES (?, ?, 'employment', ?, ?, ?, 'source_backed', ?)`,
+        [
+          skillEvidenceId,
+          skillId,
+          experienceId,
+          experienceId,
+          "Used SQLite while building reliable local-first systems.",
+          createdAt,
+        ],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO job_requirement_evidence_selection(
+           requirement_id, evidence_kind, evidence_id, experience_id, selected_at
+         ) VALUES (?, 'employment', ?, ?, ?)`,
+        [requirementId, experienceId, experienceId, createdAt],
+      ),
+    );
     await transaction.execute(
       sqlStatement(
         `INSERT INTO candidate_profile(

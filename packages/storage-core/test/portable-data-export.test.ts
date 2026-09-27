@@ -170,7 +170,7 @@ const fixtureRows = (): Map<string, readonly QueryRow[]> =>
 class FixtureDatabase implements DatabasePort {
   public readonly statements: string[] = [];
   public transactions = 0;
-  public schemaVersion: number | bigint = 129;
+  public schemaVersion: number | bigint = 132;
   public failQuery = false;
 
   public constructor(public readonly rows = fixtureRows()) {}
@@ -253,7 +253,7 @@ class SchemaInventoryDatabase implements DatabasePort {
       health: "ready",
       persistence: "memory",
       readOnly: false,
-      schemaVersion: 129,
+      schemaVersion: 132,
       details: [],
     });
   }
@@ -317,7 +317,7 @@ describe("portable human-readable data export", () => {
     }
   });
 
-  it("writes every reviewed user dataset available at schema 129 as paired deterministic JSON and CSV", async () => {
+  it("writes every reviewed user dataset available at schema 132 as paired deterministic JSON and CSV", async () => {
     const database = new FixtureDatabase();
     const bundle = await createPortableDataExportV1({
       database,
@@ -327,14 +327,14 @@ describe("portable human-readable data export", () => {
 
     expect(bundle).toMatchObject({
       specVersion: 1,
-      sourceSchemaVersion: 129,
+      sourceSchemaVersion: 132,
       generatedAt: GENERATED_AT,
       vaultId: VAULT_ID,
       datasetCount: PORTABLE_DATA_EXPORT_DATASETS.length,
       rowCount: 6,
     });
-    expect(bundle.datasetCount).toBe(48);
-    expect(bundle.dataFiles).toHaveLength(96);
+    expect(bundle.datasetCount).toBe(50);
+    expect(bundle.dataFiles).toHaveLength(100);
     const excludedTables = new Set<string>(PORTABLE_DATA_EXPORT_EXCLUDED_TABLES);
     expect(PORTABLE_DATA_EXPORT_DATASETS.filter((item) => excludedTables.has(item.table))).toEqual(
       [],
@@ -350,7 +350,7 @@ describe("portable human-readable data export", () => {
       "mutation_undo_token",
     ]);
     expect(database.transactions).toBe(1);
-    expect(database.statements).toHaveLength(49);
+    expect(database.statements).toHaveLength(51);
     expect(bundle.datasets.find((item) => item.dataset === "job_source")?.rows[0]).toMatchObject({
       is_primary: true,
     });
@@ -435,6 +435,21 @@ describe("portable human-readable data export", () => {
       "job_requirement",
     );
 
+    const requirementsOnly = new FixtureDatabase();
+    requirementsOnly.schemaVersion = 129;
+    const requirementsOnlyBundle = await createPortableDataExportV1({
+      database: requirementsOnly,
+      generatedAt: GENERATED_AT,
+      vaultId: VAULT_ID,
+    });
+    expect(requirementsOnlyBundle.datasetCount).toBe(48);
+    expect(requirementsOnlyBundle.datasets.map((item) => item.dataset)).toContain(
+      "job_requirement",
+    );
+    expect(requirementsOnlyBundle.datasets.map((item) => item.dataset)).not.toContain(
+      "skill_evidence",
+    );
+
     const current = new FixtureDatabase();
     const currentBundle = await createPortableDataExportV1({
       database: current,
@@ -445,6 +460,9 @@ describe("portable human-readable data export", () => {
       expect.arrayContaining(["source_document_id", "verification_state"]),
     );
     expect(currentBundle.datasets.map((item) => item.dataset)).toContain("job_requirement");
+    expect(currentBundle.datasets.map((item) => item.dataset)).toEqual(
+      expect.arrayContaining(["skill_evidence", "job_requirement_evidence_selection"]),
+    );
   });
 
   it("feeds the complete production projection into the portable archive writer", async () => {
@@ -477,7 +495,7 @@ describe("portable human-readable data export", () => {
       readAttachment: () => Promise.resolve(undefined),
     });
 
-    expect(archive.manifest.dataFiles).toHaveLength(96);
+    expect(archive.manifest.dataFiles).toHaveLength(100);
     expect(archive.manifest.dataFiles.map((entry) => entry.path)).toEqual(
       [...bundle.dataFiles].map((file) => file.path).sort(),
     );

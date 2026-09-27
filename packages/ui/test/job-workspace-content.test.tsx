@@ -23,6 +23,26 @@ const MODEL = Object.freeze({
     websiteUrl: "https://northstar.example",
   }),
   jobId: "job-northstar",
+  requirementEvidence: Object.freeze([
+    Object.freeze({
+      requirementId: "requirement-delivery",
+      retrievalMode: "fts5" as const,
+      queryTerms: Object.freeze(["cross-functional", "delivery"]),
+      selectedEvidence: Object.freeze([]),
+      candidates: Object.freeze([
+        Object.freeze({
+          id: "evidence-project-1",
+          kind: "project",
+          label: "Portfolio launch",
+          summary: "Led product and operations through a coordinated launch.",
+          verificationState: "user_confirmed",
+          privacyTags: Object.freeze([]),
+          reasons: Object.freeze(["lexical", "skill-relation"]),
+          matchedTerms: Object.freeze(["delivery"]),
+        }),
+      ]),
+    }),
+  ]),
   requirementProposals: Object.freeze([
     Object.freeze({
       id: "requirement-proposal-1",
@@ -154,6 +174,8 @@ describe("JobWorkspaceContent contract", () => {
       "accept-requirement-proposal",
       "reject-requirement-proposal",
       "correct-requirement-category",
+      "select-requirement-evidence",
+      "remove-requirement-evidence",
     ]);
     expect(isJobWorkspaceContentTab("source")).toBe(true);
     expect(isJobWorkspaceContentTab("documents")).toBe(false);
@@ -175,6 +197,11 @@ describe("JobWorkspaceContent contract", () => {
     expect(markup).toContain("You will lead cross-functional delivery.");
     expect(markup).toContain("extracted as Required");
     expect(markup).toContain("Category for Lead cross-functional delivery");
+    expect(markup).toContain("FTS5");
+    expect(markup).toContain("structured relations");
+    expect(markup).toContain("Portfolio launch");
+    expect(markup).toContain("Suggestions are explainable and read-only");
+    expect(markup).toContain("Select evidence");
     expect(markup).toContain("not employer verification or hiring probability");
   });
 

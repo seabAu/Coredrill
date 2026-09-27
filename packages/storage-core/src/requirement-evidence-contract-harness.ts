@@ -1,0 +1,160 @@
+import { entityId, instant } from "@coredrill/domain";
+
+import {
+  DatabaseContractViolation,
+  defineDatabaseContractSuite,
+  type DatabaseContractSuite,
+} from "./contract-harness.js";
+import { sqlStatement, type DatabasePort } from "./database-port.js";
+import { openRequirementEvidenceRepository } from "./requirement-evidence-repository.js";
+import { PHASE_1_REPOSITORY_CONTRACT_MANIFEST } from "./repository-contract-manifest.js";
+
+export interface RequirementEvidenceContractSetup {
+  readonly expectedFts5: boolean;
+  readonly migrate: (database: DatabasePort) => Promise<void>;
+}
+
+const IDS = Object.freeze({
+  job: entityId("job", "0199a740-0000-7000-8000-000000000001"),
+  source: entityId("job-source", "0199a740-0000-7000-8000-000000000002"),
+  snapshot: entityId("source-snapshot", "0199a740-0000-7000-8000-000000000003"),
+  provenance: entityId("provenance", "0199a740-0000-7000-8000-000000000004"),
+  requirement: entityId("job-requirement", "0199a740-0000-7000-8000-000000000005"),
+  skill: entityId("skill", "0199a740-0000-7000-8000-000000000006"),
+  employment: entityId("experience", "0199a740-0000-7000-8000-000000000007"),
+  skillEvidence: entityId("skill-evidence", "0199a740-0000-7000-8000-000000000008"),
+});
+const CREATED_AT = instant("2026-09-27T23:00:00.000Z");
+
+const assertContract = (condition: boolean, message: string): void => {
+  if (!condition) throw new DatabaseContractViolation(message);
+};
+
+const seed = async (database: DatabasePort): Promise<void> => {
+  await database.execute(
+    sqlStatement(
+      "INSERT INTO job(id, title, created_at, updated_at) VALUES (?, 'Platform Lead', ?, ?)",
+      [IDS.job, CREATED_AT, CREATED_AT],
+    ),
+  );
+  await database.execute(
+    sqlStatement(
+      "INSERT INTO job_source(id, job_id, first_seen_at, last_seen_at, is_primary, created_at, updated_at) VALUES (?, ?, ?, ?, 1, ?, ?)",
+      [IDS.source, IDS.job, CREATED_AT, CREATED_AT, CREATED_AT, CREATED_AT],
+    ),
+  );
+  await database.execute(
+    sqlStatement(
+      "INSERT INTO source_snapshot(id, job_source_id, captured_at, extractor_id, extractor_version, raw_text, content_hash, retention_class, created_at) VALUES (?, ?, ?, 'fixture', '1', 'TypeScript required', ?, 'standard', ?)",
+      [IDS.snapshot, IDS.source, CREATED_AT, "b".repeat(64), CREATED_AT],
+    ),
+  );
+  await database.execute(
+    sqlStatement(
+      "INSERT INTO provenance(id, source_snapshot_id, extraction_method, source_pointer, source_excerpt, confidence, captured_at, created_at) VALUES (?, ?, 'user', '/requirements/0', 'TypeScript required', 1, ?, ?)",
+      [IDS.provenance, IDS.snapshot, CREATED_AT, CREATED_AT],
+    ),
+  );
+  await database.execute(
+    sqlStatement(
+      "INSERT INTO job_requirement(id, job_id, category, source_category, normalized_text, raw_text, provenance_id, confidence, user_confirmed, sort_order, created_at, updated_at) VALUES (?, ?, 'required', 'required', 'TypeScript delivery', 'Advanced TypeScript experience required.', ?, 1, 1, 0, ?, ?)",
+      [IDS.requirement, IDS.job, IDS.provenance, CREATED_AT, CREATED_AT],
+    ),
+  );
+  await database.execute(
+    sqlStatement(
+      "INSERT INTO skill(id, canonical_name, category, aliases_json, verification_state, created_at, updated_at) VALUES (?, 'TypeScript', 'language', '[\"TS\"]', 'user_confirmed', ?, ?)",
+      [IDS.skill, CREATED_AT, CREATED_AT],
+    ),
+  );
+  await database.execute(
+    sqlStatement(
+      "INSERT INTO experience(id, organization, role, description, verification_state, created_at, updated_at) VALUES (?, 'Coredrill Labs', 'Platform Engineer', 'Built offline product delivery.', 'user_confirmed', ?, ?)",
+      [IDS.employment, CREATED_AT, CREATED_AT],
+    ),
+  );
+  await database.execute(
+    sqlStatement(
+      "INSERT INTO skill_evidence(id, skill_id, evidence_kind, evidence_id, experience_id, narrative, verification_state, created_at) VALUES (?, ?, 'employment', ?, ?, 'Used TypeScript in this role.', 'user_confirmed', ?)",
+      [IDS.skillEvidence, IDS.skill, IDS.employment, IDS.employment, CREATED_AT],
+    ),
+  );
+};
+
+const assertBehavior = async (
+  database: DatabasePort,
+  disableFts5: boolean,
+  expectedMode: "fts5" | "normalized-token",
+): Promise<void> => {
+  const repository = await openRequirementEvidenceRepository(database, { disableFts5 });
+  const before = await repository.retrieve({ requirementId: IDS.requirement, limit: 5 });
+  assertContract(
+    before.capability.mode === expectedMode,
+    "Evidence retrieval selected the wrong capability.",
+  );
+  assertContract(
+    before.candidates.some(
+      ({ evidenceId, reasons }) => evidenceId === IDS.skill && reasons.includes("exact-skill"),
+    ),
+    "Evidence retrieval did not produce the exact skill candidate.",
+  );
+  assertContract(
+    before.candidates.some(
+      ({ evidenceId, reasons }) =>
+        evidenceId === IDS.employment && reasons.includes("skill-relation"),
+    ),
+    "Evidence retrieval did not expand the reviewed skill relation.",
+  );
+  assertContract(
+    before.selectedEvidence.length === 0,
+    "Retrieval mutated the evidence selection set.",
+  );
+
+  await repository.select({
+    requirementId: IDS.requirement,
+    evidenceKind: "skill",
+    evidenceId: IDS.skill,
+    selectedAt: CREATED_AT,
+  });
+  const selected = await repository.retrieve({ requirementId: IDS.requirement, limit: 5 });
+  assertContract(
+    selected.selectedEvidence.length === 1 &&
+      selected.selectedEvidence[0]?.evidenceId === IDS.skill,
+    "Explicit evidence selection did not persist.",
+  );
+  assertContract(
+    await repository.remove({
+      requirementId: IDS.requirement,
+      evidenceKind: "skill",
+      evidenceId: IDS.skill,
+    }),
+    "Explicit evidence removal did not persist.",
+  );
+};
+
+export const createRequirementEvidenceContractSuite = (
+  setup: RequirementEvidenceContractSetup,
+): DatabaseContractSuite =>
+  defineDatabaseContractSuite(
+    PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components.requirementEvidence.suiteName,
+    [
+      {
+        name: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components.requirementEvidence.cases
+          .accelerateWithFts5,
+        run: async (database) => {
+          await setup.migrate(database);
+          await seed(database);
+          await assertBehavior(database, false, setup.expectedFts5 ? "fts5" : "normalized-token");
+        },
+      },
+      {
+        name: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components.requirementEvidence.cases
+          .preserveFallback,
+        run: async (database) => {
+          await setup.migrate(database);
+          await seed(database);
+          await assertBehavior(database, true, "normalized-token");
+        },
+      },
+    ],
+  );

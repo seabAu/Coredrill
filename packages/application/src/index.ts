@@ -326,6 +326,28 @@ export {
 } from "./job-requirement-parser.js";
 export { JOB_REQUIREMENT_CATEGORIES, type JobRequirementCategory } from "@coredrill/domain";
 export {
+  REQUIREMENT_EVIDENCE_KINDS,
+  REQUIREMENT_EVIDENCE_REASONS,
+  RequirementEvidenceError,
+  createRequirementEvidenceOperations,
+  type RemoveRequirementEvidenceInput,
+  type RequirementEvidenceCandidateDto,
+  type RequirementEvidenceErrorCode,
+  type RequirementEvidenceFallbackReason,
+  type RequirementEvidenceItemDto,
+  type RequirementEvidenceKind,
+  type RequirementEvidenceOperationDependencies,
+  type RequirementEvidenceOperations,
+  type RequirementEvidencePort,
+  type RequirementEvidenceReason,
+  type RequirementEvidenceRetrievalDto,
+  type RequirementEvidenceSearchMode,
+  type RequirementEvidenceVerificationState,
+  type RetrieveRequirementEvidenceInput,
+  type SelectRequirementEvidenceInput,
+  type SelectedRequirementEvidenceDto,
+} from "./requirement-evidence.js";
+export {
   CAREER_PROFILE_ERROR_CODES,
   MANUAL_CAREER_PROFILE_KINDS,
   CareerProfileError,

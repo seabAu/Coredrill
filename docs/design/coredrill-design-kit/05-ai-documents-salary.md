@@ -59,6 +59,8 @@ For each requirement store:
 
 The AI-disabled baseline parses bounded provenance-linked heading, list-item, and paragraph blocks with versioned deterministic rules. Parser output remains a pending proposal with an exact source excerpt, source pointer, category, and confidence; it is not a verified employer fact and cannot create a requirement by itself. The user must explicitly accept or reject each proposal and may select a different current category during acceptance. Acceptance preserves the parser category as the immutable source category and records the review as user-confirmed; rejection leaves the captured source unchanged.
 
+The AI-disabled evidence-retrieval baseline then proposes bounded candidates from exact canonical/alias skill matches, explicit skill/story/accomplishment relations, and lexical search across canonical Career Profile evidence. Each suggestion exposes its evidence kind, label, verification state, matched terms, retrieval mode, and reason codes. Suggestions do not imply coverage and do not enter a context plan automatically. Only evidence the user deliberately selects is stored for the requirement; unlinking is equally explicit. FTS5 is acceleration only, with deterministic normalized-token fallback and no embedding or network dependency.
+
 Never inflate years by double-counting overlapping projects/jobs. A deterministic interval union provides the initial estimate, then the user confirms it.
 
 ## Context plan

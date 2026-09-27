@@ -1,0 +1,26 @@
+{
+  "specVersion": 1,
+  "cases": [
+    {
+      "requirementKey": "typescript",
+      "normalizedText": "Advanced TypeScript delivery",
+      "rawText": "Advanced TypeScript experience is required.",
+      "expectedTopFive": ["skill:typescript", "employment:platform", "story:recovery"],
+      "excluded": ["education:biology"]
+    },
+    {
+      "requirementKey": "recovery",
+      "normalizedText": "Recover migrations without data loss",
+      "rawText": "Lead safe migration recovery and prevent data loss.",
+      "expectedTopFive": ["accomplishment:migration", "employment:platform", "story:recovery"],
+      "excluded": ["education:biology"]
+    },
+    {
+      "requirementKey": "aws",
+      "normalizedText": "AWS Solutions Architect certification",
+      "rawText": "AWS Solutions Architect certification is desired.",
+      "expectedTopFive": ["certification:aws"],
+      "excluded": ["education:biology"]
+    }
+  ]
+}

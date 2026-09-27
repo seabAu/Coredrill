@@ -48,6 +48,12 @@ const PHASE_1_REPOSITORY_CONTRACT_COMPONENTS = Object.freeze({
     persistPrivacySafeLog:
       "persists immutable bounded local diagnostics and rejects content-bearing attributes",
   }),
+  requirementEvidence: component("phase-3-requirement-evidence", {
+    accelerateWithFts5:
+      "retrieves exact and relational career evidence with FTS5 before deliberate selection",
+    preserveFallback:
+      "preserves equivalent bounded evidence retrieval and explicit selection without FTS5",
+  }),
 });
 
 const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
@@ -57,8 +63,8 @@ const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
 );
 
 export const PHASE_1_REPOSITORY_CONTRACT_MANIFEST = Object.freeze({
-  schemaVersion: 3 as const,
-  suiteName: "phase-1-repository-contracts-v3",
+  schemaVersion: 4 as const,
+  suiteName: "phase-1-repository-contracts-v4",
   components: PHASE_1_REPOSITORY_CONTRACT_COMPONENTS,
   caseNames: PHASE_1_REPOSITORY_CONTRACT_CASES,
 });

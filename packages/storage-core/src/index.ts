@@ -212,6 +212,10 @@ export {
   type Phase1RepositoryContractSetup,
 } from "./phase-1-repository-contract-harness.js";
 export {
+  createRequirementEvidenceContractSuite,
+  type RequirementEvidenceContractSetup,
+} from "./requirement-evidence-contract-harness.js";
+export {
   PHASE_1_CANONICAL_JOURNEY_VERSION,
   runPhase1CanonicalJourney,
   type Phase1CanonicalJourneyProof,
@@ -244,6 +248,13 @@ export {
   type JobSearchResult,
   type OpenJobSearchOptions,
 } from "./job-search.js";
+export {
+  REQUIREMENT_EVIDENCE_LIMITS,
+  RequirementEvidenceRepository,
+  normalizeRequirementEvidenceTerms,
+  openRequirementEvidenceRepository,
+  type OpenRequirementEvidenceRepositoryOptions,
+} from "./requirement-evidence-repository.js";
 export {
   applySqlMigrations,
   defineSqlMigrations,

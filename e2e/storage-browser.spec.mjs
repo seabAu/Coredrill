@@ -61,6 +61,8 @@ const humanReadableDatasetNames = Object.freeze([
   "career_import_resolution",
   "career_import_resolution_proposal",
   "anecdote_evidence_link",
+  "skill_evidence",
+  "job_requirement_evidence_selection",
   "answer_library_entry",
   "answer_library_version",
 ]);
@@ -114,10 +116,10 @@ test("opens official SQLite in a Worker, persists transactions, and restores a c
 
   await callHarness(sourcePage, "delete");
   const opened = await callHarness(sourcePage, "openAndMigrate");
-  expect(opened.appliedVersions).toEqual(Array.from({ length: 129 }, (_, index) => index + 1));
+  expect(opened.appliedVersions).toEqual(Array.from({ length: 132 }, (_, index) => index + 1));
   expect(opened.diagnostics).toMatchObject({
     adapterName: "official-sqlite-wasm-opfs-sahpool",
-    schemaVersion: 129,
+    schemaVersion: 132,
   });
   expect(["ready", "degraded"]).toContain(opened.diagnostics.health);
   expect(["best-effort", "durable"]).toContain(opened.diagnostics.persistence);
@@ -154,15 +156,15 @@ test("opens official SQLite in a Worker, persists transactions, and restores a c
     vaultId: committedVault.id,
   });
   expect(humanReadable).toEqual({
-    dataFileCount: 96,
-    datasetCount: 48,
+    dataFileCount: 100,
+    datasetCount: 50,
     datasetNames: humanReadableDatasetNames,
-    jsonFiles: 48,
-    csvFiles: 48,
+    jsonFiles: 50,
+    csvFiles: 50,
     rowCount: 1,
-    sourceSchemaVersion: 129,
+    sourceSchemaVersion: 132,
   });
-  expect(portable.schemaVersion).toBe(129);
+  expect(portable.schemaVersion).toBe(132);
   expect(portable.byteLength).toBeGreaterThan(0);
   expect(portable.sha256).toMatch(/^[a-f0-9]{64}$/u);
   const archiveRestore = await callHarness(sourcePage, "runPortableArchiveRestoreProof", {
@@ -173,7 +175,7 @@ test("opens official SQLite in a Worker, persists transactions, and restores a c
     staleName: "Stale target",
   });
   expect(archiveRestore).toMatchObject({
-    dataFileCount: 96,
+    dataFileCount: 100,
     attachmentCount: 0,
     corruptionRejected: true,
     corruptionPreservedTarget: true,

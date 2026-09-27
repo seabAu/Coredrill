@@ -70,7 +70,7 @@ test("runs and records the complete accountless browser recovery journey", async
       version: 1,
       runtime: "browser",
       adapterName: "official-sqlite-wasm-opfs-sahpool",
-      schemaVersion: 129,
+      schemaVersion: 132,
       vaultName: "Canonical local job search",
       jobTitle: "Research Operations Lead",
       finalStage: "Interviewing",
@@ -1021,6 +1021,37 @@ test("Job core tabs expose normalized facts, chronology, company context, and pr
     "Saved the user-confirmed requirement category as responsibility",
   );
   await expect(page.getByRole("status").first()).toContainText("No external request was made");
+
+  const evidenceReview = workspace.getByLabel("Evidence for Lead cross-functional delivery");
+  await expect(evidenceReview.getByText("FTS5", { exact: false })).toBeVisible();
+  await expect(evidenceReview.getByText("structured relations", { exact: false })).toBeVisible();
+  await expect(evidenceReview.getByText("Portfolio launch", { exact: true })).toBeVisible();
+  await expect(
+    evidenceReview.getByLabel("Selected evidence for Lead cross-functional delivery"),
+  ).toContainText("No evidence selected");
+  await evidenceReview
+    .getByRole("button", {
+      name: "Select Portfolio launch for Lead cross-functional delivery",
+    })
+    .click();
+  await expect(
+    evidenceReview.getByLabel("Selected evidence for Lead cross-functional delivery"),
+  ).toContainText("Portfolio launch");
+  await expect(page.getByRole("status").first()).toContainText(
+    "Selected requirement evidence by explicit local action",
+  );
+  await evidenceReview
+    .getByRole("button", {
+      name: "Remove Portfolio launch from Lead cross-functional delivery",
+    })
+    .click();
+  await expect(
+    evidenceReview.getByLabel("Selected evidence for Lead cross-functional delivery"),
+  ).toContainText("No evidence selected");
+  await expect(page.getByRole("status").first()).toContainText(
+    "Removed requirement evidence by explicit local action",
+  );
+  expect(externalRequests).toEqual([]);
 
   const privateNote = "Private question about portfolio ownership";
   await workspace.getByRole("button", { name: "Overview", exact: true }).click();

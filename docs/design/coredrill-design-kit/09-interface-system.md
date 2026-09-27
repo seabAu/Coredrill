@@ -264,6 +264,9 @@ US work authorization               Required   Unknown    Answer privately
 - User can correct requirement type and link/unlink evidence.
 - Literal term coverage is displayed separately from qualification evidence.
 - Sensitive eligibility questions are not inferred from unrelated profile data.
+- Before coverage classification exists, each requirement separates **Selected evidence** from **Suggested evidence**. Suggestions show their evidence type, verification state, retrieval mode, matched terms, and plain-language reasons.
+- Retrieval is read-only. A suggestion moves into the requirement evidence set only after the user activates **Select evidence**; **Remove selection** reverses that explicit relation without deleting Career Profile evidence.
+- Suggested candidates never display Strength, Partial, Gap, or a score during `MAT-003`; those decisions belong to `MAT-004` and must remain independently explainable.
 
 ### Document studio
 

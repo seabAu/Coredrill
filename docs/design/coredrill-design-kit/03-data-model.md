@@ -106,6 +106,8 @@ until an explicit replacement command is implemented and invoked.
 
 `MAT-002` does not add a schema. Deterministic parser output is an ephemeral, immutable proposal projection over provenance-bound source blocks; parsing alone cannot write `job_requirement` or confirmation state. Explicit acceptance uses the existing repository transaction to create one user-confirmed requirement. The parser category becomes immutable `source_category`, while the category chosen during review becomes the current `category`, so recategorization never erases the extracted interpretation. Rejection creates no row and does not mutate the source snapshot or provenance. Evidence retrieval and coverage decisions remain `MAT-003` and `MAT-004`.
 
+`MAT-003` adds schemas `0130` through `0132`. `skill_evidence` records a validated typed relationship from one canonical skill to employment, education, project, accomplishment, certification, publication, volunteer, or story evidence using one concrete foreign key. `job_requirement_evidence_selection` records only user-selected requirement/evidence pairs across all nine evidence kinds. `career_evidence_search_content` is a noncanonical union view over active Career Profile evidence; its adapter-created FTS5 index is rebuildable and excluded from export. Both durable relation tables are included in the portable JSON/CSV projection, while retrieval candidates, match scores, terms, and reason codes remain ephemeral explanations.
+
 ### Pipeline and interactions
 
 `status_definition(id, name, category, color, is_system, sort_order, terminal)`

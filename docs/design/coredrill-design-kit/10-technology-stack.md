@@ -293,6 +293,8 @@ Modes:
 - If used, vectors are stored locally with model/version/dimension and rebuilt rather than silently mixed.
 - No vector server for a personal local vault.
 
+`MAT-003` implements the first line without adding a dependency: reviewed SQLite migrations provide typed skill/evidence and requirement/selection relations plus a normalized evidence-content view. `@coredrill/storage-core` performs a real FTS5 probe, creates a rebuildable local acceleration artifact when supported, and otherwise uses escaped bound normalized-token predicates. Exact skill aliases and structured relation traversal are evaluated independently of FTS. A frozen evaluation and the shared browser/native contract require bounded deterministic results and explainable reasons; embeddings and AI reranking remain deferred.
+
 ## 11. Testing stack
 
 | Layer | Tools | Required focus |

@@ -14,13 +14,14 @@ import {
 } from "./database-port.js";
 import type { PortableArchiveDataFileSourceV1 } from "./portable-archive-writer.js";
 
-export const PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION = 129 as const;
+export const PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION = 132 as const;
 export const PORTABLE_DATA_EXPORT_SUPPORTED_SOURCE_SCHEMA_VERSIONS = Object.freeze([
   101,
   111,
   112,
   115,
   126,
+  129,
   PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION,
 ] as const);
 export const PORTABLE_DATA_EXPORT_WRITER_LIMITS = Object.freeze({
@@ -857,6 +858,50 @@ export const PORTABLE_DATA_EXPORT_DATASETS: readonly DatasetSpec[] = Object.free
     ],
     orderBy: ["anecdote_id", "evidence_kind", "evidence_id"],
     minimumSourceSchemaVersion: 126,
+  }),
+  dataset({
+    name: "skill_evidence",
+    table: "skill_evidence",
+    columns: [
+      "id",
+      "skill_id",
+      "evidence_kind",
+      "evidence_id",
+      "experience_id",
+      "education_id",
+      "project_id",
+      "accomplishment_id",
+      "certification_id",
+      "publication_id",
+      "volunteer_experience_id",
+      "anecdote_id",
+      "narrative",
+      "verification_state",
+      "created_at",
+    ],
+    orderBy: ["skill_id", "evidence_kind", "evidence_id"],
+    minimumSourceSchemaVersion: 130,
+  }),
+  dataset({
+    name: "job_requirement_evidence_selection",
+    table: "job_requirement_evidence_selection",
+    columns: [
+      "requirement_id",
+      "evidence_kind",
+      "evidence_id",
+      "experience_id",
+      "education_id",
+      "project_id",
+      "skill_id",
+      "accomplishment_id",
+      "certification_id",
+      "publication_id",
+      "volunteer_experience_id",
+      "anecdote_id",
+      "selected_at",
+    ],
+    orderBy: ["requirement_id", "evidence_kind", "evidence_id"],
+    minimumSourceSchemaVersion: 131,
   }),
   dataset({
     name: "answer_library_entry",

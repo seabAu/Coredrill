@@ -3854,6 +3854,39 @@ textarea {
   gap: var(--space-2);
 }
 
+.cd-requirement-evidence {
+  display: grid;
+  gap: var(--space-3);
+  padding-block-start: var(--space-3);
+  border-block-start: 1px solid var(--color-border-subtle);
+}
+
+.cd-requirement-evidence__heading,
+.cd-requirement-evidence__item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.cd-requirement-evidence__heading p,
+.cd-requirement-evidence__item p {
+  margin: var(--space-1) 0;
+  overflow-wrap: anywhere;
+}
+
+.cd-requirement-evidence__item {
+  margin-block-start: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-control);
+  background: var(--color-surface-raised);
+}
+
+.cd-requirement-evidence__item > div {
+  min-width: 0;
+}
+
 .cd-job-content-section,
 .cd-job-quick-note,
 .cd-job-empty-state,
@@ -4265,6 +4298,8 @@ textarea {
 @media (max-width: 48rem) {
   .cd-job-content-section-heading,
   .cd-job-requirement__heading,
+  .cd-requirement-evidence__heading,
+  .cd-requirement-evidence__item,
   .cd-job-timeline-item-heading {
     align-items: stretch;
     flex-direction: column;
