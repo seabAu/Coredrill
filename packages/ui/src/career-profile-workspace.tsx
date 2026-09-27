@@ -6,6 +6,7 @@ import {
   type CareerProfileValidationIssue,
   type CreateManualCareerProfileEntryInput,
   type ManualCareerProfileKind,
+  type ResumeImportQueueItemDto,
 } from "@coredrill/application";
 import {
   useId,
@@ -32,11 +33,21 @@ export const CAREER_PROFILE_EDITOR_SECTIONS = Object.freeze([
 
 export interface CareerProfileWorkspaceModel {
   readonly entries: readonly CareerProfileEntryDto[];
+  readonly imports: readonly ResumeImportQueueItemDto[];
   readonly loading: boolean;
+}
+
+export interface ResumeImportFileInput {
+  readonly bytes: Uint8Array;
+  readonly fileName: string;
+  readonly mediaType?: string;
 }
 
 export interface CareerProfileWorkspaceProps {
   readonly model: CareerProfileWorkspaceModel;
+  readonly onImport: (
+    input: ResumeImportFileInput,
+  ) => Promise<ApplicationResult<ResumeImportQueueItemDto>>;
   readonly onSave: (
     input: CreateManualCareerProfileEntryInput,
   ) => Promise<ApplicationResult<CareerProfileEntryDto>>;
@@ -380,12 +391,18 @@ const dateLabel = (entry: CareerProfileEntryDto): string | null => {
   return `${entry.startDate} – ${entry.endDate}`;
 };
 
-export const CareerProfileWorkspace = ({ model, onSave }: CareerProfileWorkspaceProps) => {
+export const CareerProfileWorkspace = ({
+  model,
+  onImport,
+  onSave,
+}: CareerProfileWorkspaceProps) => {
   const panelId = useId();
   const [activeKind, setActiveKind] = useState<ManualCareerProfileKind>("basics");
   const [issues, setIssues] = useState<readonly CareerProfileValidationIssue[]>([]);
   const [status, setStatus] = useState("");
   const [saving, setSaving] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importStatus, setImportStatus] = useState("");
   const issueMap = new Map(issues.map((value) => [value.field, value]));
   const visibleEntries = model.entries.filter(({ kind }) => kind === activeKind);
 
@@ -423,11 +440,37 @@ export const CareerProfileWorkspace = ({ model, onSave }: CareerProfileWorkspace
 
   if (
     model.entries.length > 10_000 ||
+    model.imports.length > 1_000 ||
     new Set(model.entries.map(({ id }) => id)).size !== model.entries.length ||
     model.entries.some(({ kind }) => !MANUAL_CAREER_PROFILE_KINDS.includes(kind))
   ) {
     throw new RangeError("Career Profile workspace model is invalid.");
   }
+
+  const importResume = async (event: SyntheticEvent<HTMLInputElement>): Promise<void> => {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    if (file === undefined) return;
+    setImporting(true);
+    setImportStatus("Reading the local resume…");
+    try {
+      const result = await onImport({
+        bytes: new Uint8Array(await file.arrayBuffer()),
+        fileName: file.name,
+        ...(file.type.length === 0 ? {} : { mediaType: file.type }),
+      });
+      setImportStatus(
+        result.ok
+          ? `${String(result.value.proposalCount)} proposal${result.value.proposalCount === 1 ? "" : "s"} queued for review. Nothing was verified or added to your profile.`
+          : result.error.message,
+      );
+    } catch {
+      setImportStatus("This local resume could not be read safely.");
+    } finally {
+      setImporting(false);
+      input.value = "";
+    }
+  };
 
   const submit = async (event: SyntheticEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
@@ -472,6 +515,81 @@ export const CareerProfileWorkspace = ({ model, onSave }: CareerProfileWorkspace
           <span>saved entries</span>
         </div>
       </header>
+
+      <section aria-labelledby={`${panelId}-import-heading`} className="cd-career-import">
+        <div className="cd-career-import-heading">
+          <div>
+            <p className="cd-eyebrow">Proposal-only local import</p>
+            <h3 id={`${panelId}-import-heading`}>Review resume evidence before it becomes yours</h3>
+            <p>
+              PDF, DOCX, Markdown, and text files are read locally. Extracted fields retain their
+              source excerpt and confidence, stay pending, and never overwrite saved information.
+            </p>
+          </div>
+          <label className="cd-button cd-button-secondary cd-career-import-button">
+            <span>{importing ? "Importing locally…" : "Choose resume"}</span>
+            <input
+              accept=".docx,.pdf,.md,.markdown,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/markdown,text/plain"
+              disabled={importing}
+              onChange={(event) => void importResume(event)}
+              type="file"
+            />
+          </label>
+        </div>
+        <p aria-live="polite" className="cd-career-status" role="status">
+          {importStatus}
+        </p>
+
+        {model.imports.length === 0 ? (
+          <p className="cd-career-empty">No resume proposals are waiting for review.</p>
+        ) : (
+          <ol className="cd-career-import-queue">
+            {model.imports.map((item) => (
+              <li key={item.id}>
+                <div className="cd-career-import-summary">
+                  <div>
+                    <strong>{item.source.fileName}</strong>
+                    <span>
+                      {item.source.format.toUpperCase()} · {String(item.proposalCount)} pending
+                      proposal{item.proposalCount === 1 ? "" : "s"}
+                    </span>
+                  </div>
+                  <span className="cd-career-proposal-badge">Proposal only · not verified</span>
+                </div>
+                {item.warnings.map((warning) => (
+                  <p className="cd-career-import-warning" key={warning}>
+                    {warning}
+                  </p>
+                ))}
+                {item.proposals.length === 0 ? (
+                  <p className="cd-career-empty">
+                    No extractable text was found. The original file was not changed.
+                  </p>
+                ) : (
+                  <ul className="cd-career-proposals">
+                    {item.proposals.map((proposal) => (
+                      <li key={proposal.id}>
+                        <div>
+                          <strong>{proposal.proposedValue}</strong>
+                          <span>
+                            {proposal.target} · {proposal.fieldName} · extraction confidence{" "}
+                            {String(Math.round(proposal.confidence * 100))}%
+                          </span>
+                        </div>
+                        <details>
+                          <summary>Source</summary>
+                          <p>{proposal.sourceExcerpt}</p>
+                          <code>{proposal.sourcePointer}</code>
+                        </details>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
 
       <div className="cd-career-layout">
         <nav aria-label="Career Profile sections" className="cd-career-sections" role="tablist">
@@ -567,8 +685,8 @@ export const CareerProfileWorkspace = ({ model, onSave }: CareerProfileWorkspace
       </div>
 
       <aside className="cd-career-later" aria-label="Later Career Profile capabilities">
-        <strong>Kept for later reviewed slices:</strong> resume-import proposals, story/evidence
-        linking, the Answer Library, and any AI-assisted drafting.
+        <strong>Kept for later reviewed slices:</strong> accepting or resolving import conflicts,
+        story/evidence linking, the Answer Library, and any AI-assisted drafting.
       </aside>
     </section>
   );

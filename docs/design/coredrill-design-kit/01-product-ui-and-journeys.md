@@ -150,6 +150,8 @@ Each generated sentence is either linked to evidence, labeled non-factual/style-
 
 `EVD-003` supplies manual, local-only editors for basics/preferences, employment, education, projects, skills, accomplishments, certifications, publications, and volunteer work. Required text, bounded lists and URLs, real optional `YYYY-MM-DD` dates, non-inverted ranges, and current-role/end-date consistency are validated before persistence. Saved evidence-backed records carry no invented source and are explicitly user-confirmed. The section tablist supports arrow, Home, and End navigation; errors remain attached to their fields; and the workspace names resume import, stories/evidence linking, Answer Library work, and AI assistance as later reviewed slices. See [manual Career Profile editor verification](../../proof/phase-3-career-profile-editors-verification.md).
 
+`EVD-004` adds an explicit local resume-import queue above those editors. PDF, DOCX, Markdown, and text files pass through the reviewed document boundary, then become field-level pending proposals with the source file hash, page/paragraph/line pointer, source excerpt, and extraction confidence. Imported proposals are visibly not verified, survive reload from SQLite, and cannot call the manual-entry port or overwrite a saved profile value. Proposal acceptance, date/duplicate/skill conflict resolution, and source-document promotion remain assigned to `EVD-005`.
+
 ### Network: Companies & Contacts
 
 - Company overview, official domains, saved jobs, interactions, outcomes, notes, sources.

@@ -65,6 +65,7 @@ import {
   type ShellDestinationId,
   type ThemePreference,
   type VaultHealthState,
+  type ResumeImportFileInput,
 } from "@coredrill/ui";
 import {
   CHECKED_IN_SOURCE_POLICY_RECORDS_V1,
@@ -77,6 +78,7 @@ import {
   type CaptureDuplicateSuggestionV1,
   type CareerProfileEntryDto,
   type CreateManualCareerProfileEntryInput,
+  type ResumeImportQueueItemDto,
   type DeleteVaultInput,
   type VaultDeletionPreviewDto,
   type VaultDeletionResultDto,
@@ -161,6 +163,7 @@ interface AppShellCatalogState {
   readonly captureInboxCount: number;
   readonly captureDialogMode: SuppliedCaptureMode | null;
   readonly careerProfileEntryCount: number;
+  readonly careerProfileProposalCount: number;
   readonly density: DensityMode;
   readonly homeMode: HomeDashboardModel["state"];
   readonly homeSnapshotVisible: boolean;
@@ -1407,6 +1410,9 @@ const AppShellCatalog = () => {
   const [careerProfileEntries, setCareerProfileEntries] = useState<
     readonly CareerProfileEntryDto[]
   >([]);
+  const [careerProfileImports, setCareerProfileImports] = useState<
+    readonly ResumeImportQueueItemDto[]
+  >([]);
   const [careerProfileLoaded, setCareerProfileLoaded] = useState(false);
   const [careerProfileLoading, setCareerProfileLoading] = useState(false);
   const [networkTab, setNetworkTab] = useState<NetworkTabId>(
@@ -1811,14 +1817,19 @@ const AppShellCatalog = () => {
     if (activeDestination !== "profile" || careerProfileLoaded || careerProfileLoading) return;
 
     setCareerProfileLoading(true);
-    void globalThis.coredrillStorageSpike
-      .listManualCareerProfileEntries()
-      .then((result) => {
-        if (result.ok) {
-          setCareerProfileEntries(result.value);
-          setLastActivity("Loaded the local Career Profile.");
+    void Promise.all([
+      globalThis.coredrillStorageSpike.listManualCareerProfileEntries(),
+      globalThis.coredrillStorageSpike.listPendingResumeImports(),
+    ])
+      .then(([entries, imports]) => {
+        if (!entries.ok) {
+          setLastActivity(entries.error.message);
+        } else if (!imports.ok) {
+          setLastActivity(imports.error.message);
         } else {
-          setLastActivity(result.error.message);
+          setCareerProfileEntries(entries.value);
+          setCareerProfileImports(imports.value);
+          setLastActivity("Loaded the local Career Profile.");
         }
       })
       .catch(() => {
@@ -1841,6 +1852,17 @@ const AppShellCatalog = () => {
     return result;
   };
 
+  const importResume = async (input: ResumeImportFileInput) => {
+    const result = await globalThis.coredrillStorageSpike.queueResumeImport(input);
+    if (result.ok) {
+      setCareerProfileImports((current) => Object.freeze([result.value, ...current]));
+      setLastActivity("Queued local resume evidence for review without changing the profile.");
+    } else {
+      setLastActivity(result.error.message);
+    }
+    return result;
+  };
+
   useEffect(() => {
     globalThis.coredrillAppShell = Object.freeze({
       getState: () =>
@@ -1852,6 +1874,10 @@ const AppShellCatalog = () => {
           captureInboxCount,
           captureDialogMode,
           careerProfileEntryCount: careerProfileEntries.length,
+          careerProfileProposalCount: careerProfileImports.reduce(
+            (total, item) => total + item.proposalCount,
+            0,
+          ),
           density: appearance.density,
           homeMode: appearance.homeMode,
           homeSnapshotVisible,
@@ -1892,6 +1918,7 @@ const AppShellCatalog = () => {
     captureInboxCount,
     captureDialogMode,
     careerProfileEntries.length,
+    careerProfileImports,
     browserStorageEnvironment,
     exportReminder.state,
     homeSnapshotVisible,
@@ -2907,7 +2934,12 @@ const AppShellCatalog = () => {
           )
         ) : activeDestination === "profile" ? (
           <CareerProfileWorkspace
-            model={{ entries: careerProfileEntries, loading: careerProfileLoading }}
+            model={{
+              entries: careerProfileEntries,
+              imports: careerProfileImports,
+              loading: careerProfileLoading,
+            }}
+            onImport={importResume}
             onSave={saveCareerProfileEntry}
           />
         ) : activeDestination === "network" ? (

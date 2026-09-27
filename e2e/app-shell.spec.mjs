@@ -1,4 +1,5 @@
 import { writeFile } from "node:fs/promises";
+import path from "node:path";
 
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
@@ -69,7 +70,7 @@ test("runs and records the complete accountless browser recovery journey", async
       version: 1,
       runtime: "browser",
       adapterName: "official-sqlite-wasm-opfs-sahpool",
-      schemaVersion: 112,
+      schemaVersion: 115,
       vaultName: "Canonical local job search",
       jobTitle: "Research Operations Lead",
       finalStage: "Interviewing",
@@ -1497,7 +1498,7 @@ test("Career Profile validates ranges and persists user-confirmed manual evidenc
 
   await workspace.getByLabel("End date").fill("2026-09-27");
   await workspace.getByRole("button", { name: "Save Work" }).click();
-  await expect(workspace.getByRole("status")).toContainText(
+  await expect(workspace.locator(".cd-career-form").getByRole("status")).toContainText(
     "Work saved locally as user-confirmed information.",
   );
   await expect(workspace.getByRole("listitem")).toContainText("Research Operations Lead");
@@ -1528,6 +1529,87 @@ test("Career Profile validates ranges and persists user-confirmed manual evidenc
     })),
   ).toEqual({ clientWidth: 320, scrollWidth: 320 });
   await attachAxe(page, testInfo, "career-profile-manual-evidence-mobile");
+  expect(externalRequests).toEqual([]);
+});
+
+test("resume PDF, DOCX, and text imports stay durable pending proposals with provenance", async ({
+  page,
+}, testInfo) => {
+  const externalRequests = [];
+  page.on("request", (request) => {
+    if (!request.url().startsWith("http://127.0.0.1:4178/")) externalRequests.push(request.url());
+  });
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await openShell(page);
+  await page
+    .getByRole("navigation", { name: "Primary" })
+    .getByRole("link", { name: "Career Profile" })
+    .click();
+
+  const workspace = page.getByTestId("career-profile-workspace");
+  const importPanel = workspace.locator(".cd-career-import");
+  const fileInput = importPanel.locator('input[type="file"]');
+  const fixtures = path.join(process.cwd(), "fixtures", "imports");
+
+  await fileInput.setInputFiles(path.join(fixtures, "synthetic-resume.docx"));
+  await expect(importPanel.getByRole("status")).toContainText("7 proposals queued for review");
+  await expect(importPanel).toContainText("synthetic-resume.docx");
+  await expect(importPanel).toContainText("Coredrill Labs");
+  await expect(importPanel).toContainText("Proposal only · not verified");
+
+  await fileInput.setInputFiles(path.join(fixtures, "synthetic-two-page.pdf"));
+  await expect(importPanel.getByRole("status")).toContainText("5 proposals queued for review");
+  await expect(importPanel).toContainText("synthetic-two-page.pdf");
+  await expect(importPanel).toContainText("Page two salary source line.");
+
+  await fileInput.setInputFiles(path.join(fixtures, "synthetic-profile.md"));
+  await expect(importPanel.getByRole("status")).toContainText("2 proposals queued for review");
+  await expect(importPanel).toContainText("synthetic-profile.md");
+  await expect(importPanel).toContainText("Source mapping survives normalization.");
+  await expect(importPanel).toContainText("/lines/5");
+  await expect(importPanel).not.toContainText("User-confirmed");
+
+  await expect
+    .poll(() =>
+      page.evaluate(() => globalThis.coredrillAppShell?.getState().careerProfileProposalCount),
+    )
+    .toBe(14);
+  await expect
+    .poll(() =>
+      page.evaluate(() => globalThis.coredrillAppShell?.getState().careerProfileEntryCount),
+    )
+    .toBe(0);
+
+  await page.reload();
+  await page.waitForFunction(() => globalThis.coredrillAppShell !== undefined);
+  await expect(page.getByTestId("page-title")).toHaveText("Career Profile");
+  const reloadedImportPanel = page
+    .getByTestId("career-profile-workspace")
+    .locator(".cd-career-import");
+  await expect(reloadedImportPanel).toContainText("synthetic-resume.docx");
+  await expect(reloadedImportPanel).toContainText("synthetic-two-page.pdf");
+  await expect(reloadedImportPanel).toContainText("synthetic-profile.md");
+  await expect
+    .poll(() =>
+      page.evaluate(() => globalThis.coredrillAppShell?.getState().careerProfileProposalCount),
+    )
+    .toBe(14);
+  await expect
+    .poll(() =>
+      page.evaluate(() => globalThis.coredrillAppShell?.getState().careerProfileEntryCount),
+    )
+    .toBe(0);
+
+  await attachAxe(page, testInfo, "career-profile-resume-proposals");
+  await attachAriaSnapshot(reloadedImportPanel, testInfo, "career-profile-resume-proposals");
+  await attachProof(page, testInfo, "career-profile-resume-proposals");
+  await page.setViewportSize({ width: 320, height: 800 });
+  const dimensions = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
+  await attachProof(page, testInfo, "career-profile-resume-proposals-320");
   expect(externalRequests).toEqual([]);
 });
 

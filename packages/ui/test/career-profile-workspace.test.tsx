@@ -1,4 +1,8 @@
-import { applicationFailure, type CareerProfileEntryDto } from "@coredrill/application";
+import {
+  applicationFailure,
+  type CareerProfileEntryDto,
+  type ResumeImportQueueItemDto,
+} from "@coredrill/application";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
@@ -25,12 +29,15 @@ const ENTRY: CareerProfileEntryDto = Object.freeze({
 const MODEL = Object.freeze({
   loading: false,
   entries: Object.freeze([ENTRY]),
+  imports: Object.freeze([]),
 } as const satisfies CareerProfileWorkspaceModel);
 
 const renderWorkspace = (model: CareerProfileWorkspaceModel = MODEL) =>
   renderToStaticMarkup(
     createElement(CareerProfileWorkspace, {
       model,
+      onImport: async () =>
+        applicationFailure({ code: "internal", message: "unused", retryable: false }),
       onSave: async () =>
         applicationFailure({ code: "internal", message: "unused", retryable: false }),
     }),
@@ -50,7 +57,7 @@ describe("CareerProfileWorkspace", () => {
       "volunteer",
     ]);
     const markup = renderWorkspace();
-    expect(markup).toContain("resume-import proposals");
+    expect(markup).toContain("accepting or resolving import conflicts");
     expect(markup).toContain("story/evidence linking");
     expect(markup).toContain("AI-assisted drafting");
   });
@@ -66,6 +73,49 @@ describe("CareerProfileWorkspace", () => {
     expect(markup).toContain('name="displayName"');
     expect(markup).toContain('name="targetRoles"');
     expect(markup).toContain('name="workModes"');
+    expect(markup).toContain('accept=".docx,.pdf,.md,.markdown,.txt');
+    expect(markup).toContain("never overwrite saved information");
+  });
+
+  it("renders imported evidence as pending source-backed proposals, never verified facts", () => {
+    const queued: ResumeImportQueueItemDto = Object.freeze({
+      completedAt: "2026-09-27T14:00:00.000Z" as ResumeImportQueueItemDto["completedAt"],
+      id: "0199a200-0000-7000-8000-000000000001" as ResumeImportQueueItemDto["id"],
+      proposalCount: 1,
+      proposals: Object.freeze([
+        Object.freeze({
+          confidence: 0.82,
+          evidenceStatus: "proposal",
+          fieldName: "organization",
+          groupKey: "block-8",
+          id: "0199a200-0000-7000-8000-000000000002" as ResumeImportQueueItemDto["proposals"][number]["id"],
+          importRunId:
+            "0199a200-0000-7000-8000-000000000001" as ResumeImportQueueItemDto["proposals"][number]["importRunId"],
+          proposedValue: "Coredrill Labs",
+          reviewState: "pending",
+          sourceExcerpt: "Coredrill Labs — Product Engineer — 2024–2026",
+          sourcePointer: "/word/document.xml#paragraph=8",
+          target: "employment",
+        }),
+      ]),
+      source: Object.freeze({
+        byteLength: 4_096,
+        fileName: "synthetic-resume.docx",
+        format: "docx",
+        mediaType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        pageCount: null,
+        sha256: "a".repeat(64),
+      }),
+      status: "completed",
+      warnings: Object.freeze([]),
+    });
+    const markup = renderWorkspace({ ...MODEL, imports: [queued] });
+
+    expect(markup).toContain("Proposal only · not verified");
+    expect(markup).toContain("extraction confidence 82%");
+    expect(markup).toContain("Coredrill Labs — Product Engineer — 2024–2026");
+    expect(markup).toContain("/word/document.xml#paragraph=8");
+    expect(markup).not.toContain("Imported as user-confirmed");
   });
 
   it("fails closed for duplicate identities, unsupported kinds, and excessive records", () => {

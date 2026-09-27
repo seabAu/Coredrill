@@ -194,6 +194,10 @@ export {
   type Phase1RepositoryContractManifest,
 } from "./repository-contract-manifest.js";
 export {
+  ResumeImportRepository,
+  createResumeImportRepository,
+} from "./resume-import-repository.js";
+export {
   JOB_SEARCH_LIMITS,
   JobSearchRepository,
   normalizeJobSearchTokens,

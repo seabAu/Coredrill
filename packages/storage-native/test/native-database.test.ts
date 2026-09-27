@@ -338,11 +338,11 @@ describe("native SQLite repository and migration contracts", () => {
         name: "applies the shared migration and reopens its ledger",
         run: async (database) => {
           await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
-            schemaVersion: 112,
-            appliedVersions: Array.from({ length: 112 }, (_, index) => index + 1),
+            schemaVersion: 115,
+            appliedVersions: Array.from({ length: 115 }, (_, index) => index + 1),
           });
           await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
-            schemaVersion: 112,
+            schemaVersion: 115,
             appliedVersions: [],
           });
         },
@@ -449,7 +449,7 @@ describe("native SQLite repository and migration contracts", () => {
       adapterName: "native-rusqlite-candidate",
       health: "ready",
       persistence: "durable",
-      schemaVersion: 112,
+      schemaVersion: 115,
     });
     await expect(reopened.delete()).resolves.toBe(true);
   });
@@ -469,7 +469,7 @@ describe("native SQLite repository and migration contracts", () => {
     });
     await applySqlMigrations(database, migrations(), APPLIED_AT);
     await expect(database.exportPortable()).resolves.toMatchObject({
-      schemaVersion: 112,
+      schemaVersion: 115,
       byteLength: expect.any(Number),
       sha256: expect.stringMatching(/^[a-f0-9]{64}$/u),
     });
@@ -479,7 +479,7 @@ describe("native SQLite repository and migration contracts", () => {
       retentionCount: 7,
       knownGoodBackups: 1,
       cleanupPending: false,
-      archive: { schemaVersion: 112, sha256: expect.stringMatching(/^[a-f0-9]{64}$/u) },
+      archive: { schemaVersion: 115, sha256: expect.stringMatching(/^[a-f0-9]{64}$/u) },
     });
     await database.delete();
   });
@@ -692,7 +692,7 @@ describe("native SQLite repository and migration contracts", () => {
           version: 1,
           runtime: "windows-native",
           adapterName: "native-rusqlite-candidate",
-          schemaVersion: 112,
+          schemaVersion: 115,
           vaultName: "Canonical local job search",
           jobTitle: "Research Operations Lead",
           finalStage: "Interviewing",

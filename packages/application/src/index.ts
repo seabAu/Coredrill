@@ -302,3 +302,23 @@ export {
   type ManualSkillInput,
   type ManualVolunteerInput,
 } from "./career-profile.js";
+export {
+  RESUME_IMPORT_ERROR_CODES,
+  RESUME_IMPORT_FORMATS,
+  RESUME_IMPORT_LIMITS,
+  RESUME_PROPOSAL_TARGETS,
+  ResumeImportError,
+  createResumeImportOperations,
+  extractResumeEvidenceProposals,
+  type QueueResumeImportInput,
+  type ResumeEvidenceProposalDto,
+  type ResumeImportBlockInput,
+  type ResumeImportErrorCode,
+  type ResumeImportFormat,
+  type ResumeImportOperationDependencies,
+  type ResumeImportOperations,
+  type ResumeImportPort,
+  type ResumeImportPortInput,
+  type ResumeImportQueueItemDto,
+  type ResumeProposalTarget,
+} from "./resume-import.js";

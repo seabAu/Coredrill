@@ -1,0 +1,177 @@
+{
+  "cases": [
+    {
+      "name": "docx",
+      "source": {
+        "format": "docx",
+        "fileName": "synthetic-resume.docx",
+        "mediaType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "byteLength": 4096,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "blocks": [
+        {
+          "text": "Jordan Rivera",
+          "sourcePointer": "/word/document.xml#paragraph=1",
+          "sourceExcerpt": "Jordan Rivera"
+        },
+        {
+          "text": "Product Engineer · jordan@example.test · Portfolio",
+          "sourcePointer": "/word/document.xml#paragraph=2",
+          "sourceExcerpt": "Product Engineer · jordan@example.test · Portfolio"
+        },
+        {
+          "text": "Summary",
+          "sourcePointer": "/word/document.xml#paragraph=3",
+          "sourceExcerpt": "Summary"
+        },
+        {
+          "text": "Built an accessible local-first workflow for evidence-backed job decisions.",
+          "sourcePointer": "/word/document.xml#paragraph=4",
+          "sourceExcerpt": "Built an accessible local-first workflow for evidence-backed job decisions."
+        },
+        {
+          "text": "Highlights",
+          "sourcePointer": "/word/document.xml#paragraph=5",
+          "sourceExcerpt": "Highlights"
+        },
+        {
+          "text": "Reduced research turnaround by 42% with explicit source trails. Kept user-confirmed facts separate from imported proposals.",
+          "sourcePointer": "/word/document.xml#paragraph=6",
+          "sourceExcerpt": "Reduced research turnaround by 42% with explicit source trails. Kept user-confirmed facts separate from imported proposals."
+        },
+        {
+          "text": "Experience",
+          "sourcePointer": "/word/document.xml#paragraph=7",
+          "sourceExcerpt": "Experience"
+        },
+        {
+          "text": "Coredrill Labs — Product Engineer — 2024–2026",
+          "sourcePointer": "/word/document.xml#paragraph=8",
+          "sourceExcerpt": "Coredrill Labs — Product Engineer — 2024–2026"
+        }
+      ],
+      "expected": [
+        {
+          "target": "basics",
+          "fieldName": "displayName",
+          "proposedValue": "Jordan Rivera",
+          "confidence": 0.72
+        },
+        {
+          "target": "unclassified",
+          "fieldName": "sourceText",
+          "proposedValue": "Product Engineer · jordan@example.test · Portfolio",
+          "confidence": 0.25
+        },
+        {
+          "target": "basics",
+          "fieldName": "summary",
+          "proposedValue": "Built an accessible local-first workflow for evidence-backed job decisions.",
+          "confidence": 0.62
+        },
+        {
+          "target": "accomplishment",
+          "fieldName": "action",
+          "proposedValue": "Reduced research turnaround by 42% with explicit source trails. Kept user-confirmed facts separate from imported proposals.",
+          "confidence": 0.62
+        },
+        {
+          "target": "employment",
+          "fieldName": "organization",
+          "proposedValue": "Coredrill Labs",
+          "confidence": 0.82
+        },
+        {
+          "target": "employment",
+          "fieldName": "role",
+          "proposedValue": "Product Engineer",
+          "confidence": 0.78
+        },
+        {
+          "target": "employment",
+          "fieldName": "dateRange",
+          "proposedValue": "2024–2026",
+          "confidence": 0.55
+        }
+      ]
+    },
+    {
+      "name": "pdf",
+      "source": {
+        "format": "pdf",
+        "fileName": "synthetic-two-page.pdf",
+        "mediaType": "application/pdf",
+        "pageCount": 2,
+        "byteLength": 2048,
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "blocks": [
+        {
+          "text": "Coredrill PDF Fixture",
+          "sourcePointer": "/pages/1/lines/1",
+          "sourceExcerpt": "Coredrill PDF Fixture"
+        },
+        {
+          "text": "Page one evidence line.",
+          "sourcePointer": "/pages/1/lines/2",
+          "sourceExcerpt": "Page one evidence line."
+        },
+        {
+          "text": "Source-backed decisions remain proposals until confirmed.",
+          "sourcePointer": "/pages/1/lines/3",
+          "sourceExcerpt": "Source-backed decisions remain proposals until confirmed."
+        },
+        {
+          "text": "Salary Notes",
+          "sourcePointer": "/pages/2/lines/1",
+          "sourceExcerpt": "Salary Notes"
+        },
+        {
+          "text": "Page two salary source line.",
+          "sourcePointer": "/pages/2/lines/2",
+          "sourceExcerpt": "Page two salary source line."
+        }
+      ],
+      "expectedCount": 5,
+      "expectedPointers": ["/pages/1/lines/1", "/pages/2/lines/2"]
+    },
+    {
+      "name": "text",
+      "source": {
+        "format": "text",
+        "fileName": "synthetic-profile.md",
+        "mediaType": "text/markdown",
+        "byteLength": 128,
+        "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "blocks": [
+        { "text": "Profile", "sourcePointer": "/lines/1", "sourceExcerpt": "# Profile" },
+        {
+          "text": "Local-first document imports remain proposals until confirmed.",
+          "sourcePointer": "/lines/3",
+          "sourceExcerpt": "Local-first document imports remain proposals until confirmed."
+        },
+        {
+          "text": "Source mapping survives normalization.",
+          "sourcePointer": "/lines/5",
+          "sourceExcerpt": "- Source mapping survives normalization."
+        }
+      ],
+      "expected": [
+        {
+          "target": "basics",
+          "fieldName": "summary",
+          "proposedValue": "Local-first document imports remain proposals until confirmed.",
+          "confidence": 0.62
+        },
+        {
+          "target": "basics",
+          "fieldName": "summary",
+          "proposedValue": "Source mapping survives normalization.",
+          "confidence": 0.62
+        }
+      ]
+    }
+  ]
+}

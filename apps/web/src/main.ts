@@ -3,6 +3,7 @@ import {
   VaultDeletionError,
   createCareerProfileOperations,
   createDefaultBrowserExportReminderPreference,
+  createResumeImportOperations,
   createVaultDeletionOperations,
   deriveBrowserExportReminderFromPreference,
   parseBrowserExportReminderPreference,
@@ -20,10 +21,15 @@ import {
   type DeleteVaultPortInput,
   type DeleteVaultInput,
   type PreviewVaultDeletionPortInput,
+  type QueueResumeImportInput,
+  type ResumeImportPort,
+  type ResumeImportPortInput,
+  type ResumeImportQueueItemDto,
   type VaultDeletionPort,
   type VaultDeletionPreviewDto,
   type VaultDeletionResultDto,
 } from "@coredrill/application";
+import type { LocalDocumentInput } from "@coredrill/documents";
 import {
   BrowserSqliteBusyError,
   BrowserStorageUnavailableError,
@@ -43,6 +49,7 @@ import {
   createPortableVaultContentHashV1,
   createCareerRepositoryContractSuite,
   createCareerRepositories,
+  createResumeImportRepository,
   createPhase1RepositoryContractSuite,
   createTrackerRepositories,
   defineSqlMigrations,
@@ -291,6 +298,10 @@ export interface CoredrillStorageSpikeApi {
     input: CreateManualCareerProfileEntryInput,
   ): Promise<ApplicationResult<CareerProfileEntryDto>>;
   listManualCareerProfileEntries(): Promise<ApplicationResult<readonly CareerProfileEntryDto[]>>;
+  listPendingResumeImports(): Promise<ApplicationResult<readonly ResumeImportQueueItemDto[]>>;
+  queueResumeImport(
+    input: LocalDocumentInput,
+  ): Promise<ApplicationResult<ResumeImportQueueItemDto>>;
   openAndMigrate(options?: OpenOptions): Promise<OpenMigrationProof>;
   tryOpenAndMigrate(options?: OpenOptions): Promise<OpenAttempt>;
   writeVault(input: VaultInput): Promise<void>;
@@ -1048,11 +1059,65 @@ const careerProfileOperations = createCareerProfileOperations({
   createId: (kind) => generateEntityId(CAREER_ENTITY_TYPE_BY_KIND[kind]),
 });
 
+const resumeImportPort: ResumeImportPort = Object.freeze({
+  enqueue: async (input: ResumeImportPortInput) => {
+    const client = await getDatabase();
+    await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
+    return createResumeImportRepository(client).enqueue(input);
+  },
+  listPending: async () => {
+    const client = await getDatabase();
+    await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
+    return createResumeImportRepository(client).listPending();
+  },
+});
+
+const resumeImportOperations = createResumeImportOperations({
+  createId: (kind) => generateEntityId(kind),
+  resumeImports: resumeImportPort,
+});
+
 const careerProfileOperationContext = (): ApplicationOperationContext =>
   Object.freeze({
     operationId: generateEntityId("application-operation"),
     initiatedAt: instant(new Date().toISOString()),
   });
+
+const resumeImportInput = async (input: LocalDocumentInput): Promise<QueueResumeImportInput> => {
+  const { documentIrToPlainText, importLocalDocument } =
+    await import("@coredrill/documents/browser");
+  const imported = await importLocalDocument({ ...input, bytes: Uint8Array.from(input.bytes) });
+  const blocks = imported.mappings.map((mapping) => {
+    const match = /^\/document\/content\/(?<index>\d+)$/u.exec(mapping.targetPath);
+    const index = Number(match?.groups?.["index"]);
+    const block = imported.structuredDocument.document.content[index];
+    if (!Number.isSafeInteger(index) || block === undefined) {
+      throw new TypeError("Imported resume mapping does not reference a retained document block.");
+    }
+    return Object.freeze({
+      sourceExcerpt: mapping.sourceExcerpt,
+      sourcePointer: mapping.sourcePointer,
+      text: documentIrToPlainText({
+        specVersion: imported.structuredDocument.specVersion,
+        document: { type: "doc", content: [block] },
+      }),
+    });
+  });
+  return Object.freeze({
+    blocks: Object.freeze(blocks),
+    source: Object.freeze({
+      byteLength: imported.source.byteLength,
+      fileName: imported.source.fileName,
+      format: imported.source.format,
+      mediaType: imported.source.mediaType,
+      ...(imported.summary.pageCount === undefined
+        ? {}
+        : { pageCount: imported.summary.pageCount }),
+      sha256: imported.source.sha256,
+    }),
+    warnings: Object.freeze(imported.warnings.map(({ message }) => message)),
+  });
+};
 
 const getAttachmentStore = async (): Promise<BrowserAttachmentStore> => {
   attachmentStore ??= await BrowserAttachmentStore.open();
@@ -1543,6 +1608,25 @@ const api: CoredrillStorageSpikeApi = {
       undefined,
       careerProfileOperationContext(),
     ),
+  listPendingResumeImports: async () =>
+    resumeImportOperations.listPendingQuery.execute(undefined, careerProfileOperationContext()),
+  queueResumeImport: async (input) => {
+    let normalized: QueueResumeImportInput;
+    try {
+      normalized = await resumeImportInput(input);
+    } catch {
+      return Object.freeze({
+        ok: false as const,
+        error: Object.freeze({
+          code: "validation" as const,
+          message:
+            "This local resume could not be read safely. Choose a supported PDF, DOCX, Markdown, or text file.",
+          retryable: false,
+        }),
+      });
+    }
+    return resumeImportOperations.queueCommand.execute(normalized, careerProfileOperationContext());
+  },
   openAndMigrate: async (options = {}) => {
     const client = await getDatabase(options);
     const result = await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
