@@ -256,14 +256,14 @@ try {
     proof.typedVaultDeletionRejectedSafely !== true ||
     proof.typedVaultDeletionCleanProfile !== true ||
     proof.repositoryContractCases !== 18 ||
-    proof.humanReadableDataFiles !== 58 ||
-    proof.humanReadableDatasets !== 29 ||
-    humanReadable.csvFiles !== 29 ||
-    humanReadable.jsonFiles !== 29 ||
+    proof.humanReadableDataFiles !== 60 ||
+    proof.humanReadableDatasets !== 30 ||
+    humanReadable.csvFiles !== 30 ||
+    humanReadable.jsonFiles !== 30 ||
     humanReadable.rowCount !== 2 ||
     humanReadable.sourceSchemaVersion !== expectedSchemaVersion ||
     archiveRestore.attachmentCount !== 0 ||
-    archiveRestore.dataFileCount !== 58 ||
+    archiveRestore.dataFileCount !== 60 ||
     archiveRestore.corruptionRejected !== true ||
     archiveRestore.corruptionPreservedTarget !== true ||
     archiveRestore.conflict !== "same_vault_replace" ||
