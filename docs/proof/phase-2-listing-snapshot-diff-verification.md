@@ -2,7 +2,7 @@
 
 Date: 2026-09-26  
 Checklist item: `REV-006`  
-Status: implementation complete; hosted clean-commit proof pending
+Status: complete; local and hosted clean-commit proof passing
 
 ## Outcome
 
@@ -65,6 +65,17 @@ REV006_COMPONENT_PROOF {"requirementsRendered":true,"compensationRendered":true,
   zero automated axe findings or unexpected external requests.
 - Format, foundation-record, import-boundary, Changesets, and secret checks:
   passing.
+
+## Hosted verification
+
+- Implementation commit:
+  [`996520f4ad46482c72ee2cbc0212d567cf246d02`](https://github.com/seabAu/Coredrill/commit/996520f4ad46482c72ee2cbc0212d567cf246d02)
+- [Foundation CI run 36285418663](https://github.com/seabAu/Coredrill/actions/runs/36285418663):
+  passing on the aggregate build/static/test/policy gate, exact Chrome 151 and
+  152 storage/application journeys, exact Firefox 153 and 154 storage
+  journeys, Chromium/Firefox extension transfer and package proof,
+  full-history secret scan, and Windows, macOS, and Ubuntu native storage and
+  package lanes. The push-only dependency-review job was correctly skipped.
 
 ## Decision impact
 
