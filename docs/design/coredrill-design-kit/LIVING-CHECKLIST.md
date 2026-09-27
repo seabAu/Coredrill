@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-09-27
 Current milestone: Phase 2 — capture and approved extraction (`GATE-0` and `GATE-1` external-evidence blockers remain open)
-Current work item: `Q2-004` — audit connector source policy, attribution, retention, rate limits, and kill switches
-Next recommended slice: `Q2-005` after `Q2-004`; retain `Q2-001`, `Q2-003`, `PEX-005`, and `PEX-006` as explicit external-evidence/manual-review/permission/deployment blockers
+Current work item: `Q2-005` — run and retain the complete Phase 2 canonical capture/review journey
+Next recommended slice: `EVD-001` after `Q2-005`; retain `Q2-001`, `Q2-003`, `PEX-005`, `PEX-006`, and `GATE-2` as explicit external-evidence/manual-review/permission/deployment blockers
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `Q2-005` after `Q2-004`; retain `Q2-001`, `Q2-003`, `PEX
 | Field | Value |
 |---|---|
 | Milestone | Phase 2, with the independent Phase 0 and Phase 1 evidence gates retained below |
-| Item range | `Q2-004` |
+| Item range | `Q2-005` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-09-26 |
-| Expected proof | A reviewed inventory maps every enabled production connector to its current source-policy record, exact transport boundary, required attribution, stored-data/retention behavior, enforced rate limit, and tested targeted/global kill switch; prohibited or unreviewed sources remain absent or disabled and manual capture remains available |
-| Blocker | None for the repository-side `Q2-004` audit. Current external source and API policies must be rechecked against primary documentation before closure. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
-| Next handoff | Inventory production source-policy and transport records for Greenhouse, Lever, and USAJOBS; compare them with current primary source rules and implementation behavior; exercise attribution, retention, rate-limit, stale-review, targeted-disable, global-disable, and prohibited-source cases; document and close any gaps without adding a connector or broadening permissions. |
+| Expected proof | One retained real-browser artifact drives a production-packaged extension capture through its outbox and acknowledgement into the durable Inbox, resolves an explicit candidate conflict, saves the reviewed job, re-ingests changed source evidence without overwriting confirmed data, shows the source diff, applies a manual correction, and proves the final durable record after reload with zero unapproved network activity |
+| Blocker | None for the repository-side `Q2-005` journey. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-2`, `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
+| Next handoff | Compose the existing production extension capture/outbox/acknowledgement, durable Inbox review/conflict/save, changed-source diff, and manual-correction boundaries into one deterministic persistent-browser journey; retain machine-readable proof and screenshots, assert final repository/provenance state after reload, and add no new connector, host permission, account, AI, or network dependency. |
 
 ## Milestone status
 
@@ -254,7 +254,7 @@ Next recommended slice: `Q2-005` after `Q2-004`; retain `Q2-001`, `Q2-003`, `PEX
 - [ ] **Q2-001** Measure capture-to-reviewed-record median and correction rate in representative tests. — Proof: _usability/accuracy report_
 - [x] **Q2-002** Verify no acknowledged capture is lost across browser/app crash and upgrade. — Proof: [pre-ack and post-ack persistent-profile restarts, schema-2-to-schema-101 receipt preservation, legacy extension-state migration, and hosted clean-commit verification](../../proof/phase-2-acknowledged-capture-reliability-verification.md)
 - [ ] **Q2-003** Pass review Inbox keyboard/screen-reader and mobile workflows. — Proof: _a11y report_
-- [ ] **Q2-004** Pass connector source-policy, attribution, retention, rate-limit, and kill-switch audit. — Proof: _audit_
+- [x] **Q2-004** Pass connector source-policy, attribution, retention, rate-limit, and kill-switch audit. — Proof: [current primary-source inventory, strict runtime descriptor enforcement, attribution/retention/rate/kill-switch audit, prohibited-source confirmation, and hosted clean-commit verification](../../proof/phase-2-connector-source-policy-audit.md)
 - [ ] **Q2-005** Run canonical journey: extension capture → outbox → Inbox review/conflict → save → source diff → manual correction. — Proof: _recorded E2E artifact_
 - [ ] **GATE-2** Phase 2 safely captures and reviews representative jobs with measured extraction quality and no prohibited scraping dependency. — Proof: _Phase 2 gate report_
 
