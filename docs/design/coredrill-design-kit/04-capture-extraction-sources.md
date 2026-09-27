@@ -83,6 +83,13 @@ document without mutating an already queued envelope, and existing transfer
 replay rejection remains effective. No permission or acquisition behavior is
 added.
 
+`PEX-008` derives store listing and privacy copy from those inspected packages
+and proven behaviors. The draft describes only explicit current-page capture,
+local review/outbox handling, exact-origin Chromium pull/ack transfer, and the
+Firefox checksummed local-file fallback. It does not turn the reserved `.test`
+origin, working public name, or development browser identities into release
+facts, and it must be re-reviewed if any permission or data flow changes.
+
 ## Extraction result
 
 ```ts

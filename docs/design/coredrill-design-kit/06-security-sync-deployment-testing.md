@@ -77,6 +77,14 @@ oversized or over-deep JSON-LD contributes no partial posting. The existing
 transfer matrix separately proves acknowledgement replay rejection. These
 fixtures add no host permission, content script, source fetch, or remote code.
 
+`PEX-008` adds the reviewed pre-publication disclosure baseline. Store copy,
+permission rationales, Chrome data-handling answers, Firefox `none` rationale,
+and the candidate public privacy policy are mapped to the generated manifests
+and browser proof. The draft states that extension-local storage is not
+automatically encrypted and lists the public origin, release identity,
+publisher/contact URLs, clearance, assets, and final policy review as release
+blockers rather than inventing them.
+
 ### Local fetch/SSRF
 
 Any URL fetcher enforces scheme/port, DNS and redirect revalidation, private/link-local/metadata IP blocks, size/time/type limits, and approved connector domains. Browser extension does not expose a general fetch oracle to pages.
