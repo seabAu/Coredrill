@@ -7,6 +7,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from "react";
+import type { CaptureSourceStateV1 } from "@coredrill/application";
 
 export interface CaptureInboxPreviewSection {
   readonly id: string;
@@ -51,6 +52,7 @@ export interface CaptureInboxPreviewItem {
   readonly captureMethod: string;
   readonly sourceKind: string;
   readonly sourceUrl: string | null;
+  readonly sourceState: CaptureSourceStateV1;
   readonly sections: readonly CaptureInboxPreviewSection[];
   readonly evidence: readonly CaptureInboxEvidence[];
   readonly reviewState: "pending" | "snoozed";
@@ -97,6 +99,11 @@ export interface CaptureInboxReviewProps {
   readonly onAction?: (action: CaptureInboxReviewAction) => Promise<void>;
   readonly discardUndo?: { readonly tokenId: string; readonly label: string } | null;
   readonly onUndoDiscard?: (tokenId: string) => Promise<void>;
+  readonly onManualFallback?: (request: {
+    readonly envelopeId: string;
+    readonly mode: "manual" | "paste";
+    readonly sourceUrl: string | null;
+  }) => void;
 }
 
 const FIELD_GROUP_LABELS: Readonly<Record<CaptureInboxFieldGroupId, string>> = Object.freeze({
@@ -148,6 +155,10 @@ function validateItems(items: readonly CaptureInboxPreviewItem[]): void {
       new Set(item.eligibleCandidateIds).size !== item.eligibleCandidateIds.length ||
       item.reviewDecisions.length > 256 ||
       item.mergeTargets.length > 256 ||
+      !CAPTURE_SOURCE_STATE_KINDS.includes(item.sourceState.kind) ||
+      (item.sourceState.kind === "blocked" && item.sourceState.promotionAllowed) ||
+      (item.sourceState.manualFallback !== null &&
+        !["manual", "paste"].includes(item.sourceState.manualFallback.mode)) ||
       (item.sourceUrl !== null && !safeHttpUrl(item.sourceUrl))
     ) {
       throw new RangeError("Capture preview item is invalid.");
@@ -187,6 +198,14 @@ function validateItems(items: readonly CaptureInboxPreviewItem[]): void {
   }
 }
 
+const CAPTURE_SOURCE_STATE_KINDS = [
+  "available",
+  "expired",
+  "changed",
+  "blocked",
+  "unsupported",
+] as const;
+
 function titleCase(value: string): string {
   const words = value.replaceAll("_", " ");
   return words.charAt(0).toLocaleUpperCase() + words.slice(1);
@@ -216,6 +235,7 @@ export function CaptureInboxReview({
   onAction,
   discardUndo = null,
   onUndoDiscard,
+  onManualFallback,
 }: CaptureInboxReviewProps) {
   validateItems(items);
   const headingId = useId();
@@ -419,6 +439,9 @@ export function CaptureInboxReview({
                     <strong>{item.label}</strong>
                     <span>{titleCase(item.sourceKind)}</span>
                     <small>{item.capturedAt}</small>
+                    {item.sourceState.kind === "available" ? null : (
+                      <small>{item.sourceState.heading}</small>
+                    )}
                     {item.reviewState === "snoozed" ? <small>Snoozed</small> : null}
                   </button>
                 </li>
@@ -440,6 +463,40 @@ export function CaptureInboxReview({
                 {selectedItem.reviewState === "snoozed" ? "Snoozed" : "Review required"}
               </span>
             </header>
+
+            <section
+              aria-labelledby={`${headingId}-source-state`}
+              className="cd-capture-review__source-state"
+              data-source-state={selectedItem.sourceState.kind}
+            >
+              <div>
+                <p className="cd-eyebrow">Source condition</p>
+                <h5 id={`${headingId}-source-state`}>{selectedItem.sourceState.heading}</h5>
+                <p>{selectedItem.sourceState.explanation}</p>
+                <p>{selectedItem.sourceState.retainedEvidence}</p>
+                <p>No automatic refresh was performed.</p>
+              </div>
+              {selectedItem.sourceState.manualFallback === null ? null : (
+                <div>
+                  <p>{selectedItem.sourceState.manualFallback.instruction}</p>
+                  <button
+                    disabled={actionState === "busy" || onManualFallback === undefined}
+                    onClick={() => {
+                      const fallback = selectedItem.sourceState.manualFallback;
+                      if (fallback === null || onManualFallback === undefined) return;
+                      onManualFallback({
+                        envelopeId: selectedItem.envelopeId,
+                        mode: fallback.mode,
+                        sourceUrl: selectedItem.sourceUrl,
+                      });
+                    }}
+                    type="button"
+                  >
+                    {selectedItem.sourceState.manualFallback.label}
+                  </button>
+                </div>
+              )}
+            </section>
 
             <section aria-label="Review actions" className="cd-capture-review__actions">
               {selectedItem.reviewState === "snoozed" ? (
@@ -466,7 +523,9 @@ export function CaptureInboxReview({
                 <>
                   <button
                     disabled={
-                      actionState === "busy" || selectedItem.eligibleCandidateIds.length === 0
+                      actionState === "busy" ||
+                      !selectedItem.sourceState.promotionAllowed ||
+                      selectedItem.eligibleCandidateIds.length === 0
                     }
                     onClick={() => {
                       setAcceptedByEnvelope((current) => ({
@@ -479,7 +538,12 @@ export function CaptureInboxReview({
                     Accept high-confidence fields
                   </button>
                   <button
-                    disabled={actionState === "busy" || onAction === undefined || !acceptedTitle}
+                    disabled={
+                      actionState === "busy" ||
+                      onAction === undefined ||
+                      !selectedItem.sourceState.promotionAllowed ||
+                      !acceptedTitle
+                    }
                     onClick={() => {
                       void runAction({
                         kind: "save_new",
@@ -498,6 +562,7 @@ export function CaptureInboxReview({
                     <label>
                       Merge target
                       <select
+                        disabled={!selectedItem.sourceState.promotionAllowed}
                         onChange={(event) => {
                           setMergeTargetId(event.target.value);
                         }}
@@ -515,7 +580,11 @@ export function CaptureInboxReview({
                         ))}
                       </select>
                       <button
-                        disabled={actionState === "busy" || onAction === undefined}
+                        disabled={
+                          actionState === "busy" ||
+                          onAction === undefined ||
+                          !selectedItem.sourceState.promotionAllowed
+                        }
                         onClick={() => {
                           const targetJobId =
                             mergeTargetId.length > 0
@@ -733,6 +802,7 @@ export function CaptureInboxReview({
                               <label>
                                 <input
                                   checked={acceptedCandidateSet.has(evidence.id)}
+                                  disabled={!selectedItem.sourceState.promotionAllowed}
                                   onChange={(event) => {
                                     setAcceptedByEnvelope((current) => {
                                       const selected = new Set(

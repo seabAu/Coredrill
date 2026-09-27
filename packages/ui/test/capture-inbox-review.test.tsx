@@ -30,6 +30,16 @@ const HOSTILE_ITEM = Object.freeze({
   captureMethod: "file",
   sourceKind: "saved_json",
   sourceUrl: "https://jobs.example.test/role",
+  sourceState: Object.freeze({
+    specVersion: 1 as const,
+    kind: "available" as const,
+    heading: "Retained source is ready for review",
+    explanation: "Review uses only the local capture.",
+    retainedEvidence: "The original capture and provenance remain in this local review.",
+    promotionAllowed: true,
+    refreshPerformed: false as const,
+    manualFallback: null,
+  }),
   sections: Object.freeze([
     Object.freeze({
       id: "api-payload",
@@ -144,6 +154,58 @@ describe("CaptureInboxReview", () => {
         unresolvedConflictVisible: true,
         conflictUsesText: true,
       })}`,
+    );
+  });
+
+  it("renders every source condition without refreshing and blocks policy-denied promotion", () => {
+    const conditions = [
+      ["available", "Retained source is ready for review", null, true],
+      ["expired", "Listing appears expired", "Enter current details manually", true],
+      ["changed", "Source content changed", "Paste updated listing", true],
+      ["blocked", "Source use is blocked", "Enter job manually", false],
+      ["unsupported", "Page content is unsupported", "Paste listing text", true],
+    ] as const;
+
+    for (const [kind, heading, fallbackLabel, promotionAllowed] of conditions) {
+      const markup = renderToStaticMarkup(
+        createElement(CaptureInboxReview, {
+          items: [
+            {
+              ...HOSTILE_ITEM,
+              sourceState: {
+                ...HOSTILE_ITEM.sourceState,
+                kind,
+                heading,
+                promotionAllowed,
+                manualFallback:
+                  fallbackLabel === null
+                    ? null
+                    : {
+                        mode: kind === "changed" || kind === "unsupported" ? "paste" : "manual",
+                        label: fallbackLabel,
+                        instruction: "Use retained local evidence only.",
+                      },
+              },
+            },
+          ],
+          onAction: async () => undefined,
+          onManualFallback: () => undefined,
+        }),
+      );
+
+      expect(markup).toContain(`data-source-state="${kind}"`);
+      expect(markup).toContain(heading);
+      expect(markup).toContain("No automatic refresh was performed");
+      if (fallbackLabel !== null) expect(markup).toContain(fallbackLabel);
+      if (!promotionAllowed) {
+        expect(markup).toContain(
+          '<button disabled="" type="button">Accept high-confidence fields</button>',
+        );
+      }
+    }
+
+    console.info(
+      `REV005_COMPONENT_PROOF ${JSON.stringify({ states: conditions.map(([kind]) => kind), noRefresh: true, blockedPromotion: true, fallbackActions: 4 })}`,
     );
   });
 

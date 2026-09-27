@@ -260,6 +260,17 @@ and content-hash preconditions reject replay or stale UI state. Snooze, wake,
 discard, and single-use undo are independent guarded transactions. None of
 these paths fetches or refreshes a source.
 
+`REV-005` introduces a pure version-1 application projection above the durable
+receipt and review repository. It accepts only bounded local observations:
+retained section/candidate counts, an optional listing validity value, an
+exact-host checked-in policy result, and the existing reason-coded duplicate
+suggestions. Stable precedence is blocked, expired, changed, unsupported, then
+available. The projection cannot read storage, fetch, extract, confirm, or
+mutate; the web composition supplies current local observations and the UI
+renders the immutable result. Policy-blocked results prevent promotion, while
+the existing manual/paste dialog provides fallback without creating a second
+capture path or changing schema 101.
+
 ## Application use cases
 
 Commands are explicit and transactional:

@@ -10,6 +10,7 @@ import {
 
 export interface CaptureEntryDialogProps {
   readonly initialMode: SuppliedCaptureMode;
+  readonly initialSourceUrl?: string;
   readonly onClose: () => void;
   readonly onStored: (result: { readonly duplicate: boolean; readonly envelopeId: string }) => void;
 }
@@ -32,12 +33,17 @@ const MODE_COPY = Object.freeze({
   },
 });
 
-export function CaptureEntryDialog({ initialMode, onClose, onStored }: CaptureEntryDialogProps) {
+export function CaptureEntryDialog({
+  initialMode,
+  initialSourceUrl = "",
+  onClose,
+  onStored,
+}: CaptureEntryDialogProps) {
   const headingId = useId();
   const [mode, setMode] = useState(initialMode);
   const [title, setTitle] = useState("");
   const [company, setCompany] = useState("");
-  const [sourceUrl, setSourceUrl] = useState("");
+  const [sourceUrl, setSourceUrl] = useState(initialSourceUrl);
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<"idle" | "saving" | "stored" | "error">("idle");

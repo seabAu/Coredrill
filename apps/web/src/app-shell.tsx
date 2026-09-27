@@ -65,12 +65,18 @@ import {
   type ThemePreference,
   type VaultHealthState,
 } from "@coredrill/ui";
-import { createConnectorPolicyDisclosuresV1 } from "@coredrill/source-policy";
+import {
+  CHECKED_IN_SOURCE_POLICY_RECORDS_V1,
+  createConnectorPolicyDisclosuresV1,
+  type ConnectorPolicyRecordV1,
+} from "@coredrill/source-policy";
 import { parseCaptureSourcePreviewJsonV1 } from "@coredrill/capture-core";
-import type {
-  DeleteVaultInput,
-  VaultDeletionPreviewDto,
-  VaultDeletionResultDto,
+import {
+  evaluateCaptureSourceStateV1,
+  type CaptureDuplicateSuggestionV1,
+  type DeleteVaultInput,
+  type VaultDeletionPreviewDto,
+  type VaultDeletionResultDto,
 } from "@coredrill/application";
 import { entityId, instant } from "@coredrill/domain";
 import {
@@ -87,6 +93,61 @@ import { CaptureEntryDialog } from "./capture-entry-dialog.js";
 import { initializeOfflineShell, OfflineShellNotice } from "./offline-shell.js";
 import { sourceTextFromHtml } from "./source-text.js";
 import type { SuppliedCaptureMode } from "./supplied-capture.js";
+
+function sourceExpirationFromEvidence(
+  evidence: CaptureInboxPreviewItem["evidence"],
+): string | null {
+  const candidate = evidence.find(({ fieldName }) => fieldName === "valid_through")?.value;
+  if (candidate === undefined) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/u.test(candidate)) return candidate;
+  const milliseconds = Date.parse(candidate);
+  return Number.isFinite(milliseconds) && new Date(milliseconds).toISOString() === candidate
+    ? candidate
+    : null;
+}
+
+function matchingSourcePolicy(sourceUrl: string | null): ConnectorPolicyRecordV1 | null {
+  if (sourceUrl === null) return null;
+  try {
+    const hostname = new URL(sourceUrl).hostname.toLowerCase();
+    return (
+      CHECKED_IN_SOURCE_POLICY_RECORDS_V1.find(({ baseDomains }) =>
+        baseDomains.includes(hostname),
+      ) ?? null
+    );
+  } catch {
+    return null;
+  }
+}
+
+function sourcePolicyObservation(
+  sourceUrl: string | null,
+  observedAt: string,
+):
+  | { readonly status: "allowed" }
+  | { readonly status: "blocked"; readonly reason: "connector_disabled" | "review_not_current" } {
+  const policy = matchingSourcePolicy(sourceUrl);
+  if (policy === null) return Object.freeze({ status: "allowed" as const });
+  if (policy.status === "disabled") {
+    return Object.freeze({ status: "blocked" as const, reason: "connector_disabled" as const });
+  }
+  if (observedAt < policy.reviewedAt || observedAt >= policy.reviewDueAt) {
+    return Object.freeze({ status: "blocked" as const, reason: "review_not_current" as const });
+  }
+  return Object.freeze({ status: "allowed" as const });
+}
+
+function storedSourceComparison(
+  suggestions: readonly CaptureDuplicateSuggestionV1[],
+): "not_checked" | "same" | "changed" {
+  const identitySuggestions = suggestions.filter(({ reasons }) =>
+    reasons.some((reason) => reason === "source_id" || reason === "canonical_url"),
+  );
+  if (identitySuggestions.length === 0) return "not_checked";
+  return identitySuggestions.some(({ reasons }) => reasons.includes("content_hash"))
+    ? "same"
+    : "changed";
+}
 
 interface AppShellCatalogState {
   readonly activeDestination: ShellDestinationId;
@@ -1324,6 +1385,7 @@ const AppShellCatalog = () => {
   const [boardTimelineEventCount, setBoardTimelineEventCount] = useState(0);
   const [boardUndo, setBoardUndo] = useState<BoardUndoRecord | null>(null);
   const [captureDialogMode, setCaptureDialogMode] = useState<SuppliedCaptureMode | null>(null);
+  const [captureDialogSourceUrl, setCaptureDialogSourceUrl] = useState("");
   const [homeSnapshotVisible, setHomeSnapshotVisible] = useState(true);
   const [browserStorageEnvironment, setBrowserStorageEnvironment] =
     useState<BrowserStorageEnvironment | null>(null);
@@ -1589,14 +1651,28 @@ const AppShellCatalog = () => {
       .listReviewItems()
       .then(async (receipts) => {
         const previews: CaptureInboxPreviewItem[] = [];
+        const observedAt = new Date().toISOString();
         for (const receipt of receipts) {
           const result = await parseCaptureSourcePreviewJsonV1(receipt.envelopeJson, {
             sanitizedHtmlToText: sourceTextFromHtml,
           });
           if (!result.success) throw new Error(result.code);
+          const sourceState = evaluateCaptureSourceStateV1({
+            specVersion: 1,
+            observedAt,
+            sourceExpiresAt: sourceExpirationFromEvidence(result.preview.evidence),
+            sourceUrl: result.preview.sourceUrl,
+            captureMethod: result.preview.captureMethod,
+            sourceKind: result.preview.sourceKind,
+            retainedSectionCount: result.preview.sections.length,
+            retainedCandidateCount: result.preview.evidence.length,
+            policy: sourcePolicyObservation(result.preview.sourceUrl, observedAt),
+            storedSourceComparison: storedSourceComparison(receipt.duplicateSuggestions),
+          });
           previews.push(
             Object.freeze({
               ...result.preview,
+              sourceState,
               reviewState: receipt.reviewState,
               snoozedUntil: receipt.snoozedUntil,
               reviewRowVersion: receipt.reviewRowVersion,
@@ -1747,11 +1823,13 @@ const AppShellCatalog = () => {
 
   const recordAction = (action: ShellActionId): void => {
     if (action === "add-job") {
+      setCaptureDialogSourceUrl("");
       setCaptureDialogMode("manual");
       setLastActivity("Manual capture form opened. Nothing has been written yet.");
       return;
     }
     if (action === "paste-listing" || action === "capture-url") {
+      setCaptureDialogSourceUrl("");
       setCaptureDialogMode("paste");
       setLastActivity("Supplied-content capture opened. Pasted URLs are never fetched.");
       return;
@@ -1848,6 +1926,7 @@ const AppShellCatalog = () => {
 
   const recordHomeAction = (action: HomeDashboardActionId): void => {
     if (action === "add-job") {
+      setCaptureDialogSourceUrl("");
       setCaptureDialogMode("manual");
       setLastActivity("Manual capture form opened. Nothing has been written yet.");
       return;
@@ -2552,6 +2631,15 @@ const AppShellCatalog = () => {
                     discardUndo={captureDiscardUndo}
                     items={capturePreviews}
                     onAction={handleCaptureReviewAction}
+                    onManualFallback={({ mode, sourceUrl }) => {
+                      setCaptureDialogSourceUrl(sourceUrl ?? "");
+                      setCaptureDialogMode(mode);
+                      setLastActivity(
+                        mode === "manual"
+                          ? "Opened manual entry from a source-condition fallback."
+                          : "Opened paste entry from a source-condition fallback.",
+                      );
+                    }}
                     onUndoDiscard={undoCaptureDiscard}
                     state={capturePreviewState}
                   />
@@ -2723,8 +2811,10 @@ const AppShellCatalog = () => {
       {captureDialogMode === null ? null : (
         <CaptureEntryDialog
           initialMode={captureDialogMode}
+          initialSourceUrl={captureDialogSourceUrl}
           onClose={() => {
             setCaptureDialogMode(null);
+            setCaptureDialogSourceUrl("");
           }}
           onStored={({ duplicate, envelopeId }) => {
             if (!duplicate) setSuppliedCaptureCount((count) => count + 1);

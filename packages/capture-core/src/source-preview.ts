@@ -46,7 +46,7 @@ export interface CaptureSourcePreviewV1 {
   readonly envelopeId: string;
   readonly label: string;
   readonly capturedAt: string;
-  readonly captureMethod: string;
+  readonly captureMethod: CaptureEnvelopeV1["captureMethod"];
   readonly sourceKind: string;
   readonly sourceUrl: string | null;
   readonly sections: readonly CaptureSourcePreviewSectionV1[];

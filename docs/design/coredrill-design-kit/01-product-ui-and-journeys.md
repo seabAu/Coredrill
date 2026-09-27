@@ -83,6 +83,17 @@ creates a durable, single-use undo token that restores the exact prior pending
 or snoozed state. Remaining conflicts and unknown fields stay visible but do not
 block a save when the required title is explicitly accepted.
 
+`REV-005` adds an explainable source-condition layer without contacting the
+source. A strict local projection labels retained evidence available, expired,
+changed, blocked, or unsupported from a retained validity candidate, checked-in
+exact-host policy, and stored source-identity/content-hash suggestions. Blocked
+sources cannot be promoted; every other warning remains reviewable. Expired,
+changed, blocked, and unsupported states preserve the original receipt,
+candidates, paths, and provenance, say that no automatic refresh occurred, and
+offer a manual or paste fallback through the existing Add dialog. A changed
+source never overwrites a confirmed field, and an unsupported URL is never
+fetched merely to make the preview complete.
+
 ### Pipeline: Board and Table
 
 Views:

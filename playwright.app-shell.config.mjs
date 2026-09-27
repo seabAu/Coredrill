@@ -12,6 +12,7 @@ export default defineConfig({
   testMatch: [
     "app-shell.spec.mjs",
     "review-actions.spec.mjs",
+    "review-source-states.spec.mjs",
     "source-preview.spec.mjs",
     "supplied-capture.spec.mjs",
   ],

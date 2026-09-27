@@ -26,6 +26,17 @@ export {
   type MaterializeCaptureReviewPromotionInputV1,
 } from "./capture-review-promotion.js";
 export {
+  CAPTURE_SOURCE_POLICY_BLOCK_REASONS_V1,
+  CAPTURE_SOURCE_STATE_KINDS_V1,
+  CaptureSourceStateError,
+  evaluateCaptureSourceStateV1,
+  type CaptureSourceManualFallbackV1,
+  type CaptureSourcePolicyBlockReasonV1,
+  type CaptureSourceStateInputV1,
+  type CaptureSourceStateKindV1,
+  type CaptureSourceStateV1,
+} from "./capture-source-state.js";
+export {
   FIELD_CANDIDATE_RECONCILIATION_ERROR_CODES,
   FIELD_CANDIDATE_RECONCILIATION_LIMITS,
   FieldCandidateReconciliationError,

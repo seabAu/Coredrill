@@ -193,6 +193,17 @@ resolved-conflict metadata, and oversized input fail closed with a content-free
 error. Confidence remains provisional evidence: the plan performs no
 confirmation or canonical write by itself.
 
+`REV-005` turns source failure conditions into a bounded review projection, not
+a new acquisition mechanism. A retained `valid_through` candidate may label a
+listing expired; a source-ID or canonical-URL match without the same content
+hash may label it changed; an exact-host checked-in disabled or out-of-review
+policy labels it blocked; and a safe URL with no retained section or candidate
+labels it unsupported. Blocked takes precedence and prevents promotion. All
+states keep the immutable receipt and provenance, never refresh a page, never
+delete a capture or job, and never treat freshness as verified fact. The user
+may choose the existing manual or paste path, which remains subject to the same
+validated local capture boundary.
+
 #### Schema.org `JobPosting`
 
 Parse JSON-LD from a single job detail page. Validate `@context`, `@type`, title, description, hiring organization, location/remote fields, date, validity, identifier, employment type, and base salary. Treat it as untrusted page input and compare to visible content. Google documents the format and requires the structured data to represent the visible job page: [JobPosting documentation](https://developers.google.com/search/docs/appearance/structured-data/job-posting).
