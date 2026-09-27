@@ -180,7 +180,7 @@ Requires SSO, quotas/billing/abuse controls, provider data-processing policy, de
 - Markdown/plain text: direct.
 - Resume parsing produces evidence proposals and never overwrites confirmed profile items.
 
-`EVD-004` implements that baseline without AI: the existing local PDF/DOCX/text import adapters feed a bounded deterministic proposal extractor, and SQLite stores only pending field-level proposals with file hash, source pointer/excerpt, and confidence. Real-file golden journeys cover PDF, DOCX, and Markdown, including durable reload and a zero-change assertion for Career Profile evidence. Scanned PDFs retain the existing actionable local/explicit OCR warning and can produce a zero-proposal queue item without changing the source file.
+`EVD-004` implements that baseline without AI: the existing local PDF/DOCX/text import adapters feed a bounded deterministic proposal extractor, and SQLite stores only pending field-level proposals with file hash, source pointer/excerpt, and confidence. Real-file golden journeys cover PDF, DOCX, and Markdown, including durable reload and a zero-change assertion for Career Profile evidence. Scanned PDFs retain the existing actionable local/explicit OCR warning and can produce a zero-proposal queue item without changing the source file. See [resume import proposal verification](../../proof/phase-3-resume-import-proposals-verification.md).
 
 ### Editing/versioning
 

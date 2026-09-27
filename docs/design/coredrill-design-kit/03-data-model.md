@@ -180,7 +180,7 @@ All estimates remain reproducible from input observations/dataset versions.
 
 `import_run(id, kind, source_name, source_hash, mapping_json, started_at, completed_at, status, summary_json)`
 
-`EVD-004` realizes the resume subset as schema versions `113`–`115`: `import_run` retains bounded local file metadata, SHA-256, the normalized source mapping, timestamps, completion state, and summary; `career_import_proposal` retains the proposed target/field/value, grouping key, source pointer, excerpt, extraction confidence, fixed `proposal` evidence state, and fixed `pending` review state. The queue is separate from all Career Profile evidence tables, so import cannot silently create or overwrite a verified fact. Review transitions and promotion are deferred to `EVD-005`.
+`EVD-004` realizes the resume subset as schema versions `113`–`115`: `import_run` retains bounded local file metadata, SHA-256, the normalized source mapping, timestamps, completion state, and summary; `career_import_proposal` retains the proposed target/field/value, grouping key, source pointer, excerpt, extraction confidence, fixed `proposal` evidence state, and fixed `pending` review state. The queue is separate from all Career Profile evidence tables, so import cannot silently create or overwrite a verified fact. Review transitions and promotion are deferred to `EVD-005`. See [resume import proposal verification](../../proof/phase-3-resume-import-proposals-verification.md).
 
 `connector(id, kind, display_name, version, enabled, policy_state, terms_url, policy_reviewed_at, last_success_at, kill_reason)`
 
