@@ -294,7 +294,7 @@ Sections: Basics, Work, Education, Projects, Skills, Accomplishments, Certificat
 - Stories use Situation / Action / Result / Skills / Metrics, with optional privacy tags.
 - Preferences distinguish hard constraints from nice-to-haves and never become public documents automatically.
 
-The `EVD-003` manual workspace exposes the first nine sections above as a roving-focus tablist with one bounded editor and a durable local-entry list per section. Manual evidence is labeled user-confirmed on save, never receives an invented source or confidence, and remains usable without an account, network, or AI. Optional dates use real calendar-day inputs; inverted ranges and a current role with an end date fail at the named field before storage. Resume import proposals, story/evidence linking, Answer Library behavior, and AI-assisted drafting remain absent until their own checklist slices.
+The `EVD-003` manual workspace exposes the first nine sections above as a roving-focus tablist with one bounded editor and a durable local-entry list per section. Manual evidence is labeled user-confirmed on save, never receives an invented source or confidence, and remains usable without an account, network, or AI. Optional dates use real calendar-day inputs; inverted ranges and a current role with an end date fail at the named field before storage. Resume import proposals, story/evidence linking, Answer Library behavior, and AI-assisted drafting remain absent until their own checklist slices. See [manual Career Profile editor verification](../../proof/phase-3-career-profile-editors-verification.md).
 
 ### Documents
 

@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-09-27
 Current milestone: Phase 3 — career evidence and versioned documents (`GATE-0`, `GATE-1`, and `GATE-2` external-evidence blockers remain open)
-Current work item: `EVD-003` — implement manual Career Profile editors and safe date/range validation
-Next recommended slice: `EVD-004` after `EVD-003`; retain `Q2-001`, `Q2-003`, `PEX-005`, `PEX-006`, and `GATE-2` as explicit external-evidence/manual-review/permission/deployment blockers
+Current work item: `EVD-004` — import PDF/DOCX/text resumes into a proposal queue without auto-verification
+Next recommended slice: `EVD-005` after `EVD-004`; retain `Q2-001`, `Q2-003`, `PEX-005`, `PEX-006`, and `GATE-2` as explicit external-evidence/manual-review/permission/deployment blockers
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `EVD-004` after `EVD-003`; retain `Q2-001`, `Q2-003`, `P
 | Field | Value |
 |---|---|
 | Milestone | Phase 3, with the independent Phase 0, Phase 1, and Phase 2 evidence gates retained below |
-| Item range | `EVD-003` |
+| Item range | `EVD-004` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-09-27 |
-| Expected proof | Manual Career Profile editors cover the accepted profile areas with safe optional-date/range validation, accessible field and error behavior, durable repository writes, and component/E2E proof without starting resume import or AI work |
-| Blocker | None for `EVD-003`. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-2`, `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
-| Next handoff | Implement manual Career Profile editors and safe date/range validation for `EVD-003`, reusing the proven repositories and evidence-state policy; leave resume import, conflict resolution, story linking, Answer Library, and AI work to their later checklist slices. |
+| Expected proof | Golden PDF, DOCX, and text resume-import tests produce reviewable proposals only, retain source excerpts and confidence, never auto-verify or silently write Career Profile evidence, and remain local/accountless/offline-capable where applicable |
+| Blocker | None for `EVD-004`. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-2`, `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
+| Next handoff | Implement PDF, DOCX, and text resume import as a proposal-only queue for `EVD-004`, reusing the proven extraction contracts and Career Profile evidence policy; leave duplicate/date/skill conflict resolution to `EVD-005`, story linking to `EVD-006`, and AI work to its later checklist slices. |
 
 ## Milestone status
 
@@ -266,7 +266,7 @@ Next recommended slice: `EVD-004` after `EVD-003`; retain `Q2-001`, `Q2-003`, `P
 
 - [x] **EVD-001** Implement employment, education, project, skill, accomplishment, certification, publication, volunteer, story, and preference repositories. — Proof: [Career Profile repository verification](../../proof/phase-3-career-profile-repositories-verification.md)
 - [x] **EVD-002** Implement evidence source/verification/staleness and privacy-tag state. — Proof: [Evidence-state verification](../../proof/phase-3-evidence-state-verification.md)
-- [ ] **EVD-003** Implement manual Career Profile editors and safe date/range validation. — Proof: _component/E2E tests_
+- [x] **EVD-003** Implement manual Career Profile editors and safe date/range validation. — Proof: [Manual Career Profile editor verification](../../proof/phase-3-career-profile-editors-verification.md)
 - [ ] **EVD-004** Import PDF/DOCX/text resume into a proposal queue without auto-verification. — Proof: _golden import tests_
 - [ ] **EVD-005** Implement duplicate role/date/skill conflict resolution and source excerpts. — Proof: _E2E tests_
 - [ ] **EVD-006** Implement Situation/Action/Result stories and evidence linking. — Proof: _use-case/UI tests_
