@@ -286,7 +286,7 @@ try {
     !/^[a-f0-9]{64}$/u.test(archiveRestore.archiveSha256) ||
     proof.repositoryContractSuite !== repositoryContracts.manifest.suiteName ||
     proof.repositoryContractVersion !== 3 ||
-    proof.careerRepositoryContractVersion !== 1 ||
+    proof.careerRepositoryContractVersion !== 2 ||
     proof.careerRepositoryContractSuite !== careerRepositoryContracts.manifest.suiteName ||
     !Array.isArray(careerRepositoryContracts.run.completedCases) ||
     careerRepositoryContracts.run.completedCases.length !== careerRepositoryCases.length ||
