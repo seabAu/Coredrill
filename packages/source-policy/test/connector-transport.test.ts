@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  CHECKED_IN_DISABLED_SOURCE_POLICY_RECORDS_V1,
   CONNECTOR_TRANSPORT_LIMITS_V1,
   ConnectorTransportError,
   GREENHOUSE_JOB_BOARD_CONNECTOR_ID,
@@ -143,6 +144,67 @@ describe("connector transport policy", () => {
     },
   );
 
+  it("rejects forged connector descriptors before the injected executor sees them", async () => {
+    let calls = 0;
+    const transport = createConnectorTransportV1({
+      request: async () => {
+        calls += 1;
+        return OK;
+      },
+      now: () => START,
+    });
+    const statusSearch = usaJobsRequest.destinationUrl.replace(
+      "WhoMayApply=Public",
+      "WhoMayApply=Status",
+    );
+    const forged = [
+      {
+        ...greenhouseRequest,
+        destinationUrl: greenhouseRequest.destinationUrl.replace(
+          "?pay_transparency=true",
+          "?questions=true",
+        ),
+      },
+      {
+        ...greenhouseRequest,
+        destinationUrl: greenhouseRequest.destinationUrl.replace("/jobs/123", "/jobs/0"),
+      },
+      { ...greenhouseRequest, unexpected: true },
+      { ...leverRequest, destinationUrl: `${leverRequest.destinationUrl}?key=not-allowed` },
+      {
+        ...leverRequest,
+        destinationUrl: leverRequest.destinationUrl.replace("/example-site/", "/Example-site/"),
+      },
+      { ...leverRequest, credentials: "user_configured" },
+      { ...usaJobsRequest, destinationUrl: statusSearch },
+      { ...usaJobsRequest, publicJobsOnly: false },
+      { ...usaJobsRequest, requiredHeaderBindings: undefined },
+      { ...usaJobsRequest, unexpected: true },
+    ];
+
+    for (const request of forged) {
+      await expect(
+        errorCode(transport.execute(execution(request as ConnectorTransportRequestV1))),
+      ).resolves.toBe("request_shape_invalid");
+    }
+    expect(calls).toBe(0);
+  });
+
+  it("accepts every Lever UUID version admitted by the reviewed request builder", async () => {
+    const transport = createConnectorTransportV1({ request: async () => OK, now: () => START });
+    const versionSeven = createLeverPostingRequestV1({
+      specVersion: 1,
+      region: "global",
+      site: "example-site",
+      postingId: "018f47a2-1234-7abc-8def-0123456789ab",
+    });
+
+    await expect(transport.execute(execution(versionSeven))).resolves.toMatchObject({
+      connectorId: LEVER_POSTINGS_CONNECTOR_ID,
+      source: "network",
+    });
+  });
+
   it("serves an unchanged exact request from bounded memory cache and expires it after 24 hours", async () => {
     let now = START;
     let calls = 0;
@@ -282,6 +344,46 @@ describe("connector transport policy", () => {
     await transport.execute(execution(otherBoard));
 
     expect(delays).toEqual([CONNECTOR_TRANSPORT_LIMITS_V1.minRequestIntervalMs]);
+  });
+
+  it("applies rate scopes to each exact board, site, and USAJOBS source", async () => {
+    let now = START;
+    const delays: number[] = [];
+    const transport = createConnectorTransportV1({
+      request: async () => OK,
+      now: () => now,
+      delay: async (milliseconds) => {
+        delays.push(milliseconds);
+        now += milliseconds;
+      },
+    });
+    const secondLeverPosting = createLeverPostingRequestV1({
+      specVersion: 1,
+      region: "global",
+      site: "example-site",
+      postingId: "018f47a2-1234-7abc-8def-0123456789ab",
+    });
+    const otherLeverSite = createLeverPostingRequestV1({
+      specVersion: 1,
+      region: "global",
+      site: "other-site",
+      postingId: "018f47a2-1234-7abc-8def-0123456789ac",
+    });
+    const secondUsaJobsRequest = {
+      ...usaJobsRequest,
+      destinationUrl: usaJobsRequest.destinationUrl.replace("Keyword=software", "Keyword=design"),
+    };
+
+    await transport.execute(execution(leverRequest));
+    await transport.execute(execution(secondLeverPosting));
+    await transport.execute(execution(otherLeverSite));
+    await transport.execute(execution(usaJobsRequest));
+    await transport.execute(execution(secondUsaJobsRequest));
+
+    expect(delays).toEqual([
+      CONNECTOR_TRANSPORT_LIMITS_V1.minRequestIntervalMs,
+      CONNECTOR_TRANSPORT_LIMITS_V1.minRequestIntervalMs,
+    ]);
   });
 
   it("honors bounded Retry-After and succeeds on a finite retry", async () => {
@@ -430,5 +532,50 @@ describe("connector transport policy", () => {
         disabledConnectorIds: [],
       })[1]?.effectiveState,
     ).toBe("blocked");
+  });
+
+  it("emits the retained Q2-004 connector-policy audit proof", () => {
+    const disclosures = createConnectorPolicyDisclosuresV1("2026-09-27T00:00:00.000Z");
+    const enabledConnectors = disclosures.map(({ connectorId }) => connectorId).sort();
+    const disabledAutomation = CHECKED_IN_DISABLED_SOURCE_POLICY_RECORDS_V1.map(
+      ({ id }) => id,
+    ).sort();
+
+    expect(enabledConnectors).toEqual([
+      GREENHOUSE_JOB_BOARD_CONNECTOR_ID,
+      LEVER_POSTINGS_CONNECTOR_ID,
+      USAJOBS_SEARCH_CONNECTOR_ID,
+    ]);
+    expect(disclosures.every(({ reviewState }) => reviewState === "current")).toBe(true);
+    expect(disclosures.every(({ attributionLabel }) => attributionLabel.length > 0)).toBe(true);
+    expect(
+      disclosures.every(({ ratePolicy }) => ratePolicy.includes("one request in flight")),
+    ).toBe(true);
+    expect(disclosures.every(({ retention }) => retention.includes("local vault"))).toBe(true);
+    expect(disabledAutomation).toEqual(["glassdoor-automation", "linkedin-automation"]);
+
+    const runtimeProcess = (
+      globalThis as typeof globalThis & {
+        readonly process?: { readonly stdout?: { write(value: string): unknown } };
+      }
+    ).process;
+    runtimeProcess?.stdout?.write(
+      `Q2_CONNECTOR_AUDIT_PROOF ${JSON.stringify({
+        specVersion: 1,
+        enabledConnectors,
+        disabledAutomation,
+        reviewedAt: "2026-09-26T00:00:00.000Z",
+        reviewDueAt: "2026-10-26T00:00:00.000Z",
+        exactRuntimeDescriptors: true,
+        attributionAttached: true,
+        memoryCacheHours: CONNECTOR_TRANSPORT_LIMITS_V1.cacheTtlMs / (60 * 60 * 1_000),
+        maxCacheEntries: CONNECTOR_TRANSPORT_LIMITS_V1.maxCacheEntries,
+        minRequestIntervalMs: CONNECTOR_TRANSPORT_LIMITS_V1.minRequestIntervalMs,
+        maxAttempts: CONNECTOR_TRANSPORT_LIMITS_V1.maxAttempts,
+        targetedKillSwitch: true,
+        globalKillSwitch: true,
+        manualCaptureUnaffected: true,
+      })}\n`,
+    );
   });
 });

@@ -334,6 +334,20 @@ are implemented under `XTR-009`.
 - retries only network failures and `429`, `502`, `503`, or `504`, honors valid `Retry-After` up to 30 seconds, uses bounded exponential backoff, stops after three attempts, and fails closed for every terminal state; and
 - returns exact source attribution plus review timestamps/age with each result. Settings displays the same checked-in disclosures, current/due/expired review state, exact domains, credential mode, last use, rate/cache/retention rules, and policy links. It does not expose credential values or imply that an off connector has run.
 
+The `Q2-004` source-policy audit rechecked all three enabled records against
+current primary documentation and closed a runtime-validation gap. Transport
+now validates every descriptor's exact own-key set and security-relevant value,
+not merely the connector/destination pair: Greenhouse and Lever accept only
+their reviewed detail-request shape, while USAJOBS additionally requires the
+exact opaque credential bindings, `WhoMayApply=Public`, `Fields=Full`, bounded
+pagination, and a targeted public query. Forged variants fail before the
+injected executor is called. Lever UUID versions 1 through 8 are now accepted
+consistently by both request construction and transport validation. The audit
+also proves the source-specific rate scopes, attribution, memory-only response
+cache, local-vault-only durable retention, review expiry, targeted/global kills,
+and disabled LinkedIn/Glassdoor records. See the
+[connector source-policy audit](../../proof/phase-2-connector-source-policy-audit.md).
+
 `XTR-010` makes the excluded-source side of the same gate auditable. LinkedIn
 and Glassdoor automation have strict checked-in `disabled` records with zero
 allowed methods, exact affected domains, current policy/privacy links, review

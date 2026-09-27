@@ -323,6 +323,17 @@ The native checkpoint runs the reusable callback-transaction suite and shared va
 - hostile HTML/JSON-LD, SSRF/redirect/size/time cases.
 - saved documented API payloads; live smoke tests separately and conservatively.
 
+`Q2-004` adds an adversarial runtime audit above the existing connector
+fixtures. The transport rejects unknown descriptor keys and any drift in method,
+credential mode, headers, destination shape, or fixed policy fields before an
+injected network executor runs. In particular, a USAJOBS request cannot replace
+the public-announcement constraint with `Status` or `All`, omit `Fields=Full`,
+or weaken the opaque credential-binding boundary. The audit also checks exact
+per-board/per-site/per-source rate scopes, current attribution and retention
+disclosures, stale-review denial, targeted/global kills, and the non-executable
+LinkedIn/Glassdoor records. See the
+[connector source-policy audit](../../proof/phase-2-connector-source-policy-audit.md).
+
 ### AI evals
 
 Use the eval suite in document 05 for every prompt/model/template change. Mock providers in ordinary CI; no real user data or billable key is required.

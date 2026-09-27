@@ -4,9 +4,12 @@ import {
   type ConnectorPolicyRegistryV1,
   type ConnectorRuntimeControlV1,
 } from "./connector-policy.js";
-import { GREENHOUSE_JOB_BOARD_CONNECTOR_ID } from "./greenhouse-job-board.js";
-import { LEVER_POSTINGS_CONNECTOR_ID } from "./lever-postings.js";
-import { USAJOBS_SEARCH_CONNECTOR_ID } from "./usajobs-search.js";
+import {
+  GREENHOUSE_JOB_BOARD_CONNECTOR_ID,
+  GREENHOUSE_JOB_BOARD_POLICY_METHOD,
+} from "./greenhouse-job-board.js";
+import { LEVER_POSTINGS_CONNECTOR_ID, LEVER_POSTINGS_POLICY_METHOD } from "./lever-postings.js";
+import { USAJOBS_SEARCH_CONNECTOR_ID, USAJOBS_SEARCH_POLICY_METHOD } from "./usajobs-search.js";
 
 const DAY_MS = 24 * 60 * 60 * 1_000;
 
@@ -103,7 +106,7 @@ interface ConnectorTransportProfileV1 {
   readonly connectorId: string;
   readonly label: string;
   readonly attributionLabel: string;
-  readonly scopeFor: (url: URL) => string | null;
+  readonly scopeFor: (request: ConnectorTransportRequestV1, url: URL) => string | null;
 }
 
 interface CachedResponseV1 {
@@ -157,45 +160,235 @@ const pathSegments = (url: URL): readonly string[] =>
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
-const greenhouseScope = (url: URL): string | null => {
+const isPlainRecord = (value: unknown): value is Record<string, unknown> => {
+  if (!isRecord(value)) return false;
+  const prototype = Object.getPrototypeOf(value) as unknown;
+  return prototype === Object.prototype || prototype === null;
+};
+
+const hasExactKeys = (record: Record<string, unknown>, expected: readonly string[]): boolean => {
+  const actual = Object.keys(record).sort();
+  const wanted = [...expected].sort();
+  return actual.length === wanted.length && actual.every((key, index) => key === wanted[index]);
+};
+
+const BASE_REQUEST_KEYS = Object.freeze([
+  "specVersion",
+  "connectorId",
+  "policyMethod",
+  "httpMethod",
+  "destinationUrl",
+  "credentials",
+  "headers",
+]);
+const USAJOBS_REQUEST_KEYS = Object.freeze([
+  ...BASE_REQUEST_KEYS,
+  "requiredHeaderBindings",
+  "publicJobsOnly",
+  "executionBoundary",
+]);
+const GREENHOUSE_BOARD_TOKEN = /^[A-Za-z0-9_-]{1,128}$/u;
+const GREENHOUSE_JOB_ID = /^[1-9][0-9]{0,15}$/u;
+const LEVER_SITE = /^[a-z0-9][a-z0-9_-]{0,127}$/u;
+const LEVER_POSTING_ID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+
+const hasExactAcceptHeader = (value: unknown): boolean =>
+  isPlainRecord(value) && hasExactKeys(value, ["accept"]) && value["accept"] === "application/json";
+
+const hasExactRequestBase = (
+  request: ConnectorTransportRequestV1,
+  expectedKeys: readonly string[],
+  connectorId: string,
+  policyMethod: string,
+  credentials: "omit" | "user_configured",
+): boolean => {
+  const record = request as unknown;
+  return (
+    isPlainRecord(record) &&
+    hasExactKeys(record, expectedKeys) &&
+    record["specVersion"] === 1 &&
+    record["connectorId"] === connectorId &&
+    record["policyMethod"] === policyMethod &&
+    record["httpMethod"] === "GET" &&
+    typeof record["destinationUrl"] === "string" &&
+    record["credentials"] === credentials &&
+    hasExactAcceptHeader(record["headers"])
+  );
+};
+
+const hasExactUsaJobsHeaderBindings = (value: unknown): boolean => {
+  if (!isPlainRecord(value) || !hasExactKeys(value, ["Host", "User-Agent", "Authorization-Key"])) {
+    return false;
+  }
+  return (
+    isPlainRecord(value["Host"]) &&
+    hasExactKeys(value["Host"], ["binding"]) &&
+    value["Host"]["binding"] === "destination_host" &&
+    isPlainRecord(value["User-Agent"]) &&
+    hasExactKeys(value["User-Agent"], ["binding"]) &&
+    value["User-Agent"]["binding"] === "registered_email" &&
+    isPlainRecord(value["Authorization-Key"]) &&
+    hasExactKeys(value["Authorization-Key"], ["binding"]) &&
+    value["Authorization-Key"]["binding"] === "api_key"
+  );
+};
+
+const hasControlCharacter = (value: string): boolean => {
+  for (const character of value) {
+    const codePoint = character.charCodeAt(0);
+    if (codePoint <= 0x1f || codePoint === 0x7f) return true;
+  }
+  return false;
+};
+
+const isBoundedText = (value: string | null, maximum: number): value is string =>
+  value !== null &&
+  value.length > 0 &&
+  value.length <= maximum &&
+  value.trim() === value &&
+  !hasControlCharacter(value);
+
+const isBoundedIntegerText = (value: string | null, minimum: number, maximum: number): boolean =>
+  value !== null &&
+  /^(0|[1-9][0-9]*)$/u.test(value) &&
+  Number(value) >= minimum &&
+  Number(value) <= maximum;
+
+const isUniqueBoundedList = (
+  value: string | null,
+  maximumEntries: number,
+  maximumEntryLength: number,
+  pattern?: RegExp,
+): boolean => {
+  if (value === null) return true;
+  const entries = value.split(";");
+  return (
+    entries.length > 0 &&
+    entries.length <= maximumEntries &&
+    new Set(entries).size === entries.length &&
+    entries.every(
+      (entry) =>
+        isBoundedText(entry, maximumEntryLength) && (pattern === undefined || pattern.test(entry)),
+    )
+  );
+};
+
+const USAJOBS_QUERY_KEYS = Object.freeze([
+  "Keyword",
+  "PositionTitle",
+  "LocationName",
+  "JobCategoryCode",
+  "RemoteIndicator",
+  "DatePosted",
+  "Page",
+  "ResultsPerPage",
+  "WhoMayApply",
+  "Fields",
+]);
+
+const hasExactUsaJobsQuery = (url: URL): boolean => {
+  const keys = [...url.searchParams.keys()];
+  if (
+    keys.some((key) => !USAJOBS_QUERY_KEYS.includes(key)) ||
+    USAJOBS_QUERY_KEYS.some((key) => url.searchParams.getAll(key).length > 1) ||
+    url.searchParams.get("WhoMayApply") !== "Public" ||
+    url.searchParams.get("Fields") !== "Full" ||
+    !isBoundedIntegerText(url.searchParams.get("Page"), 1, 100) ||
+    !isBoundedIntegerText(url.searchParams.get("ResultsPerPage"), 1, 100)
+  ) {
+    return false;
+  }
+
+  const keyword = url.searchParams.get("Keyword");
+  const positionTitle = url.searchParams.get("PositionTitle");
+  const locationName = url.searchParams.get("LocationName");
+  const jobCategoryCode = url.searchParams.get("JobCategoryCode");
+  if (
+    (keyword !== null && !isBoundedText(keyword, 256)) ||
+    (positionTitle !== null && !isBoundedText(positionTitle, 256)) ||
+    !isUniqueBoundedList(locationName, 10, 256) ||
+    !isUniqueBoundedList(jobCategoryCode, 16, 4, /^[0-9]{4}$/u) ||
+    [keyword, positionTitle, locationName, jobCategoryCode].every((value) => value === null)
+  ) {
+    return false;
+  }
+
+  const remoteIndicator = url.searchParams.get("RemoteIndicator");
+  const datePosted = url.searchParams.get("DatePosted");
+  return (
+    (remoteIndicator === null || remoteIndicator === "True" || remoteIndicator === "False") &&
+    (datePosted === null || isBoundedIntegerText(datePosted, 0, 60))
+  );
+};
+
+const greenhouseScope = (request: ConnectorTransportRequestV1, url: URL): string | null => {
   const segments = pathSegments(url);
   const boardToken = segments[2] ?? "";
   if (
+    !hasExactRequestBase(
+      request,
+      BASE_REQUEST_KEYS,
+      GREENHOUSE_JOB_BOARD_CONNECTOR_ID,
+      GREENHOUSE_JOB_BOARD_POLICY_METHOD,
+      "omit",
+    ) ||
     segments.length !== 5 ||
     segments[0] !== "v1" ||
     segments[1] !== "boards" ||
     segments[3] !== "jobs" ||
-    boardToken.length === 0 ||
-    !/^\d+$/.test(segments[4] ?? "") ||
-    url.search !== "?pay_transparency=true"
+    !GREENHOUSE_BOARD_TOKEN.test(boardToken) ||
+    !GREENHOUSE_JOB_ID.test(segments[4] ?? "") ||
+    url.search !== "?pay_transparency=true" ||
+    url.hash !== ""
   ) {
     return null;
   }
   return `greenhouse:${boardToken}`;
 };
 
-const leverScope = (url: URL): string | null => {
+const leverScope = (request: ConnectorTransportRequestV1, url: URL): string | null => {
   const segments = pathSegments(url);
   const site = segments[2] ?? "";
   if (
+    !hasExactRequestBase(
+      request,
+      BASE_REQUEST_KEYS,
+      LEVER_POSTINGS_CONNECTOR_ID,
+      LEVER_POSTINGS_POLICY_METHOD,
+      "omit",
+    ) ||
     segments.length !== 4 ||
     segments[0] !== "v0" ||
     segments[1] !== "postings" ||
-    site.length === 0 ||
-    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-      segments[3] ?? "",
-    ) ||
-    url.search !== ""
+    !LEVER_SITE.test(site) ||
+    !LEVER_POSTING_ID.test(segments[3] ?? "") ||
+    url.search !== "" ||
+    url.hash !== ""
   ) {
     return null;
   }
   return `lever:${url.hostname}:${site}`;
 };
 
-const usaJobsScope = (url: URL): string | null =>
-  url.pathname.toLowerCase() === "/api/search" && url.search.length > 1
+const usaJobsScope = (request: ConnectorTransportRequestV1, url: URL): string | null => {
+  const record = request as unknown as Record<string, unknown>;
+  return hasExactRequestBase(
+    request,
+    USAJOBS_REQUEST_KEYS,
+    USAJOBS_SEARCH_CONNECTOR_ID,
+    USAJOBS_SEARCH_POLICY_METHOD,
+    "user_configured",
+  ) &&
+    hasExactUsaJobsHeaderBindings(record["requiredHeaderBindings"]) &&
+    record["publicJobsOnly"] === true &&
+    record["executionBoundary"] === "privileged_connector_only" &&
+    url.pathname === "/api/search" &&
+    url.hash === "" &&
+    hasExactUsaJobsQuery(url)
     ? `usajobs:${url.hostname}`
     : null;
+};
 
 const CONNECTOR_TRANSPORT_PROFILES_V1: Readonly<Record<string, ConnectorTransportProfileV1>> =
   Object.freeze({
@@ -433,7 +626,7 @@ export function createConnectorTransportV1({
         throw new ConnectorTransportError("request_shape_invalid", request.connectorId);
       }
       const profile = CONNECTOR_TRANSPORT_PROFILES_V1[request.connectorId];
-      const scope = profile?.scopeFor(destination) ?? null;
+      const scope = profile?.scopeFor(request, destination) ?? null;
       if (profile === undefined || scope === null) {
         throw new ConnectorTransportError("request_shape_invalid", request.connectorId);
       }
