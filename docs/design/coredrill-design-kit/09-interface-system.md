@@ -420,6 +420,16 @@ panel and remain visible in forced colors. State resolution and snapshot
 classification are pure and versioned; no catalog entry claims an application
 was submitted.
 
+`PEX-002` realizes the recognized/needs-input preview as an editable but still
+provisional form. Every title/company control has a persistent label, bounded
+length, and detected-confidence or user-correction annotation. Location,
+salary, source signal/hostname, minimum detected confidence, and capture-time
+freshness use a semantic description list; freshness copy explicitly avoids a
+live-listing claim. Selected text is a scrollable text region with a 44-pixel
+recapture action, and the bounded local note reports its character count and
+provisional status. Queueing disables further edits, and all retained evidence
+remains local until the existing acknowledgement or expiry boundary acts.
+
 ## 8. Network and AI preflight
 
 Before the first use of each provider/connector, show:

@@ -10,7 +10,15 @@ export {
   type PageFieldCaptureMethod,
 } from "./page-capture.js";
 export {
+  EXTENSION_CAPTURE_DRAFT_LIMITS,
+  EXTENSION_CAPTURE_DRAFT_SPEC_VERSION,
+  safeParseExtensionCaptureDraftV1,
+  type ExtensionCaptureDraftV1,
+  type ExtensionCaptureDraftValidationResult,
+} from "./extension-draft.js";
+export {
   buildCaptureEnvelopeV1,
+  buildExtensionCaptureDraftEnvelopeV1,
   buildSuppliedCaptureEnvelopeV1,
   captureEnvelopeContentProjectionV1,
   createCaptureEnvelopeContentHashV1,

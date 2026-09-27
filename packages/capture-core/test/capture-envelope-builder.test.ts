@@ -3,11 +3,14 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 
 import {
+  EXTENSION_CAPTURE_DRAFT_LIMITS,
   buildCaptureEnvelopeV1,
+  buildExtensionCaptureDraftEnvelopeV1,
   buildSuppliedCaptureEnvelopeV1,
   canonicalJsonStringify,
   createCaptureEnvelopeContentHashV1,
   safeParsePageCaptureSnapshot,
+  safeParseExtensionCaptureDraftV1,
   sha256Hex,
   verifyCaptureEnvelopeContentHashV1,
   type PageCaptureSnapshot,
@@ -96,6 +99,105 @@ describe("capture envelope builder", () => {
       confidence: 0.98,
     });
     await expect(verifyCaptureEnvelopeContentHashV1(result.envelope)).resolves.toBe(true);
+  });
+
+  it("retains detected evidence while adding bounded user corrections and a local note", async () => {
+    const draft = {
+      specVersion: 1,
+      capturedAt: "2026-08-24T15:30:00.000Z",
+      snapshot,
+      corrections: { title: "Principal Platform Engineer", company: "Example Systems, Inc." },
+      note: "Ask about the local-first roadmap.",
+    } as const;
+    expect(safeParseExtensionCaptureDraftV1(draft)).toMatchObject({ success: true });
+
+    const result = await buildExtensionCaptureDraftEnvelopeV1(draft, {
+      senderId: "abcdefghijklmnopabcdefghijklmnop",
+      sequence: 7,
+      randomBytes: deterministicEntropy(70),
+    });
+    expect(result.success).toBe(true);
+    if (!result.success) throw new Error(result.issue);
+
+    expect(result.envelope.capturedAt).toBe(draft.capturedAt);
+    expect(result.envelope.content.selectedText).toBe(snapshot.selectedText);
+    expect(result.envelope.fieldCandidates).toHaveLength(5);
+    expect(
+      result.envelope.fieldCandidates.map((candidate) => ({
+        fieldName: candidate.fieldName,
+        value: candidate.value,
+        method: candidate.provenance.method,
+        pointer: candidate.provenance.source.pointer,
+        confirmed: candidate.userConfirmation !== undefined,
+      })),
+    ).toEqual([
+      {
+        fieldName: "title",
+        value: "Senior Platform Engineer",
+        method: "jsonld",
+        pointer: "/content/jsonLd/0/title",
+        confirmed: false,
+      },
+      {
+        fieldName: "company",
+        value: "Example Systems",
+        method: "jsonld",
+        pointer: "/content/jsonLd/0/hiringOrganization/name",
+        confirmed: false,
+      },
+      {
+        fieldName: "title",
+        value: "Principal Platform Engineer",
+        method: "user",
+        pointer: "/draft/corrections/title",
+        confirmed: false,
+      },
+      {
+        fieldName: "company",
+        value: "Example Systems, Inc.",
+        method: "user",
+        pointer: "/draft/corrections/company",
+        confirmed: false,
+      },
+      {
+        fieldName: "capture_note",
+        value: "Ask about the local-first roadmap.",
+        method: "user",
+        pointer: "/draft/note",
+        confirmed: false,
+      },
+    ]);
+    await expect(verifyCaptureEnvelopeContentHashV1(result.envelope)).resolves.toBe(true);
+  });
+
+  it("strictly rejects malformed, unbounded, or hidden-property extension drafts", () => {
+    const base = {
+      specVersion: 1,
+      capturedAt: "2026-08-24T15:30:00.000Z",
+      snapshot,
+    } as const;
+    expect(safeParseExtensionCaptureDraftV1({ ...base, injected: true })).toMatchObject({
+      success: false,
+      code: "draft_invalid",
+    });
+    expect(
+      safeParseExtensionCaptureDraftV1({
+        ...base,
+        corrections: {
+          title: "x".repeat(EXTENSION_CAPTURE_DRAFT_LIMITS.maxCorrectionCharacters + 1),
+        },
+      }),
+    ).toMatchObject({ success: false, code: "draft_invalid" });
+    expect(
+      safeParseExtensionCaptureDraftV1({
+        ...base,
+        note: "x".repeat(EXTENSION_CAPTURE_DRAFT_LIMITS.maxNoteCharacters + 1),
+      }),
+    ).toMatchObject({ success: false, code: "draft_invalid" });
+    expect(safeParseExtensionCaptureDraftV1({ ...base, corrections: {} })).toMatchObject({
+      success: false,
+      code: "draft_invalid",
+    });
   });
 
   it("uses semantic captured content, not random IDs or sequence, for its dedupe hash", async () => {

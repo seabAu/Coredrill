@@ -1,9 +1,16 @@
-import { safeParsePageCaptureSnapshot, type PageCaptureSnapshot } from "@coredrill/capture-core";
+import {
+  safeParseExtensionCaptureDraftV1,
+  safeParsePageCaptureSnapshot,
+  type ExtensionCaptureDraftV1,
+  type PageCaptureSnapshot,
+} from "@coredrill/capture-core";
 import { TRANSFER_LIMITS } from "@coredrill/extension-bridge";
 
 export type ExtensionRequest =
   | { readonly type: "capture.active-tab.v1" }
+  | { readonly type: "capture.active-tab.v2" }
   | { readonly type: "capture.queue.v1"; readonly snapshot: unknown }
+  | { readonly type: "capture.queue-draft.v1"; readonly draft: unknown }
   | { readonly type: "outbox.status.v1" }
   | { readonly type: "outbox.export.v1" };
 
@@ -12,6 +19,11 @@ export type ExtensionResponse =
       readonly success: true;
       readonly type: "capture.preview.v1";
       readonly snapshot: PageCaptureSnapshot;
+    }
+  | {
+      readonly success: true;
+      readonly type: "capture.preview-draft.v1";
+      readonly draft: ExtensionCaptureDraftV1;
     }
   | {
       readonly success: true;
@@ -67,6 +79,7 @@ export function parseExtensionRequest(input: unknown): ExtensionRequest | undefi
   if (!isRecord(input) || typeof input["type"] !== "string") return undefined;
   if (
     (input["type"] === "capture.active-tab.v1" ||
+      input["type"] === "capture.active-tab.v2" ||
       input["type"] === "outbox.status.v1" ||
       input["type"] === "outbox.export.v1") &&
     Object.keys(input).length === 1
@@ -79,6 +92,13 @@ export function parseExtensionRequest(input: unknown): ExtensionRequest | undefi
     Object.hasOwn(input, "snapshot")
   ) {
     return { type: "capture.queue.v1", snapshot: input["snapshot"] };
+  }
+  if (
+    input["type"] === "capture.queue-draft.v1" &&
+    Object.keys(input).length === 2 &&
+    Object.hasOwn(input, "draft")
+  ) {
+    return { type: "capture.queue-draft.v1", draft: input["draft"] };
   }
   return undefined;
 }
@@ -107,6 +127,12 @@ export function isExtensionResponse(input: unknown): input is ExtensionResponse 
     return (
       hasExactKeys(input, ["success", "type", "snapshot"]) &&
       safeParsePageCaptureSnapshot(input["snapshot"]).success
+    );
+  }
+  if (input["type"] === "capture.preview-draft.v1") {
+    return (
+      hasExactKeys(input, ["success", "type", "draft"]) &&
+      safeParseExtensionCaptureDraftV1(input["draft"]).success
     );
   }
   if (input["type"] === "capture.queued.v1") {

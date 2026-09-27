@@ -165,6 +165,16 @@ the absence of that signal is unrecognized even if generic selector fallback
 found page text. This classification changes presentation only. It performs no
 fetch, source-policy bypass, candidate confirmation, or durable write.
 
+`PEX-002` layers a strict `ExtensionCaptureDraftV1` over that immutable
+snapshot. Its capture instant drives a clearly labeled capture-freshness
+display; location and salary are inert projections of the already-retained
+bounded `JobPosting` JSON-LD, not a second extraction or network lookup. An
+explicit selected-text recapture replaces the draft snapshot while preserving
+the user's in-panel edits. Queue construction keeps the original detected
+candidates and emits title/company corrections plus `capture_note` as separate
+method-`user` candidates with exact draft pointers and no confirmation. The
+unchanged `CaptureEnvelopeV1` remains the durable and transfer boundary.
+
 The shipped `XTR-003` baseline keeps this last-resort path pure, local, and bounded:
 
 - explicit selected text produces one high-confidence description candidate while retaining the exact selected string as raw evidence;

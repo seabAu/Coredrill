@@ -10,7 +10,7 @@ export default defineConfig({
   projects: [
     {
       name: "chromium-extension-transfer",
-      testMatch: "extension-transfer.spec.mjs",
+      testMatch: ["extension-transfer.spec.mjs", "extension-preview.spec.mjs"],
     },
     {
       name: "firefox-manual-fallback",

@@ -1,4 +1,8 @@
-import { safeParsePageCaptureSnapshot, type PageCaptureSnapshot } from "@coredrill/capture-core";
+import {
+  EXTENSION_CAPTURE_DRAFT_LIMITS,
+  safeParseExtensionCaptureDraftV1,
+  type ExtensionCaptureDraftV1,
+} from "@coredrill/capture-core";
 import { useEffect, useState } from "react";
 import { browser } from "wxt/browser";
 
@@ -10,6 +14,7 @@ import {
   type ProductionExtensionStateAction,
   type ProductionExtensionStateKind,
 } from "./capture-state";
+import { createCapturePreviewV1 } from "./capture-preview";
 import { isExtensionResponse, type ExtensionResponse } from "./messages";
 import { COREDRILL_PHASE0_APP_ORIGIN } from "./transfer-policy";
 
@@ -38,7 +43,10 @@ async function sendRequest(message: unknown): Promise<ExtensionResponse> {
 }
 
 export function CapturePanel(): React.JSX.Element {
-  const [snapshot, setSnapshot] = useState<PageCaptureSnapshot>();
+  const [draft, setDraft] = useState<ExtensionCaptureDraftV1>();
+  const [title, setTitle] = useState("");
+  const [company, setCompany] = useState("");
+  const [note, setNote] = useState("");
   const [outbox, setOutbox] = useState<OutboxSummary>({ count: 0, bytes: 0 });
   const [captureState, setCaptureState] = useState<ProductionExtensionStateKind>();
   const [busy, setBusy] = useState(false);
@@ -80,16 +88,21 @@ export function CapturePanel(): React.JSX.Element {
     setBusy(true);
     setError(undefined);
     setNotice(undefined);
-    const response = await sendRequest({ type: "capture.active-tab.v1" });
-    if (response.success && response.type === "capture.preview.v1") {
-      const parsed = safeParsePageCaptureSnapshot(response.snapshot);
+    const response = await sendRequest({ type: "capture.active-tab.v2" });
+    if (response.success && response.type === "capture.preview-draft.v1") {
+      const parsed = safeParseExtensionCaptureDraftV1(response.draft);
       if (parsed.success) {
-        setSnapshot(parsed.data);
+        const previousDraft = draft;
+        setDraft(parsed.data);
+        if (previousDraft === undefined) {
+          setTitle(parsed.data.snapshot.fields.title?.value ?? "");
+          setCompany(parsed.data.snapshot.fields.company?.value ?? "");
+        }
         setCaptureState(
           resolveProductionExtensionStateV1({
             specVersion: 1,
             permission: "available",
-            recognition: classifyCapturedPageV1(parsed.data),
+            recognition: classifyCapturedPageV1(parsed.data.snapshot),
             transfer: "idle",
           }),
         );
@@ -111,11 +124,38 @@ export function CapturePanel(): React.JSX.Element {
   };
 
   const queue = async (): Promise<void> => {
-    if (snapshot === undefined) return;
+    if (draft === undefined) return;
     setBusy(true);
     setError(undefined);
     setNotice(undefined);
-    const response = await sendRequest({ type: "capture.queue.v1", snapshot });
+    const normalizedTitle = title.trim();
+    const normalizedCompany = company.trim();
+    const normalizedNote = note.trim();
+    const queuedDraft = {
+      ...draft,
+      ...((normalizedTitle !== "" && normalizedTitle !== draft.snapshot.fields.title?.value) ||
+      (normalizedCompany !== "" && normalizedCompany !== draft.snapshot.fields.company?.value)
+        ? {
+            corrections: {
+              ...(normalizedTitle === "" || normalizedTitle === draft.snapshot.fields.title?.value
+                ? {}
+                : { title: normalizedTitle }),
+              ...(normalizedCompany === "" ||
+              normalizedCompany === draft.snapshot.fields.company?.value
+                ? {}
+                : { company: normalizedCompany }),
+            },
+          }
+        : {}),
+      ...(normalizedNote === "" ? {} : { note: normalizedNote }),
+    } satisfies ExtensionCaptureDraftV1;
+    const parsedDraft = safeParseExtensionCaptureDraftV1(queuedDraft);
+    if (!parsedDraft.success) {
+      setError(parsedDraft.issue);
+      setBusy(false);
+      return;
+    }
+    const response = await sendRequest({ type: "capture.queue-draft.v1", draft: parsedDraft.data });
     if (response.success && response.type === "capture.queued.v1") {
       setOutbox({ count: response.outboxCount, bytes: response.outboxBytes });
       setNotice(`Queued locally until ${new Date(response.expiresAt).toLocaleString()}.`);
@@ -184,6 +224,29 @@ export function CapturePanel(): React.JSX.Element {
     setBusy(false);
   };
 
+  const displayedDraft =
+    draft === undefined
+      ? undefined
+      : ({
+          ...draft,
+          ...((title.trim() !== "" && title.trim() !== draft.snapshot.fields.title?.value) ||
+          (company.trim() !== "" && company.trim() !== draft.snapshot.fields.company?.value)
+            ? {
+                corrections: {
+                  ...(title.trim() === "" || title.trim() === draft.snapshot.fields.title?.value
+                    ? {}
+                    : { title: title.trim() }),
+                  ...(company.trim() === "" ||
+                  company.trim() === draft.snapshot.fields.company?.value
+                    ? {}
+                    : { company: company.trim() }),
+                },
+              }
+            : {}),
+        } satisfies ExtensionCaptureDraftV1);
+  const preview = displayedDraft === undefined ? undefined : createCapturePreviewV1(displayedDraft);
+  const queued = captureState === "queued" || captureState === "transferred";
+
   return (
     <main className="panel-shell">
       <header>
@@ -215,7 +278,7 @@ export function CapturePanel(): React.JSX.Element {
         />
       )}
 
-      {snapshot === undefined ? (
+      {preview === undefined ? (
         <section className="empty-state" aria-label="Capture preview">
           <p>No page preview yet.</p>
           <small>
@@ -223,23 +286,117 @@ export function CapturePanel(): React.JSX.Element {
           </small>
         </section>
       ) : (
-        <section className="preview" aria-label="Capture preview">
-          <div>
+        <section className="preview" aria-label="Provisional capture preview">
+          <div className="preview__intro" role="note">
+            <strong>Provisional preview</strong>
+            <span>Edits stay unconfirmed and retain the originally detected evidence.</span>
+          </div>
+
+          <label className="preview__field">
             <span>Title</span>
-            <strong>{snapshot.fields.title?.value ?? "Needs review"}</strong>
-          </div>
-          <div>
+            <input
+              data-testid="capture-title"
+              disabled={queued}
+              maxLength={EXTENSION_CAPTURE_DRAFT_LIMITS.maxCorrectionCharacters}
+              onChange={(event) => {
+                setTitle(event.currentTarget.value);
+              }}
+              value={title}
+            />
+            <small>
+              {preview.title.origin === "user"
+                ? "User correction · provisional"
+                : preview.title.confidence === undefined
+                  ? "Needs review"
+                  : `Detected · ${String(Math.round(preview.title.confidence * 100))}% confidence`}
+            </small>
+          </label>
+
+          <label className="preview__field">
             <span>Company</span>
-            <strong>{snapshot.fields.company?.value ?? "Needs review"}</strong>
+            <input
+              data-testid="capture-company"
+              disabled={queued}
+              maxLength={EXTENSION_CAPTURE_DRAFT_LIMITS.maxCorrectionCharacters}
+              onChange={(event) => {
+                setCompany(event.currentTarget.value);
+              }}
+              value={company}
+            />
+            <small>
+              {preview.company.origin === "user"
+                ? "User correction · provisional"
+                : preview.company.confidence === undefined
+                  ? "Needs review"
+                  : `Detected · ${String(Math.round(preview.company.confidence * 100))}% confidence`}
+            </small>
+          </label>
+
+          <dl className="preview__facts">
+            <div>
+              <dt>Location</dt>
+              <dd data-testid="capture-location">{preview.location ?? "Not detected"}</dd>
+            </div>
+            <div>
+              <dt>Salary</dt>
+              <dd data-testid="capture-salary">{preview.salary ?? "Not detected"}</dd>
+            </div>
+            <div>
+              <dt>Detected source</dt>
+              <dd data-testid="capture-source">
+                {preview.source.signal} · {preview.source.hostname}
+              </dd>
+            </div>
+            <div>
+              <dt>Source confidence</dt>
+              <dd data-testid="capture-confidence">
+                {preview.confidence === undefined
+                  ? "Not available"
+                  : `${String(Math.round(preview.confidence * 100))}% minimum detected-field confidence`}
+              </dd>
+            </div>
+            <div>
+              <dt>Capture freshness</dt>
+              <dd>
+                <time data-testid="capture-freshness" dateTime={preview.capturedAt}>
+                  {preview.freshness}
+                </time>
+                <small>Capture time only; this does not prove the listing is still current.</small>
+              </dd>
+            </div>
+          </dl>
+
+          <div className="preview__selection">
+            <span>Selected page text</span>
+            <p data-testid="capture-selected-text">{preview.selectedText ?? "None selected"}</p>
+            <button
+              className="secondary"
+              disabled={busy || queued}
+              onClick={() => void capture()}
+              type="button"
+            >
+              Recapture selected page text
+            </button>
           </div>
-          <div>
-            <span>Source</span>
-            <code>{snapshot.url}</code>
-          </div>
-          <div>
-            <span>Selected text</span>
-            <p>{snapshot.selectedText ?? "None selected"}</p>
-          </div>
+
+          <label className="preview__field">
+            <span>Local capture note</span>
+            <textarea
+              data-testid="capture-note"
+              disabled={queued}
+              maxLength={EXTENSION_CAPTURE_DRAFT_LIMITS.maxNoteCharacters}
+              onChange={(event) => {
+                setNote(event.currentTarget.value);
+              }}
+              placeholder="Add context for Inbox review"
+              rows={4}
+              value={note}
+            />
+            <small>
+              {note.length}/{EXTENSION_CAPTURE_DRAFT_LIMITS.maxNoteCharacters} · retained locally as
+              user-authored provisional evidence
+            </small>
+          </label>
         </section>
       )}
 

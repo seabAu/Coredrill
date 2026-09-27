@@ -95,6 +95,9 @@ describe("extension message boundary", () => {
     expect(parseExtensionRequest({ type: "capture.active-tab.v1" })).toEqual({
       type: "capture.active-tab.v1",
     });
+    expect(parseExtensionRequest({ type: "capture.active-tab.v2" })).toEqual({
+      type: "capture.active-tab.v2",
+    });
     expect(
       parseExtensionRequest({ type: "capture.active-tab.v1", injected: true }),
     ).toBeUndefined();
@@ -102,6 +105,15 @@ describe("extension message boundary", () => {
     expect(parseExtensionRequest({ type: "capture.queue.v1", snapshot: fixture })).toEqual({
       type: "capture.queue.v1",
       snapshot: fixture,
+    });
+    const draft = {
+      specVersion: 1,
+      capturedAt: "2026-09-26T14:00:00.000Z",
+      snapshot: { ...fixture, specVersion: 1, jsonLd: [fixture.jsonLd], fields: {} },
+    };
+    expect(parseExtensionRequest({ type: "capture.queue-draft.v1", draft })).toEqual({
+      type: "capture.queue-draft.v1",
+      draft,
     });
     expect(parseExtensionRequest({ type: "outbox.export.v1" })).toEqual({
       type: "outbox.export.v1",
@@ -128,6 +140,9 @@ describe("extension message boundary", () => {
       }),
     ).toBe(false);
     expect(isExtensionResponse({ success: true, type: "capture.preview.v1" })).toBe(false);
+    expect(
+      isExtensionResponse({ success: true, type: "capture.preview-draft.v1", draft: {} }),
+    ).toBe(false);
     expect(
       isExtensionResponse({
         success: true,

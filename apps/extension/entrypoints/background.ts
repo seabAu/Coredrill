@@ -1,4 +1,9 @@
-import { buildCaptureEnvelopeV1, safeParsePageCaptureSnapshot } from "@coredrill/capture-core";
+import {
+  buildCaptureEnvelopeV1,
+  buildExtensionCaptureDraftEnvelopeV1,
+  safeParsePageCaptureSnapshot,
+  type CaptureEnvelopeBuildResult,
+} from "@coredrill/capture-core";
 import {
   acknowledgeOutboxTransfer,
   createEmptyOutboxState,
@@ -159,18 +164,30 @@ async function captureActiveTab(): Promise<ExtensionResponse> {
   }
 }
 
-async function queueSnapshot(snapshot: unknown): Promise<ExtensionResponse> {
+async function captureActiveTabDraft(): Promise<ExtensionResponse> {
+  const response = await captureActiveTab();
+  if (!response.success || response.type !== "capture.preview.v1") return response;
+  return {
+    success: true,
+    type: "capture.preview-draft.v1",
+    draft: {
+      specVersion: 1,
+      capturedAt: new Date().toISOString(),
+      snapshot: response.snapshot,
+    },
+  };
+}
+
+async function queueBuiltCapture(
+  build: (sequence: number, now: Date) => Promise<CaptureEnvelopeBuildResult>,
+): Promise<ExtensionResponse> {
   const loaded = await readStoredState();
   if (!loaded.success) return loaded.response;
   if (loaded.state.nextSequence >= Number.MAX_SAFE_INTEGER) {
     return errorResponse("sequence_exhausted", "The extension sequence counter is exhausted.");
   }
   const now = new Date();
-  const built = await buildCaptureEnvelopeV1(snapshot, {
-    senderId: browser.runtime.id,
-    sequence: loaded.state.nextSequence,
-    now,
-  });
+  const built = await build(loaded.state.nextSequence, now);
   if (!built.success) return errorResponse(built.code, built.issue);
 
   const queued = await queueCaptureEnvelope(loaded.state.outbox, built.envelope, now);
@@ -195,6 +212,25 @@ async function queueSnapshot(snapshot: unknown): Promise<ExtensionResponse> {
     outboxBytes: queued.encodedBytes,
     expiresAt: queued.item.expiresAt,
   };
+}
+
+async function queueSnapshot(snapshot: unknown): Promise<ExtensionResponse> {
+  return queueBuiltCapture((sequence, now) =>
+    buildCaptureEnvelopeV1(snapshot, {
+      senderId: browser.runtime.id,
+      sequence,
+      now,
+    }),
+  );
+}
+
+async function queueDraft(draft: unknown): Promise<ExtensionResponse> {
+  return queueBuiltCapture((sequence) =>
+    buildExtensionCaptureDraftEnvelopeV1(draft, {
+      senderId: browser.runtime.id,
+      sequence,
+    }),
+  );
 }
 
 async function outboxStatus(): Promise<ExtensionResponse> {
@@ -335,8 +371,12 @@ async function handleMessage(
   switch (request.type) {
     case "capture.active-tab.v1":
       return captureActiveTab();
+    case "capture.active-tab.v2":
+      return captureActiveTabDraft();
     case "capture.queue.v1":
       return serializeQueueOperation(() => queueSnapshot(request.snapshot));
+    case "capture.queue-draft.v1":
+      return serializeQueueOperation(() => queueDraft(request.draft));
     case "outbox.status.v1":
       return serializeQueueOperation(outboxStatus);
     case "outbox.export.v1":

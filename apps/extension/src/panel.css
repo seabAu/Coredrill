@@ -21,7 +21,9 @@ body {
   min-width: 320px;
 }
 
-button {
+button,
+input,
+textarea {
   font: inherit;
 }
 
@@ -216,12 +218,14 @@ button:disabled {
   gap: 14px;
 }
 
-.preview div {
+.preview > div,
+.preview__field {
   display: grid;
   gap: 4px;
 }
 
-.preview span {
+.preview span,
+.preview dt {
   color: #6a7772;
   font-size: 0.72rem;
   font-weight: 750;
@@ -231,7 +235,9 @@ button:disabled {
 
 .preview strong,
 .preview p,
-.preview code {
+.preview code,
+.preview dl,
+.preview dd {
   margin: 0;
   overflow-wrap: anywhere;
 }
@@ -245,6 +251,68 @@ button:disabled {
   max-height: 8rem;
   overflow: auto;
   white-space: pre-wrap;
+}
+
+.preview__intro {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #edf2ef;
+  color: #27473c;
+}
+
+.preview__intro span {
+  color: #53635d;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.4;
+  text-transform: none;
+}
+
+.preview__field input,
+.preview__field textarea {
+  width: 100%;
+  border: 1px solid #aaa89f;
+  border-radius: 8px;
+  padding: 10px 11px;
+  background: white;
+  color: #16241f;
+}
+
+.preview__field textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.preview__field input:focus-visible,
+.preview__field textarea:focus-visible {
+  outline: 3px solid #e69b67;
+  outline-offset: 2px;
+}
+
+.preview__field small,
+.preview__facts small {
+  color: #64736d;
+  line-height: 1.35;
+}
+
+.preview__facts {
+  display: grid;
+  gap: 12px;
+}
+
+.preview__facts > div,
+.preview__facts dd {
+  display: grid;
+  gap: 4px;
+}
+
+.preview__facts dt {
+  margin: 0;
+}
+
+.preview__selection .secondary {
+  margin-top: 6px;
 }
 
 .message-stack p {

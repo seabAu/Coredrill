@@ -209,6 +209,20 @@ later transfer slice supplies that fact. No Apply label, navigation capture,
 host-permission expansion, trusted-field promotion, or background page read is
 introduced.
 
+`PEX-002` adds the reviewable preview without changing the shipped capture
+envelope version. A strict version-1 extension draft binds the validated page
+snapshot to its capture instant and bounded optional title/company corrections
+and local note. The production side panel shows title, company, location,
+salary, detected source hostname/signal, minimum detected-field confidence,
+and capture-time freshness with an explicit warning that capture time does not
+prove the listing is current. A user can select different page text and invoke
+recapture, edit title/company, and add a bounded note before the existing
+explicit queue action. The envelope retains original detected candidates and
+adds edits and the note as separate provisional `user` candidates with no
+`userConfirmation`; it never overwrites extracted evidence. The preview reads
+only the retained snapshot, performs no source fetch, and adds no permission,
+navigation observation, trust promotion, or automatic submission behavior.
+
 ## Mobile/PWA experience
 
 The hosted PWA is responsive and can act as a mobile-local vault, but it is a different device vault until sync exists. The bottom navigation is Home, Pipeline, Add, Documents, and More. Mobile supports:

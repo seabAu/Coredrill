@@ -10,6 +10,21 @@
     "hiringOrganization": {
       "@type": "Organization",
       "name": "Example Systems"
+    },
+    "jobLocationType": "TELECOMMUTE",
+    "applicantLocationRequirements": {
+      "@type": "Country",
+      "name": "United States"
+    },
+    "baseSalary": {
+      "@type": "MonetaryAmount",
+      "currency": "USD",
+      "value": {
+        "@type": "QuantitativeValue",
+        "minValue": 145000,
+        "maxValue": 180000,
+        "unitText": "YEAR"
+      }
     }
   }
 }

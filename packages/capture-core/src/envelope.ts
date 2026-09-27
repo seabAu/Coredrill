@@ -9,6 +9,10 @@ import {
 
 import { sha256CanonicalJson } from "./canonical-json.js";
 import {
+  safeParseExtensionCaptureDraftV1,
+  type ExtensionCaptureDraftV1,
+} from "./extension-draft.js";
+import {
   safeParsePageCaptureSnapshot,
   type PageCaptureSnapshot,
   type PageFieldCapture,
@@ -126,7 +130,7 @@ function base64Url(bytes: Uint8Array): string {
 }
 
 function createCandidate(
-  fieldName: "title" | "company",
+  fieldName: string,
   field: {
     readonly value: string;
     readonly rawValue?: string;
@@ -203,7 +207,7 @@ interface EnvelopeDefinitionV1 {
   readonly source: CaptureEnvelopeV1["source"];
   readonly content: CaptureEnvelopeV1["content"];
   readonly fields: readonly (readonly [
-    "title" | "company",
+    string,
     {
       readonly value: string;
       readonly rawValue?: string;
@@ -329,6 +333,88 @@ export async function buildCaptureEnvelopeV1(
       captureClient: { name: "coredrill.extension", version: "0.1.0" },
     },
     options,
+  );
+}
+
+function extensionDraftFieldEntries(
+  draft: ExtensionCaptureDraftV1,
+): EnvelopeDefinitionV1["fields"] {
+  return [
+    ...fieldEntries(draft.snapshot),
+    ...(draft.corrections?.title === undefined
+      ? []
+      : [
+          [
+            "title",
+            {
+              value: draft.corrections.title,
+              pointer: "/draft/corrections/title",
+              method: "user",
+              confidence: 1,
+            },
+          ] as const,
+        ]),
+    ...(draft.corrections?.company === undefined
+      ? []
+      : [
+          [
+            "company",
+            {
+              value: draft.corrections.company,
+              pointer: "/draft/corrections/company",
+              method: "user",
+              confidence: 1,
+            },
+          ] as const,
+        ]),
+    ...(draft.note === undefined
+      ? []
+      : [
+          [
+            "capture_note",
+            {
+              value: draft.note,
+              pointer: "/draft/note",
+              method: "user",
+              confidence: 1,
+            },
+          ] as const,
+        ]),
+  ];
+}
+
+/**
+ * Builds the unchanged CaptureEnvelopeV1 while retaining detected evidence and
+ * adding user edits as separate, provisional `user` candidates.
+ */
+export async function buildExtensionCaptureDraftEnvelopeV1(
+  draftInput: unknown,
+  options: CaptureEnvelopeBuildOptions,
+): Promise<CaptureEnvelopeBuildResult> {
+  const parsedDraft = safeParseExtensionCaptureDraftV1(draftInput);
+  if (!parsedDraft.success) {
+    return { success: false, code: "snapshot_invalid", issue: parsedDraft.issue };
+  }
+  const draft = parsedDraft.data;
+  const snapshot = draft.snapshot;
+  return buildEnvelopeV1(
+    {
+      captureMethod: "extension",
+      senderKind: "browser_extension",
+      source: {
+        url: snapshot.url,
+        ...(snapshot.canonicalUrl === undefined ? {} : { canonicalUrl: snapshot.canonicalUrl }),
+        ...(snapshot.pageTitle === undefined ? {} : { pageTitle: snapshot.pageTitle }),
+        sourceKind: "job_page",
+      },
+      content: {
+        ...(snapshot.jsonLd === undefined ? {} : { jsonLd: [...snapshot.jsonLd] }),
+        ...(snapshot.selectedText === undefined ? {} : { selectedText: snapshot.selectedText }),
+      },
+      fields: extensionDraftFieldEntries(draft),
+      captureClient: { name: "coredrill.extension", version: "0.1.0" },
+    },
+    { ...options, now: new Date(draft.capturedAt) },
   );
 }
 
