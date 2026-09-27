@@ -260,7 +260,7 @@ try {
     proof.typedVaultDeletionPreview !== true ||
     proof.typedVaultDeletionRejectedSafely !== true ||
     proof.typedVaultDeletionCleanProfile !== true ||
-    proof.repositoryContractCases !== 22 ||
+    proof.repositoryContractCases !== 23 ||
     proof.careerRepositoryContractCases !== 4 ||
     proof.humanReadableDataFiles !== 102 ||
     proof.humanReadableDatasets !== 51 ||
