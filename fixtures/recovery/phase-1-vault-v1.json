@@ -5,11 +5,27 @@
   "generatedAt": "2026-08-29T23:55:00.000Z",
   "vaultId": "0198d9d4-0000-7000-8000-0000000000ff",
   "schemaVersion": 126,
-  "archiveByteLength": 1442887,
-  "archiveSha256": "7700c428602d45277c09270357437bb7dcc51f99b458e787a8c71f741e77a369",
-  "databaseSha256": "85b0a786e57fc00123bcd0ac997dbca99a4d6c6dead001ec1712cbd43a8f98b5",
-  "contentSha256": "0a71052be238347f3b8893f4fe4b14e26281a8939763efb464947ffa9ce9faff",
-  "dataFileCount": 60,
-  "attachmentCount": 1,
-  "attachmentContentIds": ["e14c2f1b15c4323496d174fee5c4b5c52cf961c88de4bd99f8836f82ffa15a7b"]
+  "archiveByteLength": 1491761,
+  "archiveSha256": "75166d15b244b8c7f2abb17d0beb238439ed64d9f9e93969df50967bf57a4dbc",
+  "databaseSha256": "51e90100eb2f0d34b094aa797c07447be997a32e8460ab84f204db714a07d2aa",
+  "contentSha256": "28a22a32c6154896f7bb6108930887b4317bb0a4d7fda70a2ac744da5d05a771",
+  "dataFileCount": 94,
+  "attachmentCount": 2,
+  "attachmentContentIds": [
+    "8d75c6a2f0a8087e9745ed2fef90b36bdf13ce489c61eb40f3ae9be07acbb59c",
+    "e14c2f1b15c4323496d174fee5c4b5c52cf961c88de4bd99f8836f82ffa15a7b"
+  ],
+  "phase3Inventory": {
+    "careerEvidence": 8,
+    "stories": 1,
+    "storyEvidenceLinks": 8,
+    "importRuns": 1,
+    "importProposals": 2,
+    "importResolutions": 2,
+    "importResolutionLinks": 2,
+    "answerEntries": 1,
+    "answerVersions": 1,
+    "attachmentManifests": 2,
+    "attachmentLinks": 2
+  }
 }

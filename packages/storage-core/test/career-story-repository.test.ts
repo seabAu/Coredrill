@@ -243,4 +243,28 @@ describe("CareerStoryEvidenceRepository", () => {
     );
     expect(rows).toHaveLength(0);
   });
+
+  it("cascades only the affected evidence relationships during explicit deletion", async () => {
+    const repository = createCareerStoryRepository(database);
+    const created = await repository.create(newStory(), [
+      { evidenceKind: "employment", evidenceId: IDS.employment },
+      { evidenceKind: "skill", evidenceId: IDS.skill },
+    ]);
+
+    await database.execute(sqlStatement("DELETE FROM skill WHERE id = ?", [IDS.skill]));
+    await expect(repository.listActive()).resolves.toMatchObject([
+      {
+        id: created.id,
+        linkedEvidence: [{ evidenceKind: "employment", evidenceId: IDS.employment }],
+      },
+    ]);
+
+    await database.execute(sqlStatement("DELETE FROM anecdote WHERE id = ?", [IDS.story]));
+    await expect(
+      database.query(sqlStatement("SELECT anecdote_id FROM anecdote_evidence_link")),
+    ).resolves.toEqual([]);
+    await expect(
+      database.query(sqlStatement("SELECT id FROM experience WHERE id = ?", [IDS.employment])),
+    ).resolves.toHaveLength(1);
+  });
 });

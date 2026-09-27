@@ -96,6 +96,7 @@ const IDS = Object.freeze({
 const CREATED_AT = instant("2026-09-27T16:00:00.000Z");
 const UPDATED_AT = instant("2026-09-27T16:05:00.000Z");
 const USED_AT = instant("2026-09-27T16:10:00.000Z");
+const ATTACHMENT_CONTENT_ID = "b".repeat(64);
 const ir = (answer: string) => ({
   specVersion: 1,
   document: {
@@ -232,5 +233,61 @@ describe("AnswerLibraryRepository", () => {
       database.execute(sqlStatement("DELETE FROM job WHERE id = ?", [IDS.job])),
     ).rejects.toThrow();
     await expect(repository.listActive()).resolves.toEqual([stored]);
+  });
+
+  it("cascades answer metadata and logical attachment links while retaining shared content facts", async () => {
+    const repository = createAnswerLibraryRepository(database);
+    const answer = "It gives users durable control of their own application evidence.";
+    await repository.create({
+      id: IDS.answer,
+      versionId: IDS.version1,
+      question: "What makes this work meaningful?",
+      answer,
+      sensitivity: "standard",
+      sourceKind: "manual",
+      sourceJobId: null,
+      sourceContext: null,
+      contentIr: ir(answer),
+      contentHash: hash(answer),
+      createdAt: CREATED_AT,
+    });
+    await database.execute(
+      sqlStatement(
+        `INSERT INTO attachment_manifest(content_id, media_type, byte_length, created_at)
+         VALUES (?, 'text/plain', 12, ?)`,
+        [ATTACHMENT_CONTENT_ID, CREATED_AT],
+      ),
+    );
+    await database.execute(
+      sqlStatement(
+        `INSERT INTO document_version_attachment(
+           document_version_id, content_id, purpose, logical_name, sort_order, created_at
+         ) VALUES (?, ?, 'supporting_evidence', 'context.txt', 0, ?)`,
+        [IDS.version1, ATTACHMENT_CONTENT_ID, CREATED_AT],
+      ),
+    );
+
+    await database.execute(sqlStatement("DELETE FROM document WHERE id = ?", [IDS.answer]));
+
+    for (const table of [
+      "answer_library_entry",
+      "answer_library_version",
+      "document_version",
+      "document_version_attachment",
+    ]) {
+      await expect(
+        database.query(sqlStatement(`SELECT count(*) AS count FROM ${table}`)),
+      ).resolves.toEqual([{ count: 0 }]);
+    }
+    await expect(
+      database.query(sqlStatement("SELECT content_id FROM attachment_manifest")),
+    ).resolves.toEqual([{ content_id: ATTACHMENT_CONTENT_ID }]);
+    await expect(
+      database.execute(
+        sqlStatement("DELETE FROM attachment_manifest WHERE content_id = ?", [
+          ATTACHMENT_CONTENT_ID,
+        ]),
+      ),
+    ).resolves.toMatchObject({ rowsAffected: 1 });
   });
 });

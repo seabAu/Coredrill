@@ -1,5 +1,8 @@
 import { createHash } from "node:crypto";
+import { readdirSync, readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
+import { DatabaseSync } from "node:sqlite";
+import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
@@ -7,7 +10,10 @@ import {
   PORTABLE_DATA_EXPORT_DATASETS,
   PORTABLE_DATA_EXPORT_EXCLUDED_TABLES,
   PortableDataExportWriterError,
+  applySqlMigrations,
   createPortableDataExportV1,
+  defineSqlMigrations,
+  sqlStatement,
   writePortableArchiveV1,
   type DatabasePort,
   type DatabaseTransaction,
@@ -26,6 +32,21 @@ const SNAPSHOT_ID = "0198e102-0000-7000-8000-000000000004";
 const PROVENANCE_ID = "0198e102-0000-7000-8000-000000000005";
 const FIELD_VALUE_ID = "0198e102-0000-7000-8000-000000000006";
 const HASH = "a".repeat(64);
+const repositoryRoot = path.resolve(import.meta.dirname, "..", "..", "..");
+const migrations = defineSqlMigrations(
+  readdirSync(path.join(repositoryRoot, "migrations"))
+    .filter((fileName) => /^\d{4}_[a-z0-9_]+\.sql$/u.test(fileName))
+    .sort()
+    .map((fileName, index) => {
+      const sql = readFileSync(path.join(repositoryRoot, "migrations", fileName), "utf8");
+      return {
+        version: index + 1,
+        name: fileName.slice(5, -4).replaceAll("_", "-"),
+        sha256: createHash("sha256").update(sql).digest("hex"),
+        sql,
+      };
+    }),
+);
 
 const fixtureRows = (): Map<string, readonly QueryRow[]> =>
   new Map([
@@ -194,6 +215,54 @@ class FixtureDatabase implements DatabasePort {
   }
 }
 
+class SchemaInventoryDatabase implements DatabasePort {
+  private readonly database = new DatabaseSync(":memory:");
+
+  public constructor() {
+    this.database.exec("PRAGMA foreign_keys = ON; PRAGMA trusted_schema = OFF;");
+  }
+
+  public async query<Row extends QueryRow = QueryRow>(statement: SqlStatement) {
+    return this.database.prepare(statement.sql).all(...statement.parameters) as Row[];
+  }
+
+  public async execute(statement: SqlStatement): Promise<ExecuteResult> {
+    const result = this.database.prepare(statement.sql).run(...statement.parameters);
+    return Object.freeze({ rowsAffected: Number(result.changes) });
+  }
+
+  public async transaction<Result>(work: (transaction: DatabaseTransaction) => Promise<Result>) {
+    this.database.exec("BEGIN IMMEDIATE");
+    try {
+      const result = await work(this);
+      this.database.exec("COMMIT");
+      return result;
+    } catch (error) {
+      this.database.exec("ROLLBACK");
+      throw error;
+    }
+  }
+
+  public exportPortable(): Promise<PortableDatabase> {
+    return Promise.reject(new Error("Not used by this schema inventory test."));
+  }
+
+  public diagnostics(): Promise<StorageDiagnostics> {
+    return Promise.resolve({
+      adapterName: "schema-inventory",
+      health: "ready",
+      persistence: "memory",
+      readOnly: false,
+      schemaVersion: 126,
+      details: [],
+    });
+  }
+
+  public close(): void {
+    this.database.close();
+  }
+}
+
 const textFile = (
   bundle: Awaited<ReturnType<typeof createPortableDataExportV1>>,
   path: string,
@@ -222,7 +291,33 @@ const expectCode = async (
 };
 
 describe("portable human-readable data export", () => {
-  it("writes every reviewed Phase 1 user dataset as paired deterministic JSON and CSV", async () => {
+  it("accounts for every durable table as exported user data or a reviewed runtime exclusion", async () => {
+    const database = new SchemaInventoryDatabase();
+    try {
+      await applySqlMigrations(database, migrations, GENERATED_AT);
+      const tables = await database.query<{ readonly name: string } & QueryRow>(
+        sqlStatement(
+          `SELECT name FROM sqlite_schema
+           WHERE type = 'table' AND name NOT LIKE 'sqlite_%'
+           ORDER BY name`,
+        ),
+      );
+      const accountedFor = new Set([
+        ...PORTABLE_DATA_EXPORT_DATASETS.map((item) => item.table),
+        ...PORTABLE_DATA_EXPORT_EXCLUDED_TABLES,
+      ]);
+      expect(tables.map((row) => row.name).filter((name) => !accountedFor.has(name))).toEqual([]);
+      expect(
+        PORTABLE_DATA_EXPORT_DATASETS.map((item) => item.table).filter(
+          (name) => !tables.some((row) => row.name === name),
+        ),
+      ).toEqual([]);
+    } finally {
+      database.close();
+    }
+  });
+
+  it("writes every reviewed user dataset available at schema 126 as paired deterministic JSON and CSV", async () => {
     const database = new FixtureDatabase();
     const bundle = await createPortableDataExportV1({
       database,
@@ -238,8 +333,8 @@ describe("portable human-readable data export", () => {
       datasetCount: PORTABLE_DATA_EXPORT_DATASETS.length,
       rowCount: 6,
     });
-    expect(bundle.datasetCount).toBe(30);
-    expect(bundle.dataFiles).toHaveLength(60);
+    expect(bundle.datasetCount).toBe(47);
+    expect(bundle.dataFiles).toHaveLength(94);
     const excludedTables = new Set<string>(PORTABLE_DATA_EXPORT_EXCLUDED_TABLES);
     expect(PORTABLE_DATA_EXPORT_DATASETS.filter((item) => excludedTables.has(item.table))).toEqual(
       [],
@@ -255,7 +350,7 @@ describe("portable human-readable data export", () => {
       "mutation_undo_token",
     ]);
     expect(database.transactions).toBe(1);
-    expect(database.statements).toHaveLength(31);
+    expect(database.statements).toHaveLength(48);
     expect(bundle.datasets.find((item) => item.dataset === "job_source")?.rows[0]).toMatchObject({
       is_primary: true,
     });
@@ -269,6 +364,74 @@ describe("portable human-readable data export", () => {
     expect(textFile(bundle, "data/job.csv")).toBe(await csvFixtureText("job.csv"));
     expect(textFile(bundle, "data/field_value.json")).toBe(await fixtureText("field_value.json"));
     expect(textFile(bundle, "data/field_value.csv")).toBe(await csvFixtureText("field_value.csv"));
+  });
+
+  it("gates later evidence datasets when exporting supported historical schemas", async () => {
+    const phase1 = new FixtureDatabase();
+    phase1.schemaVersion = 101;
+    const phase1Bundle = await createPortableDataExportV1({
+      database: phase1,
+      generatedAt: GENERATED_AT,
+      vaultId: VAULT_ID,
+    });
+    expect(phase1Bundle.datasetCount).toBe(30);
+    expect(phase1Bundle.dataFiles).toHaveLength(60);
+
+    const careerProfile = new FixtureDatabase();
+    careerProfile.schemaVersion = 111;
+    const careerProfileBundle = await createPortableDataExportV1({
+      database: careerProfile,
+      generatedAt: GENERATED_AT,
+      vaultId: VAULT_ID,
+    });
+    expect(careerProfileBundle.datasetCount).toBe(40);
+    expect(careerProfileBundle.datasets.map((item) => item.dataset)).toContain("candidate_profile");
+    expect(careerProfileBundle.datasets.map((item) => item.dataset)).not.toContain("import_run");
+    expect(
+      careerProfileBundle.datasets.find((item) => item.dataset === "anecdote")?.columns,
+    ).not.toContain("privacy_tags_json");
+    expect(
+      careerProfileBundle.datasets.find((item) => item.dataset === "skill")?.columns,
+    ).not.toContain("source_document_id");
+
+    const privacyTags = new FixtureDatabase();
+    privacyTags.schemaVersion = 112;
+    const privacyTagsBundle = await createPortableDataExportV1({
+      database: privacyTags,
+      generatedAt: GENERATED_AT,
+      vaultId: VAULT_ID,
+    });
+    expect(
+      privacyTagsBundle.datasets.find((item) => item.dataset === "anecdote")?.columns,
+    ).toContain("privacy_tags_json");
+
+    const importQueue = new FixtureDatabase();
+    importQueue.schemaVersion = 115;
+    const importQueueBundle = await createPortableDataExportV1({
+      database: importQueue,
+      generatedAt: GENERATED_AT,
+      vaultId: VAULT_ID,
+    });
+    expect(importQueueBundle.datasetCount).toBe(42);
+    expect(importQueueBundle.datasets.map((item) => item.dataset)).toContain(
+      "career_import_proposal",
+    );
+    expect(importQueueBundle.datasets.map((item) => item.dataset)).not.toContain(
+      "career_import_resolution",
+    );
+    expect(
+      importQueueBundle.datasets.find((item) => item.dataset === "skill")?.columns,
+    ).not.toContain("verification_state");
+
+    const current = new FixtureDatabase();
+    const currentBundle = await createPortableDataExportV1({
+      database: current,
+      generatedAt: GENERATED_AT,
+      vaultId: VAULT_ID,
+    });
+    expect(currentBundle.datasets.find((item) => item.dataset === "skill")?.columns).toEqual(
+      expect.arrayContaining(["source_document_id", "verification_state"]),
+    );
   });
 
   it("feeds the complete production projection into the portable archive writer", async () => {
@@ -301,7 +464,7 @@ describe("portable human-readable data export", () => {
       readAttachment: () => Promise.resolve(undefined),
     });
 
-    expect(archive.manifest.dataFiles).toHaveLength(60);
+    expect(archive.manifest.dataFiles).toHaveLength(94);
     expect(archive.manifest.dataFiles.map((entry) => entry.path)).toEqual(
       [...bundle.dataFiles].map((file) => file.path).sort(),
     );

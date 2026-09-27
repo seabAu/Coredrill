@@ -4,7 +4,7 @@
 
 This document is the normative field-mapping record for the D-051 human-readable export implemented by `BKP-002`. It defines the paired `data/<dataset>.json` and `data/<dataset>.csv` projections carried by the version-1 portable archive. The archive's `database.sqlite3` remains the lossless restore source; these projections provide inspectability and migration independence without pretending that CSV preserves every SQLite distinction.
 
-Version 1 reads one consistent transaction from current database schema `111` and keeps schema `101` readable for restore verification of existing Phase 2 archives. The mapping deliberately remains the complete Phase 1 user-owned projection; the authoritative SQLite member already includes schema-111 Career Profile tables, while `EVD-008` owns adding their reviewed human-readable relationships and deletion mapping. A later schema change must either preserve this mapping deliberately or introduce a reviewed export version. The stored `vault.schema_version` is the schema at vault creation and need only be a positive integer; it is not the current migration level.
+Version 1 reads one consistent transaction from current database schema `126` and retains reviewed compatibility with schema milestones `101`, `111`, `112`, and `115`. The writer emits only datasets and columns that exist at the selected source milestone: 30 Phase 1 datasets at schema 101, 40 datasets through the initial Career Profile schema, 42 through the import proposal queue, and all 47 datasets at schema 126. The authoritative SQLite member remains the lossless restore source. A later schema change must either preserve this mapping deliberately or introduce a reviewed export version. The stored `vault.schema_version` is the schema at vault creation and need only be a positive integer; it is not the current migration level.
 
 ## Dataset envelope
 
@@ -14,7 +14,7 @@ Each JSON file is a strict UTF-8 JSON object with:
 - `dataset`: the dataset name below;
 - `generatedAt`: the archive generation instant;
 - `vaultId`: the selected vault UUID;
-- `sourceSchemaVersion`: `111`;
+- `sourceSchemaVersion`: the exact reviewed source milestone (`101`, `111`, `112`, `115`, or `126`);
 - `columns`: the ordered field names below;
 - `rowCount`: the exact number of rows;
 - `rows`: objects containing exactly those fields in that order; and
@@ -70,6 +70,25 @@ Rows use the stable ordering in the final column. Every listed field is projecte
 | `attachment_manifest` | `content_id`, `media_type`, `byte_length`, `created_at` | `content_id` |
 | `document_version_attachment` | `document_version_id`, `content_id`, `purpose`, `logical_name`, `sort_order`, `created_at` | `document_version_id`, `content_id`, `purpose` |
 | `document_style_example` | `document_version_id`, `created_at` | `document_version_id` |
+| `experience` | `id`, `organization`, `role`, `start_date`, `end_date`, `is_current`, `description`, `source_document_id`, `verification_state`, `archived_at`, `created_at`, `updated_at`, `row_version` | `id` |
+| `education` | `id`, `institution`, `credential`, `field`, `start_date`, `end_date`, `details`, `source_document_id`, `verification_state`, `archived_at`, `created_at`, `updated_at`, `row_version` | `id` |
+| `project` | `id`, `name`, `summary`, `url`, `start_date`, `end_date`, `source_document_id`, `verification_state`, `archived_at`, `created_at`, `updated_at`, `row_version` | `id` |
+| `skill` | `id`, `canonical_name`, `category`, `aliases_json`, `source_document_id`, `verification_state`, `archived_at`, `created_at`, `updated_at`, `row_version` | `canonical_name`, `id` |
+| `accomplishment` | `id`, `parent_type`, `parent_id`, `action`, `result`, `metrics_json`, `source_document_id`, `verification_state`, `archived_at`, `created_at`, `updated_at`, `row_version` | `id` |
+| `certification` | `id`, `name`, `issuer`, `issued_date`, `expires_date`, `credential_url`, `source_document_id`, `verification_state`, `archived_at`, `created_at`, `updated_at`, `row_version` | `id` |
+| `publication` | `id`, `title`, `publisher`, `published_date`, `url`, `summary`, `source_document_id`, `verification_state`, `archived_at`, `created_at`, `updated_at`, `row_version` | `id` |
+| `volunteer_experience` | `id`, `organization`, `role`, `start_date`, `end_date`, `is_current`, `description`, `source_document_id`, `verification_state`, `archived_at`, `created_at`, `updated_at`, `row_version` | `id` |
+| `anecdote` | `id`, `title`, `situation`, `action`, `result`, `tags_json`, `privacy_tags_json`, `source_document_id`, `verification_state`, `archived_at`, `created_at`, `updated_at`, `row_version` | `id` |
+| `candidate_profile` | `id`, `singleton_key`, `display_name`, `summary`, `target_roles_json`, `location_id`, `work_preferences_json`, `created_at`, `updated_at`, `row_version` | `singleton_key` |
+| `import_run` | `id`, `kind`, `source_name`, `source_format`, `source_media_type`, `source_byte_length`, `source_hash`, `source_mapping_json`, `started_at`, `completed_at`, `status`, `summary_json` | `started_at`, `id` |
+| `career_import_proposal` | `id`, `import_run_id`, `target_kind`, `field_name`, `group_key`, `proposed_value`, `source_pointer`, `source_excerpt`, `confidence`, `evidence_status`, `review_state`, `created_at`, `row_version` | `import_run_id`, `group_key`, `id` |
+| `career_import_resolution` | `id`, `import_run_id`, `group_key`, `target_kind`, `decision`, `target_id`, `resolved_values_json`, `resolved_at`, `row_version` | `import_run_id`, `group_key`, `id` |
+| `career_import_resolution_proposal` | `resolution_id`, `proposal_id`, `linked_at` | `resolution_id`, `proposal_id` |
+| `anecdote_evidence_link` | `anecdote_id`, `evidence_kind`, `evidence_id`, `experience_id`, `education_id`, `project_id`, `skill_id`, `accomplishment_id`, `certification_id`, `publication_id`, `volunteer_experience_id`, `created_at` | `anecdote_id`, `evidence_kind`, `evidence_id` |
+| `answer_library_entry` | `document_id`, `source_kind`, `source_job_id`, `source_context`, `last_used_at`, `created_at` | `created_at`, `document_id` |
+| `answer_library_version` | `document_version_id`, `question`, `sensitivity` | `document_version_id` |
+
+Schema 111 omits `anecdote.privacy_tags_json`; schema 112 adds it. Schemas 111, 112, and 115 omit the later `skill.source_document_id` and `skill.verification_state` columns; schema 126 includes both. This compatibility filtering is explicit and tested rather than relying on failed queries.
 
 ## Explicit exclusions
 
@@ -79,4 +98,4 @@ The following are runtime, derived, diagnostic, short-lived undo, or migration m
 
 The writer accepts at most 64 columns and 250,000 rows per dataset. It rejects a cell above 16 MiB, a generated data file above 128 MiB, or combined JSON/CSV data above 384 MiB. Invalid caller UUID/timestamp input fails before opening a transaction. Schema drift, a missing or mismatched vault, query failure, invalid JSON/boolean/binary/non-finite data, contract failure, or size overflow yields a stable redacted typed error and no successful partial bundle.
 
-All 30 queries execute within one `DatabasePort` transaction. Only after every dataset validates are the 60 ordered files returned to the portable archive writer.
+At schema 126, all 47 queries execute within one `DatabasePort` transaction. Only after every dataset validates are the 94 ordered files returned to the portable archive writer. A schema-inventory test fails if any durable table is neither exported nor present in the reviewed runtime-exclusion list.

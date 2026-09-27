@@ -62,13 +62,17 @@ interface DatasetSpec {
   readonly orderBy: readonly string[];
   readonly booleanColumns?: readonly string[];
   readonly jsonColumns?: readonly string[];
+  readonly minimumSourceSchemaVersion?: number;
+  readonly columnMinimumSourceSchemaVersions?: Readonly<Record<string, number>>;
 }
 
 const dataset = (spec: DatasetSpec): DatasetSpec => Object.freeze(spec);
 
 /**
  * Version-1 human-readable data is deliberately table-oriented and complete
- * for Phase 1 user records. Adapter/runtime internals are excluded below.
+ * for user-owned records available in the source schema. Adapter/runtime
+ * internals are excluded below, and later datasets are gated so previously
+ * supported schema milestones remain exportable.
  */
 export const PORTABLE_DATA_EXPORT_DATASETS: readonly DatasetSpec[] = Object.freeze([
   dataset({
@@ -533,6 +537,325 @@ export const PORTABLE_DATA_EXPORT_DATASETS: readonly DatasetSpec[] = Object.free
     columns: ["document_version_id", "created_at"],
     orderBy: ["document_version_id"],
   }),
+  dataset({
+    name: "experience",
+    table: "experience",
+    columns: [
+      "id",
+      "organization",
+      "role",
+      "start_date",
+      "end_date",
+      "is_current",
+      "description",
+      "source_document_id",
+      "verification_state",
+      "archived_at",
+      "created_at",
+      "updated_at",
+      "row_version",
+    ],
+    booleanColumns: ["is_current"],
+    orderBy: ["id"],
+    minimumSourceSchemaVersion: 111,
+  }),
+  dataset({
+    name: "education",
+    table: "education",
+    columns: [
+      "id",
+      "institution",
+      "credential",
+      "field",
+      "start_date",
+      "end_date",
+      "details",
+      "source_document_id",
+      "verification_state",
+      "archived_at",
+      "created_at",
+      "updated_at",
+      "row_version",
+    ],
+    orderBy: ["id"],
+    minimumSourceSchemaVersion: 111,
+  }),
+  dataset({
+    name: "project",
+    table: "project",
+    columns: [
+      "id",
+      "name",
+      "summary",
+      "url",
+      "start_date",
+      "end_date",
+      "source_document_id",
+      "verification_state",
+      "archived_at",
+      "created_at",
+      "updated_at",
+      "row_version",
+    ],
+    orderBy: ["id"],
+    minimumSourceSchemaVersion: 111,
+  }),
+  dataset({
+    name: "skill",
+    table: "skill",
+    columns: [
+      "id",
+      "canonical_name",
+      "category",
+      "aliases_json",
+      "source_document_id",
+      "verification_state",
+      "archived_at",
+      "created_at",
+      "updated_at",
+      "row_version",
+    ],
+    jsonColumns: ["aliases_json"],
+    columnMinimumSourceSchemaVersions: {
+      source_document_id: 126,
+      verification_state: 126,
+    },
+    orderBy: ["canonical_name", "id"],
+    minimumSourceSchemaVersion: 111,
+  }),
+  dataset({
+    name: "accomplishment",
+    table: "accomplishment",
+    columns: [
+      "id",
+      "parent_type",
+      "parent_id",
+      "action",
+      "result",
+      "metrics_json",
+      "source_document_id",
+      "verification_state",
+      "archived_at",
+      "created_at",
+      "updated_at",
+      "row_version",
+    ],
+    jsonColumns: ["metrics_json"],
+    orderBy: ["id"],
+    minimumSourceSchemaVersion: 111,
+  }),
+  dataset({
+    name: "certification",
+    table: "certification",
+    columns: [
+      "id",
+      "name",
+      "issuer",
+      "issued_date",
+      "expires_date",
+      "credential_url",
+      "source_document_id",
+      "verification_state",
+      "archived_at",
+      "created_at",
+      "updated_at",
+      "row_version",
+    ],
+    orderBy: ["id"],
+    minimumSourceSchemaVersion: 111,
+  }),
+  dataset({
+    name: "publication",
+    table: "publication",
+    columns: [
+      "id",
+      "title",
+      "publisher",
+      "published_date",
+      "url",
+      "summary",
+      "source_document_id",
+      "verification_state",
+      "archived_at",
+      "created_at",
+      "updated_at",
+      "row_version",
+    ],
+    orderBy: ["id"],
+    minimumSourceSchemaVersion: 111,
+  }),
+  dataset({
+    name: "volunteer_experience",
+    table: "volunteer_experience",
+    columns: [
+      "id",
+      "organization",
+      "role",
+      "start_date",
+      "end_date",
+      "is_current",
+      "description",
+      "source_document_id",
+      "verification_state",
+      "archived_at",
+      "created_at",
+      "updated_at",
+      "row_version",
+    ],
+    booleanColumns: ["is_current"],
+    orderBy: ["id"],
+    minimumSourceSchemaVersion: 111,
+  }),
+  dataset({
+    name: "anecdote",
+    table: "anecdote",
+    columns: [
+      "id",
+      "title",
+      "situation",
+      "action",
+      "result",
+      "tags_json",
+      "privacy_tags_json",
+      "source_document_id",
+      "verification_state",
+      "archived_at",
+      "created_at",
+      "updated_at",
+      "row_version",
+    ],
+    jsonColumns: ["tags_json", "privacy_tags_json"],
+    columnMinimumSourceSchemaVersions: { privacy_tags_json: 112 },
+    orderBy: ["id"],
+    minimumSourceSchemaVersion: 111,
+  }),
+  dataset({
+    name: "candidate_profile",
+    table: "candidate_profile",
+    columns: [
+      "id",
+      "singleton_key",
+      "display_name",
+      "summary",
+      "target_roles_json",
+      "location_id",
+      "work_preferences_json",
+      "created_at",
+      "updated_at",
+      "row_version",
+    ],
+    jsonColumns: ["target_roles_json", "work_preferences_json"],
+    orderBy: ["singleton_key"],
+    minimumSourceSchemaVersion: 111,
+  }),
+  dataset({
+    name: "import_run",
+    table: "import_run",
+    columns: [
+      "id",
+      "kind",
+      "source_name",
+      "source_format",
+      "source_media_type",
+      "source_byte_length",
+      "source_hash",
+      "source_mapping_json",
+      "started_at",
+      "completed_at",
+      "status",
+      "summary_json",
+    ],
+    jsonColumns: ["source_mapping_json", "summary_json"],
+    orderBy: ["started_at", "id"],
+    minimumSourceSchemaVersion: 115,
+  }),
+  dataset({
+    name: "career_import_proposal",
+    table: "career_import_proposal",
+    columns: [
+      "id",
+      "import_run_id",
+      "target_kind",
+      "field_name",
+      "group_key",
+      "proposed_value",
+      "source_pointer",
+      "source_excerpt",
+      "confidence",
+      "evidence_status",
+      "review_state",
+      "created_at",
+      "row_version",
+    ],
+    orderBy: ["import_run_id", "group_key", "id"],
+    minimumSourceSchemaVersion: 115,
+  }),
+  dataset({
+    name: "career_import_resolution",
+    table: "career_import_resolution",
+    columns: [
+      "id",
+      "import_run_id",
+      "group_key",
+      "target_kind",
+      "decision",
+      "target_id",
+      "resolved_values_json",
+      "resolved_at",
+      "row_version",
+    ],
+    jsonColumns: ["resolved_values_json"],
+    orderBy: ["import_run_id", "group_key", "id"],
+    minimumSourceSchemaVersion: 126,
+  }),
+  dataset({
+    name: "career_import_resolution_proposal",
+    table: "career_import_resolution_proposal",
+    columns: ["resolution_id", "proposal_id", "linked_at"],
+    orderBy: ["resolution_id", "proposal_id"],
+    minimumSourceSchemaVersion: 126,
+  }),
+  dataset({
+    name: "anecdote_evidence_link",
+    table: "anecdote_evidence_link",
+    columns: [
+      "anecdote_id",
+      "evidence_kind",
+      "evidence_id",
+      "experience_id",
+      "education_id",
+      "project_id",
+      "skill_id",
+      "accomplishment_id",
+      "certification_id",
+      "publication_id",
+      "volunteer_experience_id",
+      "created_at",
+    ],
+    orderBy: ["anecdote_id", "evidence_kind", "evidence_id"],
+    minimumSourceSchemaVersion: 126,
+  }),
+  dataset({
+    name: "answer_library_entry",
+    table: "answer_library_entry",
+    columns: [
+      "document_id",
+      "source_kind",
+      "source_job_id",
+      "source_context",
+      "last_used_at",
+      "created_at",
+    ],
+    orderBy: ["created_at", "document_id"],
+    minimumSourceSchemaVersion: 126,
+  }),
+  dataset({
+    name: "answer_library_version",
+    table: "answer_library_version",
+    columns: ["document_version_id", "question", "sensitivity"],
+    orderBy: ["document_version_id"],
+    minimumSourceSchemaVersion: 126,
+  }),
 ]);
 
 export const PORTABLE_DATA_EXPORT_EXCLUDED_TABLES = Object.freeze([
@@ -714,11 +1037,19 @@ const createDataset = async (
   readonly dataset: PortableDataExportV1;
   readonly files: readonly PortableArchiveDataFileSourceV1[];
 }> => {
-  const queried = await database.query(datasetStatement(spec));
+  const availableSpec: DatasetSpec = {
+    ...spec,
+    columns: spec.columns.filter(
+      (column) =>
+        spec.columnMinimumSourceSchemaVersions?.[column] === undefined ||
+        (spec.columnMinimumSourceSchemaVersions[column] ?? 0) <= sourceSchemaVersion,
+    ),
+  };
+  const queried = await database.query(datasetStatement(availableSpec));
   if (queried.length > PORTABLE_DATA_EXPORT_LIMITS.rowsPerDataset) {
     throw exportError("payload_too_large");
   }
-  const rows = queried.map((row) => normalizeRow(spec, row));
+  const rows = queried.map((row) => normalizeRow(availableSpec, row));
   const csvPath = `data/${spec.name}.csv`;
   const candidate = {
     specVersion: 1,
@@ -726,7 +1057,7 @@ const createDataset = async (
     generatedAt: input.generatedAt,
     vaultId: input.vaultId,
     sourceSchemaVersion,
-    columns: spec.columns,
+    columns: availableSpec.columns,
     rowCount: rows.length,
     rows,
     csv: {
@@ -779,7 +1110,12 @@ export const createPortableDataExportV1 = async (
     return await input.database.transaction(async (database) => {
       const sourceSchemaVersion = await readSchemaVersion(database);
       const results = [];
-      for (const spec of PORTABLE_DATA_EXPORT_DATASETS) {
+      const availableDatasets = PORTABLE_DATA_EXPORT_DATASETS.filter(
+        (spec) =>
+          spec.minimumSourceSchemaVersion === undefined ||
+          spec.minimumSourceSchemaVersion <= sourceSchemaVersion,
+      );
+      for (const spec of availableDatasets) {
         results.push(await createDataset(database, spec, input, sourceSchemaVersion));
       }
 

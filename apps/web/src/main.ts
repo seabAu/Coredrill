@@ -307,6 +307,7 @@ interface PortableRecoveryFixture {
   readonly attachmentContentIds: readonly string[];
   readonly dataFileCount: number;
   readonly attachmentCount: number;
+  readonly phase3Inventory: Phase3RecoveryInventory;
 }
 
 interface PortableRecoveryRestoreInput {
@@ -324,6 +325,21 @@ interface PortableRecoveryRestoreProof {
   readonly attachmentCount: number;
   readonly conflict: "none";
   readonly committed: true;
+  readonly phase3Inventory: Phase3RecoveryInventory;
+}
+
+interface Phase3RecoveryInventory {
+  readonly careerEvidence: number;
+  readonly stories: number;
+  readonly storyEvidenceLinks: number;
+  readonly importRuns: number;
+  readonly importProposals: number;
+  readonly importResolutions: number;
+  readonly importResolutionLinks: number;
+  readonly answerEntries: number;
+  readonly answerVersions: number;
+  readonly attachmentManifests: number;
+  readonly attachmentLinks: number;
 }
 
 export interface CoredrillStorageSpikeApi {
@@ -1532,6 +1548,65 @@ interface AttachmentExportRow extends QueryRow {
   readonly logical_name: string | null;
 }
 
+interface CountRow extends QueryRow {
+  readonly count: number;
+}
+
+const readCount = async (client: DatabasePort, sql: string): Promise<number> => {
+  const rows = await client.query<CountRow>(sqlStatement(sql));
+  const count = rows[0]?.count;
+  if (rows.length !== 1 || typeof count !== "number" || !Number.isSafeInteger(count)) {
+    throw new Error("The representative recovery inventory is invalid.");
+  }
+  return count;
+};
+
+const readPhase3RecoveryInventory = async (
+  client: DatabasePort,
+): Promise<Phase3RecoveryInventory> =>
+  Object.freeze({
+    careerEvidence: await readCount(
+      client,
+      `SELECT
+         (SELECT count(*) FROM experience) +
+         (SELECT count(*) FROM education) +
+         (SELECT count(*) FROM project) +
+         (SELECT count(*) FROM skill) +
+         (SELECT count(*) FROM accomplishment) +
+         (SELECT count(*) FROM certification) +
+         (SELECT count(*) FROM publication) +
+         (SELECT count(*) FROM volunteer_experience) AS count`,
+    ),
+    stories: await readCount(client, "SELECT count(*) AS count FROM anecdote"),
+    storyEvidenceLinks: await readCount(
+      client,
+      "SELECT count(*) AS count FROM anecdote_evidence_link",
+    ),
+    importRuns: await readCount(client, "SELECT count(*) AS count FROM import_run"),
+    importProposals: await readCount(
+      client,
+      "SELECT count(*) AS count FROM career_import_proposal",
+    ),
+    importResolutions: await readCount(
+      client,
+      "SELECT count(*) AS count FROM career_import_resolution",
+    ),
+    importResolutionLinks: await readCount(
+      client,
+      "SELECT count(*) AS count FROM career_import_resolution_proposal",
+    ),
+    answerEntries: await readCount(client, "SELECT count(*) AS count FROM answer_library_entry"),
+    answerVersions: await readCount(client, "SELECT count(*) AS count FROM answer_library_version"),
+    attachmentManifests: await readCount(
+      client,
+      "SELECT count(*) AS count FROM attachment_manifest",
+    ),
+    attachmentLinks: await readCount(
+      client,
+      "SELECT count(*) AS count FROM document_version_attachment",
+    ),
+  });
+
 const seedRepresentativePhase1Vault = async (
   client: BrowserSqliteDatabase,
   vaultId: string,
@@ -1541,6 +1616,12 @@ const seedRepresentativePhase1Vault = async (
     "Synthetic Coredrill resume attachment for the BKP-007 recovery drill.\n",
   );
   const attachmentContentId = await sha256Text(new TextDecoder().decode(attachmentBytes));
+  const answerAttachmentBytes = new TextEncoder().encode(
+    "Synthetic Coredrill Answer Library attachment for the EVD-008 recovery drill.\n",
+  );
+  const answerAttachmentContentId = await sha256Text(
+    new TextDecoder().decode(answerAttachmentBytes),
+  );
   await (
     await getAttachmentStore()
   ).put({
@@ -1548,6 +1629,14 @@ const seedRepresentativePhase1Vault = async (
     byteLength: attachmentBytes.byteLength,
     sha256: attachmentContentId,
     bytes: attachmentBytes,
+  });
+  await (
+    await getAttachmentStore()
+  ).put({
+    contentId: answerAttachmentContentId,
+    byteLength: answerAttachmentBytes.byteLength,
+    sha256: answerAttachmentContentId,
+    bytes: answerAttachmentBytes,
   });
 
   const companyId = "0198d9d4-0000-7000-8000-000000000001";
@@ -1560,6 +1649,23 @@ const seedRepresentativePhase1Vault = async (
   const tagId = "0198d9d4-0000-7000-8000-000000000008";
   const documentId = "0198d9d4-0000-7000-8000-000000000009";
   const documentVersionId = "0198d9d4-0000-7000-8000-00000000000a";
+  const experienceId = "0198d9d4-0000-7000-8000-00000000000b";
+  const educationId = "0198d9d4-0000-7000-8000-00000000000c";
+  const projectId = "0198d9d4-0000-7000-8000-00000000000d";
+  const skillId = "0198d9d4-0000-7000-8000-00000000000e";
+  const accomplishmentId = "0198d9d4-0000-7000-8000-00000000000f";
+  const certificationId = "0198d9d4-0000-7000-8000-000000000010";
+  const publicationId = "0198d9d4-0000-7000-8000-000000000011";
+  const volunteerId = "0198d9d4-0000-7000-8000-000000000012";
+  const anecdoteId = "0198d9d4-0000-7000-8000-000000000013";
+  const candidateProfileId = "0198d9d4-0000-7000-8000-000000000014";
+  const importRunId = "0198d9d4-0000-7000-8000-000000000015";
+  const employmentProposalId = "0198d9d4-0000-7000-8000-000000000016";
+  const skillProposalId = "0198d9d4-0000-7000-8000-000000000017";
+  const employmentResolutionId = "0198d9d4-0000-7000-8000-000000000018";
+  const skillResolutionId = "0198d9d4-0000-7000-8000-000000000019";
+  const answerDocumentId = "0198d9d4-0000-7000-8000-00000000001a";
+  const answerVersionId = "0198d9d4-0000-7000-8000-00000000001b";
   await client.transaction(async (transaction) => {
     await transaction.execute(
       sqlStatement(
@@ -1734,6 +1840,327 @@ const seedRepresentativePhase1Vault = async (
         [documentId, jobId, createdAt],
       ),
     );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO experience(
+           id, organization, role, start_date, end_date, is_current, description,
+           source_document_id, verification_state, created_at, updated_at
+         ) VALUES (?, ?, ?, ?, NULL, 1, ?, ?, 'source_backed', ?, ?)`,
+        [
+          experienceId,
+          "Northstar Systems",
+          "Platform Engineer",
+          "2023-01-01",
+          "Built reliable local-first systems.",
+          documentId,
+          createdAt,
+          createdAt,
+        ],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO education(
+           id, institution, credential, field, start_date, end_date, details,
+           source_document_id, verification_state, created_at, updated_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'source_backed', ?, ?)`,
+        [
+          educationId,
+          "Example State University",
+          "Bachelor of Science",
+          "Computer Science",
+          "2017-09-01",
+          "2021-05-31",
+          "Synthetic recovery fixture education.",
+          documentId,
+          createdAt,
+          createdAt,
+        ],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO project(
+           id, name, summary, url, start_date, end_date, source_document_id,
+           verification_state, created_at, updated_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, 'source_backed', ?, ?)`,
+        [
+          projectId,
+          "Offline application workspace",
+          "Created a resilient local-first workflow.",
+          "https://example.test/projects/offline-workspace",
+          "2025-01-01",
+          "2025-06-30",
+          documentId,
+          createdAt,
+          createdAt,
+        ],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO skill(
+           id, canonical_name, category, aliases_json, source_document_id,
+           verification_state, created_at, updated_at
+         ) VALUES (?, ?, ?, ?, ?, 'source_backed', ?, ?)`,
+        [skillId, "SQLite", "Data", JSON.stringify(["sqlite3"]), documentId, createdAt, createdAt],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO accomplishment(
+           id, parent_type, parent_id, action, result, metrics_json, source_document_id,
+           verification_state, created_at, updated_at
+         ) VALUES (?, 'experience', ?, ?, ?, ?, ?, 'source_backed', ?, ?)`,
+        [
+          accomplishmentId,
+          experienceId,
+          "Introduced deterministic recovery checks.",
+          "Reduced recovery uncertainty with verified archives.",
+          JSON.stringify({ fixtures: 1 }),
+          documentId,
+          createdAt,
+          createdAt,
+        ],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO certification(
+           id, name, issuer, issued_date, expires_date, credential_url,
+           source_document_id, verification_state, created_at, updated_at
+         ) VALUES (?, ?, ?, ?, NULL, ?, ?, 'source_backed', ?, ?)`,
+        [
+          certificationId,
+          "Synthetic Systems Certification",
+          "Example Institute",
+          "2025-02-01",
+          "https://example.test/credentials/systems",
+          documentId,
+          createdAt,
+          createdAt,
+        ],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO publication(
+           id, title, publisher, published_date, url, summary, source_document_id,
+           verification_state, created_at, updated_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, 'source_backed', ?, ?)`,
+        [
+          publicationId,
+          "Recoverable local-first applications",
+          "Example Engineering Review",
+          "2025-04-15",
+          "https://example.test/publications/local-first",
+          "Synthetic recovery fixture publication.",
+          documentId,
+          createdAt,
+          createdAt,
+        ],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO volunteer_experience(
+           id, organization, role, start_date, end_date, is_current, description,
+           source_document_id, verification_state, created_at, updated_at
+         ) VALUES (?, ?, ?, ?, NULL, 1, ?, ?, 'source_backed', ?, ?)`,
+        [
+          volunteerId,
+          "Community Technology Lab",
+          "Mentor",
+          "2024-03-01",
+          "Mentored contributors on accessible local software.",
+          documentId,
+          createdAt,
+          createdAt,
+        ],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO anecdote(
+           id, title, situation, action, result, tags_json, privacy_tags_json, source_document_id,
+           verification_state, created_at, updated_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'source_backed', ?, ?)`,
+        [
+          anecdoteId,
+          "Protected a local recovery path",
+          "A local-first workflow needed deterministic recovery proof.",
+          "Built cross-adapter archive, relationship, and attachment checks.",
+          "Browser and native restores retained the same logical content.",
+          JSON.stringify(["reliability"]),
+          JSON.stringify(["confidential"]),
+          documentId,
+          createdAt,
+          createdAt,
+        ],
+      ),
+    );
+    const evidenceLinks = [
+      ["employment", experienceId, "experience_id"],
+      ["education", educationId, "education_id"],
+      ["project", projectId, "project_id"],
+      ["skill", skillId, "skill_id"],
+      ["accomplishment", accomplishmentId, "accomplishment_id"],
+      ["certification", certificationId, "certification_id"],
+      ["publication", publicationId, "publication_id"],
+      ["volunteer", volunteerId, "volunteer_experience_id"],
+    ] as const;
+    for (const [kind, evidenceId, concreteColumn] of evidenceLinks) {
+      await transaction.execute(
+        sqlStatement(
+          `INSERT INTO anecdote_evidence_link(
+             anecdote_id, evidence_kind, evidence_id, ${concreteColumn}, created_at
+           ) VALUES (?, ?, ?, ?, ?)`,
+          [anecdoteId, kind, evidenceId, evidenceId, createdAt],
+        ),
+      );
+    }
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO candidate_profile(
+           id, display_name, summary, target_roles_json, work_preferences_json,
+           created_at, updated_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          candidateProfileId,
+          "Casey Example",
+          "Synthetic recovery fixture candidate profile.",
+          JSON.stringify(["Platform Engineer"]),
+          JSON.stringify({ workplaceTypes: ["remote"] }),
+          createdAt,
+          createdAt,
+        ],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO import_run(
+           id, kind, source_name, source_format, source_media_type, source_byte_length,
+           source_hash, source_mapping_json, started_at, completed_at, status, summary_json
+         ) VALUES (?, 'resume', ?, 'text', 'text/plain', ?, ?, ?, ?, ?, 'completed', ?)`,
+        [
+          importRunId,
+          "synthetic-resume.txt",
+          attachmentBytes.byteLength,
+          attachmentContentId,
+          JSON.stringify([{ sourcePointer: "line:1", target: "employment" }]),
+          createdAt,
+          createdAt,
+          JSON.stringify({ proposalCount: 2 }),
+        ],
+      ),
+    );
+    const importProposals = [
+      [
+        employmentProposalId,
+        "employment",
+        "role",
+        "employment:0",
+        "Platform Engineer",
+        "line:1",
+        "Platform Engineer at Northstar Systems",
+      ],
+      [skillProposalId, "skill", "canonicalName", "skill:sqlite", "SQLite", "line:2", "SQLite"],
+    ] as const;
+    for (const proposal of importProposals) {
+      await transaction.execute(
+        sqlStatement(
+          `INSERT INTO career_import_proposal(
+             id, import_run_id, target_kind, field_name, group_key, proposed_value,
+             source_pointer, source_excerpt, confidence, created_at
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0.95, ?)`,
+          [proposal[0], importRunId, ...proposal.slice(1), createdAt],
+        ),
+      );
+    }
+    const importResolutions = [
+      [employmentResolutionId, "employment:0", "employment", experienceId, employmentProposalId],
+      [skillResolutionId, "skill:sqlite", "skill", skillId, skillProposalId],
+    ] as const;
+    for (const [resolutionId, groupKey, targetKind, targetId, proposalId] of importResolutions) {
+      await transaction.execute(
+        sqlStatement(
+          `INSERT INTO career_import_resolution(
+             id, import_run_id, group_key, target_kind, decision, target_id,
+             resolved_values_json, resolved_at
+           ) VALUES (?, ?, ?, ?, 'merged_existing', ?, ?, ?)`,
+          [resolutionId, importRunId, groupKey, targetKind, targetId, "{}", createdAt],
+        ),
+      );
+      await transaction.execute(
+        sqlStatement(
+          `INSERT INTO career_import_resolution_proposal(resolution_id, proposal_id, linked_at)
+           VALUES (?, ?, ?)`,
+          [resolutionId, proposalId, createdAt],
+        ),
+      );
+    }
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO document(id, kind, title, source, created_at, updated_at)
+         VALUES (?, 'application_answer', ?, 'answer_library', ?, ?)`,
+        [answerDocumentId, "Why this company?", createdAt, createdAt],
+      ),
+    );
+    const answerText =
+      "I connect reliable local-first engineering with the role's user-owned data goals.";
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO document_version(
+           id, document_id, version_number, content_ir_version, content_ir_json, content_plain,
+           created_by, created_at, parent_version_id, content_hash, label
+         ) VALUES (?, ?, 1, 1, ?, ?, 'user', ?, NULL, ?, ?)`,
+        [
+          answerVersionId,
+          answerDocumentId,
+          JSON.stringify({ specVersion: 1, type: "doc", content: [] }),
+          answerText,
+          createdAt,
+          await sha256Text(answerText),
+          "Recovery proof answer",
+        ],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO answer_library_entry(
+           document_id, source_kind, source_job_id, source_context, last_used_at, created_at
+         ) VALUES (?, 'application', ?, ?, ?, ?)`,
+        [
+          answerDocumentId,
+          jobId,
+          "Captured from the synthetic Northstar application.",
+          createdAt,
+          createdAt,
+        ],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO answer_library_version(document_version_id, question, sensitivity)
+         VALUES (?, ?, 'sensitive')`,
+        [answerVersionId, "Why do you want to work here?"],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO attachment_manifest(content_id, media_type, byte_length, created_at)
+         VALUES (?, 'text/plain', ?, ?)`,
+        [answerAttachmentContentId, answerAttachmentBytes.byteLength, createdAt],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO document_version_attachment(
+           document_version_id, content_id, purpose, logical_name, sort_order, created_at
+         ) VALUES (?, ?, 'supporting_evidence', 'answer-context.txt', 0, ?)`,
+        [answerVersionId, answerAttachmentContentId, createdAt],
+      ),
+    );
     const vault = await transaction.query<VaultRow>(
       sqlStatement("SELECT id, name, schema_version, created_at, last_opened_at FROM vault"),
     );
@@ -1741,7 +2168,7 @@ const seedRepresentativePhase1Vault = async (
       throw new Error("The representative recovery fixture changed vault identity.");
     }
   });
-  return Object.freeze([attachmentContentId]);
+  return Object.freeze([attachmentContentId, answerAttachmentContentId].sort());
 };
 
 const createCurrentPortableArchive = async (input: PortableRecoveryFixtureInput) => {
@@ -2193,6 +2620,7 @@ const api: CoredrillStorageSpikeApi = {
   createPortableRecoveryFixture: async (input) => {
     const client = await getDatabase();
     const attachmentContentIds = await seedRepresentativePhase1Vault(client, input.vaultId);
+    const phase3Inventory = await readPhase3RecoveryInventory(client);
     const { archive, portable } = await createCurrentPortableArchive(input);
     const inspected = await inspectPortableArchiveV1({
       bytes: archive.bytes,
@@ -2209,6 +2637,7 @@ const api: CoredrillStorageSpikeApi = {
       attachmentContentIds,
       dataFileCount: archive.manifest.dataFiles.length,
       attachmentCount: archive.manifest.attachments.length,
+      phase3Inventory,
     });
   },
   restorePortableRecoveryFixture: async (input) => {
@@ -2252,6 +2681,7 @@ const api: CoredrillStorageSpikeApi = {
     const attachmentRows = await client.query<{ readonly content_id: string } & QueryRow>(
       sqlStatement("SELECT content_id FROM attachment_manifest ORDER BY content_id"),
     );
+    const phase3Inventory = await readPhase3RecoveryInventory(client);
     return Object.freeze({
       contentSha256: content.sha256,
       databaseSha256: restored.sha256,
@@ -2260,6 +2690,7 @@ const api: CoredrillStorageSpikeApi = {
       attachmentCount: attachmentRows.length,
       conflict: preview.conflict,
       committed: result.committed,
+      phase3Inventory,
     });
   },
   runPhase1RepositoryContracts: async () => {

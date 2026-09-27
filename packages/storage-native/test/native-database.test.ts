@@ -484,7 +484,7 @@ describe("native SQLite repository and migration contracts", () => {
     await database.delete();
   });
 
-  it("restores the committed Phase 1 vault and attachment through the native boundary", async () => {
+  it("restores complete evidence relationships and attachments through the native boundary", async () => {
     const manifest = JSON.parse(
       await readFile(
         path.join(repositoryRoot, "fixtures", "recovery", "phase-1-vault-v1.json"),
@@ -499,6 +499,7 @@ describe("native SQLite repository and migration contracts", () => {
       readonly schemaVersion: number;
       readonly attachmentCount: number;
       readonly attachmentContentIds: readonly string[];
+      readonly phase3Inventory: Readonly<Record<string, number>>;
     };
     const archiveBytes = new Uint8Array(
       await readFile(
@@ -563,6 +564,31 @@ describe("native SQLite repository and migration contracts", () => {
       ).resolves.toEqual(
         manifest.attachmentContentIds.map((contentId) => ({ content_id: contentId })),
       );
+      await expect(
+        database.query<QueryRow>(
+          sqlStatement(
+            `SELECT
+               (SELECT count(*) FROM experience) +
+               (SELECT count(*) FROM education) +
+               (SELECT count(*) FROM project) +
+               (SELECT count(*) FROM skill) +
+               (SELECT count(*) FROM accomplishment) +
+               (SELECT count(*) FROM certification) +
+               (SELECT count(*) FROM publication) +
+               (SELECT count(*) FROM volunteer_experience) AS careerEvidence,
+               (SELECT count(*) FROM anecdote) AS stories,
+               (SELECT count(*) FROM anecdote_evidence_link) AS storyEvidenceLinks,
+               (SELECT count(*) FROM import_run) AS importRuns,
+               (SELECT count(*) FROM career_import_proposal) AS importProposals,
+               (SELECT count(*) FROM career_import_resolution) AS importResolutions,
+               (SELECT count(*) FROM career_import_resolution_proposal) AS importResolutionLinks,
+               (SELECT count(*) FROM answer_library_entry) AS answerEntries,
+               (SELECT count(*) FROM answer_library_version) AS answerVersions,
+               (SELECT count(*) FROM attachment_manifest) AS attachmentManifests,
+               (SELECT count(*) FROM document_version_attachment) AS attachmentLinks`,
+          ),
+        ),
+      ).resolves.toEqual([manifest.phase3Inventory]);
       const restoredDatabase = await database.exportPortable();
       expect(restoredDatabase).toMatchObject({
         schemaVersion: manifest.schemaVersion,

@@ -45,6 +45,23 @@ const humanReadableDatasetNames = Object.freeze([
   "attachment_manifest",
   "document_version_attachment",
   "document_style_example",
+  "experience",
+  "education",
+  "project",
+  "skill",
+  "accomplishment",
+  "certification",
+  "publication",
+  "volunteer_experience",
+  "anecdote",
+  "candidate_profile",
+  "import_run",
+  "career_import_proposal",
+  "career_import_resolution",
+  "career_import_resolution_proposal",
+  "anecdote_evidence_link",
+  "answer_library_entry",
+  "answer_library_version",
 ]);
 
 const callHarness = (page, method, argument) =>
@@ -136,11 +153,11 @@ test("opens official SQLite in a Worker, persists transactions, and restores a c
     vaultId: committedVault.id,
   });
   expect(humanReadable).toEqual({
-    dataFileCount: 60,
-    datasetCount: 30,
+    dataFileCount: 94,
+    datasetCount: 47,
     datasetNames: humanReadableDatasetNames,
-    jsonFiles: 30,
-    csvFiles: 30,
+    jsonFiles: 47,
+    csvFiles: 47,
     rowCount: 1,
     sourceSchemaVersion: 126,
   });
@@ -155,7 +172,7 @@ test("opens official SQLite in a Worker, persists transactions, and restores a c
     staleName: "Stale target",
   });
   expect(archiveRestore).toMatchObject({
-    dataFileCount: 60,
+    dataFileCount: 94,
     attachmentCount: 0,
     corruptionRejected: true,
     corruptionPreservedTarget: true,

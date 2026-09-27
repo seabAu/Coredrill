@@ -15,6 +15,20 @@ const recoveryInput = Object.freeze({
   vaultId: "0198d9d4-0000-7000-8000-0000000000ff",
 });
 
+const expectedPhase3Inventory = Object.freeze({
+  careerEvidence: 8,
+  stories: 1,
+  storyEvidenceLinks: 8,
+  importRuns: 1,
+  importProposals: 2,
+  importResolutions: 2,
+  importResolutionLinks: 2,
+  answerEntries: 1,
+  answerVersions: 1,
+  attachmentManifests: 2,
+  attachmentLinks: 2,
+});
+
 const callHarness = (page, method, argument) =>
   page.evaluate(
     async ({ methodName, value }) => {
@@ -33,7 +47,7 @@ const openHarness = async (context) => {
   return page;
 };
 
-test("restores the committed Phase 1 vault and attachment into clean browser storage", async ({
+test("restores complete evidence relationships and attachments into clean browser storage", async ({
   browser,
 }) => {
   const sourceContext = await browser.newContext();
@@ -49,10 +63,11 @@ test("restores the committed Phase 1 vault and attachment into clean browser sto
   });
   const source = await callHarness(sourcePage, "createPortableRecoveryFixture", recoveryInput);
   expect(source).toMatchObject({
-    dataFileCount: 60,
-    attachmentCount: 1,
+    dataFileCount: 94,
+    attachmentCount: 2,
+    phase3Inventory: expectedPhase3Inventory,
   });
-  expect(source.attachmentContentIds).toHaveLength(1);
+  expect(source.attachmentContentIds).toHaveLength(2);
 
   const generatedArchive = Buffer.from(source.archiveBytesBase64, "base64");
   const generatedManifest = {
@@ -69,6 +84,7 @@ test("restores the committed Phase 1 vault and attachment into clean browser sto
     dataFileCount: source.dataFileCount,
     attachmentCount: source.attachmentCount,
     attachmentContentIds: source.attachmentContentIds,
+    phase3Inventory: source.phase3Inventory,
   };
   if (updateFixture) {
     await mkdir(fixtureDirectory, { recursive: true });
@@ -102,6 +118,7 @@ test("restores the committed Phase 1 vault and attachment into clean browser sto
     attachmentCount: committedManifest.attachmentCount,
     conflict: "none",
     committed: true,
+    phase3Inventory: committedManifest.phase3Inventory,
   });
   const deletionPreview = await callHarness(restorePage, "previewVaultDeletion", {
     vaultId: committedManifest.vaultId,
@@ -110,7 +127,7 @@ test("restores the committed Phase 1 vault and attachment into clean browser sto
   });
   expect(deletionPreview).toMatchObject({
     ok: true,
-    value: { inventory: { attachmentFiles: 1 } },
+    value: { inventory: { attachmentFiles: 2 } },
   });
   const deletion = await callHarness(restorePage, "deleteVault", {
     vaultId: committedManifest.vaultId,
@@ -121,7 +138,7 @@ test("restores the committed Phase 1 vault and attachment into clean browser sto
   });
   expect(deletion).toMatchObject({
     ok: true,
-    value: { status: "deleted", deleted: { attachmentFiles: 1 } },
+    value: { status: "deleted", deleted: { attachmentFiles: 2 } },
   });
   await restoreContext.close();
 
