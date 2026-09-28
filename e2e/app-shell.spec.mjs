@@ -1994,7 +1994,9 @@ test("search, command, and Add surfaces restore focus and stay local", async ({ 
   await expect(commandInput).toBeFocused();
   await commandInput.fill("back up");
   await page.getByRole("button", { name: /Export or back up vault/ }).click();
-  await expect(page.getByRole("status")).toContainText("export-backup");
+  await expect(
+    page.getByRole("status").filter({ hasText: "Action selected: export-backup" }),
+  ).toBeVisible();
   await expect(commandTrigger).toBeFocused();
 
   await page.locator("main").click({ position: { x: 5, y: 5 } });
