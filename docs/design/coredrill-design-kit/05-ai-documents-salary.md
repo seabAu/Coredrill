@@ -214,6 +214,19 @@ Requires SSO, quotas/billing/abuse controls, provider data-processing policy, de
 - Filename templates are sanitized and collision-safe.
 - Export metadata can include job/document/version IDs locally but never hidden sensitive content in the public file.
 
+`DOC-006` implements that local export boundary for the exact immutable version
+selected on an application. Controlled DOCX and UTF-8 text exports return
+content hashes, while PDF uses the same semantic local preview through the
+browser/Tauri print path. The review surface exposes version identity, source
+hash, safe filename, pagination estimate, and content-free format warnings.
+Public DOCX metadata excludes local job/company/version identifiers, and the
+collision-safe filename suffix preserves the complete normalized version UUID
+even when user-visible names require truncation. Browser and rendered-artifact
+proof covers accessible 320-pixel reflow, rich supported structures, a tagged
+one-page PDF, controlled DOCX properties, exact text, and zero external
+requests. Export does not mutate content, submit, or Mark Applied; submitted
+snapshot orchestration remains `DOC-007`.
+
 **Phase 0 evidence (2026-08-24):** [ADR-0006](../../adr/0006-adopt-tiptap-local-document-baseline.md) accepts the restricted local editing/import/export architecture. The checked-in synthetic DOCX and tagged PDF outputs derive from the same validated IR, render to matching unclipped pages, and retain semantic headings, lists, links, language, and controlled metadata without tables, text boxes, hidden sensitive content, hosted conversion, or implicit OCR. See [document editor/export verification](../../proof/document-editor-export-verification.md).
 
 ## Salary intelligence
