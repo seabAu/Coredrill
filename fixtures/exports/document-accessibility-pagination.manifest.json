@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-28T07:48:36Z",
+  "generator": {
+    "browser": "Microsoft Edge 154.0.0.0 headless",
+    "producer": "Skia/PDF m154",
+    "command": "COREDRILL_WRITE_ACCESSIBILITY_FIXTURE=1 pnpm test:documents-browser"
+  },
+  "pdf": {
+    "path": "document-accessibility-pagination.pdf",
+    "sha256": "8d6f17c008432454ec741604c38c83d1485b3f560c715f51ff2f85b68b1507f2",
+    "bytes": 64940,
+    "pageCount": 5,
+    "pageSize": "Letter",
+    "tagged": true,
+    "javascript": false,
+    "forms": false,
+    "customMetadata": false,
+    "firstContentRetained": true,
+    "finalContentRetained": true,
+    "lastPagePointerRetained": true
+  },
+  "render": {
+    "tool": "Poppler pdftoppm 26.07.0",
+    "resolutionDpi": 110,
+    "pages": [
+      {
+        "path": "rendered/accessibility-pagination/page-1.png",
+        "sha256": "7a12c3e48c7b84acedc14c1ccf25fafa332d54cb38f79658d90fa1edc34a3187"
+      },
+      {
+        "path": "rendered/accessibility-pagination/page-2.png",
+        "sha256": "ed0064bb6d8f9da8d657b55b70432472b75724fb2c89ffdf52603a671971dc9b"
+      },
+      {
+        "path": "rendered/accessibility-pagination/page-3.png",
+        "sha256": "4a9fff17d653d1225cacdc74deb6d8393fa10c047989c72ce6f1fc6acda2fd34"
+      },
+      {
+        "path": "rendered/accessibility-pagination/page-4.png",
+        "sha256": "15b0962d8fde6d51925e6c5556a5a3976fbe99c73428a6a8b818515df12a3bce"
+      },
+      {
+        "path": "rendered/accessibility-pagination/page-5.png",
+        "sha256": "8d16869e46c262dbb7efbd2c4595a6eac0be84722aa3b68ff70d5c64ce920f31"
+      }
+    ]
+  },
+  "visualReview": {
+    "reviewedAt": "2026-09-28",
+    "result": "passed",
+    "checks": [
+      "all five pages render",
+      "no content is clipped at page edges",
+      "headings remain with following content",
+      "paragraph continuation is readable across page boundaries",
+      "margins and color remain consistent",
+      "the final heading and FINAL-PAGINATION-SENTINEL are visible"
+    ]
+  }
+}

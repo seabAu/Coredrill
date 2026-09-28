@@ -302,3 +302,122 @@ test("exports accessible DOCX and tagged print-PDF artifacts", async ({ page }, 
     contentType: "application/pdf",
   });
 });
+
+test("paginates a long semantic document without losing first or final content", async ({
+  page,
+}, testInfo) => {
+  await openHarness(page);
+  const paragraph =
+    "Delivered a local-first hiring workflow with reviewed evidence, explicit provenance, deterministic exports, and no account or network dependency. ";
+  const content = [
+    {
+      type: "heading",
+      attrs: { level: 1 },
+      content: [{ type: "text", text: "Document accessibility pagination witness" }],
+    },
+    ...Array.from({ length: 9 }, (_, sectionIndex) => [
+      {
+        type: "heading",
+        attrs: { level: 2 },
+        content: [
+          {
+            type: "text",
+            text: `Experience section ${String(sectionIndex + 1)}`,
+          },
+        ],
+      },
+      ...Array.from({ length: 4 }, (_, paragraphIndex) => ({
+        type: "paragraph",
+        content: [
+          {
+            type: "text",
+            text: `${sectionIndex + 1}.${paragraphIndex + 1} ${paragraph.repeat(3)}`,
+          },
+        ],
+      })),
+    ]).flat(),
+    {
+      type: "heading",
+      attrs: { level: 2 },
+      content: [{ type: "text", text: "Final retained section" }],
+    },
+    {
+      type: "paragraph",
+      content: [{ type: "text", text: "FINAL-PAGINATION-SENTINEL" }],
+    },
+  ];
+  await callHarness(page, "setDocument", {
+    specVersion: 1,
+    document: { type: "doc", content },
+  });
+  await callHarness(page, "preparePrintPreview", {
+    title: "Document accessibility pagination witness",
+    language: "en-US",
+  });
+
+  const preview = page.locator("#print-preview");
+  await expect(preview.locator("article[lang='en-US']")).toHaveCount(1);
+  await expect(preview.locator("h2", { hasText: "Final retained section" })).toBeAttached();
+  await expect(preview).toContainText("FINAL-PAGINATION-SENTINEL");
+
+  const pdfPath = testInfo.outputPath("document-accessibility-pagination.pdf");
+  await page.emulateMedia({ media: "print" });
+  await page.pdf({
+    path: pdfPath,
+    format: "Letter",
+    preferCSSPageSize: true,
+    printBackground: true,
+    tagged: true,
+    outline: true,
+  });
+  const pdfBytes = await readFile(pdfPath);
+  const pdfSyntax = pdfBytes.toString("latin1");
+  const pageCount = pdfSyntax.match(/\/Type\s*\/Page\b/gu)?.length ?? 0;
+  expect(pageCount).toBeGreaterThanOrEqual(4);
+  expect(pageCount).toBeLessThanOrEqual(12);
+  expect(pdfSyntax).toContain("/StructTreeRoot");
+  expect(pdfSyntax).toMatch(/\/Marked\s+true/u);
+
+  const imported = await callHarness(page, "importDocument", {
+    bytes: [...pdfBytes],
+    fileName: "document-accessibility-pagination.pdf",
+    mediaType: "application/pdf",
+  });
+  expect(imported.summary.pageCount).toBe(pageCount);
+  expect(imported.plainText).toContain("Document accessibility pagination witness");
+  expect(imported.plainText).toContain("FINAL-PAGINATION-SENTINEL");
+  expect(
+    imported.mappings.some(
+      ({ sourceExcerpt, sourcePointer }) =>
+        sourceExcerpt.includes("FINAL-PAGINATION-SENTINEL") &&
+        sourcePointer.startsWith(`/pages/${String(pageCount)}/lines/`),
+    ),
+  ).toBe(true);
+
+  if (process.env["COREDRILL_WRITE_ACCESSIBILITY_FIXTURE"] === "1") {
+    const fixtureDirectory = path.join(repositoryRoot, "fixtures", "exports");
+    await mkdir(fixtureDirectory, { recursive: true });
+    await writeFile(path.join(fixtureDirectory, "document-accessibility-pagination.pdf"), pdfBytes);
+  }
+
+  await testInfo.attach("document-accessibility-pagination.pdf", {
+    path: pdfPath,
+    contentType: "application/pdf",
+  });
+  await testInfo.attach("document-accessibility-pagination.json", {
+    body: Buffer.from(
+      `${JSON.stringify(
+        {
+          pageCount,
+          tagged: true,
+          firstContentRetained: true,
+          finalContentRetained: true,
+          lastPagePointerRetained: true,
+        },
+        null,
+        2,
+      )}\n`,
+    ),
+    contentType: "application/json",
+  });
+});

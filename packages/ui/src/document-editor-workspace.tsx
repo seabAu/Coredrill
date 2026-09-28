@@ -292,7 +292,12 @@ export const DocumentEditorWorkspace = ({
               ? "No line changes from the selected version."
               : `${String(comparison.changedLineCount)} changed line${comparison.changedLineCount === 1 ? "" : "s"}.`}
           </p>
-          <div className="cd-document-comparison-scroll">
+          <div
+            aria-label="Document version comparison table"
+            className="cd-document-comparison-scroll"
+            role="region"
+            tabIndex={0}
+          >
             <table>
               <caption>Selected immutable version compared with the current local draft</caption>
               <thead>

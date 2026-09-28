@@ -1405,6 +1405,38 @@ test("Job Documents selects exact local versions and derives preparation status"
     path: pdfPath,
     contentType: "application/pdf",
   });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = "200%";
+  });
+  const resizedPreviewDimensions = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(resizedPreviewDimensions.scrollWidth).toBeLessThanOrEqual(
+    resizedPreviewDimensions.clientWidth,
+  );
+  const resizedPreviewLayout = await exportReview.evaluate((element) => {
+    const controls = element.querySelector(".cd-document-export-review__controls");
+    const labels = controls?.querySelectorAll("label") ?? [];
+    const first = labels[0]?.getBoundingClientRect();
+    const second = labels[1]?.getBoundingClientRect();
+    const previewPage = element.querySelector(".cd-document-export-page")?.getBoundingClientRect();
+    return {
+      controlsStacked:
+        first !== undefined && second !== undefined && second.top >= first.bottom - 1,
+      previewWidth: Math.round(previewPage?.width ?? 0),
+    };
+  });
+  expect(resizedPreviewLayout.controlsStacked).toBe(true);
+  expect(resizedPreviewLayout.previewWidth).toBeGreaterThanOrEqual(400);
+  await expect(exportReview.getByRole("region", { name: "Document preview" })).toBeVisible();
+  await expect(exportReview.getByRole("button", { name: "Print or save PDF" })).toBeVisible();
+  await attachAxe(page, testInfo, "job-document-export-review-text-resize-200");
+  await attachProof(page, testInfo, "job-document-export-review-text-resize-200");
+  await page.evaluate(() => {
+    document.documentElement.style.removeProperty("font-size");
+  });
   await page.setViewportSize({ width: 320, height: 800 });
   const exportDimensions = await page.evaluate(() => ({
     clientWidth: document.documentElement.clientWidth,
@@ -2729,6 +2761,100 @@ test("Documents recovers autosaved edits and creates an explicit immutable versi
     path: proofPath,
     contentType: "application/json",
   });
+
+  const backButton = recoveredWorkspace.getByRole("button", { name: "Back to documents" });
+  await backButton.focus();
+  await page.keyboard.press("Tab");
+  await expect(recoveredWorkspace.getByRole("button", { name: "Undo" })).toBeFocused();
+  for (const name of ["Redo", "Bold", "Italic", "Bullet list", "Numbered list"]) {
+    await page.keyboard.press("Tab");
+    await expect(recoveredWorkspace.getByRole("button", { name })).toBeFocused();
+  }
+  await page.keyboard.press("Tab");
+  await expect(
+    recoveredWorkspace.getByRole("textbox", { name: "Document content editor" }),
+  ).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(recoveredWorkspace.getByLabel("Version label (optional)")).toBeFocused();
+
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = "200%";
+  });
+  const textResizeDimensions = await page.evaluate(() => {
+    const editorMain = document.querySelector(".cd-document-editor-main")?.getBoundingClientRect();
+    const history = document.querySelector(".cd-document-editor-history")?.getBoundingClientRect();
+    return {
+      clientWidth: document.documentElement.clientWidth,
+      editorWidth: Math.round(editorMain?.width ?? 0),
+      historyWidth: Math.round(history?.width ?? 0),
+      historyWrapped:
+        editorMain !== undefined && history !== undefined && history.top >= editorMain.bottom - 1,
+      scrollWidth: document.documentElement.scrollWidth,
+    };
+  });
+  expect(textResizeDimensions.scrollWidth).toBeLessThanOrEqual(textResizeDimensions.clientWidth);
+  expect(textResizeDimensions.editorWidth).toBeGreaterThanOrEqual(500);
+  expect(textResizeDimensions.historyWidth).toBeGreaterThanOrEqual(500);
+  expect(textResizeDimensions.historyWrapped).toBe(true);
+  await expect(
+    recoveredWorkspace.getByRole("toolbar", { name: "Document formatting" }),
+  ).toBeVisible();
+  await expect(
+    recoveredWorkspace.getByRole("heading", { name: "Version history and comparison" }),
+  ).toBeVisible();
+  await attachProof(page, testInfo, "document-editor-text-resize-200");
+  await page.evaluate(() => {
+    document.documentElement.style.removeProperty("font-size");
+  });
+
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.emulateMedia({ forcedColors: "active", reducedMotion: "reduce" });
+  const displayProof = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+    forcedColors: matchMedia("(forced-colors: active)").matches,
+    reducedMotion: matchMedia("(prefers-reduced-motion: reduce)").matches,
+    motionDuration: getComputedStyle(document.documentElement)
+      .getPropertyValue("--motion-standard")
+      .trim(),
+  }));
+  expect(displayProof).toEqual({
+    clientWidth: 320,
+    scrollWidth: 320,
+    forcedColors: true,
+    reducedMotion: true,
+    motionDuration: "0.01ms",
+  });
+  const comparisonRegion = recoveredWorkspace.getByRole("region", {
+    name: "Document version comparison table",
+  });
+  const comparisonDimensions = await comparisonRegion.evaluate((element) => ({
+    clientWidth: element.clientWidth,
+    scrollWidth: element.scrollWidth,
+  }));
+  expect(comparisonDimensions.scrollWidth).toBeGreaterThan(comparisonDimensions.clientWidth);
+  await comparisonRegion.focus();
+  await expect(comparisonRegion).toBeFocused();
+  await page.keyboard.press("ArrowRight");
+  await expect
+    .poll(() => comparisonRegion.evaluate((element) => element.scrollLeft))
+    .toBeGreaterThan(0);
+  await expect(
+    recoveredWorkspace.getByRole("toolbar", { name: "Document formatting" }),
+  ).toBeVisible();
+  await expect(
+    recoveredWorkspace.getByRole("heading", { name: "Version history and comparison" }),
+  ).toBeVisible();
+  await attachAxe(page, testInfo, "document-editor-forced-colors-reduced-motion-320");
+  await attachAriaSnapshot(
+    recoveredWorkspace,
+    testInfo,
+    "document-editor-forced-colors-reduced-motion-320",
+  );
+  await attachProof(page, testInfo, "document-editor-forced-colors-reduced-motion-320");
+  await page.emulateMedia({ forcedColors: "none", reducedMotion: "no-preference" });
+  await page.setViewportSize({ width: 1440, height: 960 });
   await attachAxe(page, testInfo, "document-editor-workflow");
   await attachAriaSnapshot(recoveredWorkspace, testInfo, "document-editor-workflow");
   await attachProof(page, testInfo, "document-editor-workflow");
