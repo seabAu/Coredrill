@@ -199,6 +199,17 @@ const fixtureRows = (): Map<string, readonly QueryRow[]> =>
       ],
     ],
     [
+      "application_answer_selection",
+      [
+        {
+          application_id: APPLICATION_ID,
+          document_version_id: DOCUMENT_VERSION_ID,
+          sort_order: 0,
+          created_at: GENERATED_AT,
+        },
+      ],
+    ],
+    [
       "submitted_snapshot",
       [
         {
@@ -392,7 +403,7 @@ describe("portable human-readable data export", () => {
       generatedAt: GENERATED_AT,
       vaultId: VAULT_ID,
       datasetCount: PORTABLE_DATA_EXPORT_DATASETS.length,
-      rowCount: 10,
+      rowCount: 11,
     });
     expect(bundle.datasetCount).toBe(56);
     expect(bundle.dataFiles).toHaveLength(112);
@@ -425,6 +436,14 @@ describe("portable human-readable data export", () => {
     ).toMatchObject({ coverage_state: "gap", requirement_id: REQUIREMENT_ID, row_version: 1 });
     expect(bundle.datasets.find((item) => item.dataset === "document_lineage")?.rows[0]).toEqual(
       expect.objectContaining({ document_id: DOCUMENT_ID, role: "base" }),
+    );
+    expect(
+      bundle.datasets.find((item) => item.dataset === "application_answer_selection")?.rows[0],
+    ).toEqual(
+      expect.objectContaining({
+        application_id: APPLICATION_ID,
+        document_version_id: DOCUMENT_VERSION_ID,
+      }),
     );
     expect(
       bundle.datasets.find((item) => item.dataset === "submitted_snapshot_item")?.rows[0],

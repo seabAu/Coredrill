@@ -68,6 +68,7 @@ Rows use the stable ordering in the final column. Every listed field is projecte
 | `document` | `id`, `kind`, `title`, `source`, `archived_at`, `created_at`, `updated_at`, `row_version` | `created_at`, `id` |
 | `document_version` | `id`, `document_id`, `version_number`, `content_ir_version`, `content_ir_json`, `content_plain`, `template_id`, `created_by`, `created_at`, `parent_version_id`, `content_hash`, `label` | `document_id`, `version_number`, `id` |
 | `document_editor_draft` | `document_id`, `base_version_id`, `content_ir_version`, `content_ir_json`, `content_plain`, `updated_at`, `row_version` | `document_id` |
+| `application_answer_selection` | `application_id`, `document_version_id`, `sort_order`, `created_at` | `application_id`, `sort_order`, `document_version_id` |
 | `document_job_link` | `document_id`, `job_id`, `purpose`, `created_at` | `document_id`, `job_id`, `purpose` |
 | `attachment_manifest` | `content_id`, `media_type`, `byte_length`, `created_at` | `content_id` |
 | `document_version_attachment` | `document_version_id`, `content_id`, `purpose`, `logical_name`, `sort_order`, `created_at` | `document_version_id`, `content_id`, `purpose` |

@@ -30,7 +30,15 @@ const expectedPhase3Inventory = Object.freeze({
   answerEntries: 1,
   answerVersions: 1,
   attachmentManifests: 2,
-  attachmentLinks: 2,
+  attachmentLinks: 3,
+  documents: 3,
+  documentVersions: 4,
+  documentLineages: 2,
+  documentJobLinks: 2,
+  editorDrafts: 1,
+  applicationAnswerSelections: 1,
+  submittedSnapshots: 1,
+  submittedSnapshotItems: 2,
 });
 
 const callHarness = (page, method, argument) =>
@@ -72,6 +80,67 @@ test("restores complete evidence relationships and attachments into clean browse
     phase3Inventory: expectedPhase3Inventory,
   });
   expect(source.attachmentContentIds).toHaveLength(2);
+  const documentRows = Object.fromEntries(
+    source.documentRoundTrip.datasets.map((dataset) => [dataset.dataset, dataset.rows]),
+  );
+  expect(documentRows["document_lineage"]).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ role: "base" }),
+      expect.objectContaining({
+        role: "job_derivative",
+        base_document_id: "0198d9d4-0000-7000-8000-000000000009",
+        job_id: "0198d9d4-0000-7000-8000-000000000002",
+      }),
+    ]),
+  );
+  expect(documentRows["application"]).toEqual([
+    expect.objectContaining({
+      id: "0198d9d4-0000-7000-8000-000000000004",
+      selected_resume_version_id: "0198d9d4-0000-7000-8000-000000000022",
+      applied_at: "2026-08-29T23:53:00.000Z",
+      channel: "company_portal",
+    }),
+  ]);
+  expect(documentRows["application_answer_selection"]).toEqual([
+    expect.objectContaining({
+      application_id: "0198d9d4-0000-7000-8000-000000000004",
+      document_version_id: "0198d9d4-0000-7000-8000-00000000001b",
+    }),
+  ]);
+  const submittedAttachment = documentRows["document_version_attachment"].find(
+    (attachment) => attachment.purpose === "submission",
+  );
+  expect(submittedAttachment).toEqual(
+    expect.objectContaining({
+      document_version_id: "0198d9d4-0000-7000-8000-000000000022",
+      content_id: expect.stringMatching(/^[a-f0-9]{64}$/u),
+    }),
+  );
+  expect(documentRows["submitted_snapshot_item"]).toEqual([
+    expect.objectContaining({
+      role: "resume",
+      document_version_id: "0198d9d4-0000-7000-8000-000000000022",
+      submission_format: "file",
+      content_id: submittedAttachment?.content_id,
+      attachment_purpose: "submission",
+    }),
+    expect.objectContaining({
+      role: "answer",
+      document_version_id: "0198d9d4-0000-7000-8000-00000000001b",
+      submission_format: "plain_text",
+    }),
+  ]);
+  expect(
+    documentRows["document_version"].find(
+      (version) => version.id === "0198d9d4-0000-7000-8000-000000000023",
+    ),
+  ).toEqual(
+    expect.objectContaining({
+      parent_version_id: "0198d9d4-0000-7000-8000-000000000022",
+      content_plain:
+        "Current resume after submission: expanded local-first delivery and recovery leadership.",
+    }),
+  );
 
   const generatedArchive = Buffer.from(source.archiveBytesBase64, "base64");
   const generatedManifest = {
@@ -89,6 +158,7 @@ test("restores complete evidence relationships and attachments into clean browse
     attachmentCount: source.attachmentCount,
     attachmentContentIds: source.attachmentContentIds,
     phase3Inventory: source.phase3Inventory,
+    documentRoundTrip: source.documentRoundTrip,
   };
   if (updateFixture) {
     await mkdir(fixtureDirectory, { recursive: true });
@@ -123,6 +193,7 @@ test("restores complete evidence relationships and attachments into clean browse
     conflict: "none",
     committed: true,
     phase3Inventory: committedManifest.phase3Inventory,
+    documentRoundTrip: committedManifest.documentRoundTrip,
   });
   const deletionPreview = await callHarness(restorePage, "previewVaultDeletion", {
     vaultId: committedManifest.vaultId,

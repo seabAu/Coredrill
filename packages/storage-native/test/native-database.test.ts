@@ -13,6 +13,7 @@ import {
   commitPortableArchiveRestoreV1,
   createPortableArchiveContentHashV1,
   createPortableArchiveRestorePreviewV1,
+  createPortableDataExportV1,
   createPortableVaultContentHashV1,
   createCareerRepositoryContractSuite,
   createPhase1RepositoryContractSuite,
@@ -500,6 +501,14 @@ describe("native SQLite repository and migration contracts", () => {
       readonly attachmentCount: number;
       readonly attachmentContentIds: readonly string[];
       readonly phase3Inventory: Readonly<Record<string, number>>;
+      readonly documentRoundTrip: {
+        readonly specVersion: 1;
+        readonly datasets: readonly {
+          readonly dataset: string;
+          readonly rowCount: number;
+          readonly rows: readonly Readonly<Record<string, unknown>>[];
+        }[];
+      };
     };
     const archiveBytes = new Uint8Array(
       await readFile(
@@ -557,6 +566,29 @@ describe("native SQLite repository and migration contracts", () => {
         readAttachment: (contentId) => database.readPortableAttachment(contentId),
       });
       expect(restoredContent.sha256).toBe(manifest.contentSha256);
+      const restoredData = await createPortableDataExportV1({
+        database,
+        generatedAt: manifest.generatedAt,
+        vaultId: manifest.vaultId,
+      });
+      const restoredDocumentDatasets = manifest.documentRoundTrip.datasets.map(
+        ({ dataset: datasetName }) => {
+          const dataset = restoredData.datasets.find(
+            (candidate) => candidate.dataset === datasetName,
+          );
+          if (dataset === undefined) {
+            throw new Error("The native restore omitted a document round-trip dataset.");
+          }
+          return {
+            dataset: dataset.dataset,
+            rowCount: dataset.rowCount,
+            rows: dataset.rows,
+          };
+        },
+      );
+      expect({ specVersion: 1, datasets: restoredDocumentDatasets }).toEqual(
+        manifest.documentRoundTrip,
+      );
       await expect(
         database.query<{ readonly content_id: string } & QueryRow>(
           sqlStatement("SELECT content_id FROM attachment_manifest ORDER BY content_id"),
@@ -589,7 +621,15 @@ describe("native SQLite repository and migration contracts", () => {
                (SELECT count(*) FROM answer_library_entry) AS answerEntries,
                (SELECT count(*) FROM answer_library_version) AS answerVersions,
                (SELECT count(*) FROM attachment_manifest) AS attachmentManifests,
-               (SELECT count(*) FROM document_version_attachment) AS attachmentLinks`,
+               (SELECT count(*) FROM document_version_attachment) AS attachmentLinks,
+               (SELECT count(*) FROM document) AS documents,
+               (SELECT count(*) FROM document_version) AS documentVersions,
+               (SELECT count(*) FROM document_lineage) AS documentLineages,
+               (SELECT count(*) FROM document_job_link) AS documentJobLinks,
+               (SELECT count(*) FROM document_editor_draft) AS editorDrafts,
+               (SELECT count(*) FROM application_answer_selection) AS applicationAnswerSelections,
+               (SELECT count(*) FROM submitted_snapshot) AS submittedSnapshots,
+               (SELECT count(*) FROM submitted_snapshot_item) AS submittedSnapshotItems`,
           ),
         ),
       ).resolves.toEqual([manifest.phase3Inventory]);

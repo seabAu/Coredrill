@@ -5,10 +5,10 @@
   "generatedAt": "2026-08-29T23:55:00.000Z",
   "vaultId": "0198d9d4-0000-7000-8000-0000000000ff",
   "schemaVersion": 154,
-  "archiveByteLength": 1764140,
-  "archiveSha256": "0edb185cdd193a076e66b75542803f7cb112bfbeb56580f8da60700dad0cc89c",
-  "databaseSha256": "9c393aa8d68167e0c47394e2dc7fc567d1cc01b0d5e11ded2d75929312bc0bb3",
-  "contentSha256": "2a77d93e219332b5fec309c386f7998c07a83d1e79eadb0317530c0dd02ccc07",
+  "archiveByteLength": 1775095,
+  "archiveSha256": "38f8f58f39f9e7524d1a8b5a5d79a7bf9d11559a13d2f3d2061cd0645f2667b7",
+  "databaseSha256": "8f9745306c823e51e9977a31e1571fe6cad6d1a97be384724999edbf68b00867",
+  "contentSha256": "011982b3238bc2982fe45536592f90c7c63092a4f07713e15de7ba062605682a",
   "dataFileCount": 112,
   "attachmentCount": 2,
   "attachmentContentIds": [
@@ -30,6 +30,655 @@
     "answerEntries": 1,
     "answerVersions": 1,
     "attachmentManifests": 2,
-    "attachmentLinks": 2
+    "attachmentLinks": 3,
+    "documents": 3,
+    "documentVersions": 4,
+    "documentLineages": 2,
+    "documentJobLinks": 2,
+    "editorDrafts": 1,
+    "applicationAnswerSelections": 1,
+    "submittedSnapshots": 1,
+    "submittedSnapshotItems": 2
+  },
+  "documentRoundTrip": {
+    "specVersion": 1,
+    "datasets": [
+      {
+        "dataset": "application",
+        "rowCount": 1,
+        "rows": [
+          {
+            "id": "0198d9d4-0000-7000-8000-000000000004",
+            "job_id": "0198d9d4-0000-7000-8000-000000000002",
+            "applied_at": "2026-08-29T23:53:00.000Z",
+            "channel": "company_portal",
+            "current_status_id": "0198d9d4-0000-7000-8000-000000000027",
+            "selected_resume_version_id": "0198d9d4-0000-7000-8000-000000000022",
+            "selected_cover_letter_version_id": null,
+            "notes": "Prepare a tailored local application.",
+            "archived_at": null,
+            "created_at": "2026-08-29T23:50:00.000Z",
+            "updated_at": "2026-08-29T23:53:00.000Z",
+            "row_version": 2
+          }
+        ]
+      },
+      {
+        "dataset": "source_snapshot",
+        "rowCount": 1,
+        "rows": [
+          {
+            "id": "0198d9d4-0000-7000-8000-00000000001d",
+            "job_source_id": "0198d9d4-0000-7000-8000-00000000001c",
+            "captured_at": "2026-08-29T23:50:00.000Z",
+            "extractor_id": "fixture-jsonld",
+            "extractor_version": "1.0.0",
+            "raw_text": "You will lead cross-functional delivery.",
+            "sanitized_html": null,
+            "structured_json": null,
+            "content_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+            "retention_class": "standard",
+            "created_at": "2026-08-29T23:50:00.000Z",
+            "row_version": 1
+          }
+        ]
+      },
+      {
+        "dataset": "provenance",
+        "rowCount": 1,
+        "rows": [
+          {
+            "id": "0198d9d4-0000-7000-8000-00000000001e",
+            "source_snapshot_id": "0198d9d4-0000-7000-8000-00000000001d",
+            "extraction_method": "jsonld",
+            "source_pointer": "/description/requirements/0",
+            "source_excerpt": "You will lead cross-functional delivery.",
+            "confidence": 0.91,
+            "captured_at": "2026-08-29T23:50:00.000Z",
+            "license_note": null,
+            "created_at": "2026-08-29T23:50:00.000Z",
+            "row_version": 1
+          }
+        ]
+      },
+      {
+        "dataset": "job_requirement",
+        "rowCount": 1,
+        "rows": [
+          {
+            "id": "0198d9d4-0000-7000-8000-00000000001f",
+            "job_id": "0198d9d4-0000-7000-8000-000000000002",
+            "category": "responsibility",
+            "source_category": "required",
+            "normalized_text": "Lead cross-functional delivery",
+            "raw_text": "You will lead cross-functional delivery.",
+            "provenance_id": "0198d9d4-0000-7000-8000-00000000001e",
+            "confidence": 0.91,
+            "user_confirmed": true,
+            "sort_order": 0,
+            "created_at": "2026-08-29T23:50:00.000Z",
+            "updated_at": "2026-08-29T23:50:00.000Z",
+            "row_version": 1
+          }
+        ]
+      },
+      {
+        "dataset": "document",
+        "rowCount": 3,
+        "rows": [
+          {
+            "id": "0198d9d4-0000-7000-8000-000000000009",
+            "kind": "resume",
+            "title": "Platform resume",
+            "source": "user",
+            "archived_at": null,
+            "created_at": "2026-08-29T23:50:00.000Z",
+            "updated_at": "2026-08-29T23:50:00.000Z",
+            "row_version": 1
+          },
+          {
+            "id": "0198d9d4-0000-7000-8000-00000000001a",
+            "kind": "application_answer",
+            "title": "Why this company?",
+            "source": "answer_library",
+            "archived_at": null,
+            "created_at": "2026-08-29T23:50:00.000Z",
+            "updated_at": "2026-08-29T23:50:00.000Z",
+            "row_version": 1
+          },
+          {
+            "id": "0198d9d4-0000-7000-8000-000000000021",
+            "kind": "resume",
+            "title": "Northstar tailored resume",
+            "source": "user",
+            "archived_at": null,
+            "created_at": "2026-08-29T23:50:00.000Z",
+            "updated_at": "2026-08-29T23:54:00.000Z",
+            "row_version": 1
+          }
+        ]
+      },
+      {
+        "dataset": "document_version",
+        "rowCount": 4,
+        "rows": [
+          {
+            "id": "0198d9d4-0000-7000-8000-00000000000a",
+            "document_id": "0198d9d4-0000-7000-8000-000000000009",
+            "version_number": 1,
+            "content_ir_version": 1,
+            "content_ir_json": {
+              "document": {
+                "content": [
+                  {
+                    "content": [
+                      {
+                        "text": "Platform engineer with verified local-first delivery evidence.",
+                        "type": "text"
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "type": "doc"
+              },
+              "specVersion": 1
+            },
+            "content_plain": "Platform engineer with verified local-first delivery evidence.",
+            "template_id": null,
+            "created_by": "user",
+            "created_at": "2026-08-29T23:50:00.000Z",
+            "parent_version_id": null,
+            "content_hash": "1e0801374f59208bd71f619e66e9a9b8fc5ca6e0447d4cf4a76443ad43658c9b",
+            "label": "Career evidence source"
+          },
+          {
+            "id": "0198d9d4-0000-7000-8000-00000000001b",
+            "document_id": "0198d9d4-0000-7000-8000-00000000001a",
+            "version_number": 1,
+            "content_ir_version": 1,
+            "content_ir_json": {
+              "document": {
+                "content": [
+                  {
+                    "content": [
+                      {
+                        "text": "I connect reliable local-first engineering with the role's user-owned data goals.",
+                        "type": "text"
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "type": "doc"
+              },
+              "specVersion": 1
+            },
+            "content_plain": "I connect reliable local-first engineering with the role's user-owned data goals.",
+            "template_id": null,
+            "created_by": "user",
+            "created_at": "2026-08-29T23:50:00.000Z",
+            "parent_version_id": null,
+            "content_hash": "c9939dc4a80c0235ac3acd3d1699085a25842421d2d0d29fcacf868831032f96",
+            "label": "Recovery proof answer"
+          },
+          {
+            "id": "0198d9d4-0000-7000-8000-000000000022",
+            "document_id": "0198d9d4-0000-7000-8000-000000000021",
+            "version_number": 1,
+            "content_ir_version": 1,
+            "content_ir_json": {
+              "document": {
+                "content": [
+                  {
+                    "content": [
+                      {
+                        "text": "Submitted resume: led reliable local-first delivery with TypeScript, Rust, and SQLite.",
+                        "type": "text"
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "type": "doc"
+              },
+              "specVersion": 1
+            },
+            "content_plain": "Submitted resume: led reliable local-first delivery with TypeScript, Rust, and SQLite.",
+            "template_id": null,
+            "created_by": "user",
+            "created_at": "2026-08-29T23:50:00.000Z",
+            "parent_version_id": null,
+            "content_hash": "44feb3a9c6ae339c3ce463dad25b796d9235b16de7a98d8365fbd1d4e2a97c3a",
+            "label": "Submitted version"
+          },
+          {
+            "id": "0198d9d4-0000-7000-8000-000000000023",
+            "document_id": "0198d9d4-0000-7000-8000-000000000021",
+            "version_number": 2,
+            "content_ir_version": 1,
+            "content_ir_json": {
+              "document": {
+                "content": [
+                  {
+                    "content": [
+                      {
+                        "text": "Current resume after submission: expanded local-first delivery and recovery leadership.",
+                        "type": "text"
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "type": "doc"
+              },
+              "specVersion": 1
+            },
+            "content_plain": "Current resume after submission: expanded local-first delivery and recovery leadership.",
+            "template_id": null,
+            "created_by": "user",
+            "created_at": "2026-08-29T23:54:00.000Z",
+            "parent_version_id": "0198d9d4-0000-7000-8000-000000000022",
+            "content_hash": "ae3b1724cf34dfdc69a944acd12d67f93f325e3b478e9debe7a1d9c9e7ecdc43",
+            "label": "Post-submission current version"
+          }
+        ]
+      },
+      {
+        "dataset": "document_editor_draft",
+        "rowCount": 1,
+        "rows": [
+          {
+            "document_id": "0198d9d4-0000-7000-8000-000000000021",
+            "base_version_id": "0198d9d4-0000-7000-8000-000000000023",
+            "content_ir_version": 1,
+            "content_ir_json": {
+              "document": {
+                "content": [
+                  {
+                    "content": [
+                      {
+                        "text": "Unsaved draft after submission: preserve this recoverable working copy independently.",
+                        "type": "text"
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "type": "doc"
+              },
+              "specVersion": 1
+            },
+            "content_plain": "Unsaved draft after submission: preserve this recoverable working copy independently.",
+            "updated_at": "2026-08-29T23:54:00.000Z",
+            "row_version": 1
+          }
+        ]
+      },
+      {
+        "dataset": "application_answer_selection",
+        "rowCount": 1,
+        "rows": [
+          {
+            "application_id": "0198d9d4-0000-7000-8000-000000000004",
+            "document_version_id": "0198d9d4-0000-7000-8000-00000000001b",
+            "sort_order": 0,
+            "created_at": "2026-08-29T23:50:00.000Z"
+          }
+        ]
+      },
+      {
+        "dataset": "document_job_link",
+        "rowCount": 2,
+        "rows": [
+          {
+            "document_id": "0198d9d4-0000-7000-8000-000000000009",
+            "job_id": "0198d9d4-0000-7000-8000-000000000002",
+            "purpose": "application",
+            "created_at": "2026-08-29T23:50:00.000Z"
+          },
+          {
+            "document_id": "0198d9d4-0000-7000-8000-000000000021",
+            "job_id": "0198d9d4-0000-7000-8000-000000000002",
+            "purpose": "application",
+            "created_at": "2026-08-29T23:50:00.000Z"
+          }
+        ]
+      },
+      {
+        "dataset": "attachment_manifest",
+        "rowCount": 2,
+        "rows": [
+          {
+            "content_id": "8d75c6a2f0a8087e9745ed2fef90b36bdf13ce489c61eb40f3ae9be07acbb59c",
+            "media_type": "text/plain",
+            "byte_length": 78,
+            "created_at": "2026-08-29T23:50:00.000Z"
+          },
+          {
+            "content_id": "e14c2f1b15c4323496d174fee5c4b5c52cf961c88de4bd99f8836f82ffa15a7b",
+            "media_type": "text/plain",
+            "byte_length": 70,
+            "created_at": "2026-08-29T23:50:00.000Z"
+          }
+        ]
+      },
+      {
+        "dataset": "document_version_attachment",
+        "rowCount": 3,
+        "rows": [
+          {
+            "document_version_id": "0198d9d4-0000-7000-8000-00000000000a",
+            "content_id": "e14c2f1b15c4323496d174fee5c4b5c52cf961c88de4bd99f8836f82ffa15a7b",
+            "purpose": "source",
+            "logical_name": "resume-source.txt",
+            "sort_order": 0,
+            "created_at": "2026-08-29T23:50:00.000Z"
+          },
+          {
+            "document_version_id": "0198d9d4-0000-7000-8000-00000000001b",
+            "content_id": "8d75c6a2f0a8087e9745ed2fef90b36bdf13ce489c61eb40f3ae9be07acbb59c",
+            "purpose": "supporting_evidence",
+            "logical_name": "answer-context.txt",
+            "sort_order": 0,
+            "created_at": "2026-08-29T23:50:00.000Z"
+          },
+          {
+            "document_version_id": "0198d9d4-0000-7000-8000-000000000022",
+            "content_id": "e14c2f1b15c4323496d174fee5c4b5c52cf961c88de4bd99f8836f82ffa15a7b",
+            "purpose": "submission",
+            "logical_name": "northstar-resume.txt",
+            "sort_order": 0,
+            "created_at": "2026-08-29T23:50:00.000Z"
+          }
+        ]
+      },
+      {
+        "dataset": "document_lineage",
+        "rowCount": 2,
+        "rows": [
+          {
+            "document_id": "0198d9d4-0000-7000-8000-000000000009",
+            "role": "base",
+            "base_document_id": null,
+            "template_document_id": null,
+            "job_id": null,
+            "created_at": "2026-08-29T23:50:00.000Z"
+          },
+          {
+            "document_id": "0198d9d4-0000-7000-8000-000000000021",
+            "role": "job_derivative",
+            "base_document_id": "0198d9d4-0000-7000-8000-000000000009",
+            "template_document_id": null,
+            "job_id": "0198d9d4-0000-7000-8000-000000000002",
+            "created_at": "2026-08-29T23:50:00.000Z"
+          }
+        ]
+      },
+      {
+        "dataset": "submitted_snapshot",
+        "rowCount": 1,
+        "rows": [
+          {
+            "id": "0198d9d4-0000-7000-8000-000000000024",
+            "application_id": "0198d9d4-0000-7000-8000-000000000004",
+            "submitted_at": "2026-08-29T23:53:00.000Z",
+            "channel": "company_portal",
+            "created_at": "2026-08-29T23:53:00.000Z"
+          }
+        ]
+      },
+      {
+        "dataset": "submitted_snapshot_item",
+        "rowCount": 2,
+        "rows": [
+          {
+            "id": "0198d9d4-0000-7000-8000-000000000025",
+            "submitted_snapshot_id": "0198d9d4-0000-7000-8000-000000000024",
+            "role": "resume",
+            "document_version_id": "0198d9d4-0000-7000-8000-000000000022",
+            "submission_format": "file",
+            "content_id": "e14c2f1b15c4323496d174fee5c4b5c52cf961c88de4bd99f8836f82ffa15a7b",
+            "attachment_purpose": "submission",
+            "sort_order": 0,
+            "created_at": "2026-08-29T23:53:00.000Z"
+          },
+          {
+            "id": "0198d9d4-0000-7000-8000-000000000026",
+            "submitted_snapshot_id": "0198d9d4-0000-7000-8000-000000000024",
+            "role": "answer",
+            "document_version_id": "0198d9d4-0000-7000-8000-00000000001b",
+            "submission_format": "plain_text",
+            "content_id": null,
+            "attachment_purpose": null,
+            "sort_order": 1,
+            "created_at": "2026-08-29T23:53:00.000Z"
+          }
+        ]
+      },
+      {
+        "dataset": "experience",
+        "rowCount": 1,
+        "rows": [
+          {
+            "id": "0198d9d4-0000-7000-8000-00000000000b",
+            "organization": "Northstar Systems",
+            "role": "Platform Engineer",
+            "start_date": "2023-01-01",
+            "end_date": null,
+            "is_current": true,
+            "description": "Built reliable local-first systems.",
+            "source_document_id": "0198d9d4-0000-7000-8000-000000000009",
+            "verification_state": "source_backed",
+            "archived_at": null,
+            "created_at": "2026-08-29T23:50:00.000Z",
+            "updated_at": "2026-08-29T23:50:00.000Z",
+            "row_version": 1
+          }
+        ]
+      },
+      {
+        "dataset": "anecdote_evidence_link",
+        "rowCount": 8,
+        "rows": [
+          {
+            "anecdote_id": "0198d9d4-0000-7000-8000-000000000013",
+            "evidence_kind": "accomplishment",
+            "evidence_id": "0198d9d4-0000-7000-8000-00000000000f",
+            "experience_id": null,
+            "education_id": null,
+            "project_id": null,
+            "skill_id": null,
+            "accomplishment_id": "0198d9d4-0000-7000-8000-00000000000f",
+            "certification_id": null,
+            "publication_id": null,
+            "volunteer_experience_id": null,
+            "created_at": "2026-08-29T23:50:00.000Z"
+          },
+          {
+            "anecdote_id": "0198d9d4-0000-7000-8000-000000000013",
+            "evidence_kind": "certification",
+            "evidence_id": "0198d9d4-0000-7000-8000-000000000010",
+            "experience_id": null,
+            "education_id": null,
+            "project_id": null,
+            "skill_id": null,
+            "accomplishment_id": null,
+            "certification_id": "0198d9d4-0000-7000-8000-000000000010",
+            "publication_id": null,
+            "volunteer_experience_id": null,
+            "created_at": "2026-08-29T23:50:00.000Z"
+          },
+          {
+            "anecdote_id": "0198d9d4-0000-7000-8000-000000000013",
+            "evidence_kind": "education",
+            "evidence_id": "0198d9d4-0000-7000-8000-00000000000c",
+            "experience_id": null,
+            "education_id": "0198d9d4-0000-7000-8000-00000000000c",
+            "project_id": null,
+            "skill_id": null,
+            "accomplishment_id": null,
+            "certification_id": null,
+            "publication_id": null,
+            "volunteer_experience_id": null,
+            "created_at": "2026-08-29T23:50:00.000Z"
+          },
+          {
+            "anecdote_id": "0198d9d4-0000-7000-8000-000000000013",
+            "evidence_kind": "employment",
+            "evidence_id": "0198d9d4-0000-7000-8000-00000000000b",
+            "experience_id": "0198d9d4-0000-7000-8000-00000000000b",
+            "education_id": null,
+            "project_id": null,
+            "skill_id": null,
+            "accomplishment_id": null,
+            "certification_id": null,
+            "publication_id": null,
+            "volunteer_experience_id": null,
+            "created_at": "2026-08-29T23:50:00.000Z"
+          },
+          {
+            "anecdote_id": "0198d9d4-0000-7000-8000-000000000013",
+            "evidence_kind": "project",
+            "evidence_id": "0198d9d4-0000-7000-8000-00000000000d",
+            "experience_id": null,
+            "education_id": null,
+            "project_id": "0198d9d4-0000-7000-8000-00000000000d",
+            "skill_id": null,
+            "accomplishment_id": null,
+            "certification_id": null,
+            "publication_id": null,
+            "volunteer_experience_id": null,
+            "created_at": "2026-08-29T23:50:00.000Z"
+          },
+          {
+            "anecdote_id": "0198d9d4-0000-7000-8000-000000000013",
+            "evidence_kind": "publication",
+            "evidence_id": "0198d9d4-0000-7000-8000-000000000011",
+            "experience_id": null,
+            "education_id": null,
+            "project_id": null,
+            "skill_id": null,
+            "accomplishment_id": null,
+            "certification_id": null,
+            "publication_id": "0198d9d4-0000-7000-8000-000000000011",
+            "volunteer_experience_id": null,
+            "created_at": "2026-08-29T23:50:00.000Z"
+          },
+          {
+            "anecdote_id": "0198d9d4-0000-7000-8000-000000000013",
+            "evidence_kind": "skill",
+            "evidence_id": "0198d9d4-0000-7000-8000-00000000000e",
+            "experience_id": null,
+            "education_id": null,
+            "project_id": null,
+            "skill_id": "0198d9d4-0000-7000-8000-00000000000e",
+            "accomplishment_id": null,
+            "certification_id": null,
+            "publication_id": null,
+            "volunteer_experience_id": null,
+            "created_at": "2026-08-29T23:50:00.000Z"
+          },
+          {
+            "anecdote_id": "0198d9d4-0000-7000-8000-000000000013",
+            "evidence_kind": "volunteer",
+            "evidence_id": "0198d9d4-0000-7000-8000-000000000012",
+            "experience_id": null,
+            "education_id": null,
+            "project_id": null,
+            "skill_id": null,
+            "accomplishment_id": null,
+            "certification_id": null,
+            "publication_id": null,
+            "volunteer_experience_id": "0198d9d4-0000-7000-8000-000000000012",
+            "created_at": "2026-08-29T23:50:00.000Z"
+          }
+        ]
+      },
+      {
+        "dataset": "skill_evidence",
+        "rowCount": 1,
+        "rows": [
+          {
+            "id": "0198d9d4-0000-7000-8000-000000000020",
+            "skill_id": "0198d9d4-0000-7000-8000-00000000000e",
+            "evidence_kind": "employment",
+            "evidence_id": "0198d9d4-0000-7000-8000-00000000000b",
+            "experience_id": "0198d9d4-0000-7000-8000-00000000000b",
+            "education_id": null,
+            "project_id": null,
+            "accomplishment_id": null,
+            "certification_id": null,
+            "publication_id": null,
+            "volunteer_experience_id": null,
+            "anecdote_id": null,
+            "narrative": "Used SQLite while building reliable local-first systems.",
+            "verification_state": "source_backed",
+            "created_at": "2026-08-29T23:50:00.000Z"
+          }
+        ]
+      },
+      {
+        "dataset": "job_requirement_evidence_selection",
+        "rowCount": 1,
+        "rows": [
+          {
+            "requirement_id": "0198d9d4-0000-7000-8000-00000000001f",
+            "evidence_kind": "employment",
+            "evidence_id": "0198d9d4-0000-7000-8000-00000000000b",
+            "experience_id": "0198d9d4-0000-7000-8000-00000000000b",
+            "education_id": null,
+            "project_id": null,
+            "skill_id": null,
+            "accomplishment_id": null,
+            "certification_id": null,
+            "publication_id": null,
+            "volunteer_experience_id": null,
+            "anecdote_id": null,
+            "selected_at": "2026-08-29T23:50:00.000Z"
+          }
+        ]
+      },
+      {
+        "dataset": "job_requirement_coverage_decision",
+        "rowCount": 1,
+        "rows": [
+          {
+            "requirement_id": "0198d9d4-0000-7000-8000-00000000001f",
+            "coverage_state": "partial",
+            "requirement_row_version": 1,
+            "selection_basis": "employment:0198d9d4-0000-7000-8000-00000000000b:2026-08-29T23:50:00.000Z:source_backed",
+            "decided_at": "2026-08-29T23:50:00.000Z",
+            "updated_at": "2026-08-29T23:50:00.000Z",
+            "row_version": 1
+          }
+        ]
+      },
+      {
+        "dataset": "answer_library_entry",
+        "rowCount": 1,
+        "rows": [
+          {
+            "document_id": "0198d9d4-0000-7000-8000-00000000001a",
+            "source_kind": "application",
+            "source_job_id": "0198d9d4-0000-7000-8000-000000000002",
+            "source_context": "Captured from the synthetic Northstar application.",
+            "last_used_at": "2026-08-29T23:50:00.000Z",
+            "created_at": "2026-08-29T23:50:00.000Z"
+          }
+        ]
+      },
+      {
+        "dataset": "answer_library_version",
+        "rowCount": 1,
+        "rows": [
+          {
+            "document_version_id": "0198d9d4-0000-7000-8000-00000000001b",
+            "question": "Why do you want to work here?",
+            "sensitivity": "sensitive"
+          }
+        ]
+      }
+    ]
   }
 }

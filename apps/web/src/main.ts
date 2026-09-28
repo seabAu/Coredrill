@@ -334,6 +334,7 @@ interface PortableRecoveryFixture {
   readonly dataFileCount: number;
   readonly attachmentCount: number;
   readonly phase3Inventory: Phase3RecoveryInventory;
+  readonly documentRoundTrip: Phase3DocumentRoundTripWitness;
 }
 
 interface PortableRecoveryRestoreInput {
@@ -352,6 +353,7 @@ interface PortableRecoveryRestoreProof {
   readonly conflict: "none";
   readonly committed: true;
   readonly phase3Inventory: Phase3RecoveryInventory;
+  readonly documentRoundTrip: Phase3DocumentRoundTripWitness;
 }
 
 interface Phase3RecoveryInventory {
@@ -370,6 +372,23 @@ interface Phase3RecoveryInventory {
   readonly answerVersions: number;
   readonly attachmentManifests: number;
   readonly attachmentLinks: number;
+  readonly documents: number;
+  readonly documentVersions: number;
+  readonly documentLineages: number;
+  readonly documentJobLinks: number;
+  readonly editorDrafts: number;
+  readonly applicationAnswerSelections: number;
+  readonly submittedSnapshots: number;
+  readonly submittedSnapshotItems: number;
+}
+
+interface Phase3DocumentRoundTripWitness {
+  readonly specVersion: 1;
+  readonly datasets: readonly Readonly<{
+    dataset: string;
+    rowCount: number;
+    rows: readonly Readonly<Record<string, unknown>>[];
+  }>[];
 }
 
 export interface CoredrillStorageSpikeApi {
@@ -1706,6 +1725,50 @@ const readCount = async (client: DatabasePort, sql: string): Promise<number> => 
   return count;
 };
 
+const DOCUMENT_ROUND_TRIP_DATASETS = Object.freeze([
+  "application",
+  "source_snapshot",
+  "provenance",
+  "job_requirement",
+  "document",
+  "document_version",
+  "document_editor_draft",
+  "application_answer_selection",
+  "document_job_link",
+  "attachment_manifest",
+  "document_version_attachment",
+  "document_lineage",
+  "submitted_snapshot",
+  "submitted_snapshot_item",
+  "experience",
+  "anecdote_evidence_link",
+  "skill_evidence",
+  "job_requirement_evidence_selection",
+  "job_requirement_coverage_decision",
+  "answer_library_entry",
+  "answer_library_version",
+] as const);
+
+const createPhase3DocumentRoundTripWitness = (
+  bundle: Awaited<ReturnType<typeof createPortableDataExportV1>>,
+): Phase3DocumentRoundTripWitness =>
+  Object.freeze({
+    specVersion: 1,
+    datasets: Object.freeze(
+      DOCUMENT_ROUND_TRIP_DATASETS.map((datasetName) => {
+        const dataset = bundle.datasets.find((candidate) => candidate.dataset === datasetName);
+        if (dataset === undefined) {
+          throw new Error("The portable export omitted a document round-trip dataset.");
+        }
+        return Object.freeze({
+          dataset: dataset.dataset,
+          rowCount: dataset.rowCount,
+          rows: dataset.rows,
+        });
+      }),
+    ),
+  });
+
 const readPhase3RecoveryInventory = async (
   client: DatabasePort,
 ): Promise<Phase3RecoveryInventory> =>
@@ -1759,6 +1822,20 @@ const readPhase3RecoveryInventory = async (
     attachmentLinks: await readCount(
       client,
       "SELECT count(*) AS count FROM document_version_attachment",
+    ),
+    documents: await readCount(client, "SELECT count(*) AS count FROM document"),
+    documentVersions: await readCount(client, "SELECT count(*) AS count FROM document_version"),
+    documentLineages: await readCount(client, "SELECT count(*) AS count FROM document_lineage"),
+    documentJobLinks: await readCount(client, "SELECT count(*) AS count FROM document_job_link"),
+    editorDrafts: await readCount(client, "SELECT count(*) AS count FROM document_editor_draft"),
+    applicationAnswerSelections: await readCount(
+      client,
+      "SELECT count(*) AS count FROM application_answer_selection",
+    ),
+    submittedSnapshots: await readCount(client, "SELECT count(*) AS count FROM submitted_snapshot"),
+    submittedSnapshotItems: await readCount(
+      client,
+      "SELECT count(*) AS count FROM submitted_snapshot_item",
     ),
   });
 
@@ -1826,6 +1903,39 @@ const seedRepresentativePhase1Vault = async (
   const provenanceId = "0198d9d4-0000-7000-8000-00000000001e";
   const requirementId = "0198d9d4-0000-7000-8000-00000000001f";
   const skillEvidenceId = "0198d9d4-0000-7000-8000-000000000020";
+  const derivativeDocumentId = "0198d9d4-0000-7000-8000-000000000021";
+  const submittedResumeVersionId = "0198d9d4-0000-7000-8000-000000000022";
+  const currentResumeVersionId = "0198d9d4-0000-7000-8000-000000000023";
+  const submittedSnapshotId = "0198d9d4-0000-7000-8000-000000000024";
+  const resumeSnapshotItemId = "0198d9d4-0000-7000-8000-000000000025";
+  const answerSnapshotItemId = "0198d9d4-0000-7000-8000-000000000026";
+  const appliedStatusId = "0198d9d4-0000-7000-8000-000000000027";
+  const appliedStatusEventId = "0198d9d4-0000-7000-8000-000000000028";
+  const appliedAt = "2026-08-29T23:53:00.000Z";
+  const currentVersionAt = "2026-08-29T23:54:00.000Z";
+  const baseResumeText = "Platform engineer with verified local-first delivery evidence.";
+  const submittedResumeText =
+    "Submitted resume: led reliable local-first delivery with TypeScript, Rust, and SQLite.";
+  const currentResumeText =
+    "Current resume after submission: expanded local-first delivery and recovery leadership.";
+  const editorDraftText =
+    "Unsaved draft after submission: preserve this recoverable working copy independently.";
+  const documentIr = (text: string) => ({
+    specVersion: 1,
+    document: {
+      type: "doc",
+      content: [
+        {
+          type: "paragraph",
+          content: [{ type: "text", text }],
+        },
+      ],
+    },
+  });
+  const baseResumeIr = documentIr(baseResumeText);
+  const submittedResumeIr = documentIr(submittedResumeText);
+  const currentResumeIr = documentIr(currentResumeText);
+  const editorDraftIr = documentIr(editorDraftText);
   await client.transaction(async (transaction) => {
     await transaction.execute(
       sqlStatement(
@@ -1849,6 +1959,14 @@ const seedRepresentativePhase1Vault = async (
            id, name, category, color, is_system, sort_order, terminal, created_at, updated_at
          ) VALUES (?, ?, ?, ?, 1, 0, 0, ?, ?)`,
         [statusId, "Saved", "saved", "blue", createdAt, createdAt],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO status_definition(
+           id, name, category, color, is_system, sort_order, terminal, created_at, updated_at
+         ) VALUES (?, ?, ?, ?, 1, 1, 0, ?, ?)`,
+        [appliedStatusId, "Applied", "applied", "green", createdAt, createdAt],
       ),
     );
     await transaction.execute(
@@ -2036,12 +2154,19 @@ const seedRepresentativePhase1Vault = async (
         [
           documentVersionId,
           documentId,
-          JSON.stringify({ specVersion: 1, type: "doc", content: [] }),
-          "Senior Platform Engineer resume",
+          JSON.stringify(baseResumeIr),
+          baseResumeText,
           createdAt,
-          await sha256Text("Senior Platform Engineer resume"),
-          "Recovery proof",
+          await sha256Text(JSON.stringify(baseResumeIr)),
+          "Career evidence source",
         ],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO document_lineage(document_id, role, created_at)
+         VALUES (?, 'base', ?)`,
+        [documentId, createdAt],
       ),
     );
     await transaction.execute(
@@ -2064,6 +2189,53 @@ const seedRepresentativePhase1Vault = async (
         `INSERT INTO document_job_link(document_id, job_id, purpose, created_at)
          VALUES (?, ?, 'application', ?)`,
         [documentId, jobId, createdAt],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO document(id, kind, title, source, created_at, updated_at)
+         VALUES (?, 'resume', ?, 'user', ?, ?)`,
+        [derivativeDocumentId, "Northstar tailored resume", createdAt, currentVersionAt],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO document_lineage(
+           document_id, role, base_document_id, template_document_id, job_id, created_at
+         ) VALUES (?, 'job_derivative', ?, NULL, ?, ?)`,
+        [derivativeDocumentId, documentId, jobId, createdAt],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO document_job_link(document_id, job_id, purpose, created_at)
+         VALUES (?, ?, 'application', ?)`,
+        [derivativeDocumentId, jobId, createdAt],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO document_version(
+           id, document_id, version_number, content_ir_version, content_ir_json, content_plain,
+           created_by, created_at, parent_version_id, content_hash, label
+         ) VALUES (?, ?, 1, 1, ?, ?, 'user', ?, NULL, ?, ?)`,
+        [
+          submittedResumeVersionId,
+          derivativeDocumentId,
+          JSON.stringify(submittedResumeIr),
+          submittedResumeText,
+          createdAt,
+          await sha256Text(JSON.stringify(submittedResumeIr)),
+          "Submitted version",
+        ],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO document_version_attachment(
+           document_version_id, content_id, purpose, logical_name, sort_order, created_at
+         ) VALUES (?, ?, 'submission', 'northstar-resume.txt', 0, ?)`,
+        [submittedResumeVersionId, attachmentContentId, createdAt],
       ),
     );
     await transaction.execute(
@@ -2372,6 +2544,7 @@ const seedRepresentativePhase1Vault = async (
     );
     const answerText =
       "I connect reliable local-first engineering with the role's user-owned data goals.";
+    const answerIr = documentIr(answerText);
     await transaction.execute(
       sqlStatement(
         `INSERT INTO document_version(
@@ -2381,10 +2554,10 @@ const seedRepresentativePhase1Vault = async (
         [
           answerVersionId,
           answerDocumentId,
-          JSON.stringify({ specVersion: 1, type: "doc", content: [] }),
+          JSON.stringify(answerIr),
           answerText,
           createdAt,
-          await sha256Text(answerText),
+          await sha256Text(JSON.stringify(answerIr)),
           "Recovery proof answer",
         ],
       ),
@@ -2423,6 +2596,105 @@ const seedRepresentativePhase1Vault = async (
            document_version_id, content_id, purpose, logical_name, sort_order, created_at
          ) VALUES (?, ?, 'supporting_evidence', 'answer-context.txt', 0, ?)`,
         [answerVersionId, answerAttachmentContentId, createdAt],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO application_answer_selection(
+           application_id, document_version_id, sort_order, created_at
+         ) VALUES (?, ?, 0, ?)`,
+        [applicationId, answerVersionId, createdAt],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `UPDATE application
+         SET applied_at = ?, channel = 'company_portal', current_status_id = ?,
+             selected_resume_version_id = ?, updated_at = ?, row_version = row_version + 1
+         WHERE id = ?`,
+        [appliedAt, appliedStatusId, submittedResumeVersionId, appliedAt, applicationId],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO status_event(
+           id, job_id, application_id, from_status_id, to_status_id, occurred_at, note, created_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          appliedStatusEventId,
+          jobId,
+          applicationId,
+          statusId,
+          appliedStatusId,
+          appliedAt,
+          "Recorded the exact submitted application set locally.",
+          appliedAt,
+        ],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO submitted_snapshot(
+           id, application_id, submitted_at, channel, created_at
+         ) VALUES (?, ?, ?, 'company_portal', ?)`,
+        [submittedSnapshotId, applicationId, appliedAt, appliedAt],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO submitted_snapshot_item(
+           id, submitted_snapshot_id, role, document_version_id, submission_format,
+           content_id, attachment_purpose, sort_order, created_at
+         ) VALUES (?, ?, 'resume', ?, 'file', ?, 'submission', 0, ?)`,
+        [
+          resumeSnapshotItemId,
+          submittedSnapshotId,
+          submittedResumeVersionId,
+          attachmentContentId,
+          appliedAt,
+        ],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO submitted_snapshot_item(
+           id, submitted_snapshot_id, role, document_version_id, submission_format,
+           content_id, attachment_purpose, sort_order, created_at
+         ) VALUES (?, ?, 'answer', ?, 'plain_text', NULL, NULL, 1, ?)`,
+        [answerSnapshotItemId, submittedSnapshotId, answerVersionId, appliedAt],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO document_version(
+           id, document_id, version_number, content_ir_version, content_ir_json, content_plain,
+           created_by, created_at, parent_version_id, content_hash, label
+         ) VALUES (?, ?, 2, 1, ?, ?, 'user', ?, ?, ?, ?)`,
+        [
+          currentResumeVersionId,
+          derivativeDocumentId,
+          JSON.stringify(currentResumeIr),
+          currentResumeText,
+          currentVersionAt,
+          submittedResumeVersionId,
+          await sha256Text(JSON.stringify(currentResumeIr)),
+          "Post-submission current version",
+        ],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO document_editor_draft(
+           document_id, base_version_id, content_ir_version, content_ir_json,
+           content_plain, updated_at, row_version
+         ) VALUES (?, ?, 1, ?, ?, ?, 1)`,
+        [
+          derivativeDocumentId,
+          currentResumeVersionId,
+          JSON.stringify(editorDraftIr),
+          editorDraftText,
+          currentVersionAt,
+        ],
       ),
     );
     const vault = await transaction.query<VaultRow>(
@@ -2486,7 +2758,7 @@ const createCurrentPortableArchive = async (input: PortableRecoveryFixtureInput)
     })),
     readAttachment: (contentId) => store.read(contentId),
   });
-  return Object.freeze({ archive, portable });
+  return Object.freeze({ archive, portable, dataBundle });
 };
 
 const createBrowserContractAdapter = () => {
@@ -2929,7 +3201,7 @@ const api: CoredrillStorageSpikeApi = {
     const client = await getDatabase();
     const attachmentContentIds = await seedRepresentativePhase1Vault(client, input.vaultId);
     const phase3Inventory = await readPhase3RecoveryInventory(client);
-    const { archive, portable } = await createCurrentPortableArchive(input);
+    const { archive, portable, dataBundle } = await createCurrentPortableArchive(input);
     const inspected = await inspectPortableArchiveV1({
       bytes: archive.bytes,
       expectedSchemaVersion: portable.schemaVersion,
@@ -2946,6 +3218,7 @@ const api: CoredrillStorageSpikeApi = {
       dataFileCount: archive.manifest.dataFiles.length,
       attachmentCount: archive.manifest.attachments.length,
       phase3Inventory,
+      documentRoundTrip: createPhase3DocumentRoundTripWitness(dataBundle),
     });
   },
   restorePortableRecoveryFixture: async (input) => {
@@ -2990,6 +3263,11 @@ const api: CoredrillStorageSpikeApi = {
       sqlStatement("SELECT content_id FROM attachment_manifest ORDER BY content_id"),
     );
     const phase3Inventory = await readPhase3RecoveryInventory(client);
+    const dataBundle = await createPortableDataExportV1({
+      database: client,
+      generatedAt: input.generatedAt,
+      vaultId: input.vaultId,
+    });
     return Object.freeze({
       contentSha256: content.sha256,
       databaseSha256: restored.sha256,
@@ -2999,6 +3277,7 @@ const api: CoredrillStorageSpikeApi = {
       conflict: preview.conflict,
       committed: result.committed,
       phase3Inventory,
+      documentRoundTrip: createPhase3DocumentRoundTripWitness(dataBundle),
     });
   },
   runPhase1RepositoryContracts: async () => {
