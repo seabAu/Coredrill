@@ -5,6 +5,7 @@
   "fixtures": [
     {
       "fileName": "synthetic-resume.docx",
+      "repositoryPath": "fixtures/imports/synthetic-resume.docx",
       "format": "docx",
       "case": "baseline",
       "expectedOutcome": "valid",
@@ -12,7 +13,17 @@
       "sha256": "a77c6c7003650c4bfe1dcab8842aafee234c78d1d85a20c598b168179d507098"
     },
     {
+      "fileName": "accessible-resume.docx",
+      "repositoryPath": "fixtures/exports/accessible-resume.docx",
+      "format": "docx",
+      "case": "controlled-export-round-trip",
+      "expectedOutcome": "valid",
+      "byteLength": 9248,
+      "sha256": "77a10ffc85c90e6f98a3be2be331b7823f71085815e6eeab5303e0d174fb3652"
+    },
+    {
       "fileName": "synthetic-two-page.pdf",
+      "repositoryPath": "fixtures/imports/synthetic-two-page.pdf",
       "format": "pdf",
       "case": "baseline",
       "expectedOutcome": "valid",
@@ -21,6 +32,7 @@
     },
     {
       "fileName": "synthetic-varied-layout.pdf",
+      "repositoryPath": "fixtures/imports/synthetic-varied-layout.pdf",
       "format": "pdf",
       "case": "varied-layout",
       "expectedOutcome": "valid",
@@ -29,6 +41,7 @@
     },
     {
       "fileName": "synthetic-scanned.pdf",
+      "repositoryPath": "fixtures/imports/synthetic-scanned.pdf",
       "format": "pdf",
       "case": "scanned",
       "expectedOutcome": "valid-no-extractable-text",
@@ -37,6 +50,7 @@
     },
     {
       "fileName": "synthetic-large.pdf",
+      "repositoryPath": "fixtures/imports/synthetic-large.pdf",
       "format": "pdf",
       "case": "representative-large",
       "expectedOutcome": "valid",
@@ -45,6 +59,7 @@
     },
     {
       "fileName": "synthetic-corrupt.pdf",
+      "repositoryPath": "fixtures/imports/synthetic-corrupt.pdf",
       "format": "pdf",
       "case": "corrupt",
       "expectedOutcome": "reject-corrupt-file",
@@ -53,6 +68,7 @@
     },
     {
       "fileName": "synthetic-profile.md",
+      "repositoryPath": "fixtures/imports/synthetic-profile.md",
       "format": "text",
       "case": "baseline",
       "expectedOutcome": "valid",

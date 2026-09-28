@@ -18,6 +18,11 @@
     },
     "requiredText": ["Jordan Rivera", "Reduced research turnaround by 42%"]
   },
+  "controlledDocx": {
+    "fileName": "accessible-resume.docx",
+    "blockTypes": ["heading", "paragraph", "bulletList", "heading", "paragraph"],
+    "requiredText": ["Jordan Rivera", "Built an accessible local-first workflow.", "Portfolio"]
+  },
   "pdf": {
     "fileName": "synthetic-two-page.pdf",
     "pageCount": 2,

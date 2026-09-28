@@ -43,6 +43,15 @@ const importFixture = async (page, fileName, mediaType) => {
   });
 };
 
+const importManifestFixture = async (page, record, mediaType) => {
+  const bytes = await readFile(path.join(repositoryRoot, record.repositoryPath));
+  return callHarness(page, "importDocument", {
+    bytes: [...bytes],
+    fileName: record.fileName,
+    mediaType,
+  });
+};
+
 const importFailure = (page, input) =>
   page.evaluate(async (value) => {
     try {
@@ -98,9 +107,9 @@ test("matches every synthetic import fixture to the versioned manifest", async (
     generator: "tooling/scripts/generate-document-import-fixtures.py",
     privacy: "Synthetic test data only. Never add real applicant data.",
   });
-  expect(fixtureManifest.fixtures).toHaveLength(7);
+  expect(fixtureManifest.fixtures).toHaveLength(8);
   for (const record of fixtureManifest.fixtures) {
-    const bytes = await readFile(path.join(repositoryRoot, "fixtures", "imports", record.fileName));
+    const bytes = await readFile(path.join(repositoryRoot, record.repositoryPath));
     expect(bytes.byteLength, record.fileName).toBe(record.byteLength);
     expect(createHash("sha256").update(bytes).digest("hex"), record.fileName).toBe(record.sha256);
   }
@@ -193,7 +202,7 @@ test("edits a synthetic 100-page document within the diagnostic budget", async (
   });
 });
 
-test("imports DOCX as a source-mapped unconfirmed proposal", async ({ page }) => {
+test("imports two DOCX layouts as source-mapped unconfirmed proposals", async ({ page }) => {
   const externalRequests = watchExternalRequests(page);
   await openHarness(page);
   const result = await importFixture(
@@ -230,6 +239,29 @@ test("imports DOCX as a source-mapped unconfirmed proposal", async ({ page }) =>
         targetPath.startsWith("/document/content/"),
     ),
   ).toBe(true);
+
+  const controlledRecord = fixtureRecord(importGoldens.controlledDocx.fileName);
+  const controlled = await importManifestFixture(
+    page,
+    controlledRecord,
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  );
+  expect(controlled).toMatchObject({
+    evidenceStatus: "proposal",
+    source: {
+      format: "docx",
+      fileName: importGoldens.controlledDocx.fileName,
+      byteLength: controlledRecord.byteLength,
+      sha256: controlledRecord.sha256,
+    },
+  });
+  for (const requiredText of importGoldens.controlledDocx.requiredText) {
+    expect(controlled.plainText).toContain(requiredText);
+  }
+  expect(controlled.structuredDocument.document.content.map((block) => block.type)).toEqual(
+    importGoldens.controlledDocx.blockTypes,
+  );
+  expect(controlled.mappings).toHaveLength(controlled.summary.blockCount);
   expect(externalRequests).toEqual([]);
 });
 

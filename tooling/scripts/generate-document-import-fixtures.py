@@ -22,7 +22,9 @@ from reportlab.pdfgen import canvas
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 FIXTURE_ROOT = REPOSITORY_ROOT / "fixtures" / "imports"
+EXPORT_FIXTURE_ROOT = REPOSITORY_ROOT / "fixtures" / "exports"
 DOCX_PATH = FIXTURE_ROOT / "synthetic-resume.docx"
+CONTROLLED_DOCX_PATH = EXPORT_FIXTURE_ROOT / "accessible-resume.docx"
 PDF_PATH = FIXTURE_ROOT / "synthetic-two-page.pdf"
 VARIED_PDF_PATH = FIXTURE_ROOT / "synthetic-varied-layout.pdf"
 SCANNED_PDF_PATH = FIXTURE_ROOT / "synthetic-scanned.pdf"
@@ -233,6 +235,7 @@ def sha256(path: Path) -> str:
 def write_manifest() -> None:
     fixture_specs = (
         (DOCX_PATH, "docx", "baseline", "valid"),
+        (CONTROLLED_DOCX_PATH, "docx", "controlled-export-round-trip", "valid"),
         (PDF_PATH, "pdf", "baseline", "valid"),
         (VARIED_PDF_PATH, "pdf", "varied-layout", "valid"),
         (SCANNED_PDF_PATH, "pdf", "scanned", "valid-no-extractable-text"),
@@ -247,6 +250,7 @@ def write_manifest() -> None:
         "fixtures": [
             {
                 "fileName": path.name,
+                "repositoryPath": path.relative_to(REPOSITORY_ROOT).as_posix(),
                 "format": format_name,
                 "case": case,
                 "expectedOutcome": expected_outcome,
