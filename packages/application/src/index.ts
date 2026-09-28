@@ -1,5 +1,25 @@
 /** Use-case orchestration and query DTOs over domain ports. */
 export {
+  DOCUMENT_PREPARATION_REASON_CODES,
+  DOCUMENT_PREPARATION_STATUSES,
+  DocumentPreparationError,
+  createApplicationDocumentPreparationOperations,
+  deriveDocumentPreparationStatus,
+  validateApplicationDocumentPreparation,
+  type ApplicationDocumentCandidateDto,
+  type ApplicationDocumentKind,
+  type ApplicationDocumentLineageRole,
+  type ApplicationDocumentPreparationDto,
+  type ApplicationDocumentPreparationOperations,
+  type ApplicationDocumentPreparationPort,
+  type DocumentPreparationErrorCode,
+  type DocumentPreparationReasonCode,
+  type DocumentPreparationStatus,
+  type LoadApplicationDocumentPreparationInput,
+  type SaveApplicationDocumentPreparationInput,
+  type SaveApplicationDocumentPreparationPortInput,
+} from "./job-document-preparation.js";
+export {
   compareDocumentEditorText,
   createDocumentEditorOperations,
   validateDocumentEditorSession,

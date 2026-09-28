@@ -4,7 +4,7 @@
 
 This document is the normative field-mapping record for the D-051 human-readable export implemented by `BKP-002`. It defines the paired `data/<dataset>.json` and `data/<dataset>.csv` projections carried by the version-1 portable archive. The archive's `database.sqlite3` remains the lossless restore source; these projections provide inspectability and migration independence without pretending that CSV preserves every SQLite distinction.
 
-Version 1 reads one consistent transaction from current database schema `148` and retains reviewed compatibility with schema milestones `101`, `111`, `112`, `115`, `126`, `129`, `132`, `133`, and `145`. The writer emits only datasets and columns that exist at the selected source milestone: 30 Phase 1 datasets at schema 101, 40 datasets through the initial Career Profile schema, 42 through the import proposal queue, 47 through the completed evidence schema, 48 through provenance-bound requirements, 50 through requirement/evidence selection, 51 through requirement-coverage decisions, 54 through immutable document lineage and submitted snapshots, and all 55 datasets at schema 148. The authoritative SQLite member remains the lossless restore source. A later schema change must either preserve this mapping deliberately or introduce a reviewed export version. The stored `vault.schema_version` is the schema at vault creation and need only be a positive integer; it is not the current migration level.
+Version 1 reads one consistent transaction from current database schema `154` and retains reviewed compatibility with schema milestones `101`, `111`, `112`, `115`, `126`, `129`, `132`, `133`, `145`, and `148`. The writer emits only datasets and columns that exist at the selected source milestone: 30 Phase 1 datasets at schema 101, 40 datasets through the initial Career Profile schema, 42 through the import proposal queue, 47 through the completed evidence schema, 48 through provenance-bound requirements, 50 through requirement/evidence selection, 51 through requirement-coverage decisions, 54 through immutable document lineage and submitted snapshots, 55 through durable editor drafts, and all 56 datasets at schema 154. The authoritative SQLite member remains the lossless restore source. A later schema change must either preserve this mapping deliberately or introduce a reviewed export version. The stored `vault.schema_version` is the schema at vault creation and need only be a positive integer; it is not the current migration level.
 
 ## Dataset envelope
 
@@ -14,7 +14,7 @@ Each JSON file is a strict UTF-8 JSON object with:
 - `dataset`: the dataset name below;
 - `generatedAt`: the archive generation instant;
 - `vaultId`: the selected vault UUID;
-- `sourceSchemaVersion`: the exact reviewed source milestone (`101`, `111`, `112`, `115`, `126`, `129`, `132`, `133`, `145`, or `148`);
+- `sourceSchemaVersion`: the exact reviewed source milestone (`101`, `111`, `112`, `115`, `126`, `129`, `132`, `133`, `145`, `148`, or `154`);
 - `columns`: the ordered field names below;
 - `rowCount`: the exact number of rows;
 - `rows`: objects containing exactly those fields in that order; and
@@ -96,7 +96,7 @@ Rows use the stable ordering in the final column. Every listed field is projecte
 | `answer_library_entry` | `document_id`, `source_kind`, `source_job_id`, `source_context`, `last_used_at`, `created_at` | `created_at`, `document_id` |
 | `answer_library_version` | `document_version_id`, `question`, `sensitivity` | `document_version_id` |
 
-Schema 111 omits `anecdote.privacy_tags_json`; schema 112 adds it. Schemas 111, 112, and 115 omit the later `skill.source_document_id` and `skill.verification_state` columns; schema 126 includes both. Schema 129 adds `job_requirement`. Schemas 130 and 131 add `skill_evidence` and `job_requirement_evidence_selection`; schema 132 adds only a derived view and therefore no additional user dataset. Schema 133 adds `job_requirement_coverage_decision`. Schema 145 adds `document_lineage`, `submitted_snapshot`, and `submitted_snapshot_item`; the intermediate 134–144 migrations are intentionally not export milestones because they do not yet contain the complete guarded model. Schemas 146–148 add the durable guarded local editor draft without changing immutable document-version history. This compatibility filtering is explicit and tested rather than relying on failed queries.
+Schema 111 omits `anecdote.privacy_tags_json`; schema 112 adds it. Schemas 111, 112, and 115 omit the later `skill.source_document_id` and `skill.verification_state` columns; schema 126 includes both. Schema 129 adds `job_requirement`. Schemas 130 and 131 add `skill_evidence` and `job_requirement_evidence_selection`; schema 132 adds only a derived view and therefore no additional user dataset. Schema 133 adds `job_requirement_coverage_decision`. Schema 145 adds `document_lineage`, `submitted_snapshot`, and `submitted_snapshot_item`; the intermediate 134–144 migrations are intentionally not export milestones because they do not yet contain the complete guarded model. Schemas 146–148 add the durable guarded local editor draft without changing immutable document-version history. Schemas 149–154 add `application_answer_selection` and its eligibility and submitted-state guards. This compatibility filtering is explicit and tested rather than relying on failed queries.
 
 ## Explicit exclusions
 
@@ -106,4 +106,4 @@ The following are runtime, derived, diagnostic, short-lived undo, or migration m
 
 The writer accepts at most 64 columns and 250,000 rows per dataset. It rejects a cell above 16 MiB, a generated data file above 128 MiB, or combined JSON/CSV data above 384 MiB. Invalid caller UUID/timestamp input fails before opening a transaction. Schema drift, a missing or mismatched vault, query failure, invalid JSON/boolean/binary/non-finite data, contract failure, or size overflow yields a stable redacted typed error and no successful partial bundle.
 
-At schema 148, all 55 queries execute within one `DatabasePort` transaction. Only after every dataset validates are the 110 ordered files returned to the portable archive writer. A schema-inventory test fails if any durable table is neither exported nor present in the reviewed runtime-exclusion list.
+At schema 154, all 56 queries execute within one `DatabasePort` transaction. Only after every dataset validates are the 112 ordered files returned to the portable archive writer. A schema-inventory test fails if any durable table is neither exported nor present in the reviewed runtime-exclusion list.

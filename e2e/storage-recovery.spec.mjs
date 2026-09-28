@@ -58,7 +58,7 @@ test("restores complete evidence relationships and attachments into clean browse
   const sourcePage = await openHarness(sourceContext);
   await callHarness(sourcePage, "delete");
   const opened = await callHarness(sourcePage, "openAndMigrate");
-  expect(opened.diagnostics.schemaVersion).toBe(148);
+  expect(opened.diagnostics.schemaVersion).toBe(154);
   await callHarness(sourcePage, "writeVault", {
     id: recoveryInput.vaultId,
     name: "BKP-007 representative vault",
@@ -67,7 +67,7 @@ test("restores complete evidence relationships and attachments into clean browse
   });
   const source = await callHarness(sourcePage, "createPortableRecoveryFixture", recoveryInput);
   expect(source).toMatchObject({
-    dataFileCount: 110,
+    dataFileCount: 112,
     attachmentCount: 2,
     phase3Inventory: expectedPhase3Inventory,
   });

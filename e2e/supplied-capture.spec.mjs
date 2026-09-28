@@ -206,7 +206,7 @@ test("saved HTML, text, and JSON captures are bounded, inert, validated, and dur
   expect(externalRequests).toEqual([]);
 
   const diagnostics = await page.evaluate(() => globalThis.coredrillStorageSpike.diagnostics());
-  expect(diagnostics).toMatchObject({ schemaVersion: 148 });
+  expect(diagnostics).toMatchObject({ schemaVersion: 154 });
   console.info(
     `CAP003_PROOF ${JSON.stringify({
       schemaVersion: diagnostics.schemaVersion,

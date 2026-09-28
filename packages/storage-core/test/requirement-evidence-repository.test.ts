@@ -75,7 +75,7 @@ class NodeEvidenceDatabase implements DatabasePort {
       health: "ready",
       persistence: "memory",
       readOnly: false,
-      schemaVersion: 148,
+      schemaVersion: 154,
     });
   }
   public close(): void {

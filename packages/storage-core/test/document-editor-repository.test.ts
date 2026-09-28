@@ -80,7 +80,7 @@ class NodeDocumentEditorDatabase implements DatabasePort {
       health: "ready",
       persistence: "memory",
       readOnly: false,
-      schemaVersion: 148,
+      schemaVersion: 154,
     });
   }
 

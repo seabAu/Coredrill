@@ -7,6 +7,7 @@ import {
   createCareerStoryOperations,
   createAnswerLibraryOperations,
   createDocumentEditorOperations,
+  createApplicationDocumentPreparationOperations,
   createDocumentsWorkspaceOperations,
   createDefaultBrowserExportReminderPreference,
   createResumeImportOperations,
@@ -20,6 +21,8 @@ import {
   type BrowserExportReminderPreferenceAction,
   type BrowserExportReminderPreferenceV1,
   type ApplicationOperationContext,
+  type ApplicationDocumentPreparationDto,
+  type ApplicationDocumentPreparationPort,
   type ApplicationResult,
   type AnswerLibraryEntryDto,
   type AnswerLibraryPort,
@@ -53,6 +56,7 @@ import {
   type ResumeImportResolutionPortInput,
   type ResumeImportReviewPort,
   type SaveDocumentEditorDraftInput,
+  type SaveApplicationDocumentPreparationInput,
   type UpdateCareerStoryInput,
   type UpdateCareerStoryPortInput,
   type VaultDeletionPort,
@@ -87,6 +91,7 @@ import {
   createAnswerLibraryRepository,
   createDocumentWorkspaceRepository,
   createDocumentEditorRepository,
+  createApplicationDocumentPreparationRepository,
   createResumeImportRepository,
   createResumeImportResolutionRepository,
   createPhase1RepositoryContractSuite,
@@ -373,6 +378,12 @@ export interface CoredrillStorageSpikeApi {
   ): Promise<ApplicationResult<AnswerLibraryEntryDto>>;
   listAnswerLibraryEntries(): Promise<ApplicationResult<readonly AnswerLibraryEntryDto[]>>;
   listDocumentsWorkspace(): Promise<ApplicationResult<readonly DocumentWorkspaceItemDto[]>>;
+  loadApplicationDocumentPreparation(
+    applicationId: string,
+  ): Promise<ApplicationResult<ApplicationDocumentPreparationDto>>;
+  saveApplicationDocumentPreparation(
+    input: SaveApplicationDocumentPreparationInput,
+  ): Promise<ApplicationResult<ApplicationDocumentPreparationDto>>;
   openDocumentEditor(documentId: string): Promise<ApplicationResult<DocumentEditorSessionDto>>;
   saveDocumentEditorDraft(
     input: SaveDocumentEditorDraftInput,
@@ -1182,6 +1193,23 @@ const documentsWorkspacePort: DocumentsWorkspacePort = Object.freeze({
 
 const documentsWorkspaceOperations = createDocumentsWorkspaceOperations({
   documents: documentsWorkspacePort,
+});
+
+const applicationDocumentPreparationPort: ApplicationDocumentPreparationPort = Object.freeze({
+  load: async (applicationId: Parameters<ApplicationDocumentPreparationPort["load"]>[0]) => {
+    const client = await getDatabase();
+    await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
+    return createApplicationDocumentPreparationRepository(client).load(applicationId);
+  },
+  save: async (input: Parameters<ApplicationDocumentPreparationPort["save"]>[0]) => {
+    const client = await getDatabase();
+    await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
+    return createApplicationDocumentPreparationRepository(client).save(input);
+  },
+});
+
+const applicationDocumentPreparationOperations = createApplicationDocumentPreparationOperations({
+  preparation: applicationDocumentPreparationPort,
 });
 
 const getDocumentEditorRepository = async () => {
@@ -2449,6 +2477,16 @@ const api: CoredrillStorageSpikeApi = {
   listDocumentsWorkspace: async () =>
     documentsWorkspaceOperations.listDocumentsQuery.execute(
       undefined,
+      careerProfileOperationContext(),
+    ),
+  loadApplicationDocumentPreparation: async (applicationId) =>
+    applicationDocumentPreparationOperations.loadPreparationQuery.execute(
+      { applicationId: entityId("application", applicationId) },
+      careerProfileOperationContext(),
+    ),
+  saveApplicationDocumentPreparation: async (input) =>
+    applicationDocumentPreparationOperations.savePreparationCommand.execute(
+      input,
       careerProfileOperationContext(),
     ),
   openDocumentEditor: async (documentId) =>

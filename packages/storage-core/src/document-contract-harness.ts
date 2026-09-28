@@ -1,6 +1,6 @@
 import type { JsonValue } from "@coredrill/contracts";
 import { entityId, instant } from "@coredrill/domain";
-import { DocumentEditorError } from "@coredrill/application";
+import { DocumentEditorError, DocumentPreparationError } from "@coredrill/application";
 
 import {
   DatabaseContractViolation,
@@ -16,6 +16,7 @@ import {
   createSubmittedSnapshotRepository,
 } from "./document-repositories.js";
 import { createDocumentEditorRepository } from "./document-editor-repository.js";
+import { createApplicationDocumentPreparationRepository } from "./application-document-preparation-repository.js";
 import { createPipelineRepositories } from "./pipeline-repositories.js";
 import { createTrackerRepositories } from "./tracker-repositories.js";
 
@@ -625,8 +626,30 @@ export const createDocumentRepositoryContractSuite = (
           notes: "",
           archivedAt: null,
           createdAt: CREATED_AT,
-          updatedAt: UPDATED_AT,
+          updatedAt: CREATED_AT,
         });
+
+        const preparation = createApplicationDocumentPreparationRepository(database);
+        const prepared = (await preparation.save({
+          applicationId: IDS.application,
+          expectedApplicationRowVersion: 1,
+          resumeVersionId: IDS.derivativeVersion,
+          coverLetterVersionId: null,
+          answerVersionIds: [IDS.answerVersion],
+          updatedAt: UPDATED_AT,
+        })) as {
+          readonly applicationRowVersion: number;
+          readonly selected: {
+            readonly resumeVersionId: string | null;
+            readonly answerVersionIds: readonly string[];
+          };
+        };
+        assertContract(
+          prepared.applicationRowVersion === 2 &&
+            prepared.selected.resumeVersionId === IDS.derivativeVersion &&
+            prepared.selected.answerVersionIds[0] === IDS.answerVersion,
+          "Exact resume and answer preparation selections did not round-trip atomically.",
+        );
 
         await expectFailure(
           () =>
@@ -727,6 +750,30 @@ export const createDocumentRepositoryContractSuite = (
             answerView.submission.role === "answer" &&
             answerView.submission.format === "plain_text",
           "The Documents workspace did not retain the exact submitted answer metadata.",
+        );
+
+        await expectFailure(
+          () =>
+            preparation.save({
+              applicationId: IDS.application,
+              expectedApplicationRowVersion: 2,
+              resumeVersionId: IDS.derivativeVersion,
+              coverLetterVersionId: null,
+              answerVersionIds: [],
+              updatedAt: UPDATED_AT,
+            }),
+          (error) => error instanceof DocumentPreparationError && error.code === "immutable",
+          "A submitted application changed its prepared answer selection.",
+        );
+        await expectFailure(
+          () =>
+            database.execute(
+              sqlStatement("DELETE FROM application_answer_selection WHERE application_id = ?", [
+                IDS.application,
+              ]),
+            ),
+          () => true,
+          "A submitted application answer selection was deleted directly.",
         );
 
         await expectFailure(

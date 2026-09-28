@@ -8,6 +8,7 @@ import {
   DocumentEditorWorkspace,
   DocumentsWorkspace,
   HomeDashboard,
+  JobDocumentPreparation,
   JobWorkspaceContent,
   JobWorkspaceFrame,
   JOB_WORKSPACE_TABS,
@@ -39,6 +40,7 @@ import {
   type HomeDashboardModel,
   type HomeRecentItem,
   type JobWorkspaceActionId,
+  type JobDocumentPreparationModel,
   type JobWorkspaceContentActionRequest,
   type JobWorkspaceContentModel,
   type JobWorkspaceFrameModel,
@@ -85,6 +87,7 @@ import {
   parseJobRequirementProposals,
   type CaptureDuplicateSuggestionV1,
   type AnswerLibraryEntryDto,
+  type ApplicationDocumentPreparationDto,
   type CareerProfileEntryDto,
   type CareerStoryDto,
   type CreateCareerStoryInput,
@@ -101,6 +104,7 @@ import {
   type DocumentEditorSessionDto,
   type DocumentWorkspaceItemDto,
   type SaveDocumentEditorDraftInput,
+  type SaveApplicationDocumentPreparationInput,
   type VaultDeletionPreviewDto,
   type VaultDeletionResultDto,
 } from "@coredrill/application";
@@ -120,6 +124,8 @@ import type { SavedJobEvidence, SavedJobSourceComparison } from "./extension-tra
 import { initializeOfflineShell, OfflineShellNotice } from "./offline-shell.js";
 import { sourceTextFromHtml } from "./source-text.js";
 import type { SuppliedCaptureMode } from "./supplied-capture.js";
+
+const REFERENCE_DOCUMENT_PREPARATION_APPLICATION_ID = "0199b300-0000-7000-8000-000000000017";
 
 function sourceExpirationFromEvidence(
   evidence: CaptureInboxPreviewItem["evidence"],
@@ -1753,6 +1759,16 @@ const AppShellCatalog = () => {
   const [documentsLoaded, setDocumentsLoaded] = useState(false);
   const [documentsLoading, setDocumentsLoading] = useState(false);
   const [documentsError, setDocumentsError] = useState<string | null>(null);
+  const [jobDocumentPreparation, setJobDocumentPreparation] =
+    useState<ApplicationDocumentPreparationDto | null>(null);
+  const [jobDocumentPreparationLoadedFor, setJobDocumentPreparationLoadedFor] = useState<
+    string | null
+  >(null);
+  const [jobDocumentPreparationLoading, setJobDocumentPreparationLoading] = useState(false);
+  const [jobDocumentPreparationSaving, setJobDocumentPreparationSaving] = useState(false);
+  const [jobDocumentPreparationError, setJobDocumentPreparationError] = useState<string | null>(
+    null,
+  );
   const [documentEditor, setDocumentEditor] = useState<DocumentEditorSessionDto | null>(null);
   const [documentEditorLoading, setDocumentEditorLoading] = useState(false);
   const [documentEditorError, setDocumentEditorError] = useState<string | null>(null);
@@ -2241,6 +2257,89 @@ const AppShellCatalog = () => {
         setDocumentsLoading(false);
       });
   }, [activeDestination, documentsLoaded, documentsLoading]);
+
+  const preparationApplicationId =
+    workspaceRoute?.jobId === "board-northstar"
+      ? REFERENCE_DOCUMENT_PREPARATION_APPLICATION_ID
+      : null;
+
+  useEffect(() => {
+    if (
+      activeDestination !== "pipeline" ||
+      workspaceRoute?.tab !== "documents" ||
+      preparationApplicationId === null ||
+      jobDocumentPreparationLoadedFor === preparationApplicationId ||
+      jobDocumentPreparationLoading
+    ) {
+      return;
+    }
+    setJobDocumentPreparationLoading(true);
+    setJobDocumentPreparationError(null);
+    void globalThis.coredrillStorageSpike
+      .loadApplicationDocumentPreparation(preparationApplicationId)
+      .then((result) => {
+        if (result.ok) {
+          setJobDocumentPreparation(result.value);
+          setLastActivity("Loaded exact local application document selections.");
+        } else {
+          setJobDocumentPreparation(null);
+          setJobDocumentPreparationError(result.error.message);
+          setLastActivity(result.error.message);
+        }
+      })
+      .catch(() => {
+        const message = "The local application document set could not be loaded.";
+        setJobDocumentPreparation(null);
+        setJobDocumentPreparationError(message);
+        setLastActivity(message);
+      })
+      .finally(() => {
+        setJobDocumentPreparationLoadedFor(preparationApplicationId);
+        setJobDocumentPreparationLoading(false);
+      });
+  }, [
+    activeDestination,
+    jobDocumentPreparationLoadedFor,
+    jobDocumentPreparationLoading,
+    preparationApplicationId,
+    workspaceRoute?.tab,
+  ]);
+
+  const saveJobDocumentPreparation = async (
+    input: SaveApplicationDocumentPreparationInput,
+  ): Promise<void> => {
+    setJobDocumentPreparationSaving(true);
+    setJobDocumentPreparationError(null);
+    try {
+      const result =
+        await globalThis.coredrillStorageSpike.saveApplicationDocumentPreparation(input);
+      if (result.ok) {
+        setJobDocumentPreparation(result.value);
+        setLastActivity(
+          `Saved exact local application versions. Preparation is ${result.value.status.replace("_", " ")}.`,
+        );
+      } else {
+        setJobDocumentPreparationError(result.error.message);
+        setLastActivity(result.error.message);
+      }
+    } catch {
+      const message = "The exact local application document set could not be saved.";
+      setJobDocumentPreparationError(message);
+      setLastActivity(message);
+    } finally {
+      setJobDocumentPreparationSaving(false);
+    }
+  };
+  const visibleJobDocumentPreparation =
+    preparationApplicationId !== null &&
+    jobDocumentPreparationLoadedFor === preparationApplicationId
+      ? jobDocumentPreparation
+      : null;
+  const visibleJobDocumentPreparationError =
+    preparationApplicationId !== null &&
+    jobDocumentPreparationLoadedFor === preparationApplicationId
+      ? jobDocumentPreparationError
+      : null;
 
   const openDocumentEditor = useCallback(async (documentId: string): Promise<void> => {
     setDocumentEditorLoading(true);
@@ -2792,6 +2891,10 @@ const AppShellCatalog = () => {
   const recordWorkspaceAction = (action: JobWorkspaceActionId): void => {
     if (action === "open-source") {
       changeWorkspaceTab("source");
+      return;
+    }
+    if (action === "prepare-application") {
+      changeWorkspaceTab("documents");
       return;
     }
     setLastActivity(`Job workspace action selected: ${action}. No external request was made.`);
@@ -3542,7 +3645,21 @@ const AppShellCatalog = () => {
               onRequestClose={closeWorkspace}
               onTabChange={changeWorkspaceTab}
             >
-              {workspaceContentModel !== null && isJobWorkspaceContentTab(workspaceRoute.tab) ? (
+              {workspaceRoute.tab === "documents" ? (
+                <JobDocumentPreparation
+                  model={
+                    {
+                      preparation: visibleJobDocumentPreparation,
+                      loading: jobDocumentPreparationLoading,
+                      saving: jobDocumentPreparationSaving,
+                      error: visibleJobDocumentPreparationError,
+                    } satisfies JobDocumentPreparationModel
+                  }
+                  onSave={(input) => {
+                    void saveJobDocumentPreparation(input);
+                  }}
+                />
+              ) : workspaceContentModel !== null && isJobWorkspaceContentTab(workspaceRoute.tab) ? (
                 <JobWorkspaceContent
                   activeTab={workspaceRoute.tab}
                   model={workspaceContentModel}
@@ -3784,8 +3901,22 @@ const AppShellCatalog = () => {
                   onRequestClose={closeWorkspace}
                   onTabChange={changeWorkspaceTab}
                 >
-                  {workspaceContentModel !== null &&
-                  isJobWorkspaceContentTab(workspaceRoute.tab) ? (
+                  {workspaceRoute.tab === "documents" ? (
+                    <JobDocumentPreparation
+                      model={
+                        {
+                          preparation: visibleJobDocumentPreparation,
+                          loading: jobDocumentPreparationLoading,
+                          saving: jobDocumentPreparationSaving,
+                          error: visibleJobDocumentPreparationError,
+                        } satisfies JobDocumentPreparationModel
+                      }
+                      onSave={(input) => {
+                        void saveJobDocumentPreparation(input);
+                      }}
+                    />
+                  ) : workspaceContentModel !== null &&
+                    isJobWorkspaceContentTab(workspaceRoute.tab) ? (
                     <JobWorkspaceContent
                       activeTab={workspaceRoute.tab}
                       model={workspaceContentModel}

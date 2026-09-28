@@ -4468,6 +4468,143 @@ textarea {
   margin: var(--space-1) 0 0;
 }
 
+.cd-job-document-preparation {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.cd-job-document-status,
+.cd-job-document-form fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-raised);
+}
+
+.cd-job-document-status {
+  display: grid;
+  grid-template-columns: minmax(12rem, 0.65fr) minmax(0, 1.35fr);
+  gap: var(--space-4);
+  align-items: center;
+}
+
+.cd-job-document-status h4,
+.cd-job-document-status p,
+.cd-job-document-form legend,
+.cd-job-document-form p {
+  margin: 0;
+}
+
+.cd-job-document-status[data-preparation-status="ready"] {
+  border-color: var(--color-positive);
+}
+
+.cd-job-document-status[data-preparation-status="missing"],
+.cd-job-document-status[data-preparation-status="draft"],
+.cd-job-document-status[data-preparation-status="review_needed"] {
+  border-color: var(--color-warning);
+}
+
+.cd-job-document-form {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.cd-job-document-form fieldset {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.cd-job-document-form legend {
+  padding-inline: var(--space-1);
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.cd-job-document-form label {
+  display: grid;
+  gap: var(--space-1);
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.cd-job-document-form select {
+  inline-size: 100%;
+  min-block-size: var(--control-height);
+  padding-inline: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
+.cd-job-document-selected-item {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.cd-job-document-selected-item > div,
+.cd-job-document-selected-item dl,
+.cd-job-document-selected-item dl > div {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.cd-job-document-selected-item dl {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.cd-job-document-selected-item dt,
+.cd-job-document-selected-item dd {
+  margin: 0;
+}
+
+.cd-job-document-selected-item span,
+.cd-job-document-selected-item dt,
+.cd-job-document-form p,
+.cd-job-document-actions p {
+  color: var(--color-text-muted);
+}
+
+.cd-job-answer-options {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cd-job-answer-options label {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+}
+
+.cd-job-answer-options input {
+  margin-block-start: 0.2rem;
+}
+
+.cd-job-document-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.cd-job-document-actions p {
+  max-inline-size: 55ch;
+  margin: 0;
+}
+
 .cd-job-fact-grid,
 .cd-job-company-stats,
 .cd-job-source-facts,
@@ -4838,9 +4975,15 @@ textarea {
 
   .cd-job-quick-note,
   .cd-job-overview-secondary,
+  .cd-job-document-status,
   .cd-job-source-status-grid,
   .cd-job-source-diff__grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cd-job-document-actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .cd-job-source-diff__heading {
@@ -4870,6 +5013,7 @@ textarea {
   }
 
   .cd-job-inline-actions > .cd-button,
+  .cd-job-document-actions > .cd-button,
   .cd-job-quick-note > .cd-button,
   .cd-job-content-section-heading > .cd-button {
     width: 100%;

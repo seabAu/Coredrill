@@ -332,6 +332,8 @@ Views: All, Resumes, Cover letters, Answers, Templates, Submitted. Each item sho
 
 `DOC-004` establishes the deterministic template output contract without adding a new screen. The eventual preparation surface may present the exact section support mappings and explicit insufficient-evidence reasons returned by the renderer, but document-set selection and preparation status remain `DOC-005`. No template result may be presented as AI-verified, employer-verified, scored, exported, or submitted merely because it rendered successfully.
 
+`DOC-005` places an exact local application set on the Job workspace Documents tab. Resume and cover-letter controls select one immutable version; application answers use an ordered set of exact immutable answer versions. The panel names base or job-derivative lineage, marks claims as unevaluated, and derives four explicit states: missing resume, recoverable draft, older version needing review, or ready for the separate export review. Ready never means verified, exported, uploaded, submitted, or likely to pass an ATS. The control reflows at 320 CSS pixels, remains keyboard and screen-reader named, and introduces no network or submission action. Once a submitted snapshot exists, the panel becomes read-only and explains that the exact submitted set is separate from current document versions.
+
 ### Network
 
 Tabs: Companies, Contacts, Interactions.

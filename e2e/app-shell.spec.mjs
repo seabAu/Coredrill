@@ -70,7 +70,7 @@ test("runs and records the complete accountless browser recovery journey", async
       version: 1,
       runtime: "browser",
       adapterName: "official-sqlite-wasm-opfs-sahpool",
-      schemaVersion: 148,
+      schemaVersion: 154,
       vaultName: "Canonical local job search",
       jobTitle: "Research Operations Lead",
       finalStage: "Interviewing",
@@ -1248,6 +1248,81 @@ test("narrow Source keeps provenance and manual controls reachable without page 
   );
   await attachAxe(page, testInfo, "job-workspace-source-mobile-forced-colors");
   await attachProof(page, testInfo, "job-workspace-source-mobile-forced-colors");
+  expect(externalRequests).toEqual([]);
+});
+
+test("Job Documents selects exact local versions and derives preparation status", async ({
+  page,
+}, testInfo) => {
+  const externalRequests = [];
+  page.on("request", (request) => {
+    if (!request.url().startsWith("http://127.0.0.1:4178/")) externalRequests.push(request.url());
+  });
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await openShell(page);
+  await page.evaluate(() =>
+    globalThis.coredrillStorageSpike.installDocumentsWorkspaceReferenceFixture(),
+  );
+  await page.goto("/jobs/board-northstar/documents");
+  await page.waitForFunction(() => globalThis.coredrillAppShell !== undefined);
+
+  const workspace = page.locator('[data-job-workspace="board-northstar"]');
+  const preparation = workspace.locator(".cd-job-document-preparation");
+  await expect(preparation.getByRole("heading", { name: "Documents" })).toBeVisible();
+  await expect(preparation).toContainText("Missing required selection");
+  await expect(preparation).toContainText("No exact resume version is selected");
+
+  await preparation
+    .getByLabel("Exact resume version *")
+    .selectOption("0199b300-0000-7000-8000-00000000000d");
+  const answerSelection = preparation.getByRole("checkbox", {
+    name: /Why Northstar\?.*version 1.*latest/u,
+  });
+  await answerSelection.click();
+  await expect(answerSelection).toBeChecked();
+  await preparation.getByRole("button", { name: "Save exact selections" }).click();
+  await expect(preparation).toContainText("Selected version needs review");
+  await expect(preparation).toContainText("older immutable version");
+
+  await preparation
+    .getByLabel("Exact resume version *")
+    .selectOption("0199b300-0000-7000-8000-00000000000e");
+  await preparation.getByRole("button", { name: "Save exact selections" }).click();
+  await expect(preparation).toContainText("Ready for export review");
+  await expect(preparation).toContainText("Claims remain unevaluated");
+  await expect(preparation).toContainText("nothing has been exported or submitted");
+
+  const drafted = await page.evaluate(async () => {
+    const documentId = "0199b300-0000-7000-8000-000000000007";
+    const opened = await globalThis.coredrillStorageSpike.openDocumentEditor(documentId);
+    if (!opened.ok) return opened;
+    return globalThis.coredrillStorageSpike.saveDocumentEditorDraft({
+      documentId,
+      baseVersionId: opened.value.currentVersion.id,
+      content: opened.value.currentVersion.content,
+      expectedRowVersion: null,
+    });
+  });
+  expect(drafted).toMatchObject({ ok: true });
+  await page.reload();
+  await page.waitForFunction(() => globalThis.coredrillAppShell !== undefined);
+  const reloadedPreparation = page.locator(".cd-job-document-preparation");
+  await expect(reloadedPreparation).toContainText("Draft changes need a version");
+  await expect(reloadedPreparation).toContainText("recoverable edits");
+  await expect(reloadedPreparation).toContainText("Export and Mark Applied are separate");
+
+  await page.setViewportSize({ width: 320, height: 800 });
+  const dimensions = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
+  await attachAxe(page, testInfo, "job-document-preparation");
+  await attachAriaSnapshot(reloadedPreparation, testInfo, "job-document-preparation");
+  await attachProof(page, testInfo, "job-document-preparation");
+  console.info(
+    `DOC005_E2E_PROOF ${JSON.stringify({ statuses: ["missing", "review_needed", "ready", "draft"], externalRequests: 0 })}`,
+  );
   expect(externalRequests).toEqual([]);
 });
 

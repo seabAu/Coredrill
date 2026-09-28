@@ -9,6 +9,11 @@ import {
 } from "@coredrill/storage-core";
 import { entityId, instant, type EntityId, type Instant } from "@coredrill/domain";
 
+export const JOB_DOCUMENT_PREPARATION_REFERENCE_APPLICATION_ID = entityId(
+  "application",
+  "0199b300-0000-7000-8000-000000000017",
+);
+
 const sha256 = async (bytes: Uint8Array): Promise<string> => {
   const digest = await globalThis.crypto.subtle.digest("SHA-256", Uint8Array.from(bytes));
   return [...new Uint8Array(digest)].map((value) => value.toString(16).padStart(2, "0")).join("");
@@ -41,6 +46,7 @@ export const installDocumentsWorkspaceReferenceFixture = async (
     snapshotCover: entityId("submitted-snapshot-item", "0199b300-0000-7000-8000-000000000014"),
     snapshotAnswer: entityId("submitted-snapshot-item", "0199b300-0000-7000-8000-000000000015"),
     linkedEvidence: entityId("experience", "0199b300-0000-7000-8000-000000000016"),
+    preparationApplication: JOB_DOCUMENT_PREPARATION_REFERENCE_APPLICATION_ID,
   });
   const createdAt = instant("2026-09-27T18:00:00.000Z");
   const submittedAt = instant("2026-09-27T19:00:00.000Z");
@@ -69,11 +75,34 @@ export const installDocumentsWorkspaceReferenceFixture = async (
       ),
     );
   };
+  const ensurePreparationApplication = async (): Promise<void> => {
+    const existingPreparation = await database.query(
+      sqlStatement("SELECT id FROM application WHERE id = ?", [ids.preparationApplication]),
+    );
+    if (existingPreparation.length === 1) return;
+    await createPipelineRepositories(database).applications.create(
+      {
+        id: ids.preparationApplication,
+        jobId: ids.job,
+        appliedAt: null,
+        channel: null,
+        currentStatusId: ids.status,
+        selectedResumeVersionId: null,
+        selectedCoverLetterVersionId: null,
+        notes: "Reference-only local document preparation attempt.",
+        archivedAt: null,
+        createdAt: latestAt,
+        updatedAt: latestAt,
+      },
+      { allowAdditionalAttempt: true },
+    );
+  };
   const existing = await database.query(
     sqlStatement("SELECT id FROM submitted_snapshot WHERE id = ?", [ids.snapshot]),
   );
   if (existing.length === 1) {
     await ensureLinkedEvidence();
+    await ensurePreparationApplication();
     return;
   }
 
@@ -364,4 +393,5 @@ export const installDocumentsWorkspaceReferenceFixture = async (
       },
     ],
   });
+  await ensurePreparationApplication();
 };
