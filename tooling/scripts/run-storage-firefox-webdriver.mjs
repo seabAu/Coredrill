@@ -262,14 +262,14 @@ try {
     proof.typedVaultDeletionCleanProfile !== true ||
     proof.repositoryContractCases !== 25 ||
     proof.careerRepositoryContractCases !== 4 ||
-    proof.humanReadableDataFiles !== 110 ||
-    proof.humanReadableDatasets !== 55 ||
-    humanReadable.csvFiles !== 55 ||
-    humanReadable.jsonFiles !== 55 ||
+    proof.humanReadableDataFiles !== 112 ||
+    proof.humanReadableDatasets !== 56 ||
+    humanReadable.csvFiles !== 56 ||
+    humanReadable.jsonFiles !== 56 ||
     humanReadable.rowCount !== 2 ||
     humanReadable.sourceSchemaVersion !== expectedSchemaVersion ||
     archiveRestore.attachmentCount !== 0 ||
-    archiveRestore.dataFileCount !== 110 ||
+    archiveRestore.dataFileCount !== 112 ||
     archiveRestore.corruptionRejected !== true ||
     archiveRestore.corruptionPreservedTarget !== true ||
     archiveRestore.conflict !== "same_vault_replace" ||
