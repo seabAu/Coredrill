@@ -248,6 +248,17 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
 - **Why:** Prevent fabrication and make editing auditable.
 - **Revisit when:** Never weaken silently; improve validation through evaluations.
 
+**Phase 3 evidence (2026-09-27, DOC-004):**
+`deterministic-template-engine-v1` now renders reproducible AI-disabled cover
+letters and application answers only from exact job context and explicitly
+selected, reviewed, non-private durable evidence. Canonical IR, plain text,
+section support mappings, strict question-policy guards, insufficient-evidence
+results, four exact golden outputs, and the context source-version manifest are
+covered by local verification and
+[Foundation CI 36369364955](https://github.com/seabAu/Coredrill/actions/runs/36369364955).
+See the [deterministic-template verification](../../proof/phase-3-deterministic-template-verification.md).
+No Accepted decision changed.
+
 ### D-042 — Versioned documents and submitted snapshots
 
 - **Status:** Accepted
