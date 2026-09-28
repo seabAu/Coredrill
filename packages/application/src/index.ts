@@ -506,3 +506,10 @@ export {
   type ResumeImportReviewOperations,
   type ResumeImportReviewPort,
 } from "./resume-import-review.js";
+export {
+  guardApplicationAnswerTemplateDraft,
+  type ApplicationAnswerTemplateRenderer,
+  type DraftableTemplateQuestionKind,
+  type GuardApplicationAnswerTemplateInput,
+  type GuardedApplicationAnswerTemplateResult,
+} from "./template-drafting-policy.js";

@@ -330,6 +330,8 @@ Views: All, Resumes, Cover letters, Answers, Templates, Submitted. Each item sho
 
 `DOC-003` opens a selected document in a structured local editor. The header distinguishes the immutable current version from the recoverable autosaved draft; the toolbar exposes undo, redo, bold, italic, bullet list, and numbered list; version creation is explicit and optionally labeled. A selectable history pane compares one immutable version with the current draft line by line and never presents an opaque score. Reload names recovered draft state, save failure keeps text in the editor with an explicit retry, and the layout reflows without hiding history or controls.
 
+`DOC-004` establishes the deterministic template output contract without adding a new screen. The eventual preparation surface may present the exact section support mappings and explicit insufficient-evidence reasons returned by the renderer, but document-set selection and preparation status remain `DOC-005`. No template result may be presented as AI-verified, employer-verified, scored, exported, or submitted merely because it rendered successfully.
+
 ### Network
 
 Tabs: Companies, Contacts, Interactions.

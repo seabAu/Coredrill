@@ -1,0 +1,441 @@
+{
+  "behavioralAnswer": {
+    "content": {
+      "specVersion": 1,
+      "document": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              { "type": "text", "text": "Question: Tell us about a time you handled an incident." }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Situation: A deployment caused a production service regression during an on-call shift."
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Action: I coordinated a rollback, documented the failure mode, and paired with the service owner on a guarded fix."
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Result: The service recovered, and the team added a regression check for the failure mode."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "context": {
+      "evidence": [
+        {
+          "evidenceId": "acc-release",
+          "evidenceKind": "accomplishment",
+          "requirementIds": ["req-platform"],
+          "sourceVersion": {
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "documentId": "doc-resume",
+            "versionId": "doc-version-3",
+            "versionNumber": 3
+          },
+          "updatedAt": "2026-09-21T12:00:00.000Z",
+          "verificationState": "user_confirmed"
+        },
+        {
+          "evidenceId": "story-incident",
+          "evidenceKind": "story",
+          "requirementIds": ["req-collaboration"],
+          "sourceVersion": null,
+          "updatedAt": "2026-09-19T12:00:00.000Z",
+          "verificationState": "source_backed"
+        }
+      ],
+      "jobId": "job-platform",
+      "requirementIds": ["req-platform", "req-collaboration"]
+    },
+    "engineVersion": "deterministic-template-engine-v1",
+    "exclusions": [
+      { "evidenceId": "skill-imported", "evidenceKind": "skill", "reason": "not-reviewed" },
+      { "evidenceId": "story-private", "evidenceKind": "story", "reason": "private" }
+    ],
+    "plainText": "Question: Tell us about a time you handled an incident.\n\nSituation: A deployment caused a production service regression during an on-call shift.\n\nAction: I coordinated a rollback, documented the failure mode, and paired with the service owner on a guarded fix.\n\nResult: The service recovered, and the team added a regression check for the failure mode.",
+    "sections": [
+      {
+        "kind": "opening",
+        "support": { "kind": "style-only" },
+        "text": "Tell us about a time you handled an incident."
+      },
+      {
+        "kind": "answer",
+        "support": {
+          "evidenceIds": ["story-incident"],
+          "kind": "selected-evidence",
+          "requirementIds": ["req-collaboration"]
+        },
+        "text": "Situation: A deployment caused a production service regression during an on-call shift.\n\nAction: I coordinated a rollback, documented the failure mode, and paired with the service owner on a guarded fix.\n\nResult: The service recovered, and the team added a regression check for the failure mode."
+      }
+    ],
+    "status": "drafted",
+    "templateId": "application-answer-template-v1",
+    "templateVersion": 1
+  },
+  "coverLetter": {
+    "content": {
+      "specVersion": 1,
+      "document": {
+        "type": "doc",
+        "content": [
+          { "type": "paragraph", "content": [{ "type": "text", "text": "Dear Hiring Team," }] },
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "I am applying for the Senior Platform Engineer role at Example Systems."
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "content": [{ "type": "text", "text": "My relevant selected evidence includes:" }]
+          },
+          {
+            "type": "bulletList",
+            "content": [
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "Faster releases: Reduced release lead time from two days to four hours by introducing repeatable deployment checks."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "Production incident response: Coordinated a rollback and guarded fix after a production service regression, then added a regression check."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "I would welcome the opportunity to discuss how this experience could support the role."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "context": {
+      "evidence": [
+        {
+          "evidenceId": "acc-release",
+          "evidenceKind": "accomplishment",
+          "requirementIds": ["req-platform"],
+          "sourceVersion": {
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "documentId": "doc-resume",
+            "versionId": "doc-version-3",
+            "versionNumber": 3
+          },
+          "updatedAt": "2026-09-21T12:00:00.000Z",
+          "verificationState": "user_confirmed"
+        },
+        {
+          "evidenceId": "story-incident",
+          "evidenceKind": "story",
+          "requirementIds": ["req-collaboration"],
+          "sourceVersion": null,
+          "updatedAt": "2026-09-19T12:00:00.000Z",
+          "verificationState": "source_backed"
+        }
+      ],
+      "jobId": "job-platform",
+      "requirementIds": ["req-platform", "req-collaboration"]
+    },
+    "engineVersion": "deterministic-template-engine-v1",
+    "exclusions": [
+      { "evidenceId": "skill-imported", "evidenceKind": "skill", "reason": "not-reviewed" },
+      { "evidenceId": "story-private", "evidenceKind": "story", "reason": "private" }
+    ],
+    "plainText": "Dear Hiring Team,\n\nI am applying for the Senior Platform Engineer role at Example Systems.\n\nMy relevant selected evidence includes:\n\n- Faster releases: Reduced release lead time from two days to four hours by introducing repeatable deployment checks.\n- Production incident response: Coordinated a rollback and guarded fix after a production service regression, then added a regression check.\n\nI would welcome the opportunity to discuss how this experience could support the role.",
+    "sections": [
+      { "kind": "salutation", "support": { "kind": "style-only" }, "text": "Dear Hiring Team," },
+      {
+        "kind": "opening",
+        "support": { "kind": "job-context", "jobId": "job-platform" },
+        "text": "I am applying for the Senior Platform Engineer role at Example Systems."
+      },
+      {
+        "kind": "evidence",
+        "support": {
+          "evidenceIds": ["acc-release", "story-incident"],
+          "kind": "selected-evidence",
+          "requirementIds": ["req-platform", "req-collaboration"]
+        },
+        "text": "My relevant selected evidence includes:\n- Faster releases: Reduced release lead time from two days to four hours by introducing repeatable deployment checks.\n- Production incident response: Coordinated a rollback and guarded fix after a production service regression, then added a regression check."
+      },
+      {
+        "kind": "closing",
+        "support": { "kind": "style-only" },
+        "text": "I would welcome the opportunity to discuss how this experience could support the role."
+      }
+    ],
+    "status": "drafted",
+    "templateId": "cover-letter-template-v1",
+    "templateVersion": 1
+  },
+  "experienceAnswer": {
+    "content": {
+      "specVersion": 1,
+      "document": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              { "type": "text", "text": "Question: Describe your platform delivery experience." }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "content": [{ "type": "text", "text": "My relevant selected evidence is:" }]
+          },
+          {
+            "type": "bulletList",
+            "content": [
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "Faster releases: Reduced release lead time from two days to four hours by introducing repeatable deployment checks."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "Production incident response: Coordinated a rollback and guarded fix after a production service regression, then added a regression check."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "context": {
+      "evidence": [
+        {
+          "evidenceId": "acc-release",
+          "evidenceKind": "accomplishment",
+          "requirementIds": ["req-platform"],
+          "sourceVersion": {
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "documentId": "doc-resume",
+            "versionId": "doc-version-3",
+            "versionNumber": 3
+          },
+          "updatedAt": "2026-09-21T12:00:00.000Z",
+          "verificationState": "user_confirmed"
+        },
+        {
+          "evidenceId": "story-incident",
+          "evidenceKind": "story",
+          "requirementIds": ["req-collaboration"],
+          "sourceVersion": null,
+          "updatedAt": "2026-09-19T12:00:00.000Z",
+          "verificationState": "source_backed"
+        }
+      ],
+      "jobId": "job-platform",
+      "requirementIds": ["req-platform", "req-collaboration"]
+    },
+    "engineVersion": "deterministic-template-engine-v1",
+    "exclusions": [
+      { "evidenceId": "skill-imported", "evidenceKind": "skill", "reason": "not-reviewed" },
+      { "evidenceId": "story-private", "evidenceKind": "story", "reason": "private" }
+    ],
+    "plainText": "Question: Describe your platform delivery experience.\n\nMy relevant selected evidence is:\n\n- Faster releases: Reduced release lead time from two days to four hours by introducing repeatable deployment checks.\n- Production incident response: Coordinated a rollback and guarded fix after a production service regression, then added a regression check.",
+    "sections": [
+      {
+        "kind": "opening",
+        "support": { "kind": "style-only" },
+        "text": "Describe your platform delivery experience."
+      },
+      {
+        "kind": "answer",
+        "support": {
+          "evidenceIds": ["acc-release", "story-incident"],
+          "kind": "selected-evidence",
+          "requirementIds": ["req-platform", "req-collaboration"]
+        },
+        "text": "My relevant selected evidence is:\n- Faster releases: Reduced release lead time from two days to four hours by introducing repeatable deployment checks.\n- Production incident response: Coordinated a rollback and guarded fix after a production service regression, then added a regression check."
+      }
+    ],
+    "status": "drafted",
+    "templateId": "application-answer-template-v1",
+    "templateVersion": 1
+  },
+  "motivationAnswer": {
+    "content": {
+      "specVersion": 1,
+      "document": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              { "type": "text", "text": "Question: Why are you interested in this role?" }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "I am interested in the Senior Platform Engineer role at Example Systems. The selected evidence I would bring includes:"
+              }
+            ]
+          },
+          {
+            "type": "bulletList",
+            "content": [
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "Faster releases: Reduced release lead time from two days to four hours by introducing repeatable deployment checks."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "Production incident response: Coordinated a rollback and guarded fix after a production service regression, then added a regression check."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "context": {
+      "evidence": [
+        {
+          "evidenceId": "acc-release",
+          "evidenceKind": "accomplishment",
+          "requirementIds": ["req-platform"],
+          "sourceVersion": {
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "documentId": "doc-resume",
+            "versionId": "doc-version-3",
+            "versionNumber": 3
+          },
+          "updatedAt": "2026-09-21T12:00:00.000Z",
+          "verificationState": "user_confirmed"
+        },
+        {
+          "evidenceId": "story-incident",
+          "evidenceKind": "story",
+          "requirementIds": ["req-collaboration"],
+          "sourceVersion": null,
+          "updatedAt": "2026-09-19T12:00:00.000Z",
+          "verificationState": "source_backed"
+        }
+      ],
+      "jobId": "job-platform",
+      "requirementIds": ["req-platform", "req-collaboration"]
+    },
+    "engineVersion": "deterministic-template-engine-v1",
+    "exclusions": [
+      { "evidenceId": "skill-imported", "evidenceKind": "skill", "reason": "not-reviewed" },
+      { "evidenceId": "story-private", "evidenceKind": "story", "reason": "private" }
+    ],
+    "plainText": "Question: Why are you interested in this role?\n\nI am interested in the Senior Platform Engineer role at Example Systems. The selected evidence I would bring includes:\n\n- Faster releases: Reduced release lead time from two days to four hours by introducing repeatable deployment checks.\n- Production incident response: Coordinated a rollback and guarded fix after a production service regression, then added a regression check.",
+    "sections": [
+      {
+        "kind": "opening",
+        "support": { "kind": "style-only" },
+        "text": "Why are you interested in this role?"
+      },
+      {
+        "kind": "answer",
+        "support": { "kind": "job-context", "jobId": "job-platform" },
+        "text": "I am interested in the Senior Platform Engineer role at Example Systems. The selected evidence I would bring includes:"
+      },
+      {
+        "kind": "evidence",
+        "support": {
+          "evidenceIds": ["acc-release", "story-incident"],
+          "kind": "selected-evidence",
+          "requirementIds": ["req-platform", "req-collaboration"]
+        },
+        "text": "- Faster releases: Reduced release lead time from two days to four hours by introducing repeatable deployment checks.\n- Production incident response: Coordinated a rollback and guarded fix after a production service regression, then added a regression check."
+      }
+    ],
+    "status": "drafted",
+    "templateId": "application-answer-template-v1",
+    "templateVersion": 1
+  }
+}
