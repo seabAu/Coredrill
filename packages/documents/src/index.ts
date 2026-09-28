@@ -2,5 +2,6 @@
 export * from "./autosave.js";
 export * from "./deterministic-templates.js";
 export * from "./document-ir.js";
+export * from "./local-export.js";
 export * from "./import-types.js";
 export * from "./text-import.js";

@@ -43,8 +43,13 @@ export interface LocalDocumentExport {
 
 const windowsReservedName = /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/iu;
 
-export const sanitizeDocumentFileName = (value: string, extension: "docx" | "pdf"): string => {
-  const withoutExtension = value.replace(/\.(?:docx|pdf)$/iu, "");
+export type DocumentExportFileExtension = "docx" | "pdf" | "txt";
+
+export const sanitizeDocumentFileName = (
+  value: string,
+  extension: DocumentExportFileExtension,
+): string => {
+  const withoutExtension = value.replace(/\.(?:docx|pdf|txt)$/iu, "");
   const withoutControls = Array.from(withoutExtension.normalize("NFKC"))
     .map((character) => ((character.codePointAt(0) ?? 0) < 32 ? "-" : character))
     .join("");

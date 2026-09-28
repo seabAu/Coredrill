@@ -2,8 +2,12 @@ import { useEffect, useId, useState, type ChangeEvent, type SyntheticEvent } fro
 import type {
   ApplicationDocumentCandidateDto,
   ApplicationDocumentPreparationDto,
+  ApplicationResult,
+  DocumentEditorSessionDto,
   SaveApplicationDocumentPreparationInput,
 } from "@coredrill/application";
+
+import { DocumentExportReview } from "./document-export-review.js";
 
 export interface JobDocumentPreparationModel {
   readonly preparation: ApplicationDocumentPreparationDto | null;
@@ -15,6 +19,9 @@ export interface JobDocumentPreparationModel {
 export interface JobDocumentPreparationProps {
   readonly model: JobDocumentPreparationModel;
   readonly onSave?: (input: SaveApplicationDocumentPreparationInput) => void;
+  readonly onLoadDocument?: (
+    documentId: string,
+  ) => Promise<ApplicationResult<DocumentEditorSessionDto>>;
 }
 
 const statusLabel = (status: ApplicationDocumentPreparationDto["status"]): string => {
@@ -50,8 +57,10 @@ const candidateLabel = (candidate: ApplicationDocumentCandidateDto): string =>
 
 const SelectedSummary = ({
   candidate,
+  onReviewExport,
 }: {
   readonly candidate: ApplicationDocumentCandidateDto;
+  readonly onReviewExport?: ((candidate: ApplicationDocumentCandidateDto) => void) | undefined;
 }) => (
   <article className="cd-job-document-selected-item">
     <div>
@@ -77,11 +86,23 @@ const SelectedSummary = ({
         <dd>Not evaluated</dd>
       </div>
     </dl>
+    {onReviewExport === undefined ? null : (
+      <button
+        className="cd-text-button"
+        onClick={() => {
+          onReviewExport(candidate);
+        }}
+        type="button"
+      >
+        Review export for {candidate.title} version {String(candidate.versionNumber)}
+      </button>
+    )}
   </article>
 );
 
 export const JobDocumentPreparation = ({
   model,
+  onLoadDocument,
   onSave = () => undefined,
 }: JobDocumentPreparationProps) => {
   const headingId = useId();
@@ -89,6 +110,9 @@ export const JobDocumentPreparation = ({
   const [resumeVersionId, setResumeVersionId] = useState("");
   const [coverLetterVersionId, setCoverLetterVersionId] = useState("");
   const [answerVersionIds, setAnswerVersionIds] = useState<readonly string[]>([]);
+  const [exportCandidate, setExportCandidate] = useState<ApplicationDocumentCandidateDto | null>(
+    null,
+  );
 
   useEffect(() => {
     setResumeVersionId(preparation?.selected.resume?.documentVersionId ?? "");
@@ -97,6 +121,20 @@ export const JobDocumentPreparation = ({
       preparation?.selected.answers.map(({ documentVersionId }) => documentVersionId) ?? [],
     );
   }, [preparation?.applicationId, preparation?.applicationRowVersion]);
+
+  useEffect(() => {
+    if (
+      exportCandidate !== null &&
+      preparation !== null &&
+      ![
+        preparation.selected.resume,
+        preparation.selected.coverLetter,
+        ...preparation.selected.answers,
+      ].some((candidate) => candidate?.documentVersionId === exportCandidate.documentVersionId)
+    ) {
+      setExportCandidate(null);
+    }
+  }, [exportCandidate, preparation]);
 
   const toggleAnswer = (event: ChangeEvent<HTMLInputElement>): void => {
     const { checked, value: id } = event.currentTarget;
@@ -193,7 +231,10 @@ export const JobDocumentPreparation = ({
               {preparation.selected.resume === null ? (
                 <p>No exact resume version is selected.</p>
               ) : (
-                <SelectedSummary candidate={preparation.selected.resume} />
+                <SelectedSummary
+                  candidate={preparation.selected.resume}
+                  onReviewExport={onLoadDocument === undefined ? undefined : setExportCandidate}
+                />
               )}
             </fieldset>
 
@@ -218,7 +259,10 @@ export const JobDocumentPreparation = ({
               {preparation.selected.coverLetter === null ? (
                 <p>Optional · no exact cover-letter version selected.</p>
               ) : (
-                <SelectedSummary candidate={preparation.selected.coverLetter} />
+                <SelectedSummary
+                  candidate={preparation.selected.coverLetter}
+                  onReviewExport={onLoadDocument === undefined ? undefined : setExportCandidate}
+                />
               )}
             </fieldset>
 
@@ -247,6 +291,13 @@ export const JobDocumentPreparation = ({
                 {String(preparation.selected.answers.length)} exact answer version
                 {preparation.selected.answers.length === 1 ? "" : "s"} currently selected.
               </p>
+              {preparation.selected.answers.map((candidate) => (
+                <SelectedSummary
+                  candidate={candidate}
+                  key={candidate.documentVersionId}
+                  onReviewExport={onLoadDocument === undefined ? undefined : setExportCandidate}
+                />
+              ))}
             </fieldset>
 
             <div className="cd-job-document-actions">
@@ -263,6 +314,15 @@ export const JobDocumentPreparation = ({
               </p>
             </div>
           </form>
+          {exportCandidate === null || onLoadDocument === undefined ? null : (
+            <DocumentExportReview
+              candidate={exportCandidate}
+              onClose={() => {
+                setExportCandidate(null);
+              }}
+              onLoadDocument={onLoadDocument}
+            />
+          )}
         </>
       )}
     </section>

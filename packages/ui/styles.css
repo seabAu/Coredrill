@@ -4605,6 +4605,206 @@ textarea {
   margin: 0;
 }
 
+.cd-document-export-review {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-raised);
+}
+
+.cd-document-export-review__heading,
+.cd-document-export-preview__toolbar,
+.cd-document-export-review__actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.cd-document-export-review__heading h4,
+.cd-document-export-review__heading p,
+.cd-document-export-preview__toolbar h5,
+.cd-document-export-preview__toolbar span,
+.cd-document-export-review__actions p,
+.cd-document-export-status,
+.cd-document-export-warnings h5,
+.cd-document-export-warnings p {
+  margin: 0;
+}
+
+.cd-document-export-review__controls {
+  display: grid;
+  grid-template-columns: minmax(12rem, 0.55fr) minmax(14rem, 1.45fr);
+  gap: var(--space-3);
+}
+
+.cd-document-export-review__controls label {
+  display: grid;
+  gap: var(--space-1);
+  color: var(--color-text);
+  font-weight: 650;
+}
+
+.cd-document-export-review__controls select,
+.cd-document-export-review__controls input {
+  min-width: 0;
+  min-height: var(--control-height);
+  padding-inline: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.cd-document-export-metadata {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-border-subtle);
+}
+
+.cd-document-export-metadata > div {
+  min-width: 0;
+  padding: var(--space-3);
+  background: var(--color-surface);
+}
+
+.cd-document-export-metadata dt {
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-metadata);
+  font-weight: 700;
+}
+
+.cd-document-export-metadata dd {
+  margin: var(--space-1) 0 0;
+  overflow-wrap: anywhere;
+}
+
+.cd-document-export-warnings {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-inline-start: 0.3rem solid var(--color-warning);
+  background: var(--color-surface);
+}
+
+.cd-document-export-warnings ul {
+  margin: 0;
+  padding-inline-start: var(--space-5);
+}
+
+.cd-document-export-preview {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-2);
+}
+
+.cd-document-export-preview__toolbar {
+  align-items: baseline;
+}
+
+.cd-document-export-preview__toolbar span {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-metadata);
+}
+
+.cd-document-export-page {
+  width: min(100%, 51rem);
+  min-height: 42rem;
+  margin-inline: auto;
+  padding: clamp(1.5rem, 6vw, 4.5rem);
+  overflow-wrap: anywhere;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  box-shadow: var(--shadow-card);
+  color: #172b3a;
+}
+
+.cd-document-export-page .coredrill-print-document {
+  font-family: Arial, sans-serif;
+  font-size: 10.5pt;
+  line-height: 1.35;
+}
+
+.cd-document-export-page .coredrill-print-document h1,
+.cd-document-export-page .coredrill-print-document h2,
+.cd-document-export-page .coredrill-print-document h3 {
+  break-after: avoid;
+  color: #12344d;
+}
+
+.cd-document-export-page .coredrill-print-document a {
+  color: #145da0;
+}
+
+.cd-document-export-review__actions {
+  align-items: center;
+}
+
+.cd-document-export-review__actions p {
+  max-width: 58ch;
+  color: var(--color-text-muted);
+}
+
+.cd-document-export-status:empty {
+  display: none;
+}
+
+@media (max-width: 48rem) {
+  .cd-document-export-review__controls,
+  .cd-document-export-metadata {
+    grid-template-columns: 1fr;
+  }
+
+  .cd-document-export-review__heading,
+  .cd-document-export-review__actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .cd-document-export-page {
+    min-height: 34rem;
+    padding: var(--space-4);
+  }
+}
+
+@media print {
+  html[data-document-export-printing="true"]
+    body
+    *:not(:has(.cd-document-export-page)):not(.cd-document-export-page):not(
+      .cd-document-export-page *
+    ) {
+    display: none !important;
+  }
+
+  html[data-document-export-printing="true"] body *:has(.cd-document-export-page) {
+    display: contents !important;
+  }
+
+  html[data-document-export-printing="true"] .cd-document-export-page {
+    width: auto;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    box-shadow: none;
+  }
+
+  @page {
+    size: Letter;
+    margin: 0.65in 0.7in;
+  }
+}
+
 .cd-job-fact-grid,
 .cd-job-company-stats,
 .cd-job-source-facts,

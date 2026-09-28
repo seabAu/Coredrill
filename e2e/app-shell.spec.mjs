@@ -1,4 +1,4 @@
-import { writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import AxeBuilder from "@axe-core/playwright";
@@ -1292,6 +1292,129 @@ test("Job Documents selects exact local versions and derives preparation status"
   await expect(preparation).toContainText("Claims remain unevaluated");
   await expect(preparation).toContainText("nothing has been exported or submitted");
 
+  await preparation
+    .getByRole("button", { name: "Review export for Northstar resume version 2" })
+    .click();
+  const exportReview = preparation.getByRole("region", {
+    name: "Export review for Northstar resume version 2",
+  });
+  await expect(exportReview).toContainText("Preview an exact immutable version");
+  await expect(exportReview.getByRole("definition")).toHaveCount(4);
+  await expect(exportReview).toContainText(
+    "Northstar resume-v2-0199b30000007000800000000000000e.docx",
+  );
+  await expect(exportReview.getByRole("region", { name: "Document preview" })).toContainText(
+    "Northstar resume with post-submission notes.",
+  );
+  await expect(exportReview.getByRole("region", { name: "Format warnings" })).toContainText(
+    "No unsupported formatting is expected",
+  );
+
+  const [docxDownload] = await Promise.all([
+    page.waitForEvent("download"),
+    exportReview.getByRole("button", { name: "Download DOCX" }).click(),
+  ]);
+  expect(docxDownload.suggestedFilename()).toBe(
+    "Northstar resume-v2-0199b30000007000800000000000000e.docx",
+  );
+  const docxPath = await docxDownload.path();
+  expect(docxPath).not.toBeNull();
+  const docxBytes = await readFile(docxPath);
+  expect([...docxBytes.subarray(0, 4)]).toEqual([0x50, 0x4b, 0x03, 0x04]);
+  await expect(exportReview.getByRole("status")).toContainText("DOCX generated locally");
+
+  await exportReview.getByLabel("Export format").selectOption("plain-text");
+  await expect(exportReview).toContainText(
+    "Northstar resume-v2-0199b30000007000800000000000000e.txt",
+  );
+  await expect(
+    exportReview.locator('[data-warning-code="plain_text_removes_formatting"]'),
+  ).toBeVisible();
+  const [textDownload] = await Promise.all([
+    page.waitForEvent("download"),
+    exportReview.getByRole("button", { name: "Download Plain text" }).click(),
+  ]);
+  expect(textDownload.suggestedFilename()).toBe(
+    "Northstar resume-v2-0199b30000007000800000000000000e.txt",
+  );
+  const textPath = await textDownload.path();
+  expect(textPath).not.toBeNull();
+  await expect(readFile(textPath, "utf8")).resolves.toBe(
+    "Northstar resume with post-submission notes.",
+  );
+
+  await exportReview.getByLabel("Export format").selectOption("pdf");
+  await expect(exportReview).toContainText(
+    "Northstar resume-v2-0199b30000007000800000000000000e.pdf",
+  );
+  await expect(
+    exportReview.locator('[data-warning-code="pdf_print_settings_control_pagination"]'),
+  ).toBeVisible();
+  await page.evaluate(() => {
+    globalThis.__coredrillPrintCalls = 0;
+    globalThis.__coredrillTitleAtPrint = null;
+    window.print = () => {
+      globalThis.__coredrillPrintCalls += 1;
+      globalThis.__coredrillTitleAtPrint = document.title;
+    };
+  });
+  await exportReview.getByRole("button", { name: "Print or save PDF" }).click();
+  expect(await page.evaluate(() => globalThis.__coredrillPrintCalls)).toBe(1);
+  expect(await page.evaluate(() => globalThis.__coredrillTitleAtPrint)).toBe(
+    "Northstar resume-v2-0199b30000007000800000000000000e",
+  );
+  await expect(exportReview.getByRole("status")).toContainText("Choose Save as PDF");
+
+  const pdfPath = testInfo.outputPath("northstar-resume-v2.pdf");
+  await page.evaluate(() => {
+    document.documentElement.dataset.documentExportPrinting = "true";
+  });
+  await page.emulateMedia({ media: "print" });
+  await page.pdf({
+    path: pdfPath,
+    format: "Letter",
+    preferCSSPageSize: true,
+    printBackground: true,
+    tagged: true,
+    outline: true,
+  });
+  await page.evaluate(() => {
+    delete document.documentElement.dataset.documentExportPrinting;
+  });
+  await page.emulateMedia({ media: "screen" });
+  const pdfBytes = await readFile(pdfPath);
+  const pdfSyntax = pdfBytes.toString("latin1");
+  expect(pdfBytes.subarray(0, 5).toString("ascii")).toBe("%PDF-");
+  expect(pdfSyntax.match(/\/Type\s*\/Page\b/gu)).toHaveLength(1);
+  expect(pdfSyntax).toContain("/StructTreeRoot");
+  expect(pdfSyntax).toMatch(/\/Marked\s+true/u);
+  const retainedDocxPath = testInfo.outputPath("northstar-resume-v2.docx");
+  const retainedTextPath = testInfo.outputPath("northstar-resume-v2.txt");
+  await writeFile(retainedDocxPath, docxBytes);
+  await writeFile(retainedTextPath, "Northstar resume with post-submission notes.", "utf8");
+  await testInfo.attach("northstar-resume-v2.docx", {
+    path: retainedDocxPath,
+    contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  });
+  await testInfo.attach("northstar-resume-v2.txt", {
+    path: retainedTextPath,
+    contentType: "text/plain",
+  });
+  await testInfo.attach("northstar-resume-v2.pdf", {
+    path: pdfPath,
+    contentType: "application/pdf",
+  });
+  await page.setViewportSize({ width: 320, height: 800 });
+  const exportDimensions = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(exportDimensions.scrollWidth).toBeLessThanOrEqual(exportDimensions.clientWidth);
+  await attachAxe(page, testInfo, "job-document-export-review");
+  await attachAriaSnapshot(exportReview, testInfo, "job-document-export-review");
+  await attachProof(page, testInfo, "job-document-export-review");
+  await page.setViewportSize({ width: 1440, height: 960 });
+
   const drafted = await page.evaluate(async () => {
     const documentId = "0199b300-0000-7000-8000-000000000007";
     const opened = await globalThis.coredrillStorageSpike.openDocumentEditor(documentId);
@@ -1322,6 +1445,9 @@ test("Job Documents selects exact local versions and derives preparation status"
   await attachProof(page, testInfo, "job-document-preparation");
   console.info(
     `DOC005_E2E_PROOF ${JSON.stringify({ statuses: ["missing", "review_needed", "ready", "draft"], externalRequests: 0 })}`,
+  );
+  console.info(
+    `DOC006_E2E_PROOF ${JSON.stringify({ exactVersion: "0199b300-0000-7000-8000-00000000000e", formats: ["docx", "pdf", "plain-text"], warningCodes: ["pdf_print_settings_control_pagination", "plain_text_removes_formatting"], externalRequests: 0 })}`,
   );
   expect(externalRequests).toEqual([]);
 });

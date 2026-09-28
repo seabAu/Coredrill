@@ -109,4 +109,24 @@ describe("JobDocumentPreparation", () => {
     expect(markup).not.toContain("Export now");
     expect(markup).not.toContain("Submit application");
   });
+
+  it("offers a separate export review for every exact selected version", () => {
+    const markup = renderToStaticMarkup(
+      createElement(JobDocumentPreparation, {
+        model: { preparation, loading: false, saving: false, error: null },
+        onLoadDocument: async () => ({
+          ok: false as const,
+          error: {
+            code: "not_found" as const,
+            message: "Not loaded in static proof.",
+            retryable: false,
+          },
+        }),
+      }),
+    );
+
+    expect(markup).toContain("Review export for Northstar resume version 2");
+    expect(markup).toContain("Review export for Why Northstar? version 1");
+    expect(markup).not.toContain("Print or save PDF");
+  });
 });

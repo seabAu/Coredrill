@@ -2362,6 +2362,11 @@ const AppShellCatalog = () => {
     }
   }, []);
 
+  const loadDocumentForExport = useCallback(
+    (documentId: string) => globalThis.coredrillStorageSpike.openDocumentEditor(documentId),
+    [],
+  );
+
   useEffect(() => {
     if (
       activeDestination !== "documents" ||
@@ -3658,6 +3663,7 @@ const AppShellCatalog = () => {
                   onSave={(input) => {
                     void saveJobDocumentPreparation(input);
                   }}
+                  onLoadDocument={loadDocumentForExport}
                 />
               ) : workspaceContentModel !== null && isJobWorkspaceContentTab(workspaceRoute.tab) ? (
                 <JobWorkspaceContent
@@ -3914,6 +3920,7 @@ const AppShellCatalog = () => {
                       onSave={(input) => {
                         void saveJobDocumentPreparation(input);
                       }}
+                      onLoadDocument={loadDocumentForExport}
                     />
                   ) : workspaceContentModel !== null &&
                     isJobWorkspaceContentTab(workspaceRoute.tab) ? (
