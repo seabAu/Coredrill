@@ -278,6 +278,14 @@ Do not imply that installing the PWA on a phone exposes the desktop/browser vaul
 8. User exports/copies documents and submits outside the app.
 9. User marks Applied; app proposes a follow-up date and retains timeline/document snapshots.
 
+`DOC-007` implements step 9 as a separate explicit local confirmation. Before
+confirming, the user chooses the Applied-category status, channel, and whether
+each selected immutable document version was submitted as exact plain text or
+as one exact locally retained export artifact. The completed record names the
+immutable submitted identities and remains distinct from later current
+versions. Coredrill records no upload, autofill, external submission, or
+employer-receipt claim.
+
 ### Paste without extension
 
 Paste URL/text or import a saved HTML/PDF. The same capture contract and review queue run, with limitations shown when the source cannot be refreshed.

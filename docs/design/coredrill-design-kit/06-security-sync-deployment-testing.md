@@ -321,6 +321,15 @@ The native checkpoint runs the reusable callback-transaction suite and shared va
 
 `DB-008` binds the complete current repository surface to one versioned manifest rather than adapter-specific expected lists. The identical 15-case aggregate passes fast Node SQLite, official browser SQLite/OPFS in exact Chrome 151/152 and Firefox 153/154, and native rusqlite on Windows, macOS, and diagnostic Ubuntu. Manifest/component drift and completed-case drift fail closed. See [repository-contract CI parity verification](../../proof/phase-1-repository-contract-ci-verification.md).
 
+`DOC-007` advances the identical Node, browser SQLite/OPFS, and native rusqlite
+repository aggregate to v10/26. Its new case forces an event conflict after
+candidate projection updates and proves the entire Mark Applied transaction
+rolls back, then proves the valid exact document/answer/file snapshot cannot be
+repeated or detached. Browser E2E additionally proves explicit confirmation,
+later-version immutability, 320-pixel/axe behavior, and zero external requests.
+The feature adds no schema, dependency, upload, autofill, submission, or
+external-receipt claim.
+
 ### Extractor/connectors
 
 - Golden fixtures and provenance/confidence.

@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-09-28
 Current milestone: Phase 3 — career evidence and versioned documents (`GATE-0`, `GATE-1`, and `GATE-2` external-evidence blockers remain open)
-Current work item: `DOC-007` — Mark Applied with exact submitted artifact and answer snapshots
-Next recommended slice: `DOC-008` after `DOC-007`; retain `Q2-001`, `Q2-003`, `PEX-005`, `PEX-006`, and `GATE-2` as explicit external-evidence/manual-review/permission/deployment blockers
+Current work item: `DOC-008` — document import/export round-trip without silent content or evidence-link loss
+Next recommended slice: `DOC-009` after `DOC-008`; retain `Q2-001`, `Q2-003`, `PEX-005`, `PEX-006`, and `GATE-2` as explicit external-evidence/manual-review/permission/deployment blockers
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `DOC-008` after `DOC-007`; retain `Q2-001`, `Q2-003`, `P
 | Field | Value |
 |---|---|
 | Milestone | Phase 3, with the independent Phase 0, Phase 1, and Phase 2 evidence gates retained below |
-| Item range | `DOC-007` |
+| Item range | `DOC-008` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-09-28 |
-| Expected proof | Application, repository, and UI E2E tests prove Mark Applied is a separate explicit confirmation that transactionally records applied time/channel/status and snapshots the exact exported document/answer version IDs and generated artifact identities; submitted identities remain immutable and distinguishable from current versions, with no upload, submission, autofill, or unsupported external-confirmation claim. |
-| Blocker | None for `DOC-007`. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-2`, `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
-| Next handoff | Inspect D-042, the submitted-snapshot schema/repositories/contracts, exact application document selections, and DOC-006 export identities. Implement the smallest separate confirmation flow that freezes exact document, answer, and generated-artifact identities with the applied event; do not upload, submit, autofill, or infer external receipt. |
+| Expected proof | A reproducible round-trip report and executable browser/native/storage tests prove portable export and clean restore preserve exact immutable document content, lineage, evidence/provenance links, application selections, submitted snapshots, and content-addressed attachment relationships without silently dropping or substituting records. |
+| Blocker | None for `DOC-008`. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-2`, `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
+| Next handoff | Inspect D-027/D-042, portable archive and human-readable export contracts, document IR/version/lineage datasets, evidence relationships, attachment storage, and existing clean-vault recovery proof. Add the smallest exact round-trip fixture and cross-adapter assertions needed to prove no silent document content or evidence-link loss; do not broaden sync, import parsing, AI, or network scope. |
 
 ## Milestone status
 
@@ -291,7 +291,7 @@ Next recommended slice: `DOC-008` after `DOC-007`; retain `Q2-001`, `Q2-003`, `P
 - [x] **DOC-004** Implement deterministic cover-letter and answer templates for AI-disabled mode. — Proof: [Deterministic-template verification](../../proof/phase-3-deterministic-template-verification.md)
 - [x] **DOC-005** Implement job/application document set selection and preparation status. — Proof: [Application document preparation verification](../../proof/phase-3-document-preparation-verification.md)
 - [x] **DOC-006** Implement DOCX/PDF/text export with preview, metadata, and warnings. — Proof: [Local document export verification](../../proof/phase-3-document-export-verification.md)
-- [ ] **DOC-007** Implement Mark Applied flow that snapshots exact submitted artifacts and answers. — Proof: _E2E test_
+- [x] **DOC-007** Implement Mark Applied flow that snapshots exact submitted artifacts and answers. — Proof: [Mark Applied verification](../../proof/phase-3-mark-applied-verification.md)
 - [ ] **DOC-008** Implement import/export round-trip without silent content or evidence-link loss. — Proof: _round-trip report_
 - [ ] **DOC-009** Implement document accessibility, print, pagination, and high-zoom tests. — Proof: _manual/visual report_
 

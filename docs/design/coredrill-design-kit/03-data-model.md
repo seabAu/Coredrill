@@ -114,6 +114,15 @@ until an explicit replacement command is implemented and invoked.
 
 `DOC-005` adds schema versions `0149`–`0154`. Existing application columns remain the exact pre-submission resume and cover-letter selections; `application_answer_selection` adds ordered exact answer versions without conflating preparation with the immutable submitted snapshot. Eligible selections are active non-template resume, cover-letter, or application-answer versions; a job derivative must belong to the application's job, and only one version of an answer document may be selected. A save replaces the answer set and advances the application row version atomically. Once a submitted snapshot exists, the application identity and answer selections are immutable. Missing, draft, review-needed, and ready are derived application states rather than durable truth or a score.
 
+`DOC-007` adds no migration. Mark Applied uses schemas `0134`–`0154` to
+atomically update the job and application Applied projections, append the
+status event, and insert one immutable submitted snapshot with ordered items.
+Every item retains the exact selected document version; a file item also
+retains the already-recorded content-addressed attachment tuple, while a
+plain-text item retains an explicit plain-text format. Repository guards and
+the application boundary reject stale, mismatched, repeated, or partially
+valid requests without silently substituting a current version.
+
 ### Pipeline and interactions
 
 `status_definition(id, name, category, color, is_system, sort_order, terminal)`
