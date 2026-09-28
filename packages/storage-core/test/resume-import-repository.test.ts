@@ -89,7 +89,7 @@ class NodeResumeDatabase implements DatabasePort {
       health: "ready",
       persistence: "memory",
       readOnly: false,
-      schemaVersion: 145,
+      schemaVersion: 148,
     });
   }
 
@@ -152,7 +152,7 @@ describe("resume import proposal repository", () => {
     database = new NodeResumeDatabase();
     await expect(
       applySqlMigrations(database, migrations, "2026-09-27T15:00:00.000Z"),
-    ).resolves.toMatchObject({ schemaVersion: 145 });
+    ).resolves.toMatchObject({ schemaVersion: 148 });
   });
 
   afterEach(() => {

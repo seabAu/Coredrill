@@ -193,7 +193,13 @@ export const installDocumentsWorkspaceReferenceFixture = async (
       documentId: input.documentId,
       versionNumber: input.versionNumber,
       contentIrVersion: 1,
-      contentIr: { specVersion: 1, type: "doc", content: [] },
+      contentIr: {
+        specVersion: 1,
+        document: {
+          type: "doc",
+          content: [{ type: "paragraph", content: [{ type: "text", text: input.text }] }],
+        },
+      },
       contentPlain: input.text,
       templateId: null,
       createdBy: "reference_fixture",

@@ -6,6 +6,7 @@ import {
   createCareerProfileOperations,
   createCareerStoryOperations,
   createAnswerLibraryOperations,
+  createDocumentEditorOperations,
   createDocumentsWorkspaceOperations,
   createDefaultBrowserExportReminderPreference,
   createResumeImportOperations,
@@ -24,6 +25,7 @@ import {
   type AnswerLibraryPort,
   type CreateAnswerLibraryEntryInput,
   type CreateAnswerLibraryEntryPortInput,
+  type CreateDocumentEditorVersionInput,
   type MarkAnswerLibraryEntryUsedInput,
   type UpdateAnswerLibraryEntryInput,
   type UpdateAnswerLibraryEntryPortInput,
@@ -38,6 +40,8 @@ import {
   type DeleteVaultPortInput,
   type DeleteVaultInput,
   type DocumentWorkspaceItemDto,
+  type DocumentEditorPort,
+  type DocumentEditorSessionDto,
   type DocumentsWorkspacePort,
   type PreviewVaultDeletionPortInput,
   type QueueResumeImportInput,
@@ -48,13 +52,18 @@ import {
   type ResumeImportResolutionDto,
   type ResumeImportResolutionPortInput,
   type ResumeImportReviewPort,
+  type SaveDocumentEditorDraftInput,
   type UpdateCareerStoryInput,
   type UpdateCareerStoryPortInput,
   type VaultDeletionPort,
   type VaultDeletionPreviewDto,
   type VaultDeletionResultDto,
 } from "@coredrill/application";
-import type { LocalDocumentInput } from "@coredrill/documents";
+import {
+  documentIrToPlainText,
+  parseDocumentIr,
+  type LocalDocumentInput,
+} from "@coredrill/documents";
 import {
   BrowserSqliteBusyError,
   BrowserStorageUnavailableError,
@@ -77,6 +86,7 @@ import {
   createCareerStoryRepository,
   createAnswerLibraryRepository,
   createDocumentWorkspaceRepository,
+  createDocumentEditorRepository,
   createResumeImportRepository,
   createResumeImportResolutionRepository,
   createPhase1RepositoryContractSuite,
@@ -363,6 +373,13 @@ export interface CoredrillStorageSpikeApi {
   ): Promise<ApplicationResult<AnswerLibraryEntryDto>>;
   listAnswerLibraryEntries(): Promise<ApplicationResult<readonly AnswerLibraryEntryDto[]>>;
   listDocumentsWorkspace(): Promise<ApplicationResult<readonly DocumentWorkspaceItemDto[]>>;
+  openDocumentEditor(documentId: string): Promise<ApplicationResult<DocumentEditorSessionDto>>;
+  saveDocumentEditorDraft(
+    input: SaveDocumentEditorDraftInput,
+  ): Promise<ApplicationResult<DocumentEditorSessionDto>>;
+  createDocumentEditorVersion(
+    input: CreateDocumentEditorVersionInput,
+  ): Promise<ApplicationResult<DocumentEditorSessionDto>>;
   installDocumentsWorkspaceReferenceFixture(): Promise<void>;
   createManualCareerProfileEntry(
     input: CreateManualCareerProfileEntryInput,
@@ -1165,6 +1182,31 @@ const documentsWorkspacePort: DocumentsWorkspacePort = Object.freeze({
 
 const documentsWorkspaceOperations = createDocumentsWorkspaceOperations({
   documents: documentsWorkspacePort,
+});
+
+const getDocumentEditorRepository = async () => {
+  const client = await getDatabase();
+  await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
+  return createDocumentEditorRepository(client);
+};
+
+const documentEditorPort: DocumentEditorPort = Object.freeze({
+  load: async (documentId: Parameters<DocumentEditorPort["load"]>[0]) =>
+    (await getDocumentEditorRepository()).load(documentId),
+  saveDraft: async (input: Parameters<DocumentEditorPort["saveDraft"]>[0]) =>
+    (await getDocumentEditorRepository()).saveDraft(input),
+  createVersion: async (input: Parameters<DocumentEditorPort["createVersion"]>[0]) =>
+    (await getDocumentEditorRepository()).createVersion(input),
+});
+
+const documentEditorOperations = createDocumentEditorOperations({
+  editor: documentEditorPort,
+  createId: () => generateEntityId("document-version"),
+  hashText: sha256Text,
+  normalizeContent: (value) => {
+    const content = parseDocumentIr(value);
+    return Object.freeze({ content, plainText: documentIrToPlainText(content) });
+  },
 });
 
 const getCareerStoryRepository = async () => {
@@ -2409,6 +2451,15 @@ const api: CoredrillStorageSpikeApi = {
       undefined,
       careerProfileOperationContext(),
     ),
+  openDocumentEditor: async (documentId) =>
+    documentEditorOperations.openDocumentQuery.execute(
+      { documentId },
+      careerProfileOperationContext(),
+    ),
+  saveDocumentEditorDraft: async (input) =>
+    documentEditorOperations.saveDraftCommand.execute(input, careerProfileOperationContext()),
+  createDocumentEditorVersion: async (input) =>
+    documentEditorOperations.createVersionCommand.execute(input, careerProfileOperationContext()),
   installDocumentsWorkspaceReferenceFixture: async () => {
     const client = await getDatabase();
     await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);

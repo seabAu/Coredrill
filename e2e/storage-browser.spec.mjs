@@ -42,6 +42,7 @@ const humanReadableDatasetNames = Object.freeze([
   "saved_view",
   "document",
   "document_version",
+  "document_editor_draft",
   "document_job_link",
   "attachment_manifest",
   "document_version_attachment",
@@ -120,10 +121,10 @@ test("opens official SQLite in a Worker, persists transactions, and restores a c
 
   await callHarness(sourcePage, "delete");
   const opened = await callHarness(sourcePage, "openAndMigrate");
-  expect(opened.appliedVersions).toEqual(Array.from({ length: 145 }, (_, index) => index + 1));
+  expect(opened.appliedVersions).toEqual(Array.from({ length: 148 }, (_, index) => index + 1));
   expect(opened.diagnostics).toMatchObject({
     adapterName: "official-sqlite-wasm-opfs-sahpool",
-    schemaVersion: 145,
+    schemaVersion: 148,
   });
   expect(["ready", "degraded"]).toContain(opened.diagnostics.health);
   expect(["best-effort", "durable"]).toContain(opened.diagnostics.persistence);
@@ -160,15 +161,15 @@ test("opens official SQLite in a Worker, persists transactions, and restores a c
     vaultId: committedVault.id,
   });
   expect(humanReadable).toEqual({
-    dataFileCount: 108,
-    datasetCount: 54,
+    dataFileCount: 110,
+    datasetCount: 55,
     datasetNames: humanReadableDatasetNames,
-    jsonFiles: 54,
-    csvFiles: 54,
+    jsonFiles: 55,
+    csvFiles: 55,
     rowCount: 1,
-    sourceSchemaVersion: 145,
+    sourceSchemaVersion: 148,
   });
-  expect(portable.schemaVersion).toBe(145);
+  expect(portable.schemaVersion).toBe(148);
   expect(portable.byteLength).toBeGreaterThan(0);
   expect(portable.sha256).toMatch(/^[a-f0-9]{64}$/u);
   const archiveRestore = await callHarness(sourcePage, "runPortableArchiveRestoreProof", {
@@ -179,7 +180,7 @@ test("opens official SQLite in a Worker, persists transactions, and restores a c
     staleName: "Stale target",
   });
   expect(archiveRestore).toMatchObject({
-    dataFileCount: 108,
+    dataFileCount: 110,
     attachmentCount: 0,
     corruptionRejected: true,
     corruptionPreservedTarget: true,

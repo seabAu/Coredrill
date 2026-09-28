@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "inventoryId": "JW-DI-001",
-  "version": "1.25.0",
-  "reviewedAt": "2026-09-26T21:05:16Z",
+  "version": "1.26.0",
+  "reviewedAt": "2026-09-28T00:40:00Z",
   "scope": {
     "included": [
       "Pinned Node.js, pnpm, and Rust foundation toolchains",
@@ -17,7 +17,7 @@
   },
   "lockfile": {
     "path": "pnpm-lock.yaml",
-    "sha256": "2863f03cd447a07d4b14945750b000ad61b82ac85b7329b4b2049aee77768d2c"
+    "sha256": "222609e278cd8050cd53c490c1bf90d26ff62e931ef64b9c39923e851146f9ba"
   },
   "toolchains": [
     {
@@ -1083,7 +1083,7 @@
     "command": "pnpm audit --json",
     "source": "https://pnpm.io/cli/audit",
     "reviewedAt": "2026-09-27T08:48:00Z",
-    "lockfileSha256": "2863f03cd447a07d4b14945750b000ad61b82ac85b7329b4b2049aee77768d2c",
+    "lockfileSha256": "222609e278cd8050cd53c490c1bf90d26ff62e931ef64b9c39923e851146f9ba",
     "resolvedDependencyCount": 936,
     "optionalDependencyCount": 108,
     "vulnerabilities": {
@@ -1097,10 +1097,10 @@
   "licenseReview": {
     "command": "pnpm check:licenses",
     "reviewedAt": "2026-09-27T08:48:00Z",
-    "lockfileSha256": "2863f03cd447a07d4b14945750b000ad61b82ac85b7329b4b2049aee77768d2c",
+    "lockfileSha256": "222609e278cd8050cd53c490c1bf90d26ff62e931ef64b9c39923e851146f9ba",
     "resolvedPackageRecords": 520,
     "result": "pass",
-    "note": "License records and advisory dependency counts use different tool scopes and are not expected to match. The application shell uses reviewed MIT Tailwind CSS, Radix UI, and vite-plugin-pwa dependencies; the generated Workbox worker owns only versioned app-shell Cache Storage while SQLite remains OPFS truth. The exact graph contains 936 external resolutions and 520 license records. XTR-003 adds current Apache-2.0 Mozilla Readability for bounded plain-text extraction and declares already-resolved ISC LinkeDOM as a test-only detached DOM; production continues to use the platform DOM. The aligned MIT Tiptap family is pinned to 3.30.5, the first release patched for GHSA-j95f-988m-3j2f while retaining the earlier GHSA-cp6q-959q-f8rh fix. XTR-009 adds only the existing @coredrill/source-policy workspace link to the web composition root. EVD-002 adds only the existing @coredrill/domain workspace link to @coredrill/career-evidence. Neither change adds an external package or resolved graph entry."
+    "note": "License records and advisory dependency counts use different tool scopes and are not expected to match. The application shell uses reviewed MIT Tailwind CSS, Radix UI, and vite-plugin-pwa dependencies; the generated Workbox worker owns only versioned app-shell Cache Storage while SQLite remains OPFS truth. The exact graph contains 936 external resolutions and 520 license records. XTR-003 adds current Apache-2.0 Mozilla Readability for bounded plain-text extraction and declares already-resolved ISC LinkeDOM as a test-only detached DOM; production continues to use the platform DOM. The aligned MIT Tiptap family is pinned to 3.30.5, the first release patched for GHSA-j95f-988m-3j2f while retaining the earlier GHSA-cp6q-959q-f8rh fix. XTR-009 adds only the existing @coredrill/source-policy workspace link to the web composition root. EVD-002 adds only the existing @coredrill/domain workspace link to @coredrill/career-evidence. DOC-003 adds only the existing @coredrill/documents workspace link to the UI package; the application boundary receives canonical content normalization as an injected leaf dependency. None of these changes adds an external package or resolved graph entry."
   },
   "maintenanceWatch": [
     {

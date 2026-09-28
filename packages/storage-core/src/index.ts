@@ -1,5 +1,9 @@
 /** Storage ports, shared repository contracts, and migration coordination. */
 export {
+  DocumentEditorRepository,
+  createDocumentEditorRepository,
+} from "./document-editor-repository.js";
+export {
   advancingAuditTimestamp,
   auditTimestamps,
   type AuditTimestamps,

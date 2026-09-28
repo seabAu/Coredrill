@@ -70,7 +70,7 @@ test("runs and records the complete accountless browser recovery journey", async
       version: 1,
       runtime: "browser",
       adapterName: "official-sqlite-wasm-opfs-sahpool",
-      schemaVersion: 145,
+      schemaVersion: 148,
       vaultName: "Canonical local job search",
       jobTitle: "Research Operations Lead",
       finalStage: "Interviewing",
@@ -2235,6 +2235,109 @@ test("Documents exposes six durable local views with exact submitted-version lin
   await attachAriaSnapshot(workspace, testInfo, "documents-workspace");
   await attachProof(page, testInfo, "documents-workspace");
   console.info(`DOC002_E2E_PROOF ${JSON.stringify({ ...proof, externalRequests: 0 })}`);
+  expect(externalRequests).toEqual([]);
+});
+
+test("Documents recovers autosaved edits and creates an explicit immutable version", async ({
+  page,
+}, testInfo) => {
+  const externalRequests = [];
+  page.on("request", (request) => {
+    if (!request.url().startsWith("http://127.0.0.1:4178/")) externalRequests.push(request.url());
+  });
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await openShell(page);
+  await page.evaluate(() =>
+    globalThis.coredrillStorageSpike.installDocumentsWorkspaceReferenceFixture(),
+  );
+  await page
+    .getByRole("navigation", { name: "Primary" })
+    .getByRole("link", { name: "Documents" })
+    .click();
+  await page.getByRole("button", { name: "Northstar resume", exact: true }).click();
+
+  const editorWorkspace = page.locator(".cd-document-editor-workspace");
+  const editor = editorWorkspace.locator(".tiptap");
+  await expect(editorWorkspace.getByRole("heading", { name: "Northstar resume" })).toBeVisible();
+  await expect(editor).toBeVisible();
+  await editor.click();
+  await page.keyboard.press("Control+End");
+  await page.keyboard.type(" Durable autosave recovery proof.");
+  await expect(editorWorkspace.locator('[data-document-autosave="saved"]')).toBeVisible({
+    timeout: 10_000,
+  });
+  await expect(editorWorkspace).toContainText(/changed line/u);
+
+  await page.reload();
+  await page.waitForFunction(() => globalThis.coredrillAppShell !== undefined);
+  const recoveredWorkspace = page.locator(".cd-document-editor-workspace");
+  const recoveredEditor = recoveredWorkspace.locator(".tiptap");
+  await expect(recoveredWorkspace.getByText(/Recovered a local draft saved/u)).toBeVisible({
+    timeout: 15_000,
+  });
+  await expect(recoveredEditor).toContainText("Durable autosave recovery proof");
+
+  await recoveredEditor.click();
+  await page.keyboard.press("Control+End");
+  await page.evaluate(() => {
+    const clipboard = new DataTransfer();
+    clipboard.setData(
+      "text/html",
+      '<div onclick="alert(1)"><p><strong>Safe evidence</strong><script>alert(2)</script><a href="javascript:alert(3)">bad link</a><img src="https://example.test/tracker.png"></p><table><tr><td>table text</td></tr></table></div>',
+    );
+    clipboard.setData("text/plain", "Safe evidence bad link table text");
+    const target = document.querySelector(".cd-document-editor-workspace .tiptap");
+    if (target === null) throw new Error("Editor target unavailable.");
+    target.dispatchEvent(
+      new ClipboardEvent("paste", { bubbles: true, cancelable: true, clipboardData: clipboard }),
+    );
+  });
+  await expect(recoveredEditor).toContainText("Safe evidence");
+  expect(await recoveredEditor.innerHTML()).not.toMatch(
+    /<(?:script|img|table)|onclick|javascript:/iu,
+  );
+  await recoveredWorkspace.getByRole("button", { name: "Undo" }).click();
+  await expect(recoveredEditor).not.toContainText("Safe evidence");
+  await expect(recoveredWorkspace.locator('[data-document-autosave="saved"]')).toBeVisible({
+    timeout: 10_000,
+  });
+
+  await recoveredWorkspace.getByLabel("Version label (optional)").fill("Recovered local edit");
+  await recoveredWorkspace.getByRole("button", { name: "Create version" }).click();
+  await expect(recoveredWorkspace).toContainText("Version 3 · Recovered local edit", {
+    timeout: 10_000,
+  });
+  await expect(recoveredWorkspace).toContainText("No line changes from the selected version.");
+
+  const stored = await page.evaluate(() =>
+    globalThis.coredrillStorageSpike.listDocumentsWorkspace(),
+  );
+  expect(stored).toMatchObject({ ok: true });
+  if (!stored.ok) throw new Error(stored.error.message);
+  const storedResume = stored.value.find(({ title }) => title === "Northstar resume");
+  expect(storedResume?.latestVersion).toMatchObject({
+    versionNumber: 3,
+    label: "Recovered local edit",
+  });
+
+  const proof = {
+    autosaveRecovered: true,
+    hostilePasteSanitized: true,
+    undoPreserved: true,
+    immutableVersionCreated: storedResume?.latestVersion?.versionNumber === 3,
+    comparisonVisible: true,
+    networkRequests: externalRequests.length,
+  };
+  const proofPath = testInfo.outputPath("document-editor-workflow-proof.json");
+  await writeFile(proofPath, `${JSON.stringify(proof, null, 2)}\n`, "utf8");
+  await testInfo.attach("document-editor-workflow-proof.json", {
+    path: proofPath,
+    contentType: "application/json",
+  });
+  await attachAxe(page, testInfo, "document-editor-workflow");
+  await attachAriaSnapshot(recoveredWorkspace, testInfo, "document-editor-workflow");
+  await attachProof(page, testInfo, "document-editor-workflow");
+  console.info(`DOC003_E2E_PROOF ${JSON.stringify(proof)}`);
   expect(externalRequests).toEqual([]);
 });
 

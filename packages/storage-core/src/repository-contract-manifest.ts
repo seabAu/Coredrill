@@ -38,6 +38,8 @@ const PHASE_1_REPOSITORY_CONTRACT_COMPONENTS = Object.freeze({
   }),
   document: component("phase-1-document-repositories", {
     persistVersions: "persists canonical IR versions with explicit immutable lineage",
+    autosaveDrafts:
+      "autosaves recoverable optimistic drafts and creates immutable versions explicitly",
     linkAttachments: "links jobs and content-addressed attachment manifests without storing bytes",
     snapshotSubmittedDocuments:
       "classifies bases templates and job derivatives and snapshots exact submitted documents",
@@ -71,8 +73,8 @@ const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
 );
 
 export const PHASE_1_REPOSITORY_CONTRACT_MANIFEST = Object.freeze({
-  schemaVersion: 8 as const,
-  suiteName: "phase-1-repository-contracts-v8",
+  schemaVersion: 9 as const,
+  suiteName: "phase-1-repository-contracts-v9",
   components: PHASE_1_REPOSITORY_CONTRACT_COMPONENTS,
   caseNames: PHASE_1_REPOSITORY_CONTRACT_CASES,
 });

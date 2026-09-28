@@ -1,5 +1,25 @@
 /** Use-case orchestration and query DTOs over domain ports. */
 export {
+  compareDocumentEditorText,
+  createDocumentEditorOperations,
+  validateDocumentEditorSession,
+  DocumentEditorError,
+  type CreateDocumentEditorVersionInput,
+  type CreateDocumentEditorVersionPortInput,
+  type DocumentEditorComparison,
+  type DocumentEditorComparisonRow,
+  type DocumentEditorDraftDto,
+  type DocumentEditorErrorCode,
+  type DocumentEditorOperationDependencies,
+  type DocumentEditorOperations,
+  type DocumentEditorPort,
+  type DocumentEditorSessionDto,
+  type DocumentEditorVersionDto,
+  type OpenDocumentEditorInput,
+  type SaveDocumentEditorDraftInput,
+  type SaveDocumentEditorDraftPortInput,
+} from "./document-editor.js";
+export {
   DOCUMENTS_WORKSPACE_VIEW_IDS,
   createDocumentsWorkspaceOperations,
   validateDocumentWorkspaceItems,

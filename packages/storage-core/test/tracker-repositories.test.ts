@@ -373,7 +373,7 @@ describe("Phase 1 tracker repository contracts", () => {
 
       await applySqlMigrations(database, migrations, "2026-09-27T12:01:00.000Z");
 
-      await expect(database.diagnostics()).resolves.toMatchObject({ schemaVersion: 145 });
+      await expect(database.diagnostics()).resolves.toMatchObject({ schemaVersion: 148 });
       await expect(selectReceipt()).resolves.toEqual(receiptBeforeUpgrade);
     } finally {
       database.close();

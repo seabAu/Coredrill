@@ -202,6 +202,8 @@ Requires SSO, quotas/billing/abuse controls, provider data-processing policy, de
 - Every accepted generation/edit creates a new immutable version with parent link.
 - User can compare, restore by creating a new version, label, and mark a version as a style example.
 
+`DOC-003` implements the manual editing half of this contract with the accepted Tiptap 3.30.5 restricted schema. Paste is reduced to paragraphs, headings 1–3, ordered/bullet lists, text, bold, italic, and safe HTTP(S)/mail links. Debounced autosave stores a recoverable local Coredrill IR draft without manufacturing versions; reload recovers that draft, undo/redo remains available, and only the explicit Create version action appends immutable history after exact optimistic validation. The comparison is a transparent line view, not a quality or hiring score. Generation, AI, export orchestration, and Mark Applied remain outside this slice.
+
 ### Export
 
 - Copy plain text and Markdown.

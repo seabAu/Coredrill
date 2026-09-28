@@ -15,6 +15,9 @@ export interface RestrictedDocumentEditorOptions {
   readonly onUpdate?: (document: DocumentIntermediateRepresentationV1) => void;
 }
 
+export type RestrictedDocumentEditorCommand =
+  "bold" | "bullet" | "italic" | "ordered" | "redo" | "undo";
+
 const restrictedExtensions = [
   StarterKit.configure({
     blockquote: false,
@@ -123,4 +126,24 @@ export const createRestrictedDocumentEditor = (
   };
   if (options.element !== undefined) editorOptions.element = options.element;
   return new Editor(editorOptions);
+};
+
+export const runRestrictedDocumentEditorCommand = (
+  editor: Editor,
+  command: RestrictedDocumentEditorCommand,
+): boolean => {
+  switch (command) {
+    case "bold":
+      return editor.chain().focus().toggleBold().run();
+    case "bullet":
+      return editor.chain().focus().toggleBulletList().run();
+    case "italic":
+      return editor.chain().focus().toggleItalic().run();
+    case "ordered":
+      return editor.chain().focus().toggleOrderedList().run();
+    case "redo":
+      return editor.chain().focus().redo().run();
+    case "undo":
+      return editor.chain().focus().undo().run();
+  }
 };

@@ -5,6 +5,7 @@ import {
   CaptureInboxReview,
   ConnectorRegistrySettings,
   deriveBrowserExportReminder,
+  DocumentEditorWorkspace,
   DocumentsWorkspace,
   HomeDashboard,
   JobWorkspaceContent,
@@ -88,6 +89,7 @@ import {
   type CareerStoryDto,
   type CreateCareerStoryInput,
   type CreateAnswerLibraryEntryInput,
+  type CreateDocumentEditorVersionInput,
   type CreateManualCareerProfileEntryInput,
   type ResolveResumeImportGroupInput,
   type RequirementCoverageState,
@@ -96,7 +98,9 @@ import {
   type UpdateCareerStoryInput,
   type UpdateAnswerLibraryEntryInput,
   type DeleteVaultInput,
+  type DocumentEditorSessionDto,
   type DocumentWorkspaceItemDto,
+  type SaveDocumentEditorDraftInput,
   type VaultDeletionPreviewDto,
   type VaultDeletionResultDto,
 } from "@coredrill/application";
@@ -105,7 +109,7 @@ import {
   inspectBrowserStorageEnvironment,
   type BrowserStorageEnvironment,
 } from "@coredrill/storage-browser";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 
 import "./app-shell.css";
@@ -328,6 +332,16 @@ const readInitialLocation = (): InitialLocation => {
     return { destination: "settings", kind: "destination" };
   }
   return { kind: "home" };
+};
+
+const documentIdFromPathname = (pathname: string): string | null => {
+  const match = /^\/documents\/([^/]+)\/?$/u.exec(pathname);
+  if (match?.[1] === undefined) return null;
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return null;
+  }
 };
 
 const readPipelineSnapshot = (value: unknown): PipelineNavigationSnapshot | null => {
@@ -1739,6 +1753,10 @@ const AppShellCatalog = () => {
   const [documentsLoaded, setDocumentsLoaded] = useState(false);
   const [documentsLoading, setDocumentsLoading] = useState(false);
   const [documentsError, setDocumentsError] = useState<string | null>(null);
+  const [documentEditor, setDocumentEditor] = useState<DocumentEditorSessionDto | null>(null);
+  const [documentEditorLoading, setDocumentEditorLoading] = useState(false);
+  const [documentEditorError, setDocumentEditorError] = useState<string | null>(null);
+  const [initialDocumentRouteHandled, setInitialDocumentRouteHandled] = useState(false);
   const [careerProfileEntries, setCareerProfileEntries] = useState<
     readonly CareerProfileEntryDto[]
   >([]);
@@ -2223,6 +2241,68 @@ const AppShellCatalog = () => {
         setDocumentsLoading(false);
       });
   }, [activeDestination, documentsLoaded, documentsLoading]);
+
+  const openDocumentEditor = useCallback(async (documentId: string): Promise<void> => {
+    setDocumentEditorLoading(true);
+    setDocumentEditorError(null);
+    try {
+      const result = await globalThis.coredrillStorageSpike.openDocumentEditor(documentId);
+      if (result.ok) {
+        setDocumentEditor(result.value);
+        setLastActivity(`Opened local document: ${result.value.title}.`);
+      } else {
+        setDocumentEditorError(result.error.message);
+        setLastActivity(result.error.message);
+      }
+    } catch {
+      const message = "The local document editor could not be opened.";
+      setDocumentEditorError(message);
+      setLastActivity(message);
+    } finally {
+      setDocumentEditorLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (
+      activeDestination !== "documents" ||
+      !documentsLoaded ||
+      initialDocumentRouteHandled ||
+      documentEditor !== null
+    ) {
+      return;
+    }
+    setInitialDocumentRouteHandled(true);
+    const documentId = documentIdFromPathname(window.location.pathname);
+    if (documentId !== null) void openDocumentEditor(documentId);
+  }, [
+    activeDestination,
+    documentEditor,
+    documentsLoaded,
+    initialDocumentRouteHandled,
+    openDocumentEditor,
+  ]);
+
+  const saveDocumentEditorDraft = useCallback(
+    (input: SaveDocumentEditorDraftInput) =>
+      globalThis.coredrillStorageSpike.saveDocumentEditorDraft(input),
+    [],
+  );
+
+  const createDocumentEditorVersion = useCallback(
+    async (input: CreateDocumentEditorVersionInput) => {
+      const result = await globalThis.coredrillStorageSpike.createDocumentEditorVersion(input);
+      if (result.ok) {
+        const refreshed = await globalThis.coredrillStorageSpike.listDocumentsWorkspace();
+        if (refreshed.ok) setDocuments(refreshed.value);
+        setLastActivity(
+          `Created immutable version ${String(result.value.currentVersion.versionNumber)} locally.`,
+        );
+      }
+      return result;
+    },
+    [],
+  );
 
   const saveCareerProfileEntry = async (input: CreateManualCareerProfileEntryInput) => {
     const result = await globalThis.coredrillStorageSpike.createManualCareerProfileEntry(input);
@@ -3735,19 +3815,51 @@ const AppShellCatalog = () => {
             onUpdateStory={updateCareerStory}
           />
         ) : activeDestination === "documents" ? (
-          <DocumentsWorkspace
-            model={
-              {
-                items: documents,
-                loading: documentsLoading,
-                error: documentsError,
-              } satisfies DocumentsWorkspaceModel
-            }
-            onOpenDocument={(document) => {
-              window.history.pushState(null, "", `/documents/${document.id}`);
-              setLastActivity(`Opened local document: ${document.title}.`);
-            }}
-          />
+          documentEditor !== null ? (
+            <DocumentEditorWorkspace
+              onClose={() => {
+                setDocumentEditor(null);
+                setDocumentEditorError(null);
+                window.history.pushState(null, "", "/documents");
+              }}
+              onCreateVersion={createDocumentEditorVersion}
+              onSaveDraft={saveDocumentEditorDraft}
+              session={documentEditor}
+            />
+          ) : documentEditorLoading ? (
+            <section aria-live="polite" className="cd-shell-page-card" role="status">
+              <h2>Opening local document...</h2>
+              <p>Loading immutable history and any recoverable local draft.</p>
+            </section>
+          ) : documentEditorError !== null ? (
+            <section className="cd-shell-page-card" role="alert">
+              <h2>Document unavailable</h2>
+              <p>{documentEditorError}</p>
+              <button
+                onClick={() => {
+                  setDocumentEditorError(null);
+                  window.history.pushState(null, "", "/documents");
+                }}
+                type="button"
+              >
+                Back to documents
+              </button>
+            </section>
+          ) : (
+            <DocumentsWorkspace
+              model={
+                {
+                  items: documents,
+                  loading: documentsLoading,
+                  error: documentsError,
+                } satisfies DocumentsWorkspaceModel
+              }
+              onOpenDocument={(document) => {
+                window.history.pushState(null, "", `/documents/${document.id}`);
+                void openDocumentEditor(document.id);
+              }}
+            />
+          )
         ) : activeDestination === "network" ? (
           <NetworkWorkspace
             activeTab={networkTab}

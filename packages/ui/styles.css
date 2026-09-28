@@ -407,6 +407,126 @@ textarea {
   }
 }
 
+.cd-document-editor-workspace {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.cd-document-editor-header,
+.cd-document-editor-save-row,
+.cd-document-editor-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.cd-document-editor-header h2,
+.cd-document-editor-history h3 {
+  margin-block: 0 var(--space-1);
+}
+
+.cd-document-editor-recovered,
+.cd-document-editor-error {
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+}
+
+.cd-document-editor-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(18rem, 1fr);
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.cd-document-editor-main,
+.cd-document-editor-history {
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.cd-document-editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.cd-document-editor-surface {
+  min-height: 24rem;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+}
+
+.cd-document-editor-surface .tiptap {
+  min-height: 20rem;
+  outline: none;
+  white-space: pre-wrap;
+}
+
+.cd-document-editor-surface .tiptap:focus-visible {
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+.cd-document-editor-save-row {
+  margin-block-start: var(--space-3);
+}
+
+.cd-document-editor-save-row label,
+.cd-document-editor-history label {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.cd-document-comparison-scroll {
+  overflow: auto;
+  max-width: 100%;
+}
+
+.cd-document-comparison-scroll table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cd-document-comparison-scroll th,
+.cd-document-comparison-scroll td {
+  padding: var(--space-2);
+  border-block-end: 1px solid var(--color-border);
+  text-align: start;
+  overflow-wrap: anywhere;
+}
+
+.cd-document-comparison-scroll tr[data-changed="true"] {
+  background: var(--color-surface-raised);
+}
+
+@media (max-width: 60rem) {
+  .cd-document-editor-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (forced-colors: active) {
+  .cd-document-editor-recovered,
+  .cd-document-editor-error,
+  .cd-document-editor-main,
+  .cd-document-editor-history,
+  .cd-document-editor-surface,
+  .cd-document-comparison-scroll th,
+  .cd-document-comparison-scroll td {
+    border-color: CanvasText;
+  }
+}
+
 .cd-documents-workspace {
   display: grid;
   gap: var(--space-4);

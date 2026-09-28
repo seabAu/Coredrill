@@ -1,5 +1,6 @@
 import type { JsonValue } from "@coredrill/contracts";
 import { entityId, instant } from "@coredrill/domain";
+import { DocumentEditorError } from "@coredrill/application";
 
 import {
   DatabaseContractViolation,
@@ -14,6 +15,7 @@ import {
   createDocumentWorkspaceRepository,
   createSubmittedSnapshotRepository,
 } from "./document-repositories.js";
+import { createDocumentEditorRepository } from "./document-editor-repository.js";
 import { createPipelineRepositories } from "./pipeline-repositories.js";
 import { createTrackerRepositories } from "./tracker-repositories.js";
 
@@ -42,6 +44,7 @@ const IDS = Object.freeze({
   submittedAnswer: entityId("submitted-snapshot-item", "0198e105-0000-7000-8000-000000000012"),
   invalidSubmittedSnapshot: entityId("submitted-snapshot", "0198e105-0000-7000-8000-000000000013"),
   invalidSubmittedItem: entityId("submitted-snapshot-item", "0198e105-0000-7000-8000-000000000014"),
+  editorVersion: entityId("document-version", "0198e105-0000-7000-8000-000000000015"),
 });
 
 const CREATED_AT = instant("2026-08-25T18:00:00.000Z");
@@ -77,7 +80,10 @@ const SECOND_IR: JsonValue = {
   },
 };
 
-const assertContract = (condition: boolean, message: string): void => {
+const assertContract: (condition: boolean, message: string) => asserts condition = (
+  condition,
+  message,
+) => {
   if (!condition) throw new DatabaseContractViolation(message);
 };
 
@@ -251,6 +257,126 @@ export const createDocumentRepositoryContractSuite = (
             }),
           (error) => error instanceof TypeError,
           "Document storage accepted mismatched IR versions.",
+        );
+      },
+    },
+    {
+      name: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components.document.cases.autosaveDrafts,
+      run: async (database) => {
+        await setup.migrate(database);
+        await createDocuments(database);
+        await createFirstVersion(database);
+        const editor = createDocumentEditorRepository(database);
+
+        await editor.saveDraft({
+          documentId: IDS.document,
+          baseVersionId: IDS.versionOne,
+          content: SECOND_IR,
+          plainText: "Bound content'); DROP TABLE document; --",
+          expectedRowVersion: null,
+          updatedAt: UPDATED_AT,
+        });
+        await expectFailure(
+          () =>
+            editor.saveDraft({
+              documentId: IDS.document,
+              baseVersionId: IDS.versionOne,
+              content: FIRST_IR,
+              plainText: "Synthetic Resume",
+              expectedRowVersion: null,
+              updatedAt: UPDATED_AT,
+            }),
+          (error) => error instanceof DocumentEditorError && error.code === "conflict",
+          "A second draft insert silently replaced the saved local draft.",
+        );
+        await editor.saveDraft({
+          documentId: IDS.document,
+          baseVersionId: IDS.versionOne,
+          content: SECOND_IR,
+          plainText: "Bound content'); DROP TABLE document; --",
+          expectedRowVersion: 1,
+          updatedAt: UPDATED_AT,
+        });
+        await expectFailure(
+          () =>
+            editor.createVersion({
+              documentId: IDS.document,
+              baseVersionId: IDS.versionOne,
+              versionId: IDS.editorVersion,
+              content: FIRST_IR,
+              plainText: "Synthetic Resume",
+              contentHash: FIRST_HASH,
+              expectedDraftRowVersion: 2,
+              label: "Should roll back",
+              createdAt: UPDATED_AT,
+            }),
+          (error) => error instanceof DocumentEditorError && error.code === "conflict",
+          "Version creation accepted content that did not match the exact saved draft.",
+        );
+        const beforeCreate = await database.query<{ readonly total: number } & QueryRow>(
+          sqlStatement("SELECT count(*) AS total FROM document_version WHERE document_id = ?", [
+            IDS.document,
+          ]),
+        );
+        assertContract(
+          beforeCreate[0]?.total === 1,
+          "Rejected version creation left a partial immutable version.",
+        );
+
+        await editor.createVersion({
+          documentId: IDS.document,
+          baseVersionId: IDS.versionOne,
+          versionId: IDS.editorVersion,
+          content: SECOND_IR,
+          plainText: "Bound content'); DROP TABLE document; --",
+          contentHash: SECOND_HASH,
+          expectedDraftRowVersion: 2,
+          label: "Reviewed edit",
+          createdAt: UPDATED_AT,
+        });
+        const durable = await database.query<
+          {
+            readonly draft_count: number;
+            readonly version_count: number;
+            readonly parent_version_id: string | null;
+          } & QueryRow
+        >(
+          sqlStatement(
+            `SELECT
+               (SELECT count(*) FROM document_editor_draft WHERE document_id = ?) AS draft_count,
+               count(*) AS version_count,
+               max(CASE WHEN version_number = 2 THEN parent_version_id END) AS parent_version_id
+             FROM document_version WHERE document_id = ?`,
+            [IDS.document, IDS.document],
+          ),
+        );
+        const durableRow = durable[0];
+        assertContract(durableRow !== undefined, "The editor version query returned no row.");
+        assertContract(
+          durableRow.draft_count === 0 &&
+            durableRow.version_count === 2 &&
+            durableRow.parent_version_id === IDS.versionOne,
+          "Explicit version creation did not consume the matching draft and append its child version.",
+        );
+        await expectFailure(
+          () =>
+            database.execute(
+              sqlStatement(
+                `INSERT INTO document_editor_draft(
+                   document_id, base_version_id, content_ir_version, content_ir_json,
+                   content_plain, updated_at, row_version
+                 ) VALUES (?, ?, 1, ?, ?, ?, 1)`,
+                [
+                  IDS.document,
+                  IDS.versionOne,
+                  JSON.stringify(SECOND_IR),
+                  "Bound content'); DROP TABLE document; --",
+                  UPDATED_AT,
+                ],
+              ),
+            ),
+          () => true,
+          "A recovered draft was allowed to target a stale immutable base version.",
         );
       },
     },

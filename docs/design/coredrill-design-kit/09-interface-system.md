@@ -328,6 +328,8 @@ Views: All, Resumes, Cover letters, Answers, Templates, Submitted. Each item sho
 
 `DOC-002` renders the six accepted views from durable local SQLite records. Cards name the current immutable version, base/template/job lineage, related job and company, last edit, latest-version export availability, and the exact older submitted version when the current draft has advanced. Search covers titles, lineage, jobs, current document text, and Career Profile evidence whose provenance points to the document. Until the claim ledger exists, every card says **Claims not evaluated** rather than implying that claims are resolved. The surface is explicitly local and read-only; it adds no account, network request, AI dependency, editing, generation, export orchestration, or Mark Applied action.
 
+`DOC-003` opens a selected document in a structured local editor. The header distinguishes the immutable current version from the recoverable autosaved draft; the toolbar exposes undo, redo, bold, italic, bullet list, and numbered list; version creation is explicit and optionally labeled. A selectable history pane compares one immutable version with the current draft line by line and never presents an opaque score. Reload names recovered draft state, save failure keeps text in the editor with an explicit retry, and the layout reflows without hiding history or controls.
+
 ### Network
 
 Tabs: Companies, Contacts, Interactions.
