@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-09-27
 Current milestone: Phase 3 — career evidence and versioned documents (`GATE-0`, `GATE-1`, and `GATE-2` external-evidence blockers remain open)
-Current work item: `DOC-003` — structured editor with safe paste, autosave/recovery, undo, version creation, and comparison
-Next recommended slice: `DOC-004` after `DOC-003`; retain `Q2-001`, `Q2-003`, `PEX-005`, `PEX-006`, and `GATE-2` as explicit external-evidence/manual-review/permission/deployment blockers
+Current work item: `DOC-004` — deterministic cover-letter and answer templates for AI-disabled mode
+Next recommended slice: `DOC-005` after `DOC-004`; retain `Q2-001`, `Q2-003`, `PEX-005`, `PEX-006`, and `GATE-2` as explicit external-evidence/manual-review/permission/deployment blockers
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `DOC-004` after `DOC-003`; retain `Q2-001`, `Q2-003`, `P
 | Field | Value |
 |---|---|
 | Milestone | Phase 3, with the independent Phase 0, Phase 1, and Phase 2 evidence gates retained below |
-| Item range | `DOC-003` |
+| Item range | `DOC-004` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-09-27 |
-| Expected proof | Component and fault tests prove the restricted structured editor preserves canonical document IR through safe paste, debounced durable autosave, crash/reload recovery, undo, explicit immutable version creation, and version comparison without silently overwriting user edits. |
-| Blocker | None for `DOC-003`. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-2`, `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
-| Next handoff | Inspect the accepted restricted Tiptap adapter, canonical document IR/import-export boundary, immutable document-version repository, and the DOC-002 Documents route. Implement the smallest local editor workflow with safe paste, debounced durable autosave/recovery, undo, explicit version creation, and comparison; do not begin deterministic generation, export orchestration, or Mark Applied. |
+| Expected proof | Golden outputs prove deterministic cover-letter and answer templates produce reproducible AI-disabled drafts from selected durable evidence without unsupported factual claims, provider calls, or opaque scoring. |
+| Blocker | None for `DOC-004`. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-2`, `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
+| Next handoff | Inspect D-041 evidence-first generation, the canonical document IR/version boundary, durable Career Profile evidence, and the Answer Library. Implement the smallest deterministic AI-disabled cover-letter and answer-template generation workflow with golden outputs; do not begin provider-backed generation, export orchestration, or Mark Applied. |
 
 ## Milestone status
 
@@ -287,7 +287,7 @@ Next recommended slice: `DOC-004` after `DOC-003`; retain `Q2-001`, `Q2-003`, `P
 
 - [x] **DOC-001** Implement document, base/template, job derivative, version, attachment, and submitted-snapshot model. — Proof: [Document-lineage and submitted-snapshot verification](../../proof/phase-3-document-lineage-submission-snapshot-verification.md)
 - [x] **DOC-002** Implement Documents views: All, Resumes, Cover letters, Answers, Templates, Submitted. — Proof: [Documents workspace verification](../../proof/phase-3-documents-workspace-verification.md)
-- [ ] **DOC-003** Implement structured editor with safe paste, autosave/recovery, undo, version creation, and comparison. — Proof: _component/fault tests_
+- [x] **DOC-003** Implement structured editor with safe paste, autosave/recovery, undo, version creation, and comparison. — Proof: [Document editor verification](../../proof/phase-3-document-editor-verification.md)
 - [ ] **DOC-004** Implement deterministic cover-letter and answer templates for AI-disabled mode. — Proof: _golden outputs_
 - [ ] **DOC-005** Implement job/application document set selection and preparation status. — Proof: _use-case/UI tests_
 - [ ] **DOC-006** Implement DOCX/PDF/text export with preview, metadata, and warnings. — Proof: _rendered goldens_
