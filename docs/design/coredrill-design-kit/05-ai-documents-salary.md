@@ -216,6 +216,20 @@ fixture review](../../proof/phase-3-resume-import-fixture-review.md).
 
 `DOC-004` implements the template-only drafting baseline as `deterministic-template-engine-v1`. Cover letters use only exact job title/company context plus explicitly selected `user_confirmed` or `source_backed` evidence. Experience and motivation answers use the same reviewed evidence boundary; behavioral answers additionally require a selected structured story and preserve its Situation, Action, and Result text. Private evidence and unreviewed imported, stale, or disputed evidence are excluded with reason codes. Every output section is labeled as job context, selected evidence, or style-only language, and its context manifest retains requirement/evidence IDs, evidence update times, and source-document version/hash metadata. The renderer emits canonical Coredrill Document IR and deterministic plain text or fails closed with an insufficient-evidence result. The application-layer entry point classifies the question itself under `application-question-policy-v1`, so a caller cannot relabel a sensitive or manual-only question as draftable. It does not call a provider, score a candidate, reuse the Answer Library, persist a version, select an application set, export, or submit; those boundaries remain with later checklist items.
 
+`Q3-003` connects that pure renderer to the production Job Documents workflow
+without changing its evidence policy. An exact latest unchanged job derivative
+is required as the base; the browser application boundary loads confirmed job
+requirements and their already-selected local evidence, saves the rendered IR
+as a recoverable draft, and consumes it into a new immutable child version. The
+result names the exact output hash, template/engine versions, evidence IDs, and
+source-document version/hash identities, but never selects the child version
+silently. The user explicitly chooses the new version before preparing the
+exact resume/cover-letter/answer set and reviewing local DOCX/PDF/text export.
+Real-browser proof actively rejects external requests and retains AI-disabled,
+accountless, no-upload, no-submission, unevaluated-claim, accessibility, and
+320-pixel reflow boundaries. See [template-only application-set
+verification](../../proof/phase-3-template-only-application-set-verification.md).
+
 ### Export
 
 - Copy plain text and Markdown.

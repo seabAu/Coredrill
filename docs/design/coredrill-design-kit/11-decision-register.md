@@ -242,6 +242,15 @@ The ADR, affected design docs, and checklist change in the same commit. A new de
 - **Decision:** Template-only mode is complete; local, direct BYOK, and future hosted adapters sit behind `AiPort`.
 - **Why:** Zero-cost baseline, user choice, testability, and reduced lock-in.
 - **Revisit when:** Adapters may change; the AI-disabled path remains.
+- **Phase 3 evidence (2026-09-28, Q3-003):** The production Job Documents
+  workflow now creates an immutable deterministic cover-letter child version
+  from confirmed requirements and already-selected reviewed local evidence,
+  then prepares and locally exports an exact application set with AI disabled
+  and every external request rejected. No account, provider, upload, or
+  submission is introduced. [Foundation CI 36405366750](https://github.com/seabAu/Coredrill/actions/runs/36405366750)
+  passed exact implementation commit
+  `97795d43d70bb1f4d98f5f38029713c1385082b9`; see [template-only
+  application-set verification](../../proof/phase-3-template-only-application-set-verification.md).
 
 ### D-041 — Evidence-first generation and claim ledger
 
@@ -261,6 +270,16 @@ covered by local verification and
 See the [deterministic-template verification](../../proof/phase-3-deterministic-template-verification.md).
 No Accepted decision changed.
 
+**Phase 3 evidence (2026-09-28, Q3-003):**
+The production composition displays the exact deterministic template/engine,
+eligible evidence, verification state, and source-document version/hash
+identities used for the new immutable cover-letter version. The E2E witness
+asserts the generated sentence came from the reviewed `source_backed` evidence,
+keeps claim status explicitly unevaluated, rejects all external requests, and
+requires explicit version selection before export. Phase 4 still owns the
+durable provider generation-run and claim-ledger schema. See [template-only
+application-set verification](../../proof/phase-3-template-only-application-set-verification.md).
+
 ### D-042 — Versioned documents and submitted snapshots
 
 - **Status:** Accepted
@@ -274,6 +293,7 @@ No Accepted decision changed.
 - **Phase 3 evidence (2026-09-28, DOC-006):** The application export review resolves only the exact immutable selected version and produces controlled local DOCX, semantic browser-print PDF, or UTF-8 plain text with preview, local identity metadata, stable warnings, content hashes where byte export applies, and collision-safe filenames whose immutable version suffix cannot be truncated. Rendered and browser proof covers rich supported structures, controlled public DOCX properties, a tagged one-page PDF, exact text, axe/keyboard/320-pixel behavior, and zero external requests. [Foundation CI 36379166728](https://github.com/seabAu/Coredrill/actions/runs/36379166728) passed exact commit `7cf4f911130fb608afb65df3d6fb40458dd60ac4` across Chrome 151/152, Firefox 153/154, Windows, Ubuntu, and macOS; see [local document export verification](../../proof/phase-3-document-export-verification.md). No Accepted decision changed; Mark Applied remains a separate `DOC-007` action.
 - **Phase 3 evidence (2026-09-28, DOC-007):** Mark Applied is now a separate explicit local confirmation that atomically records the job/application Applied projections, append-only status event, applied time/channel, and one immutable ordered snapshot of the exact selected document, answer, and locally retained content-addressed artifact identities. Rollback proof rejects a partial event/snapshot write; repeat confirmation is an immutable conflict; later current document versions do not replace the submitted set. The UI names exact identities and states that its local record is not employer receipt, with axe/keyboard/320-pixel and zero-external-request coverage. [Foundation CI 36387091788](https://github.com/seabAu/Coredrill/actions/runs/36387091788) passed exact commit `27c7261d1d8403269ff18269b408562d4b742d23` across Chrome 151/152, Firefox 153/154, Windows, Ubuntu, and macOS; see [Mark Applied verification](../../proof/phase-3-mark-applied-verification.md). The shared aggregate is v10/26, no migration or dependency was added, and no Accepted decision changed.
 - **Phase 3 evidence (2026-09-28, DOC-008):** One deterministic schema-154 portable archive now carries and restores a base resume, job derivative, submitted immutable version, distinct later current version, editor draft, application answer selection, submitted file/plain-text items, evidence/provenance relations, and two physical content-addressed attachments. Source, clean browser, and native targets regenerate an identical 21-dataset document witness and canonical vault content hash while the selected/submitted resume remains the older exact version. [Foundation CI 36391985097](https://github.com/seabAu/Coredrill/actions/runs/36391985097) passed exact commit `ffdeeae7f35043e402804630eb0f2a58e2c7e22c` across Chrome 151/152, Firefox 153/154, Windows, Ubuntu, and macOS; see [document round-trip verification](../../proof/phase-3-document-round-trip-verification.md). No migration, archive/IR version, dependency, contract version, or Accepted decision changed.
+- **Phase 3 evidence (2026-09-28, Q3-003):** A guarded production action now consumes deterministic template IR through the existing recoverable editor-draft boundary into one immutable child version. It refuses stale, edited, non-latest, reusable-base, wrong-job, or already-submitted targets; never auto-selects the child; and then reuses the accepted exact-selection and DOCX/PDF/text export boundaries. [Foundation CI 36405366750](https://github.com/seabAu/Coredrill/actions/runs/36405366750) passed exact implementation commit `97795d43d70bb1f4d98f5f38029713c1385082b9`; see [template-only application-set verification](../../proof/phase-3-template-only-application-set-verification.md). No migration, dependency, contract version, or Accepted decision changed.
 
 ## Security, privacy, sync, and operations
 

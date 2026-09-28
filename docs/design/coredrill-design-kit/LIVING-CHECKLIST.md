@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-09-28
 Current milestone: Phase 3 — career evidence and versioned documents (`GATE-0`, `GATE-1`, and `GATE-2` external-evidence blockers remain open)
-Current work item: `Q3-003` — verify the complete template-only application-set preparation and export journey offline
-Next recommended slice: `Q3-004` after `Q3-003`; retain `Q3-002`, `Q2-001`, `Q2-003`, `PEX-005`, `PEX-006`, and `GATE-2` as explicit representative-user/external-evidence/manual-review/permission/deployment blockers
+Current work item: `Q3-004` — complete the document parser/editor/export threat review
+Next recommended slice: `Q3-005` after `Q3-004`; retain `Q3-002`, `Q2-001`, `Q2-003`, `PEX-005`, `PEX-006`, and `GATE-2` as explicit representative-user/external-evidence/manual-review/permission/deployment blockers
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `Q3-004` after `Q3-003`; retain `Q3-002`, `Q2-001`, `Q2-
 | Field | Value |
 |---|---|
 | Milestone | Phase 3, with the independent Phase 0, Phase 1, and Phase 2 evidence gates retained below |
-| Item range | `Q3-003` |
+| Item range | `Q3-004` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-09-28 |
-| Expected proof | One production real-browser journey starts with AI disabled and external requests rejected, uses only reviewed local job context and eligible evidence to create or select truthful deterministic template material, prepares the exact application document set, reviews immutable version/source identity, and completes local DOCX/PDF/plain-text export without unsupported claims, hidden substitution, upload, submission, or account dependency. Retain accessible/responsive and rendered-artifact evidence required by any newly generated export. |
-| Blocker | None for a synthetic local `Q3-003` journey. Representative human terminology/action validation remains separately blocked under `Q3-002`; real resumes or applicant data must not be committed as fixtures. Exact reference-device assistive-technology rows remain open under `Q1-003`/Phase 6. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-2`, `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
-| Next handoff | Inspect D-040 through D-042, `DOC-004` through `DOC-006`, the deterministic template engine and sensitive-question guard, application document-selection repositories, export review, and existing production app-shell E2E fixtures. Build the smallest vertical proof that a user with AI disabled can prepare and locally export an exact truthful set from reviewed evidence. Reuse accepted adapters and rendered fixtures where possible; do not add a provider, generated unsupported claim, hidden current-version substitution, upload, auto-submit, account, or network dependency. |
+| Expected proof | A focused security report traces untrusted local PDF/DOCX/text input through parser workers, bounded canonical IR, restricted editor paste/render behavior, and DOCX/PDF/plain-text export. Re-run relevant adversarial, archive/path, metadata, external-request, and browser/native checks; document mitigations, residual risks, ownership, and any follow-up without claiming a penetration test. Change code only for demonstrated in-scope gaps, and require an ADR for any Accepted boundary change. |
+| Blocker | None for a repository-backed synthetic threat review. Representative human terminology/action validation remains separately blocked under `Q3-002`; real resumes or applicant data must not be committed as fixtures. Exact reference-device assistive-technology rows remain open under `Q1-003`/Phase 6. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-2`, `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
+| Next handoff | Read `SECURITY.md`, D-027, D-041, D-042, the document security and export sections of `05-ai-documents-salary.md` and `06-security-sync-deployment-testing.md`, accepted editor/import/export ADRs, current parser workers, restricted editor schema, local export adapters, and their adversarial tests. Build a threat inventory from actual trust boundaries, validate existing mitigations on exact locked versions, close demonstrated gaps in scope, and retain a concise security report with reproducible proof and explicit residual risks. |
 
 ## Milestone status
 
@@ -299,7 +299,7 @@ Next recommended slice: `Q3-004` after `Q3-003`; retain `Q3-002`, `Q2-001`, `Q2-
 
 - [x] **Q3-001** Run resume import review with varied layouts, corrupt files, scanned PDFs, and large documents. — Proof: [Resume import fixture review](../../proof/phase-3-resume-import-fixture-review.md)
 - [ ] **Q3-002** Validate Evidence coverage terminology/actions with representative users. — Proof: _research report_
-- [ ] **Q3-003** Verify template-only user can prepare and export a truthful application set offline. — Proof: _E2E test_
+- [x] **Q3-003** Verify template-only user can prepare and export a truthful application set offline. — Proof: [template-only application-set verification](../../proof/phase-3-template-only-application-set-verification.md)
 - [ ] **Q3-004** Complete document parser/editor/export threat review. — Proof: _security report_
 - [ ] **Q3-005** Run canonical journey: import resume → confirm evidence → compare job → prepare documents → mark Applied → retrieve submitted set. — Proof: _recorded E2E artifact_
 - [ ] **GATE-3** Phase 3 produces versioned, recoverable application materials and transparent evidence coverage without AI. — Proof: _Phase 3 gate report_
