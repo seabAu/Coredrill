@@ -24,6 +24,17 @@
     "requiredText": ["Page one evidence line.", "Page two salary source line."],
     "sourcePointerPrefixes": ["/pages/1/lines/", "/pages/2/lines/"]
   },
+  "variedPdf": {
+    "fileName": "synthetic-varied-layout.pdf",
+    "pageCount": 3,
+    "requiredText": [
+      "VARIED-PDF-PAGE-1",
+      "VARIED-PDF-LEFT-COLUMN",
+      "VARIED-PDF-RIGHT-COLUMN",
+      "VARIED-PDF-PAGE-3-FINAL"
+    ],
+    "finalPagePointerPrefix": "/pages/3/lines/"
+  },
   "scannedPdf": {
     "fileName": "synthetic-scanned.pdf",
     "warning": {
@@ -31,9 +42,27 @@
       "message": "No extractable text was found. This PDF may be scanned. Choose a local OCR tool explicitly or paste the text manually; the original file remains unchanged."
     }
   },
+  "largePdf": {
+    "fileName": "synthetic-large.pdf",
+    "pageCount": 75,
+    "firstSentinel": "LARGE-PDF-FIRST-SENTINEL",
+    "finalSentinel": "LARGE-PDF-FINAL-SENTINEL",
+    "finalPagePointerPrefix": "/pages/75/lines/"
+  },
+  "corruptPdf": {
+    "fileName": "synthetic-corrupt.pdf",
+    "error": {
+      "code": "corrupt_file",
+      "message": "This file could not be read. Choose an intact local file and try again."
+    }
+  },
   "text": {
     "fileName": "synthetic-profile.md",
     "blockTypes": ["heading", "paragraph", "bulletList"],
     "sourcePointers": ["/lines/1", "/lines/3", "/lines/5"]
+  },
+  "limits": {
+    "maxBytes": 10485760,
+    "maxPages": 500
   }
 }

@@ -1,10 +1,13 @@
 # Import fixtures
 
-This directory contains synthetic DOCX, PDF, scanned-PDF, and Markdown fixtures plus
-their stable expected import properties. They are generated or authored solely for
-local parser and source-mapping tests. Never place real job postings, resumes, employer
-correspondence, credentials, or personal data here.
+This directory contains synthetic DOCX, PDF, scanned-PDF, corrupt-PDF, representative
+large-PDF, and Markdown fixtures plus their stable expected import properties. They are
+generated or authored solely for local parser and source-mapping tests. Never place real
+job postings, resumes, employer correspondence, credentials, or personal data here.
 
-Regenerate the binary fixtures with
-`python tooling/scripts/generate-document-import-fixtures.py`, then render and inspect
-every generated page before accepting a changed fixture.
+`fixture-manifest.json` records each fixture's byte length, SHA-256 digest, case, and
+expected high-level outcome. Regenerate the binary fixtures and manifest with the bundled
+workspace Python runtime by running
+`python tooling/scripts/generate-document-import-fixtures.py`. Render and inspect every
+page of every valid generated visual fixture before accepting a change. The intentionally
+truncated PDF must fail parsing and rendering with a corrupt-file result.

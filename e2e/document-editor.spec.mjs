@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -7,6 +8,15 @@ const repositoryRoot = process.cwd();
 const importGoldens = JSON.parse(
   await readFile(path.join(repositoryRoot, "fixtures", "imports", "expected-imports.json"), "utf8"),
 );
+const fixtureManifest = JSON.parse(
+  await readFile(path.join(repositoryRoot, "fixtures", "imports", "fixture-manifest.json"), "utf8"),
+);
+
+const fixtureRecord = (fileName) => {
+  const record = fixtureManifest.fixtures.find((candidate) => candidate.fileName === fileName);
+  if (record === undefined) throw new Error(`Fixture manifest entry missing for ${fileName}.`);
+  return record;
+};
 
 const callHarness = (page, method, argument) =>
   page.evaluate(
@@ -49,6 +59,52 @@ const importFailure = (page, input) =>
       };
     }
   }, input);
+
+const generatedImportFailure = (page, input) =>
+  page.evaluate(async (value) => {
+    try {
+      await globalThis.coredrillDocumentSpike.importDocument({
+        bytes: [...new Uint8Array(value.byteLength)],
+        fileName: value.fileName,
+        mediaType: value.mediaType,
+      });
+      return { imported: true };
+    } catch (error) {
+      return {
+        imported: false,
+        code:
+          error !== null && typeof error === "object" && "code" in error
+            ? String(error.code)
+            : undefined,
+        message: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }, input);
+
+const watchExternalRequests = (page) => {
+  const externalRequests = [];
+  page.on("request", (request) => {
+    const url = new URL(request.url());
+    if (url.hostname !== "127.0.0.1" && url.hostname !== "localhost") {
+      externalRequests.push(request.url());
+    }
+  });
+  return externalRequests;
+};
+
+test("matches every synthetic import fixture to the versioned manifest", async () => {
+  expect(fixtureManifest).toMatchObject({
+    fixtureVersion: 1,
+    generator: "tooling/scripts/generate-document-import-fixtures.py",
+    privacy: "Synthetic test data only. Never add real applicant data.",
+  });
+  expect(fixtureManifest.fixtures).toHaveLength(7);
+  for (const record of fixtureManifest.fixtures) {
+    const bytes = await readFile(path.join(repositoryRoot, "fixtures", "imports", record.fileName));
+    expect(bytes.byteLength, record.fileName).toBe(record.byteLength);
+    expect(createHash("sha256").update(bytes).digest("hex"), record.fileName).toBe(record.sha256);
+  }
+});
 
 test("edits locally and preserves undo/redo history", async ({ page }) => {
   await openHarness(page);
@@ -138,6 +194,7 @@ test("edits a synthetic 100-page document within the diagnostic budget", async (
 });
 
 test("imports DOCX as a source-mapped unconfirmed proposal", async ({ page }) => {
+  const externalRequests = watchExternalRequests(page);
   await openHarness(page);
   const result = await importFixture(
     page,
@@ -146,7 +203,12 @@ test("imports DOCX as a source-mapped unconfirmed proposal", async ({ page }) =>
   );
   expect(result).toMatchObject({
     evidenceStatus: "proposal",
-    source: { format: "docx", fileName: "synthetic-resume.docx" },
+    source: {
+      format: "docx",
+      fileName: "synthetic-resume.docx",
+      byteLength: fixtureRecord("synthetic-resume.docx").byteLength,
+      sha256: fixtureRecord("synthetic-resume.docx").sha256,
+    },
   });
   expect(result.plainText).toContain("Jordan Rivera");
   expect(result.plainText).toContain("Reduced research turnaround by 42%");
@@ -154,6 +216,101 @@ test("imports DOCX as a source-mapped unconfirmed proposal", async ({ page }) =>
   expect(result.structuredDocument.document.content.map((block) => block.type)).toEqual(
     importGoldens.docx.blockTypes,
   );
+  const serializedDocument = JSON.stringify(result.structuredDocument);
+  expect(serializedDocument).toContain('"type":"bold"');
+  expect(serializedDocument).toContain('"type":"italic"');
+  expect(serializedDocument).toContain('"type":"link"');
+  expect(result.mappings).toHaveLength(result.summary.blockCount);
+  expect(
+    result.mappings.every(
+      ({ sourceExcerpt, sourcePointer, targetPath }) =>
+        sourceExcerpt.length > 0 &&
+        sourceExcerpt.length <= 240 &&
+        sourcePointer.startsWith("/word/document.xml#paragraph=") &&
+        targetPath.startsWith("/document/content/"),
+    ),
+  ).toBe(true);
+  expect(externalRequests).toEqual([]);
+});
+
+test("reviews varied PDF layouts without hidden verification or network use", async ({ page }) => {
+  const externalRequests = watchExternalRequests(page);
+  await openHarness(page);
+
+  const pdf = await importFixture(page, importGoldens.variedPdf.fileName, "application/pdf");
+  expect(pdf).toMatchObject({
+    evidenceStatus: "proposal",
+    source: {
+      format: "pdf",
+      fileName: importGoldens.variedPdf.fileName,
+      byteLength: fixtureRecord(importGoldens.variedPdf.fileName).byteLength,
+      sha256: fixtureRecord(importGoldens.variedPdf.fileName).sha256,
+    },
+    summary: { pageCount: importGoldens.variedPdf.pageCount },
+  });
+  for (const requiredText of importGoldens.variedPdf.requiredText) {
+    expect(pdf.plainText).toContain(requiredText);
+  }
+  expect(
+    pdf.mappings.some(
+      ({ sourceExcerpt, sourcePointer }) =>
+        sourceExcerpt.includes("VARIED-PDF-PAGE-3-FINAL") &&
+        sourcePointer.startsWith(importGoldens.variedPdf.finalPagePointerPrefix),
+    ),
+  ).toBe(true);
+  expect(externalRequests).toEqual([]);
+});
+
+test("imports a representative 75-page PDF with first and final provenance", async ({
+  page,
+}, testInfo) => {
+  test.slow();
+  const externalRequests = watchExternalRequests(page);
+  await openHarness(page);
+  const startedAt = Date.now();
+  const result = await importFixture(page, importGoldens.largePdf.fileName, "application/pdf");
+  const elapsedMilliseconds = Date.now() - startedAt;
+
+  expect(result).toMatchObject({
+    evidenceStatus: "proposal",
+    source: {
+      format: "pdf",
+      fileName: importGoldens.largePdf.fileName,
+      byteLength: fixtureRecord(importGoldens.largePdf.fileName).byteLength,
+      sha256: fixtureRecord(importGoldens.largePdf.fileName).sha256,
+    },
+    summary: { pageCount: importGoldens.largePdf.pageCount },
+  });
+  expect(result.plainText).toContain(importGoldens.largePdf.firstSentinel);
+  expect(result.plainText).toContain(importGoldens.largePdf.finalSentinel);
+  expect(
+    result.mappings.some(
+      ({ sourceExcerpt, sourcePointer }) =>
+        sourceExcerpt.includes(importGoldens.largePdf.finalSentinel) &&
+        sourcePointer.startsWith(importGoldens.largePdf.finalPagePointerPrefix),
+    ),
+  ).toBe(true);
+  expect(externalRequests).toEqual([]);
+  await testInfo.attach("large-document-import.json", {
+    body: Buffer.from(
+      `${JSON.stringify(
+        {
+          elapsedMilliseconds,
+          pageCount: result.summary.pageCount,
+          blockCount: result.summary.blockCount,
+          byteLength: result.source.byteLength,
+          firstContentRetained: true,
+          finalContentRetained: true,
+          finalPagePointerRetained: true,
+          evidenceStatus: result.evidenceStatus,
+          externalRequestCount: externalRequests.length,
+        },
+        null,
+        2,
+      )}\n`,
+    ),
+    contentType: "application/json",
+  });
 });
 
 test("imports text PDFs with page mappings and flags scanned PDFs without implicit OCR", async ({
@@ -163,7 +320,11 @@ test("imports text PDFs with page mappings and flags scanned PDFs without implic
   const textPdf = await importFixture(page, "synthetic-two-page.pdf", "application/pdf");
   expect(textPdf).toMatchObject({
     evidenceStatus: "proposal",
-    source: { format: "pdf" },
+    source: {
+      format: "pdf",
+      byteLength: fixtureRecord(importGoldens.pdf.fileName).byteLength,
+      sha256: fixtureRecord(importGoldens.pdf.fileName).sha256,
+    },
     summary: { pageCount: 2 },
   });
   expect(textPdf.plainText).toContain("Page one evidence line.");
@@ -176,11 +337,19 @@ test("imports text PDFs with page mappings and flags scanned PDFs without implic
   );
 
   const scanned = await importFixture(page, "synthetic-scanned.pdf", "application/pdf");
+  expect(scanned.source).toMatchObject({
+    byteLength: fixtureRecord("synthetic-scanned.pdf").byteLength,
+    sha256: fixtureRecord("synthetic-scanned.pdf").sha256,
+  });
   expect(scanned.plainText).toBe("");
   expect(scanned.mappings).toEqual([]);
   expect(scanned.warnings).toEqual([importGoldens.scannedPdf.warning]);
 
   const text = await importFixture(page, "synthetic-profile.md", "text/markdown");
+  expect(text.source).toMatchObject({
+    byteLength: fixtureRecord("synthetic-profile.md").byteLength,
+    sha256: fixtureRecord("synthetic-profile.md").sha256,
+  });
   expect(text.structuredDocument.document.content.map((block) => block.type)).toEqual(
     importGoldens.text.blockTypes,
   );
@@ -191,6 +360,16 @@ test("imports text PDFs with page mappings and flags scanned PDFs without implic
 
 test("returns stable actionable failures for mismatched and corrupt binaries", async ({ page }) => {
   await openHarness(page);
+  const corruptPdfBytes = await readFile(
+    path.join(repositoryRoot, "fixtures", "imports", importGoldens.corruptPdf.fileName),
+  );
+  await expect(
+    importFailure(page, {
+      bytes: [...corruptPdfBytes],
+      fileName: importGoldens.corruptPdf.fileName,
+      mediaType: "application/pdf",
+    }),
+  ).resolves.toMatchObject({ imported: false, ...importGoldens.corruptPdf.error });
   await expect(
     importFailure(page, {
       bytes: [...new TextEncoder().encode("not a pdf")],
@@ -223,6 +402,17 @@ test("returns stable actionable failures for mismatched and corrupt binaries", a
     imported: false,
     code: "unsupported_format",
     message: "Choose a local DOCX, PDF, Markdown, or plain-text file.",
+  });
+  await expect(
+    generatedImportFailure(page, {
+      byteLength: importGoldens.limits.maxBytes + 1,
+      fileName: "oversized.txt",
+      mediaType: "text/plain",
+    }),
+  ).resolves.toMatchObject({
+    imported: false,
+    code: "too_large",
+    message: "This file exceeds the 10 MiB local import limit.",
   });
 });
 

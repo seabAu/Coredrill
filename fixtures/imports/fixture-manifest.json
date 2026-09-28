@@ -1,0 +1,63 @@
+{
+  "fixtureVersion": 1,
+  "generator": "tooling/scripts/generate-document-import-fixtures.py",
+  "privacy": "Synthetic test data only. Never add real applicant data.",
+  "fixtures": [
+    {
+      "fileName": "synthetic-resume.docx",
+      "format": "docx",
+      "case": "baseline",
+      "expectedOutcome": "valid",
+      "byteLength": 37150,
+      "sha256": "a77c6c7003650c4bfe1dcab8842aafee234c78d1d85a20c598b168179d507098"
+    },
+    {
+      "fileName": "synthetic-two-page.pdf",
+      "format": "pdf",
+      "case": "baseline",
+      "expectedOutcome": "valid",
+      "byteLength": 2146,
+      "sha256": "16f312880841ce831b7d02a15048c7e7bd7ff00dcb5b30f1c8937b2dc5ba5ad8"
+    },
+    {
+      "fileName": "synthetic-varied-layout.pdf",
+      "format": "pdf",
+      "case": "varied-layout",
+      "expectedOutcome": "valid",
+      "byteLength": 2806,
+      "sha256": "6419e0ae396dc97e60aac8e5d13033b81af48085db4f9b6292fad1cbacc4bda1"
+    },
+    {
+      "fileName": "synthetic-scanned.pdf",
+      "format": "pdf",
+      "case": "scanned",
+      "expectedOutcome": "valid-no-extractable-text",
+      "byteLength": 20485,
+      "sha256": "d89effe845261ae7094d69809d1807daec1e40fcfdeb0b5109b4ba828270badc"
+    },
+    {
+      "fileName": "synthetic-large.pdf",
+      "format": "pdf",
+      "case": "representative-large",
+      "expectedOutcome": "valid",
+      "byteLength": 45202,
+      "sha256": "1ecee665bd420212082da28d69c74b0162902660ea16ad85abdbf872fcd8909e"
+    },
+    {
+      "fileName": "synthetic-corrupt.pdf",
+      "format": "pdf",
+      "case": "corrupt",
+      "expectedOutcome": "reject-corrupt-file",
+      "byteLength": 73,
+      "sha256": "2fe3dc3715054c90c866bf7587d79323c579ed2ae8ebe8c9b2cee53d18c6cce6"
+    },
+    {
+      "fileName": "synthetic-profile.md",
+      "format": "text",
+      "case": "baseline",
+      "expectedOutcome": "valid",
+      "byteLength": 116,
+      "sha256": "923c9554e6d6d0a3ace1ed0c78fe02e49e9acf487dfca5b27852382ee3e2f77f"
+    }
+  ]
+}

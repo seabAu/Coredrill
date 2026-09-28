@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 from io import BytesIO
 from pathlib import Path
 from datetime import datetime, timezone
@@ -13,7 +15,7 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
 from PIL import Image, ImageDraw
-from reportlab.lib.pagesizes import LETTER
+from reportlab.lib.pagesizes import LETTER, landscape
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 
@@ -22,7 +24,12 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 FIXTURE_ROOT = REPOSITORY_ROOT / "fixtures" / "imports"
 DOCX_PATH = FIXTURE_ROOT / "synthetic-resume.docx"
 PDF_PATH = FIXTURE_ROOT / "synthetic-two-page.pdf"
+VARIED_PDF_PATH = FIXTURE_ROOT / "synthetic-varied-layout.pdf"
 SCANNED_PDF_PATH = FIXTURE_ROOT / "synthetic-scanned.pdf"
+LARGE_PDF_PATH = FIXTURE_ROOT / "synthetic-large.pdf"
+CORRUPT_PDF_PATH = FIXTURE_ROOT / "synthetic-corrupt.pdf"
+TEXT_PATH = FIXTURE_ROOT / "synthetic-profile.md"
+MANIFEST_PATH = FIXTURE_ROOT / "fixture-manifest.json"
 FIXED_TIMESTAMP = datetime(2026, 8, 24, 12, 0, 0, tzinfo=timezone.utc)
 
 
@@ -142,6 +149,61 @@ def create_text_pdf() -> None:
     pdf.save()
 
 
+def create_varied_pdf() -> None:
+    pdf = canvas.Canvas(str(VARIED_PDF_PATH), pagesize=LETTER, invariant=1, pageCompression=1)
+    pdf.setTitle("Synthetic varied-layout import fixture")
+    pdf.setAuthor("Coredrill test suite")
+
+    pdf.setFont("Helvetica-Bold", 18)
+    pdf.drawString(54, 738, "Varied PDF Resume")
+    pdf.setFont("Helvetica", 11)
+    pdf.drawString(54, 708, "VARIED-PDF-PAGE-1")
+    pdf.drawString(54, 690, "A portrait page with ordinary reading order.")
+    pdf.showPage()
+
+    pdf.setPageSize(LETTER)
+    pdf.setFont("Helvetica-Bold", 14)
+    pdf.drawString(54, 738, "Experience")
+    pdf.drawString(324, 738, "Skills")
+    pdf.setFont("Helvetica", 10)
+    pdf.drawString(54, 710, "VARIED-PDF-LEFT-COLUMN")
+    pdf.drawString(54, 692, "Recovery drills and source review")
+    pdf.drawString(324, 710, "VARIED-PDF-RIGHT-COLUMN")
+    pdf.drawString(324, 692, "TypeScript, SQLite, accessibility")
+    pdf.showPage()
+
+    pdf.setPageSize(landscape(LETTER))
+    pdf.setFont("Helvetica-Bold", 16)
+    pdf.drawString(54, 558, "Landscape Appendix")
+    pdf.setFont("Helvetica", 11)
+    pdf.drawString(54, 528, "VARIED-PDF-PAGE-3-FINAL")
+    pdf.drawString(54, 510, "Final page provenance must retain the third-page pointer.")
+    pdf.save()
+
+
+def create_large_pdf() -> None:
+    page_count = 75
+    pdf = canvas.Canvas(str(LARGE_PDF_PATH), pagesize=LETTER, invariant=1, pageCompression=1)
+    pdf.setTitle("Synthetic large import fixture")
+    pdf.setAuthor("Coredrill test suite")
+    for page_number in range(1, page_count + 1):
+        pdf.setFont("Helvetica-Bold", 13)
+        pdf.drawString(54, 738, f"Synthetic work history page {page_number:03d}")
+        pdf.setFont("Helvetica", 10)
+        pdf.drawString(54, 710, f"LARGE-PDF-PAGE-{page_number:03d}")
+        pdf.drawString(
+            54,
+            692,
+            "Local extraction retains a page-qualified source pointer and unverified status.",
+        )
+        if page_number == 1:
+            pdf.drawString(54, 674, "LARGE-PDF-FIRST-SENTINEL")
+        if page_number == page_count:
+            pdf.drawString(54, 674, "LARGE-PDF-FINAL-SENTINEL")
+        pdf.showPage()
+    pdf.save()
+
+
 def create_scanned_pdf() -> None:
     image = Image.new("RGB", (1275, 1650), "white")
     drawing = ImageDraw.Draw(image)
@@ -158,12 +220,67 @@ def create_scanned_pdf() -> None:
     pdf.save()
 
 
+def create_corrupt_pdf() -> None:
+    CORRUPT_PDF_PATH.write_bytes(
+        b"%PDF-1.7\n% Coredrill intentionally truncated synthetic fixture\n1 0 obj\n<<"
+    )
+
+
+def sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def write_manifest() -> None:
+    fixture_specs = (
+        (DOCX_PATH, "docx", "baseline", "valid"),
+        (PDF_PATH, "pdf", "baseline", "valid"),
+        (VARIED_PDF_PATH, "pdf", "varied-layout", "valid"),
+        (SCANNED_PDF_PATH, "pdf", "scanned", "valid-no-extractable-text"),
+        (LARGE_PDF_PATH, "pdf", "representative-large", "valid"),
+        (CORRUPT_PDF_PATH, "pdf", "corrupt", "reject-corrupt-file"),
+        (TEXT_PATH, "text", "baseline", "valid"),
+    )
+    manifest = {
+        "fixtureVersion": 1,
+        "generator": "tooling/scripts/generate-document-import-fixtures.py",
+        "privacy": "Synthetic test data only. Never add real applicant data.",
+        "fixtures": [
+            {
+                "fileName": path.name,
+                "format": format_name,
+                "case": case,
+                "expectedOutcome": expected_outcome,
+                "byteLength": path.stat().st_size,
+                "sha256": sha256(path),
+            }
+            for path, format_name, case, expected_outcome in fixture_specs
+        ],
+    }
+    MANIFEST_PATH.write_text(
+        f"{json.dumps(manifest, indent=2, ensure_ascii=True)}\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+
+
 def main() -> None:
     FIXTURE_ROOT.mkdir(parents=True, exist_ok=True)
     create_docx()
     create_text_pdf()
+    create_varied_pdf()
     create_scanned_pdf()
-    for path in (DOCX_PATH, PDF_PATH, SCANNED_PDF_PATH):
+    create_large_pdf()
+    create_corrupt_pdf()
+    write_manifest()
+    for path in (
+        DOCX_PATH,
+        PDF_PATH,
+        VARIED_PDF_PATH,
+        SCANNED_PDF_PATH,
+        LARGE_PDF_PATH,
+        CORRUPT_PDF_PATH,
+        MANIFEST_PATH,
+    ):
         print(f"generated {path.relative_to(REPOSITORY_ROOT)} ({path.stat().st_size} bytes)")
 
 
