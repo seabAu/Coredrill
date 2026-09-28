@@ -48,6 +48,10 @@ export const installDocumentsWorkspaceReferenceFixture = async (
     linkedEvidence: entityId("experience", "0199b300-0000-7000-8000-000000000016"),
     preparationApplication: JOB_DOCUMENT_PREPARATION_REFERENCE_APPLICATION_ID,
     preparingStatus: entityId("status_definition", "0199b300-0000-7000-8000-000000000018"),
+    jobSource: entityId("job-source", "0199b300-0000-7000-8000-000000000019"),
+    sourceSnapshot: entityId("source-snapshot", "0199b300-0000-7000-8000-00000000001a"),
+    provenance: entityId("provenance", "0199b300-0000-7000-8000-00000000001b"),
+    requirement: entityId("job-requirement", "0199b300-0000-7000-8000-00000000001c"),
   });
   const createdAt = instant("2026-09-27T18:00:00.000Z");
   const submittedAt = instant("2026-09-27T19:00:00.000Z");
@@ -66,11 +70,122 @@ export const installDocumentsWorkspaceReferenceFixture = async (
           "2024-01-01",
           null,
           1,
-          "Linked evidence search sentinel.",
+          "Linked evidence search sentinel. Led durable local-first product operations with verified recovery practices.",
           ids.resumeDerivative,
           "source_backed",
           null,
           createdAt,
+          createdAt,
+        ],
+      ),
+    );
+  };
+  const ensureTemplateContext = async (): Promise<void> => {
+    const sourceHash = "a".repeat(64);
+    await database.execute(
+      sqlStatement(
+        `INSERT OR IGNORE INTO job_source(
+           id, job_id, connector_id, external_id, canonical_url, apply_url,
+           first_seen_at, last_seen_at, content_hash, is_primary, created_at, updated_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          ids.jobSource,
+          ids.job,
+          "reference_fixture",
+          "northstar-product-operations-lead",
+          null,
+          null,
+          createdAt,
+          createdAt,
+          sourceHash,
+          1,
+          createdAt,
+          createdAt,
+        ],
+      ),
+    );
+    await database.execute(
+      sqlStatement(
+        `INSERT OR IGNORE INTO source_snapshot(
+           id, job_source_id, captured_at, extractor_id, extractor_version,
+           raw_text, sanitized_html, structured_json, content_hash, retention_class, created_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          ids.sourceSnapshot,
+          ids.jobSource,
+          createdAt,
+          "reference_fixture",
+          "1",
+          "Lead resilient local-first product operations.",
+          null,
+          null,
+          sourceHash,
+          "reference_fixture",
+          createdAt,
+        ],
+      ),
+    );
+    await database.execute(
+      sqlStatement(
+        `INSERT OR IGNORE INTO provenance(
+           id, source_snapshot_id, extraction_method, source_pointer, source_excerpt,
+           confidence, captured_at, license_note, created_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          ids.provenance,
+          ids.sourceSnapshot,
+          "user",
+          "reference-fixture.requirements[0]",
+          "Lead resilient local-first product operations.",
+          1,
+          createdAt,
+          "Reference fixture only.",
+          createdAt,
+        ],
+      ),
+    );
+    await database.execute(
+      sqlStatement(
+        `INSERT OR IGNORE INTO job_requirement(
+           id, job_id, category, source_category, normalized_text, raw_text,
+           provenance_id, confidence, user_confirmed, sort_order, created_at, updated_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          ids.requirement,
+          ids.job,
+          "required",
+          "required",
+          "lead resilient local first product operations",
+          "Lead resilient local-first product operations.",
+          ids.provenance,
+          1,
+          1,
+          0,
+          createdAt,
+          createdAt,
+        ],
+      ),
+    );
+    await database.execute(
+      sqlStatement(
+        `INSERT OR IGNORE INTO job_requirement_evidence_selection(
+           requirement_id, evidence_kind, evidence_id, experience_id, education_id,
+           project_id, skill_id, accomplishment_id, certification_id, publication_id,
+           volunteer_experience_id, anecdote_id, selected_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          ids.requirement,
+          "employment",
+          ids.linkedEvidence,
+          ids.linkedEvidence,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
           createdAt,
         ],
       ),
@@ -145,6 +260,7 @@ export const installDocumentsWorkspaceReferenceFixture = async (
   );
   if (existing.length === 1) {
     await ensureLinkedEvidence();
+    await ensureTemplateContext();
     await ensurePreparationApplication();
     return;
   }
@@ -344,6 +460,7 @@ export const installDocumentsWorkspaceReferenceFixture = async (
     parentVersionId: null,
     label: "Submitted answer",
   });
+  await ensureTemplateContext();
 
   const exportBytes = new TextEncoder().encode("%PDF-1.4\n% Coredrill reference fixture\n%%EOF");
   const exportHash = await sha256(exportBytes);

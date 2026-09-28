@@ -32,6 +32,16 @@ const answer = Object.freeze({
   versionLabel: null,
 }) as unknown as ApplicationDocumentCandidateDto;
 
+const coverLetter = Object.freeze({
+  ...resume,
+  documentId: "0199c200-0000-7000-8000-000000000007",
+  documentVersionId: "0199c200-0000-7000-8000-000000000008",
+  kind: "cover_letter" as const,
+  title: "Northstar cover letter",
+  versionNumber: 1,
+  versionLabel: "Reviewed base",
+}) as unknown as ApplicationDocumentCandidateDto;
+
 const preparation = Object.freeze({
   applicationId: "0199c200-0000-7000-8000-000000000006",
   jobId: resume.relatedJobId,
@@ -46,7 +56,7 @@ const preparation = Object.freeze({
   }),
   candidates: Object.freeze({
     resumes: Object.freeze([resume]),
-    coverLetters: Object.freeze([]),
+    coverLetters: Object.freeze([coverLetter]),
     answers: Object.freeze([answer]),
   }),
 }) as unknown as ApplicationDocumentPreparationDto;
@@ -128,5 +138,52 @@ describe("JobDocumentPreparation", () => {
     expect(markup).toContain("Review export for Northstar resume version 2");
     expect(markup).toContain("Review export for Why Northstar? version 1");
     expect(markup).not.toContain("Print or save PDF");
+  });
+
+  it("names the local AI-disabled template boundary and exact evidence identity", () => {
+    const markup = renderToStaticMarkup(
+      createElement(JobDocumentPreparation, {
+        model: { preparation, loading: false, saving: false, error: null },
+        onCreateTemplateCoverLetter: () => undefined,
+        templateCoverLetterModel: {
+          creating: false,
+          error: null,
+          result: {
+            aiMode: "disabled",
+            claimStatus: "not_evaluated",
+            contentHash: "b".repeat(64),
+            engineVersion: "deterministic-template-engine-v1",
+            evidence: [
+              {
+                evidenceId: "0199c200-0000-7000-8000-000000000009",
+                evidenceKind: "employment",
+                sourceVersion: {
+                  contentHash: "a".repeat(64),
+                  documentId: resume.documentId,
+                  versionId: resume.documentVersionId,
+                  versionNumber: 2,
+                },
+                verificationState: "source_backed",
+              },
+            ],
+            networkAccess: "none",
+            templateId: "cover-letter-template-v1",
+            templateVersion: 1,
+            versionId: "0199c200-0000-7000-8000-00000000000a",
+            versionNumber: 2,
+          },
+        },
+      }),
+    );
+
+    expect(markup).toContain("Truthful template-only draft");
+    expect(markup).toContain("AI stays disabled");
+    expect(markup).toContain("Create truthful template-only version");
+    expect(markup).toContain("Created immutable version 2");
+    expect(markup).toContain("network access none");
+    expect(markup).toContain("claims not evaluated");
+    expect(markup).toContain(resume.documentVersionId);
+    expect(markup).toContain("Review the new immutable version");
+    expect(markup).toContain("Nothing is uploaded or submitted");
   });
 });

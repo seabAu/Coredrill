@@ -3,6 +3,8 @@ import {
   AnswerLibraryError,
   CareerStoryError,
   VaultDeletionError,
+  applicationFailure,
+  applicationSuccess,
   createCareerProfileOperations,
   createCareerStoryOperations,
   createAnswerLibraryOperations,
@@ -69,8 +71,14 @@ import {
   type VaultDeletionResultDto,
 } from "@coredrill/application";
 import {
+  COVER_LETTER_TEMPLATE_ID,
   documentIrToPlainText,
   parseDocumentIr,
+  renderDeterministicCoverLetterTemplate,
+  type DETERMINISTIC_TEMPLATE_ENGINE_VERSION,
+  type DeterministicTemplateEvidenceInput,
+  type DeterministicTemplateEvidenceReference,
+  type DeterministicTemplateExclusion,
   type LocalDocumentInput,
 } from "@coredrill/documents";
 import {
@@ -98,11 +106,13 @@ import {
   createDocumentEditorRepository,
   createApplicationDocumentPreparationRepository,
   createApplicationSubmissionRepository,
+  createJobRequirementRepository,
   createResumeImportRepository,
   createResumeImportResolutionRepository,
   createPhase1RepositoryContractSuite,
   createTrackerRepositories,
   defineSqlMigrations,
+  openRequirementEvidenceRepository,
   CAREER_REPOSITORY_CONTRACT_MANIFEST,
   PHASE_1_REPOSITORY_CONTRACT_MANIFEST,
   PortableArchiveRestoreError,
@@ -391,6 +401,42 @@ interface Phase3DocumentRoundTripWitness {
   }>[];
 }
 
+export interface CreateTemplateCoverLetterVersionInput {
+  readonly applicationId: string;
+  readonly documentId: string;
+  readonly expectedBaseVersionId: string;
+}
+
+export interface TemplateCoverLetterEvidenceProof {
+  readonly evidenceId: string;
+  readonly evidenceKind: string;
+  readonly requirementIds: readonly string[];
+  readonly sourceVersion: {
+    readonly contentHash: string;
+    readonly documentId: string;
+    readonly versionId: string;
+    readonly versionNumber: number;
+  } | null;
+  readonly verificationState: "source_backed" | "user_confirmed";
+}
+
+export interface TemplateCoverLetterVersionResult {
+  readonly aiMode: "disabled";
+  readonly applicationId: string;
+  readonly baseVersionId: string;
+  readonly claimStatus: "not_evaluated";
+  readonly contentHash: string;
+  readonly documentId: string;
+  readonly engineVersion: typeof DETERMINISTIC_TEMPLATE_ENGINE_VERSION;
+  readonly evidence: readonly TemplateCoverLetterEvidenceProof[];
+  readonly exclusions: readonly DeterministicTemplateExclusion[];
+  readonly networkAccess: "none";
+  readonly templateId: typeof COVER_LETTER_TEMPLATE_ID;
+  readonly templateVersion: 1;
+  readonly versionId: string;
+  readonly versionNumber: number;
+}
+
 export interface CoredrillStorageSpikeApi {
   createAnswerLibraryEntry(
     input: CreateAnswerLibraryEntryInput,
@@ -409,6 +455,9 @@ export interface CoredrillStorageSpikeApi {
   saveApplicationDocumentPreparation(
     input: SaveApplicationDocumentPreparationInput,
   ): Promise<ApplicationResult<ApplicationDocumentPreparationDto>>;
+  createTemplateCoverLetterVersion(
+    input: CreateTemplateCoverLetterVersionInput,
+  ): Promise<ApplicationResult<TemplateCoverLetterVersionResult>>;
   loadApplicationSubmissionReview(
     applicationId: string,
   ): Promise<ApplicationResult<ApplicationSubmissionReviewDto>>;
@@ -1307,6 +1356,231 @@ const documentEditorOperations = createDocumentEditorOperations({
     return Object.freeze({ content, plainText: documentIrToPlainText(content) });
   },
 });
+
+const templateCoverLetterFailure = (
+  code: "conflict" | "not_found" | "unavailable" | "validation",
+  message: string,
+): ApplicationResult<TemplateCoverLetterVersionResult> =>
+  applicationFailure({ code, message, retryable: code === "unavailable" });
+
+const createTemplateCoverLetterVersion = async (
+  input: CreateTemplateCoverLetterVersionInput,
+): Promise<ApplicationResult<TemplateCoverLetterVersionResult>> => {
+  try {
+    const applicationId = entityId("application", input.applicationId);
+    const documentId = entityId("document", input.documentId);
+    const expectedBaseVersionId = entityId("document-version", input.expectedBaseVersionId);
+    const context = careerProfileOperationContext();
+    const preparationResult =
+      await applicationDocumentPreparationOperations.loadPreparationQuery.execute(
+        { applicationId },
+        context,
+      );
+    if (!preparationResult.ok) return applicationFailure(preparationResult.error);
+    const preparation = preparationResult.value;
+    if (preparation.submitted) {
+      return templateCoverLetterFailure(
+        "conflict",
+        "This application already has an immutable submitted snapshot.",
+      );
+    }
+    const candidate = preparation.candidates.coverLetters.find(
+      (value) =>
+        value.documentId === documentId && value.documentVersionId === expectedBaseVersionId,
+    );
+    if (
+      candidate === undefined ||
+      !candidate.latestVersion ||
+      candidate.hasDraft ||
+      candidate.lineageRole !== "job_derivative" ||
+      candidate.relatedJobId !== preparation.jobId
+    ) {
+      return templateCoverLetterFailure(
+        "conflict",
+        "Choose the latest unchanged job-specific cover-letter version before creating a template-only version.",
+      );
+    }
+
+    const editorResult = await documentEditorOperations.openDocumentQuery.execute(
+      { documentId },
+      context,
+    );
+    if (!editorResult.ok) return applicationFailure(editorResult.error);
+    if (
+      editorResult.value.currentVersion.id !== expectedBaseVersionId ||
+      editorResult.value.draft !== null
+    ) {
+      return templateCoverLetterFailure(
+        "conflict",
+        "The cover letter changed while its template context was being prepared. Review the latest local version and try again.",
+      );
+    }
+
+    const client = await getDatabase();
+    await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
+    const tracker = createTrackerRepositories(client);
+    const job = await tracker.jobs.findById(preparation.jobId);
+    const company =
+      job?.companyId === null || job?.companyId === undefined
+        ? undefined
+        : await tracker.companies.findById(job.companyId);
+    if (job === undefined || company === undefined) {
+      return templateCoverLetterFailure(
+        "not_found",
+        "The local job and company context required for this cover letter is incomplete.",
+      );
+    }
+
+    const requirements = (await createJobRequirementRepository(client).listForJob(job.id)).filter(
+      ({ userConfirmed }) => userConfirmed,
+    );
+    const evidenceRepository = await openRequirementEvidenceRepository(client, {
+      disableFts5: true,
+    });
+    const accumulatedEvidence = new Map<
+      string,
+      {
+        readonly evidence: Omit<DeterministicTemplateEvidenceInput, "requirementIds">;
+        readonly requirementIds: Set<string>;
+      }
+    >();
+    for (const requirement of requirements) {
+      const retrieval = await evidenceRepository.retrieve({
+        requirementId: requirement.id,
+        limit: 50,
+      });
+      for (const selected of retrieval.selectedEvidence) {
+        const key = `${selected.evidenceKind}:${selected.evidenceId}`;
+        const sourceVersion = selected.sourceDocument?.latestVersion;
+        const evidence = Object.freeze({
+          evidenceId: selected.evidenceId,
+          evidenceKind: selected.evidenceKind,
+          label: selected.label,
+          privacyTags: selected.privacyTags,
+          sourceVersion:
+            sourceVersion === null || sourceVersion === undefined
+              ? null
+              : Object.freeze({
+                  contentHash: sourceVersion.contentHash,
+                  documentId: selected.sourceDocument?.documentId ?? "",
+                  versionId: sourceVersion.id,
+                  versionNumber: sourceVersion.versionNumber,
+                }),
+          story: null,
+          summary: selected.summary,
+          updatedAt: selected.evidenceUpdatedAt,
+          verificationState: selected.verificationState,
+        }) satisfies Omit<DeterministicTemplateEvidenceInput, "requirementIds">;
+        const accumulated = accumulatedEvidence.get(key);
+        if (accumulated === undefined) {
+          accumulatedEvidence.set(key, {
+            evidence,
+            requirementIds: new Set([requirement.id]),
+          });
+        } else {
+          accumulated.requirementIds.add(requirement.id);
+        }
+      }
+    }
+    const evidence = Object.freeze(
+      [...accumulatedEvidence.values()].map(({ evidence: item, requirementIds }) =>
+        Object.freeze({
+          ...item,
+          requirementIds: Object.freeze([...requirementIds].sort()),
+        }),
+      ),
+    );
+    const rendered = renderDeterministicCoverLetterTemplate({
+      evidence,
+      job: Object.freeze({
+        companyName: company.canonicalName,
+        id: job.id,
+        title: job.title,
+      }),
+      requirements: Object.freeze(
+        requirements.map((requirement) =>
+          Object.freeze({
+            id: requirement.id,
+            sortOrder: requirement.sortOrder,
+            text: requirement.rawText,
+          }),
+        ),
+      ),
+    });
+    if (rendered.status !== "drafted") {
+      return templateCoverLetterFailure(
+        "validation",
+        "No reviewed selected evidence is eligible for a truthful template-only cover letter.",
+      );
+    }
+
+    const savedDraft = await documentEditorOperations.saveDraftCommand.execute(
+      {
+        baseVersionId: expectedBaseVersionId,
+        content: rendered.content,
+        documentId,
+        expectedRowVersion: null,
+      },
+      context,
+    );
+    if (!savedDraft.ok) return applicationFailure(savedDraft.error);
+    const draft = savedDraft.value.draft;
+    if (draft === null) {
+      return templateCoverLetterFailure(
+        "unavailable",
+        "The local template draft could not be retained before versioning.",
+      );
+    }
+    const createdVersion = await documentEditorOperations.createVersionCommand.execute(
+      {
+        baseVersionId: expectedBaseVersionId,
+        content: rendered.content,
+        documentId,
+        expectedDraftRowVersion: draft.rowVersion,
+        label: "Template-only draft",
+      },
+      context,
+    );
+    if (!createdVersion.ok) return applicationFailure(createdVersion.error);
+    const version = createdVersion.value.currentVersion;
+    return applicationSuccess(
+      Object.freeze({
+        aiMode: "disabled" as const,
+        applicationId,
+        baseVersionId: expectedBaseVersionId,
+        claimStatus: "not_evaluated" as const,
+        contentHash: version.contentHash,
+        documentId,
+        engineVersion: rendered.engineVersion,
+        evidence: Object.freeze(
+          rendered.context.evidence.map(
+            (item: DeterministicTemplateEvidenceReference): TemplateCoverLetterEvidenceProof =>
+              Object.freeze({
+                evidenceId: item.evidenceId,
+                evidenceKind: item.evidenceKind,
+                requirementIds: item.requirementIds,
+                sourceVersion: item.sourceVersion,
+                verificationState: item.verificationState,
+              }),
+          ),
+        ),
+        exclusions: rendered.exclusions,
+        networkAccess: "none" as const,
+        templateId: COVER_LETTER_TEMPLATE_ID,
+        templateVersion: rendered.templateVersion,
+        versionId: version.id,
+        versionNumber: version.versionNumber,
+      }),
+    );
+  } catch (error) {
+    return templateCoverLetterFailure(
+      error instanceof TypeError ? "validation" : "unavailable",
+      error instanceof TypeError
+        ? "The local template-only cover-letter request was invalid."
+        : "The local template-only cover letter could not be created.",
+    );
+  }
+};
 
 const getCareerStoryRepository = async () => {
   const client = await getDatabase();
@@ -2813,6 +3087,7 @@ const api: CoredrillStorageSpikeApi = {
       input,
       careerProfileOperationContext(),
     ),
+  createTemplateCoverLetterVersion,
   loadApplicationSubmissionReview: async (applicationId) =>
     applicationSubmissionOperations.loadReviewQuery.execute(
       { applicationId },

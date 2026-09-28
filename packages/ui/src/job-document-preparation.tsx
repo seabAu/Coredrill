@@ -23,6 +23,35 @@ export interface JobDocumentPreparationModel {
   readonly error: string | null;
 }
 
+export interface TemplateCoverLetterCreationResult {
+  readonly aiMode: "disabled";
+  readonly claimStatus: "not_evaluated";
+  readonly contentHash: string;
+  readonly engineVersion: string;
+  readonly evidence: readonly {
+    readonly evidenceId: string;
+    readonly evidenceKind: string;
+    readonly sourceVersion: {
+      readonly contentHash: string;
+      readonly documentId: string;
+      readonly versionId: string;
+      readonly versionNumber: number;
+    } | null;
+    readonly verificationState: "source_backed" | "user_confirmed";
+  }[];
+  readonly networkAccess: "none";
+  readonly templateId: string;
+  readonly templateVersion: number;
+  readonly versionId: string;
+  readonly versionNumber: number;
+}
+
+export interface TemplateCoverLetterCreationModel {
+  readonly creating: boolean;
+  readonly error: string | null;
+  readonly result: TemplateCoverLetterCreationResult | null;
+}
+
 export interface JobDocumentPreparationProps {
   readonly model: JobDocumentPreparationModel;
   readonly submissionModel?: ApplicationSubmissionReviewModel;
@@ -35,6 +64,8 @@ export interface JobDocumentPreparationProps {
     documentId: string,
   ) => Promise<ApplicationResult<DocumentEditorSessionDto>>;
   readonly onSubmissionReviewChange?: (review: ApplicationSubmissionReviewDto) => void;
+  readonly onCreateTemplateCoverLetter?: (candidate: ApplicationDocumentCandidateDto) => void;
+  readonly templateCoverLetterModel?: TemplateCoverLetterCreationModel;
 }
 
 const statusLabel = (status: ApplicationDocumentPreparationDto["status"]): string => {
@@ -121,6 +152,8 @@ export const JobDocumentPreparation = ({
   onLoadDocument,
   onSave = () => undefined,
   onSubmissionReviewChange,
+  onCreateTemplateCoverLetter,
+  templateCoverLetterModel,
 }: JobDocumentPreparationProps) => {
   const headingId = useId();
   const preparation = model.preparation;
@@ -129,6 +162,9 @@ export const JobDocumentPreparation = ({
   const [answerVersionIds, setAnswerVersionIds] = useState<readonly string[]>([]);
   const [exportCandidate, setExportCandidate] = useState<ApplicationDocumentCandidateDto | null>(
     null,
+  );
+  const templateCoverLetterCandidate = preparation?.candidates.coverLetters.find(
+    ({ documentVersionId }) => documentVersionId === coverLetterVersionId,
   );
 
   useEffect(() => {
@@ -273,6 +309,75 @@ export const JobDocumentPreparation = ({
                   ))}
                 </select>
               </label>
+              {onCreateTemplateCoverLetter === undefined ||
+              templateCoverLetterModel === undefined ? null : (
+                <section className="cd-job-template-draft" aria-label="Template-only cover letter">
+                  <div>
+                    <strong>Truthful template-only draft</strong>
+                    <p>
+                      AI stays disabled. Coredrill uses only user-reviewed evidence already selected
+                      for confirmed job requirements, then creates a new immutable local version.
+                      Nothing is uploaded or submitted.
+                    </p>
+                  </div>
+                  <button
+                    className="cd-button cd-button-secondary"
+                    disabled={
+                      templateCoverLetterModel.creating ||
+                      templateCoverLetterCandidate === undefined ||
+                      !templateCoverLetterCandidate.latestVersion ||
+                      templateCoverLetterCandidate.hasDraft ||
+                      templateCoverLetterCandidate.lineageRole !== "job_derivative"
+                    }
+                    onClick={() => {
+                      if (templateCoverLetterCandidate !== undefined) {
+                        onCreateTemplateCoverLetter(templateCoverLetterCandidate);
+                      }
+                    }}
+                    type="button"
+                  >
+                    {templateCoverLetterModel.creating
+                      ? "Creating locally…"
+                      : "Create truthful template-only version"}
+                  </button>
+                  {templateCoverLetterModel.error === null ? null : (
+                    <p role="alert">{templateCoverLetterModel.error}</p>
+                  )}
+                  {templateCoverLetterModel.result === null ? null : (
+                    <div className="cd-job-policy-note" role="status">
+                      <strong>
+                        Created immutable version{" "}
+                        {String(templateCoverLetterModel.result.versionNumber)}
+                      </strong>
+                      <p>
+                        Template {templateCoverLetterModel.result.templateId} version{" "}
+                        {String(templateCoverLetterModel.result.templateVersion)} · engine{" "}
+                        {templateCoverLetterModel.result.engineVersion} · AI disabled · network
+                        access none · claims not evaluated.
+                      </p>
+                      <p>
+                        Exact version {templateCoverLetterModel.result.versionId} · SHA-256{" "}
+                        {templateCoverLetterModel.result.contentHash}
+                      </p>
+                      <ul aria-label="Reviewed evidence and exact source versions">
+                        {templateCoverLetterModel.result.evidence.map((evidence) => (
+                          <li key={`${evidence.evidenceKind}:${evidence.evidenceId}`}>
+                            {evidence.evidenceKind} evidence {evidence.evidenceId} ·{" "}
+                            {evidence.verificationState}
+                            {evidence.sourceVersion === null
+                              ? " · user-reviewed evidence without a source document version"
+                              : ` · source document version ${String(evidence.sourceVersion.versionNumber)} (${evidence.sourceVersion.versionId}) · SHA-256 ${evidence.sourceVersion.contentHash}`}
+                          </li>
+                        ))}
+                      </ul>
+                      <p>
+                        Review the new immutable version, choose it above, and save the exact
+                        application set before export.
+                      </p>
+                    </div>
+                  )}
+                </section>
+              )}
               {preparation.selected.coverLetter === null ? (
                 <p>Optional · no exact cover-letter version selected.</p>
               ) : (

@@ -1485,6 +1485,165 @@ test("Job Documents selects exact local versions and derives preparation status"
   expect(externalRequests).toEqual([]);
 });
 
+test("template-only application set uses reviewed local evidence with AI and network disabled", async ({
+  page,
+}, testInfo) => {
+  const externalRequests = [];
+  await page.route("**/*", async (route) => {
+    if (route.request().url().startsWith("http://127.0.0.1:4178/")) {
+      await route.continue();
+      return;
+    }
+    externalRequests.push(route.request().url());
+    await route.abort("blockedbyclient");
+  });
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await openShell(page);
+  await page.evaluate(() =>
+    globalThis.coredrillStorageSpike.installDocumentsWorkspaceReferenceFixture(),
+  );
+  await page.goto("/jobs/board-northstar/documents");
+  await page.waitForFunction(() => globalThis.coredrillAppShell !== undefined);
+
+  const preparation = page.locator(".cd-job-document-preparation");
+  const createTemplate = preparation.getByRole("button", {
+    name: "Create truthful template-only version",
+  });
+  await expect(preparation).toContainText("AI stays disabled");
+  await expect(preparation).toContainText("Nothing is uploaded or submitted");
+  await expect(createTemplate).toBeDisabled();
+  await preparation
+    .getByLabel("Exact cover-letter version")
+    .selectOption("0199b300-0000-7000-8000-000000000010");
+  await expect(createTemplate).toBeEnabled();
+  await createTemplate.click();
+
+  const templateProof = preparation.locator('.cd-job-template-draft [role="status"]');
+  await expect(templateProof).toContainText("cover-letter-template-v1 version 1");
+  await expect(templateProof).toContainText("deterministic-template-engine-v1");
+  await expect(templateProof).toContainText("AI disabled");
+  await expect(templateProof).toContainText("network access none");
+  await expect(templateProof).toContainText("claims not evaluated");
+  await expect(templateProof).toContainText("0199b300-0000-7000-8000-000000000016");
+  await expect(templateProof).toContainText("0199b300-0000-7000-8000-00000000000e");
+
+  const generated = await page.evaluate(async () => {
+    const preparationResult =
+      await globalThis.coredrillStorageSpike.loadApplicationDocumentPreparation(
+        "0199b300-0000-7000-8000-000000000017",
+      );
+    if (!preparationResult.ok) return preparationResult;
+    const cover = preparationResult.value.candidates.coverLetters.find(
+      (candidate) =>
+        candidate.documentId === "0199b300-0000-7000-8000-000000000009" && candidate.latestVersion,
+    );
+    if (cover === undefined) return { ok: false, error: "latest cover missing" };
+    const editor = await globalThis.coredrillStorageSpike.openDocumentEditor(cover.documentId);
+    if (!editor.ok) return editor;
+    return {
+      ok: true,
+      cover,
+      contentHash: editor.value.currentVersion.contentHash,
+      plainText: editor.value.currentVersion.plainText,
+    };
+  });
+  expect(generated).toMatchObject({
+    ok: true,
+    cover: {
+      documentId: "0199b300-0000-7000-8000-000000000009",
+      latestVersion: true,
+      versionNumber: 2,
+      versionLabel: "Template-only draft",
+    },
+  });
+  expect(generated.contentHash).toMatch(/^[a-f0-9]{64}$/u);
+  expect(generated.plainText).toContain(
+    "I am applying for the Product Operations Lead role at Northstar Health.",
+  );
+  expect(generated.plainText).toContain(
+    "Led durable local-first product operations with verified recovery practices.",
+  );
+
+  await preparation
+    .getByLabel("Exact resume version *")
+    .selectOption("0199b300-0000-7000-8000-00000000000e");
+  await preparation
+    .getByLabel("Exact cover-letter version")
+    .selectOption(generated.cover.documentVersionId);
+  await preparation.getByRole("checkbox", { name: /Why Northstar\?.*version 1.*latest/u }).check();
+  await preparation.getByRole("button", { name: "Save exact selections" }).click();
+  await expect(preparation).toContainText("Ready for export review");
+
+  await preparation
+    .getByRole("button", { name: "Review export for Northstar resume version 2" })
+    .click();
+  let exportReview = preparation.getByRole("region", {
+    name: "Export review for Northstar resume version 2",
+  });
+  const [resumeDownload] = await Promise.all([
+    page.waitForEvent("download"),
+    exportReview.getByRole("button", { name: "Download DOCX" }).click(),
+  ]);
+  expect(resumeDownload.suggestedFilename()).toMatch(/\.docx$/u);
+  const resumePath = await resumeDownload.path();
+  expect(resumePath).not.toBeNull();
+  expect([...(await readFile(resumePath)).subarray(0, 4)]).toEqual([0x50, 0x4b, 0x03, 0x04]);
+  await exportReview.getByRole("button", { name: "Close export review" }).click();
+
+  await preparation
+    .getByRole("button", { name: "Review export for Northstar cover letter version 2" })
+    .click();
+  exportReview = preparation.getByRole("region", {
+    name: "Export review for Northstar cover letter version 2",
+  });
+  await expect(exportReview.getByRole("region", { name: "Document preview" })).toContainText(
+    "Led durable local-first product operations with verified recovery practices.",
+  );
+  await exportReview.getByLabel("Export format").selectOption("pdf");
+  await page.evaluate(() => {
+    globalThis.__coredrillTemplatePrintCalls = 0;
+    window.print = () => {
+      globalThis.__coredrillTemplatePrintCalls += 1;
+    };
+  });
+  await exportReview.getByRole("button", { name: "Print or save PDF" }).click();
+  expect(await page.evaluate(() => globalThis.__coredrillTemplatePrintCalls)).toBe(1);
+  await expect(exportReview.getByRole("status")).toContainText("Choose Save as PDF");
+  await exportReview.getByRole("button", { name: "Close export review" }).click();
+
+  await preparation
+    .getByRole("button", { name: "Review export for Why Northstar? version 1" })
+    .click();
+  exportReview = preparation.getByRole("region", {
+    name: "Export review for Why Northstar? version 1",
+  });
+  await exportReview.getByLabel("Export format").selectOption("plain-text");
+  const [answerDownload] = await Promise.all([
+    page.waitForEvent("download"),
+    exportReview.getByRole("button", { name: "Download Plain text" }).click(),
+  ]);
+  const answerPath = await answerDownload.path();
+  expect(answerPath).not.toBeNull();
+  await expect(readFile(answerPath, "utf8")).resolves.toBe(
+    "Northstar aligns with my local-first product operations experience.",
+  );
+  await exportReview.getByRole("button", { name: "Close export review" }).click();
+
+  await page.setViewportSize({ width: 320, height: 800 });
+  const dimensions = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
+  await attachAxe(page, testInfo, "template-only-application-set");
+  await attachAriaSnapshot(preparation, testInfo, "template-only-application-set");
+  await attachProof(page, testInfo, "template-only-application-set");
+  console.info(
+    `Q3_003_E2E_PROOF ${JSON.stringify({ aiMode: "disabled", claimStatus: "not_evaluated", exactCoverVersion: generated.cover.documentVersionId, evidenceId: "0199b300-0000-7000-8000-000000000016", formats: ["docx", "pdf", "plain-text"], networkAccess: "none", sourceVersionId: "0199b300-0000-7000-8000-00000000000e", templateId: "cover-letter-template-v1" })}`,
+  );
+  expect(externalRequests).toEqual([]);
+});
+
 test("Mark Applied freezes the exact local artifact and answer set without submitting", async ({
   page,
 }, testInfo) => {

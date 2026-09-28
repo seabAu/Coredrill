@@ -41,6 +41,7 @@ import {
   type HomeRecentItem,
   type JobWorkspaceActionId,
   type JobDocumentPreparationModel,
+  type TemplateCoverLetterCreationResult,
   type ApplicationSubmissionReviewModel,
   type JobWorkspaceContentActionRequest,
   type JobWorkspaceContentModel,
@@ -89,6 +90,7 @@ import {
   type CaptureDuplicateSuggestionV1,
   type AnswerLibraryEntryDto,
   type ApplicationDocumentPreparationDto,
+  type ApplicationDocumentCandidateDto,
   type ApplicationSubmissionReviewDto,
   type CareerProfileEntryDto,
   type CareerStoryDto,
@@ -1773,6 +1775,10 @@ const AppShellCatalog = () => {
   const [jobDocumentPreparationError, setJobDocumentPreparationError] = useState<string | null>(
     null,
   );
+  const [templateCoverLetterCreating, setTemplateCoverLetterCreating] = useState(false);
+  const [templateCoverLetterError, setTemplateCoverLetterError] = useState<string | null>(null);
+  const [templateCoverLetterResult, setTemplateCoverLetterResult] =
+    useState<TemplateCoverLetterCreationResult | null>(null);
   const [applicationSubmissionReview, setApplicationSubmissionReview] =
     useState<ApplicationSubmissionReviewDto | null>(null);
   const [applicationSubmissionLoadedFor, setApplicationSubmissionLoadedFor] = useState<
@@ -2379,6 +2385,46 @@ const AppShellCatalog = () => {
       setLastActivity(message);
     } finally {
       setJobDocumentPreparationSaving(false);
+    }
+  };
+
+  const createTemplateCoverLetter = async (
+    candidate: ApplicationDocumentCandidateDto,
+  ): Promise<void> => {
+    if (preparationApplicationId === null) return;
+    setTemplateCoverLetterCreating(true);
+    setTemplateCoverLetterError(null);
+    setTemplateCoverLetterResult(null);
+    try {
+      const result = await globalThis.coredrillStorageSpike.createTemplateCoverLetterVersion({
+        applicationId: preparationApplicationId,
+        documentId: candidate.documentId,
+        expectedBaseVersionId: candidate.documentVersionId,
+      });
+      if (!result.ok) {
+        setTemplateCoverLetterError(result.error.message);
+        setLastActivity(result.error.message);
+        return;
+      }
+      setTemplateCoverLetterResult(result.value);
+      const refreshed =
+        await globalThis.coredrillStorageSpike.loadApplicationDocumentPreparation(
+          preparationApplicationId,
+        );
+      if (refreshed.ok) {
+        setJobDocumentPreparation(refreshed.value);
+        setJobDocumentPreparationLoadedFor(preparationApplicationId);
+      }
+      setDocumentsLoaded(false);
+      setLastActivity(
+        `Created immutable template-only cover-letter version ${String(result.value.versionNumber)} locally with AI disabled. Review and select it explicitly before export.`,
+      );
+    } catch {
+      const message = "The local template-only cover letter could not be created.";
+      setTemplateCoverLetterError(message);
+      setLastActivity(message);
+    } finally {
+      setTemplateCoverLetterCreating(false);
     }
   };
 
@@ -3767,6 +3813,9 @@ const AppShellCatalog = () => {
                   onSave={(input) => {
                     void saveJobDocumentPreparation(input);
                   }}
+                  onCreateTemplateCoverLetter={(candidate) => {
+                    void createTemplateCoverLetter(candidate);
+                  }}
                   onLoadDocument={loadDocumentForExport}
                   onMarkApplied={(input) => {
                     void markApplicationApplied(input);
@@ -3777,6 +3826,11 @@ const AppShellCatalog = () => {
                     setApplicationSubmissionLoadedFor(review.applicationId);
                   }}
                   submissionModel={visibleApplicationSubmissionModel}
+                  templateCoverLetterModel={{
+                    creating: templateCoverLetterCreating,
+                    error: templateCoverLetterError,
+                    result: templateCoverLetterResult,
+                  }}
                 />
               ) : workspaceContentModel !== null && isJobWorkspaceContentTab(workspaceRoute.tab) ? (
                 <JobWorkspaceContent
@@ -4033,6 +4087,9 @@ const AppShellCatalog = () => {
                       onSave={(input) => {
                         void saveJobDocumentPreparation(input);
                       }}
+                      onCreateTemplateCoverLetter={(candidate) => {
+                        void createTemplateCoverLetter(candidate);
+                      }}
                       onLoadDocument={loadDocumentForExport}
                       onMarkApplied={(input) => {
                         void markApplicationApplied(input);
@@ -4043,6 +4100,11 @@ const AppShellCatalog = () => {
                         setApplicationSubmissionLoadedFor(review.applicationId);
                       }}
                       submissionModel={visibleApplicationSubmissionModel}
+                      templateCoverLetterModel={{
+                        creating: templateCoverLetterCreating,
+                        error: templateCoverLetterError,
+                        result: templateCoverLetterResult,
+                      }}
                     />
                   ) : workspaceContentModel !== null &&
                     isJobWorkspaceContentTab(workspaceRoute.tab) ? (
