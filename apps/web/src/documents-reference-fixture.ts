@@ -47,6 +47,7 @@ export const installDocumentsWorkspaceReferenceFixture = async (
     snapshotAnswer: entityId("submitted-snapshot-item", "0199b300-0000-7000-8000-000000000015"),
     linkedEvidence: entityId("experience", "0199b300-0000-7000-8000-000000000016"),
     preparationApplication: JOB_DOCUMENT_PREPARATION_REFERENCE_APPLICATION_ID,
+    preparingStatus: entityId("status_definition", "0199b300-0000-7000-8000-000000000018"),
   });
   const createdAt = instant("2026-09-27T18:00:00.000Z");
   const submittedAt = instant("2026-09-27T19:00:00.000Z");
@@ -76,26 +77,68 @@ export const installDocumentsWorkspaceReferenceFixture = async (
     );
   };
   const ensurePreparationApplication = async (): Promise<void> => {
-    const existingPreparation = await database.query(
-      sqlStatement("SELECT id FROM application WHERE id = ?", [ids.preparationApplication]),
-    );
-    if (existingPreparation.length === 1) return;
-    await createPipelineRepositories(database).applications.create(
-      {
-        id: ids.preparationApplication,
-        jobId: ids.job,
-        appliedAt: null,
-        channel: null,
-        currentStatusId: ids.status,
-        selectedResumeVersionId: null,
-        selectedCoverLetterVersionId: null,
-        notes: "Reference-only local document preparation attempt.",
+    const pipeline = createPipelineRepositories(database);
+    const existingPreparingStatus = await pipeline.statusDefinitions.findById(ids.preparingStatus);
+    if (existingPreparingStatus === undefined) {
+      await pipeline.statusDefinitions.create({
+        id: ids.preparingStatus,
+        name: "Preparing application",
+        category: "preparing",
+        color: "amber",
+        isSystem: false,
+        sortOrder: 5,
+        terminal: false,
         archivedAt: null,
         createdAt: latestAt,
         updatedAt: latestAt,
-      },
-      { allowAdditionalAttempt: true },
+      });
+    }
+    const existingPreparation = await database.query(
+      sqlStatement("SELECT id FROM application WHERE id = ?", [ids.preparationApplication]),
     );
+    if (existingPreparation.length === 0) {
+      await pipeline.applications.create(
+        {
+          id: ids.preparationApplication,
+          jobId: ids.job,
+          appliedAt: null,
+          channel: null,
+          currentStatusId: ids.preparingStatus,
+          selectedResumeVersionId: null,
+          selectedCoverLetterVersionId: null,
+          notes: "Reference-only local document preparation attempt.",
+          archivedAt: null,
+          createdAt: latestAt,
+          updatedAt: latestAt,
+        },
+        { allowAdditionalAttempt: true },
+      );
+    }
+    const submitted = await database.query(
+      sqlStatement("SELECT id FROM submitted_snapshot WHERE application_id = ?", [
+        ids.preparationApplication,
+      ]),
+    );
+    if (submitted.length === 0) {
+      await database.execute(
+        sqlStatement(
+          `UPDATE application
+           SET applied_at = NULL, channel = NULL, current_status_id = ?, updated_at = ?,
+               row_version = CASE WHEN current_status_id = ? THEN row_version ELSE row_version + 1 END
+           WHERE id = ?`,
+          [ids.preparingStatus, latestAt, ids.preparingStatus, ids.preparationApplication],
+        ),
+      );
+      await database.execute(
+        sqlStatement(
+          `UPDATE job
+           SET current_status_id = ?, updated_at = ?,
+               row_version = CASE WHEN current_status_id IS ? THEN row_version ELSE row_version + 1 END
+           WHERE id = ?`,
+          [ids.preparingStatus, latestAt, ids.preparingStatus, ids.job],
+        ),
+      );
+    }
   };
   const existing = await database.query(
     sqlStatement("SELECT id FROM submitted_snapshot WHERE id = ?", [ids.snapshot]),

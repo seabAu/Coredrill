@@ -4,6 +4,10 @@ export {
   createApplicationDocumentPreparationRepository,
 } from "./application-document-preparation-repository.js";
 export {
+  ApplicationSubmissionRepository,
+  createApplicationSubmissionRepository,
+} from "./application-submission-repository.js";
+export {
   DocumentEditorRepository,
   createDocumentEditorRepository,
 } from "./document-editor-repository.js";

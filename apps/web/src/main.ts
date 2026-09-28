@@ -8,6 +8,7 @@ import {
   createAnswerLibraryOperations,
   createDocumentEditorOperations,
   createApplicationDocumentPreparationOperations,
+  createApplicationSubmissionOperations,
   createDocumentsWorkspaceOperations,
   createDefaultBrowserExportReminderPreference,
   createResumeImportOperations,
@@ -23,6 +24,8 @@ import {
   type ApplicationOperationContext,
   type ApplicationDocumentPreparationDto,
   type ApplicationDocumentPreparationPort,
+  type ApplicationSubmissionPort,
+  type ApplicationSubmissionReviewDto,
   type ApplicationResult,
   type AnswerLibraryEntryDto,
   type AnswerLibraryPort,
@@ -57,6 +60,8 @@ import {
   type ResumeImportReviewPort,
   type SaveDocumentEditorDraftInput,
   type SaveApplicationDocumentPreparationInput,
+  type MarkApplicationAppliedInput,
+  type RecordApplicationExportInput,
   type UpdateCareerStoryInput,
   type UpdateCareerStoryPortInput,
   type VaultDeletionPort,
@@ -92,6 +97,7 @@ import {
   createDocumentWorkspaceRepository,
   createDocumentEditorRepository,
   createApplicationDocumentPreparationRepository,
+  createApplicationSubmissionRepository,
   createResumeImportRepository,
   createResumeImportResolutionRepository,
   createPhase1RepositoryContractSuite,
@@ -384,6 +390,15 @@ export interface CoredrillStorageSpikeApi {
   saveApplicationDocumentPreparation(
     input: SaveApplicationDocumentPreparationInput,
   ): Promise<ApplicationResult<ApplicationDocumentPreparationDto>>;
+  loadApplicationSubmissionReview(
+    applicationId: string,
+  ): Promise<ApplicationResult<ApplicationSubmissionReviewDto>>;
+  recordApplicationDocumentExport(
+    input: RecordApplicationExportInput,
+  ): Promise<ApplicationResult<ApplicationSubmissionReviewDto>>;
+  markApplicationApplied(
+    input: MarkApplicationAppliedInput,
+  ): Promise<ApplicationResult<ApplicationSubmissionReviewDto>>;
   openDocumentEditor(documentId: string): Promise<ApplicationResult<DocumentEditorSessionDto>>;
   saveDocumentEditorDraft(
     input: SaveDocumentEditorDraftInput,
@@ -462,6 +477,11 @@ const setStatus = (message: string): void => {
 
 const sha256Text = async (value: string): Promise<string> => {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+};
+
+const sha256Bytes = async (bytes: Uint8Array): Promise<string> => {
+  const digest = await crypto.subtle.digest("SHA-256", Uint8Array.from(bytes));
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 };
 
@@ -1210,6 +1230,38 @@ const applicationDocumentPreparationPort: ApplicationDocumentPreparationPort = O
 
 const applicationDocumentPreparationOperations = createApplicationDocumentPreparationOperations({
   preparation: applicationDocumentPreparationPort,
+});
+
+const applicationSubmissionPort: ApplicationSubmissionPort = Object.freeze({
+  load: async (applicationId: Parameters<ApplicationSubmissionPort["load"]>[0]) => {
+    const client = await getDatabase();
+    await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
+    return createApplicationSubmissionRepository(client).load(applicationId);
+  },
+  recordExport: async (input: Parameters<ApplicationSubmissionPort["recordExport"]>[0]) => {
+    const client = await getDatabase();
+    await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
+    await (
+      await getAttachmentStore()
+    ).put({
+      contentId: input.contentId,
+      sha256: input.contentId,
+      byteLength: input.byteLength,
+      bytes: input.bytes,
+    });
+    return createApplicationSubmissionRepository(client).recordExport(input);
+  },
+  markApplied: async (input: Parameters<ApplicationSubmissionPort["markApplied"]>[0]) => {
+    const client = await getDatabase();
+    await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
+    return createApplicationSubmissionRepository(client).markApplied(input);
+  },
+});
+
+const applicationSubmissionOperations = createApplicationSubmissionOperations({
+  submission: applicationSubmissionPort,
+  createId: (kind) => generateEntityId(kind),
+  hashBytes: sha256Bytes,
 });
 
 const getDocumentEditorRepository = async () => {
@@ -2486,6 +2538,21 @@ const api: CoredrillStorageSpikeApi = {
     ),
   saveApplicationDocumentPreparation: async (input) =>
     applicationDocumentPreparationOperations.savePreparationCommand.execute(
+      input,
+      careerProfileOperationContext(),
+    ),
+  loadApplicationSubmissionReview: async (applicationId) =>
+    applicationSubmissionOperations.loadReviewQuery.execute(
+      { applicationId },
+      careerProfileOperationContext(),
+    ),
+  recordApplicationDocumentExport: async (input) =>
+    applicationSubmissionOperations.recordExportCommand.execute(
+      input,
+      careerProfileOperationContext(),
+    ),
+  markApplicationApplied: async (input) =>
+    applicationSubmissionOperations.markAppliedCommand.execute(
       input,
       careerProfileOperationContext(),
     ),

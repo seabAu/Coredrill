@@ -195,7 +195,8 @@ const SUBMITTED_SNAPSHOT_ITEM_ROLES = new Set<SubmittedSnapshotItemRole>([
 const SUBMITTED_SNAPSHOT_FORMATS = new Set<SubmittedSnapshotFormat>(["file", "plain_text"]);
 const IDENTIFIER_PATTERN = /^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$/u;
 const SHA256_PATTERN = /^[a-f0-9]{64}$/u;
-const MEDIA_TYPE_PATTERN = /^[a-z0-9][a-z0-9!#$&^_.+-]{0,126}\/[a-z0-9][a-z0-9!#$&^_.+-]{0,126}$/u;
+const MEDIA_TYPE_PATTERN =
+  /^[a-z0-9][a-z0-9!#$&^_.+-]{0,126}\/[a-z0-9][a-z0-9!#$&^_.+-]{0,126}(?:;charset=utf-8)?$/u;
 
 const boundedText = (
   value: string,

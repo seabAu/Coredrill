@@ -41,6 +41,7 @@ import {
   type HomeRecentItem,
   type JobWorkspaceActionId,
   type JobDocumentPreparationModel,
+  type ApplicationSubmissionReviewModel,
   type JobWorkspaceContentActionRequest,
   type JobWorkspaceContentModel,
   type JobWorkspaceFrameModel,
@@ -88,6 +89,7 @@ import {
   type CaptureDuplicateSuggestionV1,
   type AnswerLibraryEntryDto,
   type ApplicationDocumentPreparationDto,
+  type ApplicationSubmissionReviewDto,
   type CareerProfileEntryDto,
   type CareerStoryDto,
   type CreateCareerStoryInput,
@@ -105,6 +107,8 @@ import {
   type DocumentWorkspaceItemDto,
   type SaveDocumentEditorDraftInput,
   type SaveApplicationDocumentPreparationInput,
+  type MarkApplicationAppliedInput,
+  type RecordApplicationExportInput,
   type VaultDeletionPreviewDto,
   type VaultDeletionResultDto,
 } from "@coredrill/application";
@@ -1769,6 +1773,14 @@ const AppShellCatalog = () => {
   const [jobDocumentPreparationError, setJobDocumentPreparationError] = useState<string | null>(
     null,
   );
+  const [applicationSubmissionReview, setApplicationSubmissionReview] =
+    useState<ApplicationSubmissionReviewDto | null>(null);
+  const [applicationSubmissionLoadedFor, setApplicationSubmissionLoadedFor] = useState<
+    string | null
+  >(null);
+  const [applicationSubmissionLoading, setApplicationSubmissionLoading] = useState(false);
+  const [applicationSubmissionSaving, setApplicationSubmissionSaving] = useState(false);
+  const [applicationSubmissionError, setApplicationSubmissionError] = useState<string | null>(null);
   const [documentEditor, setDocumentEditor] = useState<DocumentEditorSessionDto | null>(null);
   const [documentEditorLoading, setDocumentEditorLoading] = useState(false);
   const [documentEditorError, setDocumentEditorError] = useState<string | null>(null);
@@ -2305,6 +2317,44 @@ const AppShellCatalog = () => {
     workspaceRoute?.tab,
   ]);
 
+  useEffect(() => {
+    if (
+      activeDestination !== "pipeline" ||
+      workspaceRoute?.tab !== "documents" ||
+      preparationApplicationId === null ||
+      applicationSubmissionLoadedFor === preparationApplicationId ||
+      applicationSubmissionLoading
+    ) {
+      return;
+    }
+    setApplicationSubmissionLoading(true);
+    setApplicationSubmissionError(null);
+    void globalThis.coredrillStorageSpike
+      .loadApplicationSubmissionReview(preparationApplicationId)
+      .then((result) => {
+        if (result.ok) {
+          setApplicationSubmissionReview(result.value);
+        } else {
+          setApplicationSubmissionReview(null);
+          setApplicationSubmissionError(result.error.message);
+        }
+      })
+      .catch(() => {
+        setApplicationSubmissionReview(null);
+        setApplicationSubmissionError("The local Mark Applied review could not be loaded.");
+      })
+      .finally(() => {
+        setApplicationSubmissionLoadedFor(preparationApplicationId);
+        setApplicationSubmissionLoading(false);
+      });
+  }, [
+    activeDestination,
+    applicationSubmissionLoadedFor,
+    applicationSubmissionLoading,
+    preparationApplicationId,
+    workspaceRoute?.tab,
+  ]);
+
   const saveJobDocumentPreparation = async (
     input: SaveApplicationDocumentPreparationInput,
   ): Promise<void> => {
@@ -2315,6 +2365,7 @@ const AppShellCatalog = () => {
         await globalThis.coredrillStorageSpike.saveApplicationDocumentPreparation(input);
       if (result.ok) {
         setJobDocumentPreparation(result.value);
+        setApplicationSubmissionLoadedFor(null);
         setLastActivity(
           `Saved exact local application versions. Preparation is ${result.value.status.replace("_", " ")}.`,
         );
@@ -2330,6 +2381,45 @@ const AppShellCatalog = () => {
       setJobDocumentPreparationSaving(false);
     }
   };
+
+  const recordApplicationDocumentExport = async (input: RecordApplicationExportInput) => {
+    const result = await globalThis.coredrillStorageSpike.recordApplicationDocumentExport(input);
+    if (result.ok) {
+      setApplicationSubmissionReview(result.value);
+      setApplicationSubmissionLoadedFor(result.value.applicationId);
+      setLastActivity("Retained the exact local export identity for Mark Applied review.");
+    } else {
+      setApplicationSubmissionError(result.error.message);
+      setLastActivity(result.error.message);
+    }
+    return result;
+  };
+
+  const markApplicationApplied = async (input: MarkApplicationAppliedInput): Promise<void> => {
+    setApplicationSubmissionSaving(true);
+    setApplicationSubmissionError(null);
+    try {
+      const result = await globalThis.coredrillStorageSpike.markApplicationApplied(input);
+      if (result.ok) {
+        setApplicationSubmissionReview(result.value);
+        setApplicationSubmissionLoadedFor(result.value.applicationId);
+        setJobDocumentPreparationLoadedFor(null);
+        setDocumentsLoaded(false);
+        setLastActivity(
+          "Recorded Applied locally and froze the exact submitted versions and artifact identities.",
+        );
+      } else {
+        setApplicationSubmissionError(result.error.message);
+        setLastActivity(result.error.message);
+      }
+    } catch {
+      const message = "The local Applied confirmation could not be recorded.";
+      setApplicationSubmissionError(message);
+      setLastActivity(message);
+    } finally {
+      setApplicationSubmissionSaving(false);
+    }
+  };
   const visibleJobDocumentPreparation =
     preparationApplicationId !== null &&
     jobDocumentPreparationLoadedFor === preparationApplicationId
@@ -2340,6 +2430,20 @@ const AppShellCatalog = () => {
     jobDocumentPreparationLoadedFor === preparationApplicationId
       ? jobDocumentPreparationError
       : null;
+  const visibleApplicationSubmissionReview =
+    preparationApplicationId !== null && applicationSubmissionLoadedFor === preparationApplicationId
+      ? applicationSubmissionReview
+      : null;
+  const visibleApplicationSubmissionError =
+    preparationApplicationId !== null && applicationSubmissionLoadedFor === preparationApplicationId
+      ? applicationSubmissionError
+      : null;
+  const visibleApplicationSubmissionModel = {
+    review: visibleApplicationSubmissionReview,
+    loading: applicationSubmissionLoading,
+    saving: applicationSubmissionSaving,
+    error: visibleApplicationSubmissionError,
+  } satisfies ApplicationSubmissionReviewModel;
 
   const openDocumentEditor = useCallback(async (documentId: string): Promise<void> => {
     setDocumentEditorLoading(true);
@@ -3664,6 +3768,15 @@ const AppShellCatalog = () => {
                     void saveJobDocumentPreparation(input);
                   }}
                   onLoadDocument={loadDocumentForExport}
+                  onMarkApplied={(input) => {
+                    void markApplicationApplied(input);
+                  }}
+                  onRecordExport={recordApplicationDocumentExport}
+                  onSubmissionReviewChange={(review) => {
+                    setApplicationSubmissionReview(review);
+                    setApplicationSubmissionLoadedFor(review.applicationId);
+                  }}
+                  submissionModel={visibleApplicationSubmissionModel}
                 />
               ) : workspaceContentModel !== null && isJobWorkspaceContentTab(workspaceRoute.tab) ? (
                 <JobWorkspaceContent
@@ -3921,6 +4034,15 @@ const AppShellCatalog = () => {
                         void saveJobDocumentPreparation(input);
                       }}
                       onLoadDocument={loadDocumentForExport}
+                      onMarkApplied={(input) => {
+                        void markApplicationApplied(input);
+                      }}
+                      onRecordExport={recordApplicationDocumentExport}
+                      onSubmissionReviewChange={(review) => {
+                        setApplicationSubmissionReview(review);
+                        setApplicationSubmissionLoadedFor(review.applicationId);
+                      }}
+                      submissionModel={visibleApplicationSubmissionModel}
                     />
                   ) : workspaceContentModel !== null &&
                     isJobWorkspaceContentTab(workspaceRoute.tab) ? (

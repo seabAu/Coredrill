@@ -1,5 +1,6 @@
 /** Shared accessible product views and components; no SQL or privileged APIs. */
 export * from "./app-shell.js";
+export * from "./application-submission-review.js";
 export * from "./capture-inbox-review.js";
 export * from "./career-profile-workspace.js";
 export * from "./contrast.js";

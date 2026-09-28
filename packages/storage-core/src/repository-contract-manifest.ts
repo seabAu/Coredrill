@@ -43,6 +43,8 @@ const PHASE_1_REPOSITORY_CONTRACT_COMPONENTS = Object.freeze({
     linkAttachments: "links jobs and content-addressed attachment manifests without storing bytes",
     snapshotSubmittedDocuments:
       "classifies bases templates and job derivatives and snapshots exact submitted documents",
+    markAppliedTransaction:
+      "records Applied status history and exact submitted versions and artifacts atomically",
   }),
   jobSearch: component("phase-1-job-search", {
     accelerateWithFts5: "detects FTS5 and refreshes the accelerated lexical index",
@@ -73,8 +75,8 @@ const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
 );
 
 export const PHASE_1_REPOSITORY_CONTRACT_MANIFEST = Object.freeze({
-  schemaVersion: 9 as const,
-  suiteName: "phase-1-repository-contracts-v9",
+  schemaVersion: 10 as const,
+  suiteName: "phase-1-repository-contracts-v10",
   components: PHASE_1_REPOSITORY_CONTRACT_COMPONENTS,
   caseNames: PHASE_1_REPOSITORY_CONTRACT_CASES,
 });

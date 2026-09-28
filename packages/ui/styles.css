@@ -4759,6 +4759,139 @@ textarea {
   display: none;
 }
 
+.cd-document-export-pdf-record,
+.cd-application-submission-review,
+.cd-application-submission-review form,
+.cd-application-submission-review fieldset,
+.cd-submitted-snapshot {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.cd-document-export-pdf-record {
+  min-width: 0;
+  max-inline-size: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: 650;
+}
+
+.cd-document-export-pdf-record input {
+  inline-size: 100%;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  overflow: hidden;
+}
+
+.cd-document-export-pdf-record span {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.cd-application-submission-review {
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-raised);
+}
+
+.cd-application-submission-review header p,
+.cd-application-submission-review header h4,
+.cd-application-submission-review fieldset,
+.cd-application-submission-review legend,
+.cd-submitted-snapshot h5,
+.cd-submitted-snapshot p {
+  margin: 0;
+}
+
+.cd-application-submission-review header p:last-child,
+.cd-application-submission-review fieldset > p {
+  color: var(--color-text-muted);
+}
+
+.cd-application-submission-review fieldset {
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.cd-application-submission-review label {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+  color: var(--color-text);
+  font-weight: 650;
+}
+
+.cd-application-submission-review select,
+.cd-application-submission-review input[type="text"] {
+  inline-size: 100%;
+  min-width: 0;
+  max-inline-size: 100%;
+  min-height: var(--control-height);
+  padding-inline: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.cd-application-submission-review form,
+.cd-application-submission-review fieldset,
+.cd-application-submission-review .cd-button {
+  max-inline-size: 100%;
+  box-sizing: border-box;
+}
+
+.cd-application-submission-review .cd-button {
+  white-space: normal;
+}
+
+.cd-application-submission-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.cd-application-submission-confirmation {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  padding: var(--space-3);
+  border-inline-start: 0.3rem solid var(--color-warning);
+  background: var(--color-surface);
+}
+
+.cd-application-submission-confirmation input {
+  margin-block-start: 0.2rem;
+}
+
+.cd-submitted-snapshot {
+  padding: var(--space-3);
+  border: 2px solid var(--color-positive);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.cd-submitted-snapshot ol {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding-inline-start: var(--space-5);
+}
+
+.cd-submitted-snapshot li,
+.cd-submitted-snapshot code {
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 48rem) {
   .cd-document-export-review__controls,
   .cd-document-export-metadata {
@@ -4774,6 +4907,10 @@ textarea {
   .cd-document-export-page {
     min-height: 34rem;
     padding: var(--space-4);
+  }
+
+  .cd-application-submission-fields {
+    grid-template-columns: 1fr;
   }
 }
 

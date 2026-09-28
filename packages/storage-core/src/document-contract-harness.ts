@@ -1,6 +1,10 @@
 import type { JsonValue } from "@coredrill/contracts";
 import { entityId, instant } from "@coredrill/domain";
-import { DocumentEditorError, DocumentPreparationError } from "@coredrill/application";
+import {
+  ApplicationSubmissionError,
+  DocumentEditorError,
+  DocumentPreparationError,
+} from "@coredrill/application";
 
 import {
   DatabaseContractViolation,
@@ -17,6 +21,7 @@ import {
 } from "./document-repositories.js";
 import { createDocumentEditorRepository } from "./document-editor-repository.js";
 import { createApplicationDocumentPreparationRepository } from "./application-document-preparation-repository.js";
+import { createApplicationSubmissionRepository } from "./application-submission-repository.js";
 import { createPipelineRepositories } from "./pipeline-repositories.js";
 import { createTrackerRepositories } from "./tracker-repositories.js";
 
@@ -46,6 +51,14 @@ const IDS = Object.freeze({
   invalidSubmittedSnapshot: entityId("submitted-snapshot", "0198e105-0000-7000-8000-000000000013"),
   invalidSubmittedItem: entityId("submitted-snapshot-item", "0198e105-0000-7000-8000-000000000014"),
   editorVersion: entityId("document-version", "0198e105-0000-7000-8000-000000000015"),
+  preparingStatus: entityId("status_definition", "0198e105-0000-7000-8000-000000000016"),
+  markAppliedEvent: entityId("status-event", "0198e105-0000-7000-8000-000000000017"),
+  markAppliedSnapshot: entityId("submitted-snapshot", "0198e105-0000-7000-8000-000000000018"),
+  markAppliedResume: entityId("submitted-snapshot-item", "0198e105-0000-7000-8000-000000000019"),
+  markAppliedAnswer: entityId("submitted-snapshot-item", "0198e105-0000-7000-8000-00000000001a"),
+  exportArtifact: entityId("document-export-artifact", "0198e105-0000-7000-8000-00000000001b"),
+  duplicateStatusEvent: entityId("status-event", "0198e105-0000-7000-8000-00000000001c"),
+  exportTextArtifact: entityId("document-export-artifact", "0198e105-0000-7000-8000-00000000001d"),
 });
 
 const CREATED_AT = instant("2026-08-25T18:00:00.000Z");
@@ -53,6 +66,7 @@ const UPDATED_AT = instant("2026-08-25T18:05:00.000Z");
 const FIRST_HASH = "a".repeat(64);
 const SECOND_HASH = "b".repeat(64);
 const ATTACHMENT_HASH = "c".repeat(64);
+const TEXT_ATTACHMENT_HASH = "d".repeat(64);
 
 const FIRST_IR: JsonValue = {
   specVersion: 1,
@@ -808,6 +822,313 @@ export const createDocumentRepositoryContractSuite = (
             ),
           () => true,
           "An exact submitted file identity was deleted from its version.",
+        );
+      },
+    },
+    {
+      name: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components.document.cases.markAppliedTransaction,
+      run: async (database) => {
+        await setup.migrate(database);
+        await createJob(database);
+        const documents = createDocumentRepositories(database);
+        await documents.documents.create({
+          id: IDS.derivativeDocument,
+          kind: "resume",
+          title: "Exact prepared resume",
+          source: "user",
+          archivedAt: null,
+          createdAt: CREATED_AT,
+          updatedAt: CREATED_AT,
+        });
+        await documents.documents.create({
+          id: IDS.answerDocument,
+          kind: "application_answer",
+          title: "Exact prepared answer",
+          source: "user",
+          archivedAt: null,
+          createdAt: CREATED_AT,
+          updatedAt: CREATED_AT,
+        });
+        for (const version of [
+          { id: IDS.derivativeVersion, documentId: IDS.derivativeDocument },
+          { id: IDS.answerVersion, documentId: IDS.answerDocument },
+        ]) {
+          await documents.versions.create({
+            ...version,
+            versionNumber: 1,
+            contentIrVersion: 1,
+            contentIr: FIRST_IR,
+            contentPlain: "Exact prepared content",
+            templateId: null,
+            createdBy: "user",
+            createdAt: CREATED_AT,
+            parentVersionId: null,
+            contentHash: FIRST_HASH,
+            label: null,
+          });
+        }
+        const pipeline = createPipelineRepositories(database);
+        await pipeline.statusDefinitions.create({
+          id: IDS.preparingStatus,
+          name: "Preparing",
+          category: "preparing",
+          color: "amber",
+          isSystem: false,
+          sortOrder: 5,
+          terminal: false,
+          archivedAt: null,
+          createdAt: CREATED_AT,
+          updatedAt: CREATED_AT,
+        });
+        await pipeline.statusDefinitions.create({
+          id: IDS.appliedStatus,
+          name: "Applied",
+          category: "applied",
+          color: "blue",
+          isSystem: false,
+          sortOrder: 10,
+          terminal: false,
+          archivedAt: null,
+          createdAt: CREATED_AT,
+          updatedAt: CREATED_AT,
+        });
+        await database.execute(
+          sqlStatement("UPDATE job SET current_status_id = ? WHERE id = ?", [
+            IDS.preparingStatus,
+            IDS.job,
+          ]),
+        );
+        await pipeline.applications.create({
+          id: IDS.application,
+          jobId: IDS.job,
+          appliedAt: null,
+          channel: null,
+          currentStatusId: IDS.preparingStatus,
+          selectedResumeVersionId: IDS.derivativeVersion,
+          selectedCoverLetterVersionId: null,
+          notes: "",
+          archivedAt: null,
+          createdAt: CREATED_AT,
+          updatedAt: CREATED_AT,
+        });
+        const preparation = createApplicationDocumentPreparationRepository(database);
+        await preparation.save({
+          applicationId: IDS.application,
+          expectedApplicationRowVersion: 1,
+          resumeVersionId: IDS.derivativeVersion,
+          coverLetterVersionId: null,
+          answerVersionIds: [IDS.answerVersion],
+          updatedAt: UPDATED_AT,
+        });
+
+        const submission = createApplicationSubmissionRepository(database);
+        const exportPurpose = `export.pdf.${IDS.exportArtifact}`;
+        const artifactBytes = new Uint8Array(2_048);
+        await submission.recordExport({
+          applicationId: IDS.application,
+          expectedApplicationRowVersion: 2,
+          documentVersionId: IDS.derivativeVersion,
+          format: "pdf",
+          contentId: ATTACHMENT_HASH,
+          attachmentPurpose: exportPurpose,
+          logicalName: "exact-prepared-resume.pdf",
+          mediaType: "application/pdf",
+          byteLength: artifactBytes.byteLength,
+          bytes: artifactBytes,
+          recordedAt: UPDATED_AT,
+        });
+        const textPurpose = `export.txt.${IDS.exportTextArtifact}`;
+        const textBytes = new TextEncoder().encode("Exact prepared resume text.");
+        const exportReview = (await submission.recordExport({
+          applicationId: IDS.application,
+          expectedApplicationRowVersion: 2,
+          documentVersionId: IDS.derivativeVersion,
+          format: "plain-text",
+          contentId: TEXT_ATTACHMENT_HASH,
+          attachmentPurpose: textPurpose,
+          logicalName: "exact-prepared-resume.txt",
+          mediaType: "text/plain;charset=utf-8",
+          byteLength: textBytes.byteLength,
+          bytes: textBytes,
+          recordedAt: UPDATED_AT,
+        })) as {
+          readonly documents: readonly {
+            readonly documentVersionId: string;
+            readonly artifacts: readonly {
+              readonly contentId: string;
+              readonly format: string;
+              readonly mediaType: string;
+            }[];
+          }[];
+        };
+        const exportedDocument = exportReview.documents[0];
+        assertContract(
+          exportedDocument !== undefined,
+          "The application export review omitted its selected document.",
+        );
+        const exportedArtifact = exportedDocument.artifacts.find(
+          ({ contentId }) => contentId === ATTACHMENT_HASH,
+        );
+        const exportedTextArtifact = exportedDocument.artifacts.find(
+          ({ contentId }) => contentId === TEXT_ATTACHMENT_HASH,
+        );
+        assertContract(
+          exportedArtifact !== undefined,
+          "The application export review omitted its generated artifact.",
+        );
+        assertContract(
+          exportedTextArtifact !== undefined,
+          "The application export review omitted its UTF-8 text artifact.",
+        );
+        assertContract(
+          exportedDocument.documentVersionId === IDS.derivativeVersion &&
+            exportedArtifact.contentId === ATTACHMENT_HASH &&
+            exportedTextArtifact.format === "plain-text" &&
+            exportedTextArtifact.mediaType === "text/plain;charset=utf-8",
+          "A generated application artifact did not remain bound to its exact version.",
+        );
+
+        await database.execute(
+          sqlStatement(
+            `INSERT INTO status_event(
+               id, job_id, application_id, from_status_id, to_status_id,
+               occurred_at, note, created_at
+             ) VALUES (?, ?, ?, ?, ?, ?, NULL, ?)`,
+            [
+              IDS.duplicateStatusEvent,
+              IDS.job,
+              IDS.application,
+              IDS.preparingStatus,
+              IDS.appliedStatus,
+              CREATED_AT,
+              CREATED_AT,
+            ],
+          ),
+        );
+        const exactItems = Object.freeze([
+          Object.freeze({
+            id: IDS.markAppliedResume,
+            role: "resume" as const,
+            documentVersionId: IDS.derivativeVersion,
+            submissionFormat: "file" as const,
+            contentId: ATTACHMENT_HASH,
+            attachmentPurpose: exportPurpose,
+            sortOrder: 0,
+          }),
+          Object.freeze({
+            id: IDS.markAppliedAnswer,
+            role: "answer" as const,
+            documentVersionId: IDS.answerVersion,
+            submissionFormat: "plain_text" as const,
+            contentId: null,
+            attachmentPurpose: null,
+            sortOrder: 1,
+          }),
+        ]);
+        await expectFailure(
+          () =>
+            submission.markApplied({
+              applicationId: IDS.application,
+              expectedApplicationRowVersion: 2,
+              appliedStatusId: IDS.appliedStatus,
+              channel: "company_portal",
+              statusEventId: IDS.duplicateStatusEvent,
+              snapshotId: IDS.markAppliedSnapshot,
+              appliedAt: UPDATED_AT,
+              items: exactItems,
+            }),
+          () => true,
+          "A duplicate status-event failure did not reject Mark Applied.",
+        );
+        const afterFailure = await database.query<
+          {
+            readonly application_status: string;
+            readonly applied_at: string | null;
+            readonly job_status: string | null;
+            readonly snapshot_count: number;
+          } & QueryRow
+        >(
+          sqlStatement(
+            `SELECT application.current_status_id AS application_status,
+                    application.applied_at,
+                    job.current_status_id AS job_status,
+                    (SELECT count(*) FROM submitted_snapshot
+                     WHERE application_id = application.id) AS snapshot_count
+             FROM application
+             INNER JOIN job ON job.id = application.job_id
+             WHERE application.id = ?`,
+            [IDS.application],
+          ),
+        );
+        const rolledBackState = afterFailure[0];
+        assertContract(
+          rolledBackState !== undefined,
+          "The failed Mark Applied transaction lost the application under review.",
+        );
+        assertContract(
+          rolledBackState.application_status === IDS.preparingStatus &&
+            rolledBackState.job_status === IDS.preparingStatus &&
+            rolledBackState.applied_at === null &&
+            rolledBackState.snapshot_count === 0,
+          "A failed Mark Applied transaction left a partial status or snapshot write.",
+        );
+
+        const applied = (await submission.markApplied({
+          applicationId: IDS.application,
+          expectedApplicationRowVersion: 2,
+          appliedStatusId: IDS.appliedStatus,
+          channel: "company_portal",
+          statusEventId: IDS.markAppliedEvent,
+          snapshotId: IDS.markAppliedSnapshot,
+          appliedAt: UPDATED_AT,
+          items: exactItems,
+        })) as {
+          readonly applicationRowVersion: number;
+          readonly currentStatusId: string;
+          readonly snapshot: {
+            readonly id: string;
+            readonly statusEventId: string;
+            readonly items: readonly {
+              readonly documentVersionId: string;
+              readonly contentId: string | null;
+            }[];
+          } | null;
+        };
+        assertContract(
+          applied.applicationRowVersion === 3 &&
+            applied.currentStatusId === IDS.appliedStatus &&
+            applied.snapshot?.id === IDS.markAppliedSnapshot &&
+            applied.snapshot.statusEventId === IDS.markAppliedEvent &&
+            applied.snapshot.items[0]?.contentId === ATTACHMENT_HASH &&
+            applied.snapshot.items[1]?.documentVersionId === IDS.answerVersion,
+          "Mark Applied did not retain its exact status event, artifact, and answer identities.",
+        );
+        await expectFailure(
+          () =>
+            submission.markApplied({
+              applicationId: IDS.application,
+              expectedApplicationRowVersion: 3,
+              appliedStatusId: IDS.appliedStatus,
+              channel: "company_portal",
+              statusEventId: IDS.markAppliedEvent,
+              snapshotId: IDS.markAppliedSnapshot,
+              appliedAt: UPDATED_AT,
+              items: exactItems,
+            }),
+          (error) => error instanceof ApplicationSubmissionError && error.code === "immutable",
+          "An application with a submitted snapshot accepted a second Mark Applied command.",
+        );
+        await expectFailure(
+          () =>
+            database.execute(
+              sqlStatement(
+                `DELETE FROM document_version_attachment
+                 WHERE document_version_id = ? AND content_id = ? AND purpose = ?`,
+                [IDS.derivativeVersion, ATTACHMENT_HASH, exportPurpose],
+              ),
+            ),
+          () => true,
+          "The exact generated artifact identity was detached after Mark Applied.",
         );
       },
     },

@@ -1,7 +1,9 @@
 import type {
   ApplicationDocumentCandidateDto,
   ApplicationResult,
+  ApplicationSubmissionReviewDto,
   DocumentEditorSessionDto,
+  RecordApplicationExportInput,
 } from "@coredrill/application";
 import { parseDocumentIr } from "@coredrill/documents";
 import {
@@ -14,11 +16,17 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 
 export interface DocumentExportReviewProps {
+  readonly applicationId?: string;
   readonly candidate: ApplicationDocumentCandidateDto;
+  readonly expectedApplicationRowVersion?: number;
   readonly onClose: () => void;
   readonly onLoadDocument: (
     documentId: string,
   ) => Promise<ApplicationResult<DocumentEditorSessionDto>>;
+  readonly onRecordExport?: (
+    input: RecordApplicationExportInput,
+  ) => Promise<ApplicationResult<ApplicationSubmissionReviewDto>>;
+  readonly onSubmissionReviewChange?: (review: ApplicationSubmissionReviewDto) => void;
 }
 
 type ExportReviewState =
@@ -47,9 +55,13 @@ const downloadBytes = (bytes: Uint8Array, mediaType: string, fileName: string): 
 };
 
 export const DocumentExportReview = ({
+  applicationId,
   candidate,
+  expectedApplicationRowVersion,
   onClose,
   onLoadDocument,
+  onRecordExport,
+  onSubmissionReviewChange,
 }: DocumentExportReviewProps) => {
   const [format, setFormat] = useState<LocalDocumentExportFormat>("docx");
   const [requestedBaseName, setRequestedBaseName] = useState(candidate.title);
@@ -145,11 +157,83 @@ export const DocumentExportReview = ({
     try {
       const exported = await exportDownloadableLocalDocument(preview);
       downloadBytes(exported.bytes, exported.mediaType, exported.suggestedFileName);
-      setActionStatus(
-        `${formatLabel(preview.format)} generated locally · SHA-256 ${exported.sha256}`,
-      );
+      if (
+        applicationId !== undefined &&
+        expectedApplicationRowVersion !== undefined &&
+        onRecordExport !== undefined
+      ) {
+        const recorded = await onRecordExport({
+          applicationId,
+          expectedApplicationRowVersion,
+          documentVersionId: preview.documentVersionId,
+          format: preview.format,
+          logicalName: exported.suggestedFileName,
+          mediaType: exported.mediaType,
+          bytes: exported.bytes,
+        });
+        if (recorded.ok) {
+          onSubmissionReviewChange?.(recorded.value);
+          setActionStatus(
+            `${formatLabel(preview.format)} generated locally and retained for Mark Applied · SHA-256 ${exported.sha256}`,
+          );
+        } else {
+          setActionStatus(
+            `${formatLabel(preview.format)} downloaded, but its identity was not retained: ${recorded.error.message}`,
+          );
+        }
+      } else {
+        setActionStatus(
+          `${formatLabel(preview.format)} generated locally · SHA-256 ${exported.sha256}`,
+        );
+      }
     } catch {
       setActionStatus("The local export failed safely. The immutable version was not changed.");
+    }
+  };
+
+  const recordSavedPdf = async (file: File): Promise<void> => {
+    if (
+      preview?.format !== "pdf" ||
+      applicationId === undefined ||
+      expectedApplicationRowVersion === undefined ||
+      onRecordExport === undefined
+    ) {
+      return;
+    }
+    setActionStatus("");
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      if (
+        !file.name.toLowerCase().endsWith(".pdf") ||
+        new TextDecoder("ascii").decode(bytes.subarray(0, 5)) !== "%PDF-"
+      ) {
+        setActionStatus("Choose the exact PDF saved by the local print dialog.");
+        return;
+      }
+      const recorded = await onRecordExport({
+        applicationId,
+        expectedApplicationRowVersion,
+        documentVersionId: preview.documentVersionId,
+        format: "pdf",
+        logicalName: file.name,
+        mediaType: "application/pdf",
+        bytes,
+      });
+      if (!recorded.ok) {
+        setActionStatus(`The PDF identity was not retained: ${recorded.error.message}`);
+        return;
+      }
+      onSubmissionReviewChange?.(recorded.value);
+      const artifact = recorded.value.documents
+        .find(({ documentVersionId }) => documentVersionId === preview.documentVersionId)
+        ?.artifacts.find(({ logicalName }) => logicalName === file.name);
+      setActionStatus(
+        artifact === undefined
+          ? "The PDF was retained locally for Mark Applied review."
+          : `PDF retained locally · SHA-256 ${artifact.contentId}`,
+      );
+    } catch {
+      setActionStatus("The selected PDF could not be retained safely.");
     }
   };
 
@@ -273,6 +357,24 @@ export const DocumentExportReview = ({
               mark the application applied.
             </p>
           </div>
+          {preview.format === "pdf" && onRecordExport !== undefined ? (
+            <label className="cd-document-export-pdf-record">
+              After saving, retain the exact PDF for Mark Applied
+              <input
+                accept="application/pdf,.pdf"
+                onChange={(event) => {
+                  const file = event.currentTarget.files?.[0];
+                  if (file !== undefined) void recordSavedPdf(file);
+                  event.currentTarget.value = "";
+                }}
+                type="file"
+              />
+              <span>
+                Coredrill hashes and stores the selected PDF locally. It does not upload or submit
+                it.
+              </span>
+            </label>
+          ) : null}
           <p aria-live="polite" className="cd-document-export-status" role="status">
             {actionStatus}
           </p>

@@ -1342,6 +1342,7 @@ test("Job Documents selects exact local versions and derives preparation status"
   await expect(readFile(textPath, "utf8")).resolves.toBe(
     "Northstar resume with post-submission notes.",
   );
+  await expect(exportReview.getByRole("status")).toContainText("retained for Mark Applied");
 
   await exportReview.getByLabel("Export format").selectOption("pdf");
   await expect(exportReview).toContainText(
@@ -1448,6 +1449,197 @@ test("Job Documents selects exact local versions and derives preparation status"
   );
   console.info(
     `DOC006_E2E_PROOF ${JSON.stringify({ exactVersion: "0199b300-0000-7000-8000-00000000000e", formats: ["docx", "pdf", "plain-text"], warningCodes: ["pdf_print_settings_control_pagination", "plain_text_removes_formatting"], externalRequests: 0 })}`,
+  );
+  expect(externalRequests).toEqual([]);
+});
+
+test("Mark Applied freezes the exact local artifact and answer set without submitting", async ({
+  page,
+}, testInfo) => {
+  const externalRequests = [];
+  page.on("request", (request) => {
+    if (!request.url().startsWith("http://127.0.0.1:4178/")) externalRequests.push(request.url());
+  });
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await openShell(page);
+  await page.evaluate(() =>
+    globalThis.coredrillStorageSpike.installDocumentsWorkspaceReferenceFixture(),
+  );
+  await page.goto("/jobs/board-northstar/documents");
+  await page.waitForFunction(() => globalThis.coredrillAppShell !== undefined);
+
+  const applicationId = "0199b300-0000-7000-8000-000000000017";
+  const selectedResumeVersionId = "0199b300-0000-7000-8000-00000000000e";
+  const selectedAnswerVersionId = "0199b300-0000-7000-8000-000000000011";
+  const resumeDocumentId = "0199b300-0000-7000-8000-000000000007";
+  const workspace = page.locator('[data-job-workspace="board-northstar"]');
+  const preparation = workspace.locator(".cd-job-document-preparation");
+
+  await preparation.getByLabel("Exact resume version *").selectOption(selectedResumeVersionId);
+  await preparation.getByRole("checkbox", { name: /Why Northstar\?.*version 1.*latest/u }).check();
+  await preparation.getByRole("button", { name: "Save exact selections" }).click();
+  await expect(preparation).toContainText("Ready for export review");
+
+  await preparation
+    .getByRole("button", { name: "Review export for Northstar resume version 2" })
+    .click();
+  const exportReview = preparation.getByRole("region", {
+    name: "Export review for Northstar resume version 2",
+  });
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    exportReview.getByRole("button", { name: "Download DOCX" }).click(),
+  ]);
+  expect(download.suggestedFilename()).toBe(
+    "Northstar resume-v2-0199b30000007000800000000000000e.docx",
+  );
+  await expect(exportReview.getByRole("status")).toContainText("retained for Mark Applied");
+  await exportReview.getByRole("button", { name: "Close export review" }).click();
+
+  const submission = preparation.getByRole("region", { name: "Mark Applied" });
+  await expect(submission).toContainText("does not upload, autofill, send, or verify receipt");
+  const exactSet = submission.getByRole("group", { name: "Exact submitted set" });
+  const submittedForms = exactSet.locator("select");
+  await expect(submittedForms).toHaveCount(2);
+  await submittedForms.nth(0).selectOption({ index: 2 });
+  await submittedForms.nth(1).selectOption("plain_text");
+  await submission.getByLabel("Applied status").selectOption({ label: "Reference applied" });
+  await submission.getByLabel("Application channel").fill("Company portal");
+  const confirmation = submission.getByRole("checkbox", {
+    name: /I confirm that I submitted these exact versions/u,
+  });
+  await expect(confirmation).toBeEnabled();
+  await confirmation.check();
+  await submission.getByRole("button", { name: "Mark Applied and freeze submitted set" }).click();
+
+  const snapshot = preparation.getByRole("region", { name: "Immutable submitted snapshot" });
+  await expect(snapshot).toContainText("Applied recorded");
+  await expect(snapshot).toContainText("Company portal");
+  await expect(snapshot).toContainText(selectedResumeVersionId);
+  await expect(snapshot).toContainText(selectedAnswerVersionId);
+  await expect(snapshot).toContainText(download.suggestedFilename());
+  await expect(snapshot).toContainText("SHA-256");
+  await expect(snapshot).toContainText("does not claim that the employer received it");
+
+  const exactSnapshot = await page.evaluate(async (id) => {
+    const result = await globalThis.coredrillStorageSpike.loadApplicationSubmissionReview(id);
+    if (!result.ok || result.value.snapshot === null) return result;
+    const repeated = await globalThis.coredrillStorageSpike.markApplicationApplied({
+      applicationId: result.value.applicationId,
+      expectedApplicationRowVersion: result.value.applicationRowVersion,
+      appliedStatusId: result.value.snapshot.statusId,
+      channel: result.value.snapshot.channel,
+      confirmed: true,
+      items: result.value.snapshot.items.map((item) => ({
+        role: item.role,
+        documentVersionId: item.documentVersionId,
+        submissionFormat: item.submissionFormat,
+        contentId: item.contentId,
+        attachmentPurpose: item.attachmentPurpose,
+      })),
+    });
+    return { review: result, repeated };
+  }, applicationId);
+  expect(exactSnapshot.review).toMatchObject({
+    ok: true,
+    value: {
+      applicationRowVersion: 3,
+      snapshot: {
+        channel: "Company portal",
+        items: [
+          {
+            role: "resume",
+            documentVersionId: selectedResumeVersionId,
+            submissionFormat: "file",
+          },
+          {
+            role: "answer",
+            documentVersionId: selectedAnswerVersionId,
+            submissionFormat: "plain_text",
+          },
+        ],
+      },
+    },
+  });
+  expect(exactSnapshot.repeated).toMatchObject({
+    ok: false,
+    error: {
+      code: "conflict",
+      message: "This application already has an immutable submitted snapshot.",
+      retryable: false,
+    },
+  });
+
+  const laterVersion = await page.evaluate(
+    async ({ documentId }) => {
+      const opened = await globalThis.coredrillStorageSpike.openDocumentEditor(documentId);
+      if (!opened.ok) return opened;
+      const saved = await globalThis.coredrillStorageSpike.saveDocumentEditorDraft({
+        documentId,
+        baseVersionId: opened.value.currentVersion.id,
+        content: opened.value.currentVersion.content,
+        expectedRowVersion: null,
+      });
+      if (!saved.ok || saved.value.draft === null) return saved;
+      return globalThis.coredrillStorageSpike.createDocumentEditorVersion({
+        documentId,
+        baseVersionId: opened.value.currentVersion.id,
+        content: opened.value.currentVersion.content,
+        expectedDraftRowVersion: saved.value.draft.rowVersion,
+        label: "Post-application revision",
+      });
+    },
+    { documentId: resumeDocumentId },
+  );
+  expect(laterVersion).toMatchObject({
+    ok: true,
+    value: { currentVersion: { versionNumber: 3, label: "Post-application revision" } },
+  });
+
+  await page.reload();
+  await page.waitForFunction(() => globalThis.coredrillAppShell !== undefined);
+  const reloadedPreparation = page.locator(".cd-job-document-preparation");
+  const reloadedSnapshot = reloadedPreparation.getByRole("region", {
+    name: "Immutable submitted snapshot",
+  });
+  await expect(reloadedSnapshot).toContainText(selectedResumeVersionId);
+  await expect(reloadedSnapshot).toContainText(download.suggestedFilename());
+  const identityAfterEdit = await page.evaluate(
+    async ({ application, document }) => {
+      const [submissionResult, editorResult] = await Promise.all([
+        globalThis.coredrillStorageSpike.loadApplicationSubmissionReview(application),
+        globalThis.coredrillStorageSpike.openDocumentEditor(document),
+      ]);
+      return { submissionResult, editorResult };
+    },
+    { application: applicationId, document: resumeDocumentId },
+  );
+  expect(identityAfterEdit).toMatchObject({
+    submissionResult: {
+      ok: true,
+      value: { snapshot: { channel: "Company portal" } },
+    },
+    editorResult: {
+      ok: true,
+      value: { currentVersion: { versionNumber: 3 } },
+    },
+  });
+  expect(identityAfterEdit.submissionResult.value.snapshot.items[0].documentVersionId).toBe(
+    selectedResumeVersionId,
+  );
+  expect(identityAfterEdit.editorResult.value.currentVersion.id).not.toBe(selectedResumeVersionId);
+
+  await page.setViewportSize({ width: 320, height: 900 });
+  const dimensions = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
+  await attachAxe(page, testInfo, "job-mark-applied-snapshot");
+  await attachAriaSnapshot(reloadedSnapshot, testInfo, "job-mark-applied-snapshot");
+  await attachProof(page, testInfo, "job-mark-applied-snapshot");
+  console.info(
+    `DOC007_E2E_PROOF ${JSON.stringify({ exactSubmittedVersions: [selectedResumeVersionId, selectedAnswerVersionId], retainedFormat: "docx", immutableAfterCurrentVersion: 3, duplicateMarkAppliedRejected: true, externalRequests: externalRequests.length })}`,
   );
   expect(externalRequests).toEqual([]);
 });

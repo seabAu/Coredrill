@@ -3,10 +3,17 @@ import type {
   ApplicationDocumentCandidateDto,
   ApplicationDocumentPreparationDto,
   ApplicationResult,
+  ApplicationSubmissionReviewDto,
   DocumentEditorSessionDto,
+  MarkApplicationAppliedInput,
+  RecordApplicationExportInput,
   SaveApplicationDocumentPreparationInput,
 } from "@coredrill/application";
 
+import {
+  ApplicationSubmissionReview,
+  type ApplicationSubmissionReviewModel,
+} from "./application-submission-review.js";
 import { DocumentExportReview } from "./document-export-review.js";
 
 export interface JobDocumentPreparationModel {
@@ -18,10 +25,16 @@ export interface JobDocumentPreparationModel {
 
 export interface JobDocumentPreparationProps {
   readonly model: JobDocumentPreparationModel;
+  readonly submissionModel?: ApplicationSubmissionReviewModel;
+  readonly onMarkApplied?: (input: MarkApplicationAppliedInput) => void;
+  readonly onRecordExport?: (
+    input: RecordApplicationExportInput,
+  ) => Promise<ApplicationResult<ApplicationSubmissionReviewDto>>;
   readonly onSave?: (input: SaveApplicationDocumentPreparationInput) => void;
   readonly onLoadDocument?: (
     documentId: string,
   ) => Promise<ApplicationResult<DocumentEditorSessionDto>>;
+  readonly onSubmissionReviewChange?: (review: ApplicationSubmissionReviewDto) => void;
 }
 
 const statusLabel = (status: ApplicationDocumentPreparationDto["status"]): string => {
@@ -102,8 +115,12 @@ const SelectedSummary = ({
 
 export const JobDocumentPreparation = ({
   model,
+  submissionModel,
+  onMarkApplied,
+  onRecordExport,
   onLoadDocument,
   onSave = () => undefined,
+  onSubmissionReviewChange,
 }: JobDocumentPreparationProps) => {
   const headingId = useId();
   const preparation = model.preparation;
@@ -316,11 +333,21 @@ export const JobDocumentPreparation = ({
           </form>
           {exportCandidate === null || onLoadDocument === undefined ? null : (
             <DocumentExportReview
+              applicationId={preparation.applicationId}
               candidate={exportCandidate}
+              expectedApplicationRowVersion={preparation.applicationRowVersion}
               onClose={() => {
                 setExportCandidate(null);
               }}
               onLoadDocument={onLoadDocument}
+              {...(onRecordExport === undefined ? {} : { onRecordExport })}
+              {...(onSubmissionReviewChange === undefined ? {} : { onSubmissionReviewChange })}
+            />
+          )}
+          {submissionModel === undefined ? null : (
+            <ApplicationSubmissionReview
+              model={submissionModel}
+              {...(onMarkApplied === undefined ? {} : { onMarkApplied })}
             />
           )}
         </>
