@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-09-28
 Current milestone: Phase 3 — career evidence and versioned documents (`GATE-0`, `GATE-1`, and `GATE-2` external-evidence blockers remain open)
-Current work item: `DOC-009` — document accessibility, print, pagination, and high-zoom verification
-Next recommended slice: `Q3-001` after `DOC-009`; retain `Q2-001`, `Q2-003`, `PEX-005`, `PEX-006`, and `GATE-2` as explicit external-evidence/manual-review/permission/deployment blockers
+Current work item: `Q3-001` — resume import fixture review across varied, corrupt, scanned, and large documents
+Next recommended slice: `Q3-003` after `Q3-001`; retain `Q3-002`, `Q2-001`, `Q2-003`, `PEX-005`, `PEX-006`, and `GATE-2` as explicit representative-user/external-evidence/manual-review/permission/deployment blockers
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `Q3-001` after `DOC-009`; retain `Q2-001`, `Q2-003`, `PE
 | Field | Value |
 |---|---|
 | Milestone | Phase 3, with the independent Phase 0, Phase 1, and Phase 2 evidence gates retained below |
-| Item range | `DOC-009` |
+| Item range | `Q3-001` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-09-28 |
-| Expected proof | A reproducible manual/visual report plus executable browser and rendered-artifact tests prove the document editor, previews, print/PDF pagination, focus/semantics, 200% zoom/text resize, high contrast, reduced motion, and narrow-screen reflow remain usable without clipping, hidden content, keyboard traps, or unsupported accessibility claims. |
-| Blocker | None for the available `DOC-009` automated, rendered, and visual baseline. Exact reference-device assistive-technology rows remain separately open under `Q1-003`/Phase 6 and must not be implied by this slice. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-2`, `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
-| Next handoff | Inspect D-027, the accepted editor/export accessibility caveats, current print CSS and DOCX/PDF fixtures, `EDT-004`/`EDT-005`, `DOC-003`/`DOC-006`, and the reference accessibility matrix. Add the smallest representative editor/preview/print fixture and retained visual evidence needed for page breaks, long content, 200% zoom/text resize, keyboard/focus semantics, forced colors, reduced motion, and 320-pixel reflow; do not relabel automation as full assistive-technology conformance. |
+| Expected proof | A reproducible synthetic fixture manifest/report plus executable real-browser importer tests cover varied DOCX/PDF/text layouts, corrupt and signature-mismatched files, scanned PDFs, and representative large documents. The proof must preserve exact provenance, unverified proposal state, actionable bounded failures, no implicit OCR, and zero network/AI use. Generated visual fixtures are rendered and inspected before acceptance. |
+| Blocker | None for a synthetic local `Q3-001` fixture matrix. Representative human terminology/action validation remains separately blocked under `Q3-002`; real resumes or applicant data must not be committed as fixtures. Exact reference-device assistive-technology rows remain open under `Q1-003`/Phase 6. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-2`, `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
+| Next handoff | Inspect D-027, the local Mammoth/PDF.js/text boundaries, import size/page limits, the existing synthetic fixture generator and goldens, `EDT-003`, `EVD-004`, and the PDF render-and-review workflow. Extend only the smallest deterministic fixture matrix needed for varied layouts, corrupt/scanned behavior, and representative large documents; keep every extracted result a provenance-bearing unverified proposal and do not introduce implicit OCR, real applicant data, AI, or network I/O. |
 
 ## Milestone status
 
@@ -293,7 +293,7 @@ Next recommended slice: `Q3-001` after `DOC-009`; retain `Q2-001`, `Q2-003`, `PE
 - [x] **DOC-006** Implement DOCX/PDF/text export with preview, metadata, and warnings. — Proof: [Local document export verification](../../proof/phase-3-document-export-verification.md)
 - [x] **DOC-007** Implement Mark Applied flow that snapshots exact submitted artifacts and answers. — Proof: [Mark Applied verification](../../proof/phase-3-mark-applied-verification.md)
 - [x] **DOC-008** Implement import/export round-trip without silent content or evidence-link loss. — Proof: [Document round-trip verification](../../proof/phase-3-document-round-trip-verification.md)
-- [ ] **DOC-009** Implement document accessibility, print, pagination, and high-zoom tests. — Proof: _manual/visual report_
+- [x] **DOC-009** Implement document accessibility, print, pagination, and high-zoom tests. — Proof: [Document accessibility verification](../../proof/phase-3-document-accessibility-verification.md)
 
 ## Phase 3 quality
 

@@ -246,6 +246,20 @@ physical attachment bytes. A later current resume version remains distinct from
 the selected/submitted version after restore; export never silently promotes or
 substitutes it.
 
+`DOC-009` strengthens the same local editor and export path for accessible
+reflow and pagination. The production editor/history layout, shell actions, and
+export controls wrap from intrinsic content size at 200% text resize; the
+comparison table owns narrow-screen overflow in a named keyboard-scrollable
+region. Forced colors, reduced motion, 320-CSS-pixel reflow, explicit toolbar
+focus order, and automated accessibility analysis pass in the real application.
+Semantic print CSS keeps headings with following content where possible and
+applies widow/orphan safeguards. A fresh long-document browser test produces a
+tagged multi-page PDF, re-imports it locally, and proves first content, final
+content, and the final page pointer survive; a five-page rendered witness is
+retained for visual review. This is automated/rendered evidence, not a claim
+that the still-open manual assistive-technology and reference-device matrix has
+passed.
+
 **Phase 0 evidence (2026-08-24):** [ADR-0006](../../adr/0006-adopt-tiptap-local-document-baseline.md) accepts the restricted local editing/import/export architecture. The checked-in synthetic DOCX and tagged PDF outputs derive from the same validated IR, render to matching unclipped pages, and retain semantic headings, lists, links, language, and controlled metadata without tables, text boxes, hidden sensitive content, hosted conversion, or implicit OCR. See [document editor/export verification](../../proof/document-editor-export-verification.md).
 
 ## Salary intelligence

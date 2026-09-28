@@ -343,6 +343,17 @@ filenames, formats, and hashes plus a persistent statement that the local record
 is not proof of employer receipt. The flow remains keyboard named, axe-clean,
 and free of horizontal page overflow at 320 CSS pixels.
 
+`DOC-009` makes the production editor and export review intrinsically wrap at
+200% text resize instead of compressing the editor to unreadable columns. The
+editor, history, toolbars, shell actions, and export controls stay visible
+without document-level horizontal overflow; wide version comparisons keep
+their width inside a named, focusable local-scroll region. Keyboard focus
+crosses the complete toolbar into the editor and version form without a trap.
+Forced colors, reduced motion, 320-CSS-pixel reflow, semantic tagged print, and
+long-document pagination have executable browser and retained visual proof.
+This evidence does not replace the open manual assistive-technology and exact
+reference-device release matrix.
+
 ### Network
 
 Tabs: Companies, Contacts, Interactions.
