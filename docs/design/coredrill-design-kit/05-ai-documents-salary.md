@@ -196,6 +196,16 @@ Requires SSO, quotas/billing/abuse controls, provider data-processing policy, de
 
 `EVD-005` keeps review deterministic and AI-free. Duplicate employment is based on normalized organization/title with date-overlap and ambiguity surfaced separately; skill conflicts use a bounded reviewed alias normalization rather than semantic generation. Source excerpts, exact pointers, and extraction confidence remain visible while the user chooses accept, merge, or reject. Accepting creates imported—not verified—evidence, and merging only links the source-backed proposal history to an existing compatible entry without rewriting that entry.
 
+`Q3-001` verifies the accepted local import boundary against a deterministic
+eight-file synthetic matrix. Two independently rendered DOCX layouts, ordinary
+and portrait/two-column/landscape PDFs, Markdown, an image-only scanned PDF, a
+75-page PDF, and a deliberately corrupt PDF retain exact hashes, unverified
+proposal state, and paragraph/page/line provenance or fail with actionable
+bounded errors. All 81 valid PDF pages were rendered and inspected; the scanned
+case performs no implicit OCR, the large case retains its page-75 sentinel, and
+the real-browser journeys make zero external requests. See [resume import
+fixture review](../../proof/phase-3-resume-import-fixture-review.md).
+
 ### Editing/versioning
 
 - Markdown/structured blocks are canonical content; HTML is rendered output.

@@ -340,6 +340,17 @@ external-receipt claim.
 - hostile HTML/JSON-LD, SSRF/redirect/size/time cases.
 - saved documented API payloads; live smoke tests separately and conservatively.
 
+`Q3-001` adds a versioned local-document fixture manifest and real-browser
+matrix above the accepted Mammoth, PDF.js, and text adapters. Every referenced
+fixture is synthetic and hash-checked. Two DOCX layouts, ordinary and varied
+PDF layouts, Markdown, scanned/no-text behavior, a 75-page boundary witness,
+corrupt/signature-mismatched binaries, unsupported input, and the 10 MiB limit
+are exercised without network or AI use. Successful imports remain unverified
+proposals with exact source pointers; failures retain stable recovery guidance.
+Poppler 26.07.0 renders and visual review cover all 81 valid PDF pages, while the
+intentionally truncated PDF is required to fail rendering and import. See
+[resume import fixture review](../../proof/phase-3-resume-import-fixture-review.md).
+
 `MAT-002` adds a deterministic requirement-parser golden fixture that fixes proposal ordering, five-category classification, confidence, duplicate suppression, and byte-exact source excerpts, including retained newline evidence. Application tests prove parsing performs no durable write and only explicit acceptance invokes the requirement port with `user_confirmed = true`, preserving the parser category separately from the reviewed current category. Repository tests prove those source facts survive creation, while browser tests cover recategorized acceptance, rejection without source mutation, zero external requests, narrow-screen reflow, and automated accessibility. Malformed provenance and bounded-input violations fail closed.
 
 `MAT-003` adds a frozen retrieval evaluation covering TypeScript, recovery engineering, and AWS requirements in both FTS5 and forced-fallback modes. It requires recall@5 of 1 for the expected evidence and zero known-excluded links, and it checks that suggestions remain read-only until explicit selection. The version-4 shared repository aggregate exercises exact skill matching, typed relation expansion, FTS acceleration, normalized-token fallback, durable selection, and explicit removal in Node, browser SQLite/OPFS, and native rusqlite. UI and browser tests keep reasons and retrieval mode visible, prove only deliberate actions change the selected set, record zero external requests, and retain accessibility and responsive behavior.

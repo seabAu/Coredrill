@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-09-28
 Current milestone: Phase 3 — career evidence and versioned documents (`GATE-0`, `GATE-1`, and `GATE-2` external-evidence blockers remain open)
-Current work item: `Q3-001` — resume import fixture review across varied, corrupt, scanned, and large documents
-Next recommended slice: `Q3-003` after `Q3-001`; retain `Q3-002`, `Q2-001`, `Q2-003`, `PEX-005`, `PEX-006`, and `GATE-2` as explicit representative-user/external-evidence/manual-review/permission/deployment blockers
+Current work item: `Q3-003` — verify the complete template-only application-set preparation and export journey offline
+Next recommended slice: `Q3-004` after `Q3-003`; retain `Q3-002`, `Q2-001`, `Q2-003`, `PEX-005`, `PEX-006`, and `GATE-2` as explicit representative-user/external-evidence/manual-review/permission/deployment blockers
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `Q3-003` after `Q3-001`; retain `Q3-002`, `Q2-001`, `Q2-
 | Field | Value |
 |---|---|
 | Milestone | Phase 3, with the independent Phase 0, Phase 1, and Phase 2 evidence gates retained below |
-| Item range | `Q3-001` |
+| Item range | `Q3-003` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-09-28 |
-| Expected proof | A reproducible synthetic fixture manifest/report plus executable real-browser importer tests cover varied DOCX/PDF/text layouts, corrupt and signature-mismatched files, scanned PDFs, and representative large documents. The proof must preserve exact provenance, unverified proposal state, actionable bounded failures, no implicit OCR, and zero network/AI use. Generated visual fixtures are rendered and inspected before acceptance. |
-| Blocker | None for a synthetic local `Q3-001` fixture matrix. Representative human terminology/action validation remains separately blocked under `Q3-002`; real resumes or applicant data must not be committed as fixtures. Exact reference-device assistive-technology rows remain open under `Q1-003`/Phase 6. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-2`, `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
-| Next handoff | Inspect D-027, the local Mammoth/PDF.js/text boundaries, import size/page limits, the existing synthetic fixture generator and goldens, `EDT-003`, `EVD-004`, and the PDF render-and-review workflow. Extend only the smallest deterministic fixture matrix needed for varied layouts, corrupt/scanned behavior, and representative large documents; keep every extracted result a provenance-bearing unverified proposal and do not introduce implicit OCR, real applicant data, AI, or network I/O. |
+| Expected proof | One production real-browser journey starts with AI disabled and external requests rejected, uses only reviewed local job context and eligible evidence to create or select truthful deterministic template material, prepares the exact application document set, reviews immutable version/source identity, and completes local DOCX/PDF/plain-text export without unsupported claims, hidden substitution, upload, submission, or account dependency. Retain accessible/responsive and rendered-artifact evidence required by any newly generated export. |
+| Blocker | None for a synthetic local `Q3-003` journey. Representative human terminology/action validation remains separately blocked under `Q3-002`; real resumes or applicant data must not be committed as fixtures. Exact reference-device assistive-technology rows remain open under `Q1-003`/Phase 6. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-2`, `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
+| Next handoff | Inspect D-040 through D-042, `DOC-004` through `DOC-006`, the deterministic template engine and sensitive-question guard, application document-selection repositories, export review, and existing production app-shell E2E fixtures. Build the smallest vertical proof that a user with AI disabled can prepare and locally export an exact truthful set from reviewed evidence. Reuse accepted adapters and rendered fixtures where possible; do not add a provider, generated unsupported claim, hidden current-version substitution, upload, auto-submit, account, or network dependency. |
 
 ## Milestone status
 
@@ -297,7 +297,7 @@ Next recommended slice: `Q3-003` after `Q3-001`; retain `Q3-002`, `Q2-001`, `Q2-
 
 ## Phase 3 quality
 
-- [ ] **Q3-001** Run resume import review with varied layouts, corrupt files, scanned PDFs, and large documents. — Proof: _fixture report_
+- [x] **Q3-001** Run resume import review with varied layouts, corrupt files, scanned PDFs, and large documents. — Proof: [Resume import fixture review](../../proof/phase-3-resume-import-fixture-review.md)
 - [ ] **Q3-002** Validate Evidence coverage terminology/actions with representative users. — Proof: _research report_
 - [ ] **Q3-003** Verify template-only user can prepare and export a truthful application set offline. — Proof: _E2E test_
 - [ ] **Q3-004** Complete document parser/editor/export threat review. — Proof: _security report_
