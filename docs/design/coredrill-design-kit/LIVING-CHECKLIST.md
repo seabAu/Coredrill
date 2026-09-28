@@ -4,8 +4,8 @@ This file is the single progress ledger. `GOAL.md` defines the outcome; numbered
 
 Last design update: 2026-09-28
 Current milestone: Phase 3 — career evidence and versioned documents (`GATE-0`, `GATE-1`, and `GATE-2` external-evidence blockers remain open)
-Current work item: `DOC-008` — document import/export round-trip without silent content or evidence-link loss
-Next recommended slice: `DOC-009` after `DOC-008`; retain `Q2-001`, `Q2-003`, `PEX-005`, `PEX-006`, and `GATE-2` as explicit external-evidence/manual-review/permission/deployment blockers
+Current work item: `DOC-009` — document accessibility, print, pagination, and high-zoom verification
+Next recommended slice: `Q3-001` after `DOC-009`; retain `Q2-001`, `Q2-003`, `PEX-005`, `PEX-006`, and `GATE-2` as explicit external-evidence/manual-review/permission/deployment blockers
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `DOC-009` after `DOC-008`; retain `Q2-001`, `Q2-003`, `P
 | Field | Value |
 |---|---|
 | Milestone | Phase 3, with the independent Phase 0, Phase 1, and Phase 2 evidence gates retained below |
-| Item range | `DOC-008` |
+| Item range | `DOC-009` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-09-28 |
-| Expected proof | A reproducible round-trip report and executable browser/native/storage tests prove portable export and clean restore preserve exact immutable document content, lineage, evidence/provenance links, application selections, submitted snapshots, and content-addressed attachment relationships without silently dropping or substituting records. |
-| Blocker | None for `DOC-008`. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-2`, `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
-| Next handoff | Inspect D-027/D-042, portable archive and human-readable export contracts, document IR/version/lineage datasets, evidence relationships, attachment storage, and existing clean-vault recovery proof. Add the smallest exact round-trip fixture and cross-adapter assertions needed to prove no silent document content or evidence-link loss; do not broaden sync, import parsing, AI, or network scope. |
+| Expected proof | A reproducible manual/visual report plus executable browser and rendered-artifact tests prove the document editor, previews, print/PDF pagination, focus/semantics, 200% zoom/text resize, high contrast, reduced motion, and narrow-screen reflow remain usable without clipping, hidden content, keyboard traps, or unsupported accessibility claims. |
+| Blocker | None for the available `DOC-009` automated, rendered, and visual baseline. Exact reference-device assistive-technology rows remain separately open under `Q1-003`/Phase 6 and must not be implied by this slice. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-2`, `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
+| Next handoff | Inspect D-027, the accepted editor/export accessibility caveats, current print CSS and DOCX/PDF fixtures, `EDT-004`/`EDT-005`, `DOC-003`/`DOC-006`, and the reference accessibility matrix. Add the smallest representative editor/preview/print fixture and retained visual evidence needed for page breaks, long content, 200% zoom/text resize, keyboard/focus semantics, forced colors, reduced motion, and 320-pixel reflow; do not relabel automation as full assistive-technology conformance. |
 
 ## Milestone status
 
@@ -292,7 +292,7 @@ Next recommended slice: `DOC-009` after `DOC-008`; retain `Q2-001`, `Q2-003`, `P
 - [x] **DOC-005** Implement job/application document set selection and preparation status. — Proof: [Application document preparation verification](../../proof/phase-3-document-preparation-verification.md)
 - [x] **DOC-006** Implement DOCX/PDF/text export with preview, metadata, and warnings. — Proof: [Local document export verification](../../proof/phase-3-document-export-verification.md)
 - [x] **DOC-007** Implement Mark Applied flow that snapshots exact submitted artifacts and answers. — Proof: [Mark Applied verification](../../proof/phase-3-mark-applied-verification.md)
-- [ ] **DOC-008** Implement import/export round-trip without silent content or evidence-link loss. — Proof: _round-trip report_
+- [x] **DOC-008** Implement import/export round-trip without silent content or evidence-link loss. — Proof: [Document round-trip verification](../../proof/phase-3-document-round-trip-verification.md)
 - [ ] **DOC-009** Implement document accessibility, print, pagination, and high-zoom tests. — Proof: _manual/visual report_
 
 ## Phase 3 quality

@@ -236,6 +236,16 @@ the chosen content-addressed artifact identities or explicit plain-text format.
 This local record is not a delivery receipt and never uploads, autofills, sends,
 or implies that an employer received the material.
 
+`DOC-008` proves portable ownership of that complete document state. A
+deterministic schema-154 archive retains canonical IR and plain text, immutable
+version history and lineage, a recoverable editor draft, evidence/provenance and
+job relationships, selected application answers, exact submitted snapshot
+items, and their content-addressed attachment tuples. Clean browser and native
+restores regenerate the same ordered document witness and separately verify the
+physical attachment bytes. A later current resume version remains distinct from
+the selected/submitted version after restore; export never silently promotes or
+substitutes it.
+
 **Phase 0 evidence (2026-08-24):** [ADR-0006](../../adr/0006-adopt-tiptap-local-document-baseline.md) accepts the restricted local editing/import/export architecture. The checked-in synthetic DOCX and tagged PDF outputs derive from the same validated IR, render to matching unclipped pages, and retain semantic headings, lists, links, language, and controlled metadata without tables, text boxes, hidden sensitive content, hosted conversion, or implicit OCR. See [document editor/export verification](../../proof/document-editor-export-verification.md).
 
 ## Salary intelligence

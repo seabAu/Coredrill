@@ -186,7 +186,7 @@ actual state and must persist bytes only after writer success. Restore remains a
 separate dry-run and transactional boundary in `BKP-003`.
 
 `BKP-002` adds production human-readable projections without broadening that
-trust boundary. All 29 canonical dataset reads occur inside one database
+trust boundary. At current schema 154, all 56 canonical dataset reads occur inside one database
 transaction; schema/vault drift, query failure, invalid stored JSON or boolean
 state, binary/non-finite values, or size overflow returns a stable redacted
 error and no successful partial bundle. JSON preserves original strings and
@@ -207,15 +207,18 @@ or attachment drift since preview, and delegates only to an atomic adapter port
 that must preserve the prior usable vault on failure. Errors are typed and
 content-free. See [portable archive restore version 1](portable-archive-restore-v1.md).
 
-`BKP-007`, extended by `EVD-008`, exercises that boundary with one committed
-synthetic schema-129 vault in empty production browser and native targets. The
+`BKP-007`, extended by `EVD-008` and `DOC-008`, exercises that boundary with one committed
+synthetic schema-154 vault in empty production browser and native targets. The
 fixture includes canonical Career Profile evidence, every story-evidence link
 kind, resume-import proposal/resolution links, Answer Library provenance and
 version metadata, one provenance-bound user-corrected job requirement, and two
-independently checksummed attachment relationships.
+independently checksummed attachment files. It now also fixes an exact document
+round-trip witness: base/job-derivative lineage, immutable submitted and later
+current resume versions, a recoverable draft, application selections, submitted
+file/plain-text items, and purpose-qualified attachment relationships.
 The archive member checksum
 continues to protect exact SQLite transport, while the version-1 canonical
-content hash compares regenerated JSON projections and separately reread,
+content hash compares all 56 regenerated JSON projections and separately reread,
 content-addressed attachment bytes across adapters. This avoids treating
 adapter-specific SQLite page rewrites as content loss. Browser attachment bytes
 remain under the Coredrill OPFS root; native bytes remain under the confined
