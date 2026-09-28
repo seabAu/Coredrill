@@ -2,10 +2,10 @@
 
 This file is the single progress ledger. `GOAL.md` defines the outcome; numbered design documents define behavior; `11-decision-register.md` defines accepted choices. This checklist records what is actually proven.
 
-Last design update: 2026-09-27
+Last design update: 2026-09-28
 Current milestone: Phase 3 — career evidence and versioned documents (`GATE-0`, `GATE-1`, and `GATE-2` external-evidence blockers remain open)
-Current work item: `DOC-005` — job/application document set selection and preparation status
-Next recommended slice: `DOC-006` after `DOC-005`; retain `Q2-001`, `Q2-003`, `PEX-005`, `PEX-006`, and `GATE-2` as explicit external-evidence/manual-review/permission/deployment blockers
+Current work item: `DOC-006` — DOCX/PDF/text export with preview, metadata, and warnings
+Next recommended slice: `DOC-007` after `DOC-006`; retain `Q2-001`, `Q2-003`, `PEX-005`, `PEX-006`, and `GATE-2` as explicit external-evidence/manual-review/permission/deployment blockers
 
 ## How to use this file
 
@@ -24,12 +24,12 @@ Next recommended slice: `DOC-006` after `DOC-005`; retain `Q2-001`, `Q2-003`, `P
 | Field | Value |
 |---|---|
 | Milestone | Phase 3, with the independent Phase 0, Phase 1, and Phase 2 evidence gates retained below |
-| Item range | `DOC-005` |
+| Item range | `DOC-006` |
 | Branch/worktree | `main` / repository root |
-| Started | 2026-09-27 |
-| Expected proof | Use-case and UI tests prove a job/application can select exact local resume, cover-letter, and answer document versions; derive preparation status from explicit missing, draft, review-needed, and ready conditions; preserve lineage and submitted-snapshot distinctions; and make no network request, export, submission, or opaque scoring claim. |
-| Blocker | None for `DOC-005`. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-2`, `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
-| Next handoff | Inspect the job/application/document lineage and selected-version contracts, the Job detail Documents panel, durable application answers, submitted snapshots, and current export-availability projection. Implement the smallest local document-set selection and preparation-status workflow with use-case and UI proof; do not begin export orchestration or Mark Applied. |
+| Started | 2026-09-28 |
+| Expected proof | Rendered golden fixtures and application/UI tests prove exact immutable document versions export locally to controlled DOCX, PDF, and plain text; preview, metadata, unsupported-format warnings, sanitized collision-safe filenames, and content-free warning codes remain explicit; no hidden sensitive metadata, network conversion, document mutation, submission, or Mark Applied action occurs. |
+| Blocker | None for `DOC-006`. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-2`, `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
+| Next handoff | Inspect the accepted `DocumentPort`, Phase 0 editor/export proof and golden fixtures, canonical document IR, exact selected-version preparation contracts, and Job Documents surface. Implement the smallest local immutable-version export workflow with DOCX/PDF/text preview, controlled metadata, warnings, and rendered proof; do not begin Mark Applied or submitted-snapshot orchestration. |
 
 ## Milestone status
 
@@ -289,7 +289,7 @@ Next recommended slice: `DOC-006` after `DOC-005`; retain `Q2-001`, `Q2-003`, `P
 - [x] **DOC-002** Implement Documents views: All, Resumes, Cover letters, Answers, Templates, Submitted. — Proof: [Documents workspace verification](../../proof/phase-3-documents-workspace-verification.md)
 - [x] **DOC-003** Implement structured editor with safe paste, autosave/recovery, undo, version creation, and comparison. — Proof: [Document editor verification](../../proof/phase-3-document-editor-verification.md)
 - [x] **DOC-004** Implement deterministic cover-letter and answer templates for AI-disabled mode. — Proof: [Deterministic-template verification](../../proof/phase-3-deterministic-template-verification.md)
-- [ ] **DOC-005** Implement job/application document set selection and preparation status. — Proof: _use-case/UI tests_
+- [x] **DOC-005** Implement job/application document set selection and preparation status. — Proof: [Application document preparation verification](../../proof/phase-3-document-preparation-verification.md)
 - [ ] **DOC-006** Implement DOCX/PDF/text export with preview, metadata, and warnings. — Proof: _rendered goldens_
 - [ ] **DOC-007** Implement Mark Applied flow that snapshots exact submitted artifacts and answers. — Proof: _E2E test_
 - [ ] **DOC-008** Implement import/export round-trip without silent content or evidence-link loss. — Proof: _round-trip report_

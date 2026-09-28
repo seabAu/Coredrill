@@ -2,9 +2,9 @@
 
 Date: 2026-09-27
 Checklist item: `DOC-005`
-Implementation commit: _pending_
-Hosted run: _pending_
-Status: implementation verified locally; hosted clean-commit proof pending
+Implementation commit: `201cb5ba9e4ac01c066a779be48de9c8a4c3f2ac`
+Hosted run: [Foundation CI 36374935236](https://github.com/seabAu/Coredrill/actions/runs/36374935236)
+Status: complete
 
 ## Outcome
 
@@ -72,6 +72,27 @@ or network request, and it does not present an ATS or hiring-probability score.
   execution foundation records, Changesets validation, the 520-package
   JavaScript license inventory, the 498-crate Rust license inventory, and the
   tracked/unignored workspace secret scan passed.
+
+## Hosted clean-commit verification
+
+Foundation CI run `36374935236` completed successfully for exact implementation
+commit `201cb5ba9e4ac01c066a779be48de9c8a4c3f2ac`.
+
+Required hosted jobs passed:
+
+- build, static checks, tests, and policy (`108778996257`)
+- browser storage on Chrome 151 (`108778996351`), Chrome 152 (`108778996413`),
+  Firefox 153 (`108778996339`), and Firefox 154 (`108778996304`)
+- native secure storage and packages on Ubuntu 26.04 (`108778996203`), Windows
+  (`108778996241`), and macOS 26 (`108778996079`)
+- extension transfer on Chromium and Firefox fallback (`108778996345`)
+- full-history secret scan (`108778996240`)
+
+The pull-request-only dependency review job (`108778997151`) was skipped as
+expected for a direct push to `main`. The first hosted attempt exposed only a
+stale Firefox proof count after the portable export gained its 56th dataset;
+the verifier was aligned with the already-correct schema-154 output, and this
+clean rerun passed the complete matrix without a product or security failure.
 
 ## Decision review
 
