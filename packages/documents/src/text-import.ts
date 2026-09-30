@@ -1,4 +1,5 @@
 import {
+  DOCUMENT_IR_LIMITS,
   DOCUMENT_IR_SPEC_VERSION,
   documentIrToPlainText,
   parseDocumentIr,
@@ -67,12 +68,18 @@ export const importTextDocument = async (
     throw new DocumentImportError("malformed_text", { cause: error });
   }
   if (decoded.includes("\0")) throw new DocumentImportError("malformed_text");
+  if (decoded.length > DOCUMENT_IR_LIMITS.maxCharacters) {
+    throw new DocumentImportError("too_complex");
+  }
 
   const lines = normalizeLineEndings(decoded).split("\n");
   const blocks: DocumentBlock[] = [];
   const mappings: DocumentSourceMapping[] = [];
   lines.forEach((line, index) => {
     if (line.length === 0) return;
+    if (blocks.length >= DOCUMENT_IR_LIMITS.maxBlocks) {
+      throw new DocumentImportError("too_complex");
+    }
     const block = parseLine(line);
     const targetIndex = blocks.length;
     blocks.push(block);

@@ -1,9 +1,10 @@
-import type {
-  ApplicationDocumentCandidateDto,
-  ApplicationResult,
-  ApplicationSubmissionReviewDto,
-  DocumentEditorSessionDto,
-  RecordApplicationExportInput,
+import {
+  APPLICATION_EXPORT_LIMITS,
+  type ApplicationDocumentCandidateDto,
+  type ApplicationResult,
+  type ApplicationSubmissionReviewDto,
+  type DocumentEditorSessionDto,
+  type RecordApplicationExportInput,
 } from "@coredrill/application";
 import { parseDocumentIr } from "@coredrill/documents";
 import {
@@ -201,6 +202,14 @@ export const DocumentExportReview = ({
       return;
     }
     setActionStatus("");
+    if (file.size < 1 || file.size > APPLICATION_EXPORT_LIMITS.maxBytes) {
+      setActionStatus(
+        file.size < 1
+          ? "Choose a non-empty PDF saved by the local print dialog."
+          : `This PDF exceeds the ${String(APPLICATION_EXPORT_LIMITS.maxBytes / 1024 / 1024)} MiB local retention limit. Choose a smaller saved PDF.`,
+      );
+      return;
+    }
     try {
       const bytes = new Uint8Array(await file.arrayBuffer());
       if (

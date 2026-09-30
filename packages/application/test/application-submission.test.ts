@@ -4,6 +4,7 @@ import { entityId, instant } from "@coredrill/domain";
 import { describe, expect, it } from "vitest";
 
 import {
+  APPLICATION_EXPORT_LIMITS,
   ApplicationSubmissionError,
   createApplicationSubmissionOperations,
   type ApplicationSubmissionPort,
@@ -146,6 +147,43 @@ describe("application submission", () => {
       }),
     ]);
     expect((recorded[0] as { readonly bytes: Uint8Array }).bytes).not.toBe(bytes);
+  });
+
+  it("rejects an oversized retained export before hashing or persistence", async () => {
+    let hashed = false;
+    let recorded = false;
+    const operations = createApplicationSubmissionOperations({
+      submission: {
+        load: async () => review(),
+        recordExport: async () => {
+          recorded = true;
+          return review();
+        },
+        markApplied: async () => review(true),
+      },
+      createId: () => IDS.artifact,
+      hashBytes: async () => {
+        hashed = true;
+        return hash;
+      },
+    });
+
+    const result = await operations.recordExportCommand.execute(
+      {
+        applicationId: IDS.application,
+        expectedApplicationRowVersion: 3,
+        documentVersionId: IDS.resumeVersion,
+        format: "pdf",
+        logicalName: "oversized.pdf",
+        mediaType: "application/pdf",
+        bytes: new Uint8Array(APPLICATION_EXPORT_LIMITS.maxBytes + 1),
+      },
+      context,
+    );
+
+    expect(result).toMatchObject({ ok: false, error: { code: "validation" } });
+    expect(hashed).toBe(false);
+    expect(recorded).toBe(false);
   });
 
   it("creates one explicit applied event and exact ordered snapshot request", async () => {

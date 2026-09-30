@@ -172,7 +172,7 @@ export interface ApplicationSubmissionOperations {
 const SHA256_PATTERN = /^[a-f0-9]{64}$/u;
 const PURPOSE_PATTERN = /^export\.(?:docx|pdf|txt)(?:\.[a-f0-9-]{36})?$/u;
 const MAX_DOCUMENTS = 130;
-const MAX_EXPORT_BYTES = 16 * 1024 * 1024;
+export const APPLICATION_EXPORT_LIMITS = Object.freeze({ maxBytes: 16 * 1024 * 1024 });
 
 const FORMAT_DETAILS: Readonly<
   Record<ApplicationExportFormat, { readonly extension: string; readonly mediaType: string }>
@@ -443,7 +443,7 @@ const checkedRecordInput = async (
     input.mediaType !== details.mediaType ||
     !(input.bytes instanceof Uint8Array) ||
     input.bytes.byteLength < 1 ||
-    input.bytes.byteLength > MAX_EXPORT_BYTES ||
+    input.bytes.byteLength > APPLICATION_EXPORT_LIMITS.maxBytes ||
     !Number.isSafeInteger(input.expectedApplicationRowVersion) ||
     input.expectedApplicationRowVersion < 1
   ) {

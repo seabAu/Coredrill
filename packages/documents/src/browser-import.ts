@@ -1,8 +1,9 @@
-import mammoth from "mammoth";
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 
+import { preflightDocxArchive } from "./docx-archive.js";
 import {
+  DOCUMENT_IR_LIMITS,
   DOCUMENT_IR_SPEC_VERSION,
   documentIrToPlainText,
   isSafeDocumentLink,
@@ -28,6 +29,10 @@ import { importTextDocument } from "./text-import.js";
 
 GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
+const DOCX_WORKER_TIMEOUT_MILLISECONDS = 30_000;
+const DOCX_WORKER_MAX_HTML_CHARACTERS = 8_000_000;
+const DOCX_WORKER_MAX_MESSAGES = 100;
+
 const pdfMagic = [0x25, 0x50, 0x44, 0x46, 0x2d] as const;
 const zipMagic = [0x50, 0x4b] as const;
 
@@ -40,6 +45,87 @@ const assertMagic = (bytes: Uint8Array, expected: readonly number[]): void => {
 
 const sourceExcerpt = (value: string): string =>
   value.trim().replaceAll(/\s+/gu, " ").slice(0, DOCUMENT_IMPORT_LIMITS.maxSourceExcerptCharacters);
+
+interface DocxConversionResult {
+  readonly html: string;
+  readonly messageCount: number;
+}
+
+const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
+  value !== null && typeof value === "object" && !Array.isArray(value);
+
+const convertDocxInWorker = async (bytes: Uint8Array): Promise<DocxConversionResult> => {
+  if (typeof Worker === "undefined") throw new DocumentImportError("import_runtime_unavailable");
+  const worker = new Worker(new URL("./docx-import.worker.js", import.meta.url), {
+    name: "coredrill-docx-import",
+    type: "module",
+  });
+  return new Promise<DocxConversionResult>((resolve, reject) => {
+    let settled = false;
+    const finish = (operation: () => void): void => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      worker.terminate();
+      operation();
+    };
+    const timeout = setTimeout(() => {
+      finish(() => {
+        reject(new DocumentImportError("too_complex"));
+      });
+    }, DOCX_WORKER_TIMEOUT_MILLISECONDS);
+    worker.addEventListener("error", () => {
+      finish(() => {
+        reject(new DocumentImportError("corrupt_file"));
+      });
+    });
+    worker.addEventListener("messageerror", () => {
+      finish(() => {
+        reject(new DocumentImportError("corrupt_file"));
+      });
+    });
+    worker.addEventListener("message", (event: MessageEvent<unknown>) => {
+      const value = event.data;
+      if (!isRecord(value) || (value["type"] !== "success" && value["type"] !== "failure")) {
+        finish(() => {
+          reject(new DocumentImportError("corrupt_file"));
+        });
+        return;
+      }
+      if (value["type"] === "failure") {
+        finish(() => {
+          reject(
+            new DocumentImportError(
+              value["reason"] === "too_complex" ? "too_complex" : "corrupt_file",
+            ),
+          );
+        });
+        return;
+      }
+      const html = value["html"];
+      const messageCount = value["messageCount"];
+      if (
+        typeof html !== "string" ||
+        html.length > DOCX_WORKER_MAX_HTML_CHARACTERS ||
+        !Number.isSafeInteger(messageCount) ||
+        (messageCount as number) < 0 ||
+        (messageCount as number) > DOCX_WORKER_MAX_MESSAGES ||
+        Object.keys(value).length !== 3
+      ) {
+        finish(() => {
+          reject(new DocumentImportError("corrupt_file"));
+        });
+        return;
+      }
+      finish(() => {
+        resolve(Object.freeze({ html, messageCount: messageCount as number }));
+      });
+    });
+    const copied = Uint8Array.from(bytes);
+    const transferred = copied.buffer;
+    worker.postMessage(Object.freeze({ bytes: transferred }), [transferred]);
+  });
+};
 
 const marksForElement = (
   element: Element,
@@ -60,19 +146,55 @@ const marksForElement = (
   return inherited;
 };
 
+interface HtmlConversionBudget {
+  characters: number;
+  nodes: number;
+}
+
+const consumeHtmlNode = (budget: HtmlConversionBudget, characters = 0): void => {
+  budget.nodes += 1;
+  budget.characters += characters;
+  if (
+    budget.nodes > DOCUMENT_IR_LIMITS.maxNodes ||
+    characters > DOCUMENT_IR_LIMITS.maxTextNodeCharacters ||
+    budget.characters > DOCUMENT_IR_LIMITS.maxCharacters
+  ) {
+    throw new DocumentImportError("too_complex");
+  }
+};
+
 const htmlInlineContent = (
   parent: ParentNode,
   warnings: DocumentImportWarning[],
+  budget: HtmlConversionBudget,
   inherited: readonly DocumentMark[] = [],
 ): DocumentTextNode[] | undefined => {
   const output: DocumentTextNode[] = [];
-  parent.childNodes.forEach((node) => {
+  const pending: {
+    readonly depth: number;
+    readonly inherited: readonly DocumentMark[];
+    readonly node: Node;
+  }[] = Array.from(parent.childNodes, (node) => ({
+    depth: 0,
+    inherited,
+    node,
+  })).reverse();
+  while (pending.length > 0) {
+    const current = pending.pop();
+    if (current === undefined) break;
+    const { node } = current;
     if (node.nodeType === Node.TEXT_NODE) {
       const value = node.textContent ?? "";
-      if (value.length > 0) output.push(textNode(value, inherited));
-      return;
+      if (value.length > 0) {
+        consumeHtmlNode(budget, value.length);
+        output.push(textNode(value, current.inherited));
+      }
+      continue;
     }
-    if (!(node instanceof Element)) return;
+    if (!(node instanceof Element)) continue;
+    if (current.depth > DOCUMENT_IR_LIMITS.maxDepth * 4) {
+      throw new DocumentImportError("too_complex");
+    }
     const tag = node.tagName.toLowerCase();
     if (
       tag === "script" ||
@@ -82,27 +204,40 @@ const htmlInlineContent = (
       tag === "ul" ||
       tag === "ol"
     ) {
-      return;
+      continue;
     }
-    const marks = marksForElement(node, inherited, warnings);
-    output.push(...(htmlInlineContent(node, warnings, marks) ?? []));
-  });
+    const marks = marksForElement(node, current.inherited, warnings);
+    const children = Array.from(node.childNodes);
+    for (let index = children.length - 1; index >= 0; index -= 1) {
+      pending.push({ depth: current.depth + 1, inherited: marks, node: children[index] as Node });
+    }
+  }
   return output.length === 0 ? undefined : output;
 };
 
 const htmlList = (
   element: Element,
   warnings: DocumentImportWarning[],
+  budget: HtmlConversionBudget,
+  depth = 0,
 ): Extract<DocumentBlock, { type: "bulletList" | "orderedList" }> => {
+  if (depth > DOCUMENT_IR_LIMITS.maxDepth) throw new DocumentImportError("too_complex");
+  consumeHtmlNode(budget);
   const content: ListItemNode[] = [];
   for (const child of element.children) {
     if (child.tagName.toLowerCase() !== "li") continue;
+    consumeHtmlNode(budget);
     const itemContent: ListItemNode["content"] = [];
-    const inline = htmlInlineContent(child, warnings);
-    if (inline !== undefined) itemContent.push({ type: "paragraph", content: inline });
+    const inline = htmlInlineContent(child, warnings, budget);
+    if (inline !== undefined) {
+      consumeHtmlNode(budget);
+      itemContent.push({ type: "paragraph", content: inline });
+    }
     for (const nested of child.children) {
       const nestedTag = nested.tagName.toLowerCase();
-      if (nestedTag === "ul" || nestedTag === "ol") itemContent.push(htmlList(nested, warnings));
+      if (nestedTag === "ul" || nestedTag === "ol") {
+        itemContent.push(htmlList(nested, warnings, budget, depth + 1));
+      }
     }
     if (itemContent.length > 0) content.push({ type: "listItem", content: itemContent });
   }
@@ -129,21 +264,24 @@ const htmlToDocument = (
   const blocks: DocumentBlock[] = [];
   const mappings: DocumentSourceMapping[] = [];
   const warnings: DocumentImportWarning[] = [];
+  const budget: HtmlConversionBudget = { characters: 0, nodes: 1 };
   let sourceParagraph = 0;
 
   for (const element of parsed.body.children) {
     const tag = element.tagName.toLowerCase();
     let block: DocumentBlock | undefined;
     if (tag === "p") {
-      block = { type: "paragraph", content: htmlInlineContent(element, warnings) };
+      consumeHtmlNode(budget);
+      block = { type: "paragraph", content: htmlInlineContent(element, warnings, budget) };
     } else if (/^h[1-3]$/u.test(tag)) {
+      consumeHtmlNode(budget);
       block = {
         type: "heading",
         attrs: { level: Number(tag.slice(1)) as 1 | 2 | 3 },
-        content: htmlInlineContent(element, warnings),
+        content: htmlInlineContent(element, warnings, budget),
       };
     } else if (tag === "ul" || tag === "ol") {
-      block = htmlList(element, warnings);
+      block = htmlList(element, warnings, budget);
     }
     if (block === undefined) {
       warnings.push({
@@ -164,6 +302,9 @@ const htmlToDocument = (
       continue;
     }
     const targetIndex = blocks.length;
+    if (targetIndex >= DOCUMENT_IR_LIMITS.maxBlocks) {
+      throw new DocumentImportError("too_complex");
+    }
     blocks.push(block);
     sourceParagraph += 1;
     mappings.push({
@@ -180,27 +321,9 @@ export const importDocxDocument = async (
 ): Promise<DocumentImportProposal> => {
   assertImportSize(input.bytes);
   assertMagic(input.bytes, zipMagic);
-  let converted: Awaited<ReturnType<typeof mammoth.convertToHtml>>;
-  try {
-    converted = await mammoth.convertToHtml(
-      { arrayBuffer: Uint8Array.from(input.bytes).buffer },
-      {
-        convertImage: mammoth.images.imgElement(() => Promise.resolve({ src: "about:blank" })),
-        externalFileAccess: false,
-        ignoreEmptyParagraphs: false,
-        includeEmbeddedStyleMap: false,
-        styleMap: [
-          "p[style-name='Title'] => h1:fresh",
-          "p[style-name='Heading 1'] => h1:fresh",
-          "p[style-name='Heading 2'] => h2:fresh",
-          "p[style-name='Heading 3'] => h3:fresh",
-        ],
-      },
-    );
-  } catch (error) {
-    throw new DocumentImportError("corrupt_file", { cause: error });
-  }
-  const convertedDocument = htmlToDocument(converted.value);
+  preflightDocxArchive(input.bytes);
+  const converted = await convertDocxInWorker(input.bytes);
+  const convertedDocument = htmlToDocument(converted.html);
   const structuredDocument = parseDocumentIr({
     specVersion: DOCUMENT_IR_SPEC_VERSION,
     document: { type: "doc", content: convertedDocument.blocks },
@@ -208,7 +331,7 @@ export const importDocxDocument = async (
   const plainText = documentIrToPlainText(structuredDocument);
   const warnings = [
     ...convertedDocument.warnings,
-    ...converted.messages.map((): DocumentImportWarning => ({
+    ...Array.from({ length: converted.messageCount }, (): DocumentImportWarning => ({
       code: "formatting_omitted",
       message: "Some DOCX formatting could not be represented and was omitted.",
     })),
@@ -269,6 +392,7 @@ export const importPdfDocument = async (
     }
     const blocks: DocumentBlock[] = [];
     const mappings: DocumentSourceMapping[] = [];
+    let characterCount = 0;
     for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
       const page = await pdf.getPage(pageNumber);
       const textContent = await page.getTextContent();
@@ -286,6 +410,14 @@ export const importPdfDocument = async (
       }
       if (line.trim().length > 0) lines.push(line.trim());
       lines.forEach((text, lineIndex) => {
+        if (
+          blocks.length >= DOCUMENT_IR_LIMITS.maxBlocks ||
+          text.length > DOCUMENT_IR_LIMITS.maxTextNodeCharacters ||
+          characterCount + text.length > DOCUMENT_IR_LIMITS.maxCharacters
+        ) {
+          throw new DocumentImportError("too_complex");
+        }
+        characterCount += text.length;
         const targetIndex = blocks.length;
         blocks.push({ type: "paragraph", content: [textNode(text)] });
         mappings.push({

@@ -95,6 +95,43 @@ describe("DocumentIntermediateRepresentationV1", () => {
     ).toThrow();
   });
 
+  it("rejects adversarial depth before recursive schema parsing", () => {
+    let nested: unknown = {
+      type: "paragraph",
+      content: [{ type: "text", text: "bounded" }],
+    };
+    for (let depth = 0; depth < DOCUMENT_IR_LIMITS.maxDepth + 10; depth += 1) {
+      nested = {
+        type: "bulletList",
+        content: [{ type: "listItem", content: [nested] }],
+      };
+    }
+    expect(() =>
+      documentIntermediateRepresentationV1Schema.parse({
+        specVersion: 1,
+        document: { type: "doc", content: [nested] },
+      }),
+    ).toThrow(/nesting is too deep/u);
+  });
+
+  it("rejects adversarial aggregate node counts before normalization", () => {
+    const items = Array.from({ length: 9_000 }, () => ({
+      type: "listItem",
+      content: [
+        {
+          type: "paragraph",
+          content: [{ type: "text", text: "x" }],
+        },
+      ],
+    }));
+    expect(() =>
+      documentIntermediateRepresentationV1Schema.parse({
+        specVersion: 1,
+        document: { type: "doc", content: [{ type: "bulletList", content: items }] },
+      }),
+    ).toThrow(/too many structural nodes/u);
+  });
+
   it("permits only explicit safe link protocols", () => {
     expect(isSafeDocumentLink("https://example.test/path")).toBe(true);
     expect(isSafeDocumentLink("mailto:jobs@example.test")).toBe(true);

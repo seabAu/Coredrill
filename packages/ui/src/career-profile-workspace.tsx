@@ -25,6 +25,7 @@ import {
   type UpdateCareerStoryInput,
   type UpdateAnswerLibraryEntryInput,
 } from "@coredrill/application";
+import { DOCUMENT_IMPORT_LIMITS } from "@coredrill/documents";
 import {
   useId,
   useState,
@@ -623,6 +624,9 @@ const AnswerEditorFields = ({
   </>
 );
 
+const resumeProposalStatus = (proposalCount: number): string =>
+  `${String(proposalCount)} proposal${proposalCount === 1 ? "" : "s"} queued for review. Nothing was verified or added to your profile.`;
+
 export const CareerProfileWorkspace = ({
   model,
   onCreateAnswer,
@@ -655,6 +659,12 @@ export const CareerProfileWorkspace = ({
   const editingStory = model.stories.find(({ id }) => id === editingStoryId) ?? null;
   const editingAnswer = model.answers.find(({ id }) => id === editingAnswerId) ?? null;
   const reviewGroups = analyzeResumeImportReviewQueue(model.imports, model.entries);
+  const visibleImportStatus =
+    importStatus.length > 0
+      ? importStatus
+      : model.imports[0] === undefined
+        ? ""
+        : resumeProposalStatus(model.imports[0].proposalCount);
 
   const selectKind = (kind: CareerProfileSectionKind): void => {
     setActiveKind(kind);
@@ -707,6 +717,15 @@ export const CareerProfileWorkspace = ({
     const input = event.currentTarget;
     const file = input.files?.[0];
     if (file === undefined) return;
+    if (file.size < 1 || file.size > DOCUMENT_IMPORT_LIMITS.maxBytes) {
+      setImportStatus(
+        file.size < 1
+          ? "Choose a non-empty local resume file."
+          : `This file exceeds the ${String(DOCUMENT_IMPORT_LIMITS.maxBytes / 1024 / 1024)} MiB local import limit. Choose a smaller local file.`,
+      );
+      input.value = "";
+      return;
+    }
     setImporting(true);
     setImportStatus("Reading the local resume…");
     try {
@@ -716,9 +735,7 @@ export const CareerProfileWorkspace = ({
         ...(file.type.length === 0 ? {} : { mediaType: file.type }),
       });
       setImportStatus(
-        result.ok
-          ? `${String(result.value.proposalCount)} proposal${result.value.proposalCount === 1 ? "" : "s"} queued for review. Nothing was verified or added to your profile.`
-          : result.error.message,
+        result.ok ? resumeProposalStatus(result.value.proposalCount) : result.error.message,
       );
     } catch {
       setImportStatus("This local resume could not be read safely.");
@@ -950,7 +967,7 @@ export const CareerProfileWorkspace = ({
           </label>
         </div>
         <p aria-live="polite" className="cd-career-status" role="status">
-          {importStatus}
+          {visibleImportStatus}
         </p>
 
         {model.imports.length === 0 ? (

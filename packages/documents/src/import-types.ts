@@ -51,6 +51,7 @@ export type DocumentImportErrorCode =
   | "import_runtime_unavailable"
   | "malformed_text"
   | "signature_mismatch"
+  | "too_complex"
   | "too_large"
   | "too_many_pages"
   | "unsupported_format";
@@ -61,6 +62,8 @@ const errorMessages: Readonly<Record<DocumentImportErrorCode, string>> = Object.
   import_runtime_unavailable: "Local document import is unavailable in this browser session.",
   malformed_text: "This text file is not valid UTF-8. Save it as UTF-8 and try again.",
   signature_mismatch: "The file contents do not match the selected document type.",
+  too_complex:
+    "This document exceeds the safe local parser budget. Simplify it or save a smaller local copy before importing it.",
   too_large: `This file exceeds the ${String(DOCUMENT_IMPORT_LIMITS.maxBytes / 1024 / 1024)} MiB local import limit.`,
   too_many_pages: `This PDF exceeds the ${String(DOCUMENT_IMPORT_LIMITS.maxPages)}-page local import limit.`,
   unsupported_format: "Choose a local DOCX, PDF, Markdown, or plain-text file.",

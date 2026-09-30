@@ -1352,6 +1352,25 @@ test("Job Documents selects exact local versions and derives preparation status"
     exportReview.locator('[data-warning-code="pdf_print_settings_control_pagination"]'),
   ).toBeVisible();
   await page.evaluate(() => {
+    const original = File.prototype.arrayBuffer;
+    globalThis.__coredrillOversizedPdfReads = 0;
+    File.prototype.arrayBuffer = function (...arguments_) {
+      if (this.size > 16 * 1024 * 1024) globalThis.__coredrillOversizedPdfReads += 1;
+      return original.apply(this, arguments_);
+    };
+  });
+  await exportReview
+    .getByLabel("After saving, retain the exact PDF for Mark Applied")
+    .setInputFiles({
+      name: "oversized-saved.pdf",
+      mimeType: "application/pdf",
+      buffer: Buffer.alloc(16 * 1024 * 1024 + 1),
+    });
+  await expect(exportReview.getByRole("status")).toContainText(
+    "exceeds the 16 MiB local retention limit",
+  );
+  expect(await page.evaluate(() => globalThis.__coredrillOversizedPdfReads)).toBe(0);
+  await page.evaluate(() => {
     globalThis.__coredrillPrintCalls = 0;
     globalThis.__coredrillTitleAtPrint = null;
     window.print = () => {
@@ -2533,6 +2552,29 @@ test("resume PDF, DOCX, and text imports stay durable pending proposals with pro
   const importPanel = workspace.locator(".cd-career-import");
   const fileInput = importPanel.locator('input[type="file"]');
   const fixtures = path.join(process.cwd(), "fixtures", "imports");
+
+  await page.evaluate(() => {
+    const original = File.prototype.arrayBuffer;
+    globalThis.__coredrillOversizedResumeReads = 0;
+    File.prototype.arrayBuffer = function (...arguments_) {
+      if (this.size > 10 * 1024 * 1024) globalThis.__coredrillOversizedResumeReads += 1;
+      return original.apply(this, arguments_);
+    };
+  });
+  await fileInput.setInputFiles({
+    name: "oversized-resume.docx",
+    mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    buffer: Buffer.alloc(10 * 1024 * 1024 + 1),
+  });
+  await expect(importPanel.getByRole("status")).toContainText(
+    "exceeds the 10 MiB local import limit",
+  );
+  expect(await page.evaluate(() => globalThis.__coredrillOversizedResumeReads)).toBe(0);
+  await expect
+    .poll(() =>
+      page.evaluate(() => globalThis.coredrillAppShell?.getState().careerProfileProposalCount),
+    )
+    .toBe(0);
 
   await fileInput.setInputFiles(path.join(fixtures, "synthetic-resume.docx"));
   await expect(importPanel.getByRole("status")).toContainText("7 proposals queued for review");

@@ -9,6 +9,7 @@ export const DOCUMENT_IR_LIMITS = Object.freeze({
   maxCharacters: 2_000_000,
   maxDepth: 8,
   maxLinkCharacters: 2_048,
+  maxNodes: 25_000,
   maxTextNodeCharacters: 100_000,
 });
 
@@ -116,7 +117,7 @@ export const documentBlockSchema = z.union([
   orderedListSchema,
 ]);
 
-export const documentIntermediateRepresentationV1Schema = z
+const documentIntermediateRepresentationV1CoreSchema = z
   .strictObject({
     specVersion: z.literal(DOCUMENT_IR_SPEC_VERSION),
     document: z.strictObject({
@@ -158,9 +159,73 @@ export const documentIntermediateRepresentationV1Schema = z
     "x-coredrill-maxCharacters": DOCUMENT_IR_LIMITS.maxCharacters,
   });
 
-const generatedDocumentIrV1JsonSchema = z.toJSONSchema(documentIntermediateRepresentationV1Schema, {
-  target: "draft-2020-12",
+const assertDocumentIrPreflight = (value: unknown): void => {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new TypeError("Document IR must be an object.");
+  }
+  const documentValue = (value as Readonly<Record<string, unknown>>)["document"];
+  if (documentValue === null || typeof documentValue !== "object" || Array.isArray(documentValue)) {
+    throw new TypeError("Document IR must contain a document object.");
+  }
+
+  const pending: { readonly depth: number; readonly node: unknown }[] = [
+    { depth: 0, node: documentValue },
+  ];
+  let characters = 0;
+  let nodes = 0;
+  while (pending.length > 0) {
+    const current = pending.pop();
+    if (current === undefined) break;
+    if (current.depth > DOCUMENT_IR_LIMITS.maxDepth) {
+      throw new TypeError("Document nesting is too deep.");
+    }
+    if (current.node === null || typeof current.node !== "object" || Array.isArray(current.node)) {
+      continue;
+    }
+    nodes += 1;
+    if (nodes > DOCUMENT_IR_LIMITS.maxNodes) {
+      throw new TypeError("Document contains too many structural nodes.");
+    }
+    const candidate = current.node as Readonly<Record<string, unknown>>;
+    const text = candidate["text"];
+    if (typeof text === "string") {
+      characters += text.length;
+      if (characters > DOCUMENT_IR_LIMITS.maxCharacters) {
+        throw new TypeError("Document contains too much text.");
+      }
+    }
+    const content = candidate["content"];
+    if (content === undefined) continue;
+    if (!Array.isArray(content) || content.length > DOCUMENT_IR_LIMITS.maxBlocks) {
+      throw new TypeError("Document content is outside the structural limit.");
+    }
+    for (let index = content.length - 1; index >= 0; index -= 1) {
+      pending.push({ depth: current.depth + 1, node: content[index] });
+    }
+  }
+};
+
+const documentIrPreflightSchema = z.unknown().superRefine((value, context) => {
+  try {
+    assertDocumentIrPreflight(value);
+  } catch (error) {
+    context.addIssue({
+      code: "custom",
+      message: error instanceof Error ? error.message : "Document IR preflight failed.",
+    });
+  }
 });
+
+export const documentIntermediateRepresentationV1Schema = documentIrPreflightSchema.pipe(
+  documentIntermediateRepresentationV1CoreSchema,
+);
+
+const generatedDocumentIrV1JsonSchema = z.toJSONSchema(
+  documentIntermediateRepresentationV1CoreSchema,
+  {
+    target: "draft-2020-12",
+  },
+);
 const { $schema: documentIrDialect, ...documentIrSchemaBody } = generatedDocumentIrV1JsonSchema;
 
 export const documentIrV1JsonSchema = Object.freeze({

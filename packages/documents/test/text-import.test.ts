@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { DOCUMENT_IMPORT_LIMITS, importTextDocument } from "../src/index.js";
+import { DOCUMENT_IMPORT_LIMITS, DOCUMENT_IR_LIMITS, importTextDocument } from "../src/index.js";
 
 describe("local text import", () => {
   it("returns a source-mapped unconfirmed proposal", async () => {
@@ -50,5 +50,15 @@ describe("local text import", () => {
         fileName: "large.txt",
       }),
     ).rejects.toMatchObject({ code: "too_large" });
+  });
+
+  it("stops pathological text structure at the parser budget", async () => {
+    const excessiveLines = `${"x\n".repeat(DOCUMENT_IR_LIMITS.maxBlocks)}x`;
+    await expect(
+      importTextDocument({
+        bytes: new TextEncoder().encode(excessiveLines),
+        fileName: "too-many-lines.txt",
+      }),
+    ).rejects.toMatchObject({ code: "too_complex" });
   });
 });
