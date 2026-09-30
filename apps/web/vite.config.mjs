@@ -78,6 +78,7 @@ export default defineConfig({
   },
   optimizeDeps: {
     exclude: ["@sqlite.org/sqlite-wasm"],
+    include: ["@coredrill/documents > mammoth"],
   },
   server: {
     host: "127.0.0.1",

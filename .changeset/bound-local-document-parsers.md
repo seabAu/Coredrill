@@ -2,6 +2,7 @@
 "@coredrill/application": patch
 "@coredrill/documents": patch
 "@coredrill/ui": patch
+"@coredrill/web": patch
 ---
 
 Harden local document handling with bounded DOCX archive preflight, isolated
