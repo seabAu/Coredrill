@@ -351,6 +351,19 @@ Poppler 26.07.0 renders and visual review cover all 81 valid PDF pages, while th
 intentionally truncated PDF is required to fail rendering and import. See
 [resume import fixture review](../../proof/phase-3-resume-import-fixture-review.md).
 
+`Q3-004` traces untrusted local files through browser reads, archive/PDF/text
+parsers, worker boundaries, canonical IR, restricted editing/paste, local
+exports, retained bytes, attachment identities, and public filenames. It adds
+strict pre-decompression DOCX archive budgets, an isolated terminating Mammoth
+worker, pre-recursion IR budgets, and size rejection before browser reads. The
+expanded `test:security` command runs 10 files/51 tests, while existing SQL
+authorizer, portable-archive/attachment, and CSV formula-injection proof closes
+the combined `SEC-005` scope. The exact lockfile audit also replaces five
+advisory-affected transitive build-tool resolutions and returns to zero known
+npm vulnerabilities. Residual deployment-header, worker-memory, opaque-PDF,
+and independent-review risks remain explicitly owned; see [document parser,
+editor, and export threat review](../../proof/phase-3-document-threat-review.md).
+
 `MAT-002` adds a deterministic requirement-parser golden fixture that fixes proposal ordering, five-category classification, confidence, duplicate suppression, and byte-exact source excerpts, including retained newline evidence. Application tests prove parsing performs no durable write and only explicit acceptance invokes the requirement port with `user_confirmed = true`, preserving the parser category separately from the reviewed current category. Repository tests prove those source facts survive creation, while browser tests cover recategorized acceptance, rejection without source mutation, zero external requests, narrow-screen reflow, and automated accessibility. Malformed provenance and bounded-input violations fail closed.
 
 `MAT-003` adds a frozen retrieval evaluation covering TypeScript, recovery engineering, and AWS requirements in both FTS5 and forced-fallback modes. It requires recall@5 of 1 for the expected evidence and zero known-excluded links, and it checks that suggestions remain read-only until explicit selection. The version-4 shared repository aggregate exercises exact skill matching, typed relation expansion, FTS acceleration, normalized-token fallback, durable selection, and explicit removal in Node, browser SQLite/OPFS, and native rusqlite. UI and browser tests keep reasons and retrieval mode visible, prove only deliberate actions change the selected set, record zero external requests, and retain accessibility and responsive behavior.

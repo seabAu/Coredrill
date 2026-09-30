@@ -206,6 +206,18 @@ case performs no implicit OCR, the large case retains its page-75 sentinel, and
 the real-browser journeys make zero external requests. See [resume import
 fixture review](../../proof/phase-3-resume-import-fixture-review.md).
 
+`Q3-004` completes a repository-backed parser/editor/export threat review and
+closes the earlier deferred DOCX expansion finding. DOCX central/local headers,
+safe unique paths, reviewed flags/methods, entry count, per-entry expansion,
+and cumulative expansion are checked before Mammoth runs in a dedicated
+terminating worker with external file access disabled. PDF/text and canonical
+IR paths now enforce aggregate budgets before expensive parsing; resume and
+retained-PDF pickers reject oversize files before browser reads. Adversarial
+unit and production-browser proof retains proposal-only provenance, restricted
+paste/render behavior, safe export names/metadata/links, and zero external
+requests. See [document parser, editor, and export threat
+review](../../proof/phase-3-document-threat-review.md).
+
 ### Editing/versioning
 
 - Markdown/structured blocks are canonical content; HTML is rendered output.

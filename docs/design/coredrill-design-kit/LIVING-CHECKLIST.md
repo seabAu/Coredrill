@@ -2,10 +2,10 @@
 
 This file is the single progress ledger. `GOAL.md` defines the outcome; numbered design documents define behavior; `11-decision-register.md` defines accepted choices. This checklist records what is actually proven.
 
-Last design update: 2026-09-28
+Last design update: 2026-09-30
 Current milestone: Phase 3 — career evidence and versioned documents (`GATE-0`, `GATE-1`, and `GATE-2` external-evidence blockers remain open)
-Current work item: `Q3-004` — complete the document parser/editor/export threat review
-Next recommended slice: `Q3-005` after `Q3-004`; retain `Q3-002`, `Q2-001`, `Q2-003`, `PEX-005`, `PEX-006`, and `GATE-2` as explicit representative-user/external-evidence/manual-review/permission/deployment blockers
+Current work item: `Q3-005` — run the complete local canonical Phase 3 journey
+Next recommended slice: assess `GATE-3` after `Q3-005`; retain `Q3-002`, `Q2-001`, `Q2-003`, `PEX-005`, `PEX-006`, and `GATE-2` as explicit representative-user/external-evidence/manual-review/permission/deployment blockers
 
 ## How to use this file
 
@@ -24,11 +24,11 @@ Next recommended slice: `Q3-005` after `Q3-004`; retain `Q3-002`, `Q2-001`, `Q2-
 | Field | Value |
 |---|---|
 | Milestone | Phase 3, with the independent Phase 0, Phase 1, and Phase 2 evidence gates retained below |
-| Item range | `Q3-004` |
+| Item range | `Q3-005` |
 | Branch/worktree | `main` / repository root |
-| Started | 2026-09-28 |
-| Expected proof | A focused security report traces untrusted local PDF/DOCX/text input through parser workers, bounded canonical IR, restricted editor paste/render behavior, and DOCX/PDF/plain-text export. Re-run relevant adversarial, archive/path, metadata, external-request, and browser/native checks; document mitigations, residual risks, ownership, and any follow-up without claiming a penetration test. Change code only for demonstrated in-scope gaps, and require an ADR for any Accepted boundary change. |
-| Blocker | None for a repository-backed synthetic threat review. Representative human terminology/action validation remains separately blocked under `Q3-002`; real resumes or applicant data must not be committed as fixtures. Exact reference-device assistive-technology rows remain open under `Q1-003`/Phase 6. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-2`, `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
+| Started | 2026-09-30 |
+| Expected proof | One production E2E journey starts with a synthetic local resume import, explicitly reviews/confirms evidence without overwriting prior user truth, compares that evidence with a synthetic job, prepares exact versioned application documents with AI disabled, exports locally, marks Applied without submitting, reloads, and retrieves the immutable submitted set and retained artifact identities. The artifact must prove provenance, exact version/hash continuity, accountless/offline/zero-egress behavior, accessible named actions, narrow-screen reflow, and durable recovery through SQLite rather than test-only state. |
+| Blocker | None for a repository-backed synthetic canonical journey. Representative human terminology/action validation remains separately blocked under `Q3-002`; real resumes or applicant data must not be committed as fixtures. Exact reference-device assistive-technology rows remain open under `Q1-003`/Phase 6. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-2`, `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
 | Next handoff | Read `SECURITY.md`, D-027, D-041, D-042, the document security and export sections of `05-ai-documents-salary.md` and `06-security-sync-deployment-testing.md`, accepted editor/import/export ADRs, current parser workers, restricted editor schema, local export adapters, and their adversarial tests. Build a threat inventory from actual trust boundaries, validate existing mitigations on exact locked versions, close demonstrated gaps in scope, and retain a concise security report with reproducible proof and explicit residual risks. |
 
 ## Milestone status
@@ -300,7 +300,7 @@ Next recommended slice: `Q3-005` after `Q3-004`; retain `Q3-002`, `Q2-001`, `Q2-
 - [x] **Q3-001** Run resume import review with varied layouts, corrupt files, scanned PDFs, and large documents. — Proof: [Resume import fixture review](../../proof/phase-3-resume-import-fixture-review.md)
 - [ ] **Q3-002** Validate Evidence coverage terminology/actions with representative users. — Proof: _research report_
 - [x] **Q3-003** Verify template-only user can prepare and export a truthful application set offline. — Proof: [template-only application-set verification](../../proof/phase-3-template-only-application-set-verification.md)
-- [ ] **Q3-004** Complete document parser/editor/export threat review. — Proof: _security report_
+- [x] **Q3-004** Complete document parser/editor/export threat review. — Proof: [document parser, editor, and export threat review](../../proof/phase-3-document-threat-review.md)
 - [ ] **Q3-005** Run canonical journey: import resume → confirm evidence → compare job → prepare documents → mark Applied → retrieve submitted set. — Proof: _recorded E2E artifact_
 - [ ] **GATE-3** Phase 3 produces versioned, recoverable application materials and transparent evidence coverage without AI. — Proof: _Phase 3 gate report_
 
@@ -414,7 +414,7 @@ Next recommended slice: `Q3-005` after `Q3-004`; retain `Q3-002`, `Q2-001`, `Q2-
 - [ ] **SEC-002** Verify production CSP, Trusted Types decision, sanitizer rules, dependency/remote-code inventory, and no `unsafe-eval`. — Proof: _header/build report_
 - [ ] **SEC-003** Audit Tauri commands/capabilities, filesystem paths, URL opening, updater, secure storage, and native fetch allowlists. — Proof: _security audit_
 - [ ] **SEC-004** Audit extension permissions/messages/outbox/content-script isolation and store disclosures. — Proof: _security audit_
-- [ ] **SEC-005** Audit SQL, archive extraction, attachment names/types/sizes, document parser, and formula/CSV injection. — Proof: _security tests_
+- [x] **SEC-005** Audit SQL, archive extraction, attachment names/types/sizes, document parser, and formula/CSV injection. — Proof: [cross-surface security tests and document threat review](../../proof/phase-3-document-threat-review.md)
 - [ ] **SEC-006** Audit AI/source egress, redirects, logs, diagnostics, keys, prompts, and deletion. — Proof: _privacy/security audit_
 - [ ] **SEC-007** Run dependency, license, secret, static-analysis, and artifact malware/signature checks. — Proof: _CI/release reports_
 - [ ] **SEC-008** Publish privacy notice, security policy, data-flow reference, supported-source policy, and vulnerability-reporting route. — Proof: _public docs_
