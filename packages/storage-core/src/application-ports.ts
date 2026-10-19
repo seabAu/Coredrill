@@ -187,6 +187,8 @@ const pipelineFailure = (error: unknown): never => {
   if (!(error instanceof PipelineRepositoryConflictError)) throw error;
   if (error.code === "pipeline_record_not_found") throw new JobPipelineError("not_found");
   if (error.code === "same_status") throw new JobPipelineError("same_status");
+  if (error.code === "submission_review_required")
+    throw new JobPipelineError("submission_review_required");
   if (error.code === "reopen_requires_explicit_confirmation") {
     throw new JobPipelineError("reopen_confirmation_required");
   }

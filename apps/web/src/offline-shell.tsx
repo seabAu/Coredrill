@@ -132,7 +132,7 @@ export const OfflineShellNotice = () => {
   if (!state.offlineReady && !state.updateAvailable && !state.error) return null;
 
   return (
-    <aside className="cd-offline-shell-notice" data-testid="offline-shell-notice" role="status">
+    <div className="cd-offline-shell-notice" data-testid="offline-shell-notice" role="status">
       <p>
         {state.updateAvailable
           ? "A Coredrill update is ready. Reload when your current edit is safely saved."
@@ -160,6 +160,6 @@ export const OfflineShellNotice = () => {
           Dismiss
         </button>
       </div>
-    </aside>
+    </div>
   );
 };

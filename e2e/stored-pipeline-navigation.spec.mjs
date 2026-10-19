@@ -57,13 +57,15 @@ test("discovers a manually saved job through normal Pipeline navigation offline"
     "Synthetic discoverable local role",
   );
   await expect(board).toContainText("Unknown priority");
+  // No stage has been named yet, so there is no valid destination.
   await expect(board.getByRole("combobox")).toBeDisabled();
   await page.locator('[data-pipeline-view-option="table"]').click();
   const table = page.getByTestId("pipeline-table");
   await expect(
     table.getByRole("button", { name: "Synthetic discoverable local role", exact: true }),
   ).toBeVisible();
-  await expect(table.getByRole("button", { name: /^Edit /u })).toHaveCount(0);
+  await expect(table.getByRole("button", { name: /^Edit /u })).toHaveCount(1);
+  await expect(table.getByRole("button", { name: /^Edit status/u })).toBeVisible();
   await table
     .getByRole("button", { name: "Synthetic discoverable local role", exact: true })
     .click();

@@ -1,4 +1,4 @@
-import { useId, useState, type CSSProperties } from "react";
+import { useId, useRef, useState, type CSSProperties } from "react";
 
 export const PIPELINE_TABLE_COLUMN_IDS = Object.freeze([
   "title",
@@ -90,6 +90,7 @@ export type PipelineTableEditResult =
   | { readonly error: string; readonly ok: false };
 
 export interface PipelineTableProps {
+  readonly editableFields?: readonly PipelineTableEditField[];
   readonly columnConfiguration: readonly PipelineTableColumnConfiguration[];
   readonly onColumnConfigurationChange?: (
     configuration: readonly PipelineTableColumnConfiguration[],
@@ -160,6 +161,8 @@ const MINIMUM_COLUMN_WIDTH_PX = 96;
 const MAXIMUM_COLUMN_WIDTH_PX = 480;
 
 interface EditorState {
+  readonly expectedRowVersion: number;
+  readonly sourceTerminal: boolean;
   readonly draft: string;
   readonly error: string | null;
   readonly field: PipelineTableEditField;
@@ -280,6 +283,7 @@ const parseTags = (value: string): readonly string[] | undefined => {
 const displayValue = (value: string | null, fallback: string): string => value ?? fallback;
 
 export const PipelineTable = ({
+  editableFields = PIPELINE_TABLE_EDIT_FIELDS,
   columnConfiguration,
   onColumnConfigurationChange,
   onEditRequest,
@@ -292,7 +296,29 @@ export const PipelineTable = ({
   viewName,
 }: PipelineTableProps) => {
   validateModel(rows, statusOptions, columnConfiguration);
+  if (
+    new Set(editableFields).size !== editableFields.length ||
+    editableFields.some((field) => !PIPELINE_TABLE_EDIT_FIELDS.includes(field))
+  )
+    throw new TypeError("Table editable fields must be unique reviewed scalar fields.");
+  const canEditField = (field: PipelineTableEditField) =>
+    onEditRequest !== undefined && editableFields.includes(field);
   const headingId = useId();
+  const savingEdit = useRef(false);
+  const tableRoot = useRef<HTMLElement>(null);
+  const restoreEditFocus = (row: PipelineTableJob, field: PipelineTableEditField): void => {
+    requestAnimationFrame(() => {
+      const label = `Edit ${COLUMN_LABELS[field].toLocaleLowerCase()} for ${row.title}`;
+      const targetRow = Array.from(
+        tableRoot.current?.querySelectorAll<HTMLTableRowElement>("tr[data-table-job]") ?? [],
+      ).find((item) => item.dataset["tableJob"] === row.id);
+      const buttons = targetRow?.querySelectorAll<HTMLButtonElement>("button");
+      const target = Array.from(buttons ?? []).find(
+        (button) => button.getAttribute("aria-label") === label,
+      );
+      target?.focus();
+    });
+  };
   const [visibleStart, setVisibleStart] = useState(0);
   const [editor, setEditor] = useState<EditorState | null>(null);
   const [announcement, setAnnouncement] = useState("");
@@ -357,7 +383,7 @@ export const PipelineTable = ({
   };
 
   const openEditor = (row: PipelineTableJob, field: PipelineTableEditField): void => {
-    if (onEditRequest === undefined) return;
+    if (!canEditField(field) || savingEdit.current) return;
     const draft =
       field === "status"
         ? (row.status?.id ?? "")
@@ -366,11 +392,29 @@ export const PipelineTable = ({
           : field === "tags"
             ? row.tags.join(", ")
             : (row.nextActionDate ?? "");
-    setEditor({ draft, error: null, field, jobId: row.id, pending: false, reopenConfirmed: false });
+    setEditor({
+      draft,
+      error: null,
+      field,
+      jobId: row.id,
+      pending: false,
+      reopenConfirmed: false,
+      expectedRowVersion: row.rowVersion,
+      sourceTerminal: row.status?.terminal === true,
+    });
   };
 
   const submitEdit = async (row: PipelineTableJob): Promise<void> => {
     if (editor?.jobId !== row.id || onEditRequest === undefined) return;
+    if (!canEditField(editor.field) || savingEdit.current) return;
+    if (editor.expectedRowVersion !== row.rowVersion) {
+      setEditor({
+        ...editor,
+        error:
+          "This job changed since editing began. Cancel this draft and review the current value before editing again.",
+      });
+      return;
+    }
     let request: PipelineTableEditRequest;
     if (editor.field === "status") {
       const target = statusOptions.find(({ id }) => id === editor.draft);
@@ -378,12 +422,12 @@ export const PipelineTable = ({
         setEditor({ ...editor, error: "Choose a different valid status." });
         return;
       }
-      if (row.status?.terminal === true && !target.terminal && !editor.reopenConfirmed) {
+      if (editor.sourceTerminal && !target.terminal && !editor.reopenConfirmed) {
         setEditor({ ...editor, error: "Confirm reopening before changing this closed job." });
         return;
       }
       request = {
-        expectedRowVersion: row.rowVersion,
+        expectedRowVersion: editor.expectedRowVersion,
         field: "status",
         jobId: row.id,
         reopenConfirmed: editor.reopenConfirmed,
@@ -398,7 +442,7 @@ export const PipelineTable = ({
         return;
       }
       request = {
-        expectedRowVersion: row.rowVersion,
+        expectedRowVersion: editor.expectedRowVersion,
         field: "priority",
         jobId: row.id,
         value: editor.draft,
@@ -413,7 +457,7 @@ export const PipelineTable = ({
         return;
       }
       request = {
-        expectedRowVersion: row.rowVersion,
+        expectedRowVersion: editor.expectedRowVersion,
         field: "tags",
         jobId: row.id,
         value: tags,
@@ -425,7 +469,7 @@ export const PipelineTable = ({
         return;
       }
       request = {
-        expectedRowVersion: row.rowVersion,
+        expectedRowVersion: editor.expectedRowVersion,
         field: "next-action-date",
         jobId: row.id,
         value: date,
@@ -433,15 +477,23 @@ export const PipelineTable = ({
     }
 
     setEditor({ ...editor, error: null, pending: true });
+    savingEdit.current = true;
     let result: PipelineTableEditResult;
     try {
       result = await onEditRequest(Object.freeze(request));
     } catch {
-      result = { error: "The local edit failed safely. Your previous value remains.", ok: false };
+      result = {
+        error:
+          "The local edit could not be confirmed. Your draft is retained; refresh to check the saved value.",
+        ok: false,
+      };
+    } finally {
+      savingEdit.current = false;
     }
     if (result.ok) {
       setAnnouncement(result.announcement);
       setEditor(null);
+      restoreEditFocus(row, editor.field);
     } else {
       setEditor({ ...editor, error: result.error, pending: false });
     }
@@ -449,12 +501,14 @@ export const PipelineTable = ({
 
   const renderEditor = (row: PipelineTableJob, field: PipelineTableEditField) => {
     if (editor?.jobId !== row.id || editor.field !== field) return null;
+    const unavailable = !canEditField(field);
+    const stale = editor.expectedRowVersion !== row.rowVersion;
     const inputId = `${headingId}-${row.id}-${field}`;
     const errorId = `${inputId}-error`;
     const targetStatus =
       field === "status" ? statusOptions.find(({ id }) => id === editor.draft) : undefined;
     const needsReopenConfirmation =
-      field === "status" && row.status?.terminal === true && targetStatus?.terminal === false;
+      field === "status" && editor.sourceTerminal && targetStatus?.terminal === false;
     return (
       <div className="cd-table-editor">
         <label className="cd-visually-hidden" htmlFor={inputId}>
@@ -463,7 +517,7 @@ export const PipelineTable = ({
         {field === "status" ? (
           <select
             aria-describedby={editor.error === null ? undefined : errorId}
-            disabled={editor.pending || onEditRequest === undefined}
+            disabled={editor.pending || unavailable}
             id={inputId}
             onChange={(event) => {
               setEditor({
@@ -487,7 +541,7 @@ export const PipelineTable = ({
         ) : field === "priority" ? (
           <select
             aria-describedby={editor.error === null ? undefined : errorId}
-            disabled={editor.pending || onEditRequest === undefined}
+            disabled={editor.pending || unavailable}
             id={inputId}
             onChange={(event) => {
               setEditor({ ...editor, draft: event.target.value, error: null });
@@ -501,7 +555,7 @@ export const PipelineTable = ({
         ) : (
           <input
             aria-describedby={editor.error === null ? undefined : errorId}
-            disabled={editor.pending || onEditRequest === undefined}
+            disabled={editor.pending || unavailable}
             id={inputId}
             onChange={(event) => {
               setEditor({ ...editor, draft: event.target.value, error: null });
@@ -515,7 +569,7 @@ export const PipelineTable = ({
           <label className="cd-table-reopen-confirmation">
             <input
               checked={editor.reopenConfirmed}
-              disabled={editor.pending || onEditRequest === undefined}
+              disabled={editor.pending || unavailable}
               onChange={(event) => {
                 setEditor({ ...editor, error: null, reopenConfirmed: event.target.checked });
               }}
@@ -529,7 +583,13 @@ export const PipelineTable = ({
             {editor.error}
           </p>
         )}
-        {onEditRequest === undefined ? (
+        {stale ? (
+          <p role="note">
+            This job changed since editing began. Your draft is retained; Cancel to review the
+            current value.
+          </p>
+        ) : null}
+        {unavailable && !editor.pending ? (
           <p role="note">
             Your draft is retained. Restore editing to save, or Cancel to discard it.
           </p>
@@ -537,7 +597,7 @@ export const PipelineTable = ({
         <div className="cd-table-editor-actions">
           <button
             className="cd-button cd-button-primary"
-            disabled={editor.pending || onEditRequest === undefined}
+            disabled={editor.pending || unavailable || stale}
             onClick={() => {
               void submitEdit(row);
             }}
@@ -550,6 +610,7 @@ export const PipelineTable = ({
             disabled={editor.pending}
             onClick={() => {
               setEditor(null);
+              restoreEditFocus(row, field);
             }}
             type="button"
           >
@@ -562,7 +623,7 @@ export const PipelineTable = ({
 
   const editableCell = (row: PipelineTableJob, field: PipelineTableEditField, value: string) => {
     const activeEditor = renderEditor(row, field);
-    if (onEditRequest === undefined && activeEditor === null) return <span>{value}</span>;
+    if (!canEditField(field) && activeEditor === null) return <span>{value}</span>;
     return (
       activeEditor ?? (
         <div className="cd-table-editable-value">
@@ -570,6 +631,7 @@ export const PipelineTable = ({
           <button
             aria-label={`Edit ${COLUMN_LABELS[field].toLocaleLowerCase()} for ${row.title}`}
             className="cd-table-edit-button"
+            disabled={editor?.pending === true}
             onClick={() => {
               openEditor(row, field);
             }}
@@ -630,6 +692,7 @@ export const PipelineTable = ({
       aria-labelledby={`${headingId} ${headingId}-view`}
       className="cd-table-view"
       data-testid="pipeline-table"
+      ref={tableRoot}
     >
       <span className="cd-visually-hidden" id={`${headingId}-view`}>
         {viewName}
@@ -759,7 +822,9 @@ export const PipelineTable = ({
             {String(rows.length)} opportunities in {viewName}.{" "}
             {onEditRequest === undefined
               ? "This view is read-only."
-              : "Use the edit buttons for low-risk scalar fields."}{" "}
+              : editableFields.length === PIPELINE_TABLE_EDIT_FIELDS.length
+                ? "Use the edit buttons for low-risk scalar fields."
+                : `Editing is connected only for: ${editableFields.join(", ")}.`}{" "}
             {onOpenJob === undefined ? "" : "Open a job for complex fields."}
           </caption>
           <thead>

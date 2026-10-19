@@ -52,6 +52,7 @@ export const installDocumentsWorkspaceReferenceFixture = async (
     sourceSnapshot: entityId("source-snapshot", "0199b300-0000-7000-8000-00000000001a"),
     provenance: entityId("provenance", "0199b300-0000-7000-8000-00000000001b"),
     requirement: entityId("job-requirement", "0199b300-0000-7000-8000-00000000001c"),
+    closedStatus: entityId("status_definition", "0199b300-0000-7000-8000-00000000001d"),
   });
   const createdAt = instant("2026-09-27T18:00:00.000Z");
   const submittedAt = instant("2026-09-27T19:00:00.000Z");
@@ -193,6 +194,21 @@ export const installDocumentsWorkspaceReferenceFixture = async (
   };
   const ensurePreparationApplication = async (): Promise<void> => {
     const pipeline = createPipelineRepositories(database);
+    // Explicit reference-fixture data only; never a new-vault default.
+    if ((await pipeline.statusDefinitions.findById(ids.closedStatus)) === undefined) {
+      await pipeline.statusDefinitions.create({
+        id: ids.closedStatus,
+        name: "Reference closed",
+        category: "rejected",
+        color: "red",
+        isSystem: false,
+        sortOrder: 20,
+        terminal: true,
+        archivedAt: null,
+        createdAt: latestAt,
+        updatedAt: latestAt,
+      });
+    }
     const existingPreparingStatus = await pipeline.statusDefinitions.findById(ids.preparingStatus);
     if (existingPreparingStatus === undefined) {
       await pipeline.statusDefinitions.create({

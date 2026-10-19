@@ -32,6 +32,10 @@ The existing status transaction compared projections/row versions read inside it
 - Schema drift, contrast/extraction reports and extension build/package inspection pass. License checks pass for 520 npm packages and 498 crates, secret scan passes, npm reports no known vulnerabilities and Cargo retains the same ten reviewed allowed warnings.
 - The unchanged runtime/UI is regression-tested, but these results do not make its currently disabled mutation controls connected. No installed end-user status/undo workflow is claimed.
 
-## Remaining verification and product boundaries
+## Hosted checkpoint (2026-10-19)
+
+Prerequisite commit `d5339ac` passed all required jobs in [run 39310159834](https://github.com/seabAu/Coredrill/actions/runs/39310159834). Subsequent normal runtime/UI composition is recorded separately in [status actions verification](stored-status-actions-verification.md); that later checkpoint must not inherit this commit's hosted proof.
+
+## Original remaining verification and product boundaries
 
 Clean-commit hosted verification remains. This does not enable Board/Table controls or prove an end-user mutation journey. Normal runtime/UI composition must supply mandatory viewed context, refresh both views from SQLite after acknowledgement, retain failures/input, provide accessible pending/confirmation/retry states and at least ten seconds of undo, and preserve Mark Applied/document-snapshot review. Multiple active attempts require explicit selection rather than an inferred default. The Table currently reads its row version at submit time; wiring must retain the version from editor opening rather than silently rebinding a retained draft to refreshed rows. Board gestures likewise need a well-defined viewed-state binding, and undo must remain reachable from both peer views. `Q3-005` stays open.

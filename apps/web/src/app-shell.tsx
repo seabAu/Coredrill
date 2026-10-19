@@ -146,6 +146,7 @@ import {
   storedRequirementReviews,
 } from "./job-comparison-view.js";
 import type { SuppliedCaptureMode } from "./supplied-capture.js";
+import { useStoredStatusActions } from "./stored-status-actions.js";
 import {
   loadStoredPipelineSnapshot,
   storedPipelineBoardColumns,
@@ -1748,6 +1749,7 @@ const AppShellCatalog = ({
     "loading",
   );
   const [storedPipelineRefresh, setStoredPipelineRefresh] = useState(0);
+  const storedPipelineLoadGeneration = useRef(0);
   const pendingPipelineRestore = useRef<PipelineNavigationSnapshot | null>(null);
   const appearance = useMemo(readAppearance, []);
   const canonicalJourneyMode = useMemo(
@@ -1946,10 +1948,12 @@ const AppShellCatalog = ({
   useEffect(() => {
     if (referenceCatalog) return;
     const controller = new AbortController();
+    const generation = ++storedPipelineLoadGeneration.current;
     setStoredPipelineState("loading");
     void loadStoredPipelineSnapshot(globalThis.coredrillStorageSpike.pipeline, controller.signal)
       .then((snapshot) => {
-        if (controller.signal.aborted) return;
+        if (controller.signal.aborted || generation !== storedPipelineLoadGeneration.current)
+          return;
         setStoredPipeline(snapshot);
         setBoardColumns(storedPipelineBoardColumns(snapshot));
         setTableRows(snapshot.jobs.map(storedPipelineTableRow));
@@ -1959,7 +1963,8 @@ const AppShellCatalog = ({
         if (activeDestination === "pipeline" && pending !== null) restorePipelineSnapshot(pending);
       })
       .catch(() => {
-        if (!controller.signal.aborted) setStoredPipelineState("error");
+        if (!controller.signal.aborted && generation === storedPipelineLoadGeneration.current)
+          setStoredPipelineState("error");
       });
     return () => {
       controller.abort();
@@ -3288,7 +3293,11 @@ const AppShellCatalog = ({
     });
   };
 
-  const openJobWorkspace = (jobId: string, source: PipelineReturnFocus["source"]): void => {
+  const openJobWorkspace = (
+    jobId: string,
+    source: PipelineReturnFocus["source"],
+    initialTab: JobWorkspaceTabId = "overview",
+  ): void => {
     const snapshot = capturePipelineSnapshot({ jobId, source });
     const mode: JobWorkspaceMode = window.matchMedia("(min-width: 80rem)").matches
       ? "contextual"
@@ -3301,7 +3310,7 @@ const AppShellCatalog = ({
     navigationHistory.pushState(
       { kind: JOB_HISTORY_KIND, mode, snapshot, pipelineDepth: 1 },
       "",
-      jobUrl(jobId, "overview"),
+      jobUrl(jobId, initialTab),
     );
     setWorkspaceRoute({
       jobId,
@@ -3309,7 +3318,7 @@ const AppShellCatalog = ({
       responsiveContextual: mode === "contextual",
       pipelineDepth: 1,
       returnSnapshot: snapshot,
-      tab: "overview",
+      tab: initialTab,
     });
     setLastActivity(
       `Opened ${mode === "contextual" ? "contextual" : "full-page"} local Job workspace.`,
@@ -4125,6 +4134,27 @@ const AppShellCatalog = ({
     setLastActivity(message);
   };
 
+  const storedStatusActions = useStoredStatusActions({
+    enabled: !referenceCatalog,
+    snapshot: storedPipeline,
+    refresh: async () => {
+      const generation = ++storedPipelineLoadGeneration.current;
+      const snapshot = await loadStoredPipelineSnapshot(
+        globalThis.coredrillStorageSpike.pipeline,
+        new AbortController().signal,
+      );
+      if (generation !== storedPipelineLoadGeneration.current) return false;
+      setStoredPipeline(snapshot);
+      setBoardColumns(storedPipelineBoardColumns(snapshot));
+      setTableRows(snapshot.jobs.map(storedPipelineTableRow));
+      setStoredPipelineState("ready");
+      return true;
+    },
+    reviewApplied: (jobId) => {
+      openJobWorkspace(jobId, pipelineView === "table" ? "table" : "board", "documents");
+    },
+  });
+
   const renderWorkspaceContent = () => {
     if (
       workspaceRoute === null ||
@@ -4408,6 +4438,7 @@ const AppShellCatalog = ({
                   );
                 }}
               >
+                {pipelineView === "inbox" ? null : storedStatusActions.panel}
                 {pipelineView === "inbox" ? (
                   <>
                     <CaptureInboxReview
@@ -4549,10 +4580,12 @@ const AppShellCatalog = ({
                       columns={filteredBoardColumns}
                       {...(referenceCatalog
                         ? { onMoveRequest: requestBoardMove }
-                        : {
-                            moveUnavailableReason:
-                              "Stage moves are not connected in this view yet. Start preparation or use the job workspace's reviewed actions.",
-                          })}
+                        : storedStatusActions.busy
+                          ? {
+                              moveUnavailableReason:
+                                "Finish the pending local status operation or reopen review before moving another job.",
+                            }
+                          : { onMoveRequest: storedStatusActions.moveBoard })}
                       onOpenJob={(job) => {
                         openJobWorkspace(job.id, "board");
                       }}
@@ -4586,10 +4619,16 @@ const AppShellCatalog = ({
                       : {})}
                     {...(referenceCatalog
                       ? { onEditRequest: requestTableEdit }
-                      : {
-                          editUnavailableReason:
-                            "Inline edits are not connected to local commands yet. Open the job to prepare an application.",
-                        })}
+                      : storedStatusActions.busy
+                        ? {
+                            editUnavailableReason:
+                              "Wait for the pending local status operation or finish its reopen review.",
+                            editableFields: ["status"],
+                          }
+                        : {
+                            onEditRequest: storedStatusActions.editTable,
+                            editableFields: ["status"],
+                          })}
                     onOpenJob={(job) => {
                       openJobWorkspace(job.id, "table");
                     }}

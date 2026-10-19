@@ -42,6 +42,7 @@ export type NewInterview = Omit<InterviewRecord, "rowVersion">;
 export type NewReminder = Omit<ReminderRecord, "rowVersion">;
 
 export type PipelineRepositoryConflictCode =
+  | "submission_review_required"
   | "additional_application_requires_explicit_authorization"
   | "next_action_not_pending"
   | "pipeline_projection_conflict"
@@ -52,6 +53,7 @@ export type PipelineRepositoryConflictCode =
   | "undo_token_already_consumed";
 
 const CONFLICT_MESSAGES: Readonly<Record<PipelineRepositoryConflictCode, string>> = Object.freeze({
+  submission_review_required: "A first Applied status requires the submitted-document review.",
   additional_application_requires_explicit_authorization:
     "Creating another application for this job requires explicit authorization.",
   next_action_not_pending: "The next action is not pending.",
@@ -805,6 +807,7 @@ export interface ChangePipelineStatusInput {
   readonly occurredAt: Instant;
   readonly note: string | null;
   readonly allowReopen?: boolean;
+  readonly requireSubmissionSnapshot?: boolean;
   readonly expected?: {
     readonly jobRowVersion: number;
     readonly currentStatusId: StatusDefinitionId | null;
@@ -891,6 +894,20 @@ export const changePipelineStatus = async (
     const target = await repositories.statusDefinitions.findById(input.toStatusId);
     if (target?.archivedAt !== null) {
       throw new PipelineRepositoryConflictError("pipeline_record_not_found");
+    }
+    if (input.requireSubmissionSnapshot === true && target.category === "applied") {
+      if (input.expected === undefined)
+        throw new TypeError("Interactive status context is missing.");
+      const submitted =
+        input.applicationId === null
+          ? []
+          : await transaction.query(
+              sqlStatement("SELECT id FROM submitted_snapshot WHERE application_id = ? LIMIT 1", [
+                input.applicationId,
+              ]),
+            );
+      if (submitted.length !== 1)
+        throw new PipelineRepositoryConflictError("submission_review_required");
     }
     if (fromStatusId !== null) {
       const current = await repositories.statusDefinitions.findById(fromStatusId);

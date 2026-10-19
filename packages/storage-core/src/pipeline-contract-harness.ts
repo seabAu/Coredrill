@@ -354,6 +354,18 @@ export const createPipelineRepositoryContractSuite = (
             [APPLIED_AT, IDS.job],
           ),
         );
+        await expectFailure(
+          () =>
+            changePipelineStatus(database, {
+              ...strictInput,
+              expected: { ...viewed, jobRowVersion: 3 },
+              requireSubmissionSnapshot: true,
+            }),
+          (error) =>
+            error instanceof PipelineRepositoryConflictError &&
+            error.code === "submission_review_required",
+          "An interactive Applied move bypassed the document-submission review.",
+        );
         await changePipelineStatus(database, {
           eventId: IDS.appliedEvent,
           undoTokenId: IDS.appliedUndo,

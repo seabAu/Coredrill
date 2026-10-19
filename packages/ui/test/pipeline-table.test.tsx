@@ -56,6 +56,26 @@ const renderTable = (
   );
 
 describe("PipelineTable contract", () => {
+  it("exposes only explicitly connected edit fields", () => {
+    const markup = renderToStaticMarkup(
+      createElement(PipelineTable, {
+        columnConfiguration: DEFAULT_PIPELINE_TABLE_COLUMNS,
+        rows: [row(0)],
+        statusOptions: STATUSES,
+        viewName: "Connected statuses",
+        editableFields: ["status"],
+        onEditRequest: (): PipelineTableEditResult => ({
+          ok: true,
+          announcement: "Saved locally.",
+        }),
+      }),
+    );
+    expect(markup).toContain("Edit status for Role 0");
+    expect(markup).not.toContain("Edit priority for Role 0");
+    expect(markup).not.toContain("Edit tags for Role 0");
+    expect(markup).not.toContain("Edit next action for Role 0");
+    expect(markup).toContain("Editing is connected only for: status.");
+  });
   it("labels unavailable priority and capture/application dates as Unknown", () => {
     const markup = renderToStaticMarkup(
       createElement(PipelineTable, {

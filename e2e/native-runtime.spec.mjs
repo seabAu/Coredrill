@@ -173,6 +173,47 @@ test("normal root uses real native SQLite for capture and documents without OPFS
     await start.getByRole("button", { name: "Start preparation locally" }).click();
     await expect(page.locator('[data-preparation-status="missing"]')).toBeVisible();
     const jobDocumentsUrl = page.url();
+    await page.getByRole("button", { name: /Close Job workspace|Back to Pipeline/u }).click();
+    await page.getByRole("button", { name: "Add", exact: true }).click();
+    await page.getByRole("menuitem", { name: /Add job/u }).click();
+    await capture.getByLabel(/Job title/u).fill("Synthetic native movable role");
+    await capture.getByLabel(/Company/u).fill("Synthetic Runtime Lab");
+    await capture.getByLabel(/Notes or listing details/u).fill("Native status and undo fixture.");
+    await capture.getByRole("button", { name: "Save to capture inbox" }).click();
+    await expect(capture.getByRole("status")).toContainText("Stored in the local capture inbox");
+    await capture.getByRole("button", { name: "Close capture dialog" }).click();
+    await page.locator('[data-pipeline-view-option="inbox"]').click();
+    await review.getByRole("button", { name: "Accept high-confidence fields" }).click();
+    await review.getByRole("button", { name: "Save as new job" }).click();
+    await expect(review.getByText("No durable captures yet")).toBeVisible();
+    await page.locator('[data-pipeline-view-option="board"]').click();
+    await page
+      .getByRole("combobox", { name: "Move Synthetic native movable role to stage" })
+      .selectOption({ label: "Native drafting" });
+    const statusActions = page.getByRole("region", { name: "Local status changes", exact: true });
+    await expect(statusActions.getByRole("status")).toContainText(
+      "Saved Synthetic native movable role",
+    );
+    await page.locator('[data-pipeline-view-option="table"]').click();
+    await statusActions
+      .getByRole("button", {
+        name: "Undo status change for Synthetic native movable role",
+        exact: true,
+      })
+      .click();
+    await expect(statusActions.getByRole("status")).toContainText(
+      "Restored Synthetic native movable role",
+    );
+    await page
+      .getByRole("button", { name: "Edit status for Synthetic native movable role", exact: true })
+      .click();
+    await page
+      .getByLabel("Status for Synthetic native movable role", { exact: true })
+      .selectOption({ label: "Native drafting" });
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(statusActions.getByRole("status")).toContainText(
+      "Saved Synthetic native movable role",
+    );
     await primary.getByRole("link", { name: "Documents", exact: true }).click();
     await page.getByRole("button", { name: "New document", exact: true }).click();
     const form = page.getByRole("form", { name: "New reusable document" });

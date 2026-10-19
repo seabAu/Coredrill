@@ -82,6 +82,7 @@ export interface ChangeStatusPortInput {
   readonly note: string | null;
   readonly allowReopen: boolean;
   readonly expected?: StatusChangeExpectation;
+  readonly requireSubmissionSnapshot?: boolean;
 }
 
 /**
@@ -94,6 +95,7 @@ export interface JobPipelinePort {
 }
 
 export const JOB_PIPELINE_ERROR_CODES = [
+  "submission_review_required",
   "already_exists",
   "not_found",
   "same_status",
@@ -140,6 +142,7 @@ export interface ChangeStatusInput {
   readonly note?: string | null;
   readonly allowReopen?: boolean;
   readonly expected?: StatusChangeExpectation;
+  readonly requireSubmissionSnapshot?: boolean;
 }
 
 export interface JobPipelineOperationDependencies {
@@ -176,6 +179,11 @@ const UNKNOWN_PIPELINE_ERROR: ApplicationError = Object.freeze({
 });
 
 const PIPELINE_ERRORS: Readonly<Record<JobPipelineErrorCode, ApplicationError>> = Object.freeze({
+  submission_review_required: Object.freeze({
+    code: "conflict",
+    message: "Review Mark Applied in the job Documents tab before recording a submission.",
+    retryable: false,
+  }),
   already_exists: Object.freeze({
     code: "conflict",
     message: "The local job already exists.",
@@ -492,6 +500,15 @@ export const createJobPipelineOperations = (
           allowReopen: allowReopen ?? false,
         };
         const expected = untrustedInput["expected"];
+        const requireSubmissionSnapshot = untrustedInput["requireSubmissionSnapshot"];
+        if (requireSubmissionSnapshot !== undefined) {
+          if (
+            typeof requireSubmissionSnapshot !== "boolean" ||
+            (requireSubmissionSnapshot && expected === undefined)
+          )
+            throw new TypeError("Interactive status changes require a viewed context.");
+          parsed = { ...parsed, requireSubmissionSnapshot };
+        }
         if (expected !== undefined) {
           if (!isRecord(expected)) throw new TypeError("Invalid viewed status context.");
           const jobRowVersion = requireRowVersion(expected["jobRowVersion"]);

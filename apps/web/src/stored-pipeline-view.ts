@@ -93,6 +93,7 @@ export const storedPipelineBoardColumns = (
     items: snapshot.jobs
       .filter((job) => (job.status?.id ?? null) === group.statusId)
       .map((job): BoardJobCard => ({
+        rowVersion: job.rowVersion,
         id: job.id,
         title: job.title,
         company: job.company?.name ?? "Unknown company",

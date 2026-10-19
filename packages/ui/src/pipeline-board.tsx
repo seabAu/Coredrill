@@ -36,6 +36,7 @@ export interface BoardStage {
 }
 
 export interface BoardJobCard {
+  readonly rowVersion?: number;
   readonly company: string;
   readonly id: string;
   readonly lastActivity: string;
@@ -53,6 +54,7 @@ export interface BoardColumn {
 }
 
 export interface BoardMoveRequest {
+  readonly expectedRowVersion?: number;
   readonly fromStageId: string;
   readonly jobId: string;
   readonly method: BoardMoveMethod;
@@ -101,6 +103,15 @@ const validateColumns = (columns: readonly BoardColumn[]): void => {
     columns.flatMap(({ items }) => items.map(({ id }) => id)),
     "Pipeline Board job IDs",
   );
+  if (
+    columns.some(({ items }) =>
+      items.some(
+        ({ rowVersion }) =>
+          rowVersion !== undefined && (!Number.isSafeInteger(rowVersion) || rowVersion < 1),
+      ),
+    )
+  )
+    throw new RangeError("Board row versions must be positive safe integers.");
   for (const { stage } of columns) {
     if (
       stage.unassigned === true &&
@@ -157,6 +168,7 @@ const VirtualBoardColumn = ({
   const bottomSpacer = Math.max(0, column.items.length - visibleEnd) * BOARD_ROW_HEIGHT_PX;
 
   const createDragRequest = (job: BoardJobCard): BoardMoveRequest => ({
+    ...(job.rowVersion === undefined ? {} : { expectedRowVersion: job.rowVersion }),
     fromStageId: column.stage.id,
     jobId: job.id,
     method: "drag",
@@ -190,6 +202,9 @@ const VirtualBoardColumn = ({
       )
     ) {
       onMoveRequest({
+        ...(currentDrag.expectedRowVersion === undefined
+          ? {}
+          : { expectedRowVersion: currentDrag.expectedRowVersion }),
         fromStageId: currentDrag.fromStageId,
         jobId: currentDrag.jobId,
         method: "drag",
@@ -221,6 +236,17 @@ const VirtualBoardColumn = ({
           : plainStageId
         : transferredStageId;
     const fromStage = columns.find(({ stage }) => stage.id === fromStageId)?.stage;
+    const sourceJob = columns
+      .find(({ stage }) => stage.id === fromStageId)
+      ?.items.find(({ id }) => id === jobId);
+    const viewedVersion =
+      currentDrag?.jobId === jobId && currentDrag?.fromStageId === fromStageId
+        ? currentDrag?.expectedRowVersion
+        : undefined;
+    if (sourceJob?.rowVersion !== undefined && viewedVersion === undefined) {
+      onDragChange(null);
+      return;
+    }
     if (
       canReceive &&
       jobId !== undefined &&
@@ -232,6 +258,7 @@ const VirtualBoardColumn = ({
       )
     ) {
       onMoveRequest({
+        ...(viewedVersion === undefined ? {} : { expectedRowVersion: viewedVersion }),
         fromStageId,
         jobId,
         method: "drag",
@@ -354,6 +381,9 @@ const VirtualBoardColumn = ({
                     if (targetStage === undefined || targetStage.unassigned === true || !canMove)
                       return;
                     onMoveRequest({
+                      ...(job.rowVersion === undefined
+                        ? {}
+                        : { expectedRowVersion: job.rowVersion }),
                       fromStageId: column.stage.id,
                       jobId: job.id,
                       method: "keyboard",
