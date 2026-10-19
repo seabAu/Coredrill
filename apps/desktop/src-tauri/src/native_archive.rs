@@ -15,7 +15,7 @@ use crate::native_storage::{
     validate_session_id,
 };
 
-pub const NATIVE_ARCHIVE_PROTOCOL_VERSION: u16 = 2;
+pub const NATIVE_ARCHIVE_PROTOCOL_VERSION: u16 = 3;
 
 const ARCHIVE_MAGIC: [u8; 16] = *b"COREDRILL_DB_V1\0";
 const ARCHIVE_FORMAT_VERSION: u16 = 1;
@@ -78,6 +78,10 @@ pub enum NativeArchiveOperation {
         session_id: String,
         content_id: String,
     },
+    AttachmentPut {
+        session_id: String,
+        attachment: NativeAttachmentBytes,
+    },
     PortableCommit {
         session_id: String,
         expected_target_fingerprint: String,
@@ -134,6 +138,11 @@ pub enum NativeArchiveResponseData {
     AttachmentMissing {
         content_id: String,
     },
+    AttachmentStored {
+        content_id: String,
+        byte_length: u64,
+        sha256: String,
+    },
     PortableCommitted {
         database_sha256: String,
         attachment_count: usize,
@@ -150,6 +159,15 @@ pub enum PortableIntegrity {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct NativePortableDatabase {
     pub schema_version: u32,
+    pub byte_length: u64,
+    pub sha256: String,
+    pub bytes: Vec<u8>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct NativeAttachmentBytes {
+    pub content_id: String,
     pub byte_length: u64,
     pub sha256: String,
     pub bytes: Vec<u8>,
@@ -359,6 +377,7 @@ fn validate_native_archive_request(
         | NativeArchiveOperation::PortableInspect { session_id, .. }
         | NativeArchiveOperation::PortableTarget { session_id }
         | NativeArchiveOperation::AttachmentRead { session_id, .. }
+        | NativeArchiveOperation::AttachmentPut { session_id, .. }
         | NativeArchiveOperation::PortableCommit { session_id, .. } => session_id,
     };
     validate_archive_session_id(session_id)?;
@@ -386,6 +405,7 @@ impl NativeStorageService {
             | NativeArchiveOperation::PortableInspect { session_id, .. }
             | NativeArchiveOperation::PortableTarget { session_id }
             | NativeArchiveOperation::AttachmentRead { session_id, .. }
+            | NativeArchiveOperation::AttachmentPut { session_id, .. }
             | NativeArchiveOperation::PortableCommit { session_id, .. } => session_id,
         };
         let mut state = self
@@ -481,6 +501,20 @@ impl NativeStorageService {
                 None => NativeArchiveResponseData::AttachmentMissing { content_id },
             },
             (
+                NativeArchiveOperation::AttachmentPut {
+                    session_id,
+                    attachment,
+                },
+                None,
+            ) => {
+                self.write_portable_attachment(&session_id, &attachment)?;
+                NativeArchiveResponseData::AttachmentStored {
+                    content_id: attachment.content_id,
+                    byte_length: attachment.byte_length,
+                    sha256: attachment.sha256,
+                }
+            }
+            (
                 NativeArchiveOperation::PortableCommit {
                     session_id,
                     expected_target_fingerprint,
@@ -526,6 +560,7 @@ impl NativeStorageService {
                 | NativeArchiveOperation::PortableInspect { .. }
                 | NativeArchiveOperation::PortableTarget { .. }
                 | NativeArchiveOperation::AttachmentRead { .. }
+                | NativeArchiveOperation::AttachmentPut { .. }
                 | NativeArchiveOperation::PortableCommit { .. },
                 Some(_),
             ) => return Err(NativeArchiveError::invalid_request()),
@@ -681,7 +716,7 @@ impl NativeStorageService {
             .layout
             .prepare_attachment_path(content_id)
             .map_err(|_| NativeArchiveError::archive_io_failure())?;
-        let bytes = match fs::read(path) {
+        let bytes = match read_bounded_attachment(&path) {
             Ok(bytes) => bytes,
             Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
             Err(_) => return Err(NativeArchiveError::archive_io_failure()),
@@ -691,6 +726,57 @@ impl NativeStorageService {
             return Err(NativeArchiveError::archive_invalid());
         }
         Ok(Some(bytes))
+    }
+
+    fn write_portable_attachment(
+        &self,
+        session_id: &str,
+        attachment: &NativeAttachmentBytes,
+    ) -> Result<(), NativeArchiveError> {
+        validate_archive_session_id(session_id)?;
+        validate_sha256_hex(&attachment.content_id)?;
+        if attachment.sha256 != attachment.content_id
+            || attachment.byte_length != attachment.bytes.len() as u64
+            || attachment.bytes.len() > MAX_PORTABLE_ENTRY_BYTES
+            || digest_hex(&digest_bytes(&attachment.bytes)) != attachment.content_id
+        {
+            return Err(NativeArchiveError::archive_invalid());
+        }
+        let mut state = self
+            .state
+            .lock()
+            .map_err(|_| NativeArchiveError::archive_io_failure())?;
+        let session = state
+            .sessions
+            .get_mut(session_id)
+            .ok_or_else(NativeArchiveError::session_missing)?;
+        if session.transaction_active {
+            return Err(NativeArchiveError::transaction_state());
+        }
+        self.layout
+            .verify_database_path(&session.database_path)
+            .map_err(|_| NativeArchiveError::archive_io_failure())?;
+        let target = self
+            .layout
+            .prepare_attachment_path(&attachment.content_id)
+            .map_err(|_| NativeArchiveError::archive_io_failure())?;
+        match read_bounded_attachment(&target) {
+            Ok(existing) if existing == attachment.bytes => return Ok(()),
+            Ok(_) => return Err(NativeArchiveError::archive_invalid()),
+            Err(error) if error.kind() == io::ErrorKind::NotFound => {}
+            Err(_) => return Err(NativeArchiveError::archive_io_failure()),
+        }
+        publish_portable_attachment(
+            &self.layout,
+            &NativePortableAttachment {
+                content_id: attachment.content_id.clone(),
+                media_type: "application/octet-stream".to_owned(),
+                logical_name: None,
+                byte_length: attachment.byte_length,
+                sha256: attachment.sha256.clone(),
+                bytes: attachment.bytes.clone(),
+            },
+        )
     }
 
     fn commit_portable_restore(
@@ -1358,6 +1444,27 @@ fn validate_and_publish_portable_attachments(
     Ok(())
 }
 
+fn read_bounded_attachment(path: &Path) -> io::Result<Vec<u8>> {
+    let file = File::open(path)?;
+    let metadata = file.metadata()?;
+    if !metadata.is_file() || metadata.len() > MAX_PORTABLE_ENTRY_BYTES as u64 {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "Invalid attachment.",
+        ));
+    }
+    let mut bytes = Vec::new();
+    file.take(MAX_PORTABLE_ENTRY_BYTES as u64 + 1)
+        .read_to_end(&mut bytes)?;
+    if bytes.len() > MAX_PORTABLE_ENTRY_BYTES {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "Invalid attachment.",
+        ));
+    }
+    Ok(bytes)
+}
+
 fn publish_portable_attachment(
     layout: &NativeStorageLayout,
     attachment: &NativePortableAttachment,
@@ -1365,7 +1472,7 @@ fn publish_portable_attachment(
     let target = layout
         .prepare_attachment_path(&attachment.content_id)
         .map_err(|_| NativeArchiveError::archive_io_failure())?;
-    match fs::read(&target) {
+    match read_bounded_attachment(&target) {
         Ok(existing)
             if existing.len() == attachment.bytes.len()
                 && digest_hex(&digest_bytes(&existing)) == attachment.content_id =>
@@ -1373,6 +1480,8 @@ fn publish_portable_attachment(
             return Ok(());
         }
         Ok(_) => {}
+        // Explicit archive restore may repair a corrupt oversized payload without reading it.
+        Err(error) if error.kind() == io::ErrorKind::InvalidData => {}
         Err(error) if error.kind() == io::ErrorKind::NotFound => {}
         Err(_) => return Err(NativeArchiveError::archive_io_failure()),
     }

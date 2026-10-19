@@ -36,6 +36,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import {
   NativeStorageProtocolError,
+  NATIVE_ARCHIVE_PROTOCOL_VERSION,
   createNativePortableArchiveRestorePortV1,
   openNativeSqliteDatabase,
   type NativeArchiveRequest,
@@ -483,6 +484,100 @@ describe("native SQLite repository and migration contracts", () => {
       archive: { schemaVersion: 158, sha256: expect.stringMatching(/^[a-f0-9]{64}$/u) },
     });
     await database.delete();
+  });
+
+  it("persists immutable path-free attachment writes durably and rejects forged payloads in Rust", async () => {
+    const databaseName = nextDatabaseName();
+    const database = await openNativeSqliteDatabase({ databaseName, transport });
+    await applySqlMigrations(database, migrations(), APPLIED_AT);
+    const beforeWriteHash = (await database.exportPortable()).sha256;
+    const bytes = new Uint8Array([0, 255, 9, 13, 10]);
+    const contentId = createHash("sha256").update(bytes).digest("hex");
+    const input = { contentId, sha256: contentId, byteLength: bytes.byteLength, bytes };
+    await database.writePortableAttachment(input);
+    await database.writePortableAttachment(input);
+    expect((await database.exportPortable()).sha256).toBe(beforeWriteHash);
+    await expect(database.readPortableAttachment(contentId)).resolves.toEqual(bytes);
+    const attachmentPath = path.join(
+      transport.storageRoot(),
+      "attachments",
+      "sha256",
+      contentId.slice(0, 2),
+      contentId.slice(2, 4),
+      contentId,
+    );
+    expect(await readFile(attachmentPath)).toEqual(Buffer.from(bytes));
+    expect(await realpath(attachmentPath)).toBe(attachmentPath);
+    await database.close();
+    const reopened = await openNativeSqliteDatabase({ databaseName, transport });
+    await expect(reopened.readPortableAttachment(contentId)).resolves.toEqual(bytes);
+    // Direct transport faults deliberately bypass TypeScript's preflight.
+    const opened = (await transport.invoke({
+      protocolVersion: 1,
+      requestId: "attachment-fault-session",
+      operation: { type: "open", databaseName: nextDatabaseName() },
+    })) as { data: { sessionId: string } };
+    for (const invalid of [
+      { contentId: "../escape", sha256: contentId, byteLength: 5, bytes: [...bytes] },
+      { contentId, sha256: "0".repeat(64), byteLength: 5, bytes: [...bytes] },
+      { contentId, sha256: contentId, byteLength: 4, bytes: [...bytes] },
+      { contentId, sha256: contentId, byteLength: 5, bytes: [0, 255, 9, 13, 11] },
+    ])
+      await expect(
+        transport.invokeArchive({
+          protocolVersion: NATIVE_ARCHIVE_PROTOCOL_VERSION,
+          requestId: "invalid-attachment-put",
+          operation: {
+            type: "attachment_put",
+            sessionId: opened.data.sessionId,
+            attachment: invalid,
+          },
+        }),
+      ).rejects.toBeDefined();
+    await transport.invoke({
+      protocolVersion: 1,
+      requestId: "begin-attachment-fault",
+      operation: { type: "begin", sessionId: opened.data.sessionId },
+    });
+    await expect(
+      transport.invokeArchive({
+        protocolVersion: NATIVE_ARCHIVE_PROTOCOL_VERSION,
+        requestId: "transaction-attachment-put",
+        operation: {
+          type: "attachment_put",
+          sessionId: opened.data.sessionId,
+          attachment: { ...input, bytes: [...bytes] },
+        },
+      }),
+    ).rejects.toMatchObject({ code: "transaction_state" });
+    await transport.invoke({
+      protocolVersion: 1,
+      requestId: "rollback-attachment-fault",
+      operation: { type: "rollback", sessionId: opened.data.sessionId },
+    });
+    await transport.invoke({
+      protocolVersion: 1,
+      requestId: "close-attachment-fault",
+      operation: { type: "close", sessionId: opened.data.sessionId },
+    });
+    await expect(
+      transport.invokeArchive({
+        protocolVersion: NATIVE_ARCHIVE_PROTOCOL_VERSION,
+        requestId: "closed-attachment-put",
+        operation: {
+          type: "attachment_put",
+          sessionId: opened.data.sessionId,
+          attachment: { ...input, bytes: [...bytes] },
+        },
+      }),
+    ).rejects.toMatchObject({ code: "session_missing" });
+    await expect(reopened.readPortableAttachment(contentId)).resolves.toEqual(bytes);
+    await writeFile(attachmentPath, "synthetic corruption");
+    await expect(reopened.writePortableAttachment(input)).rejects.toMatchObject({
+      code: "archive_invalid",
+    });
+    expect(await readFile(attachmentPath, "utf8")).toBe("synthetic corruption");
+    await reopened.delete();
   });
 
   it("restores complete evidence relationships and attachments through the native boundary", async () => {

@@ -2,6 +2,8 @@
 export {
   deserializeNativeArchiveError,
   NATIVE_ARCHIVE_PROTOCOL_VERSION,
+  NATIVE_ATTACHMENT_MAX_BYTES,
+  type NativeAttachmentBytes,
   NATIVE_BACKUP_RETENTION_LIMITS,
   parseNativeArchiveResponse,
   type NativeArchiveMetadata,

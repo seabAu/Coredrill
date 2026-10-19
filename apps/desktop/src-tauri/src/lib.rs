@@ -61,6 +61,7 @@ async fn native_archive_invoke(
             | NativeArchiveOperation::PortableInspect { .. }
             | NativeArchiveOperation::PortableTarget { .. }
             | NativeArchiveOperation::AttachmentRead { .. }
+            | NativeArchiveOperation::AttachmentPut { .. }
             | NativeArchiveOperation::PortableCommit { .. } => None,
         };
         let selected_path = selected

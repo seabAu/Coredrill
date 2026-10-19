@@ -1,6 +1,7 @@
 import { deserializeNativeStorageError, NativeStorageProtocolError } from "./protocol.js";
 
-export const NATIVE_ARCHIVE_PROTOCOL_VERSION = 2 as const;
+export const NATIVE_ARCHIVE_PROTOCOL_VERSION = 3 as const;
+export const NATIVE_ATTACHMENT_MAX_BYTES = 256 * 1024 * 1024;
 const NATIVE_ARCHIVE_FORMAT_VERSION = 1 as const;
 const MAX_ARCHIVE_DATABASE_BYTES = 64 * 1024 * 1024 * 1024;
 const MAX_PORTABLE_ENTRY_BYTES = 256 * 1024 * 1024;
@@ -37,6 +38,11 @@ export type NativeArchiveOperation =
   | { readonly type: "portable_target"; readonly sessionId: string }
   | { readonly type: "attachment_read"; readonly sessionId: string; readonly contentId: string }
   | {
+      readonly type: "attachment_put";
+      readonly sessionId: string;
+      readonly attachment: NativeAttachmentBytes;
+    }
+  | {
       readonly type: "portable_commit";
       readonly sessionId: string;
       readonly expectedTargetFingerprint: string;
@@ -52,13 +58,16 @@ export interface NativePortableDatabase {
   readonly bytes: readonly number[];
 }
 
-export interface NativePortableAttachment {
+export interface NativeAttachmentBytes {
   readonly contentId: string;
-  readonly mediaType: string;
-  readonly logicalName?: string;
   readonly byteLength: number;
   readonly sha256: string;
   readonly bytes: readonly number[];
+}
+
+export interface NativePortableAttachment extends NativeAttachmentBytes {
+  readonly mediaType: string;
+  readonly logicalName?: string;
 }
 
 export type NativePortableTarget =
@@ -119,6 +128,12 @@ export type NativeArchiveResponseData =
       readonly bytes: readonly number[];
     }
   | { readonly type: "attachment_missing"; readonly contentId: string }
+  | {
+      readonly type: "attachment_stored";
+      readonly contentId: string;
+      readonly byteLength: number;
+      readonly sha256: string;
+    }
   | {
       readonly type: "portable_committed";
       readonly databaseSha256: string;
@@ -309,6 +324,13 @@ const parseResponseData = (value: unknown): NativeArchiveResponseData => {
     }
     case "portable_target":
       return Object.freeze({ type: "portable_target", target: parseTarget(value["target"]) });
+    case "attachment_stored": {
+      const contentId = parseSha256(value["contentId"]);
+      const byteLength = requireSafeInteger(value, "byteLength");
+      const sha256 = parseSha256(value["sha256"]);
+      if (sha256 !== contentId || byteLength > NATIVE_ATTACHMENT_MAX_BYTES) throw invalidResponse();
+      return Object.freeze({ type: "attachment_stored", contentId, byteLength, sha256 });
+    }
     case "attachment_data": {
       const contentId = parseSha256(value["contentId"]);
       const byteLength = requireSafeInteger(value, "byteLength");

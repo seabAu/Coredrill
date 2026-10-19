@@ -1,12 +1,16 @@
+import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 
 import {
   NATIVE_ARCHIVE_PROTOCOL_VERSION,
+  NATIVE_ATTACHMENT_MAX_BYTES,
   NativeStorageProtocolError,
   openNativeSqliteDatabase,
   parseNativeArchiveResponse,
   type NativeArchiveRequest,
+  type NativeArchiveTransport,
   type NativeStorageRequest,
+  type NativeStorageTransport,
 } from "../src/index.js";
 
 const metadata = Object.freeze({
@@ -25,7 +29,125 @@ const backupMetadata = Object.freeze({
   archive: metadata,
 });
 
+const combinedTransport = (transport: NativeStorageTransport & NativeArchiveTransport) => transport;
+
 describe("native recovery archive protocol", () => {
+  it("writes only immutable content-addressed bytes through the versioned attachment boundary", async () => {
+    const requests: NativeArchiveRequest[] = [];
+    const bytes = new Uint8Array([0, 1, 255, 64]);
+    const contentId = createHash("sha256").update(bytes).digest("hex");
+    const database = await openNativeSqliteDatabase({
+      databaseName: "attachment-write.sqlite3",
+      transport: combinedTransport({
+        invoke: async (request: NativeStorageRequest) => ({
+          protocolVersion: 1,
+          requestId: request.requestId,
+          data: { type: "opened", sessionId: "native-session-1" },
+        }),
+        invokeArchive: async (request: NativeArchiveRequest) => {
+          requests.push(request);
+          return {
+            protocolVersion: NATIVE_ARCHIVE_PROTOCOL_VERSION,
+            requestId: request.requestId,
+            data: { type: "attachment_stored", contentId, sha256: contentId, byteLength: 4 },
+          };
+        },
+      }),
+    });
+    const pending = database.writePortableAttachment({
+      contentId,
+      sha256: contentId,
+      byteLength: 4,
+      bytes,
+    });
+    bytes[0] = 99;
+    await pending;
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toMatchObject({
+      protocolVersion: 3,
+      operation: {
+        type: "attachment_put",
+        sessionId: "native-session-1",
+        attachment: { contentId, bytes: [0, 1, 255, 64] },
+      },
+    });
+    expect(JSON.stringify(requests)).not.toContain("path");
+  });
+
+  it("rejects invalid identity, lengths, and bytes before attachment IPC", async () => {
+    let archiveCalls = 0;
+    const database = await openNativeSqliteDatabase({
+      databaseName: "attachment-invalid.sqlite3",
+      transport: combinedTransport({
+        invoke: async (request: NativeStorageRequest) => ({
+          protocolVersion: 1,
+          requestId: request.requestId,
+          data: { type: "opened", sessionId: "native-session-1" },
+        }),
+        invokeArchive: async () => {
+          archiveCalls += 1;
+          throw new Error("must not invoke");
+        },
+      }),
+    });
+    const bytes = new Uint8Array([0, 1]);
+    const contentId = createHash("sha256").update(bytes).digest("hex");
+    for (const invalid of [
+      { contentId: "../outside", sha256: contentId, byteLength: 2, bytes },
+      { contentId, sha256: "0".repeat(64), byteLength: 2, bytes },
+      { contentId, sha256: contentId, byteLength: 1, bytes },
+      { contentId, sha256: contentId, byteLength: NATIVE_ATTACHMENT_MAX_BYTES + 1, bytes },
+      { contentId, sha256: contentId, byteLength: 2, bytes: new Uint8Array([0, 2]) },
+    ])
+      await expect(database.writePortableAttachment(invalid)).rejects.toMatchObject({
+        code: "invalid_request",
+      });
+    expect(archiveCalls).toBe(0);
+  });
+
+  it("rejects acknowledgement drift and the old archive protocol version", async () => {
+    const bytes = new Uint8Array([1]);
+    const contentId = createHash("sha256").update(bytes).digest("hex");
+    const database = await openNativeSqliteDatabase({
+      databaseName: "attachment-drift.sqlite3",
+      transport: combinedTransport({
+        invoke: async (request: NativeStorageRequest) => ({
+          protocolVersion: 1,
+          requestId: request.requestId,
+          data: { type: "opened", sessionId: "native-session-1" },
+        }),
+        invokeArchive: async (request: NativeArchiveRequest) => ({
+          protocolVersion: 3,
+          requestId: request.requestId,
+          data: { type: "attachment_stored", contentId, sha256: contentId, byteLength: 2 },
+        }),
+      }),
+    });
+    await expect(
+      database.writePortableAttachment({ contentId, sha256: contentId, byteLength: 1, bytes }),
+    ).rejects.toMatchObject({ code: "invalid_response" });
+    expect(() =>
+      parseNativeArchiveResponse(
+        {
+          protocolVersion: 2,
+          requestId: "old-archive",
+          data: { type: "attachment_stored", contentId, sha256: contentId, byteLength: 1 },
+        },
+        "old-archive",
+      ),
+    ).toThrow(NativeStorageProtocolError);
+    for (const byteLength of [-1, NATIVE_ATTACHMENT_MAX_BYTES + 1, 0.5])
+      expect(() =>
+        parseNativeArchiveResponse(
+          {
+            protocolVersion: 3,
+            requestId: "bad-attachment",
+            data: { type: "attachment_stored", contentId, sha256: contentId, byteLength },
+          },
+          "bad-attachment",
+        ),
+      ).toThrow(NativeStorageProtocolError);
+  });
   it("accepts only versioned, checksummed metadata without a filesystem path", () => {
     const response = parseNativeArchiveResponse(
       {

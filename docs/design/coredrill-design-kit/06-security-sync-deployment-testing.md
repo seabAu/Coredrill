@@ -184,6 +184,15 @@ has no secret-read IPC.
 
 `NAT-006` proves first-OS database recovery through an official native picker called only inside Rust. The custom command receives an opaque session, never a path; the selected path never returns to the WebView, and dialog/filesystem JavaScript permissions are absent. Export snapshots WAL safely through SQLite's online-backup API, streams a version/schema/length/SHA-256 envelope, and atomically replaces a same-directory temporary file. Restore verifies the entire envelope and temporary SQLite database before closing the target, then maintains a same-volume recovery snapshot until atomic replacement, reopen, integrity, and schema checks succeed. Corrupt bytes and an injected post-replacement failure both preserve the previous usable vault. This remains database-only recovery evidence, not the full portable archive promised by D-051. See [native archive verification](../../proof/native-archive-verification.md).
 
+Native archive IPC version 3 adds a session-owned content-addressed attachment
+write for the eventual native document runtime. TypeScript and Rust independently
+validate digest/length/bytes; ordinary writes reuse identical payloads and reject
+corrupt existing payloads rather than silently repairing them. Publication uses
+the existing confined atomic writer, reads are bounded, and no path or new
+permission crosses the WebView boundary. SQLite remains canonical metadata and
+no write implies selection or submission. See [native attachment write contract](native-attachment-write-v3.md)
+and [verification](../../proof/native-attachment-write-verification.md).
+
 `BKP-001` adds the adapter-neutral D-051 writer. It rechecks exported database
 length/schema/checksum, requires every recorded content-addressed attachment to
 resolve and match its length/hash, calculates JSON/CSV checksums, validates the

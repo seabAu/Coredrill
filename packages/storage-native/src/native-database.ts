@@ -27,6 +27,7 @@ import {
 import {
   deserializeNativeArchiveError,
   NATIVE_ARCHIVE_PROTOCOL_VERSION,
+  NATIVE_ATTACHMENT_MAX_BYTES,
   parseNativeArchiveResponse,
   type NativeArchiveOperation,
   type NativeArchiveOutcome,
@@ -43,6 +44,12 @@ export interface OpenNativeSqliteOptions {
 }
 
 export interface NativeSqliteDatabase extends DatabasePort {
+  writePortableAttachment(input: {
+    readonly contentId: string;
+    readonly byteLength: number;
+    readonly sha256: string;
+    readonly bytes: Uint8Array;
+  }): Promise<void>;
   exportRecoveryArchive(): Promise<NativeArchiveOutcome>;
   restoreRecoveryArchive(): Promise<NativeArchiveOutcome>;
   createAutomaticBackup(retentionCount: number): Promise<NativeAutomaticBackupMetadata>;
@@ -197,6 +204,54 @@ class NativeSqliteDatabaseAdapter implements NativeSqliteDatabase {
       if (data.type !== "portable_target")
         throw this.invalidArchiveResponse("portable_target", data.type);
       return data.target;
+    });
+  }
+
+  public async writePortableAttachment(input: {
+    readonly contentId: string;
+    readonly byteLength: number;
+    readonly sha256: string;
+    readonly bytes: Uint8Array;
+  }): Promise<void> {
+    const { contentId, byteLength, sha256 } = input;
+    if (
+      !/^[a-f0-9]{64}$/u.test(contentId) ||
+      sha256 !== contentId ||
+      !Number.isSafeInteger(byteLength) ||
+      byteLength < 0 ||
+      byteLength > NATIVE_ATTACHMENT_MAX_BYTES ||
+      !(input.bytes instanceof Uint8Array) ||
+      input.bytes.byteLength !== byteLength
+    ) {
+      throw new NativeStorageProtocolError(
+        "invalid_request",
+        "Attachment bytes do not match their content identity.",
+        false,
+      );
+    }
+    const bytes = Uint8Array.from(input.bytes);
+    const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
+    if ([...digest].map((value) => value.toString(16).padStart(2, "0")).join("") !== contentId) {
+      throw new NativeStorageProtocolError(
+        "invalid_request",
+        "Attachment bytes do not match their content identity.",
+        false,
+      );
+    }
+    return this.runExclusive(async () => {
+      const data = await this.sendArchiveData({
+        type: "attachment_put",
+        sessionId: this.sessionId,
+        attachment: { contentId, byteLength, sha256, bytes: Object.freeze([...bytes]) },
+      });
+      if (
+        data.type !== "attachment_stored" ||
+        data.contentId !== contentId ||
+        data.byteLength !== byteLength ||
+        data.sha256 !== sha256
+      ) {
+        throw this.invalidArchiveResponse("attachment_stored", data.type);
+      }
     });
   }
 
@@ -437,7 +492,7 @@ class NativeSqliteDatabaseAdapter implements NativeSqliteDatabase {
     this.assertOpen();
     if (this.archiveTransport === undefined) {
       throw new NativeStorageCapabilityError(
-        operation.type.startsWith("portable_") || operation.type === "attachment_read"
+        operation.type.startsWith("portable_") || operation.type.startsWith("attachment_")
           ? "portable-recovery"
           : operation.type === "automatic_backup"
             ? "native-automatic-backup"

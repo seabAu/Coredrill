@@ -239,6 +239,16 @@ does not finish.
 
 ### Native adapter
 
+Archive IPC version 3 adds an ordinary immutable attachment put over the existing
+narrow archive command. It accepts a live session and bounded hash-addressed
+bytes, independently validates them in TypeScript/Rust, preserves corrupt
+existing payloads on ordinary writes, and returns only content identity metadata.
+This fills the native document-runtime retention gap without changing SQLite
+schema, archive file format, generic filesystem access or permissions. See
+[contract](native-attachment-write-v3.md) and [verification](../../proof/native-attachment-write-verification.md).
+Production runtime/entry composition remains unfinished; this adapter capability
+alone is not native UI proof.
+
 - `NAT-001` through `NAT-008` establish an accepted capability-gated Tauri boundary with a strict, versioned operation protocol over a narrow `rusqlite` 0.40.1 service. The shared TypeScript `DatabasePort`, reviewed SQL migration ledger, and repository contracts remain the public surface; Rust/Tauri/SQLite types do not cross into storage-core.
 - Opaque session identifiers retain one native connection for callback transactions. Query/execute separation, tagged bound values, request/value/result limits, unknown-field denial, serialized access, foreign keys, `trusted_schema = OFF`, WAL, and content-free errors are enforced at the privileged boundary.
 - `NAT-004` forwards Tauri's exact platform-resolved application-data directory into one canonical Rust layout. Databases live under `databases/`; content-addressed attachment paths live under `attachments/sha256/<first-byte>/<second-byte>/<lowercase-sha256>`. Managed directories and existing leaf paths are canonicalized and confined on every use, SQLite opens with `SQLITE_OPEN_NOFOLLOW`, and no arbitrary or absolute attachment path crosses IPC.
