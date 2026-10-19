@@ -58,6 +58,14 @@ export const applyStoredRequirementAction = async (
   request: JobWorkspaceContentActionRequest,
   onComparison: (requirementId: string, comparison: RequirementCoverageRerunDiffV1) => void,
 ): Promise<ApplicationResult<unknown> | null> => {
+  if (request.id === "accept-requirement-proposal") {
+    if (!value.requirementProposals.some(({ id }) => id === request.targetId)) return null;
+    return api.accept({
+      jobId: value.jobId,
+      proposalId: request.targetId,
+      category: request.category,
+    });
+  }
   if (request.id === "correct-requirement-category") {
     if (!value.requirements.some(({ id }) => id === request.targetId)) return null;
     return api.correct({

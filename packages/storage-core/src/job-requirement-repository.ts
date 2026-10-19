@@ -171,6 +171,84 @@ export class JobRequirementRepository {
   public constructor(private readonly database: DatabasePort) {}
 
   public async create(input: CreateJobRequirementRecordInput): Promise<JobRequirementRecord> {
+    return this.database.transaction((session) => this.createInSession(session, input));
+  }
+
+  /** Source and requirement commit together; no orphan provenance on failed acceptance. */
+  public async createFromRetainedLine(
+    input: CreateJobRequirementRecordInput & {
+      readonly snapshotId: string;
+      readonly lineIndex: number;
+      readonly parseConfidence: number;
+    },
+  ): Promise<JobRequirementRecord> {
+    const snapshotId = entityId("source-snapshot", input.snapshotId);
+    const lineIndex = nonnegativeInteger(input.lineIndex, "Source line index");
+    const parseConfidence = confidence(input.parseConfidence);
+    if (typeof input.userConfirmed !== "boolean" || !input.userConfirmed)
+      throw new TypeError("Source acceptance requires explicit confirmation.");
+    return this.database.transaction(async (session) => {
+      const rows = await session.query(
+        sqlStatement(
+          `SELECT source_snapshot.raw_text, source_snapshot.captured_at
+           FROM source_snapshot
+           INNER JOIN job_source ON job_source.id = source_snapshot.job_source_id
+           INNER JOIN job ON job.id = job_source.job_id
+           WHERE source_snapshot.id = ? AND job.id = ? AND job.archived_at IS NULL`,
+          [snapshotId, input.jobId],
+        ),
+      );
+      const source = rows[0];
+      const text = source?.["raw_text"];
+      const capturedAt = source?.["captured_at"];
+      const lines =
+        typeof text === "string" && text.length <= 524_288 ? text.split(/\r\n|\n|\r/u) : [];
+      const excerpt = lines[lineIndex];
+      if (
+        typeof text !== "string" ||
+        text.length > 524_288 ||
+        typeof capturedAt !== "string" ||
+        lines.length > 512 ||
+        typeof excerpt !== "string" ||
+        excerpt.length > 4_096 ||
+        excerpt.trim() !== input.rawText
+      )
+        throw new TypeError("Requirement source line is unavailable or mismatched.");
+      const pointer = `/raw_text/lines/${String(lineIndex + 1)}`;
+      const duplicate = await session.query(
+        sqlStatement(
+          `SELECT job_requirement.id FROM job_requirement
+         INNER JOIN provenance ON provenance.id = job_requirement.provenance_id
+         WHERE job_requirement.job_id = ? AND provenance.source_snapshot_id = ?
+           AND provenance.source_pointer = ? LIMIT 1`,
+          [input.jobId, snapshotId, pointer],
+        ),
+      );
+      if (duplicate.length !== 0) throw new Error("Requirement source line was already accepted.");
+      await session.execute(
+        sqlStatement(
+          `INSERT INTO provenance(id, source_snapshot_id, extraction_method, source_pointer,
+           source_excerpt, confidence, captured_at, license_note, created_at, row_version)
+         VALUES (?, ?, 'heuristic', ?, ?, ?, ?, NULL, ?, 1)`,
+          [
+            input.provenanceId,
+            snapshotId,
+            pointer,
+            excerpt,
+            parseConfidence,
+            capturedAt,
+            input.createdAt,
+          ],
+        ),
+      );
+      return this.createInSession(session, input);
+    });
+  }
+
+  private async createInSession(
+    transaction: DatabaseSession,
+    input: CreateJobRequirementRecordInput,
+  ): Promise<JobRequirementRecord> {
     const id = entityId("job-requirement", input.id);
     const jobId = entityId("job", input.jobId);
     const category = jobRequirementCategory(input.category);
@@ -183,10 +261,9 @@ export class JobRequirementRepository {
     if (typeof input.userConfirmed !== "boolean") {
       throw new TypeError("Requirement confirmation state must be explicit.");
     }
-    return this.database.transaction(async (transaction) => {
-      const result = await transaction.execute(
-        sqlStatement(
-          `INSERT INTO job_requirement(
+    const result = await transaction.execute(
+      sqlStatement(
+        `INSERT INTO job_requirement(
              id, job_id, category, source_category, normalized_text, raw_text,
              provenance_id, confidence, user_confirmed, sort_order,
              created_at, updated_at
@@ -197,31 +274,30 @@ export class JobRequirementRepository {
            INNER JOIN job_source ON job_source.id = source_snapshot.job_source_id
            WHERE provenance.id = ? AND provenance.source_excerpt IS NOT NULL
              AND job_source.job_id = ?`,
-          [
-            id,
-            jobId,
-            category,
-            sourceCategory,
-            normalizedText,
-            rawText,
-            input.userConfirmed ? 1 : 0,
-            sortOrder,
-            createdAt,
-            createdAt,
-            provenanceId,
-            jobId,
-          ],
-        ),
+        [
+          id,
+          jobId,
+          category,
+          sourceCategory,
+          normalizedText,
+          rawText,
+          input.userConfirmed ? 1 : 0,
+          sortOrder,
+          createdAt,
+          createdAt,
+          provenanceId,
+          jobId,
+        ],
+      ),
+    );
+    if (result.rowsAffected !== 1) {
+      throw new Error(
+        "Requirement provenance is missing, excerpt-free, or belongs to another job.",
       );
-      if (result.rowsAffected !== 1) {
-        throw new Error(
-          "Requirement provenance is missing, excerpt-free, or belongs to another job.",
-        );
-      }
-      const stored = await findOne(transaction, id);
-      if (stored === undefined) throw new Error("Created job requirement is missing.");
-      return stored;
-    });
+    }
+    const stored = await findOne(transaction, id);
+    if (stored === undefined) throw new Error("Created job requirement is missing.");
+    return stored;
   }
 
   public async correct(input: CorrectJobRequirementRecordInput): Promise<JobRequirementRecord> {

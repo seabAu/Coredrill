@@ -10,6 +10,7 @@ import {
   type DatabaseContractSuite,
 } from "./contract-harness.js";
 import { sqlStatement, type DatabasePort } from "./database-port.js";
+import { createJobRequirementRepository } from "./job-requirement-repository.js";
 import { openRequirementEvidenceRepository } from "./requirement-evidence-repository.js";
 import { PHASE_1_REPOSITORY_CONTRACT_MANIFEST } from "./repository-contract-manifest.js";
 
@@ -122,6 +123,57 @@ const seed = async (database: DatabasePort): Promise<void> => {
       [IDS.skillEvidence, IDS.skill, IDS.employment, IDS.employment, CREATED_AT],
     ),
   );
+};
+
+const assertRetainedSourceAcceptance = async (database: DatabasePort): Promise<void> => {
+  const repository = createJobRequirementRepository(database);
+  const input = {
+    id: entityId("job-requirement", "0199a740-0000-7000-8000-000000000020"),
+    jobId: IDS.job,
+    category: "desired" as const,
+    sourceCategory: "required" as const,
+    normalizedText: "TypeScript required",
+    rawText: "TypeScript required",
+    provenanceId: entityId("provenance", "0199a740-0000-7000-8000-000000000021"),
+    sortOrder: 2,
+    createdAt: CREATED_AT,
+    userConfirmed: true,
+    snapshotId: IDS.snapshot,
+    lineIndex: 0,
+    parseConfidence: 0.55,
+  };
+  let rejected = false;
+  try {
+    await repository.createFromRetainedLine({ ...input, normalizedText: "" });
+  } catch {
+    rejected = true;
+  }
+  assertContract(rejected, "An invalid source acceptance unexpectedly committed.");
+  const orphans = await database.query(
+    sqlStatement("SELECT id FROM provenance WHERE id = ?", [input.provenanceId]),
+  );
+  assertContract(orphans.length === 0, "Failed source acceptance left orphan provenance.");
+  const accepted = await repository.createFromRetainedLine(input);
+  assertContract(
+    accepted.sourceExcerpt === input.rawText &&
+      accepted.sourcePointer === "/raw_text/lines/1" &&
+      accepted.category === "desired" &&
+      accepted.sourceCategory === "required" &&
+      accepted.confidence === 0.55 &&
+      accepted.userConfirmed,
+    "Accepted source identity, confidence or reviewed categories drifted.",
+  );
+  rejected = false;
+  try {
+    await repository.createFromRetainedLine({
+      ...input,
+      id: entityId("job-requirement", "0199a740-0000-7000-8000-000000000022"),
+      provenanceId: entityId("provenance", "0199a740-0000-7000-8000-000000000023"),
+    });
+  } catch {
+    rejected = true;
+  }
+  assertContract(rejected, "Repeated source acceptance created another requirement.");
 };
 
 const assertRerunDiffBehavior = async (database: DatabasePort): Promise<void> => {
@@ -371,6 +423,7 @@ export const createRequirementEvidenceContractSuite = (
         run: async (database) => {
           await setup.migrate(database);
           await seed(database);
+          await assertRetainedSourceAcceptance(database);
           await assertBehavior(database, false, setup.expectedFts5 ? "fts5" : "normalized-token");
         },
       },
@@ -380,6 +433,7 @@ export const createRequirementEvidenceContractSuite = (
         run: async (database) => {
           await setup.migrate(database);
           await seed(database);
+          await assertRetainedSourceAcceptance(database);
           await assertBehavior(database, true, "normalized-token");
         },
       },

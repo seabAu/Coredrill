@@ -141,6 +141,59 @@ describe("JobRequirementRepository", () => {
 
   afterEach(() => database.close());
 
+  const sourceInput = () => ({
+    id: IDS.requirement,
+    jobId: IDS.job,
+    category: "desired" as const,
+    sourceCategory: "responsibility" as const,
+    normalizedText: "lead delivery.",
+    rawText: "You will lead delivery.",
+    provenanceId: entityId("provenance", "0199a710-0000-7000-8000-000000000006"),
+    sortOrder: 0,
+    createdAt: CREATED_AT,
+    userConfirmed: true,
+    snapshotId: IDS.snapshot,
+    lineIndex: 0,
+    parseConfidence: 0.86,
+  });
+
+  it("atomically accepts an exact retained source line and refuses repeated acceptance", async () => {
+    const repository = createJobRequirementRepository(database);
+    const created = await repository.createFromRetainedLine(sourceInput());
+    expect(created).toMatchObject({
+      sourceExcerpt: "You will lead delivery.",
+      sourcePointer: "/raw_text/lines/1",
+      extractionMethod: "heuristic",
+      confidence: 0.86,
+      category: "desired",
+      sourceCategory: "responsibility",
+      userConfirmed: true,
+    });
+    await expect(
+      repository.createFromRetainedLine({
+        ...sourceInput(),
+        id: entityId("job-requirement", "0199a710-0000-7000-8000-000000000007"),
+        provenanceId: entityId("provenance", "0199a710-0000-7000-8000-000000000008"),
+      }),
+    ).rejects.toThrow("already accepted");
+    expect(await database.query(sqlStatement("SELECT id FROM provenance"))).toHaveLength(2);
+    expect(await repository.listForJob(IDS.job)).toEqual([created]);
+  });
+
+  it("rejects forged source text, coordinates and wrong-job snapshots without orphan provenance", async () => {
+    const repository = createJobRequirementRepository(database);
+    for (const input of [
+      { ...sourceInput(), rawText: "Invented experience" },
+      { ...sourceInput(), lineIndex: 1 },
+      { ...sourceInput(), jobId: entityId("job", "0199a710-0000-7000-8000-000000000009") },
+      { ...sourceInput(), normalizedText: "" },
+      { ...sourceInput(), userConfirmed: false },
+    ])
+      await expect(repository.createFromRetainedLine(input)).rejects.toThrow();
+    expect(await database.query(sqlStatement("SELECT id FROM provenance"))).toHaveLength(1);
+    expect(await repository.listForJob(IDS.job)).toEqual([]);
+  });
+
   it("persists exact provenance and retains the extracted category across correction", async () => {
     const repository = createJobRequirementRepository(database);
     const created = await repository.create({

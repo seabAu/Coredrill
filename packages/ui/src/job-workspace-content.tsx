@@ -154,6 +154,7 @@ export interface JobWorkspaceContentModel {
       readonly matchedTerms: readonly string[];
     }[];
   }[];
+  readonly requirementParseNotice?: string | null;
   readonly requirementProposals: readonly {
     readonly id: string;
     readonly category: JobRequirementCategory;
@@ -848,6 +849,7 @@ const RequirementsPanel = ({ model, onAction }: JobWorkspaceContentPanelProps) =
           Proposals are unconfirmed interpretations. Nothing becomes a recorded requirement until
           you explicitly accept it, and rejecting a proposal does not alter the source.
         </p>
+        {model.requirementParseNotice ? <p>{model.requirementParseNotice}</p> : null}
         {model.requirementProposals.length === 0 ? (
           <div className="cd-job-empty-state">
             <h4>No pending proposals</h4>

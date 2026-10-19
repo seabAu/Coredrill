@@ -438,6 +438,7 @@ export {
   JOB_REQUIREMENT_PARSE_SPEC_VERSION,
   JOB_REQUIREMENT_SOURCE_BLOCK_KINDS,
   parseJobRequirementProposals,
+  isJobRequirementHeading,
   validateJobRequirementProposal,
   type JobRequirementParseResultDto,
   type JobRequirementProposalDto,

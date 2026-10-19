@@ -1884,6 +1884,7 @@ const AppShellCatalog = () => {
   >("idle");
   const [workspaceRoute, setWorkspaceRoute] = useState<JobRouteState | null>(initialJobRoute);
   const [storedJob, setStoredJob] = useState<StoredJobComparison | null>(null);
+  const [rejectedStoredProposals, setRejectedStoredProposals] = useState<readonly string[]>([]);
   const [storedCoverageComparisons, setStoredCoverageComparisons] = useState<
     Readonly<
       Record<string, JobWorkspaceContentModel["requirementEvidence"][number]["coverageComparison"]>
@@ -2100,7 +2101,10 @@ const AppShellCatalog = () => {
               ? review
               : { ...review, coverageComparison: comparison };
           }),
-          requirementProposals: [],
+          requirementProposals: storedJob.requirementProposals.filter(
+            ({ id }) => !rejectedStoredProposals.includes(id),
+          ),
+          requirementParseNotice: storedJob.requirementParseNotice,
           overview: { ...workspaceContentBase.overview, descriptionText: storedJob.description },
         }
       : workspaceContentBase;
@@ -3223,9 +3227,22 @@ const AppShellCatalog = () => {
 
   const recordWorkspaceContentAction = (request: JobWorkspaceContentActionRequest): void => {
     if (
+      storedJob?.jobId === workspaceRoute?.jobId &&
+      request.id === "reject-requirement-proposal" &&
+      typeof request.targetId === "string"
+    ) {
+      const targetId = request.targetId;
+      setRejectedStoredProposals((current) => [...current, targetId]);
+      setLastActivity(
+        "Rejected this proposal for the current view. The retained source is unchanged; reload can review it again.",
+      );
+      return;
+    }
+    if (
       storedJob !== null &&
       storedJob.jobId === workspaceRoute?.jobId &&
       [
+        "accept-requirement-proposal",
         "correct-requirement-category",
         "select-requirement-evidence",
         "remove-requirement-evidence",

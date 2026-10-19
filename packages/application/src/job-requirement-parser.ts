@@ -117,6 +117,9 @@ const headingKey = (value: string): string =>
 const withoutListMarker = (value: string): string =>
   value.replace(/^\s*(?:(?:[-*•‣▪◦])|(?:\d{1,3}[.)]))\s+/u, "").trim();
 
+export const isJobRequirementHeading = (value: string): boolean =>
+  HEADING_CATEGORIES[headingKey(value.replace(/^\s*#{1,3}\s+/u, ""))] !== undefined;
+
 const normalizedMeaning = (value: string): string => {
   const withoutMarker = withoutListMarker(value);
   const withoutPrefix = withoutMarker.replace(

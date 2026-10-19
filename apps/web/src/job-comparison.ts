@@ -8,7 +8,7 @@ import {
   type JobRequirementDto,
   type RequirementEvidenceRetrievalDto,
 } from "@coredrill/application";
-import { entityId, generateEntityId } from "@coredrill/domain";
+import { entityId, generateEntityId, type JobRequirementCategory } from "@coredrill/domain";
 import {
   createJobRequirementRepository,
   createPipelineRepositories,
@@ -17,6 +17,11 @@ import {
   sqlStatement,
   type DatabasePort,
 } from "@coredrill/storage-core";
+
+import {
+  loadStoredRequirementSource,
+  type PendingStoredRequirementProposal,
+} from "./job-requirement-source.js";
 
 export interface StoredJobComparison {
   readonly jobId: string;
@@ -32,6 +37,8 @@ export interface StoredJobComparison {
     readonly terminal: boolean;
   } | null;
   readonly requirements: readonly JobRequirementDto[];
+  readonly requirementProposals: readonly PendingStoredRequirementProposal[];
+  readonly requirementParseNotice: string | null;
   readonly evidence: readonly RequirementEvidenceRetrievalDto[];
 }
 
@@ -103,6 +110,7 @@ export const createStoredJobComparisonApi = (
             : await createPipelineRepositories(client).statusDefinitions.findById(
                 job.currentStatusId,
               );
+        const source = await loadStoredRequirementSource(client, jobId);
         return applicationSuccess(
           Object.freeze({
             jobId,
@@ -121,6 +129,8 @@ export const createStoredJobComparisonApi = (
                     terminal: status.terminal,
                   },
             requirements: listed.value,
+            requirementProposals: source.proposals,
+            requirementParseNotice: source.notice,
             evidence: Object.freeze(reviews),
           }),
         );
@@ -129,6 +139,57 @@ export const createStoredJobComparisonApi = (
           code: "unavailable",
           message: "The stored job comparison could not be loaded.",
           retryable: true,
+        });
+      }
+    },
+    accept: async (input: {
+      readonly jobId: string;
+      readonly proposalId: string;
+      readonly category: JobRequirementCategory;
+    }) => {
+      try {
+        const [snapshotId, parserId, extra] = input.proposalId.split("/");
+        if (snapshotId === undefined || parserId === undefined || extra !== undefined)
+          throw new TypeError("Invalid proposal identity.");
+        const client = await database();
+        const source = await loadStoredRequirementSource(client, input.jobId, snapshotId);
+        const selected = source.proposals.find(({ id }) => id === input.proposalId);
+        if (selected === undefined)
+          return applicationFailure({
+            code: "conflict",
+            message: "This source proposal is no longer available. Reload before reviewing it.",
+            retryable: false,
+          });
+        const lineIndex = Number(selected.sourcePointer.split("/").at(-1)) - 1;
+        const operations = createJobRequirementOperations({
+          createId: (kind) => generateEntityId(kind),
+          requirements: {
+            recordRequirement: (value) =>
+              createJobRequirementRepository(client).createFromRetainedLine({
+                ...value,
+                snapshotId,
+                lineIndex,
+                parseConfidence: selected.confidence,
+              }),
+            correctRequirement: (value) => createJobRequirementRepository(client).correct(value),
+            listRequirements: (jobId) => createJobRequirementRepository(client).listForJob(jobId),
+          },
+        });
+        return await operations.acceptRequirementProposalCommand.execute(
+          {
+            category: input.category,
+            proposal: { ...selected, id: parserId, provenanceId: generateEntityId("provenance") },
+          },
+          context(),
+        );
+      } catch (error) {
+        return applicationFailure({
+          code: error instanceof TypeError ? "validation" : "unavailable",
+          message:
+            error instanceof TypeError
+              ? "The retained requirement proposal is invalid."
+              : "The local requirement source is unavailable.",
+          retryable: !(error instanceof TypeError),
         });
       }
     },
