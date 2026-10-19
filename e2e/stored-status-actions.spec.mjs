@@ -106,6 +106,13 @@ test("reviewed submission survives normal terminal moves, reopen cancellation, c
   await expect(move).toBeFocused();
   await expect(move.locator("option:checked")).toHaveText("Reference closed");
   await move.selectOption({ label: "Preparing application" });
+  await expect(reopen.getByRole("heading")).toBeFocused();
+  await page.locator('[data-pipeline-view-option="table"]').click();
+  await reopen.getByRole("button", { name: "Cancel reopening", exact: true }).click();
+  await expect(changes.getByRole("status")).toBeFocused();
+  await page.locator('[data-pipeline-view-option="board"]').click();
+  await expect(move.locator("option:checked")).toHaveText("Reference closed");
+  await move.selectOption({ label: "Preparing application" });
   await reopen.getByRole("button", { name: "Confirm reopen and move", exact: true }).click();
   await expect(changes.getByRole("status")).toContainText(
     "Saved Synthetic submission status role in Preparing application",
@@ -122,10 +129,12 @@ test("reviewed submission survives normal terminal moves, reopen cancellation, c
   );
   await expect(move.locator("option:checked")).toHaveText("Reference closed");
   await move.selectOption({ label: "Reference applied" });
+  await page.locator('[data-pipeline-view-option="table"]').click();
   await reopen.getByRole("button", { name: "Confirm reopen and move", exact: true }).click();
   await expect(changes.getByRole("status")).toContainText(
     "Saved Synthetic submission status role in Reference applied",
   );
+  await expect(changes.getByRole("status")).toBeFocused();
   const current = await page.evaluate(
     async (id) => ({
       workspace: await globalThis.coredrillStorageSpike.pipeline.workspace({ jobId: id.jobId }),
@@ -306,6 +315,43 @@ test("normal user-created stages support durable Board/Table status changes and 
   await expect(
     table.getByRole("button", { name: "Edit status for Synthetic movable role", exact: true }),
   ).toBeFocused();
+  // A delayed acknowledgement must not pull focus out of an intentional search.
+  await changes
+    .getByRole("button", { name: "Undo status change for Synthetic movable role", exact: true })
+    .click();
+  await expect(changes.getByRole("status")).toContainText("Restored Synthetic movable role");
+  await page.evaluate(() => {
+    const api = globalThis.coredrillStorageSpike;
+    globalThis.coredrillHeldStatusSuccess = { api, release: null };
+    globalThis.coredrillStorageSpike = {
+      ...api,
+      pipelineMutations: {
+        ...api.pipelineMutations,
+        changeStatus: async (input) => {
+          await new Promise((resolve) => {
+            globalThis.coredrillHeldStatusSuccess.release = resolve;
+          });
+          return api.pipelineMutations.changeStatus(input);
+        },
+      },
+    };
+  });
+  await table
+    .getByRole("button", { name: "Edit status for Synthetic movable role", exact: true })
+    .click();
+  await editor.selectOption({ label: "My deliberate drafting stage" });
+  await table.getByRole("button", { name: "Save", exact: true }).click();
+  await page.waitForFunction(() => globalThis.coredrillHeldStatusSuccess.release !== null);
+  const search = page.getByRole("searchbox", { name: "Search jobs and companies", exact: true });
+  await search.fill("Synthetic");
+  await expect(search).toBeFocused();
+  await page.evaluate(() => {
+    globalThis.coredrillStorageSpike = globalThis.coredrillHeldStatusSuccess.api;
+    globalThis.coredrillHeldStatusSuccess.release();
+  });
+  await expect(changes.getByRole("status")).toContainText("Saved Synthetic movable role");
+  await expect(search).toBeFocused();
+  await expect(row).toContainText("My deliberate drafting stage");
   await page.setViewportSize({ width: 320, height: 900 });
   await page.emulateMedia({ forcedColors: "active" });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

@@ -1,4 +1,5 @@
 import { useId, useRef, useState, type CSSProperties } from "react";
+import { restoreFocusAfterChange } from "./focus-restoration.js";
 
 export const PIPELINE_TABLE_COLUMN_IDS = Object.freeze([
   "title",
@@ -306,8 +307,12 @@ export const PipelineTable = ({
   const headingId = useId();
   const savingEdit = useRef(false);
   const tableRoot = useRef<HTMLElement>(null);
-  const restoreEditFocus = (row: PipelineTableJob, field: PipelineTableEditField): void => {
-    requestAnimationFrame(() => {
+  const restoreEditFocus = (
+    row: PipelineTableJob,
+    field: PipelineTableEditField,
+    origin: Element | null = document.activeElement,
+  ): void => {
+    restoreFocusAfterChange(origin, () => {
       const label = `Edit ${COLUMN_LABELS[field].toLocaleLowerCase()} for ${row.title}`;
       const targetRow = Array.from(
         tableRoot.current?.querySelectorAll<HTMLTableRowElement>("tr[data-table-job]") ?? [],
@@ -316,7 +321,7 @@ export const PipelineTable = ({
       const target = Array.from(buttons ?? []).find(
         (button) => button.getAttribute("aria-label") === label,
       );
-      target?.focus();
+      return target ?? tableRoot.current;
     });
   };
   const [visibleStart, setVisibleStart] = useState(0);
@@ -476,6 +481,7 @@ export const PipelineTable = ({
       };
     }
 
+    const focusOrigin = document.activeElement;
     setEditor({ ...editor, error: null, pending: true });
     savingEdit.current = true;
     let result: PipelineTableEditResult;
@@ -493,7 +499,7 @@ export const PipelineTable = ({
     if (result.ok) {
       setAnnouncement(result.announcement);
       setEditor(null);
-      restoreEditFocus(row, editor.field);
+      restoreEditFocus(row, editor.field, focusOrigin);
     } else {
       setEditor({ ...editor, error: result.error, pending: false });
     }
@@ -693,6 +699,7 @@ export const PipelineTable = ({
       className="cd-table-view"
       data-testid="pipeline-table"
       ref={tableRoot}
+      tabIndex={-1}
     >
       <span className="cd-visually-hidden" id={`${headingId}-view`}>
         {viewName}

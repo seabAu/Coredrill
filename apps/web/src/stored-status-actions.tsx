@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type {
-  BoardMoveRequest,
-  PipelineTableEditRequest,
-  PipelineTableEditResult,
+import {
+  restoreFocusAfterChange,
+  type BoardMoveRequest,
+  type PipelineTableEditRequest,
+  type PipelineTableEditResult,
 } from "@coredrill/ui";
 import { createStoredStatusController, type ViewedStatusMove } from "./stored-status-controller.js";
 import type { StoredPipelineSnapshot } from "./stored-pipeline-view.js";
@@ -21,12 +22,17 @@ interface UndoEntry {
   readonly unavailable: boolean;
 }
 
-const restoreBoardMoveFocus = (jobId: string): void => {
-  requestAnimationFrame(() => {
+const restoreBoardMoveFocus = (
+  jobId: string,
+  origin: Element | null,
+  fallback: () => HTMLElement | null,
+): void => {
+  restoreFocusAfterChange(origin, () => {
     const card = Array.from(document.querySelectorAll<HTMLElement>("[data-board-job]")).find(
       (item) => item.dataset["boardJob"] === jobId,
     );
-    card?.querySelector<HTMLSelectElement>("select")?.focus();
+    const control = card?.querySelector<HTMLSelectElement>("select");
+    return control?.disabled === false ? control : fallback();
   });
 };
 
@@ -72,6 +78,13 @@ export const useStoredStatusActions = (options: {
     setError(true);
     return { ok: false, error: text };
   };
+  const restoreFailureFocus = (origin: Element | null): void => {
+    restoreFocusAfterChange(origin, () =>
+      origin instanceof HTMLElement && origin.isConnected && !origin.matches(":disabled")
+        ? origin
+        : feedback.current,
+    );
+  };
   const reread = async (savedMessage: string) => {
     try {
       const refreshed = await live.current.refresh();
@@ -88,9 +101,13 @@ export const useStoredStatusActions = (options: {
       setError(true);
     }
   };
-  const perform = async (request: RequestedMove): Promise<PipelineTableEditResult> => {
+  const perform = async (
+    request: RequestedMove,
+    focusOwner: "board" | "table" = "board",
+  ): Promise<PipelineTableEditResult> => {
     if (!live.current.enabled || owner.current)
       return fail("A local status operation is already pending. Wait for it to finish.");
+    const focusOrigin = document.activeElement;
     owner.current = true;
     setBusy(true);
     setError(false);
@@ -100,11 +117,13 @@ export const useStoredStatusActions = (options: {
       const outcome = await controller.move(request.viewed);
       if (outcome.kind === "failed") {
         setRetry(outcome.retryable ? request : null);
+        restoreFailureFocus(focusOrigin);
         return fail(outcome.message);
       }
       if (outcome.kind === "review-applied") {
         setRetry(null);
         setAppliedReview(outcome.jobId);
+        restoreFailureFocus(focusOrigin);
         return fail(
           "Applied requires a separate exact-document review. No status was changed by this request. Choose Review Mark Applied to continue.",
         );
@@ -124,7 +143,9 @@ export const useStoredStatusActions = (options: {
       setRetry(null);
       const announcement = `Saved ${request.title} in ${request.target}. Timeline event retained; undo is available.`;
       await reread(announcement);
-      restoreBoardMoveFocus(request.viewed.jobId);
+      // Table owns its successful editor teardown; two restorers would compete.
+      if (focusOwner === "board")
+        restoreBoardMoveFocus(request.viewed.jobId, focusOrigin, () => feedback.current);
       return { ok: true, announcement };
     } finally {
       owner.current = false;
@@ -195,10 +216,11 @@ export const useStoredStatusActions = (options: {
           error:
             "This job changed since editing began. Cancel the draft and review the current value.",
         }
-      : perform(request);
+      : perform(request, "table");
   };
   const undo = async (entry: UndoEntry) => {
     if (owner.current || pendingReopen !== null || entry.consumed || entry.unavailable) return;
+    const focusOrigin = document.activeElement;
     owner.current = true;
     setBusy(true);
     setError(false);
@@ -212,6 +234,7 @@ export const useStoredStatusActions = (options: {
             current.map((item) => (item.id === entry.id ? { ...item, unavailable: true } : item)),
           );
         fail(outcome.message);
+        restoreFailureFocus(focusOrigin);
         return;
       }
       setUndos((current) =>
@@ -220,7 +243,7 @@ export const useStoredStatusActions = (options: {
       await reread(
         `Restored ${entry.title} to its prior status. The original timeline event remains and the undo token is consumed.`,
       );
-      requestAnimationFrame(() => feedback.current?.focus());
+      restoreFocusAfterChange(focusOrigin, () => feedback.current);
     } finally {
       owner.current = false;
       setBusy(false);
@@ -279,7 +302,11 @@ export const useStoredStatusActions = (options: {
               className="cd-button"
               disabled={busy}
               onClick={() => {
-                restoreBoardMoveFocus(pendingReopen.viewed.jobId);
+                restoreBoardMoveFocus(
+                  pendingReopen.viewed.jobId,
+                  document.activeElement,
+                  () => feedback.current,
+                );
                 setPendingReopen(null);
                 setMessage("Reopening cancelled. No move was requested.");
                 setError(false);

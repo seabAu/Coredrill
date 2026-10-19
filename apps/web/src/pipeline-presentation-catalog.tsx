@@ -68,6 +68,10 @@ declare global {
 export const PipelinePresentationCatalog = () => {
   const [moves, setMoves] = useState<readonly BoardMoveRequest[]>([]);
   const [editingAvailable, setEditingAvailable] = useState(true);
+  const [removableRows, setRemovableRows] = useState<readonly PipelineTableJob[]>([
+    row,
+    { ...row, id: "synthetic-other", rowVersion: 2 },
+  ]);
   useEffect(() => {
     globalThis.coredrillPipelinePresentation = { getMoves: () => moves };
     return () => {
@@ -134,6 +138,26 @@ export const PipelinePresentationCatalog = () => {
                 }),
               }
             : {})}
+        />
+      </section>
+      <section aria-label="Removed edit origin example">
+        <h2>Removed edit origin</h2>
+        <p>
+          Presentation-only row removal. Identical titles must not redirect focus to another job.
+        </p>
+        <PipelineTable
+          columnConfiguration={DEFAULT_PIPELINE_TABLE_COLUMNS}
+          rows={removableRows}
+          statusOptions={[{ id: "local-stage", name: "Explicit local stage", terminal: false }]}
+          viewName="Removed origin fixture"
+          editableFields={["status"]}
+          onEditRequest={(input) => {
+            setRemovableRows((current) => current.filter(({ id }) => id !== input.jobId));
+            return {
+              ok: true,
+              announcement: "Presentation-only row removal; no storage operation.",
+            };
+          }}
         />
       </section>
     </main>

@@ -224,6 +224,8 @@ Dragging changes status after an accessible confirmation announcement and writes
 
 Normal Board/Table status composition retains the gesture/editor row version, blocks overlapping local writes and rereads SQLite after acknowledgement. Failed drafts remain visible, while refreshed stale drafts require cancellation and a fresh edit. Undo is shared across the peer views and stays available until used or dismissed, subject to durable unchanged-state checks. An initial Applied request opens Documents review rather than claiming a submission; terminal reopening has a separate confirmation. The normal Table currently connects status only; other scalar edits remain unavailable. Save/cancel restores focus to the originating edit button. See [current executable proof and remaining checks](../../proof/stored-status-actions-verification.md).
 
+Status focus restoration resolves a connected target after rendering and proceeds only while the initiating interaction still owns focus. A missing Table row returns to the named Table context, not another same-title job; a missing Board after a peer-view change uses persistent status feedback. Deliberate focus changes during pending work are preserved. Table success has one restoration owner, and programmatic context targets do not add sequential Tab stops. See [focus recovery proof](../../proof/status-focus-recovery-verification.md).
+
 Jobs with no status appear in an explicit Unassigned read group labeled “No
 status assigned.” This is not a stored stage or semantic category and is never
 a move destination. Missing move/open/undo handlers disable the corresponding

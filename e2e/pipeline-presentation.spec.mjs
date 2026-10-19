@@ -1,6 +1,38 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
+test("restores a removed Table origin to its named context, not a duplicate title", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/ui-foundations.html?pipeline=availability");
+  const example = page.getByRole("region", { name: "Removed edit origin example", exact: true });
+  const table = example.getByTestId("pipeline-table");
+  const edit = table.getByRole("button", {
+    name: "Edit status for Synthetic unassigned role",
+    exact: true,
+  });
+  await expect(edit).toHaveCount(2);
+  await edit.first().click();
+  await table
+    .getByLabel("Status for Synthetic unassigned role", { exact: true })
+    .selectOption("local-stage");
+  await table.getByRole("button", { name: "Save", exact: true }).press("Enter");
+  await expect(table.locator('tr[data-table-job="synthetic-unassigned"]')).toHaveCount(0);
+  await expect(edit).toHaveCount(1);
+  await expect(table).toBeFocused();
+  await expect(table).toHaveCSS("outline-style", "solid");
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.emulateMedia({ forcedColors: "active" });
+  await table.scrollIntoViewIfNeeded();
+  await expect(table).toBeFocused();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.screenshot({ path: testInfo.outputPath("table-focus-fallback-320.png") });
+  await page.keyboard.press("Tab");
+  await expect(table.locator("summary")).toBeFocused();
+  expect(await page.evaluate(() => globalThis.coredrillStorageSpike)).toBeUndefined();
+});
+
 test("represents Unassigned and missing Pipeline capabilities without fake changes", async ({
   page,
 }, testInfo) => {

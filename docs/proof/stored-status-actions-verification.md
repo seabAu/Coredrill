@@ -4,7 +4,7 @@ Date: 2026-10-19. Checklist: `Q3-005` remains open.
 
 ## Outcome
 
-Normal Board moves and Table status edits now use guarded local transactions and durable undo. Final-source component checks pass across the recorded runs; the final aggregate run is **not** green because three existing browser cases timed out. Those same three pass unchanged in isolation. Clean-commit hosted verification is pending. `Q3-005` and milestone gates remain open.
+Normal Board moves and Table status edits now use guarded local transactions and durable undo. Final-source component checks pass across the recorded runs; the final local aggregate run is **not** green because three existing browser cases timed out. Those same three pass unchanged in isolation. Exact clean commit `1aa4d093c93a866b32557ed9819c706c8352049c` subsequently passed every required hosted job in [run 39323540428](https://github.com/seabAu/Coredrill/actions/runs/39323540428). This does not verify the later [focus refinement](status-focus-recovery-verification.md). `Q3-005` and milestone gates remain open.
 
 Final-source coverage: 138 unit files / 1,119 tests and coverage; six foundation cases; all 76 shell cases across the 73-pass aggregate plus three-case retry; performance; 21 resilience, seven onboarding, 13 document and nine browser-storage cases; 14 native adapter cases; Rust core, redacted secret, archive/backup recovery, reports, policy and audits. Windows package proof is recorded below. No assertions, thresholds or timeouts were weakened.
 
@@ -62,12 +62,12 @@ The next full run (`test-results/stored-status-actions-complete-verify.log`) pas
 
 The completed full run is retained in `test-results/stored-status-actions-bounded-verify.log`, with process-local `VITEST_MAX_WORKERS=4`, a supported setting verified against the installed Vitest resolver. This changes unit-test scheduling only, not scope or thresholds. It is not a green aggregate result.
 
-Every verification check not reached after that shell-suite failure passes in `test-results/stored-status-actions-remaining-gate.log` (command sequence exit 0), including the strengthened offline status journeys, performance, remaining browser/native/recovery checks and policy/audits. Both status cases run their mutations while explicitly offline and pass, including terminal cancellation/confirmation, undo and identical submitted snapshots/applied facts. License checks pass for 520 npm packages and 498 crates; npm audit reports no vulnerabilities and Cargo retains ten allowed warnings. Final aggregate/clean-commit hosted verification remains pending; successful component reruns are not an aggregate pass.
+Every verification check not reached after that shell-suite failure passes in `test-results/stored-status-actions-remaining-gate.log` (command sequence exit 0), including the strengthened offline status journeys, performance, remaining browser/native/recovery checks and policy/audits. Both status cases run their mutations while explicitly offline and pass, including terminal cancellation/confirmation, undo and identical submitted snapshots/applied facts. License checks pass for 520 npm packages and 498 crates; npm audit reports no vulnerabilities and Cargo retains ten allowed warnings. The local aggregate remains a failure; successful component reruns are not an aggregate pass. Subsequent clean-commit hosted run `39323540428` passes every required job at `1aa4d09`, as recorded above.
 
 ## Remaining engineering and release boundaries
 
-- Obtain clean-commit hosted verification, retaining the local timeout observations above.
-- Add focus fallback when a filter removes the originating status control or a peer-view change removes the Board during reopen review; current tests prove focus only while the originating control remains present.
+- Retain the local timeout observations alongside the successful clean-commit hosted result.
+- Complete the separate [focus recovery refinement](status-focus-recovery-verification.md) for removed origins and deliberate focus movement; it requires its own final/hosted proof.
 - Complete remaining stored workspace/backup/recovery composition and the unseeded canonical Phase 3 journey. Reference documents in the additional submission case do not close that requirement.
 - Representative-user studies, manual assistive-technology, reference hardware, signing, publication and other independent gates remain open.
 
