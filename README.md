@@ -3,7 +3,7 @@
 Coredrill is a standalone, local-first workspace for capturing job opportunities, managing an application pipeline, grounding application materials in truthful career evidence, and making explainable decisions about where to focus.
 
 > [!IMPORTANT]
-> This repository is in Phase 1 engineering. It contains the governed foundation, browser and native SQLite adapters, the user-triggered capture extension, the local document-editor spike, and the first shared tracker repositories. It does not yet contain a usable end-to-end application, the complete application pipeline, AI integration, or a hosted service.
+> This repository is in Phase 3 engineering. Local tracking and recovery, capture/review, career evidence, requirement comparison, versioned documents, local export, and immutable submitted snapshots have implementation proof. The complete Phase 3 journey is under verification. Representative-user and manual accessibility gates remain open. AI assistance, salary/discovery/insights, public-beta distribution, and optional hosted services remain ahead; there is no supported public release yet. See the [living checklist](docs/design/coredrill-design-kit/LIVING-CHECKLIST.md) for exact proof and blockers.
 
 ## Product promise
 

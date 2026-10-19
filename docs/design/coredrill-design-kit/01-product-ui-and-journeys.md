@@ -132,6 +132,14 @@ Tabs/panels:
 
 ### Application editor
 
+Canonical stored-job routes load their requirement and selected-evidence state
+from SQLite through the existing validated application operations. Explicit
+selection/removal, category correction, and coverage decisions persist before
+the UI refreshes; re-running coverage compares saved facts without changing the
+decision. The Documents tab resolves the latest active application belonging to
+that job, so template context reads the same durable selections after reload.
+The original demonstration fixtures remain separate from stored-job routes.
+
 Three-column desktop studio:
 
 - Left: job requirements and selected career evidence.

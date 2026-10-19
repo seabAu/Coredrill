@@ -2,7 +2,7 @@
 
 This file is the single progress ledger. `GOAL.md` defines the outcome; numbered design documents define behavior; `11-decision-register.md` defines accepted choices. This checklist records what is actually proven.
 
-Last design update: 2026-09-30
+Last design update: 2026-10-19
 Current milestone: Phase 3 — career evidence and versioned documents (`GATE-0`, `GATE-1`, and `GATE-2` external-evidence blockers remain open)
 Current work item: `Q3-005` — run the complete local canonical Phase 3 journey
 Next recommended slice: assess `GATE-3` after `Q3-005`; retain `Q3-002`, `Q2-001`, `Q2-003`, `PEX-005`, `PEX-006`, and `GATE-2` as explicit representative-user/external-evidence/manual-review/permission/deployment blockers
@@ -27,16 +27,18 @@ Next recommended slice: assess `GATE-3` after `Q3-005`; retain `Q3-002`, `Q2-001
 | Item range | `Q3-005` |
 | Branch/worktree | `main` / repository root |
 | Started | 2026-09-30 |
+| Integration finding (2026-10-19) | The Requirements demonstration currently mutates React state while template generation reads SQLite selections. Connect canonical stored-job routes to the existing durable requirement/evidence operations and verify reload continuity before treating the complete journey as proven. Final closure CI at `a58b57f` passed in run `36732872523`. |
+| Local checkpoint (2026-10-19) | Stored-job requirement review now commits to SQLite and feeds the template engine. The scaffolded production-PWA journey passes offline, including stale-write rejection, exact DOCX hash retention, immutable submission reload, axe, and 320-pixel reflow. Full `pnpm verify` passes (120 unit files / 909 tests) after [six dependency security fixes](../../proof/dependency-security-maintenance-2026-10-19.md). Hosted proof and production application/document creation remain. |
 | Expected proof | One production E2E journey starts with a synthetic local resume import, explicitly reviews/confirms evidence without overwriting prior user truth, compares that evidence with a synthetic job, prepares exact versioned application documents with AI disabled, exports locally, marks Applied without submitting, reloads, and retrieves the immutable submitted set and retained artifact identities. The artifact must prove provenance, exact version/hash continuity, accountless/offline/zero-egress behavior, accessible named actions, narrow-screen reflow, and durable recovery through SQLite rather than test-only state. |
 | Blocker | None for a repository-backed synthetic canonical journey. Representative human terminology/action validation remains separately blocked under `Q3-002`; real resumes or applicant data must not be committed as fixtures. Exact reference-device assistive-technology rows remain open under `Q1-003`/Phase 6. `Q2-001` still requires representative human usability sessions, and `Q2-003` retains manual keyboard/screen-reader/mobile evidence beyond automation. Actual extension publication/hosted transfer remains blocked on the public origin, hosting target, release identities/accounts, and owner-supplied public details. `PEX-006` remains open until a reviewed extension-specific adapter genuinely needs persistent host access. `GATE-2`, `GATE-1`, the participant study, and `FND-001` remain independently blocked. |
-| Next handoff | Read the canonical journeys in `01-product-ui-and-journeys.md`, Phase 3 boundaries in `05-ai-documents-salary.md`, D-030/D-039/D-040/D-041/D-042, and the retained `EVD-*`, `MAT-*`, and `DOC-*` proofs. Inventory the production commands already exposed through the browser composition root, then implement one synthetic production E2E journey that imports a resume, deliberately resolves evidence, compares it with a job, prepares/exports exact versions with AI disabled, marks Applied without submitting, reloads, and retrieves the immutable submitted set. Prefer composition over new product capability; add only the smallest missing production seam or durable query demonstrated by the journey. |
+| Next handoff | Finish local/hosted verification of the stored-job requirement/evidence connection and its scaffolded built-PWA offline test. Then implement the missing production application/document-set creation entry point and replace seeded application/document setup in the journey with user actions on actual vault records. Keep `Q3-005` open until that complete path is proven; see the [partial proof and remaining boundary](../../proof/phase-3-canonical-journey-verification.md). Assess `GATE-3` afterward without closing representative-user or manual/reference-device blockers. |
 
 ## Milestone status
 
 | Phase | Outcome | Status | Gate |
 |---|---|---|---|
 | 0 | Repository, UX prototypes, and risky platform assumptions proven | Blocked on representative human validation | `GATE-0` |
-| 1 | Complete local tracker and recovery loop | Implementation complete; gate blocked on external performance/accessibility evidence | `GATE-1` |
+| 1 | Complete local tracker and recovery loop | Repository/application and recovery proof exists; normal-user shell composition still needs integration audit, alongside the external performance/accessibility gate | `GATE-1` |
 | 2 | Safe capture, review, and approved extraction | Implementation complete; gate blocked on external usability/accessibility/publication evidence | `GATE-2` |
 | 3 | Career evidence and versioned documents | In progress | `GATE-3` |
 | 4 | Optional evidence-grounded AI assistance | Not started | `GATE-4` |

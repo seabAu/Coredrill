@@ -129,6 +129,12 @@ import { CaptureEntryDialog } from "./capture-entry-dialog.js";
 import type { SavedJobEvidence, SavedJobSourceComparison } from "./extension-transfer.js";
 import { initializeOfflineShell, OfflineShellNotice } from "./offline-shell.js";
 import { sourceTextFromHtml } from "./source-text.js";
+import type { StoredJobComparison } from "./job-comparison.js";
+import {
+  applyStoredRequirementAction,
+  storedJobTableRow,
+  storedRequirementReviews,
+} from "./job-comparison-view.js";
 import type { SuppliedCaptureMode } from "./supplied-capture.js";
 
 const REFERENCE_DOCUMENT_PREPARATION_APPLICATION_ID = "0199b300-0000-7000-8000-000000000017";
@@ -1874,6 +1880,34 @@ const AppShellCatalog = () => {
     "idle" | "busy" | "saved" | "error"
   >("idle");
   const [workspaceRoute, setWorkspaceRoute] = useState<JobRouteState | null>(initialJobRoute);
+  const [storedJob, setStoredJob] = useState<StoredJobComparison | null>(null);
+  const [storedCoverageComparisons, setStoredCoverageComparisons] = useState<
+    Readonly<
+      Record<string, JobWorkspaceContentModel["requirementEvidence"][number]["coverageComparison"]>
+    >
+  >({});
+  const storedJobId = workspaceRoute?.jobId;
+  useEffect(() => {
+    if (storedJobId === undefined || !/^[a-f0-9-]{36}$/u.test(storedJobId)) {
+      setStoredJob(null);
+      return;
+    }
+    let active = true;
+    setStoredJob(null);
+    void globalThis.coredrillStorageSpike.jobComparison
+      .load(storedJobId)
+      .then((result) => {
+        if (!active) return;
+        if (result.ok) setStoredJob(result.value);
+        else setLastActivity(result.error.message);
+      })
+      .catch(() => {
+        if (active) setLastActivity("The stored job could not be loaded. Reload to try again.");
+      });
+    return () => {
+      active = false;
+    };
+  }, [storedJobId]);
   const [workspaceWidth, setWorkspaceWidth] = useState(640);
   const [lastActivity, setLastActivity] = useState(
     canonicalJourneyMode
@@ -1982,7 +2016,8 @@ const AppShellCatalog = () => {
     workspaceRoute === null
       ? undefined
       : (tableRows.find(({ id }) => id === workspaceRoute.jobId) ??
-        STANDARD_TABLE_ROWS.find(({ id }) => id === workspaceRoute.jobId));
+        STANDARD_TABLE_ROWS.find(({ id }) => id === workspaceRoute.jobId) ??
+        (storedJob?.jobId === workspaceRoute.jobId ? storedJobTableRow(storedJob) : undefined));
   const workspaceModel: JobWorkspaceFrameModel | null =
     workspaceJob === undefined
       ? null
@@ -1994,10 +2029,13 @@ const AppShellCatalog = () => {
           priority: workspaceJob.priority,
           sourceFreshness: `Captured ${workspaceJob.capturedDate}`,
           sourceLabel: workspaceJob.source,
-          status: workspaceJob.status?.name ?? "Unassigned",
+          status:
+            applicationSubmissionReview?.jobId === workspaceJob.id
+              ? applicationSubmissionReview.currentStatusName
+              : (workspaceJob.status?.name ?? "Unassigned"),
           title: workspaceJob.title,
         });
-  const workspaceContentModel =
+  const workspaceContentBase =
     workspaceJob === undefined
       ? null
       : jobWorkspaceContentFor(
@@ -2007,6 +2045,21 @@ const AppShellCatalog = () => {
           jobRequirementProposals[workspaceJob.id] ?? Object.freeze([]),
           jobRequirements[workspaceJob.id] ?? Object.freeze([]),
         );
+  const workspaceContentModel =
+    storedJob !== null && workspaceContentBase?.jobId === storedJob.jobId
+      ? {
+          ...workspaceContentBase,
+          requirements: storedJob.requirements,
+          requirementEvidence: storedRequirementReviews(storedJob).map((review) => {
+            const comparison = storedCoverageComparisons[review.requirementId];
+            return comparison === undefined
+              ? review
+              : { ...review, coverageComparison: comparison };
+          }),
+          requirementProposals: [],
+          overview: { ...workspaceContentBase.overview, descriptionText: storedJob.description },
+        }
+      : workspaceContentBase;
   const page = canonicalJourneyMode
     ? Object.freeze({ eyebrow: "Phase 1 local proof", title: "Accountless recovery journey" })
     : workspaceRoute?.mode === "full-page" && workspaceModel !== null
@@ -2277,9 +2330,11 @@ const AppShellCatalog = () => {
   }, [activeDestination, documentsLoaded, documentsLoading]);
 
   const preparationApplicationId =
-    workspaceRoute?.jobId === "board-northstar"
-      ? REFERENCE_DOCUMENT_PREPARATION_APPLICATION_ID
-      : null;
+    storedJob !== null && storedJob.jobId === workspaceRoute?.jobId
+      ? storedJob.applicationId
+      : workspaceRoute?.jobId === "board-northstar"
+        ? REFERENCE_DOCUMENT_PREPARATION_APPLICATION_ID
+        : null;
 
   useEffect(() => {
     if (
@@ -3056,6 +3111,51 @@ const AppShellCatalog = () => {
   };
 
   const recordWorkspaceContentAction = (request: JobWorkspaceContentActionRequest): void => {
+    if (
+      storedJob !== null &&
+      storedJob.jobId === workspaceRoute?.jobId &&
+      [
+        "correct-requirement-category",
+        "select-requirement-evidence",
+        "remove-requirement-evidence",
+        "set-requirement-coverage",
+        "reset-requirement-coverage",
+        "rerun-requirement-coverage",
+      ].includes(request.id)
+    ) {
+      const jobId = storedJob.jobId;
+      void applyStoredRequirementAction(
+        globalThis.coredrillStorageSpike.jobComparison,
+        storedJob,
+        request,
+        (requirementId, comparison) => {
+          setStoredCoverageComparisons((current) => ({ ...current, [requirementId]: comparison }));
+        },
+      )
+        .then(async (result) => {
+          if (!result?.ok) {
+            setLastActivity(
+              result === null
+                ? "The evidence changed. Reload before saving."
+                : result.error.message,
+            );
+            return;
+          }
+          const refreshed = await globalThis.coredrillStorageSpike.jobComparison.load(jobId);
+          if (refreshed.ok) {
+            setStoredJob((current) => (current?.jobId === jobId ? refreshed.value : current));
+            setLastActivity(
+              request.id === "rerun-requirement-coverage"
+                ? "Compared local coverage without changing your saved decision."
+                : "Saved the local requirement review in your vault.",
+            );
+          } else setLastActivity(refreshed.error.message);
+        })
+        .catch(() => {
+          setLastActivity("The local requirement review failed. Reload before trying again.");
+        });
+      return;
+    }
     if (request.id === "open-timeline") {
       changeWorkspaceTab("timeline");
       return;

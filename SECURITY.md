@@ -10,7 +10,7 @@ If a secret may have been exposed, revoke or rotate it before sharing diagnostic
 
 ## Supported versions
 
-There is no supported public release yet. Phase 0 is an implementation foundation and receives security fixes directly on the active development branch.
+There is no supported public release yet. The pre-release implementation receives security fixes directly on the active development branch; the living checklist records the current engineering milestone and release gates.
 
 ## Baseline threat model
 

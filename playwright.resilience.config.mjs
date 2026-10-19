@@ -10,6 +10,7 @@ const channel =
 export default defineConfig({
   testDir: "./e2e",
   testMatch: [
+    "phase-3-canonical-journey.spec.mjs",
     "phase-1-resilience.spec.mjs",
     "storage-concurrency.spec.mjs",
     "storage-failures.spec.mjs",

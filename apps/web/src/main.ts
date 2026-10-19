@@ -190,6 +190,7 @@ import interactionUpdateGuardMigrationSql from "../../../migrations/0044_interac
 import attachmentManifestUpdateGuardMigrationSql from "../../../migrations/0045_attachment_manifest_update_guard.sql?raw";
 import { createExtensionInbox, type ExtensionInboxApi } from "./extension-transfer.js";
 import { installDocumentsWorkspaceReferenceFixture } from "./documents-reference-fixture.js";
+import { createStoredJobComparisonApi, type StoredJobComparisonApi } from "./job-comparison.js";
 import {
   runJobSearchBenchmark,
   runStorageBenchmark,
@@ -438,6 +439,7 @@ export interface TemplateCoverLetterVersionResult {
 }
 
 export interface CoredrillStorageSpikeApi {
+  readonly jobComparison: StoredJobComparisonApi;
   createAnswerLibraryEntry(
     input: CreateAnswerLibraryEntryInput,
   ): Promise<ApplicationResult<AnswerLibraryEntryDto>>;
@@ -3054,6 +3056,11 @@ const createBrowserContractAdapter = () => {
 };
 
 const api: CoredrillStorageSpikeApi = {
+  jobComparison: createStoredJobComparisonApi(async () => {
+    const client = await getDatabase();
+    await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
+    return client;
+  }, careerProfileOperationContext),
   createAnswerLibraryEntry: async (input) =>
     answerLibraryOperations.createAnswerCommand.execute(input, careerProfileOperationContext()),
   createCareerStory: async (input) =>
