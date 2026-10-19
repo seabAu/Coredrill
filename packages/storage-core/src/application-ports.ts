@@ -8,6 +8,7 @@ import {
   type JobRequirementPort,
   type VaultDiagnosticsDto,
   type VaultLifecyclePort,
+  type VaultBootstrapPort,
   type VaultSessionDto,
 } from "@coredrill/application";
 
@@ -20,6 +21,7 @@ import {
 } from "./pipeline-repositories.js";
 import { createTrackerRepositories } from "./tracker-repositories.js";
 import { createJobRequirementRepository } from "./job-requirement-repository.js";
+import { sqlStatement } from "./database-port.js";
 
 /** Concrete SQLite composition for provenance-bound requirement review and correction. */
 export const createDatabaseJobRequirementPort = (database: DatabasePort): JobRequirementPort => {
@@ -83,12 +85,24 @@ const sessionDto = async (
 };
 
 /** Concrete SQLite composition for the adapter-neutral vault use cases. */
-export const createDatabaseVaultLifecyclePort = (database: DatabasePort): VaultLifecyclePort =>
+const vaultIdentity = async (session: DatabaseSession) => {
+  const identities = await createTrackerRepositories(session).vaults.readIdentityCandidates();
+  if (identities.length > 1) throw new VaultLifecycleError("invalid_state");
+  return identities[0]?.id;
+};
+
+const createVaultLifecyclePort = (
+  database: DatabasePort,
+  singleIdentity: boolean,
+): VaultLifecyclePort =>
   Object.freeze({
     create: async (input: Parameters<VaultLifecyclePort["create"]>[0]) => {
       const diagnostics = await database.diagnostics();
       if (diagnostics.readOnly) throw new VaultLifecycleError("read_only");
-      await database.transaction(async (transaction) => {
+      const vault = await database.transaction(async (transaction) => {
+        if (singleIdentity && (await vaultIdentity(transaction)) !== undefined) {
+          throw new VaultLifecycleError("already_exists");
+        }
         const repositories = createTrackerRepositories(transaction);
         if ((await repositories.vaults.findById(input.vaultId)) !== undefined) {
           throw new VaultLifecycleError("already_exists");
@@ -100,20 +114,70 @@ export const createDatabaseVaultLifecyclePort = (database: DatabasePort): VaultL
           createdAt: input.createdAt,
           lastOpenedAt: input.createdAt,
         });
+        const row = await repositories.vaults.findById(input.vaultId);
+        if (row === undefined) throw new VaultLifecycleError("invalid_state");
+        return Object.freeze({ ...row });
       });
-      return sessionDto(database, input.vaultId);
+      return singleIdentity
+        ? Object.freeze({ vault, diagnostics: diagnosticsDto(diagnostics) })
+        : sessionDto(database, input.vaultId);
     },
     open: async (input: Parameters<VaultLifecyclePort["open"]>[0]) => {
-      await database.transaction(async (transaction) => {
+      const diagnostics = singleIdentity ? await database.diagnostics() : undefined;
+      if (diagnostics?.readOnly === true) throw new VaultLifecycleError("read_only");
+      const openedVault = await database.transaction(async (transaction) => {
         const repositories = createTrackerRepositories(transaction);
-        if ((await repositories.vaults.findById(input.vaultId)) === undefined) {
+        if (singleIdentity && (await vaultIdentity(transaction)) !== input.vaultId) {
           throw new VaultLifecycleError("not_found");
         }
-        await repositories.vaults.touch(input.vaultId, input.openedAt);
+        const vault = await repositories.vaults.findById(input.vaultId);
+        if (vault === undefined) {
+          throw new VaultLifecycleError("not_found");
+        }
+        if (diagnostics !== undefined) {
+          if (
+            vault.schemaVersion > diagnostics.schemaVersion ||
+            input.openedAt < vault.lastOpenedAt ||
+            input.openedAt < vault.createdAt
+          ) {
+            throw new VaultLifecycleError("invalid_state");
+          }
+          await transaction.execute(
+            sqlStatement("UPDATE vault SET schema_version = ?, last_opened_at = ? WHERE id = ?", [
+              diagnostics.schemaVersion,
+              input.openedAt,
+              input.vaultId,
+            ]),
+          );
+        } else {
+          await repositories.vaults.touch(input.vaultId, input.openedAt);
+        }
+        const row = await repositories.vaults.findById(input.vaultId);
+        if (row === undefined) throw new VaultLifecycleError("invalid_state");
+        return Object.freeze({ ...row });
       });
-      return sessionDto(database, input.vaultId);
+      return diagnostics !== undefined
+        ? Object.freeze({ vault: openedVault, diagnostics: diagnosticsDto(diagnostics) })
+        : sessionDto(database, input.vaultId);
     },
     diagnostics: async () => diagnosticsDto(await database.diagnostics()),
+  });
+
+/** Existing generic lifecycle stays compatible with diagnostic/multi-record fixtures. */
+export const createDatabaseVaultLifecyclePort = (database: DatabasePort): VaultLifecyclePort =>
+  createVaultLifecyclePort(database, false);
+
+/** Strict production composition: one identity per physical local database. */
+export const createDatabaseVaultBootstrapPort = (database: DatabasePort): VaultBootstrapPort =>
+  Object.freeze({
+    ...createVaultLifecyclePort(database, true),
+    inspect: async () => {
+      const diagnostics = diagnosticsDto(await database.diagnostics());
+      const identities = await createTrackerRepositories(database).vaults.readIdentityCandidates();
+      if (identities.length > 1) throw new VaultLifecycleError("invalid_state");
+      const vault = identities[0] ?? null;
+      return Object.freeze({ vault, diagnostics });
+    },
   });
 
 const pipelineFailure = (error: unknown): never => {

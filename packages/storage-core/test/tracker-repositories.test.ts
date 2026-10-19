@@ -12,6 +12,7 @@ import {
   createDatabaseJobActivityPort,
   createDatabaseJobPipelinePort,
   createDatabaseVaultLifecyclePort,
+  createDatabaseVaultBootstrapPort,
   createPhase1RepositoryContractSuite,
   createPipelineRepositories,
   defineSqlMigrations,
@@ -399,6 +400,169 @@ describe("Phase 1 tracker repository contracts", () => {
 });
 
 describe("SQLite application port composition", () => {
+  it("inspects read-only storage without beginning a transaction or making a write", async () => {
+    class ReadOnlyDatabase extends NodeSqliteTestDatabase {
+      restricted = false;
+      override async diagnostics(): Promise<StorageDiagnostics> {
+        return Object.freeze({ ...(await super.diagnostics()), readOnly: this.restricted });
+      }
+      override async transaction<Result>(
+        work: (session: DatabaseTransaction) => Promise<Result>,
+      ): Promise<Result> {
+        if (this.restricted) throw new Error("No transaction is permitted by this read-only proof");
+        return super.transaction(work);
+      }
+      override async execute(statement: SqlStatement): Promise<ExecuteResult> {
+        if (this.restricted) throw new Error("No write is permitted by this read-only proof");
+        return super.execute(statement);
+      }
+    }
+    const database = new ReadOnlyDatabase();
+    try {
+      await applySqlMigrations(database, migrations, APPLIED_AT);
+      database.restricted = true;
+      const port = createDatabaseVaultBootstrapPort(database);
+      expect(await port.inspect()).toMatchObject({ vault: null, diagnostics: { readOnly: true } });
+      const vaultId = entityId("vault", "0199a200-0000-7000-8000-000000000001");
+      await expect(
+        port.create({ vaultId, name: "No write", createdAt: instant(APPLIED_AT) }),
+      ).rejects.toMatchObject({ code: "read_only" });
+      await expect(port.open({ vaultId, openedAt: instant(APPLIED_AT) })).rejects.toMatchObject({
+        code: "read_only",
+      });
+    } finally {
+      database.close();
+    }
+  });
+
+  it("inspects a nameless store read-only and preserves prior records on explicit initialization", async () => {
+    const database = new NodeSqliteTestDatabase();
+    try {
+      await applySqlMigrations(database, migrations, APPLIED_AT);
+      await database.execute(
+        sqlStatement(
+          "INSERT INTO company(id, canonical_name, created_at, updated_at) VALUES (?, ?, ?, ?)",
+          [
+            "0199a200-0000-7000-8000-000000000003",
+            "Synthetic existing company",
+            APPLIED_AT,
+            APPLIED_AT,
+          ],
+        ),
+      );
+      const before = await database.query(sqlStatement("SELECT * FROM company"));
+      const port = createDatabaseVaultBootstrapPort(database);
+      expect((await port.inspect()).vault).toBeNull();
+      expect(await database.query(sqlStatement("SELECT * FROM vault"))).toEqual([]);
+      const vaultId = entityId("vault", "0199a200-0000-7000-8000-000000000001");
+      const created = await port.create({
+        vaultId,
+        name: "Explicit local name",
+        createdAt: instant(APPLIED_AT),
+      });
+      expect(created.vault.schemaVersion).toBe(158);
+      expect((await port.inspect()).vault).toEqual(created.vault);
+      await expect(
+        port.create({
+          vaultId: entityId("vault", "0199a200-0000-7000-8000-000000000002"),
+          name: "Do not replace",
+          createdAt: instant(APPLIED_AT),
+        }),
+      ).rejects.toMatchObject({ code: "already_exists" });
+      expect(await database.query(sqlStatement("SELECT * FROM company"))).toEqual(before);
+      expect((await port.inspect()).vault).toEqual(created.vault);
+    } finally {
+      database.close();
+    }
+  });
+
+  it("refreshes only old root operational metadata on open and rejects future/ambiguous roots", async () => {
+    const database = new NodeSqliteTestDatabase();
+    try {
+      await applySqlMigrations(database, migrations, APPLIED_AT);
+      const id = entityId("vault", "0199a200-0000-7000-8000-000000000001");
+      await database.execute(
+        sqlStatement("INSERT INTO vault VALUES (?, ?, 1, ?, ?)", [
+          id,
+          "Keep my name",
+          APPLIED_AT,
+          APPLIED_AT,
+        ]),
+      );
+      const port = createDatabaseVaultBootstrapPort(database);
+      expect((await port.inspect()).vault?.schemaVersion).toBe(1);
+      const openedAt = instant("2026-10-19T12:00:00.000Z");
+      const opened = await port.open({ vaultId: id, openedAt });
+      expect(opened.vault).toMatchObject({
+        id,
+        name: "Keep my name",
+        createdAt: APPLIED_AT,
+        lastOpenedAt: openedAt,
+        schemaVersion: 158,
+      });
+      await expect(port.open({ vaultId: id, openedAt: instant(APPLIED_AT) })).rejects.toMatchObject(
+        { code: "invalid_state" },
+      );
+      await database.execute(
+        sqlStatement("UPDATE vault SET schema_version = 159 WHERE id = ?", [id]),
+      );
+      const before = await database.query(sqlStatement("SELECT * FROM vault"));
+      await expect(port.open({ vaultId: id, openedAt })).rejects.toMatchObject({
+        code: "invalid_state",
+      });
+      expect(await database.query(sqlStatement("SELECT * FROM vault"))).toEqual(before);
+      await database.execute(
+        sqlStatement("INSERT INTO vault VALUES (?, ?, 158, ?, ?)", [
+          "0199a200-0000-7000-8000-000000000002",
+          "Ambiguous",
+          APPLIED_AT,
+          APPLIED_AT,
+        ]),
+      );
+      const ambiguous = await database.query(sqlStatement("SELECT * FROM vault ORDER BY id"));
+      await expect(port.inspect()).rejects.toMatchObject({ code: "invalid_state" });
+      await expect(port.open({ vaultId: id, openedAt })).rejects.toMatchObject({
+        code: "invalid_state",
+      });
+      expect(await database.query(sqlStatement("SELECT * FROM vault ORDER BY id"))).toEqual(
+        ambiguous,
+      );
+    } finally {
+      database.close();
+    }
+  });
+
+  it("rolls initialization back if the transaction fails after inserting its identity", async () => {
+    class FailingDatabase extends NodeSqliteTestDatabase {
+      fail = false;
+      override transaction<Result>(
+        work: (session: DatabaseTransaction) => Promise<Result>,
+      ): Promise<Result> {
+        return super.transaction(async (session) => {
+          const result = await work(session);
+          if (this.fail) throw new Error("synthetic transaction failure");
+          return result;
+        });
+      }
+    }
+    const database = new FailingDatabase();
+    try {
+      await applySqlMigrations(database, migrations, APPLIED_AT);
+      database.fail = true;
+      const port = createDatabaseVaultBootstrapPort(database);
+      await expect(
+        port.create({
+          vaultId: entityId("vault", "0199a200-0000-7000-8000-000000000001"),
+          name: "Not committed",
+          createdAt: instant(APPLIED_AT),
+        }),
+      ).rejects.toThrow("synthetic transaction failure");
+      expect(await database.query(sqlStatement("SELECT * FROM vault"))).toEqual([]);
+    } finally {
+      database.close();
+    }
+  });
+
   it("persists the adapter-neutral vault, pipeline, and activity operations", async () => {
     const database = new NodeSqliteTestDatabase();
     const ids = {

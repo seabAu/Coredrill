@@ -49,6 +49,15 @@ fn invoke_line(service: &NativeStorageService, line: &str) -> ProbeEnvelope {
             ));
         }
     };
+    // Probe-only host lifecycle control. This binary is excluded from packages;
+    // no reset operation is added to the shipped storage protocol or commands.
+    if value == serde_json::json!({ "proofOperation": "retire_webview_sessions" }) {
+        return envelope::<_, NativeStorageError>(
+            service
+                .retire_webview_sessions()
+                .map(|()| serde_json::json!({ "retired": true })),
+        );
+    }
     if let Ok(request) = serde_json::from_value::<NativeStorageRequest>(value.clone()) {
         return envelope(service.invoke(request));
     }

@@ -523,6 +523,16 @@ const selectOne = async <Row extends QueryRow, Result>(
 export class VaultRepository {
   public constructor(private readonly session: DatabaseSession) {}
 
+  /** At most two rows: callers distinguish absent, single and ambiguous identity. */
+  public async readIdentityCandidates(): Promise<readonly VaultRecord[]> {
+    const rows = await this.session.query<VaultRow>(
+      sqlStatement(
+        "SELECT id, name, schema_version, created_at, last_opened_at FROM vault ORDER BY id LIMIT 2",
+      ),
+    );
+    return Object.freeze(rows.map(mapVault));
+  }
+
   public async create(record: VaultRecord): Promise<void> {
     const result = await this.session.execute(
       sqlStatement(

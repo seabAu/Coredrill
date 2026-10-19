@@ -119,6 +119,26 @@ export interface VaultOperations {
   readonly getVaultDiagnosticsQuery: ApplicationQuery<undefined, VaultDiagnosticsDto>;
 }
 
+/** Read-only startup facts; absence never grants permission to replace stored records. */
+export interface VaultBootstrapStateDto {
+  readonly vault: VaultDto | null;
+  readonly diagnostics: VaultDiagnosticsDto;
+}
+
+/** One physical local database; create/open must reject ambiguous or additional identities. */
+export interface VaultBootstrapPort extends VaultLifecyclePort {
+  inspect(): Promise<VaultBootstrapStateDto>;
+}
+
+export interface VaultBootstrapOperations extends VaultOperations {
+  readonly inspectVaultQuery: ApplicationQuery<undefined, VaultBootstrapStateDto>;
+}
+
+export interface VaultBootstrapDependencies {
+  readonly lifecycle: VaultBootstrapPort;
+  readonly createVaultId: () => EntityId<"vault">;
+}
+
 const STORAGE_HEALTH = new Set<string>(VAULT_STORAGE_HEALTH_VALUES);
 const STORAGE_PERSISTENCE = new Set<string>(VAULT_STORAGE_PERSISTENCE_VALUES);
 const DIAGNOSTIC_ISSUES = new Set<string>(VAULT_DIAGNOSTIC_ISSUE_CODES);
@@ -362,4 +382,39 @@ export const createVaultOperations = (
   );
 
   return Object.freeze({ createVaultCommand, openVaultCommand, getVaultDiagnosticsQuery });
+};
+
+/** Production startup reuses the validated lifecycle without creating a root as a read side effect. */
+export const createVaultBootstrapOperations = (
+  dependencies: VaultBootstrapDependencies,
+): VaultBootstrapOperations => {
+  const operations = createVaultOperations(dependencies);
+  if (typeof dependencies.lifecycle.inspect !== "function") {
+    throw new TypeError("Vault bootstrap requires a read-only inspection port.");
+  }
+  const inspectVaultQuery = defineQuery<undefined, VaultBootstrapStateDto>(
+    "InspectLocalVaultQuery",
+    async () => {
+      try {
+        const value = (await dependencies.lifecycle.inspect()) as unknown;
+        if (!isRecord(value)) throw new TypeError("Invalid local vault inspection.");
+        const vault = value["vault"] === null ? null : copyVault(value["vault"]);
+        const observed = copyDiagnostics(value["diagnostics"]);
+        const mismatch = vault !== null && vault.schemaVersion !== observed.schemaVersion;
+        const diagnostics: VaultDiagnosticsDto = mismatch
+          ? Object.freeze({
+              ...observed,
+              health: observed.health === "unavailable" ? "unavailable" : "degraded",
+              issueCodes: Object.freeze([
+                ...new Set([...observed.issueCodes, "schema-mismatch" as const]),
+              ]),
+            })
+          : observed;
+        return applicationSuccess(Object.freeze({ vault, diagnostics }));
+      } catch (error) {
+        return failureFrom<VaultBootstrapStateDto>(error);
+      }
+    },
+  );
+  return Object.freeze({ ...operations, inspectVaultQuery });
 };

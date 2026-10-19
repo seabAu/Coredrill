@@ -24,6 +24,7 @@ export {
   createDatabaseJobPipelinePort,
   createDatabaseJobRequirementPort,
   createDatabaseVaultLifecyclePort,
+  createDatabaseVaultBootstrapPort,
 } from "./application-ports.js";
 export {
   ANSWER_SENSITIVITIES,

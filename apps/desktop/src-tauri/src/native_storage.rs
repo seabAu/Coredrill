@@ -333,6 +333,30 @@ impl NativeStorageLayout {
 }
 
 impl NativeStorageService {
+    /// Host lifecycle only, never a WebView IPC operation. All current sessions
+    /// belong to the single capability-authorized main WebView. Retiring that
+    /// document closes its connections and rolls back abandoned transactions.
+    pub fn retire_webview_sessions(&self) -> Result<(), NativeStorageError> {
+        let mut state = self
+            .state
+            .lock()
+            .map_err(|_| NativeStorageError::storage_unavailable())?;
+        let sessions = std::mem::take(&mut state.sessions);
+        let mut failed = false;
+        for session in sessions.into_values() {
+            if session.transaction_active && session.connection.execute_batch("ROLLBACK").is_err() {
+                failed = true;
+            }
+            drop(session);
+        }
+        // Keep next_session monotonic: a retired document must never regain a new session.
+        if failed {
+            Err(NativeStorageError::storage_unavailable())
+        } else {
+            Ok(())
+        }
+    }
+
     pub fn new(app_data_root: PathBuf) -> Result<Self, NativeStorageError> {
         Ok(Self {
             layout: NativeStorageLayout::initialize(app_data_root)?,
@@ -1241,6 +1265,129 @@ mod tests {
             sql: sql.to_owned(),
             parameters,
         }
+    }
+
+    #[test]
+    fn retiring_a_document_rolls_back_orphan_transactions_without_deleting_committed_data() {
+        let root = TestRoot::new("view-retirement");
+        let service = NativeStorageService::new(root.path().to_owned()).unwrap();
+        let open = || {
+            let response = service
+                .invoke(request(
+                    "open-view",
+                    NativeStorageOperation::Open {
+                        database_name: "view.sqlite3".to_owned(),
+                    },
+                ))
+                .unwrap();
+            let NativeStorageResponseData::Opened { session_id } = response.data else {
+                panic!("expected a session");
+            };
+            session_id
+        };
+        let first = open();
+        for sql in [
+            "CREATE TABLE view_lifecycle(value TEXT NOT NULL)",
+            "INSERT INTO view_lifecycle VALUES ('committed')",
+        ] {
+            service
+                .invoke(request(
+                    "committed-data",
+                    NativeStorageOperation::Execute {
+                        session_id: first.clone(),
+                        statement: statement(sql, Vec::new()),
+                    },
+                ))
+                .unwrap();
+        }
+        let second = open();
+        service
+            .invoke(request(
+                "abandoned-begin",
+                NativeStorageOperation::Begin {
+                    session_id: first.clone(),
+                },
+            ))
+            .unwrap();
+        service
+            .invoke(request(
+                "abandoned-write",
+                NativeStorageOperation::Execute {
+                    session_id: first.clone(),
+                    statement: statement(
+                        "INSERT INTO view_lifecycle VALUES ('not committed')",
+                        Vec::new(),
+                    ),
+                },
+            ))
+            .unwrap();
+        let blocked = service
+            .invoke(request(
+                "new-document-begin",
+                NativeStorageOperation::Begin {
+                    session_id: second.clone(),
+                },
+            ))
+            .unwrap_err();
+        assert_eq!(blocked.code, "sqlite_busy");
+        let attachment = service
+            .layout
+            .prepare_attachment_path(SYNTHETIC_ATTACHMENT_SHA256)
+            .unwrap();
+        fs::write(&attachment, b"retained attachment").unwrap();
+        service.retire_webview_sessions().unwrap();
+        for retired in [&first, &second] {
+            assert_eq!(
+                service
+                    .invoke(request(
+                        "retired-token",
+                        NativeStorageOperation::Begin {
+                            session_id: retired.clone()
+                        }
+                    ))
+                    .unwrap_err()
+                    .code,
+                "session_missing"
+            );
+        }
+        let reopened = open();
+        assert_ne!(reopened, first);
+        assert_ne!(reopened, second);
+        let rows = service
+            .invoke(request(
+                "retained-data",
+                NativeStorageOperation::Query {
+                    session_id: reopened.clone(),
+                    statement: statement("SELECT value FROM view_lifecycle", Vec::new()),
+                },
+            ))
+            .unwrap();
+        let NativeStorageResponseData::Rows { rows, .. } = rows.data else {
+            panic!("expected rows");
+        };
+        assert_eq!(
+            serde_json::to_value(rows).unwrap(),
+            serde_json::json!([[{"type":"text","value":"committed"}]])
+        );
+        assert_eq!(fs::read(attachment).unwrap(), b"retained attachment");
+        service
+            .invoke(request(
+                "new-transaction",
+                NativeStorageOperation::Begin {
+                    session_id: reopened.clone(),
+                },
+            ))
+            .unwrap();
+        service
+            .invoke(request(
+                "new-commit",
+                NativeStorageOperation::Commit {
+                    session_id: reopened,
+                },
+            ))
+            .unwrap();
+        service.retire_webview_sessions().unwrap();
+        service.retire_webview_sessions().unwrap();
     }
 
     #[test]

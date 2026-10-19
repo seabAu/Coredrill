@@ -20,6 +20,16 @@
 
 Secrets are not stored in ordinary settings.
 
+The production bootstrap port treats one physical local database as one vault
+identity. Inspection is a bounded, read-only query: no root means explicit
+uninitialized state, not permission to discard existing records; multiple roots
+fail closed rather than selecting one. Explicit naming atomically checks absence
+and inserts only the root. Opening preserves the name/creation instant while
+refreshing operational schema/open-time metadata, refusing future schema metadata
+or backward audit times. The generic diagnostic lifecycle remains compatible;
+normal setup UI composition is still pending. See
+[bootstrap proof](../../proof/local-vault-bootstrap-verification.md).
+
 `BKP-006` uses the existing strict `app_setting` row
 `provider-secret-registry.v1` as a vault-local, versioned, sorted registry of
 reviewed provider IDs. It contains no secret bytes, keychain account names, or

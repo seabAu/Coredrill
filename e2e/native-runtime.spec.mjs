@@ -41,7 +41,10 @@ const attachNativeHost = async (page, invoke) => {
   await page.exposeFunction("coredrillNativeProofInvoke", invoke);
   await page.addInitScript(() => {
     globalThis.isTauri = true;
-    globalThis.__TAURI_INTERNALS__ = { invoke: globalThis.coredrillNativeProofInvoke };
+    const documentId = crypto.randomUUID();
+    globalThis.__TAURI_INTERNALS__ = {
+      invoke: (command, args) => globalThis.coredrillNativeProofInvoke(command, args, documentId),
+    };
     const calls = { opfs: 0, persistent: 0, serviceWorker: 0, worker: 0 };
     globalThis.coredrillBrowserCapabilityProbe = calls;
     navigator.storage.getDirectory = async () => {
@@ -75,6 +78,20 @@ test("normal root uses real native SQLite for capture and documents without OPFS
   const lines = createInterface({ input: child.stdout })[Symbol.asyncIterator]();
   let queue = Promise.resolve();
   let invocations = 0;
+  let activeDocumentId;
+  const retiredDocuments = new Set();
+  let holdNextBegin = false;
+  let heldAcknowledgements = 0;
+  let releaseHeldBegin = () => undefined;
+  const send = async (request) => {
+    invocations += 1;
+    child.stdin.write(`${JSON.stringify(request)}\n`);
+    const line = await lines.next();
+    if (line.done) throw new Error("Native proof process stopped");
+    const envelope = JSON.parse(line.value);
+    if (!envelope.ok) throw envelope.error;
+    return envelope.response;
+  };
   const errors = [];
   const external = [];
   page.on("pageerror", (error) => errors.push(error.message));
@@ -84,19 +101,29 @@ test("normal root uses real native SQLite for capture and documents without OPFS
     return route.abort("blockedbyclient");
   });
   try {
-    await attachNativeHost(page, (command, args) => {
+    await attachNativeHost(page, (command, args, documentId) => {
       if (!["native_storage_invoke", "native_archive_invoke"].includes(command))
         throw new Error("Unexpected native command");
       const result = queue.then(async () => {
-        invocations += 1;
-        child.stdin.write(`${JSON.stringify(args.request)}\n`);
-        const line = await lines.next();
-        if (line.done) throw new Error("Native proof process stopped");
-        const envelope = JSON.parse(line.value);
-        if (!envelope.ok) throw envelope.error;
-        return envelope.response;
+        if (retiredDocuments.has(documentId)) throw new Error("Retired proof document");
+        if (activeDocumentId !== documentId) {
+          if (activeDocumentId !== undefined) retiredDocuments.add(activeDocumentId);
+          await send({ proofOperation: "retire_webview_sessions" });
+          activeDocumentId = documentId;
+        }
+        return send(args.request);
       });
       queue = result.catch(() => {});
+      if (holdNextBegin && args.request.operation.type === "begin") {
+        holdNextBegin = false;
+        return result.then((response) => {
+          expect(response.data).toEqual({ type: "transaction_state", active: true });
+          heldAcknowledgements += 1;
+          return new Promise((resolve) => {
+            releaseHeldBegin = () => resolve(response);
+          });
+        });
+      }
       return result;
     });
     await page.goto("/");
@@ -125,7 +152,16 @@ test("normal root uses real native SQLite for capture and documents without OPFS
     await expect(review.getByText("No durable captures yet")).toBeVisible();
     await page.locator('[data-pipeline-view-option="board"]').click();
     await expect(page.getByTestId("pipeline-board")).toContainText("Synthetic native runtime role");
+    // Force the lifecycle race: Rust has entered a transaction but its document
+    // never receives BEGIN's acknowledgement and cannot send COMMIT/ROLLBACK.
+    holdNextBegin = true;
+    const abandonedRead = page
+      .evaluate(() => globalThis.coredrillStorageSpike.pipeline.counts())
+      .catch(() => undefined);
+    await expect.poll(() => heldAcknowledgements).toBe(1);
     await page.reload();
+    releaseHeldBegin();
+    await abandonedRead;
     await expect(page.getByTestId("pipeline-board")).toContainText("Synthetic native runtime role");
     await page.locator('[data-pipeline-view-option="table"]').click();
     await page.getByRole("button", { name: "Synthetic native runtime role", exact: true }).click();
@@ -222,6 +258,8 @@ test("normal root uses real native SQLite for capture and documents without OPFS
           seededRecords: false,
           invocations,
           nativeRetainedDocxSha256: hash,
+          heldBeginAcknowledgements: heldAcknowledgements,
+          retiredDocuments: retiredDocuments.size,
           capabilities,
           externalRequests: external.length,
         },
@@ -231,6 +269,7 @@ test("normal root uses real native SQLite for capture and documents without OPFS
       contentType: "application/json",
     });
   } finally {
+    releaseHeldBegin();
     await page.close();
     await queue;
     child.stdin.end();

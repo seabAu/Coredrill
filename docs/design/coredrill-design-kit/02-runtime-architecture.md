@@ -239,6 +239,13 @@ does not finish.
 
 ### Native adapter
 
+Main-document navigation/window destruction retires its native sessions, rolling
+back uncommitted transactions and closing connections without deleting committed
+data or attachments. Session numbers remain monotonic. The current capability
+authorizes only the main window; enabling another privileged window requires
+per-owner session scoping. No retirement operation crosses shipped IPC. See
+[lifetime repair proof](../../proof/native-document-session-lifetime-verification.md).
+
 Archive IPC version 3 adds an ordinary immutable attachment put over the existing
 narrow archive command. It accepts a live session and bounded hash-addressed
 bytes, independently validates them in TypeScript/Rust, preserves corrupt

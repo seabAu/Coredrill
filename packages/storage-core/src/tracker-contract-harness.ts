@@ -1,5 +1,7 @@
 import type { JsonValue } from "@coredrill/contracts";
 import { confidence, dateOnly, entityId, instant, webUrl } from "@coredrill/domain";
+import { VaultLifecycleError } from "@coredrill/application";
+import { createDatabaseVaultBootstrapPort } from "./application-ports.js";
 
 import {
   DatabaseContractViolation,
@@ -242,6 +244,11 @@ export const createTrackerRepositoryContractSuite = (
       run: async (database) => {
         await setup.migrate(database);
         const repositories = createTrackerRepositories(database);
+        const bootstrap = createDatabaseVaultBootstrapPort(database);
+        assertContract(
+          (await bootstrap.inspect()).vault === null,
+          "Inspection invented a vault identity.",
+        );
         await repositories.vaults.create({
           id: IDS.vault,
           name: "Synthetic local vault",
@@ -276,6 +283,79 @@ export const createTrackerRepositoryContractSuite = (
           (await repositories.settings.list()).length === 1,
           "Setting list did not return the persisted record.",
         );
+        const beforeInspection = JSON.stringify(
+          await database.query(sqlStatement("SELECT * FROM vault")),
+        );
+        assertContract(
+          (await bootstrap.inspect()).vault?.name === "Synthetic local vault",
+          "Inspection lost the stored name.",
+        );
+        assertContract(
+          JSON.stringify(await database.query(sqlStatement("SELECT * FROM vault"))) ===
+            beforeInspection,
+          "Inspection wrote operational metadata.",
+        );
+        const opened = await bootstrap.open({ vaultId: IDS.vault, openedAt: REPLACED_AT });
+        assertContract(
+          opened.vault.schemaVersion === opened.diagnostics.schemaVersion &&
+            opened.vault.createdAt === CREATED_AT &&
+            opened.vault.name === "Synthetic local vault",
+          "Opening an old identity changed user facts or failed to refresh operational schema metadata.",
+        );
+        const other = entityId("vault", "0198e102-0000-7000-8000-00000000001b");
+        await expectRepositoryFailure(
+          () =>
+            bootstrap.create({ vaultId: other, name: "Do not replace", createdAt: REPLACED_AT }),
+          (error) => error instanceof VaultLifecycleError && error.code === "already_exists",
+          "Bootstrap created a second identity or replaced an existing name.",
+        );
+        const settingsBefore = JSON.stringify(await repositories.settings.list());
+        // Owned isolated fixture only: race two first-use requests after removing its root.
+        await database.execute(sqlStatement("DELETE FROM vault"));
+        const race = await Promise.allSettled([
+          bootstrap.create({ vaultId: IDS.vault, name: "Concurrent A", createdAt: REPLACED_AT }),
+          bootstrap.create({ vaultId: other, name: "Concurrent B", createdAt: REPLACED_AT }),
+        ]);
+        assertContract(
+          race.filter((result) => result.status === "fulfilled").length === 1,
+          "Concurrent bootstrap did not establish exactly one acknowledged identity.",
+        );
+        assertContract(
+          (await database.query(sqlStatement("SELECT id FROM vault"))).length === 1,
+          "Concurrent initialization persisted more than one root.",
+        );
+        const current = (await bootstrap.inspect()).vault;
+        assertContract(current !== null, "Concurrent initialization lost its acknowledged root.");
+        await repositories.vaults.create({
+          id: entityId("vault", "0198e102-0000-7000-8000-00000000001c"),
+          name: "Ambiguous fixture",
+          schemaVersion: opened.diagnostics.schemaVersion,
+          createdAt: REPLACED_AT,
+          lastOpenedAt: REPLACED_AT,
+        });
+        const ambiguousBefore = JSON.stringify(
+          await database.query(sqlStatement("SELECT * FROM vault ORDER BY id")),
+        );
+        await expectRepositoryFailure(
+          () => bootstrap.inspect(),
+          (error) => error instanceof VaultLifecycleError && error.code === "invalid_state",
+          "Ambiguous identities were silently selected.",
+        );
+        if (current === null) throw new DatabaseContractViolation("Missing acknowledged identity.");
+        await expectRepositoryFailure(
+          () => bootstrap.open({ vaultId: current.id, openedAt: REPLACED_AT }),
+          (error) => error instanceof VaultLifecycleError && error.code === "invalid_state",
+          "Ambiguous open rewrote operational state.",
+        );
+        assertContract(
+          JSON.stringify(await database.query(sqlStatement("SELECT * FROM vault ORDER BY id"))) ===
+            ambiguousBefore,
+          "Ambiguous bootstrap mutated root identities.",
+        );
+        assertContract(
+          JSON.stringify(await repositories.settings.list()) === settingsBefore,
+          "Bootstrap changed existing local preferences.",
+        );
       },
     },
     {
@@ -284,6 +364,21 @@ export const createTrackerRepositoryContractSuite = (
         await setup.migrate(database);
         await createSourceAggregate(database);
         const repositories = createTrackerRepositories(database);
+        const existingSource = JSON.stringify(
+          await database.query(sqlStatement("SELECT * FROM source_snapshot")),
+        );
+        const existingJob = JSON.stringify(await database.query(sqlStatement("SELECT * FROM job")));
+        await createDatabaseVaultBootstrapPort(database).create({
+          vaultId: IDS.vault,
+          name: "Name existing local records",
+          createdAt: CREATED_AT,
+        });
+        assertContract(
+          JSON.stringify(await database.query(sqlStatement("SELECT * FROM source_snapshot"))) ===
+            existingSource &&
+            JSON.stringify(await database.query(sqlStatement("SELECT * FROM job"))) === existingJob,
+          "Explicit initialization changed existing job or source records.",
+        );
         const company = await repositories.companies.findById(IDS.company);
         const contact = await repositories.contacts.findById(IDS.contact);
         const job = await repositories.jobs.findById(IDS.job);

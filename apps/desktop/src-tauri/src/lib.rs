@@ -113,6 +113,15 @@ async fn native_vault_invoke(
 }
 
 #[cfg(feature = "desktop-shell")]
+fn retire_document_storage<R: Runtime>(app: &tauri::AppHandle<R>) {
+    if let Some(storage) = app.try_state::<NativeStorageState>()
+        && storage.0.retire_webview_sessions().is_err()
+    {
+        eprintln!("Native document storage retirement failed.");
+    }
+}
+
+#[cfg(feature = "desktop-shell")]
 fn native_storage_app_data_root<R: Runtime>(
     app: &tauri::App<R>,
 ) -> tauri::Result<std::path::PathBuf> {
@@ -127,6 +136,9 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .on_page_load(move |webview, payload| {
+            if webview.label() == "main" && matches!(payload.event(), PageLoadEvent::Started) {
+                retire_document_storage(webview.app_handle());
+            }
             if webview.label() == "main" && matches!(payload.event(), PageLoadEvent::Finished) {
                 let window = webview.window();
                 window
@@ -137,6 +149,11 @@ pub fn run() {
                         .show()
                         .expect("Coredrill main window must show after page load");
                 }
+            }
+        })
+        .on_window_event(|window, event| {
+            if window.label() == "main" && matches!(event, tauri::WindowEvent::Destroyed) {
+                retire_document_storage(window.app_handle());
             }
         })
         .setup(move |app| {
