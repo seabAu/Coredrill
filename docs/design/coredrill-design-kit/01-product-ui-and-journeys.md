@@ -140,6 +140,14 @@ decision. The Documents tab resolves the latest active application belonging to
 that job, so template context reads the same durable selections after reload.
 The original demonstration fixtures remain separate from stored-job routes.
 
+The Documents library also provides an explicit New document action for a
+manually authored reusable resume or cover letter, including a blank first
+version. The local transaction creates the document, base lineage, and exact
+immutable version together before opening the editor. Failure retains entered
+text; manual document text is not promoted to verified Career Profile evidence,
+selected for an application, uploaded, or submitted. Job-derivative and
+application-attempt creation remain separate integration work under `Q3-005`.
+
 Three-column desktop studio:
 
 - Left: job requirements and selected career evidence.

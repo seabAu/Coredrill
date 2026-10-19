@@ -275,7 +275,12 @@ const normalizeInline = (
 const normalizeBlock = (block: DocumentBlock): DocumentBlock => {
   if (block.type === "paragraph" || block.type === "heading") {
     const content = normalizeInline(block.content);
-    return content === undefined ? { ...block, content: undefined } : { ...block, content };
+    if (content === undefined) {
+      return block.type === "heading"
+        ? { type: "heading", attrs: block.attrs }
+        : { type: "paragraph" };
+    }
+    return { ...block, content };
   }
   return {
     ...block,

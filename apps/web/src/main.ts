@@ -9,6 +9,7 @@ import {
   createCareerStoryOperations,
   createAnswerLibraryOperations,
   createDocumentEditorOperations,
+  createReusableDocumentCommand,
   createApplicationDocumentPreparationOperations,
   createApplicationSubmissionOperations,
   createDocumentsWorkspaceOperations,
@@ -34,6 +35,8 @@ import {
   type CreateAnswerLibraryEntryInput,
   type CreateAnswerLibraryEntryPortInput,
   type CreateDocumentEditorVersionInput,
+  type CreateReusableDocumentInput,
+  type CreatedReusableDocumentDto,
   type MarkAnswerLibraryEntryUsedInput,
   type UpdateAnswerLibraryEntryInput,
   type UpdateAnswerLibraryEntryPortInput,
@@ -104,6 +107,7 @@ import {
   createAnswerLibraryRepository,
   createDocumentWorkspaceRepository,
   createDocumentEditorRepository,
+  createDocumentCreationRepository,
   createApplicationDocumentPreparationRepository,
   createApplicationSubmissionRepository,
   createJobRequirementRepository,
@@ -440,6 +444,9 @@ export interface TemplateCoverLetterVersionResult {
 
 export interface CoredrillStorageSpikeApi {
   readonly jobComparison: StoredJobComparisonApi;
+  createReusableDocument(
+    input: CreateReusableDocumentInput,
+  ): Promise<ApplicationResult<CreatedReusableDocumentDto>>;
   createAnswerLibraryEntry(
     input: CreateAnswerLibraryEntryInput,
   ): Promise<ApplicationResult<AnswerLibraryEntryDto>>;
@@ -1352,6 +1359,22 @@ const documentEditorPort: DocumentEditorPort = Object.freeze({
 const documentEditorOperations = createDocumentEditorOperations({
   editor: documentEditorPort,
   createId: () => generateEntityId("document-version"),
+  hashText: sha256Text,
+  normalizeContent: (value) => {
+    const content = parseDocumentIr(value);
+    return Object.freeze({ content, plainText: documentIrToPlainText(content) });
+  },
+});
+
+const reusableDocumentCommand = createReusableDocumentCommand({
+  documents: {
+    create: async (input) => {
+      const database = await getDatabase();
+      await applySqlMigrations(database, await migrations(), MIGRATION_APPLIED_AT);
+      await createDocumentCreationRepository(database).create(input);
+    },
+  },
+  createId: (kind) => generateEntityId(kind),
   hashText: sha256Text,
   normalizeContent: (value) => {
     const content = parseDocumentIr(value);
@@ -3115,6 +3138,8 @@ const api: CoredrillStorageSpikeApi = {
       { documentId },
       careerProfileOperationContext(),
     ),
+  createReusableDocument: async (input) =>
+    reusableDocumentCommand.execute(input, careerProfileOperationContext()),
   saveDocumentEditorDraft: async (input) =>
     documentEditorOperations.saveDraftCommand.execute(input, careerProfileOperationContext()),
   createDocumentEditorVersion: async (input) =>

@@ -4269,6 +4269,24 @@ const AppShellCatalog = () => {
             </section>
           ) : (
             <DocumentsWorkspace
+              onCreateDocument={async (input) => {
+                const result = await globalThis.coredrillStorageSpike.createReusableDocument(input);
+                if (result.ok) {
+                  // Creation has committed; a refresh failure must not invite a duplicate retry.
+                  void globalThis.coredrillStorageSpike
+                    .listDocumentsWorkspace()
+                    .then((refreshed) => {
+                      if (refreshed.ok) setDocuments(refreshed.value);
+                      else setDocumentsError(refreshed.error.message);
+                    })
+                    .catch(() => {
+                      setDocumentsError("The local document list could not be refreshed.");
+                    });
+                  window.history.pushState(null, "", `/documents/${result.value.documentId}`);
+                  void openDocumentEditor(result.value.documentId);
+                }
+                return result;
+              }}
               model={
                 {
                   items: documents,

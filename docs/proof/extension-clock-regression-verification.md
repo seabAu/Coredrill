@@ -2,7 +2,7 @@
 
 Date: 2026-10-19  
 Scope: verification maintenance for `PEX-007` while `Q3-005` remains active  
-Status: complete local extension and aggregate gates; hosted verification pending
+Status: complete local and clean-commit hosted verification
 
 ## Evidence and cause
 
@@ -45,8 +45,11 @@ checks. npm reported zero known vulnerabilities; Cargo reported zero
 vulnerabilities and the same ten reviewed informational warnings documented in
 the [dependency maintenance proof](dependency-security-maintenance-2026-10-19.md).
 
-## Remaining work
+## Hosted verification and remaining work
 
-Obtain green clean-commit hosted verification.
+Commit `752a1689a7bbb5293a0e15ce512cc782f5b51aa5` passed
+[Foundation CI 39223465958](https://github.com/seabAu/Coredrill/actions/runs/39223465958),
+including the production extension lane, aggregate gate, Chrome 151/152,
+Firefox 153/154, Windows, macOS, diagnostic Ubuntu, and full-history secret scan.
 This maintenance proof does not close `Q3-005`, production document/application
 creation, any representative-user gate, or publication blockers.

@@ -1,6 +1,15 @@
 # Dependency security maintenance — 2026-10-19
 
-Status: complete local verification; hosted verification pending.
+Status: complete local and clean-commit hosted verification.
+
+The reviewed graph passed all required jobs at commit
+`752a1689a7bbb5293a0e15ce512cc782f5b51aa5` in
+[Foundation CI 39223465958](https://github.com/seabAu/Coredrill/actions/runs/39223465958).
+This includes the aggregate advisory/license gate, exact Chrome/Firefox lanes,
+extension package/source rebuild and transfer, Windows/macOS/diagnostic Ubuntu,
+and full-history secret scan. The preceding extension fixture clock failure
+was repaired without changing runtime expiry policy; see the
+[clock regression proof](extension-clock-regression-verification.md).
 
 The Q3-005 repository gate passed the unit, coverage, build, browser, native,
 license, and secret checks before its final npm audit reported six advisories

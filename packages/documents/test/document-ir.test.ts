@@ -14,6 +14,25 @@ import {
 import validFixture from "./fixtures/document-ir.v1.valid.json" with { type: "json" };
 
 describe("DocumentIntermediateRepresentationV1", () => {
+  it.each([undefined, []])("omits absent inline content from empty canonical blocks", (content) => {
+    const parsed = parseDocumentIr({
+      specVersion: 1,
+      document: {
+        type: "doc",
+        content: [
+          { type: "paragraph", content },
+          { type: "heading", attrs: { level: 2 }, content },
+        ],
+      },
+    });
+    expect(parsed.document.content).toStrictEqual([
+      { type: "paragraph" },
+      { type: "heading", attrs: { level: 2 } },
+    ]);
+    expect(parsed).toStrictEqual(JSON.parse(JSON.stringify(parsed)));
+    expect(documentIrToPlainText(parsed)).toBe("\n\n");
+  });
+
   it("publishes a versioned schema that matches the checked-in artifact", () => {
     expect(documentIrV1JsonSchema).toEqual(generatedSchemaFixture);
     expect(documentIrV1JsonSchema.$id).toBe(DOCUMENT_IR_V1_SCHEMA_ID);

@@ -11,6 +11,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   applySqlMigrations,
   createDocumentEditorRepository,
+  createDocumentCreationRepository,
   createDocumentRepositories,
   defineSqlMigrations,
   type DatabasePort,
@@ -137,6 +138,64 @@ describe("DocumentEditorRepository", () => {
   });
 
   afterEach(() => database.close());
+
+  it("creates a reusable manual document with durable lineage and immutable first version", async () => {
+    const id = entityId("document", "0199b320-0000-7000-8000-000000000001");
+    const versionId = entityId("document-version", "0199b320-0000-7000-8000-000000000002");
+    const initial = content("Manually authored text");
+    await createDocumentCreationRepository(database).create({
+      documentId: id,
+      versionId,
+      title: "New reusable resume",
+      kind: "resume",
+      content: initial,
+      plainText: "Manually authored text",
+      contentHash: hash(initial),
+      createdAt: CREATED_AT,
+    });
+    await expect(createDocumentEditorRepository(database).load(id)).resolves.toMatchObject({
+      title: "New reusable resume",
+      draft: null,
+      versions: [
+        {
+          id: versionId,
+          versionNumber: 1,
+          parentVersionId: null,
+          contentHash: hash(initial),
+          plainText: "Manually authored text",
+        },
+      ],
+    });
+    await expect(
+      createDocumentRepositories(database).lineages.findForDocument(id),
+    ).resolves.toMatchObject({ role: "base", baseDocumentId: null, jobId: null });
+  });
+
+  it("rolls back document and lineage when the first immutable version cannot be written", async () => {
+    const id = entityId("document", "0199b320-0000-7000-8000-000000000003");
+    const initial = content("Rollback sentinel");
+    await expect(
+      createDocumentCreationRepository(database).create({
+        documentId: id,
+        versionId: VERSION_1_ID,
+        title: "Must not survive",
+        kind: "cover_letter",
+        content: initial,
+        plainText: "Rollback sentinel",
+        contentHash: hash(initial),
+        createdAt: CREATED_AT,
+      }),
+    ).rejects.toThrow();
+    await expect(
+      createDocumentRepositories(database).documents.findById(id),
+    ).resolves.toBeUndefined();
+    await expect(
+      createDocumentRepositories(database).lineages.findForDocument(id),
+    ).resolves.toBeUndefined();
+    await expect(createDocumentEditorRepository(database).load(DOCUMENT_ID)).resolves.toMatchObject(
+      { versions: [{ id: VERSION_1_ID }] },
+    );
+  });
 
   it("persists and recovers the latest optimistic draft across repository recreation", async () => {
     const repository = createDocumentEditorRepository(database);

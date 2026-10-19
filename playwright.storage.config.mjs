@@ -11,6 +11,7 @@ const channel =
 export default defineConfig({
   testDir: "./e2e",
   testMatch: process.env["COREDRILL_TEST_MATCH"] ?? "storage-*.spec.mjs",
+  outputDir: "test-results/storage-browser",
   fullyParallel: false,
   workers: 1,
   reporter: [["list"], ["json", { outputFile: "test-results/storage-browser.json" }]],

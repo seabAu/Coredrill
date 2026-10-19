@@ -1,6 +1,8 @@
 import type { DocumentWorkspaceItemDto, DocumentsWorkspaceViewId } from "@coredrill/application";
 import { useId, useMemo, useState, type KeyboardEvent } from "react";
 
+import { DocumentCreationForm, type DocumentCreationFormProps } from "./document-creation-form.js";
+
 export const DOCUMENTS_WORKSPACE_VIEWS = Object.freeze([
   Object.freeze({ id: "all" as const, label: "All" }),
   Object.freeze({ id: "resumes" as const, label: "Resumes" }),
@@ -19,6 +21,7 @@ export interface DocumentsWorkspaceModel {
 export interface DocumentsWorkspaceProps {
   readonly model: DocumentsWorkspaceModel;
   readonly onOpenDocument?: (document: DocumentWorkspaceItemDto) => void;
+  readonly onCreateDocument?: DocumentCreationFormProps["onCreate"];
 }
 
 const kindLabel = (kind: DocumentWorkspaceItemDto["kind"]): string => {
@@ -97,6 +100,7 @@ const focusTab = (id: DocumentsWorkspaceViewId): void => {
 export const DocumentsWorkspace = ({
   model,
   onOpenDocument = () => undefined,
+  onCreateDocument,
 }: DocumentsWorkspaceProps) => {
   const [activeView, setActiveView] = useState<DocumentsWorkspaceViewId>("all");
   const [query, setQuery] = useState("");
@@ -167,6 +171,8 @@ export const DocumentsWorkspace = ({
           />
         </label>
       </div>
+
+      {onCreateDocument === undefined ? null : <DocumentCreationForm onCreate={onCreateDocument} />}
 
       <nav aria-label="Document views" className="cd-documents-tabs" role="tablist">
         {DOCUMENTS_WORKSPACE_VIEWS.map(({ id, label }) => (
@@ -298,8 +304,10 @@ export const DocumentsWorkspace = ({
       </section>
 
       <aside className="cd-documents-boundary" aria-label="Documents capability boundary">
-        <strong>Local read-only view:</strong> editing, generation, export orchestration, and Mark
-        Applied remain separate reviewed steps.
+        <strong>
+          {onCreateDocument === undefined ? "Local read-only view:" : "Local document library:"}
+        </strong>{" "}
+        editing, generation, export orchestration, and Mark Applied remain separate reviewed steps.
       </aside>
     </section>
   );

@@ -1,5 +1,13 @@
 /** Use-case orchestration and query DTOs over domain ports. */
 export {
+  createReusableDocumentCommand,
+  type CreateReusableDocumentInput,
+  type CreatedReusableDocumentDto,
+  type CreateReusableDocumentPortInput,
+  type DocumentCreationPort,
+  type DocumentCreationDependencies,
+} from "./document-creation.js";
+export {
   DOCUMENT_PREPARATION_REASON_CODES,
   DOCUMENT_PREPARATION_STATUSES,
   DocumentPreparationError,

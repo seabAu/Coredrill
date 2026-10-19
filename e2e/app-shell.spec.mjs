@@ -2745,7 +2745,7 @@ test("Documents exposes six durable local views with exact submitted-version lin
   await expect(panel.locator(".cd-document-card")).toHaveCount(6);
   await expect(workspace).toContainText("Nothing here uploads or submits a document");
   await expect(workspace.getByLabel("Documents capability boundary")).toContainText(
-    "Local read-only view",
+    "Local document library",
   );
 
   for (const [label, count] of [

@@ -2,7 +2,7 @@
 
 Date: 2026-10-19
 Checklist item: `Q3-005`
-Status: partial integration locally verified; hosted verification and production creation remain
+Status: partial integration locally and hosted verified; complete production creation remains
 
 ## Integration finding and implementation
 
@@ -76,6 +76,13 @@ The final preceding security-closure commit `a58b57f` passed
 [Foundation CI 36732872523](https://github.com/seabAu/Coredrill/actions/runs/36732872523).
 That run is baseline evidence, not verification of the new changes.
 
+The durable comparison connection, scaffolded offline journey, and patched
+dependency graph subsequently passed every required job at exact commit
+`752a1689a7bbb5293a0e15ce512cc782f5b51aa5` in
+[Foundation CI 39223465958](https://github.com/seabAu/Coredrill/actions/runs/39223465958).
+The extension success-fixture timestamp needed a calendar-independent repair;
+see its [regression proof](extension-clock-regression-verification.md).
+
 ## Remaining boundaries
 
 This synthetic test does not replace representative human research under
@@ -85,8 +92,11 @@ proof remains the authority for portable archive restoration and physical
 attachment recovery. `GATE-3` remains open.
 
 The test currently seeds the starting application and document lineage. Code
-inspection found no production document/application-set creation entry point
-that replaces this fixture setup. The durable comparison connection is an
+inspection initially found no production document/application-set creation entry
+point that replaces this fixture setup. A subsequent
+[manual reusable-document creation slice](manual-document-creation-verification.md)
+adds normal-user base resume/cover-letter creation, but application-attempt and
+job-derivative/document-set creation remain. The durable comparison connection is an
 implemented integration step, but Q3-005 must remain open until that creation
 workflow is implemented and the journey proves it from actual vault records.
 Do not use the scaffolded test as proof that a new user can complete the whole

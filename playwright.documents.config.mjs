@@ -11,6 +11,7 @@ const channel =
 export default defineConfig({
   testDir: "./e2e",
   testMatch: "document-editor.spec.mjs",
+  outputDir: "test-results/document-editor",
   fullyParallel: false,
   workers: 1,
   reporter: [["list"], ["json", { outputFile: "test-results/document-editor.json" }]],
