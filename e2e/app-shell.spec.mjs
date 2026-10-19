@@ -2198,6 +2198,12 @@ test("search, command, and Add surfaces restore focus and stay local", async ({ 
   await page.waitForFunction(() => globalThis.coredrillAppShell !== undefined);
   await expect(page.getByTestId("page-title")).toHaveText("Documents");
 
+  // This catalog-only search result has no durable document. A page heading
+  // does not mean its async load finished; wait before testing command feedback.
+  await expect(
+    page.getByRole("heading", { name: "Document unavailable", exact: true }),
+  ).toBeVisible();
+
   const commandTrigger = page.getByRole("button", { name: "Open command menu" });
   await page.keyboard.press("Control+k");
   const commandInput = page.getByRole("searchbox", { name: "Filter commands" });

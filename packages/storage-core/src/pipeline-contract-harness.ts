@@ -1,6 +1,7 @@
 import { dateOnly, entityId, instant, timeZone } from "@coredrill/domain";
-import { AppliedStageError } from "@coredrill/application";
+import { AppliedStageError, createPipelineQueryOperations } from "@coredrill/application";
 import { createAppliedStageRepository } from "./applied-stage-repository.js";
+import { createPipelineQueryRepository } from "./pipeline-query-repository.js";
 
 import {
   DatabaseContractViolation,
@@ -166,6 +167,42 @@ export const createPipelineRepositoryContractSuite = (
         const repositories = createPipelineRepositories(database);
         const storedStatus = await repositories.statusDefinitions.findById(IDS.saved);
         const storedApplication = await repositories.applications.findById(IDS.application);
+        const queries = createPipelineQueryOperations({
+          pipelineQueries: createPipelineQueryRepository(database),
+        });
+        const context = {
+          operationId: entityId("application-operation", "0198e103-0000-7000-8000-000000000030"),
+          initiatedAt: REOPENED_AT,
+        };
+        const counts = await queries.getPipelineCountsQuery.execute({}, context);
+        const groups = await queries.getPipelineBoardGroupsQuery.execute({}, context);
+        const page = await queries.listPipelineJobsQuery.execute({ limit: 1 }, context);
+        const workspace = await queries.getJobWorkspaceQuery.execute({ jobId: IDS.job }, context);
+        assertContract(
+          counts.ok && counts.value.all === 1 && counts.value.needsAction === 0,
+          "Concrete Pipeline counts did not read stored jobs.",
+        );
+        assertContract(
+          groups.ok &&
+            groups.value.length === 4 &&
+            groups.value[0]?.statusId === null &&
+            groups.value.find((group) => group.statusId === IDS.saved)?.jobCount === 1,
+          "Concrete Board groups lost the stored or unassigned stage.",
+        );
+        assertContract(
+          page.ok &&
+            page.value.items[0]?.id === IDS.job &&
+            !page.value.hasMore &&
+            page.value.nextCursor === null,
+          "Concrete Pipeline page did not preserve stored identity.",
+        );
+        assertContract(
+          workspace.ok &&
+            workspace.value.application?.id === IDS.application &&
+            workspace.value.job.status?.id === IDS.saved &&
+            workspace.value.timelineItemCount === 0,
+          "Concrete workspace did not preserve application relationships.",
+        );
         const stageInput = {
           id: entityId("status_definition", "0198e103-0000-7000-8000-000000000020"),
           name: "Explicit submitted stage",

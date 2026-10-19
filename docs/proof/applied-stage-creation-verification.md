@@ -52,8 +52,12 @@ and passes separately through the real Windows Credential Manager proof harness.
 ## Remaining proof
 
 The 320-pixel screenshot has been visually inspected: the named form, input,
-success message and button remain readable within the page. Fresh clean-commit
-hosted verification is still required before this slice is complete. `Q3-005` and
+success message and button remain readable within the page. Clean commit
+`c89b9c29a331dd93b9d275b7bf1485d7f1e45e7d` passed all required hosted jobs in
+[Foundation CI run 39274402709](https://github.com/seabAu/Coredrill/actions/runs/39274402709),
+including exact Chrome/Firefox lanes, extension transfer, native packages,
+aggregate checks and full-history secret scan. The Applied-stage slice is
+verified; `Q3-005` and
 `GATE-3` remain open: the complete canonical journey still needs normal-user setup
 instead of its reference fixture, plus tracker composition audit. Human research,
 reference hardware, manual assistive technology and public distribution gates

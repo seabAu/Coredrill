@@ -206,6 +206,7 @@ import attachmentManifestUpdateGuardMigrationSql from "../../../migrations/0045_
 import { createExtensionInbox, type ExtensionInboxApi } from "./extension-transfer.js";
 import { installDocumentsWorkspaceReferenceFixture } from "./documents-reference-fixture.js";
 import { createStoredJobComparisonApi, type StoredJobComparisonApi } from "./job-comparison.js";
+import { createStoredPipelineApi, type StoredPipelineApi } from "./stored-pipeline.js";
 import {
   runJobSearchBenchmark,
   runStorageBenchmark,
@@ -465,6 +466,7 @@ export interface CoredrillStorageSpikeApi {
     input: StartApplicationAttemptInput,
   ): Promise<ApplicationResult<StartedApplicationAttemptDto>>;
   readonly jobComparison: StoredJobComparisonApi;
+  readonly pipeline: StoredPipelineApi;
   createReusableDocument(
     input: CreateReusableDocumentInput,
   ): Promise<ApplicationResult<CreatedReusableDocumentDto>>;
@@ -3177,6 +3179,11 @@ const createBrowserContractAdapter = () => {
 };
 
 const api: CoredrillStorageSpikeApi = {
+  pipeline: createStoredPipelineApi(async () => {
+    const client = await getDatabase();
+    await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
+    return client;
+  }, careerProfileOperationContext),
   jobComparison: createStoredJobComparisonApi(async () => {
     const client = await getDatabase();
     await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);

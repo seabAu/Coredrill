@@ -74,6 +74,35 @@ test("starts a durable local application from a manually captured job without se
   }, jobId);
   expect(comparison.status.name).toBe("My drafting stage");
   expect(comparison.applicationId).not.toBeNull();
+  const pipeline = await page.evaluate(async (id) => {
+    const api = globalThis.coredrillStorageSpike.pipeline;
+    return {
+      counts: await api.counts(),
+      groups: await api.groups(),
+      page: await api.page({ limit: 1 }),
+      workspace: await api.workspace({ jobId: id }),
+    };
+  }, jobId);
+  expect(pipeline.counts).toMatchObject({ ok: true, value: { all: 1 } });
+  expect(pipeline.groups).toMatchObject({
+    ok: true,
+    value: [
+      { statusId: null, jobCount: 0 },
+      { statusId: comparison.status.id, jobCount: 1 },
+    ],
+  });
+  expect(pipeline.page).toMatchObject({
+    ok: true,
+    value: { items: [{ id: jobId }], hasMore: false },
+  });
+  expect(pipeline.workspace).toMatchObject({
+    ok: true,
+    value: {
+      job: { id: jobId, title: "Offline preparation engineer" },
+      application: { id: comparison.applicationId },
+      company: { canonicalName: "Synthetic Preparation Lab" },
+    },
+  });
   const before = await page.evaluate(async (id) => {
     const result = await globalThis.coredrillStorageSpike.loadApplicationDocumentPreparation(id);
     if (!result.ok) throw new Error(result.error.code);

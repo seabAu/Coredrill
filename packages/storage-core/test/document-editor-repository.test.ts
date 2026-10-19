@@ -3,9 +3,9 @@ import { readdirSync, readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import path from "node:path";
 
-import { DocumentEditorError } from "@coredrill/application";
+import { DocumentEditorError, createPipelineQueryOperations } from "@coredrill/application";
 import type { JsonValue } from "@coredrill/contracts";
-import { entityId, instant } from "@coredrill/domain";
+import { entityId, instant, timeZone } from "@coredrill/domain";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
@@ -15,9 +15,11 @@ import {
   createDocumentDerivationRepository,
   createApplicationAttemptRepository,
   createAppliedStageRepository,
+  createPipelineQueryRepository,
   createPipelineRepositories,
   createTrackerRepositories,
   changePipelineStatus,
+  setNextAction,
   sqlStatement,
   createDocumentRepositories,
   defineSqlMigrations,
@@ -185,11 +187,392 @@ describe("DocumentEditorRepository", () => {
     name: "My submitted stage",
     createdAt: VERSIONED_AT,
   });
+  const queryContext = {
+    operationId: entityId("application-operation", "0199b360-0000-7000-8000-000000000001"),
+    initiatedAt: instant("2026-10-19T10:00:00.000Z"),
+  };
+  const pipelineQueries = () =>
+    createPipelineQueryOperations({ pipelineQueries: createPipelineQueryRepository(database) });
+  it("reads an empty Pipeline without installing default stages or inventing a job", async () => {
+    const queries = pipelineQueries();
+    expect(await queries.getPipelineCountsQuery.execute({}, queryContext)).toEqual({
+      ok: true,
+      value: {
+        asOf: queryContext.initiatedAt,
+        includeArchived: false,
+        all: 0,
+        needsAction: 0,
+        overdue: 0,
+        upcomingInterviews: 0,
+        waiting: 0,
+        closed: 0,
+      },
+    });
+    expect(await queries.getPipelineBoardGroupsQuery.execute({}, queryContext)).toMatchObject({
+      ok: true,
+      value: [{ statusId: null, name: "Unassigned", jobCount: 0 }],
+    });
+    expect(await queries.listPipelineJobsQuery.execute({}, queryContext)).toEqual({
+      ok: true,
+      value: { items: [], hasMore: false, nextCursor: null },
+    });
+    expect(
+      await queries.getJobWorkspaceQuery.execute({ jobId: attemptJob }, queryContext),
+    ).toMatchObject({ ok: false, error: { code: "not_found" } });
+    expect(await database.query(sqlStatement("SELECT id FROM status_definition"))).toEqual([]);
+  });
+  it("reads stable scoped keyset pages and rejects a changed or out-of-scope anchor", async () => {
+    await seedAttemptJob();
+    const jobs = createTrackerRepositories(database).jobs;
+    const original = await jobs.findById(attemptJob);
+    if (original === undefined) throw new Error("Synthetic job missing");
+    const newerId = entityId("job", "0199b360-0000-7000-8000-000000000002");
+    const tiedId = entityId("job", "0199b360-0000-7000-8000-000000000003");
+    const archivedId = entityId("job", "0199b360-0000-7000-8000-000000000004");
+    await jobs.create({ ...original, id: newerId, title: "Newer", updatedAt: EDITED_AT });
+    await jobs.create({ ...original, id: tiedId, title: "Tied", updatedAt: EDITED_AT });
+    await jobs.create({ ...original, id: archivedId, title: "Archived", archivedAt: VERSIONED_AT });
+    const queries = pipelineQueries();
+    const first = await queries.listPipelineJobsQuery.execute({ limit: 1 }, queryContext);
+    expect(first).toMatchObject({
+      ok: true,
+      value: {
+        items: [{ id: newerId }],
+        hasMore: true,
+        nextCursor: { jobId: newerId, updatedAt: EDITED_AT },
+      },
+    });
+    if (!first.ok) throw new Error("First page failed");
+    const second = await queries.listPipelineJobsQuery.execute(
+      { after: first.value.nextCursor, limit: 1, statusId: null },
+      queryContext,
+    );
+    expect(second).toMatchObject({ ok: true, value: { items: [{ id: tiedId }], hasMore: true } });
+    const all = await queries.listPipelineJobsQuery.execute(
+      { includeArchived: true },
+      queryContext,
+    );
+    expect(all.ok && all.value.items.map(({ id }) => id)).toEqual([
+      newerId,
+      tiedId,
+      attemptJob,
+      archivedId,
+    ]);
+    expect(
+      await queries.listPipelineJobsQuery.execute(
+        { after: first.value.nextCursor, statusId: attemptInput().newStageId },
+        queryContext,
+      ),
+    ).toMatchObject({ ok: false, error: { code: "conflict", retryable: true } });
+    await database.execute(
+      sqlStatement("UPDATE job SET updated_at = ?, row_version = row_version + 1 WHERE id = ?", [
+        VERSIONED_AT,
+        newerId,
+      ]),
+    );
+    expect(
+      await queries.listPipelineJobsQuery.execute({ after: first.value.nextCursor }, queryContext),
+    ).toMatchObject({ ok: false, error: { code: "conflict", retryable: true } });
+  });
+  it("projects an actual attempt and pending action through the validated read port without writes", async () => {
+    await seedAttemptJob();
+    await createApplicationAttemptRepository(database).start(attemptInput());
+    const actionId = entityId("next-action", "0199b360-0000-7000-8000-000000000005");
+    await setNextAction(
+      database,
+      {
+        id: actionId,
+        jobId: attemptJob,
+        applicationId: attemptInput().applicationId,
+        interactionId: null,
+        title: "Review requirements",
+        dueAt: null,
+        timeZone: null,
+        state: "pending",
+        completedAt: null,
+        createdAt: VERSIONED_AT,
+        updatedAt: VERSIONED_AT,
+      },
+      entityId("mutation-undo-token", "0199b360-0000-7000-8000-000000000006"),
+    );
+    const before = await stageState();
+    const queries = pipelineQueries();
+    expect(await queries.getPipelineCountsQuery.execute({}, queryContext)).toMatchObject({
+      ok: true,
+      value: { all: 1, needsAction: 1, overdue: 0, upcomingInterviews: 0, waiting: 0, closed: 0 },
+    });
+    expect(await queries.getPipelineBoardGroupsQuery.execute({}, queryContext)).toMatchObject({
+      ok: true,
+      value: [
+        { statusId: null, jobCount: 0 },
+        { statusId: attemptInput().newStageId, name: "Drafting locally", jobCount: 1 },
+      ],
+    });
+    expect(
+      await queries.listPipelineJobsQuery.execute(
+        { statusId: attemptInput().newStageId },
+        queryContext,
+      ),
+    ).toMatchObject({
+      ok: true,
+      value: {
+        items: [
+          {
+            id: attemptJob,
+            status: { name: "Drafting locally" },
+            nextAction: { id: actionId, title: "Review requirements" },
+          },
+        ],
+      },
+    });
+    expect(
+      await queries.getJobWorkspaceQuery.execute({ jobId: attemptJob }, queryContext),
+    ).toMatchObject({
+      ok: true,
+      value: {
+        job: { id: attemptJob },
+        application: {
+          id: attemptInput().applicationId,
+          jobId: attemptJob,
+          selectedResumeVersionId: null,
+        },
+        company: null,
+        primarySource: null,
+        attention: { nextAction: { id: actionId, jobId: attemptJob, timeZone: null } },
+        timelineItemCount: 1,
+      },
+    });
+    expect(await stageState()).toEqual(before);
+  });
   const stageState = async () => ({
     jobs: await database.query(sqlStatement("SELECT * FROM job ORDER BY id")),
     applications: await database.query(sqlStatement("SELECT * FROM application ORDER BY id")),
     events: await database.query(sqlStatement("SELECT * FROM status_event ORDER BY id")),
     documents: await database.query(sqlStatement("SELECT * FROM document_version ORDER BY id")),
+  });
+  it("does not transport full descriptions in paginated summaries", async () => {
+    await seedAttemptJob();
+    const description = "Synthetic long description. ".repeat(10_000);
+    await database.execute(
+      sqlStatement("UPDATE job SET description_text = ? WHERE id = ?", [description, attemptJob]),
+    );
+    const projected: Array<readonly QueryRow[]> = [];
+    const query = database.query.bind(database);
+    database.query = async <Row extends QueryRow = QueryRow>(
+      statement: SqlStatement,
+    ): Promise<Row[]> => {
+      const rows = await query<Row>(statement);
+      if (statement.sql.includes("FROM job j LEFT JOIN")) projected.push(rows);
+      return rows;
+    };
+    const queries = pipelineQueries();
+    expect(await queries.listPipelineJobsQuery.execute({}, queryContext)).toMatchObject({
+      ok: true,
+      value: { items: [{ id: attemptJob }] },
+    });
+    expect(projected).toHaveLength(1);
+    expect(Object.keys(projected[0]?.[0] ?? {})).not.toContain("description_text");
+    expect(Object.keys(projected[0]?.[0] ?? {})).not.toContain("remote_region_json");
+    expect(
+      await queries.getJobWorkspaceQuery.execute({ jobId: attemptJob }, queryContext),
+    ).toMatchObject({ ok: true, value: { descriptionText: description } });
+  });
+  it("projects real company/source/tag relationships and defined attention counts", async () => {
+    const tracker = createTrackerRepositories(database);
+    const companyId = entityId("company", "0199b370-0000-7000-8000-000000000001");
+    const sourceId = entityId("job-source", "0199b370-0000-7000-8000-000000000002");
+    const tagId = entityId("tag", "0199b370-0000-7000-8000-000000000003");
+    await tracker.companies.create({
+      id: companyId,
+      canonicalName: "Synthetic query company",
+      websiteUrl: null,
+      domain: "synthetic.example",
+      locationId: null,
+      notes: "Local company context",
+      archivedAt: null,
+      createdAt: CREATED_AT,
+      updatedAt: CREATED_AT,
+    });
+    await seedAttemptJob();
+    await database.execute(
+      sqlStatement("UPDATE job SET company_id = ? WHERE id = ?", [companyId, attemptJob]),
+    );
+    await tracker.jobSources.create({
+      id: sourceId,
+      jobId: attemptJob,
+      connectorId: null,
+      externalId: null,
+      canonicalUrl: null,
+      applyUrl: null,
+      firstSeenAt: CREATED_AT,
+      lastSeenAt: CREATED_AT,
+      contentHash: null,
+      primary: true,
+      createdAt: CREATED_AT,
+      updatedAt: CREATED_AT,
+    });
+    await database.execute(
+      sqlStatement(
+        "INSERT INTO tag(id, name, color, created_at, updated_at) VALUES (?, ?, NULL, ?, ?)",
+        [tagId, "Review locally", CREATED_AT, CREATED_AT],
+      ),
+    );
+    await database.execute(
+      sqlStatement("INSERT INTO job_tag(job_id, tag_id, created_at) VALUES (?, ?, ?)", [
+        attemptJob,
+        tagId,
+        CREATED_AT,
+      ]),
+    );
+    await createApplicationAttemptRepository(database).start(attemptInput());
+    await setNextAction(
+      database,
+      {
+        id: entityId("next-action", "0199b370-0000-7000-8000-000000000004"),
+        jobId: attemptJob,
+        applicationId: attemptInput().applicationId,
+        interactionId: null,
+        title: "Due review",
+        dueAt: EDITED_AT,
+        timeZone: timeZone("America/New_York"),
+        state: "pending",
+        completedAt: null,
+        createdAt: CREATED_AT,
+        updatedAt: VERSIONED_AT,
+      },
+      entityId("mutation-undo-token", "0199b370-0000-7000-8000-000000000005"),
+    );
+    const pipeline = createPipelineRepositories(database);
+    await pipeline.interviews.create({
+      id: entityId("interview", "0199b370-0000-7000-8000-000000000006"),
+      applicationId: attemptInput().applicationId,
+      stageName: "Future conversation",
+      startsAt: instant("2026-10-20T10:00:00.000Z"),
+      timeZone: timeZone("America/New_York"),
+      durationMinutes: 30,
+      locationOrUrl: null,
+      contactIds: [],
+      preparationNotes: "",
+      outcome: null,
+      createdAt: VERSIONED_AT,
+      updatedAt: VERSIONED_AT,
+    });
+    await pipeline.reminders.create({
+      id: entityId("reminder", "0199b370-0000-7000-8000-000000000007"),
+      jobId: attemptJob,
+      nextActionId: null,
+      interviewId: null,
+      remindAt: instant("2026-10-20T09:00:00.000Z"),
+      timeZone: timeZone("America/New_York"),
+      state: "pending",
+      note: "Local reminder",
+      firedAt: null,
+      createdAt: VERSIONED_AT,
+      updatedAt: VERSIONED_AT,
+    });
+    await pipeline.interactions.append({
+      id: entityId("interaction", "0199b370-0000-7000-8000-000000000008"),
+      jobId: attemptJob,
+      contactId: null,
+      type: "note",
+      occurredAt: VERSIONED_AT,
+      direction: "unknown",
+      summary: "Local query fixture",
+      nextActionAt: null,
+      createdAt: VERSIONED_AT,
+      updatedAt: VERSIONED_AT,
+    });
+    const job = await tracker.jobs.findById(attemptJob);
+    if (job === undefined) throw new Error("Synthetic job missing");
+    const stage = (await createAppliedStageRepository(database).create(appliedStageInput())) as {
+      id: ReturnType<typeof entityId<"status_definition">>;
+    };
+    await tracker.jobs.create({
+      ...job,
+      id: entityId("job", "0199b370-0000-7000-8000-000000000009"),
+      currentStatusId: stage.id,
+    });
+    const queries = pipelineQueries();
+    expect(await queries.getPipelineCountsQuery.execute({}, queryContext)).toMatchObject({
+      ok: true,
+      value: { all: 2, needsAction: 1, overdue: 1, upcomingInterviews: 1, waiting: 1, closed: 0 },
+    });
+    expect(
+      await queries.getJobWorkspaceQuery.execute({ jobId: attemptJob }, queryContext),
+    ).toMatchObject({
+      ok: true,
+      value: {
+        job: {
+          company: { id: companyId },
+          tags: [{ id: tagId, name: "Review locally" }],
+          lastInteractionAt: VERSIONED_AT,
+        },
+        company: {
+          id: companyId,
+          canonicalName: "Synthetic query company",
+          otherActiveJobCount: 1,
+          contactCount: 0,
+        },
+        primarySource: { id: sourceId, jobId: attemptJob },
+        attention: {
+          upcomingInterviewCount: 1,
+          pendingReminderCount: 1,
+          nextAction: { dueAt: EDITED_AT, timeZone: "America/New_York" },
+        },
+        timelineItemCount: 2,
+      },
+    });
+    await database.execute(
+      sqlStatement("UPDATE tag SET archived_at = ? WHERE id = ?", [VERSIONED_AT, tagId]),
+    );
+    const withoutTag = await queries.listPipelineJobsQuery.execute({}, queryContext);
+    expect(withoutTag.ok && withoutTag.value.items.every((item) => item.tags.length === 0)).toBe(
+      true,
+    );
+    const closedStatus = entityId("status_definition", "0199b370-0000-7000-8000-000000000010");
+    await pipeline.statusDefinitions.create({
+      id: closedStatus,
+      name: "Archived closed stage",
+      category: "rejected",
+      terminal: true,
+      isSystem: false,
+      sortOrder: 20,
+      color: null,
+      archivedAt: VERSIONED_AT,
+      createdAt: CREATED_AT,
+      updatedAt: VERSIONED_AT,
+    });
+    await tracker.jobs.create({
+      ...job,
+      id: entityId("job", "0199b370-0000-7000-8000-000000000011"),
+      currentStatusId: closedStatus,
+      archivedAt: VERSIONED_AT,
+    });
+    expect(await queries.getPipelineCountsQuery.execute({}, queryContext)).toMatchObject({
+      ok: true,
+      value: { all: 2, closed: 0 },
+    });
+    expect(
+      await queries.getPipelineCountsQuery.execute({ includeArchived: true }, queryContext),
+    ).toMatchObject({ ok: true, value: { all: 3, closed: 1 } });
+    const defaultGroups = await queries.getPipelineBoardGroupsQuery.execute({}, queryContext);
+    expect(
+      defaultGroups.ok && defaultGroups.value.some((group) => group.statusId === closedStatus),
+    ).toBe(false);
+    const archivedGroups = await queries.getPipelineBoardGroupsQuery.execute(
+      { includeArchived: true },
+      queryContext,
+    );
+    expect(
+      archivedGroups.ok &&
+        archivedGroups.value.find((group) => group.statusId === closedStatus)?.jobCount,
+    ).toBe(1);
+    await database.execute(
+      sqlStatement("UPDATE job_source SET is_primary = 0 WHERE id = ?", [sourceId]),
+    );
+    expect(
+      await queries.getJobWorkspaceQuery.execute({ jobId: attemptJob }, queryContext),
+    ).toMatchObject({ ok: true, value: { primarySource: null } });
   });
   it("creates and reuses explicit Applied configuration without changing application state", async () => {
     await seedAttemptJob();

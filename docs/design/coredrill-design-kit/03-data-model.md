@@ -325,6 +325,23 @@ The `APP-004` application boundary creates explicitly user-entered companies and
 
 The `APP-005` application boundary reads one time-bounded Pipeline snapshot. Counts, ordered status/unassigned groups, table/board pages, and the job workspace use explicit archive and filter scope; pages share the stable keyset order `updated_at DESC, job_id ASC` and carry the final tuple as their cursor. Cross-entity job, application/status, company, source, next-action, and interaction projections are checked before returning an immutable DTO. This slice defines the adapter-neutral read contract but does not claim concrete browser/native query composition. See [Pipeline query application verification](../../proof/phase-1-pipeline-query-application-verification.md).
 
+Stored-Pipeline integration adds the concrete SQLite read adapter without a schema
+change. Each projection uses one transaction; pages bind their exact status/archive
+scope and invalidate an anchor whose stored update tuple changed or left that
+scope. Active tags are batch-read, and an unmarked source is never promoted to the
+primary-source field. Page queries select summary columns only; full descriptions
+are read separately only for explicit workspace detail. The Unassigned group and
+nullable fields never become invented canonical status or source data. Groups
+retain archived definitions only when referenced by jobs in the requested scope.
+Unassigned is a read projection, not a seeded display stage. Needs action counts
+jobs with pending next actions, overdue
+counts those with a pending action due before the operation instant, upcoming
+interviews counts jobs with future/uncompleted interviews on active attempts,
+waiting counts nonterminal Applied-category jobs, and closed counts terminal
+jobs. Timeline item count covers append-only status events and interactions;
+scheduled interviews and reminders have separate attention counts. Normal shell
+composition remains in progress; see [stored Pipeline query proof](../../proof/stored-pipeline-query-verification.md).
+
 The `APP-006` boundary creates and updates only user-owned job views with version-1 validated filter and view-settings documents. Sort clauses are unique and allowlisted, nulls remain last, job ID is the required stable final key, and status/company grouping retains an explicit unassigned group. Updates and timestamped archive operations require optimistic row versions; duplicate clones stored filter/settings atomically rather than accepting a caller copy. System views are protected, but no system-view names or default display stages are seeded, so `Q-006` remains open. See [saved job-view application verification](../../proof/phase-1-saved-job-view-application-verification.md).
 
 The `APP-007` boundary creates each status or next-action mutation together with a durable undo token. Consumption is single-use, restores only the exact recorded projections while their row-version preconditions still match, keeps append-only status history, dismisses created actions and linked pending reminders instead of deleting them, and rolls back on replay or stale targets. See [durable mutation-undo verification](../../proof/phase-1-mutation-undo-application-verification.md).
