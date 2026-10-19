@@ -84,7 +84,10 @@ the new UI has completed native-platform or representative-user validation.
 The aggregate gate still runs the existing browser/native repository and
 recovery suites. Clean-commit hosted verification remains required.
 
-`Q3-005` remains open. Its full journey still needs production application-attempt
-and job-derivative/document-set creation, replacement of the seeded starting
+`Q3-005` remains open. Application-attempt creation now has separate
+[local implementation proof](application-attempt-creation-verification.md),
+including the OPFS startup repair prompted by the earlier hosted Chrome 152
+failure. The full journey still needs job-derivative/document-set creation and
+replacement of the seeded starting
 records, and a normal-user tracker composition audit. Human evidence and
 publication blockers remain independently open.

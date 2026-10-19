@@ -95,8 +95,11 @@ The test currently seeds the starting application and document lineage. Code
 inspection initially found no production document/application-set creation entry
 point that replaces this fixture setup. A subsequent
 [manual reusable-document creation slice](manual-document-creation-verification.md)
-adds normal-user base resume/cover-letter creation, but application-attempt and
-job-derivative/document-set creation remain. The durable comparison connection is an
+adds normal-user base resume/cover-letter creation, and a further
+[application-attempt slice](application-attempt-creation-verification.md) proves
+manual capture/review through local preparation without seeded jobs or attempts.
+Job-derivative/document-set creation and stored-requirement authoring/parsing
+composition remain. The durable comparison connection is an
 implemented integration step, but Q3-005 must remain open until that creation
 workflow is implemented and the journey proves it from actual vault records.
 Do not use the scaffolded test as proof that a new user can complete the whole

@@ -145,8 +145,13 @@ manually authored reusable resume or cover letter, including a blank first
 version. The local transaction creates the document, base lineage, and exact
 immutable version together before opening the editor. Failure retains entered
 text; manual document text is not promoted to verified Career Profile evidence,
-selected for an application, uploaded, or submitted. Job-derivative and
-application-attempt creation remain separate integration work under `Q3-005`.
+selected for an application, uploaded, or submitted. A stored job without an
+active attempt can separately Start preparation locally: the user names a
+Preparing stage to reuse or create, and the stage/application/job projection
+and timeline event commit together. Stale, closed, or duplicate cases fail
+without reopening a job or sending anything. Default stage names remain a
+research decision. Job-derivative creation and full-journey integration remain
+open under `Q3-005`.
 
 Three-column desktop studio:
 

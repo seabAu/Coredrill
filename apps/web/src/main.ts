@@ -10,6 +10,7 @@ import {
   createAnswerLibraryOperations,
   createDocumentEditorOperations,
   createReusableDocumentCommand,
+  createStartApplicationAttemptCommand,
   createApplicationDocumentPreparationOperations,
   createApplicationSubmissionOperations,
   createDocumentsWorkspaceOperations,
@@ -37,6 +38,8 @@ import {
   type CreateDocumentEditorVersionInput,
   type CreateReusableDocumentInput,
   type CreatedReusableDocumentDto,
+  type StartApplicationAttemptInput,
+  type StartedApplicationAttemptDto,
   type MarkAnswerLibraryEntryUsedInput,
   type UpdateAnswerLibraryEntryInput,
   type UpdateAnswerLibraryEntryPortInput,
@@ -108,6 +111,7 @@ import {
   createDocumentWorkspaceRepository,
   createDocumentEditorRepository,
   createDocumentCreationRepository,
+  createApplicationAttemptRepository,
   createApplicationDocumentPreparationRepository,
   createApplicationSubmissionRepository,
   createJobRequirementRepository,
@@ -443,6 +447,9 @@ export interface TemplateCoverLetterVersionResult {
 }
 
 export interface CoredrillStorageSpikeApi {
+  startApplicationAttempt(
+    input: StartApplicationAttemptInput,
+  ): Promise<ApplicationResult<StartedApplicationAttemptDto>>;
   readonly jobComparison: StoredJobComparisonApi;
   createReusableDocument(
     input: CreateReusableDocumentInput,
@@ -1380,6 +1387,17 @@ const reusableDocumentCommand = createReusableDocumentCommand({
     const content = parseDocumentIr(value);
     return Object.freeze({ content, plainText: documentIrToPlainText(content) });
   },
+});
+
+const startApplicationAttemptCommand = createStartApplicationAttemptCommand({
+  attempts: {
+    start: async (input) => {
+      const database = await getDatabase();
+      await applySqlMigrations(database, await migrations(), MIGRATION_APPLIED_AT);
+      return createApplicationAttemptRepository(database).start(input);
+    },
+  },
+  createId: (kind) => generateEntityId(kind),
 });
 
 const templateCoverLetterFailure = (
@@ -3140,6 +3158,8 @@ const api: CoredrillStorageSpikeApi = {
     ),
   createReusableDocument: async (input) =>
     reusableDocumentCommand.execute(input, careerProfileOperationContext()),
+  startApplicationAttempt: async (input) =>
+    startApplicationAttemptCommand.execute(input, careerProfileOperationContext()),
   saveDocumentEditorDraft: async (input) =>
     documentEditorOperations.saveDraftCommand.execute(input, careerProfileOperationContext()),
   createDocumentEditorVersion: async (input) =>

@@ -12,6 +12,11 @@ import {
   applySqlMigrations,
   createDocumentEditorRepository,
   createDocumentCreationRepository,
+  createApplicationAttemptRepository,
+  createPipelineRepositories,
+  createTrackerRepositories,
+  changePipelineStatus,
+  sqlStatement,
   createDocumentRepositories,
   defineSqlMigrations,
   type DatabasePort,
@@ -138,6 +143,171 @@ describe("DocumentEditorRepository", () => {
   });
 
   afterEach(() => database.close());
+
+  const attemptJob = entityId("job", "0199b330-0000-7000-8000-000000000001");
+  const attemptInput = () => ({
+    jobId: attemptJob,
+    applicationId: entityId("application", "0199b330-0000-7000-8000-000000000002"),
+    newStageId: entityId("status_definition", "0199b330-0000-7000-8000-000000000003"),
+    eventId: entityId("status-event", "0199b330-0000-7000-8000-000000000004"),
+    expectedJobRowVersion: 1,
+    preparationStageName: "Drafting locally",
+    createdAt: VERSIONED_AT,
+  });
+  const seedAttemptJob = async (
+    statusId: ReturnType<typeof entityId<"status_definition">> | null = null,
+  ) => {
+    await createTrackerRepositories(database).jobs.create({
+      id: attemptJob,
+      companyId: null,
+      title: "Preparation job",
+      normalizedTitle: null,
+      descriptionText: "Synthetic role",
+      employmentType: null,
+      workplaceType: null,
+      seniority: null,
+      locationId: null,
+      remoteRegion: null,
+      datePosted: null,
+      validThrough: null,
+      currentStatusId: statusId,
+      nextActionAt: null,
+      archivedAt: null,
+      createdAt: CREATED_AT,
+      updatedAt: CREATED_AT,
+    });
+  };
+
+  it("starts preparation atomically from an unassigned job without marking Applied or selecting documents", async () => {
+    await seedAttemptJob();
+    const input = attemptInput();
+    const result = await createApplicationAttemptRepository(database).start(input);
+    expect(result).toMatchObject({
+      applicationId: input.applicationId,
+      statusId: input.newStageId,
+      jobRowVersion: 2,
+    });
+    await expect(
+      createPipelineRepositories(database).applications.findById(input.applicationId),
+    ).resolves.toMatchObject({
+      appliedAt: null,
+      channel: null,
+      selectedResumeVersionId: null,
+      selectedCoverLetterVersionId: null,
+      currentStatusId: input.newStageId,
+    });
+    await expect(
+      createPipelineRepositories(database).statusEvents.listForJob(attemptJob),
+    ).resolves.toMatchObject([
+      { applicationId: input.applicationId, fromStatusId: null, toStatusId: input.newStageId },
+    ]);
+    await expect(
+      createTrackerRepositories(database).jobs.findById(attemptJob),
+    ).resolves.toMatchObject({ rowVersion: 2, currentStatusId: input.newStageId });
+    await expect(
+      createApplicationAttemptRepository(database).start({ ...input, expectedJobRowVersion: 2 }),
+    ).rejects.toMatchObject({ code: "conflict" });
+    expect(await database.query(sqlStatement("SELECT id FROM application"))).toHaveLength(1);
+  });
+
+  it("rejects stale jobs and terminal jobs before creating a preparation stage", async () => {
+    await seedAttemptJob();
+    await expect(
+      createApplicationAttemptRepository(database).start({
+        ...attemptInput(),
+        expectedJobRowVersion: 2,
+      }),
+    ).rejects.toMatchObject({ code: "conflict" });
+    const terminal = entityId("status_definition", "0199b330-0000-7000-8000-000000000006");
+    await createPipelineRepositories(database).statusDefinitions.create({
+      id: terminal,
+      name: "Closed",
+      category: "rejected",
+      color: null,
+      isSystem: false,
+      sortOrder: 0,
+      terminal: true,
+      archivedAt: null,
+      createdAt: CREATED_AT,
+      updatedAt: CREATED_AT,
+    });
+    await changePipelineStatus(database, {
+      eventId: entityId("status-event", "0199b330-0000-7000-8000-000000000007"),
+      undoTokenId: entityId("mutation-undo-token", "0199b330-0000-7000-8000-000000000008"),
+      jobId: attemptJob,
+      applicationId: null,
+      toStatusId: terminal,
+      occurredAt: EDITED_AT,
+      note: null,
+    });
+    await expect(
+      createApplicationAttemptRepository(database).start({
+        ...attemptInput(),
+        expectedJobRowVersion: 2,
+      }),
+    ).rejects.toMatchObject({ code: "conflict" });
+    expect(await database.query(sqlStatement("SELECT id FROM application"))).toHaveLength(0);
+    expect(await database.query(sqlStatement("SELECT id FROM status_definition"))).toHaveLength(1);
+  });
+
+  it("reuses an exact user-named Preparing stage and does not create a default stage", async () => {
+    await seedAttemptJob();
+    const stageId = entityId("status_definition", "0199b330-0000-7000-8000-000000000009");
+    await createPipelineRepositories(database).statusDefinitions.create({
+      id: stageId,
+      name: "Drafting locally",
+      category: "preparing",
+      color: null,
+      isSystem: false,
+      sortOrder: 0,
+      terminal: false,
+      archivedAt: null,
+      createdAt: CREATED_AT,
+      updatedAt: CREATED_AT,
+    });
+    await expect(
+      createApplicationAttemptRepository(database).start(attemptInput()),
+    ).resolves.toMatchObject({ statusId: stageId });
+    expect(await database.query(sqlStatement("SELECT id FROM status_definition"))).toHaveLength(1);
+  });
+
+  it("rolls back the new stage, application, and job projection if the timeline insert fails", async () => {
+    await seedAttemptJob();
+    const savedStage = entityId("status_definition", "0199b330-0000-7000-8000-000000000010");
+    await createPipelineRepositories(database).statusDefinitions.create({
+      id: savedStage,
+      name: "Saved",
+      category: "saved",
+      color: null,
+      isSystem: false,
+      sortOrder: 0,
+      terminal: false,
+      archivedAt: null,
+      createdAt: CREATED_AT,
+      updatedAt: CREATED_AT,
+    });
+    const input = attemptInput();
+    await changePipelineStatus(database, {
+      eventId: input.eventId,
+      undoTokenId: entityId("mutation-undo-token", "0199b330-0000-7000-8000-000000000011"),
+      jobId: attemptJob,
+      applicationId: null,
+      toStatusId: savedStage,
+      occurredAt: EDITED_AT,
+      note: null,
+    });
+    await expect(
+      createApplicationAttemptRepository(database).start({ ...input, expectedJobRowVersion: 2 }),
+    ).rejects.toThrow();
+    expect(await database.query(sqlStatement("SELECT id FROM application"))).toHaveLength(0);
+    expect(await database.query(sqlStatement("SELECT id FROM status_definition"))).toHaveLength(1);
+    await expect(
+      createTrackerRepositories(database).jobs.findById(attemptJob),
+    ).resolves.toMatchObject({ rowVersion: 2, currentStatusId: savedStage });
+    await expect(
+      createPipelineRepositories(database).statusEvents.listForJob(attemptJob),
+    ).resolves.toHaveLength(1);
+  });
 
   it("creates a reusable manual document with durable lineage and immutable first version", async () => {
     const id = entityId("document", "0199b320-0000-7000-8000-000000000001");

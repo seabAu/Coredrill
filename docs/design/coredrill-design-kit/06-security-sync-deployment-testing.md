@@ -122,6 +122,16 @@ The Phase 0 browser adapter exports SQLite bytes with schema version, byte lengt
 
 The accepted browser-storage boundary additionally imports restore data under a temporary SAH-pool name and validates SQLite integrity/schema before target replacement. A correctly checksummed but truncated database is rejected while the healthy target remains readable. Every open runs `quick_check`. Observable persistence denial, low/unknown quota, and an expected database missing produce degraded local diagnostics; Coredrill does not attempt private-mode fingerprinting. An origin-wide Web Lock blocks a second writer before SQLite initialization and releases automatically after abrupt tab/page loss. [ADR-0003](../../adr/0003-adopt-browser-storage-support-floor.md) binds this behavior to the exact hosted Chrome/Firefox matrix and an explicit unsupported Safari/mobile fallback.
 
+An initial open can encounter the exact OPFS `NoModificationAllowedError` while
+the preceding page's terminated worker is still releasing access handles.
+The public open factory permits at most four fresh opens (25/75/150-ms delays)
+for that specific startup failure. Failed workers shut down and release their
+lease before each retry; a new open must acquire the same exclusive Web Lock.
+Exhaustion becomes the existing typed busy/retry state. Queries, transactions,
+restores, and migrations are never replayed, and lease, corruption, quota,
+permission, and ordinary SQLite-busy failures are not automatically retried.
+See the [startup finding and executable proof](../../proof/application-attempt-creation-verification.md#hosted-startup-finding).
+
 `BKP-005` keeps `persisted()`/`estimate()` observation passive and makes
 `persist()` callable only through the explicit Vault & Backup action. The UI
 receives stable path-free state rather than raw errors, origin-private data, or

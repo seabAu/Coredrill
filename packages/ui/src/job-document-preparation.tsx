@@ -1,4 +1,11 @@
-import { useEffect, useId, useState, type ChangeEvent, type SyntheticEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useState,
+  type ChangeEvent,
+  type SyntheticEvent,
+  type ReactNode,
+} from "react";
 import type {
   ApplicationDocumentCandidateDto,
   ApplicationDocumentPreparationDto,
@@ -53,6 +60,7 @@ export interface TemplateCoverLetterCreationModel {
 }
 
 export interface JobDocumentPreparationProps {
+  readonly applicationStart?: ReactNode;
   readonly model: JobDocumentPreparationModel;
   readonly submissionModel?: ApplicationSubmissionReviewModel;
   readonly onMarkApplied?: (input: MarkApplicationAppliedInput) => void;
@@ -145,6 +153,7 @@ const SelectedSummary = ({
 );
 
 export const JobDocumentPreparation = ({
+  applicationStart,
   model,
   submissionModel,
   onMarkApplied,
@@ -239,6 +248,7 @@ export const JobDocumentPreparation = ({
         <div className="cd-job-empty-state">
           <h4>No application attempt yet</h4>
           <p>Create a local application attempt before selecting its exact document versions.</p>
+          {applicationStart}
         </div>
       ) : (
         <>

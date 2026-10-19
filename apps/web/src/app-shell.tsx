@@ -1,4 +1,5 @@
 import {
+  ApplicationAttemptForm,
   ApplicationShell,
   BrowserVaultBackupSettings,
   CareerProfileWorkspace,
@@ -1898,8 +1899,10 @@ const AppShellCatalog = () => {
       .load(storedJobId)
       .then((result) => {
         if (!active) return;
-        if (result.ok) setStoredJob(result.value);
-        else setLastActivity(result.error.message);
+        if (result.ok) {
+          setStoredJob(result.value);
+          setLastActivity("Loaded a stored local job.");
+        } else setLastActivity(result.error.message);
       })
       .catch(() => {
         if (active) setLastActivity("The stored job could not be loaded. Reload to try again.");
@@ -2335,6 +2338,41 @@ const AppShellCatalog = () => {
       : workspaceRoute?.jobId === "board-northstar"
         ? REFERENCE_DOCUMENT_PREPARATION_APPLICATION_ID
         : null;
+
+  const applicationAttemptStart =
+    storedJob !== null &&
+    storedJob.jobId === workspaceRoute?.jobId &&
+    storedJob.applicationId === null ? (
+      <ApplicationAttemptForm
+        key={storedJob.jobId}
+        onStart={async (preparationStageName) => {
+          const job = storedJob;
+          const result = await globalThis.coredrillStorageSpike.startApplicationAttempt({
+            jobId: job.jobId,
+            expectedJobRowVersion: job.rowVersion,
+            preparationStageName,
+          });
+          if (result.ok) {
+            setStoredJob((current) =>
+              current?.jobId === result.value.jobId
+                ? {
+                    ...current,
+                    applicationId: result.value.applicationId,
+                    rowVersion: result.value.jobRowVersion,
+                    status: {
+                      id: result.value.statusId,
+                      name: result.value.statusName,
+                      terminal: false,
+                    },
+                  }
+                : current,
+            );
+            setLastActivity("Started local preparation. Nothing was submitted or selected.");
+          }
+          return result;
+        }}
+      />
+    ) : null;
 
   useEffect(() => {
     if (
@@ -3902,6 +3940,7 @@ const AppShellCatalog = () => {
             >
               {workspaceRoute.tab === "documents" ? (
                 <JobDocumentPreparation
+                  applicationStart={applicationAttemptStart}
                   model={
                     {
                       preparation: visibleJobDocumentPreparation,
@@ -4176,6 +4215,7 @@ const AppShellCatalog = () => {
                 >
                   {workspaceRoute.tab === "documents" ? (
                     <JobDocumentPreparation
+                      applicationStart={applicationAttemptStart}
                       model={
                         {
                           preparation: visibleJobDocumentPreparation,

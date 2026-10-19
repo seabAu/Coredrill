@@ -1,5 +1,13 @@
 /** Use-case orchestration and query DTOs over domain ports. */
 export {
+  ApplicationAttemptError,
+  createStartApplicationAttemptCommand,
+  type ApplicationAttemptPort,
+  type StartApplicationAttemptInput,
+  type StartApplicationAttemptPortInput,
+  type StartedApplicationAttemptDto,
+} from "./application-attempt.js";
+export {
   createReusableDocumentCommand,
   type CreateReusableDocumentInput,
   type CreatedReusableDocumentDto,

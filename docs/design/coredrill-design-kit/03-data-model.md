@@ -147,6 +147,16 @@ Undo tokens are durable, immutable audit records except for one fresh-to-consume
 
 One job may have multiple applications only when the user explicitly creates them; otherwise enforce one active application per job.
 
+The production Start preparation locally action creates the first active
+attempt with no Applied timestamp, channel, or selected versions. It requires
+the expected job row version and an explicitly user-named Preparing stage,
+reusing an exact active match or creating one user-owned nonterminal stage.
+Stage/application creation, the job status projection, and the append-only
+application-bound event commit together. Stale, archived, terminal, ambiguous
+stage-name, or existing-active-attempt cases fail without partial writes.
+This does not select default stage names, reopen a closed job, authorize an
+additional attempt, or submit an application.
+
 ### Local diagnostics
 
 `diagnostic_event(event_id, spec_version, occurred_at, app_version, delivery, category, name, severity, outcome, operation_id, code, duration_ms, attributes_json, redacted_attribute_count)`

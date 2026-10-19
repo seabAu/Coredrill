@@ -19,6 +19,7 @@ import {
   type BrowserStorageRestoreResult,
 } from "./protocol.js";
 import { deserializeBrowserStorageError } from "./errors.js";
+import { openAfterOpfsHandleRelease } from "./opfs-open-retry.js";
 import {
   inspectBrowserStorageEnvironment,
   withBrowserStorageWarning,
@@ -366,4 +367,5 @@ export class BrowserSqliteDatabase implements DatabasePort {
 
 export const openBrowserSqliteDatabase = (
   options: BrowserSqliteOptions,
-): Promise<BrowserSqliteDatabase> => BrowserSqliteDatabase.open(options);
+): Promise<BrowserSqliteDatabase> =>
+  openAfterOpfsHandleRelease(() => BrowserSqliteDatabase.open(options));

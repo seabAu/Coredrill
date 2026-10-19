@@ -24,6 +24,71 @@ const openHarness = async (context) => {
   return page;
 };
 
+test("recovers a specific startup handle conflict with a fresh worker and no replayed vault write", async ({
+  browser,
+}) => {
+  const context = await browser.newContext();
+  await context.addInitScript(() => {
+    const OriginalWorker = globalThis.Worker;
+    const proof = { workers: 0, injected: 0, operations: [], vaultWrites: 0 };
+    globalThis.opfsStartupRetryProof = proof;
+    globalThis.Worker = class extends OriginalWorker {
+      constructor(url, options) {
+        super(url, options);
+        this.sqlite = options?.name === "coredrill-sqlite";
+        if (this.sqlite) proof.workers += 1;
+      }
+      postMessage(message, transfer) {
+        if (this.sqlite) {
+          proof.operations.push(message.operation);
+          if (
+            message.operation === "execute" &&
+            /INSERT INTO vault\(/u.test(message.statement?.sql ?? "")
+          )
+            proof.vaultWrites += 1;
+          if (message.operation === "open" && proof.injected === 0) {
+            proof.injected += 1;
+            queueMicrotask(() =>
+              this.dispatchEvent(
+                new MessageEvent("message", {
+                  data: {
+                    version: message.version,
+                    id: message.id,
+                    ok: false,
+                    error: {
+                      name: "NoModificationAllowedError",
+                      message: "Synthetic previous-worker handle conflict",
+                    },
+                  },
+                }),
+              ),
+            );
+            return;
+          }
+        }
+        super.postMessage(message, transfer);
+      }
+    };
+  });
+  try {
+    const page = await openHarness(context);
+    await callHarness(page, "openAndMigrate");
+    await callHarness(page, "writeVault", vault);
+    await expect(callHarness(page, "listVaults")).resolves.toHaveLength(1);
+    const proof = await page.evaluate(() => globalThis.opfsStartupRetryProof);
+    expect(proof.workers).toBe(2);
+    expect(proof.injected).toBe(1);
+    expect(proof.operations.slice(0, 2)).toEqual(["open", "open"]);
+    expect(proof.vaultWrites).toBe(1);
+    console.info(
+      `OPFS_STARTUP_RETRY_PROOF ${JSON.stringify({ workers: proof.workers, injectedHandleConflicts: proof.injected, initialOperations: proof.operations.slice(0, 2), vaultWrites: proof.vaultWrites, canonicalVaults: 1 })}`,
+    );
+    await callHarness(page, "close");
+  } finally {
+    await context.close();
+  }
+});
+
 test("blocks a second writer, hands off after tab loss, and survives reload", async ({
   browser,
 }) => {
