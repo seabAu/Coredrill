@@ -31,9 +31,10 @@ const expectedPhase3Inventory = Object.freeze({
   answerVersions: 1,
   attachmentManifests: 2,
   attachmentLinks: 3,
-  documents: 3,
-  documentVersions: 4,
-  documentLineages: 2,
+  documents: 4,
+  documentVersions: 5,
+  documentLineages: 3,
+  documentDerivationOrigins: 1,
   documentJobLinks: 2,
   editorDrafts: 1,
   applicationAnswerSelections: 1,
@@ -66,7 +67,7 @@ test("restores complete evidence relationships and attachments into clean browse
   const sourcePage = await openHarness(sourceContext);
   await callHarness(sourcePage, "delete");
   const opened = await callHarness(sourcePage, "openAndMigrate");
-  expect(opened.diagnostics.schemaVersion).toBe(154);
+  expect(opened.diagnostics.schemaVersion).toBe(158);
   await callHarness(sourcePage, "writeVault", {
     id: recoveryInput.vaultId,
     name: "BKP-007 representative vault",
@@ -75,7 +76,7 @@ test("restores complete evidence relationships and attachments into clean browse
   });
   const source = await callHarness(sourcePage, "createPortableRecoveryFixture", recoveryInput);
   expect(source).toMatchObject({
-    dataFileCount: 112,
+    dataFileCount: 114,
     attachmentCount: 2,
     phase3Inventory: expectedPhase3Inventory,
   });
@@ -83,6 +84,14 @@ test("restores complete evidence relationships and attachments into clean browse
   const documentRows = Object.fromEntries(
     source.documentRoundTrip.datasets.map((dataset) => [dataset.dataset, dataset.rows]),
   );
+  expect(documentRows["document_derivation_origin"]).toEqual([
+    {
+      document_id: "0198d9d4-0000-7000-8000-000000000029",
+      first_version_id: "0198d9d4-0000-7000-8000-00000000002a",
+      source_version_id: "0198d9d4-0000-7000-8000-00000000000a",
+      created_at: "2026-08-29T23:54:00.000Z",
+    },
+  ]);
   expect(documentRows["document_lineage"]).toEqual(
     expect.arrayContaining([
       expect.objectContaining({ role: "base" }),

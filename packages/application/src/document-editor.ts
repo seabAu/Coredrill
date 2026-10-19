@@ -34,6 +34,14 @@ export interface DocumentEditorDraftDto {
 }
 
 export interface DocumentEditorSessionDto {
+  /** Absent/null for base documents and legacy derivatives whose exact origin is unknown. */
+  readonly origin?: {
+    readonly sourceDocumentId: EntityId<"document">;
+    readonly sourceVersionId: EntityId<"document-version">;
+    readonly sourceVersionNumber: number;
+    readonly firstVersionId: EntityId<"document-version">;
+    readonly contentHash: string;
+  } | null;
   readonly documentId: EntityId<"document">;
   readonly title: string;
   readonly versions: readonly DocumentEditorVersionDto[];
@@ -254,7 +262,34 @@ export const validateDocumentEditorSession = (
       rowVersion: positiveInteger(draftValue["rowVersion"], "Document draft row version"),
     });
   }
+  const originValue = value["origin"];
+  let origin: DocumentEditorSessionDto["origin"];
+  if (originValue !== undefined && originValue !== null) {
+    if (!isRecord(originValue)) throw new TypeError("Document origin is invalid.");
+    const firstVersion = versions[0];
+    const sourceDocumentId = entityId("document", originValue["sourceDocumentId"] as string);
+    const sourceVersionId = entityId("document-version", originValue["sourceVersionId"] as string);
+    const firstVersionId = entityId("document-version", originValue["firstVersionId"] as string);
+    if (
+      sourceDocumentId === value["documentId"] ||
+      sourceVersionId === firstVersionId ||
+      firstVersionId !== firstVersion?.id ||
+      originValue["contentHash"] !== firstVersion.contentHash
+    )
+      throw new TypeError("Document origin does not identify the first immutable copy.");
+    origin = Object.freeze({
+      sourceDocumentId,
+      sourceVersionId,
+      firstVersionId,
+      sourceVersionNumber: positiveInteger(
+        originValue["sourceVersionNumber"],
+        "Source document version",
+      ),
+      contentHash: firstVersion.contentHash,
+    });
+  }
   return Object.freeze({
+    ...(originValue === undefined ? {} : { origin: origin ?? null }),
     documentId: entityId("document", value["documentId"] as string),
     title: requiredText(value["title"], "Document title", MAX_TITLE_LENGTH),
     versions,

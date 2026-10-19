@@ -11,3 +11,5 @@ Remove-Item Env:COREDRILL_UPDATE_RECOVERY_FIXTURE
 ```
 
 The fixture contains only invented company, job, workflow, career-evidence, document, answer, relationship, and attachment data. Do not add personal or production data.
+
+The schema-158 revision adds a separate exact reusable-version copy and immutable `document_derivation_origin` row. The older tailored submitted derivative retains unknown exact source-version origin; it is not backfilled. Browser and native restore compare the retained origin dataset and count as well as the existing submitted/current/draft document identities.

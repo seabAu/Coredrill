@@ -14,7 +14,7 @@ import {
 } from "./database-port.js";
 import type { PortableArchiveDataFileSourceV1 } from "./portable-archive-writer.js";
 
-export const PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION = 154 as const;
+export const PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION = 158 as const;
 export const PORTABLE_DATA_EXPORT_SUPPORTED_SOURCE_SCHEMA_VERSIONS = Object.freeze([
   101,
   111,
@@ -26,6 +26,7 @@ export const PORTABLE_DATA_EXPORT_SUPPORTED_SOURCE_SCHEMA_VERSIONS = Object.free
   133,
   145,
   148,
+  154,
   PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION,
 ] as const);
 export const PORTABLE_DATA_EXPORT_WRITER_LIMITS = Object.freeze({
@@ -601,6 +602,13 @@ export const PORTABLE_DATA_EXPORT_DATASETS: readonly DatasetSpec[] = Object.free
     ],
     orderBy: ["document_id"],
     minimumSourceSchemaVersion: 145,
+  }),
+  dataset({
+    name: "document_derivation_origin",
+    table: "document_derivation_origin",
+    columns: ["document_id", "first_version_id", "source_version_id", "created_at"],
+    orderBy: ["document_id"],
+    minimumSourceSchemaVersion: 158,
   }),
   dataset({
     name: "submitted_snapshot",

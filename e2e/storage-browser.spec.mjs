@@ -49,6 +49,7 @@ const humanReadableDatasetNames = Object.freeze([
   "document_version_attachment",
   "document_style_example",
   "document_lineage",
+  "document_derivation_origin",
   "submitted_snapshot",
   "submitted_snapshot_item",
   "experience",
@@ -122,10 +123,10 @@ test("opens official SQLite in a Worker, persists transactions, and restores a c
 
   await callHarness(sourcePage, "delete");
   const opened = await callHarness(sourcePage, "openAndMigrate");
-  expect(opened.appliedVersions).toEqual(Array.from({ length: 154 }, (_, index) => index + 1));
+  expect(opened.appliedVersions).toEqual(Array.from({ length: 158 }, (_, index) => index + 1));
   expect(opened.diagnostics).toMatchObject({
     adapterName: "official-sqlite-wasm-opfs-sahpool",
-    schemaVersion: 154,
+    schemaVersion: 158,
   });
   expect(["ready", "degraded"]).toContain(opened.diagnostics.health);
   expect(["best-effort", "durable"]).toContain(opened.diagnostics.persistence);
@@ -162,15 +163,15 @@ test("opens official SQLite in a Worker, persists transactions, and restores a c
     vaultId: committedVault.id,
   });
   expect(humanReadable).toEqual({
-    dataFileCount: 112,
-    datasetCount: 56,
+    dataFileCount: 114,
+    datasetCount: 57,
     datasetNames: humanReadableDatasetNames,
-    jsonFiles: 56,
-    csvFiles: 56,
+    jsonFiles: 57,
+    csvFiles: 57,
     rowCount: 1,
-    sourceSchemaVersion: 154,
+    sourceSchemaVersion: 158,
   });
-  expect(portable.schemaVersion).toBe(154);
+  expect(portable.schemaVersion).toBe(158);
   expect(portable.byteLength).toBeGreaterThan(0);
   expect(portable.sha256).toMatch(/^[a-f0-9]{64}$/u);
   const archiveRestore = await callHarness(sourcePage, "runPortableArchiveRestoreProof", {
@@ -181,7 +182,7 @@ test("opens official SQLite in a Worker, persists transactions, and restores a c
     staleName: "Stale target",
   });
   expect(archiveRestore).toMatchObject({
-    dataFileCount: 112,
+    dataFileCount: 114,
     attachmentCount: 0,
     corruptionRejected: true,
     corruptionPreservedTarget: true,

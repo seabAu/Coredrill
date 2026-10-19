@@ -4,7 +4,7 @@
 
 This document is the normative field-mapping record for the D-051 human-readable export implemented by `BKP-002`. It defines the paired `data/<dataset>.json` and `data/<dataset>.csv` projections carried by the version-1 portable archive. The archive's `database.sqlite3` remains the lossless restore source; these projections provide inspectability and migration independence without pretending that CSV preserves every SQLite distinction.
 
-Version 1 reads one consistent transaction from current database schema `154` and retains reviewed compatibility with schema milestones `101`, `111`, `112`, `115`, `126`, `129`, `132`, `133`, `145`, and `148`. The writer emits only datasets and columns that exist at the selected source milestone: 30 Phase 1 datasets at schema 101, 40 datasets through the initial Career Profile schema, 42 through the import proposal queue, 47 through the completed evidence schema, 48 through provenance-bound requirements, 50 through requirement/evidence selection, 51 through requirement-coverage decisions, 54 through immutable document lineage and submitted snapshots, 55 through durable editor drafts, and all 56 datasets at schema 154. The authoritative SQLite member remains the lossless restore source. A later schema change must either preserve this mapping deliberately or introduce a reviewed export version. The stored `vault.schema_version` is the schema at vault creation and need only be a positive integer; it is not the current migration level.
+Version 1 reads one consistent transaction from current database schema `158` and retains reviewed compatibility with schema milestones `101`, `111`, `112`, `115`, `126`, `129`, `132`, `133`, `145`, `148`, and `154`. The writer emits only datasets and columns that exist at the selected source milestone: 30 Phase 1 datasets at schema 101, 40 datasets through the initial Career Profile schema, 42 through the import proposal queue, 47 through the completed evidence schema, 48 through provenance-bound requirements, 50 through requirement/evidence selection, 51 through requirement-coverage decisions, 54 through immutable document lineage and submitted snapshots, 55 through durable editor drafts, 56 datasets through application-answer selections at schema 154, and 57 datasets through exact document-derivation origins at schema 158. The authoritative SQLite member remains the lossless restore source. A later schema change must either preserve this mapping deliberately or introduce a reviewed export version. The stored `vault.schema_version` is the schema at vault creation and need only be a positive integer; it is not the current migration level.
 
 ## Dataset envelope
 
@@ -14,7 +14,7 @@ Each JSON file is a strict UTF-8 JSON object with:
 - `dataset`: the dataset name below;
 - `generatedAt`: the archive generation instant;
 - `vaultId`: the selected vault UUID;
-- `sourceSchemaVersion`: the exact reviewed source milestone (`101`, `111`, `112`, `115`, `126`, `129`, `132`, `133`, `145`, `148`, or `154`);
+- `sourceSchemaVersion`: the exact reviewed source milestone (`101`, `111`, `112`, `115`, `126`, `129`, `132`, `133`, `145`, `148`, `154`, or `158`);
 - `columns`: the ordered field names below;
 - `rowCount`: the exact number of rows;
 - `rows`: objects containing exactly those fields in that order; and
@@ -74,6 +74,7 @@ Rows use the stable ordering in the final column. Every listed field is projecte
 | `document_version_attachment` | `document_version_id`, `content_id`, `purpose`, `logical_name`, `sort_order`, `created_at` | `document_version_id`, `content_id`, `purpose` |
 | `document_style_example` | `document_version_id`, `created_at` | `document_version_id` |
 | `document_lineage` | `document_id`, `role`, `base_document_id`, `template_document_id`, `job_id`, `created_at` | `document_id` |
+| `document_derivation_origin` | `document_id`, `first_version_id`, `source_version_id`, `created_at` | `document_id` |
 | `submitted_snapshot` | `id`, `application_id`, `submitted_at`, `channel`, `created_at` | `submitted_at`, `id` |
 | `submitted_snapshot_item` | `id`, `submitted_snapshot_id`, `role`, `document_version_id`, `submission_format`, `content_id`, `attachment_purpose`, `sort_order`, `created_at` | `submitted_snapshot_id`, `sort_order`, `role`, `id` |
 | `experience` | `id`, `organization`, `role`, `start_date`, `end_date`, `is_current`, `description`, `source_document_id`, `verification_state`, `archived_at`, `created_at`, `updated_at`, `row_version` | `id` |
@@ -107,4 +108,6 @@ The following are runtime, derived, diagnostic, short-lived undo, or migration m
 
 The writer accepts at most 64 columns and 250,000 rows per dataset. It rejects a cell above 16 MiB, a generated data file above 128 MiB, or combined JSON/CSV data above 384 MiB. Invalid caller UUID/timestamp input fails before opening a transaction. Schema drift, a missing or mismatched vault, query failure, invalid JSON/boolean/binary/non-finite data, contract failure, or size overflow yields a stable redacted typed error and no successful partial bundle.
 
-At schema 154, all 56 queries execute within one `DatabasePort` transaction. Only after every dataset validates are the 112 ordered files returned to the portable archive writer. A schema-inventory test fails if any durable table is neither exported nor present in the reviewed runtime-exclusion list.
+At schema 158, all 57 queries execute within one `DatabasePort` transaction. Only after every dataset validates are the 114 ordered files returned to the portable archive writer. Schema 154 retains 56 datasets and 112 files without fabricated version-origin rows. A schema-inventory test fails if any durable table is neither exported nor present in the reviewed runtime-exclusion list.
+
+Schemas 155–158 add exact reusable-version origins and their complete insertion/update/deletion guards. Only the completed schema 158 is an export milestone. A legacy derivative with unknown exact source version remains absent from this dataset; export does not invent a backfill.

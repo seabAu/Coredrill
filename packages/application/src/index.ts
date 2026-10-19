@@ -1,5 +1,14 @@
 /** Use-case orchestration and query DTOs over domain ports. */
 export {
+  createDeriveJobDocumentCommand,
+  DocumentDerivationError,
+  type DeriveJobDocumentInput,
+  type DocumentDerivationBasisRequest,
+  type CreateDocumentDerivativePortInput,
+  type DocumentDerivationPort,
+  type DocumentDerivationDependencies,
+} from "./document-derivation.js";
+export {
   ApplicationAttemptError,
   createStartApplicationAttemptCommand,
   type ApplicationAttemptPort,

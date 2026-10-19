@@ -12,6 +12,8 @@ import type {
   ApplicationResult,
   ApplicationSubmissionReviewDto,
   DocumentEditorSessionDto,
+  DeriveJobDocumentInput,
+  CreatedReusableDocumentDto,
   MarkApplicationAppliedInput,
   RecordApplicationExportInput,
   SaveApplicationDocumentPreparationInput,
@@ -22,6 +24,7 @@ import {
   type ApplicationSubmissionReviewModel,
 } from "./application-submission-review.js";
 import { DocumentExportReview } from "./document-export-review.js";
+import { DocumentDerivationForm } from "./document-derivation-form.js";
 
 export interface JobDocumentPreparationModel {
   readonly preparation: ApplicationDocumentPreparationDto | null;
@@ -60,6 +63,9 @@ export interface TemplateCoverLetterCreationModel {
 }
 
 export interface JobDocumentPreparationProps {
+  readonly onDeriveDocument?: (
+    input: DeriveJobDocumentInput,
+  ) => Promise<ApplicationResult<CreatedReusableDocumentDto>>;
   readonly applicationStart?: ReactNode;
   readonly model: JobDocumentPreparationModel;
   readonly submissionModel?: ApplicationSubmissionReviewModel;
@@ -153,6 +159,7 @@ const SelectedSummary = ({
 );
 
 export const JobDocumentPreparation = ({
+  onDeriveDocument,
   applicationStart,
   model,
   submissionModel,
@@ -271,6 +278,13 @@ export const JobDocumentPreparation = ({
             </aside>
           ) : null}
 
+          {preparation.submitted || onDeriveDocument === undefined ? null : (
+            <DocumentDerivationForm
+              key={preparation.applicationId}
+              preparation={preparation}
+              onCreate={onDeriveDocument}
+            />
+          )}
           <form className="cd-job-document-form" onSubmit={submit}>
             <fieldset disabled={model.saving || preparation.submitted}>
               <legend>Resume</legend>

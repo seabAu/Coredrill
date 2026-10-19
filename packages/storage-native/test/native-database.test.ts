@@ -339,11 +339,11 @@ describe("native SQLite repository and migration contracts", () => {
         name: "applies the shared migration and reopens its ledger",
         run: async (database) => {
           await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
-            schemaVersion: 154,
-            appliedVersions: Array.from({ length: 154 }, (_, index) => index + 1),
+            schemaVersion: 158,
+            appliedVersions: Array.from({ length: 158 }, (_, index) => index + 1),
           });
           await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
-            schemaVersion: 154,
+            schemaVersion: 158,
             appliedVersions: [],
           });
         },
@@ -450,7 +450,7 @@ describe("native SQLite repository and migration contracts", () => {
       adapterName: "native-rusqlite-candidate",
       health: "ready",
       persistence: "durable",
-      schemaVersion: 154,
+      schemaVersion: 158,
     });
     await expect(reopened.delete()).resolves.toBe(true);
   });
@@ -470,7 +470,7 @@ describe("native SQLite repository and migration contracts", () => {
     });
     await applySqlMigrations(database, migrations(), APPLIED_AT);
     await expect(database.exportPortable()).resolves.toMatchObject({
-      schemaVersion: 154,
+      schemaVersion: 158,
       byteLength: expect.any(Number),
       sha256: expect.stringMatching(/^[a-f0-9]{64}$/u),
     });
@@ -480,7 +480,7 @@ describe("native SQLite repository and migration contracts", () => {
       retentionCount: 7,
       knownGoodBackups: 1,
       cleanupPending: false,
-      archive: { schemaVersion: 154, sha256: expect.stringMatching(/^[a-f0-9]{64}$/u) },
+      archive: { schemaVersion: 158, sha256: expect.stringMatching(/^[a-f0-9]{64}$/u) },
     });
     await database.delete();
   });
@@ -625,6 +625,7 @@ describe("native SQLite repository and migration contracts", () => {
                (SELECT count(*) FROM document) AS documents,
                (SELECT count(*) FROM document_version) AS documentVersions,
                (SELECT count(*) FROM document_lineage) AS documentLineages,
+               (SELECT count(*) FROM document_derivation_origin) AS documentDerivationOrigins,
                (SELECT count(*) FROM document_job_link) AS documentJobLinks,
                (SELECT count(*) FROM document_editor_draft) AS editorDrafts,
                (SELECT count(*) FROM application_answer_selection) AS applicationAnswerSelections,
@@ -762,7 +763,7 @@ describe("native SQLite repository and migration contracts", () => {
           version: 1,
           runtime: "windows-native",
           adapterName: "native-rusqlite-candidate",
-          schemaVersion: 154,
+          schemaVersion: 158,
           vaultName: "Canonical local job search",
           jobTitle: "Research Operations Lead",
           finalStage: "Interviewing",

@@ -1,4 +1,5 @@
 /** Storage ports, shared repository contracts, and migration coordination. */
+export { createDocumentDerivationRepository } from "./document-derivation-repository.js";
 export {
   ApplicationDocumentPreparationRepository,
   createApplicationDocumentPreparationRepository,

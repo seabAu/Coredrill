@@ -150,8 +150,13 @@ active attempt can separately Start preparation locally: the user names a
 Preparing stage to reuse or create, and the stage/application/job projection
 and timeline event commit together. Stale, closed, or duplicate cases fail
 without reopening a job or sending anything. Default stage names remain a
-research decision. Job-derivative creation and full-journey integration remain
-open under `Q3-005`.
+research decision. The stored job's Documents tab offers an explicit job-specific
+copy from a chosen saved reusable resume or cover-letter version. Unsaved drafts
+are not copied. The copy retains the exact original version identity and content
+hash, remains independent of later reusable edits, and is neither selected nor
+submitted automatically. Its origin is visible in the editor. Templates are not
+eligible reusable sources in this slice. Full-journey integration remains open
+under `Q3-005`.
 
 Three-column desktop studio:
 

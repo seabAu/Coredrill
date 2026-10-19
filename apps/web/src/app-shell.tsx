@@ -110,6 +110,7 @@ import {
   type DocumentWorkspaceItemDto,
   type SaveDocumentEditorDraftInput,
   type SaveApplicationDocumentPreparationInput,
+  type DeriveJobDocumentInput,
   type MarkApplicationAppliedInput,
   type RecordApplicationExportInput,
   type VaultDeletionPreviewDto,
@@ -2454,6 +2455,35 @@ const AppShellCatalog = () => {
     workspaceRoute?.tab,
   ]);
 
+  const deriveJobDocument = async (input: DeriveJobDocumentInput) => {
+    const result = await globalThis.coredrillStorageSpike.deriveJobDocument(input);
+    if (!result.ok) return result;
+    setDocumentsLoaded(false);
+    // Creation has committed. A refresh failure must not offer a duplicate-creation retry.
+    try {
+      const refreshed = await globalThis.coredrillStorageSpike.loadApplicationDocumentPreparation(
+        input.applicationId,
+      );
+      if (refreshed.ok) {
+        setJobDocumentPreparation((current) =>
+          current?.applicationId === input.applicationId ? refreshed.value : current,
+        );
+        setLastActivity(
+          "Created a job-specific document copy locally. Nothing was selected or submitted.",
+        );
+      } else {
+        setLastActivity(
+          "The job-specific copy was created. Reload the workspace to refresh its candidate list.",
+        );
+      }
+    } catch {
+      setLastActivity(
+        "The job-specific copy was created. Reload the workspace to refresh its candidate list.",
+      );
+    }
+    return result;
+  };
+
   const saveJobDocumentPreparation = async (
     input: SaveApplicationDocumentPreparationInput,
   ): Promise<void> => {
@@ -3941,6 +3971,9 @@ const AppShellCatalog = () => {
               {workspaceRoute.tab === "documents" ? (
                 <JobDocumentPreparation
                   applicationStart={applicationAttemptStart}
+                  {...(storedJob?.jobId === workspaceRoute.jobId
+                    ? { onDeriveDocument: deriveJobDocument }
+                    : {})}
                   model={
                     {
                       preparation: visibleJobDocumentPreparation,
@@ -4216,6 +4249,9 @@ const AppShellCatalog = () => {
                   {workspaceRoute.tab === "documents" ? (
                     <JobDocumentPreparation
                       applicationStart={applicationAttemptStart}
+                      {...(storedJob?.jobId === workspaceRoute.jobId
+                        ? { onDeriveDocument: deriveJobDocument }
+                        : {})}
                       model={
                         {
                           preparation: visibleJobDocumentPreparation,

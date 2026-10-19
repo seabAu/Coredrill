@@ -82,7 +82,36 @@ const loadSession = async (session: DatabaseSession, documentId: EntityId<"docum
     ),
   );
   const draft = drafts[0];
+  const origins = await session.query<
+    {
+      readonly source_document_id: string;
+      readonly source_version_id: string;
+      readonly source_version_number: number;
+      readonly first_version_id: string;
+      readonly content_hash: string;
+    } & QueryRow
+  >(
+    sqlStatement(
+      `SELECT source.document_id AS source_document_id, origin.source_version_id,
+       source.version_number AS source_version_number, origin.first_version_id, source.content_hash
+     FROM document_derivation_origin AS origin
+     JOIN document_version AS source ON source.id = origin.source_version_id
+     WHERE origin.document_id = ?`,
+      [documentId],
+    ),
+  );
+  const origin = origins[0];
   return Object.freeze({
+    origin:
+      origin === undefined
+        ? null
+        : Object.freeze({
+            sourceDocumentId: entityId("document", origin.source_document_id),
+            sourceVersionId: entityId("document-version", origin.source_version_id),
+            sourceVersionNumber: origin.source_version_number,
+            firstVersionId: entityId("document-version", origin.first_version_id),
+            contentHash: origin.content_hash,
+          }),
     documentId: entityId("document", document.id),
     title: document.title,
     versions: Object.freeze(

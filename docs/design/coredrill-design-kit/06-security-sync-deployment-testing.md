@@ -196,7 +196,7 @@ actual state and must persist bytes only after writer success. Restore remains a
 separate dry-run and transactional boundary in `BKP-003`.
 
 `BKP-002` adds production human-readable projections without broadening that
-trust boundary. At current schema 154, all 56 canonical dataset reads occur inside one database
+trust boundary. At current schema 158, all 57 canonical dataset reads occur inside one database
 transaction; schema/vault drift, query failure, invalid stored JSON or boolean
 state, binary/non-finite values, or size overflow returns a stable redacted
 error and no successful partial bundle. JSON preserves original strings and

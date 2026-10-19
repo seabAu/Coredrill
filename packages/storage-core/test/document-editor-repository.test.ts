@@ -12,6 +12,7 @@ import {
   applySqlMigrations,
   createDocumentEditorRepository,
   createDocumentCreationRepository,
+  createDocumentDerivationRepository,
   createApplicationAttemptRepository,
   createPipelineRepositories,
   createTrackerRepositories,
@@ -86,7 +87,7 @@ class NodeDocumentEditorDatabase implements DatabasePort {
       health: "ready",
       persistence: "memory",
       readOnly: false,
-      schemaVersion: 154,
+      schemaVersion: migrations.length,
     });
   }
 
@@ -177,6 +178,266 @@ describe("DocumentEditorRepository", () => {
       updatedAt: CREATED_AT,
     });
   };
+
+  const derivativeId = entityId("document", "0199b340-0000-7000-8000-000000000001");
+  const derivativeVersionId = entityId("document-version", "0199b340-0000-7000-8000-000000000002");
+  const seedDerivative = async (
+    options: { kind?: "resume" | "cover_letter"; text?: string } = {},
+  ) => {
+    await seedAttemptJob();
+    const repositories = createDocumentRepositories(database);
+    await repositories.lineages.create({
+      documentId: DOCUMENT_ID,
+      role: "base",
+      baseDocumentId: null,
+      templateDocumentId: null,
+      jobId: null,
+      createdAt: CREATED_AT,
+    });
+    await repositories.documents.create({
+      id: derivativeId,
+      kind: options.kind ?? "resume",
+      title: "Job-specific copy",
+      source: "user",
+      archivedAt: null,
+      createdAt: EDITED_AT,
+      updatedAt: EDITED_AT,
+    });
+    await repositories.lineages.create({
+      documentId: derivativeId,
+      role: "job_derivative",
+      baseDocumentId: DOCUMENT_ID,
+      templateDocumentId: null,
+      jobId: attemptJob,
+      createdAt: EDITED_AT,
+    });
+    const text = options.text ?? "Original evidence";
+    await repositories.versions.create({
+      id: derivativeVersionId,
+      documentId: derivativeId,
+      versionNumber: 1,
+      contentIrVersion: 1,
+      contentIr: content(text),
+      contentPlain: text,
+      templateId: null,
+      createdBy: "user",
+      createdAt: EDITED_AT,
+      parentVersionId: null,
+      contentHash: hash(content(text)),
+      label: "Exact reusable copy",
+    });
+  };
+  const insertOrigin = (sourceVersionId: string = VERSION_1_ID, createdAt: string = EDITED_AT) =>
+    database.execute(
+      sqlStatement(
+        "INSERT INTO document_derivation_origin (document_id, first_version_id, source_version_id, created_at) VALUES (?, ?, ?, ?)",
+        [derivativeId, derivativeVersionId, sourceVersionId, createdAt],
+      ),
+    );
+
+  it("retains the chosen older source version when the reusable document gains a newer version", async () => {
+    await seedDerivative();
+    await insertOrigin();
+    await createDocumentRepositories(database).versions.create({
+      id: VERSION_2_ID,
+      documentId: DOCUMENT_ID,
+      versionNumber: 2,
+      contentIrVersion: 1,
+      contentIr: content("Later reusable edit"),
+      contentPlain: "Later reusable edit",
+      templateId: null,
+      createdBy: "user",
+      createdAt: VERSIONED_AT,
+      parentVersionId: VERSION_1_ID,
+      contentHash: hash(content("Later reusable edit")),
+      label: null,
+    });
+    expect(
+      await database.query(
+        sqlStatement(
+          "SELECT origin.source_version_id, source.content_plain, first.content_hash = source.content_hash AS exact_hash FROM document_derivation_origin AS origin JOIN document_version AS source ON source.id = origin.source_version_id JOIN document_version AS first ON first.id = origin.first_version_id",
+        ),
+      ),
+    ).toEqual([
+      { source_version_id: VERSION_1_ID, content_plain: "Original evidence", exact_hash: 1 },
+    ]);
+  });
+
+  it.each([
+    { kind: "cover_letter" as const },
+    { text: "Changed content must not claim an exact copy" },
+  ])("rejects an origin whose first copy differs from its source: %j", async (options) => {
+    await seedDerivative(options);
+    await expect(insertOrigin()).rejects.toThrow("invalid exact document derivation origin");
+  });
+
+  it("rejects self-origin and fabricated derivation timestamps", async () => {
+    await seedDerivative();
+    await expect(insertOrigin(derivativeVersionId)).rejects.toThrow();
+    await expect(insertOrigin(VERSION_1_ID, VERSIONED_AT)).rejects.toThrow();
+    expect(await database.query(sqlStatement("SELECT * FROM document_derivation_origin"))).toEqual(
+      [],
+    );
+  });
+
+  it("does not permit rewriting or detaching an established version origin", async () => {
+    await seedDerivative();
+    await insertOrigin();
+    await expect(
+      database.execute(
+        sqlStatement("UPDATE document_derivation_origin SET created_at = ? WHERE document_id = ?", [
+          VERSIONED_AT,
+          derivativeId,
+        ]),
+      ),
+    ).rejects.toThrow("document derivation origin is immutable");
+    await expect(
+      database.execute(
+        sqlStatement("DELETE FROM document_derivation_origin WHERE document_id = ?", [
+          derivativeId,
+        ]),
+      ),
+    ).rejects.toThrow("document derivation origin cannot be detached");
+    await expect(
+      database.execute(sqlStatement("DELETE FROM document_version WHERE id = ?", [VERSION_1_ID])),
+    ).rejects.toThrow();
+    await expect(
+      database.execute(
+        sqlStatement("DELETE FROM document_version WHERE id = ?", [derivativeVersionId]),
+      ),
+    ).rejects.toThrow();
+    expect(
+      await database.query(
+        sqlStatement("SELECT COUNT(*) AS count FROM document_derivation_origin"),
+      ),
+    ).toEqual([{ count: 1 }]);
+  });
+
+  it("allows deleting the whole unsubmitted derivative without orphaning its origin or deleting its source", async () => {
+    await seedDerivative();
+    await insertOrigin();
+    await database.execute(sqlStatement("DELETE FROM document WHERE id = ?", [derivativeId]));
+    expect(await database.query(sqlStatement("SELECT * FROM document_derivation_origin"))).toEqual(
+      [],
+    );
+    expect(
+      await database.query(
+        sqlStatement("SELECT id FROM document_version WHERE id = ?", [VERSION_1_ID]),
+      ),
+    ).toEqual([{ id: VERSION_1_ID }]);
+  });
+
+  const copyRequest = () => ({
+    applicationId: attemptInput().applicationId,
+    expectedApplicationRowVersion: 1,
+    sourceVersionId: VERSION_1_ID,
+    documentId: entityId("document", "0199b341-0000-7000-8000-000000000001"),
+    versionId: entityId("document-version", "0199b341-0000-7000-8000-000000000002"),
+    sourceDocumentId: DOCUMENT_ID,
+    jobId: attemptJob,
+    title: "Explicit application copy",
+    kind: "resume" as const,
+    content: content("Original evidence"),
+    plainText: "Original evidence",
+    contentHash: hash(content("Original evidence")),
+    createdAt: VERSIONED_AT,
+  });
+
+  it("atomically creates a job derivative and origin without changing application selections", async () => {
+    await seedDerivative();
+    await createApplicationAttemptRepository(database).start(attemptInput());
+    const repository = createDocumentDerivationRepository(database);
+    expect(await repository.readBasis(copyRequest())).toMatchObject({
+      sourceDocumentId: DOCUMENT_ID,
+      sourceVersionId: VERSION_1_ID,
+      kind: "resume",
+    });
+    await repository.create(copyRequest());
+    expect(
+      await database.query(
+        sqlStatement(
+          "SELECT source_version_id FROM document_derivation_origin WHERE document_id = ?",
+          [copyRequest().documentId],
+        ),
+      ),
+    ).toEqual([{ source_version_id: VERSION_1_ID }]);
+    expect(
+      await database.query(
+        sqlStatement(
+          "SELECT selected_resume_version_id, selected_cover_letter_version_id, applied_at, row_version FROM application",
+        ),
+      ),
+    ).toEqual([
+      {
+        selected_resume_version_id: null,
+        selected_cover_letter_version_id: null,
+        applied_at: null,
+        row_version: 1,
+      },
+    ]);
+  });
+
+  it("rejects a stale or applied target and an archived reusable source", async () => {
+    await seedDerivative();
+    await createApplicationAttemptRepository(database).start(attemptInput());
+    const repository = createDocumentDerivationRepository(database);
+    await expect(
+      repository.create({ ...copyRequest(), expectedApplicationRowVersion: 2 }),
+    ).rejects.toMatchObject({ code: "conflict" });
+    await database.execute(
+      sqlStatement(
+        "UPDATE document SET archived_at = ?, updated_at = ?, row_version = row_version + 1 WHERE id = ?",
+        [VERSIONED_AT, VERSIONED_AT, DOCUMENT_ID],
+      ),
+    );
+    await expect(repository.create(copyRequest())).rejects.toMatchObject({ code: "conflict" });
+    await database.execute(
+      sqlStatement(
+        "UPDATE document SET archived_at = NULL, row_version = row_version + 1 WHERE id = ?",
+        [DOCUMENT_ID],
+      ),
+    );
+    await database.execute(
+      sqlStatement(
+        "UPDATE application SET applied_at = ?, updated_at = ?, row_version = row_version + 1 WHERE id = ?",
+        [VERSIONED_AT, VERSIONED_AT, attemptInput().applicationId],
+      ),
+    );
+    await expect(
+      repository.create({ ...copyRequest(), expectedApplicationRowVersion: 2 }),
+    ).rejects.toMatchObject({ code: "conflict" });
+    expect(
+      await database.query(
+        sqlStatement("SELECT id FROM document WHERE id = ?", [copyRequest().documentId]),
+      ),
+    ).toEqual([]);
+  });
+
+  it("rolls back metadata and lineage if immutable version creation fails after earlier writes", async () => {
+    await seedDerivative();
+    await createApplicationAttemptRepository(database).start(attemptInput());
+    await expect(
+      createDocumentDerivationRepository(database).create({
+        ...copyRequest(),
+        versionId: VERSION_1_ID,
+      }),
+    ).rejects.toThrow();
+    expect(
+      await database.query(
+        sqlStatement("SELECT id FROM document WHERE id = ?", [copyRequest().documentId]),
+      ),
+    ).toEqual([]);
+    expect(
+      await database.query(
+        sqlStatement("SELECT document_id FROM document_lineage WHERE document_id = ?", [
+          copyRequest().documentId,
+        ]),
+      ),
+    ).toEqual([]);
+    expect(await database.query(sqlStatement("SELECT * FROM document_derivation_origin"))).toEqual(
+      [],
+    );
+  });
 
   it("starts preparation atomically from an unassigned job without marking Applied or selecting documents", async () => {
     await seedAttemptJob();

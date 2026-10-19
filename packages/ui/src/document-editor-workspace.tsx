@@ -176,6 +176,13 @@ export const DocumentEditorWorkspace = ({
         <div>
           <p className="cd-eyebrow">Structured local editor</p>
           <h2 id="document-editor-heading">{session.title}</h2>
+          {session.origin === null || session.origin === undefined ? null : (
+            <p style={{ overflowWrap: "anywhere" }}>
+              Copied from reusable version {session.origin.sourceVersionNumber}:{" "}
+              {session.origin.sourceVersionId}. Later edits to the reusable document do not change
+              this origin.
+            </p>
+          )}
           <p>
             {versionLabel(session.currentVersion)} is immutable. Autosave keeps a recoverable local
             draft; only Create version adds to history.

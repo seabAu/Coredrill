@@ -616,6 +616,55 @@ export const createDocumentRepositoryContractSuite = (
           linkedAt: UPDATED_AT,
         });
 
+        const insertOrigin = (sourceVersionId: string) =>
+          database.execute(
+            sqlStatement(
+              "INSERT INTO document_derivation_origin (document_id, first_version_id, source_version_id, created_at) VALUES (?, ?, ?, ?)",
+              [IDS.derivativeDocument, IDS.derivativeVersion, sourceVersionId, CREATED_AT],
+            ),
+          );
+        await expectFailure(
+          () => insertOrigin(IDS.templateVersion),
+          () => true,
+          "A derivative claimed a template version instead of its reusable base as exact origin.",
+        );
+        await insertOrigin(IDS.versionOne);
+        await expectFailure(
+          () =>
+            database.execute(
+              sqlStatement(
+                "UPDATE document_derivation_origin SET source_version_id = ? WHERE document_id = ?",
+                [IDS.templateVersion, IDS.derivativeDocument],
+              ),
+            ),
+          () => true,
+          "An exact document origin accepted an update.",
+        );
+        await expectFailure(
+          () =>
+            database.execute(
+              sqlStatement("DELETE FROM document_derivation_origin WHERE document_id = ?", [
+                IDS.derivativeDocument,
+              ]),
+            ),
+          () => true,
+          "An exact document origin was detached from its surviving derivative.",
+        );
+        const origins = await database.query<
+          { readonly source_version_id: string; readonly first_version_id: string } & QueryRow
+        >(
+          sqlStatement(
+            "SELECT source_version_id, first_version_id FROM document_derivation_origin WHERE document_id = ?",
+            [IDS.derivativeDocument],
+          ),
+        );
+        assertContract(
+          origins.length === 1 &&
+            origins[0]?.source_version_id === IDS.versionOne &&
+            origins[0].first_version_id === IDS.derivativeVersion,
+          "The exact reusable-version origin did not round-trip after rejected mutations.",
+        );
+
         const pipeline = createPipelineRepositories(database);
         await pipeline.statusDefinitions.create({
           id: IDS.appliedStatus,

@@ -4,12 +4,12 @@
   "archiveId": "0198d9d5-0000-7000-8000-000000000001",
   "generatedAt": "2026-08-29T23:55:00.000Z",
   "vaultId": "0198d9d4-0000-7000-8000-0000000000ff",
-  "schemaVersion": 154,
-  "archiveByteLength": 1775095,
-  "archiveSha256": "38f8f58f39f9e7524d1a8b5a5d79a7bf9d11559a13d2f3d2061cd0645f2667b7",
-  "databaseSha256": "8f9745306c823e51e9977a31e1571fe6cad6d1a97be384724999edbf68b00867",
-  "contentSha256": "011982b3238bc2982fe45536592f90c7c63092a4f07713e15de7ba062605682a",
-  "dataFileCount": 112,
+  "schemaVersion": 158,
+  "archiveByteLength": 1813070,
+  "archiveSha256": "f7e92e0bea8982773fc90e7be6b2098a2b9e01888d76405ab2e0320e5e63678e",
+  "databaseSha256": "4635fb69e7581669b52d76317d67474b20fd59afced03973cff844762bafa127",
+  "contentSha256": "2a171e980a6aa67182ef6ad409368c7a0258297f999752c40397203f0efb5acf",
+  "dataFileCount": 114,
   "attachmentCount": 2,
   "attachmentContentIds": [
     "8d75c6a2f0a8087e9745ed2fef90b36bdf13ce489c61eb40f3ae9be07acbb59c",
@@ -31,9 +31,10 @@
     "answerVersions": 1,
     "attachmentManifests": 2,
     "attachmentLinks": 3,
-    "documents": 3,
-    "documentVersions": 4,
-    "documentLineages": 2,
+    "documents": 4,
+    "documentVersions": 5,
+    "documentLineages": 3,
+    "documentDerivationOrigins": 1,
     "documentJobLinks": 2,
     "editorDrafts": 1,
     "applicationAnswerSelections": 1,
@@ -124,7 +125,7 @@
       },
       {
         "dataset": "document",
-        "rowCount": 3,
+        "rowCount": 4,
         "rows": [
           {
             "id": "0198d9d4-0000-7000-8000-000000000009",
@@ -155,12 +156,22 @@
             "created_at": "2026-08-29T23:50:00.000Z",
             "updated_at": "2026-08-29T23:54:00.000Z",
             "row_version": 1
+          },
+          {
+            "id": "0198d9d4-0000-7000-8000-000000000029",
+            "kind": "resume",
+            "title": "Exact reusable copy for recovery",
+            "source": "user",
+            "archived_at": null,
+            "created_at": "2026-08-29T23:54:00.000Z",
+            "updated_at": "2026-08-29T23:54:00.000Z",
+            "row_version": 1
           }
         ]
       },
       {
         "dataset": "document_version",
-        "rowCount": 4,
+        "rowCount": 5,
         "rows": [
           {
             "id": "0198d9d4-0000-7000-8000-00000000000a",
@@ -281,6 +292,36 @@
             "parent_version_id": "0198d9d4-0000-7000-8000-000000000022",
             "content_hash": "ae3b1724cf34dfdc69a944acd12d67f93f325e3b478e9debe7a1d9c9e7ecdc43",
             "label": "Post-submission current version"
+          },
+          {
+            "id": "0198d9d4-0000-7000-8000-00000000002a",
+            "document_id": "0198d9d4-0000-7000-8000-000000000029",
+            "version_number": 1,
+            "content_ir_version": 1,
+            "content_ir_json": {
+              "document": {
+                "content": [
+                  {
+                    "content": [
+                      {
+                        "text": "Platform engineer with verified local-first delivery evidence.",
+                        "type": "text"
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "type": "doc"
+              },
+              "specVersion": 1
+            },
+            "content_plain": "Platform engineer with verified local-first delivery evidence.",
+            "template_id": null,
+            "created_by": "user",
+            "created_at": "2026-08-29T23:54:00.000Z",
+            "parent_version_id": null,
+            "content_hash": "1e0801374f59208bd71f619e66e9a9b8fc5ca6e0447d4cf4a76443ad43658c9b",
+            "label": "Exact reusable copy"
           }
         ]
       },
@@ -395,7 +436,7 @@
       },
       {
         "dataset": "document_lineage",
-        "rowCount": 2,
+        "rowCount": 3,
         "rows": [
           {
             "document_id": "0198d9d4-0000-7000-8000-000000000009",
@@ -412,6 +453,26 @@
             "template_document_id": null,
             "job_id": "0198d9d4-0000-7000-8000-000000000002",
             "created_at": "2026-08-29T23:50:00.000Z"
+          },
+          {
+            "document_id": "0198d9d4-0000-7000-8000-000000000029",
+            "role": "job_derivative",
+            "base_document_id": "0198d9d4-0000-7000-8000-000000000009",
+            "template_document_id": null,
+            "job_id": "0198d9d4-0000-7000-8000-000000000002",
+            "created_at": "2026-08-29T23:54:00.000Z"
+          }
+        ]
+      },
+      {
+        "dataset": "document_derivation_origin",
+        "rowCount": 1,
+        "rows": [
+          {
+            "document_id": "0198d9d4-0000-7000-8000-000000000029",
+            "first_version_id": "0198d9d4-0000-7000-8000-00000000002a",
+            "source_version_id": "0198d9d4-0000-7000-8000-00000000000a",
+            "created_at": "2026-08-29T23:54:00.000Z"
           }
         ]
       },

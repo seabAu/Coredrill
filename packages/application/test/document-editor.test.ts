@@ -78,6 +78,33 @@ const operations = (port: DocumentEditorPort) =>
   });
 
 describe("document editor application operations", () => {
+  it("retains a validated exact-version origin and rejects invented first-version identities", async () => {
+    const origin = {
+      sourceDocumentId: "0199b360-0000-7000-8000-000000000001",
+      sourceVersionId: "0199b360-0000-7000-8000-000000000002",
+      sourceVersionNumber: 3,
+      firstVersionId: VERSION_1_ID,
+      contentHash: "a".repeat(64),
+    };
+    const load = vi.fn(async (): Promise<unknown> => ({ ...session(), origin }));
+    const editor = operations({ load, saveDraft: vi.fn(), createVersion: vi.fn() });
+    expect(
+      await editor.openDocumentQuery.execute({ documentId: DOCUMENT_ID }, context),
+    ).toMatchObject({ ok: true, value: { origin } });
+    for (const invalid of [
+      { ...origin, sourceDocumentId: DOCUMENT_ID },
+      { ...origin, sourceVersionId: VERSION_1_ID },
+      { ...origin, firstVersionId: VERSION_2_ID },
+      { ...origin, contentHash: "b".repeat(64) },
+      { ...origin, sourceVersionNumber: 0 },
+    ]) {
+      load.mockResolvedValueOnce({ ...session(), origin: invalid });
+      expect(
+        (await editor.openDocumentQuery.execute({ documentId: DOCUMENT_ID }, context)).ok,
+      ).toBe(false);
+    }
+  });
+
   it("loads a validated immutable history and recovered local draft", async () => {
     const port: DocumentEditorPort = {
       load: vi.fn(async () => session("Recovered edit")),

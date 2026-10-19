@@ -10,6 +10,8 @@ import {
   createAnswerLibraryOperations,
   createDocumentEditorOperations,
   createReusableDocumentCommand,
+  createDeriveJobDocumentCommand,
+  type DeriveJobDocumentInput,
   createStartApplicationAttemptCommand,
   createApplicationDocumentPreparationOperations,
   createApplicationSubmissionOperations,
@@ -111,6 +113,7 @@ import {
   createDocumentWorkspaceRepository,
   createDocumentEditorRepository,
   createDocumentCreationRepository,
+  createDocumentDerivationRepository,
   createApplicationAttemptRepository,
   createApplicationDocumentPreparationRepository,
   createApplicationSubmissionRepository,
@@ -394,6 +397,7 @@ interface Phase3RecoveryInventory {
   readonly documents: number;
   readonly documentVersions: number;
   readonly documentLineages: number;
+  readonly documentDerivationOrigins: number;
   readonly documentJobLinks: number;
   readonly editorDrafts: number;
   readonly applicationAnswerSelections: number;
@@ -447,6 +451,9 @@ export interface TemplateCoverLetterVersionResult {
 }
 
 export interface CoredrillStorageSpikeApi {
+  deriveJobDocument(
+    input: DeriveJobDocumentInput,
+  ): Promise<ApplicationResult<CreatedReusableDocumentDto>>;
   startApplicationAttempt(
     input: StartApplicationAttemptInput,
   ): Promise<ApplicationResult<StartedApplicationAttemptDto>>;
@@ -1389,6 +1396,27 @@ const reusableDocumentCommand = createReusableDocumentCommand({
   },
 });
 
+const documentDerivationCommand = createDeriveJobDocumentCommand({
+  documents: {
+    readBasis: async (input) => {
+      const database = await getDatabase();
+      await applySqlMigrations(database, await migrations(), MIGRATION_APPLIED_AT);
+      return createDocumentDerivationRepository(database).readBasis(input);
+    },
+    create: async (input) => {
+      const database = await getDatabase();
+      await applySqlMigrations(database, await migrations(), MIGRATION_APPLIED_AT);
+      await createDocumentDerivationRepository(database).create(input);
+    },
+  },
+  createId: (kind) => generateEntityId(kind),
+  hashText: sha256Text,
+  normalizeContent: (value) => {
+    const content = parseDocumentIr(value);
+    return Object.freeze({ content, plainText: documentIrToPlainText(content) });
+  },
+});
+
 const startApplicationAttemptCommand = createStartApplicationAttemptCommand({
   attempts: {
     start: async (input) => {
@@ -2055,6 +2083,7 @@ const DOCUMENT_ROUND_TRIP_DATASETS = Object.freeze([
   "attachment_manifest",
   "document_version_attachment",
   "document_lineage",
+  "document_derivation_origin",
   "submitted_snapshot",
   "submitted_snapshot_item",
   "experience",
@@ -2143,6 +2172,10 @@ const readPhase3RecoveryInventory = async (
     documents: await readCount(client, "SELECT count(*) AS count FROM document"),
     documentVersions: await readCount(client, "SELECT count(*) AS count FROM document_version"),
     documentLineages: await readCount(client, "SELECT count(*) AS count FROM document_lineage"),
+    documentDerivationOrigins: await readCount(
+      client,
+      "SELECT count(*) AS count FROM document_derivation_origin",
+    ),
     documentJobLinks: await readCount(client, "SELECT count(*) AS count FROM document_job_link"),
     editorDrafts: await readCount(client, "SELECT count(*) AS count FROM document_editor_draft"),
     applicationAnswerSelections: await readCount(
@@ -3014,6 +3047,35 @@ const seedRepresentativePhase1Vault = async (
         ],
       ),
     );
+    const exactCopyDocumentId = "0198d9d4-0000-7000-8000-000000000029";
+    const exactCopyVersionId = "0198d9d4-0000-7000-8000-00000000002a";
+    await transaction.execute(
+      sqlStatement(
+        "INSERT INTO document (id, kind, title, source, created_at, updated_at) VALUES (?, 'resume', 'Exact reusable copy for recovery', 'user', ?, ?)",
+        [exactCopyDocumentId, currentVersionAt, currentVersionAt],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        "INSERT INTO document_lineage (document_id, role, base_document_id, job_id, created_at) VALUES (?, 'job_derivative', ?, ?, ?)",
+        [exactCopyDocumentId, documentId, jobId, currentVersionAt],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        `INSERT INTO document_version (id, document_id, version_number, content_ir_version,
+        content_ir_json, content_plain, created_by, created_at, content_hash, label)
+       SELECT ?, ?, 1, content_ir_version, content_ir_json, content_plain, 'user', ?, content_hash,
+        'Exact reusable copy' FROM document_version WHERE id = ?`,
+        [exactCopyVersionId, exactCopyDocumentId, currentVersionAt, documentVersionId],
+      ),
+    );
+    await transaction.execute(
+      sqlStatement(
+        "INSERT INTO document_derivation_origin (document_id, first_version_id, source_version_id, created_at) VALUES (?, ?, ?, ?)",
+        [exactCopyDocumentId, exactCopyVersionId, documentVersionId, currentVersionAt],
+      ),
+    );
     const vault = await transaction.query<VaultRow>(
       sqlStatement("SELECT id, name, schema_version, created_at, last_opened_at FROM vault"),
     );
@@ -3158,6 +3220,8 @@ const api: CoredrillStorageSpikeApi = {
     ),
   createReusableDocument: async (input) =>
     reusableDocumentCommand.execute(input, careerProfileOperationContext()),
+  deriveJobDocument: async (input) =>
+    documentDerivationCommand.execute(input, careerProfileOperationContext()),
   startApplicationAttempt: async (input) =>
     startApplicationAttemptCommand.execute(input, careerProfileOperationContext()),
   saveDocumentEditorDraft: async (input) =>

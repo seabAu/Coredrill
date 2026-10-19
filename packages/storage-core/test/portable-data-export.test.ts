@@ -402,7 +402,7 @@ describe("portable human-readable data export", () => {
       sourceSchemaVersion: 154,
       generatedAt: GENERATED_AT,
       vaultId: VAULT_ID,
-      datasetCount: PORTABLE_DATA_EXPORT_DATASETS.length,
+      datasetCount: 56,
       rowCount: 11,
     });
     expect(bundle.datasetCount).toBe(56);
@@ -460,6 +460,45 @@ describe("portable human-readable data export", () => {
     expect(textFile(bundle, "data/job.csv")).toBe(await csvFixtureText("job.csv"));
     expect(textFile(bundle, "data/field_value.json")).toBe(await fixtureText("field_value.json"));
     expect(textFile(bundle, "data/field_value.csv")).toBe(await csvFixtureText("field_value.csv"));
+  });
+
+  it("exports exact derivation origins at schema 158 without inventing origins for schema 154", async () => {
+    const database = new FixtureDatabase();
+    database.schemaVersion = 158;
+    const origin = {
+      document_id: DOCUMENT_ID,
+      first_version_id: DOCUMENT_VERSION_ID,
+      source_version_id: "0198e102-0000-7000-8000-000000000099",
+      created_at: GENERATED_AT,
+    };
+    database.rows.set("document_derivation_origin", [origin]);
+    const bundle = await createPortableDataExportV1({
+      database,
+      generatedAt: GENERATED_AT,
+      vaultId: VAULT_ID,
+    });
+    expect(bundle.sourceSchemaVersion).toBe(158);
+    expect(bundle.datasetCount).toBe(PORTABLE_DATA_EXPORT_DATASETS.length);
+    expect(bundle.dataFiles).toHaveLength(114);
+    expect(
+      bundle.datasets.find((item) => item.dataset === "document_derivation_origin")?.rows,
+    ).toEqual([origin]);
+    expect(textFile(bundle, "data/document_derivation_origin.json")).toContain(
+      origin.source_version_id,
+    );
+    expect(textFile(bundle, "data/document_derivation_origin.csv")).toContain(
+      origin.source_version_id,
+    );
+    database.schemaVersion = 154;
+    const historical = await createPortableDataExportV1({
+      database,
+      generatedAt: GENERATED_AT,
+      vaultId: VAULT_ID,
+    });
+    expect(historical.datasetCount).toBe(56);
+    expect(
+      historical.datasets.find((item) => item.dataset === "document_derivation_origin"),
+    ).toBeUndefined();
   });
 
   it("gates later evidence datasets when exporting supported historical schemas", async () => {
