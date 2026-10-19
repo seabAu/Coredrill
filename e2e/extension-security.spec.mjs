@@ -138,11 +138,32 @@ test("keeps malicious prompt text inert across redirect, iframe, and SPA changes
     expect(JSON.stringify(firstSnapshot)).not.toContain("Iframe override");
     expect(requests).not.toContain(exfilUrl);
 
+    // Exercise expiry against the real worker clock without dating the success fixture.
+    const expired = await sendInternal(extensionPage, {
+      type: "capture.queue-draft.v1",
+      draft: {
+        specVersion: 1,
+        capturedAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+        snapshot: firstSnapshot,
+      },
+    });
+    expect(expired).toMatchObject({
+      success: false,
+      type: "extension.error.v1",
+      code: "envelope_expired",
+    });
+    const afterExpired = await extensionPage.evaluate(async () => {
+      const values = await globalThis.chrome.storage.local.get("coredrill.extension.state.v1");
+      return values["coredrill.extension.state.v1"];
+    });
+    expect(afterExpired?.outbox.items ?? []).toHaveLength(0);
+
+    const capturedAt = new Date().toISOString();
     const queued = await sendInternal(extensionPage, {
       type: "capture.queue-draft.v1",
       draft: {
         specVersion: 1,
-        capturedAt: "2026-09-27T05:00:00.000Z",
+        capturedAt,
         snapshot: firstSnapshot,
       },
     });
@@ -173,6 +194,7 @@ test("keeps malicious prompt text inert across redirect, iframe, and SPA changes
     });
     expect(stored.outbox.items).toHaveLength(1);
     expect(stored.outbox.items[0].envelope).toMatchObject({
+      capturedAt,
       source: { url: jobUrl },
       content: { selectedText: firstSelectedText },
       fieldCandidates: [
@@ -191,6 +213,7 @@ test("keeps malicious prompt text inert across redirect, iframe, and SPA changes
         crossOriginIframeIgnored: true,
         spaRecaptureObservedCurrentDocument: true,
         queuedSnapshotRemainedImmutable: true,
+        expiredDraftRejectedWithoutQueuing: true,
         exfiltrationRequests: requests.filter((url) => url === exfilUrl).length,
       })}`,
     );
