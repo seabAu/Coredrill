@@ -3,10 +3,13 @@ import {
   AppliedStageError,
   MutationUndoError,
   createPipelineQueryOperations,
+  createJobTimelineQuery,
+  JobTimelineError,
 } from "@coredrill/application";
 import { createDatabaseMutationUndoPort } from "./application-ports.js";
 import { createAppliedStageRepository } from "./applied-stage-repository.js";
 import { createPipelineQueryRepository } from "./pipeline-query-repository.js";
+import { createJobTimelineRepository } from "./job-timeline-repository.js";
 
 import {
   DatabaseContractViolation,
@@ -651,6 +654,108 @@ export const createPipelineRepositoryContractSuite = (
             ),
           () => true,
           "A durable undo audit record was deleted.",
+        );
+        // Exercise the concrete history projection in every shared SQLite adapter.
+        await repositories.interactions.append({
+          id: IDS.interaction,
+          jobId: IDS.job,
+          contactId: null,
+          type: "note.local",
+          occurredAt: APPLIED_AT,
+          direction: "unknown",
+          summary: "Synthetic history text <script> remains inert data.",
+          nextActionAt: null,
+          createdAt: APPLIED_AT,
+          updatedAt: APPLIED_AT,
+        });
+        const timelinePort = createJobTimelineRepository(database);
+        const timeline = createJobTimelineQuery(timelinePort);
+        const historyContext = {
+          operationId: entityId("application-operation", IDS.interaction),
+          initiatedAt: REOPENED_AT,
+        };
+        const first = await timeline.execute({ jobId: IDS.job, limit: 1 }, historyContext);
+        assertContract(
+          first.ok && first.value.items[0]?.id === IDS.rejectedEvent && first.value.hasMore,
+          "Timeline did not bound the snapshot or order the newest event first.",
+        );
+        if (!first.ok || first.value.nextCursor === null)
+          throw new DatabaseContractViolation("Missing history cursor.");
+        const second = await timeline.execute(
+          { jobId: IDS.job, limit: 1, after: first.value.nextCursor },
+          { ...historyContext, initiatedAt: FINAL_UNDO_AT },
+        );
+        assertContract(
+          second.ok &&
+            second.value.asOf === REOPENED_AT &&
+            second.value.items[0]?.kind === "interaction" &&
+            second.value.hasMore,
+          "Timeline pagination lost its snapshot ceiling or deterministic mixed-kind tie.",
+        );
+        if (!second.ok || second.value.nextCursor === null)
+          throw new DatabaseContractViolation("Missing second history cursor.");
+        const third = await timeline.execute(
+          { jobId: IDS.job, limit: 1, after: second.value.nextCursor },
+          historyContext,
+        );
+        const oldest = third.ok ? third.value.items[0] : undefined;
+        assertContract(
+          third.ok &&
+            !third.value.hasMore &&
+            third.value.nextCursor === null &&
+            oldest?.kind === "status" &&
+            oldest.id === IDS.appliedEvent &&
+            oldest.undoneAt === REJECTED_AT &&
+            oldest.fromStatus?.id === IDS.saved &&
+            oldest.toStatus.id === IDS.applied &&
+            oldest.applicationId === IDS.application,
+          "Timeline erased or misrepresented the original undone status event.",
+        );
+        const beforeUndo = await timeline.execute(
+          { jobId: IDS.job },
+          { ...historyContext, initiatedAt: APPLIED_AT },
+        );
+        assertContract(
+          beforeUndo.ok &&
+            beforeUndo.value.items.length === 2 &&
+            beforeUndo.value.items.some((item) => item.kind === "status" && item.undoneAt === null),
+          "Timeline exposed an undo recorded after its snapshot ceiling.",
+        );
+        const firstHistoryCursor = first.value.nextCursor;
+        await expectFailure(
+          () =>
+            timelinePort.listPage({
+              jobId: IDS.job,
+              asOf: REOPENED_AT,
+              includeArchived: false,
+              limit: 1,
+              after: { ...firstHistoryCursor, id: IDS.reminder },
+            }),
+          (error) => error instanceof JobTimelineError && error.code === "cursor_invalidated",
+          "Timeline accepted a missing keyset anchor.",
+        );
+        assertContract(
+          (await repositories.applications.findById(IDS.application))?.currentStatusId ===
+            IDS.rejected && (await repositories.statusEvents.listForJob(IDS.job)).length === 3,
+          "History queries changed current projections or append-only events.",
+        );
+        await database.execute(
+          sqlStatement(
+            "UPDATE job SET archived_at = ?, updated_at = ?, row_version = row_version + 1 WHERE id = ?",
+            [FINAL_UNDO_AT, FINAL_UNDO_AT, IDS.job],
+          ),
+        );
+        const hidden = await timeline.execute({ jobId: IDS.job }, historyContext);
+        const archived = await timeline.execute(
+          { jobId: IDS.job, includeArchived: true },
+          historyContext,
+        );
+        assertContract(
+          !hidden.ok &&
+            hidden.error.code === "not_found" &&
+            archived.ok &&
+            archived.value.items.length === 3,
+          "Timeline ignored explicit archived-job scope.",
         );
       },
     },

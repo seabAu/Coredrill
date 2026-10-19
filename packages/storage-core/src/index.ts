@@ -414,3 +414,4 @@ export {
 export type { SavedViewRecord, SavedViewScope, TagRecord } from "./view-records.js";
 export { createDocumentCreationRepository } from "./document-creation-repository.js";
 export { createApplicationAttemptRepository } from "./application-attempt-repository.js";
+export { createJobTimelineRepository } from "./job-timeline-repository.js";

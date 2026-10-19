@@ -1,5 +1,18 @@
 /** Use-case orchestration and query DTOs over domain ports. */
 export {
+  createJobTimelineQuery,
+  compareJobTimelineItems,
+  JobTimelineError,
+  type JobTimelinePort,
+  type JobTimelinePageDto,
+  type JobTimelineItemDto,
+  type JobTimelineCursor,
+  type JobTimelineKind,
+  type TimelineStatusLabel,
+  type ListJobTimelineInput,
+  type ListJobTimelinePortInput,
+} from "./job-timeline.js";
+export {
   AppliedStageError,
   createAppliedStageCommand,
   type AppliedStagePort,

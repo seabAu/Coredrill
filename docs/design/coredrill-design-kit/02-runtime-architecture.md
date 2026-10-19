@@ -417,6 +417,14 @@ The optional `ChangeStatus` viewed-state tuple is validated before the persisten
 
 ## Application use cases
 
+The stored Timeline prerequisite adds a separate `ListJobTimelineQuery` over a
+read-only `JobTimelinePort`. Shared SQLite composition reads status events and
+interactions transactionally with bounded job-scoped keyset pages. The cursor
+retains its initial operation-time ceiling; consumed undo facts annotate rather
+than erase the original status event. Current stage labels are explicitly not
+historical label snapshots. This does not yet connect the normal Timeline UI;
+see [query proof](../../proof/stored-job-timeline-query-verification.md).
+
 Commands are explicit and transactional:
 
 - `CaptureJob`, `ReviewCapture`, `MergeCapture`, `CreateJob`, `ChangeStatus`.

@@ -29,8 +29,8 @@ The full `pnpm verify` log (`test-results/status-focus-verify.log`, process-loca
 
 The final suite includes all seven ownership unit cases, original Board-only cancellation, cross-view cancellation/confirmation and delayed successful saves preserving search focus. The 320-pixel forced-colors screenshot `table-focus-fallback-320.png` was visually inspected: the named Table retains a visible outline, controls wrap and the same-title remaining row does not receive focus. Automated overflow/axe checks and keyboard Tab continuation pass. This is not manual assistive-technology acceptance.
 
-## Remaining proof
+## Hosted checkpoint and remaining boundaries
 
 After the full run, only proof/ledger text and the helper's usage comment changed. Final formatting, `pnpm check:policy`, `pnpm changeset:status` and `git diff --check` pass (exit 0).
 
-Clean-commit hosted verification remains. No fresh native package benchmark is claimed for this DOM-only refinement; prior package evidence belongs to its own checkpoint. Do not close `Q3-005`, a manual assistive-technology row or a milestone gate on this focus-only refinement.
+Exact commit `c828eb36afa11c3fda17246665463ff3617e0a39` passes every required job in [run 39336936560](https://github.com/seabAu/Coredrill/actions/runs/39336936560): aggregate, exact Chrome/Firefox, extension, Windows/macOS/diagnostic Linux packages and full-history secret scan. This is clean-commit hosted proof for the focus refinement, not completion of the canonical journey. No new local package benchmark is claimed. Do not close `Q3-005`, a manual assistive-technology row or a milestone gate on this focus-only refinement.
