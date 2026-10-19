@@ -35,7 +35,7 @@ export interface PipelineTableStatusOption {
 
 export interface PipelineTableJob {
   readonly appliedDate: string | null;
-  readonly capturedDate: string;
+  readonly capturedDate: string | null;
   readonly company: string;
   readonly disclosedSalary: string | null;
   readonly id: string;
@@ -45,7 +45,7 @@ export interface PipelineTableJob {
   /** Transparent evidence-oriented summary; never an opaque hiring-probability score. */
   readonly matchSummary: string | null;
   readonly nextActionDate: string | null;
-  readonly priority: PipelineTablePriority;
+  readonly priority: PipelineTablePriority | null;
   readonly rowVersion: number;
   readonly source: string;
   readonly status: PipelineTableStatusOption | null;
@@ -362,7 +362,7 @@ export const PipelineTable = ({
       field === "status"
         ? (row.status?.id ?? "")
         : field === "priority"
-          ? row.priority
+          ? (row.priority ?? "")
           : field === "tags"
             ? row.tags.join(", ")
             : (row.nextActionDate ?? "");
@@ -601,11 +601,11 @@ export const PipelineTable = ({
       case "status":
         return editableCell(row, column, row.status?.name ?? "Unassigned");
       case "priority":
-        return editableCell(row, column, row.priority);
+        return editableCell(row, column, row.priority ?? "Unknown");
       case "location-work-mode":
         return `${row.workMode} · ${row.location}`;
       case "disclosed-salary":
-        return displayValue(row.disclosedSalary, "Not disclosed");
+        return displayValue(row.disclosedSalary, "Unknown");
       case "market-band":
         return displayValue(row.marketBand, "No local band");
       case "match-summary":
@@ -613,9 +613,9 @@ export const PipelineTable = ({
       case "source":
         return row.source;
       case "captured-date":
-        return row.capturedDate;
+        return displayValue(row.capturedDate, "Unknown");
       case "applied-date":
-        return displayValue(row.appliedDate, "Not applied");
+        return displayValue(row.appliedDate, "Unknown");
       case "next-action-date":
         return editableCell(row, column, displayValue(row.nextActionDate, "Not set"));
       case "last-interaction":

@@ -4,6 +4,13 @@ import path from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
+// This suite is the explicit synthetic presentation catalog, not stored-record integration.
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    globalThis.coredrillReferenceShellCatalog = true;
+  });
+});
+
 const openShell = async (page, options = {}) => {
   const parameters = new URLSearchParams(options).toString();
   await page.goto(`/app-shell.html${parameters.length > 0 ? `?${parameters}` : ""}`);

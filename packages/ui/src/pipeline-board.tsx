@@ -41,7 +41,7 @@ export interface BoardJobCard {
   readonly lastActivity: string;
   readonly location: string;
   readonly nextAction: string | null;
-  readonly priority: "high" | "normal" | "low";
+  readonly priority: "high" | "normal" | "low" | null;
   readonly title: string;
   readonly warnings: readonly BoardWarningKind[];
   readonly workMode: "hybrid" | "onsite" | "remote" | "unspecified";
@@ -301,7 +301,7 @@ const VirtualBoardColumn = ({
               >
                 {job.title}
               </button>
-              <span data-priority={job.priority}>{job.priority}</span>
+              <span data-priority={job.priority}>{job.priority ?? "Unknown priority"}</span>
               <span
                 aria-hidden="true"
                 className="cd-board-drag-handle"

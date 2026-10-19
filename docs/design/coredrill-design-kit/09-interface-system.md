@@ -169,6 +169,17 @@ Pipeline   [Inbox 3] [Board] [Table] [Discover]     Saved view ▾  Filter  Sort
 - Bulk actions appear only after selection.
 - Search is scoped to jobs/companies in this surface; global search stays in shell.
 
+The normal stored-record shell reads all validated keyset pages before publishing
+its active-job projection, so local title/company search and both presentations
+operate over the same complete loaded corpus rather than silently truncating at
+100 jobs. Loading, empty and retry states do not fall back to reference records.
+Synthetic presentation records require explicit catalog opt-in. Unavailable
+capture/priority facts remain Unknown. Stored move/edit wiring and complete
+production/native entry composition remain separate unfinished integration work.
+Closing a Job workspace returns through its full tab-history depth to the saved
+Pipeline context; opener focus waits for stored rows to finish loading. Switching
+Board/Table updates that history snapshot so reload agrees with the route.
+
 ### Board
 
 Default semantic stages:

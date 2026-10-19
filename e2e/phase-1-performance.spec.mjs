@@ -6,6 +6,13 @@ import { dirname, resolve } from "node:path";
 
 import { expect, test } from "@playwright/test";
 
+// UI timings below intentionally use the reviewed synthetic reference catalog.
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    globalThis.coredrillReferenceShellCatalog = true;
+  });
+});
+
 const fixtureSource = await readFile(
   new URL("../fixtures/storage/benchmark-profile.v1.json", import.meta.url),
   "utf8",

@@ -26,7 +26,7 @@ export interface JobWorkspaceFrameModel {
   readonly company: string;
   readonly id: string;
   readonly nextAction: string | null;
-  readonly priority: "high" | "normal" | "low";
+  readonly priority: "high" | "normal" | "low" | null;
   readonly sourceFreshness: string;
   readonly sourceLabel: string;
   readonly status: string;
@@ -139,7 +139,7 @@ export const JobWorkspaceFrame = ({
           </div>
           <div>
             <dt>Priority</dt>
-            <dd>{model.priority}</dd>
+            <dd>{model.priority ?? "Unknown"}</dd>
           </div>
           <div>
             <dt>Next action</dt>

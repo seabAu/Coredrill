@@ -117,9 +117,9 @@ test("flushes local document navigation, blocks failed Back, and ignores abandon
   await page.getByRole("button", { name: /Search local vault/u }).click();
   await page
     .getByRole("searchbox", { name: "Search local vault", exact: true })
-    .fill("acme research");
-  await page.getByRole("link", { name: /Acme Research/u }).click();
-  await expect(page).toHaveURL(/\/network\/companies\/company-acme$/u);
+    .fill("navigation resume");
+  await page.getByRole("link", { name: /Navigation resume/u }).click();
+  await expect(page).toHaveURL(new RegExp(`/documents/${documentId}$`, "u"));
   const afterSearch = await page.evaluate(
     (id) => globalThis.coredrillStorageSpike.openDocumentEditor(id),
     documentId,

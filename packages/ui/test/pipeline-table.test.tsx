@@ -56,6 +56,21 @@ const renderTable = (
   );
 
 describe("PipelineTable contract", () => {
+  it("labels unavailable priority and capture/application dates as Unknown", () => {
+    const markup = renderToStaticMarkup(
+      createElement(PipelineTable, {
+        columnConfiguration: DEFAULT_PIPELINE_TABLE_COLUMNS.map((column) => ({
+          ...column,
+          visible: true,
+        })),
+        rows: [{ ...row(0), priority: null, capturedDate: null, appliedDate: null }],
+        statusOptions: STATUSES,
+        viewName: "Stored facts",
+      }),
+    );
+    expect(markup.match(/>Unknown</gu)?.length).toBeGreaterThanOrEqual(3);
+    expect(markup).not.toContain("Not applied");
+  });
   it("renders read-only values and unavailable configuration/selection without handlers", () => {
     const markup = renderToStaticMarkup(
       createElement(PipelineTable, {

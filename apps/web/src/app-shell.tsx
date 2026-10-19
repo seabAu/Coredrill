@@ -140,6 +140,12 @@ import {
   storedRequirementReviews,
 } from "./job-comparison-view.js";
 import type { SuppliedCaptureMode } from "./supplied-capture.js";
+import {
+  loadStoredPipelineSnapshot,
+  storedPipelineBoardColumns,
+  storedPipelineTableRow,
+  type StoredPipelineSnapshot,
+} from "./stored-pipeline-view.js";
 
 const REFERENCE_DOCUMENT_PREPARATION_APPLICATION_ID = "0199b300-0000-7000-8000-000000000017";
 
@@ -245,6 +251,8 @@ interface AppShellCatalogApi {
 }
 
 declare global {
+  /** Explicit presentation-fixture opt-in; normal application windows never set this. */
+  var coredrillReferenceShellCatalog: boolean | undefined;
   var coredrillAppShell: AppShellCatalogApi | undefined;
 }
 
@@ -276,6 +284,7 @@ interface PipelineNavigationSnapshot {
 }
 
 interface JobRouteState {
+  readonly pipelineDepth?: number;
   readonly jobId: string;
   readonly mode: JobWorkspaceMode;
   readonly responsiveContextual: boolean;
@@ -457,7 +466,7 @@ const readPipelineSnapshot = (value: unknown): PipelineNavigationSnapshot | null
 
 const readJobHistoryState = (
   value: unknown,
-): Pick<JobRouteState, "mode" | "returnSnapshot"> | null => {
+): Pick<JobRouteState, "mode" | "returnSnapshot" | "pipelineDepth"> | null => {
   if (
     !isRecord(value) ||
     value["kind"] !== JOB_HISTORY_KIND ||
@@ -467,6 +476,13 @@ const readJobHistoryState = (
   }
   return Object.freeze({
     mode: value["mode"],
+    pipelineDepth:
+      typeof value["pipelineDepth"] === "number" &&
+      Number.isSafeInteger(value["pipelineDepth"]) &&
+      value["pipelineDepth"] > 0 &&
+      value["pipelineDepth"] < window.history.length
+        ? value["pipelineDepth"]
+        : 1,
     returnSnapshot: readPipelineSnapshot({
       kind: PIPELINE_HISTORY_KIND,
       snapshot: value["snapshot"],
@@ -1541,14 +1557,18 @@ const jobWorkspaceContentFor = (
             title: "Marked applied",
           }),
         ]),
-    Object.freeze({
-      detail: `Captured from ${job.source.toLocaleLowerCase()}.`,
-      editable: false,
-      id: `${job.id}-captured`,
-      kind: "status" as const,
-      occurredAtLabel: job.capturedDate,
-      title: "Job captured",
-    }),
+    ...(job.capturedDate === null
+      ? []
+      : [
+          Object.freeze({
+            detail: `Captured from ${job.source.toLocaleLowerCase()}.`,
+            editable: false,
+            id: `${job.id}-captured`,
+            kind: "status" as const,
+            occurredAtLabel: job.capturedDate,
+            title: "Job captured",
+          }),
+        ]),
   ]);
   const isCompanySource = job.source === "Company careers page";
   const sourceBasis = isCompanySource
@@ -1612,10 +1632,13 @@ const jobWorkspaceContentFor = (
       extractionLabel: isCompanySource
         ? "Stored candidates await user confirmation."
         : "No extraction was run for this manual entry.",
-      firstSeenAtLabel: job.capturedDate,
-      freshnessLabel: `Captured ${job.capturedDate} · no automatic refresh`,
+      firstSeenAtLabel: job.capturedDate ?? "Unknown",
+      freshnessLabel:
+        job.capturedDate === null
+          ? "Capture time unknown · no automatic refresh"
+          : `Captured ${job.capturedDate} · no automatic refresh`,
       id: `source-${job.id}`,
-      lastSeenAtLabel: job.capturedDate,
+      lastSeenAtLabel: job.capturedDate ?? "Unknown",
       provenance: Object.freeze([
         Object.freeze({ basis: sourceBasis, field: "Title", value: job.title }),
         Object.freeze({ basis: sourceBasis, field: "Company", value: job.company }),
@@ -1707,6 +1730,13 @@ const moveBoardJob = (
 };
 
 const AppShellCatalog = () => {
+  const referenceCatalog = useMemo(() => globalThis.coredrillReferenceShellCatalog === true, []);
+  const [storedPipeline, setStoredPipeline] = useState<StoredPipelineSnapshot | null>(null);
+  const [storedPipelineState, setStoredPipelineState] = useState<"loading" | "ready" | "error">(
+    "loading",
+  );
+  const [storedPipelineRefresh, setStoredPipelineRefresh] = useState(0);
+  const pendingPipelineRestore = useRef<PipelineNavigationSnapshot | null>(null);
   const appearance = useMemo(readAppearance, []);
   const canonicalJourneyMode = useMemo(
     () => new URLSearchParams(window.location.search).get("journey") === "phase-1",
@@ -1725,6 +1755,7 @@ const AppShellCatalog = () => {
       jobId: initialLocation.jobId,
       mode: contextual ? "contextual" : "full-page",
       responsiveContextual: contextual,
+      pipelineDepth: historyState?.pipelineDepth ?? 1,
       returnSnapshot: historyState?.returnSnapshot ?? null,
       tab: initialLocation.tab,
     });
@@ -1749,11 +1780,13 @@ const AppShellCatalog = () => {
     Readonly<Record<string, JobWorkspaceContentModel["requirementEvidence"]>>
   >(() => Object.freeze({ "board-northstar": NORTHSTAR_REQUIREMENT_EVIDENCE }));
   const [boardColumns, setBoardColumns] = useState<readonly BoardColumn[]>(
-    appearance.boardMode === "reference"
-      ? REFERENCE_BOARD_COLUMNS
-      : appearance.boardMode === "large"
-        ? LARGE_BOARD_COLUMNS
-        : STANDARD_BOARD_COLUMNS,
+    !referenceCatalog
+      ? []
+      : appearance.boardMode === "reference"
+        ? REFERENCE_BOARD_COLUMNS
+        : appearance.boardMode === "large"
+          ? LARGE_BOARD_COLUMNS
+          : STANDARD_BOARD_COLUMNS,
   );
   const [boardTimelineEventCount, setBoardTimelineEventCount] = useState(0);
   const [boardUndo, setBoardUndo] = useState<BoardUndoRecord | null>(null);
@@ -1831,7 +1864,7 @@ const AppShellCatalog = () => {
       : null,
   );
   const [pipelineFilters, setPipelineFilters] = useState<readonly PipelineFilterChip[]>(
-    initialPipelineSnapshot?.filters ?? INITIAL_PIPELINE_FILTERS,
+    initialPipelineSnapshot?.filters ?? (referenceCatalog ? INITIAL_PIPELINE_FILTERS : []),
   );
   const [pipelineSavedViewId, setPipelineSavedViewId] = useState(
     PIPELINE_SAVED_VIEWS.some(
@@ -1850,7 +1883,9 @@ const AppShellCatalog = () => {
   const [pipelineSelectedJobIds, setPipelineSelectedJobIds] = useState<readonly string[]>(
     initialPipelineSnapshot?.selectedJobIds ??
       Object.freeze(
-        STANDARD_TABLE_ROWS.slice(0, appearance.pipelineSelectionCount).map(({ id }) => id),
+        referenceCatalog
+          ? STANDARD_TABLE_ROWS.slice(0, appearance.pipelineSelectionCount).map(({ id }) => id)
+          : [],
       ),
   );
   const [pipelineView, setPipelineView] = useState<PipelineViewId>(
@@ -1861,7 +1896,11 @@ const AppShellCatalog = () => {
   const [tableConfigurations, setTableConfigurations] = useState(INITIAL_TABLE_CONFIGURATIONS);
   const [tableEditCount, setTableEditCount] = useState(0);
   const [tableRows, setTableRows] = useState<readonly PipelineTableJob[]>(
-    appearance.tableMode === "large" ? LARGE_TABLE_ROWS : STANDARD_TABLE_ROWS,
+    !referenceCatalog
+      ? []
+      : appearance.tableMode === "large"
+        ? LARGE_TABLE_ROWS
+        : STANDARD_TABLE_ROWS,
   );
   const [suppliedCaptureCount, setSuppliedCaptureCount] = useState(0);
   const [captureInboxCount, setCaptureInboxCount] = useState(0);
@@ -1893,6 +1932,35 @@ const AppShellCatalog = () => {
   >({});
   const storedJobId = workspaceRoute?.jobId;
   useEffect(() => {
+    if (referenceCatalog) return;
+    const controller = new AbortController();
+    setStoredPipelineState("loading");
+    void loadStoredPipelineSnapshot(globalThis.coredrillStorageSpike.pipeline, controller.signal)
+      .then((snapshot) => {
+        if (controller.signal.aborted) return;
+        setStoredPipeline(snapshot);
+        setBoardColumns(storedPipelineBoardColumns(snapshot));
+        setTableRows(snapshot.jobs.map(storedPipelineTableRow));
+        setStoredPipelineState("ready");
+        const pending = pendingPipelineRestore.current;
+        pendingPipelineRestore.current = null;
+        if (activeDestination === "pipeline" && pending !== null) restorePipelineSnapshot(pending);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setStoredPipelineState("error");
+      });
+    return () => {
+      controller.abort();
+    };
+  }, [
+    referenceCatalog,
+    activeDestination,
+    pipelineView,
+    storedJobId,
+    capturePreviewRefreshVersion,
+    storedPipelineRefresh,
+  ]);
+  useEffect(() => {
     if (storedJobId === undefined || !/^[a-f0-9-]{36}$/u.test(storedJobId)) {
       setStoredJob(null);
       return;
@@ -1920,7 +1988,9 @@ const AppShellCatalog = () => {
     canonicalJourneyMode
       ? "Canonical recovery rehearsal ready. No account, network, or AI is required."
       : appearance.workspaceState === null
-        ? "Shell ready. All displayed records are synthetic."
+        ? referenceCatalog
+          ? "Shell ready. All displayed records are synthetic."
+          : "Local workspace ready. No account or AI is required."
         : `State proof ready: ${appearance.workspaceState}. All displayed records are synthetic.`,
   );
   const documentLeaveGuard = useRef<(() => Promise<void>) | null>(null);
@@ -2008,8 +2078,25 @@ const AppShellCatalog = () => {
     attention: readyHomeAttention,
     week: readyHomeWeek,
   });
-  const homeModel: HomeDashboardModel =
-    appearance.homeMode === "empty"
+  const homeModel: HomeDashboardModel = !referenceCatalog
+    ? captureInboxCount === 0 && (storedPipeline?.jobs.length ?? 0) === 0
+      ? EMPTY_HOME_MODEL
+      : {
+          state: "ready",
+          agendaSummary: "Local jobs and captures",
+          now: [],
+          attention: readyHomeAttention.filter((item) => item.kind === "capture-review"),
+          week: [],
+          snapshot: null,
+          recent: (storedPipeline?.jobs ?? []).slice(0, 5).map((job) => ({
+            id: job.id,
+            kind: "job",
+            title: job.title,
+            context: job.company?.name ?? "Unknown company",
+            href: jobUrl(job.id, "overview"),
+          })),
+        }
+    : appearance.homeMode === "empty"
       ? EMPTY_HOME_MODEL
       : homeSnapshotVisible
         ? readyHomeModel
@@ -2062,7 +2149,9 @@ const AppShellCatalog = () => {
     workspaceRoute === null
       ? undefined
       : (tableRows.find(({ id }) => id === workspaceRoute.jobId) ??
-        STANDARD_TABLE_ROWS.find(({ id }) => id === workspaceRoute.jobId) ??
+        (referenceCatalog
+          ? STANDARD_TABLE_ROWS.find(({ id }) => id === workspaceRoute.jobId)
+          : undefined) ??
         (storedJob?.jobId === workspaceRoute.jobId ? storedJobTableRow(storedJob) : undefined));
   const workspaceModel: JobWorkspaceFrameModel | null =
     workspaceJob === undefined
@@ -2073,7 +2162,10 @@ const AppShellCatalog = () => {
           nextAction:
             workspaceJob.nextActionDate === null ? null : `Due ${workspaceJob.nextActionDate}`,
           priority: workspaceJob.priority,
-          sourceFreshness: `Captured ${workspaceJob.capturedDate}`,
+          sourceFreshness:
+            workspaceJob.capturedDate === null
+              ? "Capture time unknown"
+              : `Captured ${workspaceJob.capturedDate}`,
           sourceLabel: workspaceJob.source,
           status:
             applicationSubmissionReview?.jobId === workspaceJob.id
@@ -2120,7 +2212,9 @@ const AppShellCatalog = () => {
     filters: pipelineFilters,
     inboxCount: captureInboxCount,
     matchingCount: pipelineMatchingCount,
-    savedViews: PIPELINE_SAVED_VIEWS,
+    savedViews: referenceCatalog
+      ? PIPELINE_SAVED_VIEWS
+      : [{ id: pipelineSavedViewId, label: "All active jobs" }],
     searchQuery: pipelineSearchQuery,
     selectedCount: pipelineSelectedCount,
     sortLabel: "Recently updated",
@@ -3144,6 +3238,11 @@ const AppShellCatalog = () => {
     setPipelineSearchQuery(snapshot.searchQuery);
     setPipelineSelectedJobIds(snapshot.selectedJobIds);
     setPipelineView(snapshot.view);
+    if (!referenceCatalog && workspaceRoute !== null) {
+      // The real query temporarily unmounts rows; restore focus only after they return.
+      pendingPipelineRestore.current = snapshot;
+      return;
+    }
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => {
         const boardColumns = document.querySelector<HTMLElement>(".cd-board-columns");
@@ -3187,7 +3286,7 @@ const AppShellCatalog = () => {
       pipelineUrl(pipelineView, pipelineSavedViewId),
     );
     navigationHistory.pushState(
-      { kind: JOB_HISTORY_KIND, mode, snapshot },
+      { kind: JOB_HISTORY_KIND, mode, snapshot, pipelineDepth: 1 },
       "",
       jobUrl(jobId, "overview"),
     );
@@ -3195,6 +3294,7 @@ const AppShellCatalog = () => {
       jobId,
       mode,
       responsiveContextual: mode === "contextual",
+      pipelineDepth: 1,
       returnSnapshot: snapshot,
       tab: "overview",
     });
@@ -3216,7 +3316,7 @@ const AppShellCatalog = () => {
       navigateToPipelineFallback();
       return;
     }
-    window.history.back();
+    window.history.go(-(workspaceRoute.pipelineDepth ?? 1));
   };
 
   const changeWorkspaceTab = (tab: JobWorkspaceTabId): void => {
@@ -3226,11 +3326,16 @@ const AppShellCatalog = () => {
         kind: JOB_HISTORY_KIND,
         mode: workspaceRoute.mode,
         snapshot: workspaceRoute.returnSnapshot,
+        pipelineDepth: (workspaceRoute.pipelineDepth ?? 1) + 1,
       },
       "",
       jobUrl(workspaceRoute.jobId, tab),
     );
-    setWorkspaceRoute({ ...workspaceRoute, tab });
+    setWorkspaceRoute({
+      ...workspaceRoute,
+      tab,
+      pipelineDepth: (workspaceRoute.pipelineDepth ?? 1) + 1,
+    });
     setLastActivity(`Opened local Job workspace tab: ${tab}.`);
   };
 
@@ -3764,6 +3869,7 @@ const AppShellCatalog = () => {
             jobId: location.jobId,
             mode,
             responsiveContextual: historyState?.mode === "contextual",
+            pipelineDepth: historyState?.pipelineDepth ?? 1,
             returnSnapshot: historyState?.returnSnapshot ?? null,
             tab: location.tab,
           });
@@ -4006,6 +4112,51 @@ const AppShellCatalog = () => {
     setLastActivity(message);
   };
 
+  const renderWorkspaceContent = () => {
+    if (
+      workspaceRoute === null ||
+      workspaceContentModel === null ||
+      !isJobWorkspaceContentTab(workspaceRoute.tab)
+    )
+      return null;
+    if (referenceCatalog || workspaceRoute.tab === "requirements") {
+      return (
+        <JobWorkspaceContent
+          activeTab={workspaceRoute.tab}
+          model={workspaceContentModel}
+          onAction={recordWorkspaceContentAction}
+        />
+      );
+    }
+    if (workspaceRoute.tab === "overview") {
+      return (
+        <section aria-label="Stored job overview">
+          <h2>Stored job details</h2>
+          <p>{storedJob?.description ?? "Loading stored job details…"}</p>
+          <p>
+            Additional normalized facts and history are not connected to this workspace view yet. No
+            sample source, contact, or timeline data is substituted.
+          </p>
+        </section>
+      );
+    }
+    return (
+      <section aria-label="Stored job view unavailable">
+        <h2>
+          {workspaceRoute.tab === "source"
+            ? "Source and provenance"
+            : workspaceRoute.tab === "timeline"
+              ? "Timeline"
+              : "Company and contacts"}
+        </h2>
+        <p>
+          This stored-record view is not connected yet. Retained data remains in the local vault;
+          reference catalog content is not shown as your data.
+        </p>
+      </section>
+    );
+  };
+
   return (
     <ApplicationShell
       activeDestination={activeDestination}
@@ -4021,8 +4172,27 @@ const AppShellCatalog = () => {
           openGlobalSearchResult(result);
         });
       }}
-      outboxCount={2}
-      searchResults={SEARCH_RESULTS}
+      outboxCount={referenceCatalog ? 2 : 0}
+      searchResults={
+        referenceCatalog
+          ? SEARCH_RESULTS
+          : [
+              ...(storedPipeline?.jobs ?? []).map((job) => ({
+                id: job.id,
+                kind: "job" as const,
+                title: job.title,
+                context: job.company?.name ?? "Unknown company",
+                href: jobUrl(job.id, "overview"),
+              })),
+              ...documents.map((document) => ({
+                id: document.id,
+                kind: "document" as const,
+                title: document.title,
+                context: "Stored local document",
+                href: `/documents/${document.id}`,
+              })),
+            ]
+      }
       vault={{
         health: appearance.workspaceState === "offline" ? "offline" : appearance.vaultHealth,
         kind: "browser",
@@ -4111,11 +4281,7 @@ const AppShellCatalog = () => {
                   }}
                 />
               ) : workspaceContentModel !== null && isJobWorkspaceContentTab(workspaceRoute.tab) ? (
-                <JobWorkspaceContent
-                  activeTab={workspaceRoute.tab}
-                  model={workspaceContentModel}
-                  onAction={recordWorkspaceContentAction}
-                />
+                renderWorkspaceContent()
               ) : undefined}
             </JobWorkspaceFrame>
           ) : (
@@ -4167,8 +4333,20 @@ const AppShellCatalog = () => {
                     setCapturePreviewRefreshVersion((version) => version + 1);
                   }
                   if (workspaceRoute === null) {
+                    const previous = readPipelineSnapshot(window.history.state);
+                    const snapshot =
+                      previous === null
+                        ? null
+                        : {
+                            ...capturePipelineSnapshot(previous.focus),
+                            view,
+                            focus: {
+                              ...previous.focus,
+                              source: view === "table" ? ("table" as const) : ("board" as const),
+                            },
+                          };
                     navigationHistory.replaceState(
-                      window.history.state,
+                      { kind: PIPELINE_HISTORY_KIND, snapshot },
                       "",
                       pipelineUrl(view, pipelineSavedViewId),
                     );
@@ -4288,36 +4466,78 @@ const AppShellCatalog = () => {
                       </section>
                     )}
                   </>
+                ) : !referenceCatalog && storedPipelineState !== "ready" ? (
+                  <section aria-label="Stored Pipeline status">
+                    <p role="status">
+                      {storedPipelineState === "loading"
+                        ? "Loading local jobs…"
+                        : "The local Pipeline changed or could not be loaded. Try again."}
+                    </p>
+                    {storedPipelineState === "error" ? (
+                      <button
+                        type="button"
+                        className="cd-button"
+                        onClick={() => {
+                          setStoredPipelineRefresh((value) => value + 1);
+                        }}
+                      >
+                        Retry local Pipeline
+                      </button>
+                    ) : null}
+                  </section>
                 ) : pipelineView === "board" ? (
-                  <PipelineBoard
-                    announcement={boardAnnouncement}
-                    columns={filteredBoardColumns}
-                    onMoveRequest={requestBoardMove}
-                    onOpenJob={(job) => {
-                      openJobWorkspace(job.id, "board");
-                    }}
-                    onUndo={undoBoardMove}
-                    undo={
-                      boardUndo === null
-                        ? null
+                  <>
+                    {!referenceCatalog && tableRows.length === 0 ? (
+                      <p role="status">
+                        No stored jobs yet. Use Add to capture a job, then review and save it.
+                      </p>
+                    ) : null}
+                    <PipelineBoard
+                      announcement={boardAnnouncement}
+                      columns={filteredBoardColumns}
+                      {...(referenceCatalog
+                        ? { onMoveRequest: requestBoardMove }
                         : {
-                            description: `${boardUndo.title} moved. The original timeline event will remain if you undo.`,
-                          }
-                    }
-                  />
+                            moveUnavailableReason:
+                              "Stage moves are not connected in this view yet. Start preparation or use the job workspace's reviewed actions.",
+                          })}
+                      onOpenJob={(job) => {
+                        openJobWorkspace(job.id, "board");
+                      }}
+                      {...(referenceCatalog ? { onUndo: undoBoardMove } : {})}
+                      undo={
+                        boardUndo === null
+                          ? null
+                          : {
+                              description: `${boardUndo.title} moved. The original timeline event will remain if you undo.`,
+                            }
+                      }
+                    />
+                  </>
                 ) : (
                   <PipelineTable
                     columnConfiguration={tableConfiguration}
-                    onColumnConfigurationChange={(configuration) => {
-                      setTableConfigurations((current) =>
-                        Object.freeze({ ...current, [pipelineSavedViewId]: configuration }),
-                      );
-                      setTableColumnSaveCount((count) => count + 1);
-                      setLastActivity(
-                        `Saved Table columns for ${PIPELINE_SAVED_VIEWS.find(({ id }) => id === pipelineSavedViewId)?.label ?? "this local view"}.`,
-                      );
-                    }}
-                    onEditRequest={requestTableEdit}
+                    {...(referenceCatalog
+                      ? {
+                          onColumnConfigurationChange: (
+                            configuration: readonly PipelineTableColumnConfiguration[],
+                          ) => {
+                            setTableConfigurations((current) =>
+                              Object.freeze({ ...current, [pipelineSavedViewId]: configuration }),
+                            );
+                            setTableColumnSaveCount((count) => count + 1);
+                            setLastActivity(
+                              `Saved Table columns for ${PIPELINE_SAVED_VIEWS.find(({ id }) => id === pipelineSavedViewId)?.label ?? "this local view"}.`,
+                            );
+                          },
+                        }
+                      : {})}
+                    {...(referenceCatalog
+                      ? { onEditRequest: requestTableEdit }
+                      : {
+                          editUnavailableReason:
+                            "Inline edits are not connected to local commands yet. Open the job to prepare an application.",
+                        })}
                     onOpenJob={(job) => {
                       openJobWorkspace(job.id, "table");
                     }}
@@ -4333,10 +4553,25 @@ const AppShellCatalog = () => {
                     }}
                     rows={filteredTableRows}
                     selectedJobIds={visiblePipelineSelectedJobIds}
-                    statusOptions={TABLE_STATUS_OPTIONS}
+                    statusOptions={
+                      referenceCatalog
+                        ? TABLE_STATUS_OPTIONS
+                        : (storedPipeline?.groups ?? []).flatMap((group) =>
+                            group.statusId === null
+                              ? []
+                              : [
+                                  {
+                                    id: group.statusId,
+                                    name: group.name,
+                                    terminal: group.terminal,
+                                  },
+                                ],
+                          )
+                    }
                     viewName={
-                      PIPELINE_SAVED_VIEWS.find(({ id }) => id === pipelineSavedViewId)?.label ??
-                      "Current view"
+                      (referenceCatalog
+                        ? PIPELINE_SAVED_VIEWS.find(({ id }) => id === pipelineSavedViewId)?.label
+                        : "All active jobs") ?? "Current view"
                     }
                   />
                 )}
@@ -4391,11 +4626,7 @@ const AppShellCatalog = () => {
                     />
                   ) : workspaceContentModel !== null &&
                     isJobWorkspaceContentTab(workspaceRoute.tab) ? (
-                    <JobWorkspaceContent
-                      activeTab={workspaceRoute.tab}
-                      model={workspaceContentModel}
-                      onAction={recordWorkspaceContentAction}
-                    />
+                    renderWorkspaceContent()
                   ) : undefined}
                 </JobWorkspaceFrame>
               ) : null}
@@ -4485,6 +4716,14 @@ const AppShellCatalog = () => {
               }}
             />
           )
+        ) : activeDestination === "network" && !referenceCatalog ? (
+          <section aria-label="Stored Network view unavailable">
+            <h2>Company and contact navigation</h2>
+            <p>
+              Stored Network navigation is not connected yet. Reference companies and contacts are
+              not shown as your data.
+            </p>
+          </section>
         ) : activeDestination === "network" ? (
           <NetworkWorkspace
             activeTab={networkTab}
