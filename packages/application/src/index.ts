@@ -1,5 +1,13 @@
 /** Use-case orchestration and query DTOs over domain ports. */
 export {
+  AppliedStageError,
+  createAppliedStageCommand,
+  type AppliedStagePort,
+  type AppliedStagePortInput,
+  type CreatedAppliedStageDto,
+  type CreateAppliedStageInput,
+} from "./applied-stage.js";
+export {
   createDeriveJobDocumentCommand,
   DocumentDerivationError,
   type DeriveJobDocumentInput,

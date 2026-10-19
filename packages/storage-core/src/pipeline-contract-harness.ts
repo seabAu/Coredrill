@@ -1,4 +1,6 @@
 import { dateOnly, entityId, instant, timeZone } from "@coredrill/domain";
+import { AppliedStageError } from "@coredrill/application";
+import { createAppliedStageRepository } from "./applied-stage-repository.js";
 
 import {
   DatabaseContractViolation,
@@ -164,6 +166,40 @@ export const createPipelineRepositoryContractSuite = (
         const repositories = createPipelineRepositories(database);
         const storedStatus = await repositories.statusDefinitions.findById(IDS.saved);
         const storedApplication = await repositories.applications.findById(IDS.application);
+        const stageInput = {
+          id: entityId("status_definition", "0198e103-0000-7000-8000-000000000020"),
+          name: "Explicit submitted stage",
+          createdAt: CREATED_AT,
+        };
+        const stages = createAppliedStageRepository(database);
+        const created = (await stages.create(stageInput)) as { id: string; created: boolean };
+        const reused = (await stages.create({
+          ...stageInput,
+          id: entityId("status_definition", "0198e103-0000-7000-8000-000000000021"),
+        })) as { id: string; created: boolean };
+        assertContract(
+          created.id === stageInput.id &&
+            created.created &&
+            reused.id === stageInput.id &&
+            !reused.created,
+          "Explicit Applied stage creation/reuse did not retain identity.",
+        );
+        await expectFailure(
+          () => stages.create({ ...stageInput, name: "Synthetic review queue" }),
+          (error) => error instanceof AppliedStageError && error.code === "conflict",
+          "Applied stage creation reused an incompatible category.",
+        );
+        assertContract(
+          JSON.stringify(await repositories.applications.findById(IDS.application)) ===
+            JSON.stringify(storedApplication),
+          "Stage creation changed application selections or submission state.",
+        );
+        const unchangedJob = await createTrackerRepositories(database).jobs.findById(IDS.job);
+        assertContract(
+          unchangedJob?.currentStatusId === IDS.saved &&
+            (await database.query(sqlStatement("SELECT id FROM status_event"))).length === 0,
+          "Stage creation changed job status or timeline.",
+        );
         assertContract(
           storedStatus?.name === "Synthetic review queue" && !storedStatus.isSystem,
           "Custom status definition did not round-trip.",

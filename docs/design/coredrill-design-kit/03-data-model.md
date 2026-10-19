@@ -157,6 +157,13 @@ stage-name, or existing-active-attempt cases fail without partial writes.
 This does not select default stage names, reopen a closed job, authorize an
 additional attempt, or submit an application.
 
+Applied-stage creation is a separate global configuration transaction. An explicit
+user name creates a nonterminal, user-owned Applied-category definition after the
+last stored sort order, or reuses the exact compatible active name. Archived,
+terminal, differently cased, incompatible or ambiguous matches fail without
+mutations. It never changes jobs, attempts, selections, timeline events or
+submitted snapshots. No default stage names or new schema are introduced.
+
 ### Local diagnostics
 
 `diagnostic_event(event_id, spec_version, occurred_at, app_version, delivery, category, name, severity, outcome, operation_id, code, duration_ms, attributes_json, redacted_attribute_count)`

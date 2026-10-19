@@ -73,7 +73,16 @@ test("keeps the production shell offline and applies a waiting update without to
     await expect(page.getByTestId("offline-shell-notice")).toContainText(
       "A Coredrill update is ready",
     );
-    await page.getByRole("button", { name: "Reload update" }).click();
+    // The old document already satisfies the readiness predicate below. Observe
+    // the requested reload before inspecting the replacement document or OPFS.
+    await page.evaluate(() => {
+      globalThis.coredrillUpdateDocumentWitness = "before-update";
+    });
+    await Promise.all([
+      page.waitForEvent("load"),
+      page.getByRole("button", { name: "Reload update" }).click(),
+    ]);
+    expect(await page.evaluate(() => globalThis.coredrillUpdateDocumentWitness)).toBeUndefined();
     await page.waitForFunction(
       () =>
         globalThis.coredrillAppShell !== undefined &&

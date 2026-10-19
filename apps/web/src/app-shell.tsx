@@ -1,5 +1,6 @@
 import {
   ApplicationAttemptForm,
+  AppliedStageForm,
   ApplicationShell,
   BrowserVaultBackupSettings,
   CareerProfileWorkspace,
@@ -2419,6 +2420,26 @@ const AppShellCatalog = () => {
       />
     ) : null;
 
+  const appliedStageCreation =
+    storedJob !== null &&
+    storedJob.jobId === workspaceRoute?.jobId &&
+    storedJob.applicationId !== null ? (
+      <AppliedStageForm
+        key={`applied-stage-${storedJob.applicationId}`}
+        disabled={applicationSubmissionLoading}
+        onCreate={async (name) => {
+          const result = await globalThis.coredrillStorageSpike.createAppliedStage({ name });
+          if (result.ok) {
+            setApplicationSubmissionLoadedFor(null);
+            setLastActivity(
+              "Saved an Applied-category stage locally. No application was marked Applied.",
+            );
+          }
+          return result;
+        }}
+      />
+    ) : null;
+
   useEffect(() => {
     if (
       activeDestination !== "pipeline" ||
@@ -4055,6 +4076,7 @@ const AppShellCatalog = () => {
               {workspaceRoute.tab === "documents" ? (
                 <JobDocumentPreparation
                   applicationStart={applicationAttemptStart}
+                  appliedStageCreation={appliedStageCreation}
                   {...(storedJob?.jobId === workspaceRoute.jobId
                     ? { onDeriveDocument: deriveJobDocument }
                     : {})}
@@ -4333,6 +4355,7 @@ const AppShellCatalog = () => {
                   {workspaceRoute.tab === "documents" ? (
                     <JobDocumentPreparation
                       applicationStart={applicationAttemptStart}
+                      appliedStageCreation={appliedStageCreation}
                       {...(storedJob?.jobId === workspaceRoute.jobId
                         ? { onDeriveDocument: deriveJobDocument }
                         : {})}

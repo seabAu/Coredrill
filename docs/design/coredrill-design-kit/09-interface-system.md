@@ -182,6 +182,13 @@ Default semantic stages:
 
 Closed contains Rejected, Withdrawn, Expired, and Declined outcomes. Users may create/reorder display stages, but each maps to one semantic category so insights remain coherent.
 
+For an actual unsubmitted application, document preparation offers a separate
+explicitly named Applied-stage creation form. It preserves the name on failure,
+distinguishes creation from reuse, and refreshes eligible submission-stage choices.
+This configures the vault only; it does not select documents, change job status or
+record a submission. Mark Applied remains its own reviewed confirmation. Default
+display-stage terminology remains subject to the outstanding validation gate.
+
 Card minimum:
 
 - title and company;

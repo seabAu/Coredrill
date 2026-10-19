@@ -13,6 +13,9 @@ import {
   createDeriveJobDocumentCommand,
   type DeriveJobDocumentInput,
   createStartApplicationAttemptCommand,
+  createAppliedStageCommand,
+  type CreateAppliedStageInput,
+  type CreatedAppliedStageDto,
   createApplicationDocumentPreparationOperations,
   createApplicationSubmissionOperations,
   createDocumentsWorkspaceOperations,
@@ -113,6 +116,7 @@ import {
   createDocumentWorkspaceRepository,
   createDocumentEditorRepository,
   createDocumentCreationRepository,
+  createAppliedStageRepository,
   createDocumentDerivationRepository,
   createApplicationAttemptRepository,
   createApplicationDocumentPreparationRepository,
@@ -451,6 +455,9 @@ export interface TemplateCoverLetterVersionResult {
 }
 
 export interface CoredrillStorageSpikeApi {
+  createAppliedStage(
+    input: CreateAppliedStageInput,
+  ): Promise<ApplicationResult<CreatedAppliedStageDto>>;
   deriveJobDocument(
     input: DeriveJobDocumentInput,
   ): Promise<ApplicationResult<CreatedReusableDocumentDto>>;
@@ -1426,6 +1433,17 @@ const startApplicationAttemptCommand = createStartApplicationAttemptCommand({
     },
   },
   createId: (kind) => generateEntityId(kind),
+});
+
+const appliedStageCommand = createAppliedStageCommand({
+  stages: {
+    create: async (input) => {
+      const database = await getDatabase();
+      await applySqlMigrations(database, await migrations(), MIGRATION_APPLIED_AT);
+      return createAppliedStageRepository(database).create(input);
+    },
+  },
+  createId: () => generateEntityId("status_definition"),
 });
 
 const templateCoverLetterFailure = (
@@ -3224,6 +3242,8 @@ const api: CoredrillStorageSpikeApi = {
     documentDerivationCommand.execute(input, careerProfileOperationContext()),
   startApplicationAttempt: async (input) =>
     startApplicationAttemptCommand.execute(input, careerProfileOperationContext()),
+  createAppliedStage: async (input) =>
+    appliedStageCommand.execute(input, careerProfileOperationContext()),
   saveDocumentEditorDraft: async (input) =>
     documentEditorOperations.saveDraftCommand.execute(input, careerProfileOperationContext()),
   createDocumentEditorVersion: async (input) =>

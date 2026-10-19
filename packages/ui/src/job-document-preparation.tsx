@@ -67,6 +67,7 @@ export interface JobDocumentPreparationProps {
     input: DeriveJobDocumentInput,
   ) => Promise<ApplicationResult<CreatedReusableDocumentDto>>;
   readonly applicationStart?: ReactNode;
+  readonly appliedStageCreation?: ReactNode;
   readonly model: JobDocumentPreparationModel;
   readonly submissionModel?: ApplicationSubmissionReviewModel;
   readonly onMarkApplied?: (input: MarkApplicationAppliedInput) => void;
@@ -161,6 +162,7 @@ const SelectedSummary = ({
 export const JobDocumentPreparation = ({
   onDeriveDocument,
   applicationStart,
+  appliedStageCreation,
   model,
   submissionModel,
   onMarkApplied,
@@ -277,6 +279,8 @@ export const JobDocumentPreparation = ({
               be changed; the exact submitted set remains separate from current document versions.
             </aside>
           ) : null}
+
+          {preparation.submitted ? null : appliedStageCreation}
 
           {preparation.submitted || onDeriveDocument === undefined ? null : (
             <DocumentDerivationForm

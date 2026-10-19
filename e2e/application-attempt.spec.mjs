@@ -100,6 +100,80 @@ test("starts a durable local application from a manually captured job without se
     return result.value;
   }, comparison.applicationId);
   expect(after).toEqual(before);
+  const appliedStage = page.getByRole("form", { name: "Create local Applied stage", exact: true });
+  await expect(appliedStage).toBeVisible();
+  await appliedStage.getByLabel("Applied stage name", { exact: true }).fill("My submitted stage");
+  // Fault witness only; retry restores the real storage command.
+  await page.evaluate(() => {
+    const api = globalThis.coredrillStorageSpike;
+    globalThis.coredrillStorageSpike = {
+      ...api,
+      createAppliedStage: async () => {
+        globalThis.coredrillStorageSpike = api;
+        return {
+          ok: false,
+          error: {
+            code: "unavailable",
+            message: "Synthetic local failure; keep the name.",
+            retryable: true,
+          },
+        };
+      },
+    };
+  });
+  await appliedStage
+    .getByRole("button", { name: "Create Applied stage locally", exact: true })
+    .click();
+  await expect(appliedStage.getByRole("alert")).toContainText("keep the name");
+  await expect(appliedStage.getByLabel("Applied stage name", { exact: true })).toHaveValue(
+    "My submitted stage",
+  );
+  await appliedStage
+    .getByRole("button", { name: "Create Applied stage locally", exact: true })
+    .click();
+  await expect(appliedStage.getByRole("status")).toContainText(
+    "Created Applied stage: My submitted stage",
+  );
+  const stageReview = await page.evaluate(async (id) => {
+    const result = await globalThis.coredrillStorageSpike.loadApplicationSubmissionReview(id);
+    if (!result.ok) throw new Error(result.error.code);
+    return result.value;
+  }, comparison.applicationId);
+  expect(stageReview.appliedStatuses).toHaveLength(1);
+  expect(stageReview.appliedStatuses[0].name).toBe("My submitted stage");
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  const stageScreenshot = testInfo.outputPath("applied-stage-320.png");
+  await page.screenshot({ path: stageScreenshot, fullPage: true });
+  await testInfo.attach("applied-stage-320.png", {
+    path: stageScreenshot,
+    contentType: "image/png",
+  });
+  await page.reload();
+  await expect(appliedStage).toBeVisible();
+  await appliedStage.getByLabel("Applied stage name", { exact: true }).fill("My submitted stage");
+  await appliedStage
+    .getByRole("button", { name: "Create Applied stage locally", exact: true })
+    .click();
+  await expect(appliedStage.getByRole("status")).toContainText(
+    "Reused existing Applied stage: My submitted stage",
+  );
+  const stageAfter = await page.evaluate(
+    async ({ jobId, applicationId }) => {
+      const job = await globalThis.coredrillStorageSpike.jobComparison.load(jobId);
+      const preparation =
+        await globalThis.coredrillStorageSpike.loadApplicationDocumentPreparation(applicationId);
+      const review =
+        await globalThis.coredrillStorageSpike.loadApplicationSubmissionReview(applicationId);
+      if (!job.ok || !preparation.ok || !review.ok)
+        throw new Error("Stage verification read failed");
+      return { job: job.value, preparation: preparation.value, review: review.value };
+    },
+    { jobId, applicationId: comparison.applicationId },
+  );
+  expect(stageAfter.job).toEqual(comparison);
+  expect(stageAfter.preparation).toEqual(before);
+  expect(stageAfter.review.appliedStatuses).toEqual(stageReview.appliedStatuses);
   const copies = [];
   for (const kind of ["resume", "cover_letter"]) {
     await page.setViewportSize({ width: 1440, height: 900 });

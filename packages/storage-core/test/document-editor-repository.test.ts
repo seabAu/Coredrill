@@ -14,6 +14,7 @@ import {
   createDocumentCreationRepository,
   createDocumentDerivationRepository,
   createApplicationAttemptRepository,
+  createAppliedStageRepository,
   createPipelineRepositories,
   createTrackerRepositories,
   changePipelineStatus,
@@ -178,6 +179,91 @@ describe("DocumentEditorRepository", () => {
       updatedAt: CREATED_AT,
     });
   };
+
+  const appliedStageInput = () => ({
+    id: entityId("status_definition", "0199b350-0000-7000-8000-000000000001"),
+    name: "My submitted stage",
+    createdAt: VERSIONED_AT,
+  });
+  const stageState = async () => ({
+    jobs: await database.query(sqlStatement("SELECT * FROM job ORDER BY id")),
+    applications: await database.query(sqlStatement("SELECT * FROM application ORDER BY id")),
+    events: await database.query(sqlStatement("SELECT * FROM status_event ORDER BY id")),
+    documents: await database.query(sqlStatement("SELECT * FROM document_version ORDER BY id")),
+  });
+  it("creates and reuses explicit Applied configuration without changing application state", async () => {
+    await seedAttemptJob();
+    await createApplicationAttemptRepository(database).start(attemptInput());
+    const before = await stageState();
+    const stages = createAppliedStageRepository(database);
+    expect(await stages.create(appliedStageInput())).toEqual({
+      id: appliedStageInput().id,
+      name: "My submitted stage",
+      created: true,
+    });
+    expect(
+      await stages.create({
+        ...appliedStageInput(),
+        id: entityId("status_definition", "0199b350-0000-7000-8000-000000000002"),
+      }),
+    ).toEqual({ id: appliedStageInput().id, name: "My submitted stage", created: false });
+    expect(
+      await createPipelineRepositories(database).statusDefinitions.findById(appliedStageInput().id),
+    ).toMatchObject({
+      category: "applied",
+      terminal: false,
+      isSystem: false,
+      archivedAt: null,
+      sortOrder: 1,
+      createdAt: VERSIONED_AT,
+      updatedAt: VERSIONED_AT,
+    });
+    expect(await stageState()).toEqual(before);
+    expect(await database.query(sqlStatement("SELECT id FROM status_definition"))).toHaveLength(2);
+  });
+  it.each(["category", "archived", "terminal", "case"])(
+    "rejects %s name collisions without mutations",
+    async (kind) => {
+      const definitions = createPipelineRepositories(database).statusDefinitions;
+      const existing = {
+        id: appliedStageInput().id,
+        name: kind === "case" ? "MY SUBMITTED STAGE" : appliedStageInput().name,
+        category: kind === "category" ? ("preparing" as const) : ("applied" as const),
+        color: null,
+        terminal: kind === "terminal",
+        isSystem: false,
+        sortOrder: 0,
+        archivedAt: kind === "archived" ? CREATED_AT : null,
+        createdAt: CREATED_AT,
+        updatedAt: CREATED_AT,
+      };
+      await definitions.create(existing);
+      const before = await database.query(
+        sqlStatement("SELECT * FROM status_definition ORDER BY id"),
+      );
+      await expect(
+        createAppliedStageRepository(database).create({
+          ...appliedStageInput(),
+          id: entityId("status_definition", "0199b350-0000-7000-8000-000000000002"),
+        }),
+      ).rejects.toMatchObject({ code: "conflict" });
+      expect(
+        await database.query(sqlStatement("SELECT * FROM status_definition ORDER BY id")),
+      ).toEqual(before);
+    },
+  );
+  it("rolls back a stage insert if the transaction fails after writing", async () => {
+    const original = database.transaction.bind(database);
+    database.transaction = (work) =>
+      original(async (session) => {
+        await work(session);
+        throw new Error("Synthetic transaction failure after insert");
+      });
+    await expect(
+      createAppliedStageRepository(database).create(appliedStageInput()),
+    ).rejects.toThrow("Synthetic transaction failure");
+    expect(await database.query(sqlStatement("SELECT * FROM status_definition"))).toEqual([]);
+  });
 
   const derivativeId = entityId("document", "0199b340-0000-7000-8000-000000000001");
   const derivativeVersionId = entityId("document-version", "0199b340-0000-7000-8000-000000000002");
