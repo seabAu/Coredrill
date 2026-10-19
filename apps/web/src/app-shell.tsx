@@ -121,12 +121,13 @@ import {
   inspectBrowserStorageEnvironment,
   type BrowserStorageEnvironment,
 } from "@coredrill/storage-browser";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 
 import "./app-shell.css";
 import "./main.js";
 import { CanonicalJourneyPanel } from "./canonical-journey-panel.js";
+import { createGuardedNavigation } from "./guarded-navigation.js";
 import { CaptureEntryDialog } from "./capture-entry-dialog.js";
 import type { SavedJobEvidence, SavedJobSourceComparison } from "./extension-transfer.js";
 import { initializeOfflineShell, OfflineShellNotice } from "./offline-shell.js";
@@ -1920,6 +1921,45 @@ const AppShellCatalog = () => {
         ? "Shell ready. All displayed records are synthetic."
         : `State proof ready: ${appearance.workspaceState}. All displayed records are synthetic.`,
   );
+  const documentLeaveGuard = useRef<(() => Promise<void>) | null>(null);
+  const documentLoadGeneration = useRef(0);
+  const registerDocumentLeaveGuard = useCallback((guard: (() => Promise<void>) | null) => {
+    documentLeaveGuard.current = guard;
+  }, []);
+  const navigationHistory = useMemo(
+    () =>
+      createGuardedNavigation({
+        history: {
+          read: () => ({ href: window.location.href, state: window.history.state as unknown }),
+          push: (state, href) => {
+            window.history.pushState(state, "", href);
+          },
+          replace: (state, href) => {
+            window.history.replaceState(state, "", href);
+          },
+          go: (delta) => {
+            window.history.go(delta);
+          },
+        },
+        getLeaveGuard: () => documentLeaveGuard.current,
+        onBlocked: () => {
+          setLastActivity(
+            "Navigation stopped. Save the local draft or retry; your text remains in the editor.",
+          );
+        },
+      }),
+    [],
+  );
+  useEffect(() => {
+    navigationHistory.initialize();
+  }, [navigationHistory]);
+  const resetDocumentEditor = useCallback(() => {
+    documentLoadGeneration.current += 1;
+    setDocumentEditor(null);
+    setDocumentEditorError(null);
+    setDocumentEditorLoading(false);
+    setInitialDocumentRouteHandled(true);
+  }, []);
   const browserVaultBackupModel = useMemo<BrowserVaultBackupModel | null>(
     () =>
       browserStorageEnvironment === null
@@ -2615,10 +2655,12 @@ const AppShellCatalog = () => {
   } satisfies ApplicationSubmissionReviewModel;
 
   const openDocumentEditor = useCallback(async (documentId: string): Promise<void> => {
+    const generation = ++documentLoadGeneration.current;
     setDocumentEditorLoading(true);
     setDocumentEditorError(null);
     try {
       const result = await globalThis.coredrillStorageSpike.openDocumentEditor(documentId);
+      if (generation !== documentLoadGeneration.current) return;
       if (result.ok) {
         setDocumentEditor(result.value);
         setLastActivity(`Opened local document: ${result.value.title}.`);
@@ -2627,11 +2669,12 @@ const AppShellCatalog = () => {
         setLastActivity(result.error.message);
       }
     } catch {
+      if (generation !== documentLoadGeneration.current) return;
       const message = "The local document editor could not be opened.";
       setDocumentEditorError(message);
       setLastActivity(message);
     } finally {
-      setDocumentEditorLoading(false);
+      if (generation === documentLoadGeneration.current) setDocumentEditorLoading(false);
     }
   }, []);
 
@@ -2996,7 +3039,7 @@ const AppShellCatalog = () => {
       setPipelineView("inbox");
       setCapturePreviewRefreshVersion((version) => version + 1);
       setActiveDestination("pipeline");
-      window.history.pushState(
+      navigationHistory.pushState(
         { kind: PIPELINE_HISTORY_KIND, snapshot: null },
         "",
         pipelineUrl("inbox", pipelineSavedViewId),
@@ -3113,12 +3156,12 @@ const AppShellCatalog = () => {
     const mode: JobWorkspaceMode = window.matchMedia("(min-width: 80rem)").matches
       ? "contextual"
       : "full-page";
-    window.history.replaceState(
+    navigationHistory.replaceState(
       { kind: PIPELINE_HISTORY_KIND, snapshot },
       "",
       pipelineUrl(pipelineView, pipelineSavedViewId),
     );
-    window.history.pushState(
+    navigationHistory.pushState(
       { kind: JOB_HISTORY_KIND, mode, snapshot },
       "",
       jobUrl(jobId, "overview"),
@@ -3137,7 +3180,7 @@ const AppShellCatalog = () => {
 
   const navigateToPipelineFallback = (): void => {
     const url = pipelineUrl(pipelineView, pipelineSavedViewId);
-    window.history.pushState({ kind: PIPELINE_HISTORY_KIND, snapshot: null }, "", url);
+    navigationHistory.pushState({ kind: PIPELINE_HISTORY_KIND, snapshot: null }, "", url);
     setActiveDestination("pipeline");
     setWorkspaceRoute(null);
     setLastActivity("Returned to the local Pipeline.");
@@ -3153,7 +3196,7 @@ const AppShellCatalog = () => {
 
   const changeWorkspaceTab = (tab: JobWorkspaceTabId): void => {
     if (workspaceRoute === null || tab === workspaceRoute.tab) return;
-    window.history.pushState(
+    navigationHistory.pushState(
       {
         kind: JOB_HISTORY_KIND,
         mode: workspaceRoute.mode,
@@ -3542,7 +3585,7 @@ const AppShellCatalog = () => {
 
   const changeNetworkTab = (tab: NetworkTabId): void => {
     if (tab === networkTab) return;
-    window.history.pushState(null, "", networkUrl(tab));
+    navigationHistory.pushState(null, "", networkUrl(tab));
     setNetworkTab(tab);
     setLastActivity(`Opened local Network view: ${tab}.`);
   };
@@ -3551,13 +3594,13 @@ const AppShellCatalog = () => {
     if (request.id === "select-company" && request.targetId !== undefined) {
       setNetworkSelectedCompanyId(request.targetId);
       if (networkTab === "companies") {
-        window.history.replaceState(null, "", networkUrl("companies", request.targetId));
+        navigationHistory.replaceState(null, "", networkUrl("companies", request.targetId));
       }
     }
     if (request.id === "select-contact" && request.targetId !== undefined) {
       setNetworkSelectedContactId(request.targetId);
       if (networkTab === "contacts") {
-        window.history.replaceState(null, "", networkUrl("contacts", request.targetId));
+        navigationHistory.replaceState(null, "", networkUrl("contacts", request.targetId));
       }
     }
     if (request.id === "log-interaction") {
@@ -3595,11 +3638,12 @@ const AppShellCatalog = () => {
         setLastActivity("The selected local job destination is unavailable.");
         return;
       }
-      window.history.pushState(
+      navigationHistory.pushState(
         { kind: JOB_HISTORY_KIND, mode: "full-page", snapshot: null },
         "",
         result.href,
       );
+      resetDocumentEditor();
       setActiveDestination("pipeline");
       setWorkspaceRoute({
         jobId,
@@ -3614,7 +3658,8 @@ const AppShellCatalog = () => {
         setLastActivity("The selected local company destination is unavailable.");
         return;
       }
-      window.history.pushState(null, "", result.href);
+      navigationHistory.pushState(null, "", result.href);
+      resetDocumentEditor();
       setWorkspaceRoute(null);
       setActiveDestination("network");
       setNetworkSelectedCompanyId(companyId);
@@ -3625,24 +3670,31 @@ const AppShellCatalog = () => {
         setLastActivity("The selected local contact destination is unavailable.");
         return;
       }
-      window.history.pushState(null, "", result.href);
+      navigationHistory.pushState(null, "", result.href);
+      resetDocumentEditor();
       setWorkspaceRoute(null);
       setActiveDestination("network");
       setNetworkSelectedContactId(contactId);
       setNetworkTab("contacts");
     } else {
-      window.history.pushState(null, "", result.href);
+      navigationHistory.pushState(null, "", result.href);
+      resetDocumentEditor();
       setWorkspaceRoute(null);
       setActiveDestination("documents");
+      const documentId = documentIdFromPathname(
+        new URL(result.href, window.location.href).pathname,
+      );
+      if (documentId !== null) void openDocumentEditor(documentId);
     }
     setLastActivity(`Opened local ${result.kind}: ${result.title}.`);
   };
 
   const navigateDestination = (destination: ShellDestinationId): void => {
+    resetDocumentEditor();
     setWorkspaceRoute(null);
     setActiveDestination(destination);
     if (destination === "pipeline") {
-      window.history.pushState(
+      navigationHistory.pushState(
         { kind: PIPELINE_HISTORY_KIND, snapshot: null },
         "",
         pipelineUrl(pipelineView, pipelineSavedViewId),
@@ -3651,71 +3703,78 @@ const AppShellCatalog = () => {
       setNetworkSelectedCompanyId(null);
       setNetworkSelectedContactId(null);
       setNetworkTab("companies");
-      window.history.pushState(null, "", networkUrl("companies"));
+      navigationHistory.pushState(null, "", networkUrl("companies"));
     } else {
-      window.history.pushState(null, "", DESTINATION_URLS[destination]);
+      navigationHistory.pushState(null, "", DESTINATION_URLS[destination]);
     }
     setLastActivity(`Opened ${PAGE_COPY[destination].title} locally.`);
   };
 
   useEffect(() => {
     const handlePopState = (event: PopStateEvent): void => {
-      const location = readInitialLocation();
-      if (location.kind === "job") {
-        const historyState = readJobHistoryState(event.state);
-        const mode: JobWorkspaceMode =
-          historyState?.mode === "contextual" && window.matchMedia("(min-width: 80rem)").matches
-            ? "contextual"
-            : "full-page";
-        setActiveDestination("pipeline");
-        setWorkspaceRoute({
-          jobId: location.jobId,
-          mode,
-          responsiveContextual: historyState?.mode === "contextual",
-          returnSnapshot: historyState?.returnSnapshot ?? null,
-          tab: location.tab,
-        });
-        setLastActivity(`Restored local Job workspace history at ${location.tab}.`);
-        return;
-      }
-      setWorkspaceRoute(null);
-      if (location.kind === "network") {
-        setActiveDestination("network");
-        setNetworkSelectedCompanyId(
-          location.tab === "companies" &&
-            NETWORK_MODEL.companies.some(({ id }) => id === location.recordId)
-            ? location.recordId
-            : null,
-        );
-        setNetworkSelectedContactId(
-          location.tab === "contacts" &&
-            NETWORK_MODEL.contacts.some(({ id }) => id === location.recordId)
-            ? location.recordId
-            : null,
-        );
-        setNetworkTab(location.tab);
-        setLastActivity(`Restored local Network history at ${location.tab}.`);
-      } else if (location.kind === "pipeline") {
-        setActiveDestination("pipeline");
-        const snapshot = readPipelineSnapshot(event.state);
-        if (snapshot === null) {
-          setPipelineView(location.view);
-          setPipelineSavedViewId(
-            PIPELINE_SAVED_VIEWS.some(({ id }) => id === location.savedViewId)
-              ? location.savedViewId
-              : "active-search",
-          );
-        } else {
-          restorePipelineSnapshot(snapshot);
+      void navigationHistory.pop(() => {
+        const location = readInitialLocation();
+        resetDocumentEditor();
+        if (location.kind === "job") {
+          const historyState = readJobHistoryState(event.state);
+          const mode: JobWorkspaceMode =
+            historyState?.mode === "contextual" && window.matchMedia("(min-width: 80rem)").matches
+              ? "contextual"
+              : "full-page";
+          setActiveDestination("pipeline");
+          setWorkspaceRoute({
+            jobId: location.jobId,
+            mode,
+            responsiveContextual: historyState?.mode === "contextual",
+            returnSnapshot: historyState?.returnSnapshot ?? null,
+            tab: location.tab,
+          });
+          setLastActivity(`Restored local Job workspace history at ${location.tab}.`);
+          return;
         }
-        setLastActivity("Restored the exact local Pipeline return context.");
-      } else if (location.kind === "destination") {
-        setActiveDestination(location.destination);
-        setLastActivity(`Restored ${PAGE_COPY[location.destination].title} locally.`);
-      } else {
-        setActiveDestination("home");
-        setLastActivity("Returned to Home locally.");
-      }
+        setWorkspaceRoute(null);
+        if (location.kind === "network") {
+          setActiveDestination("network");
+          setNetworkSelectedCompanyId(
+            location.tab === "companies" &&
+              NETWORK_MODEL.companies.some(({ id }) => id === location.recordId)
+              ? location.recordId
+              : null,
+          );
+          setNetworkSelectedContactId(
+            location.tab === "contacts" &&
+              NETWORK_MODEL.contacts.some(({ id }) => id === location.recordId)
+              ? location.recordId
+              : null,
+          );
+          setNetworkTab(location.tab);
+          setLastActivity(`Restored local Network history at ${location.tab}.`);
+        } else if (location.kind === "pipeline") {
+          setActiveDestination("pipeline");
+          const snapshot = readPipelineSnapshot(event.state);
+          if (snapshot === null) {
+            setPipelineView(location.view);
+            setPipelineSavedViewId(
+              PIPELINE_SAVED_VIEWS.some(({ id }) => id === location.savedViewId)
+                ? location.savedViewId
+                : "active-search",
+            );
+          } else {
+            restorePipelineSnapshot(snapshot);
+          }
+          setLastActivity("Restored the exact local Pipeline return context.");
+        } else if (location.kind === "destination") {
+          setActiveDestination(location.destination);
+          if (location.destination === "documents") {
+            const documentId = documentIdFromPathname(window.location.pathname);
+            if (documentId !== null) void openDocumentEditor(documentId);
+          }
+          setLastActivity(`Restored ${PAGE_COPY[location.destination].title} locally.`);
+        } else {
+          setActiveDestination("home");
+          setLastActivity("Returned to Home locally.");
+        }
+      });
     };
     window.addEventListener("popstate", handlePopState);
     return () => {
@@ -3914,8 +3973,16 @@ const AppShellCatalog = () => {
       activeDestination={activeDestination}
       inboxCount={captureInboxCount}
       onAction={recordAction}
-      onNavigate={navigateDestination}
-      onSearchResult={openGlobalSearchResult}
+      onNavigate={(destination) => {
+        void navigationHistory.run(() => {
+          navigateDestination(destination);
+        });
+      }}
+      onSearchResult={(result) => {
+        void navigationHistory.run(() => {
+          openGlobalSearchResult(result);
+        });
+      }}
       outboxCount={2}
       searchResults={SEARCH_RESULTS}
       vault={{
@@ -4041,7 +4108,7 @@ const AppShellCatalog = () => {
                 onSavedViewChange={(savedView) => {
                   setPipelineSavedViewId(savedView.id);
                   if (workspaceRoute === null) {
-                    window.history.replaceState(
+                    navigationHistory.replaceState(
                       window.history.state,
                       "",
                       pipelineUrl(pipelineView, savedView.id),
@@ -4061,7 +4128,7 @@ const AppShellCatalog = () => {
                     setCapturePreviewRefreshVersion((version) => version + 1);
                   }
                   if (workspaceRoute === null) {
-                    window.history.replaceState(
+                    navigationHistory.replaceState(
                       window.history.state,
                       "",
                       pipelineUrl(view, pipelineSavedViewId),
@@ -4315,10 +4382,12 @@ const AppShellCatalog = () => {
         ) : activeDestination === "documents" ? (
           documentEditor !== null ? (
             <DocumentEditorWorkspace
+              key={documentEditor.documentId}
+              onRegisterLeaveGuard={registerDocumentLeaveGuard}
               onClose={() => {
                 setDocumentEditor(null);
                 setDocumentEditorError(null);
-                window.history.pushState(null, "", "/documents");
+                navigationHistory.pushState(null, "", "/documents");
               }}
               onCreateVersion={createDocumentEditorVersion}
               onSaveDraft={saveDocumentEditorDraft}
@@ -4336,7 +4405,7 @@ const AppShellCatalog = () => {
               <button
                 onClick={() => {
                   setDocumentEditorError(null);
-                  window.history.pushState(null, "", "/documents");
+                  navigationHistory.pushState(null, "", "/documents");
                 }}
                 type="button"
               >
@@ -4358,7 +4427,7 @@ const AppShellCatalog = () => {
                     .catch(() => {
                       setDocumentsError("The local document list could not be refreshed.");
                     });
-                  window.history.pushState(null, "", `/documents/${result.value.documentId}`);
+                  navigationHistory.pushState(null, "", `/documents/${result.value.documentId}`);
                   void openDocumentEditor(result.value.documentId);
                 }
                 return result;
@@ -4371,7 +4440,7 @@ const AppShellCatalog = () => {
                 } satisfies DocumentsWorkspaceModel
               }
               onOpenDocument={(document) => {
-                window.history.pushState(null, "", `/documents/${document.id}`);
+                navigationHistory.pushState(null, "", `/documents/${document.id}`);
                 void openDocumentEditor(document.id);
               }}
             />

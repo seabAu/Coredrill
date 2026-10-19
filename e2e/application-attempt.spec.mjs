@@ -163,11 +163,39 @@ test("starts a durable local application from a manually captured job without se
     await expect(page.getByText(/Copied from reusable version 1/u)).toBeVisible();
     await page.reload();
     await expect(page.getByText(/Copied from reusable version 1/u)).toBeVisible();
+    // Exercise wider native-control font metrics as well as the host's default font.
+    await page.evaluate(() => {
+      for (const control of document.querySelectorAll(
+        ".cd-document-editor-workspace input, .cd-document-editor-workspace select",
+      )) {
+        control.style.fontFamily = "monospace";
+        control.style.fontSize = "20px";
+      }
+    });
     const copyAxe = await new AxeBuilder({ page }).analyze();
     expect(copyAxe.violations).toEqual([]);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
-      true,
+    const editorLayout = await page.evaluate(() => ({
+      viewport: innerWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+      controls: [
+        ...document.querySelectorAll(
+          ".cd-document-editor-workspace input, .cd-document-editor-workspace select",
+        ),
+      ].map((control) => ({
+        tag: control.tagName,
+        width: control.getBoundingClientRect().width,
+        right: control.getBoundingClientRect().right,
+      })),
+    }));
+    expect(editorLayout.scrollWidth, JSON.stringify(editorLayout)).toBeLessThanOrEqual(
+      editorLayout.viewport,
     );
+    const editorScreenshot = testInfo.outputPath(`job-copy-editor-wide-controls-${kind}-320.png`);
+    await page.screenshot({ path: editorScreenshot, fullPage: true });
+    await testInfo.attach(`job-copy-editor-wide-controls-${kind}-320.png`, {
+      path: editorScreenshot,
+      contentType: "image/png",
+    });
     copies.push({
       documentId: stored.copy.id,
       sourceVersionId: source.currentVersion.id,

@@ -158,6 +158,13 @@ submitted automatically. Its origin is visible in the editor. Templates are not
 eligible reusable sources in this slice. Full-journey integration remains open
 under `Q3-005`.
 
+Leaving the structured editor through shell/search/history navigation flushes
+pending local edits before committing the route. A failed save keeps the editor,
+text and retry available and restores the committed history entry. Opening
+Documents shows the library rather than retaining a stale editor. Pending
+unsaved full-page exits request a browser warning, not an impossible promise
+that an asynchronous write survives a forced close or crash.
+
 Three-column desktop studio:
 
 - Left: job requirements and selected career evidence.

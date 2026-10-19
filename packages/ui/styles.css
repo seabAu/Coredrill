@@ -492,7 +492,24 @@ textarea {
 .cd-document-editor-save-row label,
 .cd-document-editor-history label {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-1);
+  min-inline-size: 0;
+  max-inline-size: 100%;
+}
+
+.cd-document-editor-workspace input,
+.cd-document-editor-workspace select {
+  box-sizing: border-box;
+  inline-size: 100%;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+}
+
+.cd-document-editor-header > div {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  overflow-wrap: anywhere;
 }
 
 .cd-document-comparison-scroll {

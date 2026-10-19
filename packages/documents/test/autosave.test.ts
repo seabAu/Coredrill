@@ -7,6 +7,34 @@ afterEach(() => {
 });
 
 describe("document autosave coordinator", () => {
+  it("shares the entire save drain across timer, navigation and explicit flush callers", async () => {
+    vi.useFakeTimers();
+    let releaseFirst: (() => void) | undefined;
+    let activeWrites = 0;
+    let maximumWrites = 0;
+    const save = vi.fn(async (value: string) => {
+      activeWrites += 1;
+      maximumWrites = Math.max(maximumWrites, activeWrites);
+      if (value === "first")
+        await new Promise<void>((resolve) => {
+          releaseFirst = resolve;
+        });
+      activeWrites -= 1;
+    });
+    const coordinator = createDocumentAutosaveCoordinator({ delayMilliseconds: 100, save });
+    coordinator.queue("first");
+    const first = coordinator.flush();
+    coordinator.queue("latest");
+    await vi.advanceTimersByTimeAsync(100);
+    const navigation = coordinator.flush();
+    expect(navigation).toBe(first);
+    releaseFirst?.();
+    await navigation;
+    expect(save.mock.calls).toEqual([["first"], ["latest"]]);
+    expect(maximumWrites).toBe(1);
+    expect(coordinator.status()).toBe("saved");
+  });
+
   it("debounces rapid edits and durably saves only the latest value", async () => {
     vi.useFakeTimers();
     const save = vi.fn(async () => undefined);

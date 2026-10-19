@@ -354,6 +354,14 @@ long-document pagination have executable browser and retained visual proof.
 This evidence does not replace the open manual assistive-technology and exact
 reference-device release matrix.
 
+Editor route exits use a save-before-navigation boundary: failure preserves the
+current editor, restores editing/focus and the committed URL, and retains the
+explicit local-save retry. Sidebar Documents opens the library; browser Back
+and Forward resolve document routes deliberately. Skip-link fragments move
+focus without remounting the editor. Long version labels and native controls
+shrink within the viewport across font metrics; their text is not truncated in
+the underlying document or accessible option names.
+
 ### Network
 
 Tabs: Companies, Contacts, Interactions.

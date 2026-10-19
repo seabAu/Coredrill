@@ -52,29 +52,35 @@ export const createDocumentAutosaveCoordinator = <Value>(
     timer = null;
   };
 
-  const flush = async (): Promise<void> => {
+  const flush = (): Promise<void> => {
     cancelTimer();
-    if (inFlight !== null) await inFlight;
+    if (inFlight !== null) return inFlight;
     if (latestValue === undefined || savedRevision === latestRevision) {
       setStatus(savedRevision === 0 ? "idle" : "saved");
-      return;
+      return Promise.resolve();
     }
-    const value = latestValue;
-    const revision = latestRevision;
-    setStatus("saving");
-    const saving = options.save(value);
+    const saving = (async () => {
+      while (savedRevision !== latestRevision) {
+        const value = latestValue;
+        const revision = latestRevision;
+        setStatus("saving");
+        try {
+          await options.save(value);
+          savedRevision = revision;
+          setStatus(savedRevision === latestRevision ? "saved" : "pending");
+        } catch (error) {
+          setStatus("failed");
+          throw error;
+        }
+      }
+    })();
     inFlight = saving;
-    try {
-      await saving;
-      savedRevision = revision;
-      setStatus(savedRevision === latestRevision ? "saved" : "pending");
-    } catch (error) {
-      setStatus("failed");
-      throw error;
-    } finally {
-      if (inFlight === saving) inFlight = null;
-    }
-    if (savedRevision !== latestRevision) await flush();
+    void saving
+      .finally(() => {
+        if (inFlight === saving) inFlight = null;
+      })
+      .catch(() => undefined);
+    return saving;
   };
 
   const startTimer = (): void => {

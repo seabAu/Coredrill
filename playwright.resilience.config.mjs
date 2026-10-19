@@ -12,6 +12,7 @@ export default defineConfig({
   testMatch: [
     "application-attempt.spec.mjs",
     "document-creation.spec.mjs",
+    "document-navigation.spec.mjs",
     "phase-3-canonical-journey.spec.mjs",
     "phase-1-resilience.spec.mjs",
     "storage-concurrency.spec.mjs",

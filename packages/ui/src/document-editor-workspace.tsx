@@ -22,6 +22,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 
 export interface DocumentEditorWorkspaceProps {
+  readonly onRegisterLeaveGuard?: (guard: (() => Promise<void>) | null) => void;
   readonly session: DocumentEditorSessionDto;
   readonly onClose: () => void;
   readonly onSaveDraft: (
@@ -48,12 +49,16 @@ export const DocumentEditorWorkspace = ({
   onClose,
   onSaveDraft,
   onCreateVersion,
+  onRegisterLeaveGuard,
 }: DocumentEditorWorkspaceProps) => {
   const [session, setSession] = useState(initialSession);
   const [autosaveStatus, setAutosaveStatus] = useState<DocumentAutosaveStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [label, setLabel] = useState("");
   const [editorReady, setEditorReady] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const leavingRef = useRef(false);
+  const leaveGuardRef = useRef<(() => Promise<void>) | null>(null);
   const [selectedVersionId, setSelectedVersionId] = useState<string>(session.currentVersion.id);
   const initialContent = useMemo(
     () => parseDocumentIr(initialSession.draft?.content ?? initialSession.currentVersion.content),
@@ -110,13 +115,39 @@ export const DocumentEditorWorkspace = ({
     const editor = createRestrictedDocumentEditor(options);
     editorRef.current = editor;
     setEditorReady(true);
+    const leaveGuard = async () => {
+      leavingRef.current = true;
+      setLeaving(true);
+      editor.setEditable(false, false);
+      try {
+        await coordinator.flush();
+      } catch (error) {
+        editor.setEditable(true, false);
+        editor.commands.focus();
+        throw error;
+      } finally {
+        leavingRef.current = false;
+        setLeaving(false);
+        editor.setEditable(true, false);
+      }
+    };
+    leaveGuardRef.current = leaveGuard;
+    onRegisterLeaveGuard?.(leaveGuard);
+    const beforeUnload = (event: BeforeUnloadEvent) => {
+      if (!["pending", "saving", "failed"].includes(coordinator.status())) return;
+      event.preventDefault();
+    };
+    window.addEventListener("beforeunload", beforeUnload);
     return () => {
+      window.removeEventListener("beforeunload", beforeUnload);
+      onRegisterLeaveGuard?.(null);
+      leaveGuardRef.current = null;
       coordinator.cancelTimer();
       editor.destroy();
       coordinatorRef.current = null;
       editorRef.current = null;
     };
-  }, [initialContent, onSaveDraft]);
+  }, [initialContent, onSaveDraft, onRegisterLeaveGuard]);
 
   const selectedVersion =
     session.versions.find((version) => version.id === selectedVersionId) ?? session.currentVersion;
@@ -133,6 +164,7 @@ export const DocumentEditorWorkspace = ({
   };
 
   const createVersion = async (): Promise<void> => {
+    if (leavingRef.current) return;
     const coordinator = coordinatorRef.current;
     if (coordinator === null) return;
     try {
@@ -162,8 +194,9 @@ export const DocumentEditorWorkspace = ({
   };
 
   const closeEditor = async (): Promise<void> => {
+    if (leavingRef.current) return;
     try {
-      await coordinatorRef.current?.flush();
+      await leaveGuardRef.current?.();
     } catch {
       return;
     }
@@ -189,6 +222,7 @@ export const DocumentEditorWorkspace = ({
           </p>
         </div>
         <button
+          disabled={leaving}
           onClick={() => {
             void closeEditor();
           }}
@@ -208,7 +242,7 @@ export const DocumentEditorWorkspace = ({
           <span>{error}</span>
           <button
             onClick={() => {
-              void coordinatorRef.current?.retry();
+              void coordinatorRef.current?.retry().catch(() => undefined);
             }}
             type="button"
           >
@@ -235,7 +269,7 @@ export const DocumentEditorWorkspace = ({
               ] as const
             ).map(([command, actionLabel]) => (
               <button
-                disabled={!editorReady}
+                disabled={!editorReady || leaving}
                 key={command}
                 onClick={() => {
                   runEditorCommand(command);
@@ -266,7 +300,7 @@ export const DocumentEditorWorkspace = ({
               />
             </label>
             <button
-              disabled={autosaveStatus === "saving" || session.draft === null}
+              disabled={leaving || autosaveStatus === "saving" || session.draft === null}
               onClick={() => {
                 void createVersion();
               }}
