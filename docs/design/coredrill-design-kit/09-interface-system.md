@@ -200,6 +200,13 @@ Card minimum:
 
 Dragging changes status after an accessible confirmation announcement and writes a timeline event. Keyboard move is available. Undo restores the status projections while retaining the original event as append-only history; the consumed undo token records that reversal. Columns virtualize when large and collapse when empty if the user chooses.
 
+Jobs with no status appear in an explicit Unassigned read group labeled “No
+status assigned.” This is not a stored stage or semantic category and is never
+a move destination. Missing move/open/undo handlers disable the corresponding
+controls; a read-only Board explains why moves are unavailable and does not
+offer an active drag grip. Multiple Board instances namespace their stage
+headings and include their view names in landmark labels.
+
 ### Table
 
 - Virtualized rows with sticky title/company columns.
@@ -208,6 +215,14 @@ Dragging changes status after an accessible confirmation announcement and writes
 - Complex fields open the job workspace.
 - Sorting, grouping, and validated nested filters never expose SQL.
 - CSV export reports which view/filter produced the export.
+
+A Table without an edit handler presents scalar values without Edit controls
+and explains that editing is unavailable. Configuration, selection and job-open
+controls are disabled independently when their handlers are absent. If editing
+becomes unavailable while a draft is open, retain the draft, disable saving,
+and offer Cancel; restoring the handler restores editing without losing text.
+View names distinguish Table landmarks. These presentation capabilities do not
+by themselves prove stored-record navigation or durable command composition.
 
 ### Inbox and capture review
 

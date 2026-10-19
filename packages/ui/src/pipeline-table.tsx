@@ -94,9 +94,10 @@ export interface PipelineTableProps {
   readonly onColumnConfigurationChange?: (
     configuration: readonly PipelineTableColumnConfiguration[],
   ) => void;
-  readonly onEditRequest: (
+  readonly onEditRequest?: (
     request: PipelineTableEditRequest,
   ) => PipelineTableEditResult | Promise<PipelineTableEditResult>;
+  readonly editUnavailableReason?: string;
   readonly onOpenJob?: (job: PipelineTableJob) => void;
   readonly onSelectionChange?: (job: PipelineTableJob, selected: boolean) => void;
   readonly rows: readonly PipelineTableJob[];
@@ -282,6 +283,7 @@ export const PipelineTable = ({
   columnConfiguration,
   onColumnConfigurationChange,
   onEditRequest,
+  editUnavailableReason = "Edits are unavailable in this view.",
   onOpenJob,
   onSelectionChange,
   rows,
@@ -355,6 +357,7 @@ export const PipelineTable = ({
   };
 
   const openEditor = (row: PipelineTableJob, field: PipelineTableEditField): void => {
+    if (onEditRequest === undefined) return;
     const draft =
       field === "status"
         ? (row.status?.id ?? "")
@@ -367,7 +370,7 @@ export const PipelineTable = ({
   };
 
   const submitEdit = async (row: PipelineTableJob): Promise<void> => {
-    if (editor?.jobId !== row.id) return;
+    if (editor?.jobId !== row.id || onEditRequest === undefined) return;
     let request: PipelineTableEditRequest;
     if (editor.field === "status") {
       const target = statusOptions.find(({ id }) => id === editor.draft);
@@ -460,7 +463,7 @@ export const PipelineTable = ({
         {field === "status" ? (
           <select
             aria-describedby={editor.error === null ? undefined : errorId}
-            disabled={editor.pending}
+            disabled={editor.pending || onEditRequest === undefined}
             id={inputId}
             onChange={(event) => {
               setEditor({
@@ -484,7 +487,7 @@ export const PipelineTable = ({
         ) : field === "priority" ? (
           <select
             aria-describedby={editor.error === null ? undefined : errorId}
-            disabled={editor.pending}
+            disabled={editor.pending || onEditRequest === undefined}
             id={inputId}
             onChange={(event) => {
               setEditor({ ...editor, draft: event.target.value, error: null });
@@ -498,7 +501,7 @@ export const PipelineTable = ({
         ) : (
           <input
             aria-describedby={editor.error === null ? undefined : errorId}
-            disabled={editor.pending}
+            disabled={editor.pending || onEditRequest === undefined}
             id={inputId}
             onChange={(event) => {
               setEditor({ ...editor, draft: event.target.value, error: null });
@@ -512,7 +515,7 @@ export const PipelineTable = ({
           <label className="cd-table-reopen-confirmation">
             <input
               checked={editor.reopenConfirmed}
-              disabled={editor.pending}
+              disabled={editor.pending || onEditRequest === undefined}
               onChange={(event) => {
                 setEditor({ ...editor, error: null, reopenConfirmed: event.target.checked });
               }}
@@ -526,10 +529,15 @@ export const PipelineTable = ({
             {editor.error}
           </p>
         )}
+        {onEditRequest === undefined ? (
+          <p role="note">
+            Your draft is retained. Restore editing to save, or Cancel to discard it.
+          </p>
+        ) : null}
         <div className="cd-table-editor-actions">
           <button
             className="cd-button cd-button-primary"
-            disabled={editor.pending}
+            disabled={editor.pending || onEditRequest === undefined}
             onClick={() => {
               void submitEdit(row);
             }}
@@ -554,6 +562,7 @@ export const PipelineTable = ({
 
   const editableCell = (row: PipelineTableJob, field: PipelineTableEditField, value: string) => {
     const activeEditor = renderEditor(row, field);
+    if (onEditRequest === undefined && activeEditor === null) return <span>{value}</span>;
     return (
       activeEditor ?? (
         <div className="cd-table-editable-value">
@@ -580,6 +589,7 @@ export const PipelineTable = ({
         return (
           <button
             className="cd-table-open-job"
+            disabled={onOpenJob === undefined}
             onClick={() => {
               onOpenJob?.(row);
             }}
@@ -616,7 +626,14 @@ export const PipelineTable = ({
   };
 
   return (
-    <section aria-labelledby={headingId} className="cd-table-view" data-testid="pipeline-table">
+    <section
+      aria-labelledby={`${headingId} ${headingId}-view`}
+      className="cd-table-view"
+      data-testid="pipeline-table"
+    >
+      <span className="cd-visually-hidden" id={`${headingId}-view`}>
+        {viewName}
+      </span>
       <div className="cd-table-heading">
         <div>
           <p className="cd-eyebrow">Table</p>
@@ -624,10 +641,12 @@ export const PipelineTable = ({
         </div>
         <details className="cd-table-column-settings">
           <summary className="cd-button cd-button-secondary">Columns</summary>
-          <fieldset>
+          <fieldset disabled={onColumnConfigurationChange === undefined}>
             <legend>Columns for {viewName}</legend>
             <p>
-              Title and company remain visible and pinned. Other choices are saved by this view.
+              {onColumnConfigurationChange === undefined
+                ? "Column settings are read-only in this view."
+                : "Title and company remain visible and pinned. Other choices are saved by this view."}
             </p>
             <ol>
               {columnConfiguration.map((column, index) => {
@@ -714,6 +733,7 @@ export const PipelineTable = ({
         </details>
       </div>
 
+      {onEditRequest === undefined ? <p role="note">{editUnavailableReason}</p> : null}
       <p aria-live="polite" className="cd-table-announcement" role="status">
         {announcement}
       </p>
@@ -736,8 +756,11 @@ export const PipelineTable = ({
       >
         <table style={{ inlineSize: `${String(tableWidth)}px` }}>
           <caption className="cd-visually-hidden">
-            {String(rows.length)} opportunities in {viewName}. Use the edit buttons for low-risk
-            scalar fields; open a job for complex fields.
+            {String(rows.length)} opportunities in {viewName}.{" "}
+            {onEditRequest === undefined
+              ? "This view is read-only."
+              : "Use the edit buttons for low-risk scalar fields."}{" "}
+            {onOpenJob === undefined ? "" : "Open a job for complex fields."}
           </caption>
           <thead>
             <tr>
@@ -770,6 +793,7 @@ export const PipelineTable = ({
                   <input
                     aria-label={`Select ${row.title}`}
                     checked={selectedJobIds.includes(row.id)}
+                    disabled={onSelectionChange === undefined}
                     onChange={(event) => {
                       onSelectionChange?.(row, event.target.checked);
                     }}

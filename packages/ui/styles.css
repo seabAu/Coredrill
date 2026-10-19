@@ -3400,6 +3400,11 @@ textarea {
   cursor: grabbing;
 }
 
+.cd-board-drag-handle[draggable="false"] {
+  cursor: default;
+  touch-action: auto;
+}
+
 .cd-board-card > strong {
   font-size: 0.875rem;
 }

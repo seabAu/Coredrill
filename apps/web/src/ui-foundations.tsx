@@ -13,6 +13,7 @@ import {
 import "@coredrill/ui/styles.css";
 import { type CSSProperties, useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { PipelinePresentationCatalog } from "./pipeline-presentation-catalog.js";
 
 interface UiFoundationsCatalogApi {
   getAppearance(): RootAppearanceAttributes;
@@ -253,4 +254,10 @@ const Catalog = () => {
 
 const rootElement = document.querySelector<HTMLElement>("#root");
 if (rootElement === null) throw new Error("UI foundation catalog root is missing.");
-createRoot(rootElement).render(<Catalog />);
+createRoot(rootElement).render(
+  new URLSearchParams(window.location.search).get("pipeline") === "availability" ? (
+    <PipelinePresentationCatalog />
+  ) : (
+    <Catalog />
+  ),
+);

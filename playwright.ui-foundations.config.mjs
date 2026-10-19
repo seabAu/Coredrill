@@ -9,7 +9,7 @@ const channel =
 
 export default defineConfig({
   testDir: "./e2e",
-  testMatch: "ui-foundations.spec.mjs",
+  testMatch: ["ui-foundations.spec.mjs", "pipeline-presentation.spec.mjs"],
   outputDir: "test-results/ui-foundations",
   fullyParallel: false,
   workers: 1,

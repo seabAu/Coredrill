@@ -56,6 +56,24 @@ const renderTable = (
   );
 
 describe("PipelineTable contract", () => {
+  it("renders read-only values and unavailable configuration/selection without handlers", () => {
+    const markup = renderToStaticMarkup(
+      createElement(PipelineTable, {
+        columnConfiguration: DEFAULT_PIPELINE_TABLE_COLUMNS,
+        rows: [row(0)],
+        statusOptions: STATUSES,
+        viewName: "Stored jobs",
+        editUnavailableReason: "Editing awaits the local command adapter.",
+      }),
+    );
+    expect(markup).toContain("Editing awaits the local command adapter.");
+    expect(markup).not.toContain('aria-label="Edit status');
+    expect(markup).not.toContain('aria-label="Edit priority');
+    expect(markup).not.toContain('aria-label="Edit tags');
+    expect(markup).toContain("Column settings are read-only in this view.");
+    expect(markup).toMatch(/<fieldset[^>]*disabled/u);
+    expect(markup).toMatch(/<input[^>]*aria-label="Select Role 0"[^>]*disabled/u);
+  });
   it("freezes the reviewed column and editable-field vocabularies", () => {
     expect(PIPELINE_TABLE_COLUMN_IDS).toHaveLength(14);
     expect(PIPELINE_TABLE_EDIT_FIELDS).toEqual(["status", "priority", "tags", "next-action-date"]);

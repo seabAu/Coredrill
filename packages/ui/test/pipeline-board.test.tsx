@@ -55,6 +55,39 @@ const renderBoard = (columns: readonly BoardColumn[] = COLUMNS) =>
   );
 
 describe("PipelineBoard contract", () => {
+  it("renders an explicit Unassigned group without inventing a semantic stage", () => {
+    const markup = renderBoard([
+      {
+        items: [job(0)],
+        stage: {
+          id: "unassigned",
+          name: "Unassigned",
+          semanticCategories: [],
+          terminal: false,
+          unassigned: true,
+        },
+      },
+    ]);
+    expect(markup).toContain('data-board-unassigned="true"');
+    expect(markup).toContain("No status assigned");
+    expect(markup).not.toContain("saved ·");
+  });
+  it.each([
+    { id: "unassigned", semanticCategories: ["saved"], terminal: false },
+    { id: "unassigned", semanticCategories: [], terminal: true },
+    { id: "other", semanticCategories: [], terminal: false },
+  ] as const)("rejects unassigned metadata that claims canonical stage semantics", (invalid) => {
+    expect(() =>
+      renderBoard([{ items: [], stage: { ...invalid, name: "Unassigned", unassigned: true } }]),
+    ).toThrow();
+  });
+  it("does not advertise working move or undo controls without handlers", () => {
+    const markup = renderBoard();
+    expect(markup).toContain("Stage moves are unavailable in this view.");
+    expect(markup).not.toContain('draggable="true"');
+    expect(markup).toMatch(/<select[^>]*disabled/u);
+    expect(markup).toMatch(/<button[^>]*disabled[^>]*>Undo move/u);
+  });
   it("freezes semantic, warning, and move-method vocabularies", () => {
     expect(BOARD_SEMANTIC_CATEGORIES).toEqual([
       "viewed",

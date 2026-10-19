@@ -31,6 +31,8 @@ export interface BoardStage {
   readonly name: string;
   readonly semanticCategories: readonly BoardSemanticCategory[];
   readonly terminal: boolean;
+  /** Read-only grouping for jobs with no status; never a stored status/category. */
+  readonly unassigned?: boolean;
 }
 
 export interface BoardJobCard {
@@ -63,9 +65,11 @@ export interface BoardUndoState {
 }
 
 export interface PipelineBoardProps {
+  readonly viewName?: string;
   readonly announcement?: string;
   readonly columns: readonly BoardColumn[];
   readonly onMoveRequest?: (request: BoardMoveRequest) => void;
+  readonly moveUnavailableReason?: string;
   readonly onOpenJob?: (job: BoardJobCard) => void;
   readonly onUndo?: () => void;
   readonly undo?: BoardUndoState | null;
@@ -99,9 +103,16 @@ const validateColumns = (columns: readonly BoardColumn[]): void => {
   );
   for (const { stage } of columns) {
     if (
+      stage.unassigned === true &&
+      (stage.id !== "unassigned" || stage.semanticCategories.length !== 0 || stage.terminal)
+    ) {
+      throw new RangeError("Unassigned must not claim stored status semantics.");
+    }
+    if (
       !/^[a-z0-9][a-z0-9-]{0,63}$/.test(stage.id) ||
       stage.name.trim().length === 0 ||
-      stage.semanticCategories.length === 0 ||
+      (stage.semanticCategories.length === 0 && stage.unassigned !== true) ||
+      (stage.id === "unassigned" && stage.unassigned !== true) ||
       stage.semanticCategories.some((category) => !BOARD_SEMANTIC_CATEGORIES.includes(category))
     ) {
       throw new RangeError("Every Pipeline Board stage needs a name and semantic category.");
@@ -118,6 +129,8 @@ interface VirtualBoardColumnProps {
   readonly onMoveRequest: PipelineBoardProps["onMoveRequest"];
   readonly onOpenJob: PipelineBoardProps["onOpenJob"];
   readonly readActiveDrag: () => BoardMoveRequest | null;
+  readonly moveHelpId: string;
+  readonly boardHeadingId: string;
 }
 
 const VirtualBoardColumn = ({
@@ -128,7 +141,14 @@ const VirtualBoardColumn = ({
   onMoveRequest,
   onOpenJob,
   readActiveDrag,
+  moveHelpId,
+  boardHeadingId,
 }: VirtualBoardColumnProps) => {
+  const stageHeadingId = `${boardHeadingId}-stage-${column.stage.id}`;
+  const canMove =
+    onMoveRequest !== undefined &&
+    columns.some(({ stage }) => stage.id !== column.stage.id && stage.unassigned !== true);
+  const canReceive = onMoveRequest !== undefined && column.stage.unassigned !== true;
   const [visibleStart, setVisibleStart] = useState(0);
   const safeStart = Math.min(visibleStart, Math.max(0, column.items.length - 1));
   const visibleEnd = Math.min(column.items.length, safeStart + BOARD_WINDOW_SIZE);
@@ -145,6 +165,10 @@ const VirtualBoardColumn = ({
   });
 
   const beginNativeDrag = (event: DragEvent<HTMLElement>, job: BoardJobCard): void => {
+    if (!canMove) {
+      event.preventDefault();
+      return;
+    }
     const request = createDragRequest(job);
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData(BOARD_TRANSFER_TYPE, job.id);
@@ -156,8 +180,16 @@ const VirtualBoardColumn = ({
   const moveActiveDragToColumn = (): void => {
     const currentDrag = readActiveDrag();
     const fromStage = columns.find(({ stage }) => stage.id === currentDrag?.fromStageId)?.stage;
-    if (currentDrag !== null && currentDrag.fromStageId !== column.stage.id) {
-      onMoveRequest?.({
+    if (
+      canReceive &&
+      currentDrag !== null &&
+      currentDrag.fromStageId !== column.stage.id &&
+      columns.some(
+        ({ stage, items }) =>
+          stage.id === currentDrag.fromStageId && items.some(({ id }) => id === currentDrag.jobId),
+      )
+    ) {
+      onMoveRequest({
         fromStageId: currentDrag.fromStageId,
         jobId: currentDrag.jobId,
         method: "drag",
@@ -190,12 +222,16 @@ const VirtualBoardColumn = ({
         : transferredStageId;
     const fromStage = columns.find(({ stage }) => stage.id === fromStageId)?.stage;
     if (
+      canReceive &&
       jobId !== undefined &&
       jobId !== "" &&
       fromStageId !== undefined &&
-      fromStageId !== column.stage.id
+      fromStageId !== column.stage.id &&
+      columns.some(
+        ({ stage, items }) => stage.id === fromStageId && items.some(({ id }) => id === jobId),
+      )
     ) {
-      onMoveRequest?.({
+      onMoveRequest({
         fromStageId,
         jobId,
         method: "drag",
@@ -208,12 +244,15 @@ const VirtualBoardColumn = ({
 
   return (
     <section
-      aria-labelledby={`board-stage-${column.stage.id}`}
+      aria-labelledby={`${boardHeadingId}-view ${stageHeadingId}`}
       className="cd-board-column"
       data-board-stage={column.stage.id}
-      data-drop-active={activeDrag !== null && activeDrag.fromStageId !== column.stage.id}
+      data-board-unassigned={column.stage.unassigned === true ? "true" : undefined}
+      data-drop-active={
+        canReceive && activeDrag !== null && activeDrag.fromStageId !== column.stage.id
+      }
       onDragOver={(event) => {
-        event.preventDefault();
+        if (canReceive) event.preventDefault();
       }}
       onDrop={receiveDrop}
       onPointerUp={(event) => {
@@ -222,8 +261,12 @@ const VirtualBoardColumn = ({
     >
       <header className="cd-board-column-heading">
         <div>
-          <h4 id={`board-stage-${column.stage.id}`}>{column.stage.name}</h4>
-          <small>{column.stage.semanticCategories.join(" · ")}</small>
+          <h4 id={stageHeadingId}>{column.stage.name}</h4>
+          <small>
+            {column.stage.unassigned === true
+              ? "No status assigned"
+              : column.stage.semanticCategories.join(" · ")}
+          </small>
         </div>
         <span aria-label={`${String(column.items.length)} jobs`}>
           {String(column.items.length)}
@@ -250,6 +293,7 @@ const VirtualBoardColumn = ({
             <div className="cd-board-card-heading">
               <button
                 className="cd-board-card-title"
+                disabled={onOpenJob === undefined}
                 onClick={() => {
                   onOpenJob?.(job);
                 }}
@@ -262,7 +306,7 @@ const VirtualBoardColumn = ({
                 aria-hidden="true"
                 className="cd-board-drag-handle"
                 data-board-drag-handle
-                draggable
+                draggable={canMove}
                 onDragEnd={() => {
                   onDragChange(null);
                 }}
@@ -273,7 +317,7 @@ const VirtualBoardColumn = ({
                   onDragChange(null);
                 }}
                 onPointerDown={(event) => {
-                  if (event.button === 0) onDragChange(createDragRequest(job));
+                  if (canMove && event.button === 0) onDragChange(createDragRequest(job));
                 }}
               >
                 ⋮⋮
@@ -300,17 +344,20 @@ const VirtualBoardColumn = ({
               <span>Move</span>
               <select
                 aria-label={`Move ${job.title} to stage`}
+                aria-describedby={moveHelpId}
+                disabled={!canMove}
                 onChange={(event) => {
                   if (event.target.value !== column.stage.id) {
                     const targetStage = columns.find(
                       ({ stage }) => stage.id === event.target.value,
                     )?.stage;
-                    onMoveRequest?.({
+                    if (targetStage === undefined || targetStage.unassigned === true || !canMove)
+                      return;
+                    onMoveRequest({
                       fromStageId: column.stage.id,
                       jobId: job.id,
                       method: "keyboard",
-                      requiresReopenConfirmation:
-                        column.stage.terminal && targetStage?.terminal === false,
+                      requiresReopenConfirmation: column.stage.terminal && !targetStage.terminal,
                       toStageId: event.target.value,
                     });
                   }
@@ -318,7 +365,7 @@ const VirtualBoardColumn = ({
                 value={column.stage.id}
               >
                 {columns.map(({ stage }) => (
-                  <option key={stage.id} value={stage.id}>
+                  <option disabled={stage.unassigned === true} key={stage.id} value={stage.id}>
                     {stage.name}
                   </option>
                 ))}
@@ -333,9 +380,11 @@ const VirtualBoardColumn = ({
 };
 
 export const PipelineBoard = ({
+  viewName = "Pipeline",
   announcement = "",
   columns,
   onMoveRequest,
+  moveUnavailableReason = "Stage moves are unavailable in this view.",
   onOpenJob,
   onUndo,
   undo = null,
@@ -351,17 +400,26 @@ export const PipelineBoard = ({
 
   return (
     <section
-      aria-labelledby={headingId}
+      aria-labelledby={`${headingId} ${headingId}-view`}
       className="cd-board"
       data-board-total={columns.reduce((count, column) => count + column.items.length, 0)}
       data-testid="pipeline-board"
     >
       <div className="cd-board-heading">
+        <span className="cd-visually-hidden" id={`${headingId}-view`}>
+          {viewName}
+        </span>
         <div>
           <p className="cd-eyebrow">Board</p>
-          <h3 id={headingId}>Move opportunities with context intact</h3>
+          <h3 id={headingId}>
+            {onMoveRequest === undefined ? "Review" : "Move"} opportunities with context intact
+          </h3>
         </div>
-        <p>Drag a card or use its Move control. Every durable move requires a timeline event.</p>
+        <p id={`${headingId}-moves`}>
+          {onMoveRequest === undefined
+            ? moveUnavailableReason
+            : "Drag a card or use its Move control. Every durable move requires a timeline event. Unassigned is not a move destination."}
+        </p>
       </div>
 
       <p aria-live="polite" className="cd-board-announcement" role="status">
@@ -371,7 +429,12 @@ export const PipelineBoard = ({
       {undo === null ? null : (
         <div className="cd-board-undo" role="region" aria-label="Undo status move">
           <span>{undo.description}</span>
-          <button className="cd-button cd-button-secondary" onClick={onUndo} type="button">
+          <button
+            className="cd-button cd-button-secondary"
+            disabled={onUndo === undefined}
+            onClick={onUndo}
+            type="button"
+          >
             Undo move
           </button>
         </div>
@@ -388,6 +451,8 @@ export const PipelineBoard = ({
             onMoveRequest={onMoveRequest}
             onOpenJob={onOpenJob}
             readActiveDrag={() => activeDragReference.current}
+            moveHelpId={`${headingId}-moves`}
+            boardHeadingId={headingId}
           />
         ))}
       </div>
