@@ -409,6 +409,10 @@ trusted-mutation flags. It depends on no adapter and creates no persistence or
 network port; the Source-tab component renders the DTO without deriving or
 writing canonical job truth.
 
+## Viewed status and undo composition prerequisite (2026-10-19)
+
+The optional `ChangeStatus` viewed-state tuple is validated before the persistence port and checked in the existing projection/event/undo transaction. This closes the gap between transaction-local concurrency checks and a stale user view, including a newly created or ambiguous active attempt. Returned event source status must match the supplied view. `createDatabaseMutationUndoPort` now composes the existing repository consumption action through stable application missing/replay/stale-target errors; returned DTO validation still belongs to the application command. Browser and native share these boundaries. This prerequisite neither enables normal Board/Table mutation controls nor changes the explicit Mark Applied review or submitted snapshots; those remain subsequent runtime/UI integration. See [proof](../../proof/stored-status-preconditions-verification.md).
+
 ## Application use cases
 
 Commands are explicit and transactional:

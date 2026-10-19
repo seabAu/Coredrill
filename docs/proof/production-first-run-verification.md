@@ -45,4 +45,6 @@ An early attempt caught lint issues and a paste test clicking a label-covered ra
 
 Runtime composition is in `apps/web/src/main.ts`, `stored-vault-root.tsx`, `first-run-commit.ts`, `vault-lifecycle.ts`, `vault-presentation.ts`, `app-shell.tsx` and `stored-vault-settings.tsx`. Shared setup is in `packages/ui/src/first-run.tsx`; `onboarding.tsx` labels the reference catalog explicitly. Unit/browser tests, real-setup helpers for existing journeys, the Changeset and design/checklist/proof records accompany the implementation.
 
-Clean-commit hosted verification remains. No schema, dependency, permission or Accepted decision changes. Optional setup integrations, connected recovery/backup Settings, durable Pipeline mutations, remaining stored subviews and the entirely unseeded canonical Phase 3 journey remain unfinished. `Q3-005` stays unchecked.
+Clean commit `2b993d20d92c5a331773b3dfc7016883be72547f` passes all required hosted jobs in [run 39306852478](https://github.com/seabAu/Coredrill/actions/runs/39306852478): aggregate checks, exact Chrome 151/152 and Firefox 153/154, Windows/macOS/diagnostic Ubuntu native packages, extension transfer/fallback and full-history secret scan. This does not close the outstanding product boundaries or constitute release acceptance.
+
+No schema, dependency, permission or Accepted decision changes. Optional setup integrations, connected recovery/backup Settings, durable Pipeline mutations, remaining stored subviews and the entirely unseeded canonical Phase 3 journey remain unfinished. `Q3-005` stays unchecked.

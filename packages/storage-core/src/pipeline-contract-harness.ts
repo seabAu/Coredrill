@@ -1,5 +1,10 @@
 import { dateOnly, entityId, instant, timeZone } from "@coredrill/domain";
-import { AppliedStageError, createPipelineQueryOperations } from "@coredrill/application";
+import {
+  AppliedStageError,
+  MutationUndoError,
+  createPipelineQueryOperations,
+} from "@coredrill/application";
+import { createDatabaseMutationUndoPort } from "./application-ports.js";
 import { createAppliedStageRepository } from "./applied-stage-repository.js";
 import { createPipelineQueryRepository } from "./pipeline-query-repository.js";
 
@@ -267,6 +272,88 @@ export const createPipelineRepositoryContractSuite = (
       run: async (database) => {
         await setup.migrate(database);
         await createPipelineAggregate(database);
+        const viewed = { jobRowVersion: 1, currentStatusId: IDS.saved, applicationRowVersion: 1 };
+        for (const contextChange of [
+          { expected: { ...viewed, jobRowVersion: 2 } },
+          { expected: { ...viewed, currentStatusId: IDS.rejected } },
+          { expected: { ...viewed, applicationRowVersion: 2 } },
+          { applicationId: null, expected: { ...viewed, applicationRowVersion: null } },
+        ]) {
+          await expectFailure(
+            () =>
+              changePipelineStatus(database, {
+                eventId: IDS.appliedEvent,
+                undoTokenId: IDS.appliedUndo,
+                jobId: IDS.job,
+                applicationId: IDS.application,
+                toStatusId: IDS.applied,
+                occurredAt: APPLIED_AT,
+                note: null,
+                ...contextChange,
+              }),
+            (error) =>
+              error instanceof PipelineRepositoryConflictError &&
+              error.code === "pipeline_projection_conflict",
+            "A stale or omitted viewed application context changed status.",
+          );
+        }
+        assertContract(
+          (await createTrackerRepositories(database).jobs.findById(IDS.job))?.rowVersion === 1 &&
+            (await createPipelineRepositories(database).statusEvents.listForJob(IDS.job)).length ===
+              0 &&
+            (await database.query(sqlStatement("SELECT id FROM mutation_undo_token"))).length === 0,
+          "Rejected viewed-state preconditions left a partial status/event/undo mutation.",
+        );
+        const strictInput = {
+          eventId: IDS.appliedEvent,
+          undoTokenId: IDS.appliedUndo,
+          jobId: IDS.job,
+          applicationId: IDS.application,
+          toStatusId: IDS.applied,
+          occurredAt: APPLIED_AT,
+          note: null,
+          expected: viewed,
+        };
+        await createPipelineRepositories(database).applications.create(
+          newApplication(IDS.additionalApplication),
+          { allowAdditionalAttempt: true },
+        );
+        await expectFailure(
+          () => changePipelineStatus(database, strictInput),
+          (error) =>
+            error instanceof PipelineRepositoryConflictError &&
+            error.code === "pipeline_projection_conflict",
+          "An ambiguous active-application set was silently resolved.",
+        );
+        await database.execute(
+          sqlStatement(
+            "UPDATE application SET archived_at = ?, updated_at = ?, row_version = row_version + 1 WHERE id = ?",
+            [APPLIED_AT, APPLIED_AT, IDS.additionalApplication],
+          ),
+        );
+        await database.execute(
+          sqlStatement(
+            "UPDATE job SET archived_at = ?, updated_at = ?, row_version = row_version + 1 WHERE id = ?",
+            [APPLIED_AT, APPLIED_AT, IDS.job],
+          ),
+        );
+        await expectFailure(
+          () =>
+            changePipelineStatus(database, {
+              ...strictInput,
+              expected: { ...viewed, jobRowVersion: 2 },
+            }),
+          (error) =>
+            error instanceof PipelineRepositoryConflictError &&
+            error.code === "pipeline_projection_conflict",
+          "An archived job accepted an interactive status mutation.",
+        );
+        await database.execute(
+          sqlStatement(
+            "UPDATE job SET archived_at = NULL, updated_at = ?, row_version = row_version + 1 WHERE id = ?",
+            [APPLIED_AT, IDS.job],
+          ),
+        );
         await changePipelineStatus(database, {
           eventId: IDS.appliedEvent,
           undoTokenId: IDS.appliedUndo,
@@ -275,6 +362,7 @@ export const createPipelineRepositoryContractSuite = (
           toStatusId: IDS.applied,
           occurredAt: APPLIED_AT,
           note: "Synthetic submission.",
+          expected: { ...viewed, jobRowVersion: 3 },
         });
         await changePipelineStatus(database, {
           eventId: IDS.rejectedEvent,
@@ -467,7 +555,7 @@ export const createPipelineRepositoryContractSuite = (
           "Status edit did not return its fresh durable undo token.",
         );
 
-        const consumed = await consumeMutationUndoToken(database, {
+        const consumed = await createDatabaseMutationUndoPort(database).consume({
           id: IDS.appliedUndo,
           consumedAt: REJECTED_AT,
         });
@@ -477,6 +565,15 @@ export const createPipelineRepositoryContractSuite = (
         assertContract(
           consumed.consumedAt === REJECTED_AT && consumed.rowVersion === 2,
           "Status undo token did not complete its single consume transition.",
+        );
+        await expectFailure(
+          () =>
+            createDatabaseMutationUndoPort(database).consume({
+              id: IDS.appliedUndo,
+              consumedAt: REOPENED_AT,
+            }),
+          (error) => error instanceof MutationUndoError && error.code === "already_consumed",
+          "Undo composition did not retain its stable replay error.",
         );
         assertContract(
           restoredJob?.currentStatusId === IDS.saved &&

@@ -1,10 +1,12 @@
 import {
   JobActivityError,
   JobPipelineError,
+  MutationUndoError,
   JobRequirementError,
   VaultLifecycleError,
   type JobActivityPort,
   type JobPipelinePort,
+  type MutationUndoPort,
   type JobRequirementPort,
   type VaultDiagnosticsDto,
   type VaultLifecyclePort,
@@ -16,6 +18,7 @@ import type { DatabasePort, DatabaseSession, StorageDiagnostics } from "./databa
 import {
   PipelineRepositoryConflictError,
   changePipelineStatus,
+  consumeMutationUndoToken,
   createPipelineRepositories,
   setNextAction,
 } from "./pipeline-repositories.js";
@@ -229,6 +232,23 @@ export const createDatabaseJobPipelinePort = (database: DatabasePort): JobPipeli
         });
       } catch (error) {
         return pipelineFailure(error);
+      }
+    },
+  });
+
+/** Preserve the durable undo error vocabulary at the application boundary. */
+export const createDatabaseMutationUndoPort = (database: DatabasePort): MutationUndoPort =>
+  Object.freeze({
+    consume: async (input: Parameters<MutationUndoPort["consume"]>[0]) => {
+      try {
+        return await consumeMutationUndoToken(database, input);
+      } catch (error) {
+        if (!(error instanceof PipelineRepositoryConflictError)) throw error;
+        if (error.code === "pipeline_record_not_found") throw new MutationUndoError("not_found");
+        if (error.code === "undo_token_already_consumed")
+          throw new MutationUndoError("already_consumed");
+        if (error.code === "undo_target_changed") throw new MutationUndoError("target_changed");
+        throw new MutationUndoError("invalid_state");
       }
     },
   });

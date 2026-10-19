@@ -6,11 +6,13 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { entityId, instant, timeZone } from "@coredrill/domain";
+import { createMutationUndoOperations } from "@coredrill/application";
 
 import {
   applySqlMigrations,
   createDatabaseJobActivityPort,
   createDatabaseJobPipelinePort,
+  createDatabaseMutationUndoPort,
   createDatabaseVaultLifecyclePort,
   createDatabaseVaultBootstrapPort,
   createPhase1RepositoryContractSuite,
@@ -736,6 +738,39 @@ describe("SQLite application port composition", () => {
       expect(nextAction.nextAction.id).toBe(ids.nextAction);
       expect(interview.id).toBe(ids.interview);
       expect(reminder.id).toBe(ids.reminder);
+      const undo = createMutationUndoOperations({ undo: createDatabaseMutationUndoPort(database) });
+      const undoContext = {
+        operationId: entityId("application-operation", "0199a200-0000-7000-8000-0000000000ff"),
+        initiatedAt: openedAt,
+      };
+      await expect(
+        undo.consumeUndoTokenCommand.execute({ tokenId: ids.nextActionUndo }, undoContext),
+      ).resolves.toMatchObject({
+        ok: true,
+        value: { id: ids.nextActionUndo, consumedAt: openedAt, rowVersion: 2 },
+      });
+      await expect(
+        undo.consumeUndoTokenCommand.execute({ tokenId: ids.nextActionUndo }, undoContext),
+      ).resolves.toMatchObject({
+        ok: false,
+        error: { code: "conflict", retryable: false, message: "That edit was already undone." },
+      });
+      await expect(
+        undo.consumeUndoTokenCommand.execute({ tokenId: ids.statusUndo }, undoContext),
+      ).resolves.toMatchObject({
+        ok: false,
+        error: {
+          code: "conflict",
+          retryable: false,
+          message: "The edited item changed again, so this undo is no longer safe.",
+        },
+      });
+      await expect(
+        undo.consumeUndoTokenCommand.execute(
+          { tokenId: "0199a200-0000-7000-8000-0000000000fe" },
+          undoContext,
+        ),
+      ).resolves.toMatchObject({ ok: false, error: { code: "not_found" } });
     } finally {
       database.close();
     }

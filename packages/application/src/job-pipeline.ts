@@ -65,6 +65,13 @@ export interface CreateManualJobPortInput {
   readonly updatedAt: Instant;
 }
 
+/** Exact viewed-state binding for interactive edits; omitted by legacy trusted runners. */
+export interface StatusChangeExpectation {
+  readonly jobRowVersion: number;
+  readonly currentStatusId: StatusDefinitionId | null;
+  readonly applicationRowVersion: number | null;
+}
+
 export interface ChangeStatusPortInput {
   readonly eventId: EntityId<"status-event">;
   readonly undoTokenId: EntityId<"mutation-undo-token">;
@@ -74,6 +81,7 @@ export interface ChangeStatusPortInput {
   readonly occurredAt: Instant;
   readonly note: string | null;
   readonly allowReopen: boolean;
+  readonly expected?: StatusChangeExpectation;
 }
 
 /**
@@ -131,6 +139,7 @@ export interface ChangeStatusInput {
   readonly toStatusId: string;
   readonly note?: string | null;
   readonly allowReopen?: boolean;
+  readonly expected?: StatusChangeExpectation;
 }
 
 export interface JobPipelineOperationDependencies {
@@ -329,6 +338,7 @@ interface ExpectedStatusEvent {
   readonly toStatusId: StatusDefinitionId;
   readonly occurredAt: Instant;
   readonly note: string | null;
+  readonly fromStatusId?: StatusDefinitionId | null;
 }
 
 const copyStatusEvent = (value: unknown, expected: ExpectedStatusEvent): StatusEventDto => {
@@ -348,6 +358,7 @@ const copyStatusEvent = (value: unknown, expected: ExpectedStatusEvent): StatusE
     copied.id !== expected.id ||
     copied.jobId !== expected.jobId ||
     copied.applicationId !== expected.applicationId ||
+    (expected.fromStatusId !== undefined && copied.fromStatusId !== expected.fromStatusId) ||
     copied.toStatusId !== expected.toStatusId ||
     copied.occurredAt !== expected.occurredAt ||
     copied.note !== expected.note ||
@@ -480,6 +491,28 @@ export const createJobPipelineOperations = (
           note: optionalText(untrustedInput["note"], 200_000),
           allowReopen: allowReopen ?? false,
         };
+        const expected = untrustedInput["expected"];
+        if (expected !== undefined) {
+          if (!isRecord(expected)) throw new TypeError("Invalid viewed status context.");
+          const jobRowVersion = requireRowVersion(expected["jobRowVersion"]);
+          const applicationRowVersion =
+            expected["applicationRowVersion"] === null
+              ? null
+              : requireRowVersion(expected["applicationRowVersion"]);
+          if ((parsed.applicationId === null) !== (applicationRowVersion === null))
+            throw new TypeError("Viewed application context is incomplete.");
+          parsed = {
+            ...parsed,
+            expected: Object.freeze({
+              jobRowVersion,
+              currentStatusId: nullableResultEntityId(
+                "status_definition",
+                expected["currentStatusId"],
+              ),
+              applicationRowVersion,
+            }),
+          };
+        }
       } catch {
         return applicationFailure(VALID_STATUS_CHANGE_ERROR);
       }
@@ -495,6 +528,9 @@ export const createJobPipelineOperations = (
           toStatusId: parsed.toStatusId,
           occurredAt,
           note: parsed.note,
+          ...(parsed.expected === undefined
+            ? {}
+            : { fromStatusId: parsed.expected.currentStatusId }),
         };
         return applicationSuccess(
           copyUndoableStatusChange(

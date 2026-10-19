@@ -72,6 +72,84 @@ const pipelinePort = (): JobPipelinePort => ({
 });
 
 describe("manual job and pipeline application operations", () => {
+  it("copies strict viewed-state preconditions into the one atomic status port call", async () => {
+    const pipeline = pipelinePort();
+    const operations = createJobPipelineOperations({
+      pipeline,
+      createJobId: () => JOB_ID,
+      createStatusEventId: () => EVENT_ID,
+      createUndoTokenId: () => UNDO_TOKEN_ID,
+    });
+    const expected = {
+      jobRowVersion: 7,
+      currentStatusId: FROM_STATUS_ID,
+      applicationRowVersion: 3,
+    };
+    const result = await operations.changeStatusCommand.execute(
+      {
+        jobId: JOB_ID,
+        applicationId: APPLICATION_ID,
+        toStatusId: TO_STATUS_ID,
+        note: "Submitted outside Coredrill.",
+        expected,
+      },
+      { ...context, initiatedAt: CHANGED_AT },
+    );
+    expect(result.ok).toBe(true);
+    expect(pipeline.changeStatus).toHaveBeenCalledWith(expect.objectContaining({ expected }));
+    const forwarded = vi.mocked(pipeline.changeStatus).mock.calls[0]?.[0]?.expected;
+    expect(forwarded).not.toBe(expected);
+    expect(Object.isFrozen(forwarded)).toBe(true);
+  });
+
+  it.each([
+    null,
+    {},
+    { jobRowVersion: 0, currentStatusId: FROM_STATUS_ID, applicationRowVersion: 1 },
+    { jobRowVersion: 1, currentStatusId: "not-an-id", applicationRowVersion: 1 },
+    { jobRowVersion: 1, currentStatusId: FROM_STATUS_ID, applicationRowVersion: null },
+    { jobRowVersion: 1, currentStatusId: FROM_STATUS_ID, applicationRowVersion: 1.5 },
+  ])("rejects malformed viewed-state preconditions before storage: %j", async (expected) => {
+    const pipeline = pipelinePort();
+    const operations = createJobPipelineOperations({
+      pipeline,
+      createJobId: () => JOB_ID,
+      createStatusEventId: () => EVENT_ID,
+      createUndoTokenId: () => UNDO_TOKEN_ID,
+    });
+    const result = await operations.changeStatusCommand.execute(
+      { jobId: JOB_ID, applicationId: APPLICATION_ID, toStatusId: TO_STATUS_ID, expected } as never,
+      context,
+    );
+    expect(result).toMatchObject({ ok: false, error: { code: "validation" } });
+    expect(pipeline.changeStatus).not.toHaveBeenCalled();
+  });
+
+  it("rejects a returned event that does not start at the viewed status", async () => {
+    const pipeline = pipelinePort();
+    vi.mocked(pipeline.changeStatus).mockResolvedValueOnce({
+      ...statusChange(),
+      statusEvent: { ...statusEvent(), fromStatusId: null },
+    });
+    const operations = createJobPipelineOperations({
+      pipeline,
+      createJobId: () => JOB_ID,
+      createStatusEventId: () => EVENT_ID,
+      createUndoTokenId: () => UNDO_TOKEN_ID,
+    });
+    const result = await operations.changeStatusCommand.execute(
+      {
+        jobId: JOB_ID,
+        applicationId: APPLICATION_ID,
+        toStatusId: TO_STATUS_ID,
+        note: "Submitted outside Coredrill.",
+        expected: { jobRowVersion: 1, currentStatusId: FROM_STATUS_ID, applicationRowVersion: 1 },
+      } as never,
+      { ...context, initiatedAt: CHANGED_AT },
+    );
+    expect(result.ok).toBe(false);
+  });
+
   it("creates a manual local job without inventing source or provenance state", async () => {
     const pipeline = pipelinePort();
     const operations = createJobPipelineOperations({

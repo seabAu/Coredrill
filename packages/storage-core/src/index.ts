@@ -22,6 +22,7 @@ export {
 export {
   createDatabaseJobActivityPort,
   createDatabaseJobPipelinePort,
+  createDatabaseMutationUndoPort,
   createDatabaseJobRequirementPort,
   createDatabaseVaultLifecyclePort,
   createDatabaseVaultBootstrapPort,

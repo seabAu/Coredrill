@@ -229,6 +229,7 @@ export {
   JobPipelineError,
   createJobPipelineOperations,
   type ChangeStatusInput,
+  type StatusChangeExpectation,
   type ChangeStatusPortInput,
   type CreateJobInput,
   type CreateManualJobPortInput,

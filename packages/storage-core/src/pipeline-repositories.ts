@@ -198,6 +198,15 @@ interface JobProjectionRow extends QueryRow {
   readonly row_version: number;
 }
 
+interface ViewedJobProjectionRow extends JobProjectionRow {
+  readonly archived_at: string | null;
+}
+
+interface ActiveApplicationIdentityRow extends QueryRow {
+  readonly id: string;
+  readonly row_version: number;
+}
+
 interface CountRow extends QueryRow {
   readonly total: number;
 }
@@ -796,6 +805,11 @@ export interface ChangePipelineStatusInput {
   readonly occurredAt: Instant;
   readonly note: string | null;
   readonly allowReopen?: boolean;
+  readonly expected?: {
+    readonly jobRowVersion: number;
+    readonly currentStatusId: StatusDefinitionId | null;
+    readonly applicationRowVersion: number | null;
+  };
 }
 
 export const changePipelineStatus = async (
@@ -804,10 +818,11 @@ export const changePipelineStatus = async (
 ): Promise<UndoableStatusChangeRecord> =>
   database.transaction(async (transaction) => {
     const jobId = entityId("job", input.jobId);
-    const jobRows = await transaction.query<JobProjectionRow>(
-      sqlStatement("SELECT current_status_id, next_action_at, row_version FROM job WHERE id = ?", [
-        jobId,
-      ]),
+    const jobRows = await transaction.query<ViewedJobProjectionRow>(
+      sqlStatement(
+        "SELECT current_status_id, next_action_at, row_version, archived_at FROM job WHERE id = ?",
+        [jobId],
+      ),
     );
     const job = jobRows[0];
     if (job === undefined) {
@@ -816,6 +831,39 @@ export const changePipelineStatus = async (
 
     const jobRowVersion = rowVersion(job.row_version);
     let fromStatusId = optionalEntityId("status_definition", job.current_status_id);
+    if (input.expected !== undefined) {
+      const expected = input.expected;
+      const expectedJobVersion = rowVersion(expected.jobRowVersion);
+      const expectedApplicationVersion =
+        expected.applicationRowVersion === null ? null : rowVersion(expected.applicationRowVersion);
+      const expectedStatus =
+        expected.currentStatusId === null
+          ? null
+          : entityId("status_definition", expected.currentStatusId);
+      if ((input.applicationId === null) !== (expectedApplicationVersion === null))
+        throw new TypeError("Viewed application context is incomplete.");
+      if (
+        job.archived_at !== null ||
+        jobRowVersion !== expectedJobVersion ||
+        fromStatusId !== expectedStatus
+      )
+        throw new PipelineRepositoryConflictError("pipeline_projection_conflict");
+      // The caller cannot omit a newly created attempt or select one from an ambiguous set.
+      const active = await transaction.query<ActiveApplicationIdentityRow>(
+        sqlStatement(
+          "SELECT id, row_version FROM application WHERE job_id = ? AND archived_at IS NULL ORDER BY id LIMIT 2",
+          [jobId],
+        ),
+      );
+      if (
+        input.applicationId === null
+          ? active.length !== 0
+          : active.length !== 1 ||
+            active[0]?.id !== input.applicationId ||
+            active[0].row_version !== expectedApplicationVersion
+      )
+        throw new PipelineRepositoryConflictError("pipeline_projection_conflict");
+    }
     let applicationRowVersion: number | null = null;
     if (input.applicationId !== null) {
       const applicationRows = await transaction.query<ApplicationRow>(
