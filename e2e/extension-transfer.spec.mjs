@@ -4,8 +4,9 @@ import path from "node:path";
 
 import { chromium, expect, test } from "@playwright/test";
 
+import { closeHostedAppContext, routeHostedApp } from "./hosted-app-routing.mjs";
+
 const appOrigin = "https://app.coredrill.test";
-const localAppOrigin = "http://127.0.0.1:4173";
 const extensionPath = path.resolve("apps/extension/.output/chrome-mv3");
 
 const snapshot = Object.freeze({
@@ -69,15 +70,6 @@ const launchExtensionContext = (userDataDirectory) =>
     channel: "chromium",
     headless: true,
     args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`],
-  });
-
-const routeHostedApp = (context) =>
-  context.route(`${appOrigin}/**`, async (route) => {
-    const requested = new URL(route.request().url());
-    const response = await route.fetch({
-      url: `${localAppOrigin}${requested.pathname}${requested.search}`,
-    });
-    await route.fulfill({ response });
   });
 
 test("durably stores before acknowledgement and safely retries the exact Chromium transfer", async () => {
@@ -245,7 +237,7 @@ test("durably stores before acknowledgement and safely retries the exact Chromiu
     });
 
     await callStorage(app, "close");
-    await context.close();
+    await closeHostedAppContext(context);
 
     context = await launchExtensionContext(userDataDirectory);
     await routeHostedApp(context);
@@ -333,7 +325,7 @@ test("durably stores before acknowledgement and safely retries the exact Chromiu
     await expect(callInbox(restartedApp, "listReceipts")).resolves.toHaveLength(1);
 
     await callStorage(restartedApp, "close");
-    await context.close();
+    await closeHostedAppContext(context);
 
     context = await launchExtensionContext(userDataDirectory);
     await routeHostedApp(context);
@@ -402,7 +394,7 @@ test("durably stores before acknowledgement and safely retries the exact Chromiu
       })}`,
     );
   } finally {
-    await context.close();
+    await closeHostedAppContext(context);
     await rm(userDataDirectory, { recursive: true, force: true });
   }
 });
@@ -514,7 +506,7 @@ test("preserves the existing outbox when browser storage rejects a later queue w
       })}`,
     );
   } finally {
-    await context.close();
+    await closeHostedAppContext(context);
     await rm(userDataDirectory, { recursive: true, force: true });
   }
 });

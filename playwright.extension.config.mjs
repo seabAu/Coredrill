@@ -13,6 +13,7 @@ export default defineConfig({
       name: "chromium-extension-transfer",
       testMatch: [
         "extension-canonical-journey.spec.mjs",
+        "extension-routing.spec.mjs",
         "extension-transfer.spec.mjs",
         "extension-preview.spec.mjs",
         "extension-security.spec.mjs",

@@ -5,8 +5,13 @@ import path from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import { chromium, expect, test } from "@playwright/test";
 
+import {
+  closeHostedAppContext,
+  closeHostedAppPage,
+  routeHostedApp,
+} from "./hosted-app-routing.mjs";
+
 const appOrigin = "https://app.coredrill.test";
-const localAppOrigin = "http://127.0.0.1:4173";
 const extensionPath = path.resolve("apps/extension/.output/chrome-mv3");
 const sourceUrl = "https://jobs.example.test/openings/q2-canonical-journey";
 
@@ -15,15 +20,6 @@ const launchExtensionContext = (userDataDirectory) =>
     channel: "chromium",
     headless: true,
     args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`],
-  });
-
-const routeHostedApp = (context) =>
-  context.route(`${appOrigin}/**`, async (route) => {
-    const requested = new URL(route.request().url());
-    const response = await route.fetch({
-      url: `${localAppOrigin}${requested.pathname}${requested.search}`,
-    });
-    await route.fulfill({ response });
   });
 
 const callInbox = (page, method, ...arguments_) =>
@@ -124,7 +120,7 @@ test("retains the complete Phase 2 extension capture and correction journey", as
       remainingCount: 0,
     });
     console.info("Q2 journey stage: first transfer acknowledged");
-    await root.close();
+    await closeHostedAppPage(context, root);
 
     const app = await context.newPage();
     await app.goto(`${appOrigin}/app-shell.html`);
@@ -305,7 +301,7 @@ test("retains the complete Phase 2 extension capture and correction journey", as
     });
     console.info(`Q2_CANONICAL_CAPTURE_REVIEW_PROOF ${JSON.stringify(proof)}`);
   } finally {
-    await context.close();
+    await closeHostedAppContext(context);
     await rm(userDataDirectory, { recursive: true, force: true });
   }
 });
