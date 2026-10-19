@@ -10,6 +10,8 @@ const channel =
 export default defineConfig({
   testDir: "./e2e",
   testMatch: [
+    "native-runtime.spec.mjs",
+    "stored-vault-deletion.spec.mjs",
     "stored-pipeline-navigation.spec.mjs",
     "application-attempt.spec.mjs",
     "stored-requirement-source.spec.mjs",

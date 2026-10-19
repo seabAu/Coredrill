@@ -14,7 +14,7 @@ const installAppShellHistoryFallback = (server) => {
       acceptsHtml &&
       APP_SHELL_NAVIGATION.test(new URL(request.url ?? "/", "http://coredrill.local").pathname)
     ) {
-      request.url = "/app-shell.html";
+      request.url = "/index.html";
     }
     next();
   });
@@ -49,7 +49,7 @@ export default defineConfig({
         name: "Coredrill",
         scope: "/",
         short_name: "Coredrill",
-        start_url: "/app-shell.html",
+        start_url: "/",
         theme_color: "#173f35",
       },
       registerType: "prompt",
@@ -59,7 +59,7 @@ export default defineConfig({
         clientsClaim: false,
         globPatterns: ["**/*.{css,html,js,svg,wasm}"],
         inlineWorkboxRuntime: true,
-        navigateFallback: "/app-shell.html",
+        navigateFallback: "/index.html",
         skipWaiting: false,
       },
     }),
@@ -70,7 +70,8 @@ export default defineConfig({
         appShell: fileURLToPath(new URL("./app-shell.html", import.meta.url)),
         documents: fileURLToPath(new URL("./document-spike.html", import.meta.url)),
         onboarding: fileURLToPath(new URL("./onboarding.html", import.meta.url)),
-        storage: fileURLToPath(new URL("./index.html", import.meta.url)),
+        app: fileURLToPath(new URL("./index.html", import.meta.url)),
+        storage: fileURLToPath(new URL("./storage-verification.html", import.meta.url)),
         uiFoundations: fileURLToPath(new URL("./ui-foundations.html", import.meta.url)),
       },
     },

@@ -1,0 +1,268 @@
+import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
+import { once } from "node:events";
+import { mkdtemp, readFile, realpath, rm, stat } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { createInterface } from "node:readline";
+import { expect, test } from "@playwright/test";
+
+const root = path.resolve(import.meta.dirname, "..");
+const executable = path.join(
+  root,
+  "apps/desktop/src-tauri/target/debug",
+  process.platform === "win32"
+    ? "coredrill-native-storage-probe.exe"
+    : "coredrill-native-storage-probe",
+);
+
+test.beforeAll(async () => {
+  test.setTimeout(240_000);
+  const build = spawn(
+    "cargo",
+    [
+      "build",
+      "--manifest-path",
+      "apps/desktop/src-tauri/Cargo.toml",
+      "--locked",
+      "--no-default-features",
+      "--features",
+      "native-storage-probe",
+      "--bin",
+      "coredrill-native-storage-probe",
+    ],
+    { cwd: root, windowsHide: true, stdio: "ignore", timeout: 180_000 },
+  );
+  expect((await once(build, "exit"))[0]).toBe(0);
+});
+
+/** Simulated host IPC only: every database operation runs in the actual Rust process. */
+const attachNativeHost = async (page, invoke) => {
+  await page.exposeFunction("coredrillNativeProofInvoke", invoke);
+  await page.addInitScript(() => {
+    globalThis.isTauri = true;
+    globalThis.__TAURI_INTERNALS__ = { invoke: globalThis.coredrillNativeProofInvoke };
+    const calls = { opfs: 0, persistent: 0, serviceWorker: 0, worker: 0 };
+    globalThis.coredrillBrowserCapabilityProbe = calls;
+    navigator.storage.getDirectory = async () => {
+      calls.opfs += 1;
+      throw new Error("OPFS forbidden in native proof");
+    };
+    navigator.storage.persist = async () => {
+      calls.persistent += 1;
+      throw new Error("Browser persistence forbidden");
+    };
+    navigator.serviceWorker.register = async () => {
+      calls.serviceWorker += 1;
+      throw new Error("Browser SW forbidden");
+    };
+    globalThis.Worker = class {
+      constructor() {
+        calls.worker += 1;
+        throw new Error("Browser worker forbidden");
+      }
+    };
+  });
+};
+
+test("normal root uses real native SQLite for capture and documents without OPFS fallback", async ({
+  page,
+}, testInfo) => {
+  test.setTimeout(120_000);
+  const temporaryRoot = await mkdtemp(path.join(tmpdir(), "coredrill-native-ui-"));
+  const child = spawn(executable, [temporaryRoot], { windowsHide: true, stdio: "pipe" });
+  const stopped = once(child, "exit");
+  const lines = createInterface({ input: child.stdout })[Symbol.asyncIterator]();
+  let queue = Promise.resolve();
+  let invocations = 0;
+  const errors = [];
+  const external = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.route("**/*", (route) => {
+    if (route.request().url().startsWith("http://127.0.0.1:4181/")) return route.continue();
+    external.push(route.request().url());
+    return route.abort("blockedbyclient");
+  });
+  try {
+    await attachNativeHost(page, (command, args) => {
+      if (!["native_storage_invoke", "native_archive_invoke"].includes(command))
+        throw new Error("Unexpected native command");
+      const result = queue.then(async () => {
+        invocations += 1;
+        child.stdin.write(`${JSON.stringify(args.request)}\n`);
+        const line = await lines.next();
+        if (line.done) throw new Error("Native proof process stopped");
+        const envelope = JSON.parse(line.value);
+        if (!envelope.ok) throw envelope.error;
+        return envelope.response;
+      });
+      queue = result.catch(() => {});
+      return result;
+    });
+    await page.goto("/");
+    await page.waitForFunction(() => globalThis.coredrillStorageSpike?.runtimeKind === "native");
+    await expect(
+      page.getByRole("button", {
+        name: "Desktop vault: Local workspace. Vault health not checked",
+      }),
+    ).toBeVisible();
+    const primary = page.getByRole("navigation", { name: "Primary", exact: true });
+    await primary.getByRole("link", { name: "Pipeline", exact: true }).click();
+    await expect(page.getByText("No stored jobs yet.", { exact: false })).toBeVisible();
+    await page.getByRole("button", { name: "Add", exact: true }).click();
+    await page.getByRole("menuitem", { name: /Add job/u }).click();
+    const capture = page.getByRole("dialog");
+    await capture.getByLabel(/Job title/u).fill("Synthetic native runtime role");
+    await capture.getByLabel(/Company/u).fill("Synthetic Runtime Lab");
+    await capture.getByLabel(/Notes or listing details/u).fill("Build reliable offline systems.");
+    await capture.getByRole("button", { name: "Save to capture inbox" }).click();
+    await expect(capture.getByRole("status")).toContainText("Stored in the local capture inbox");
+    await capture.getByRole("button", { name: "Close capture dialog" }).click();
+    await page.locator('[data-pipeline-view-option="inbox"]').click();
+    const review = page.getByTestId("capture-review");
+    await review.getByRole("button", { name: "Accept high-confidence fields" }).click();
+    await review.getByRole("button", { name: "Save as new job" }).click();
+    await expect(review.getByText("No durable captures yet")).toBeVisible();
+    await page.locator('[data-pipeline-view-option="board"]').click();
+    await expect(page.getByTestId("pipeline-board")).toContainText("Synthetic native runtime role");
+    await page.reload();
+    await expect(page.getByTestId("pipeline-board")).toContainText("Synthetic native runtime role");
+    await page.locator('[data-pipeline-view-option="table"]').click();
+    await page.getByRole("button", { name: "Synthetic native runtime role", exact: true }).click();
+    await page.getByRole("button", { name: "Documents", exact: true }).click();
+    const start = page.getByRole("form", { name: "Start local application preparation" });
+    await start.getByLabel("Preparation stage name").fill("Native drafting");
+    await start.getByRole("button", { name: "Start preparation locally" }).click();
+    await expect(page.locator('[data-preparation-status="missing"]')).toBeVisible();
+    const jobDocumentsUrl = page.url();
+    await primary.getByRole("link", { name: "Documents", exact: true }).click();
+    await page.getByRole("button", { name: "New document", exact: true }).click();
+    const form = page.getByRole("form", { name: "New reusable document" });
+    await form.getByLabel("Document title", { exact: true }).fill("Synthetic native resume");
+    await form
+      .getByLabel("Initial document text", { exact: true })
+      .fill("Synthetic native evidence");
+    await form.getByRole("button", { name: "Create document locally", exact: true }).click();
+    await expect(
+      page.getByRole("heading", { name: "Synthetic native resume", exact: true }),
+    ).toBeVisible();
+    const documentId = new URL(page.url()).pathname.split("/").at(-1);
+    await page.reload();
+    await expect(
+      page.getByRole("heading", { name: "Synthetic native resume", exact: true }),
+    ).toBeVisible();
+    const stored = await page.evaluate(
+      (id) => globalThis.coredrillStorageSpike.openDocumentEditor(id),
+      documentId,
+    );
+    expect(stored).toMatchObject({
+      ok: true,
+      value: { currentVersion: { plainText: "Synthetic native evidence", versionNumber: 1 } },
+    });
+    await page.goto(jobDocumentsUrl);
+    const derivative = page.getByRole("form", {
+      name: "Create a job-specific document",
+      exact: true,
+    });
+    await derivative
+      .getByLabel("Reusable source version", { exact: true })
+      .selectOption(stored.value.currentVersion.id);
+    await derivative
+      .getByLabel("Job-specific document title", { exact: true })
+      .fill("Synthetic native job resume");
+    await derivative.getByRole("button", { name: "Create job-specific copy", exact: true }).click();
+    await expect(derivative.getByRole("status")).toContainText("has not been selected");
+    const preparation = page.locator(".cd-job-document-preparation");
+    const version = await preparation
+      .getByLabel("Exact resume version *")
+      .locator("option")
+      .filter({ hasText: "Synthetic native job resume" })
+      .getAttribute("value");
+    await preparation.getByLabel("Exact resume version *").selectOption(version);
+    await preparation.getByRole("button", { name: "Save exact selections" }).click();
+    await expect(preparation).toContainText("Ready for export review");
+    await preparation
+      .getByRole("button", { name: "Review export for Synthetic native job resume version 1" })
+      .click();
+    const exportReview = preparation.getByRole("region", {
+      name: "Export review for Synthetic native job resume version 1",
+    });
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      exportReview.getByRole("button", { name: "Download DOCX" }).click(),
+    ]);
+    const bytes = await readFile(await download.path());
+    const hash = createHash("sha256").update(bytes).digest("hex");
+    await expect(exportReview.getByRole("status")).toContainText("retained for Mark Applied");
+    expect(
+      await readFile(
+        path.join(temporaryRoot, "attachments", "sha256", hash.slice(0, 2), hash.slice(2, 4), hash),
+      ),
+    ).toEqual(bytes);
+    await page.reload();
+    await expect(preparation).toContainText("Ready for export review");
+    const capabilities = await page.evaluate(() => ({
+      calls: globalThis.coredrillBrowserCapabilityProbe,
+      offline: globalThis.coredrillOfflineShell.getState(),
+    }));
+    expect(capabilities.calls).toEqual({ opfs: 0, persistent: 0, serviceWorker: 0, worker: 0 });
+    expect(capabilities.offline.registered).toBe(false);
+    expect(invocations).toBeGreaterThan(100);
+    expect((await stat(path.join(temporaryRoot, "databases", "coredrill.sqlite3"))).isFile()).toBe(
+      true,
+    );
+    expect(external).toEqual([]);
+    expect(errors).toEqual([]);
+    await testInfo.attach("native-runtime-proof.json", {
+      body: JSON.stringify(
+        {
+          host: "simulated Tauri IPC",
+          backend: "real Rust SQLite process",
+          packagedWebviewProven: false,
+          seededRecords: false,
+          invocations,
+          nativeRetainedDocxSha256: hash,
+          capabilities,
+          externalRequests: external.length,
+        },
+        null,
+        2,
+      ),
+      contentType: "application/json",
+    });
+  } finally {
+    await page.close();
+    await queue;
+    child.stdin.end();
+    await stopped;
+    const actual = await realpath(temporaryRoot);
+    const temp = await realpath(tmpdir());
+    if (
+      !actual.startsWith(`${temp}${path.sep}`) ||
+      !path.basename(actual).startsWith("coredrill-native-ui-")
+    )
+      throw new Error("Unsafe native proof cleanup target");
+    await rm(actual, { recursive: true });
+  }
+});
+
+test("native IPC failure shows retry without browser storage fallback", async ({ page }) => {
+  await attachNativeHost(page, () => {
+    throw new Error("synthetic private native detail");
+  });
+  await page.goto("/");
+  await page
+    .getByRole("navigation", { name: "Primary", exact: true })
+    .getByRole("link", { name: "Pipeline", exact: true })
+    .click();
+  await expect(
+    page.getByRole("region", { name: "Stored Pipeline status", exact: true }),
+  ).toContainText("Retry");
+  await expect(page.getByText("synthetic private native detail", { exact: false })).toHaveCount(0);
+  expect(await page.evaluate(() => globalThis.coredrillBrowserCapabilityProbe)).toEqual({
+    opfs: 0,
+    persistent: 0,
+    serviceWorker: 0,
+    worker: 0,
+  });
+});

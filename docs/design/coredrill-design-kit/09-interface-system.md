@@ -81,6 +81,17 @@ Opening a job from a wide Pipeline route uses a side workspace while preserving 
 
 ## 3. Application shell
 
+The normal workspace opens at `/`; `app-shell.html` remains an alias and the
+storage verification surface is explicitly `/storage-verification.html`.
+Production Settings identifies the actual host kind and uses a real deletion
+preview rather than the presentation catalog's sample inventory. Missing vault
+identity and unconnected backup/restore are disclosed. Successful deletion
+removes the workspace view, retains cleanup warnings and offers an explicit
+return to an empty workspace. Durable onboarding/name/health composition remains
+unfinished; normal views show a generic Local workspace name and explicit
+unverified health rather than the catalog's invented name or healthy state.
+See [runtime integration proof](../../proof/production-root-runtime-verification.md).
+
 ```text
 ┌──────────────────┬────────────────────────────────────────────────────────────┐
 │ Product / Vault  │ Search…        [⌘K]                    Local ▾   [+ Add]   │

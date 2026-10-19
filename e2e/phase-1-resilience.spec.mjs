@@ -35,7 +35,7 @@ test("keeps the production shell offline and applies a waiting update without to
 
   const originalServiceWorker = await readFile(serviceWorkerPath, "utf8");
   try {
-    await page.goto("/app-shell.html");
+    await page.goto("/");
     await expect(page.getByTestId("page-title")).toHaveText("Keep the next move clear");
     await waitForOfflineShell(page);
 

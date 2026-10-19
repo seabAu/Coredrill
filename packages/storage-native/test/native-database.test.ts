@@ -499,7 +499,9 @@ describe("native SQLite repository and migration contracts", () => {
     expect((await database.exportPortable()).sha256).toBe(beforeWriteHash);
     await expect(database.readPortableAttachment(contentId)).resolves.toEqual(bytes);
     const attachmentPath = path.join(
-      transport.storageRoot(),
+      // /var aliases on macOS and Windows short temp names are valid root aliases.
+      // Canonicalize only the root: leaf/shard redirection must still fail below it.
+      await realpath(transport.storageRoot()),
       "attachments",
       "sha256",
       contentId.slice(0, 2),

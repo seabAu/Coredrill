@@ -127,6 +127,9 @@ import { createRoot } from "react-dom/client";
 
 import "./app-shell.css";
 import "./main.js";
+import { RUNTIME_KIND } from "./runtime-kind.js";
+import { StoredVaultSettings } from "./stored-vault-settings.js";
+import { installVaultViewInvalidation } from "./vault-lifecycle.js";
 import { CanonicalJourneyPanel } from "./canonical-journey-panel.js";
 import { createGuardedNavigation } from "./guarded-navigation.js";
 import { CaptureEntryDialog } from "./capture-entry-dialog.js";
@@ -2238,6 +2241,7 @@ const AppShellCatalog = () => {
 
   useEffect(() => {
     let active = true;
+    if (RUNTIME_KIND === "native") return;
     void inspectBrowserStorageEnvironment().then((environment) => {
       if (active) setBrowserStorageEnvironment(environment);
     });
@@ -4157,6 +4161,35 @@ const AppShellCatalog = () => {
     );
   };
 
+  if (!referenceCatalog && vaultDeletionStatus !== null) {
+    return (
+      <main className="cd-shell-page-card" aria-labelledby="deleted-vault-heading">
+        <h1 id="deleted-vault-heading">
+          {vaultDeletionStatus === "cleanup_pending"
+            ? "Local vault deleted; cleanup pending"
+            : "Local vault deleted"}
+        </h1>
+        <p role="status">
+          {vaultDeletionStatus === "cleanup_pending"
+            ? RUNTIME_KIND === "native"
+              ? "The active vault was removed, but desktop cleanup is still pending. Coredrill retained a managed cleanup record and will retry the bounded purge on restart."
+              : "The active vault was removed, but local attachment cleanup did not finish. Retained bytes may remain in this browser origin. Automatic cleanup is not claimed."
+            : "The active local vault was removed. Its workspace is no longer displayed."}
+        </p>
+        <p>External portable archives were not changed.</p>
+        <button
+          type="button"
+          className="cd-button"
+          onClick={() => {
+            window.location.replace("/");
+          }}
+        >
+          Return to an empty workspace
+        </button>
+      </main>
+    );
+  }
+
   return (
     <ApplicationShell
       activeDestination={activeDestination}
@@ -4194,9 +4227,17 @@ const AppShellCatalog = () => {
             ]
       }
       vault={{
-        health: appearance.workspaceState === "offline" ? "offline" : appearance.vaultHealth,
-        kind: "browser",
-        name: canonicalJourneyMode ? "Canonical local job search" : "Job search 2026",
+        health: !referenceCatalog
+          ? "unverified"
+          : appearance.workspaceState === "offline"
+            ? "offline"
+            : appearance.vaultHealth,
+        kind: RUNTIME_KIND === "native" ? "desktop" : "browser",
+        name: !referenceCatalog
+          ? "Local workspace"
+          : canonicalJourneyMode
+            ? "Canonical local job search"
+            : "Job search 2026",
       }}
     >
       <div className="mx-auto grid max-w-[90rem] gap-5">
@@ -4733,6 +4774,13 @@ const AppShellCatalog = () => {
             selectedCompanyId={networkSelectedCompanyId}
             selectedContactId={networkSelectedContactId}
           />
+        ) : activeDestination === "settings" && !referenceCatalog ? (
+          <StoredVaultSettings
+            api={globalThis.coredrillStorageSpike}
+            onDeleted={(result) => {
+              setVaultDeletionStatus(result.status);
+            }}
+          />
         ) : activeDestination === "settings" ? (
           vaultDeletionStatus !== null ? (
             <section className="cd-shell-page-card" role="status">
@@ -4836,6 +4884,7 @@ const AppShellCatalog = () => {
 };
 
 initializeOfflineShell();
+installVaultViewInvalidation();
 const rootElement = document.querySelector<HTMLElement>("#root");
 if (rootElement === null) throw new Error("Application shell root is missing.");
 createRoot(rootElement).render(<AppShellCatalog />);

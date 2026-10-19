@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { deserializeNativeVaultError, parseNativeVaultResponse } from "../src/vault-protocol.js";
+import {
+  openNativeSqliteDatabase,
+  type NativeVaultRequest,
+  type NativeStorageRequest,
+} from "../src/index.js";
 
 const requestId = "vault-preview-1";
 const inventory = {
@@ -11,6 +16,95 @@ const inventory = {
 };
 
 describe("native vault protocol", () => {
+  it("binds production deletion operations to the opened session and closes it after success", async () => {
+    const requests: NativeVaultRequest[] = [];
+    const database = await openNativeSqliteDatabase({
+      databaseName: "runtime-vault.sqlite3",
+      transport: {
+        invoke: async (request: NativeStorageRequest) => ({
+          protocolVersion: 1,
+          requestId: request.requestId,
+          data: { type: "opened", sessionId: "native-session-42" },
+        }),
+      },
+      vaultTransport: {
+        invokeVault: async (request) => {
+          requests.push(request);
+          return {
+            protocolVersion: 1,
+            requestId: request.requestId,
+            data:
+              request.operation.type === "preview_deletion"
+                ? {
+                    type: "deletion_preview",
+                    previewId: "preview",
+                    vaultId: "vault",
+                    vaultName: "Synthetic runtime vault",
+                    storageMode: "desktop",
+                    inventory,
+                    lastSuccessfulPortableExportAt: null,
+                    requiredConfirmation: "DELETE Synthetic runtime vault",
+                  }
+                : {
+                    type: "deleted",
+                    deletionId: "deletion",
+                    vaultId: "vault",
+                    status: "deleted",
+                    deleted: inventory,
+                    externalPortableArchivesAffected: false,
+                  },
+          };
+        },
+      },
+    });
+    await expect(
+      database.previewVaultDeletion({ vaultId: "vault", previewId: "preview" }),
+    ).resolves.toMatchObject({ storageMode: "desktop" });
+    await expect(
+      database.deleteVault({
+        vaultId: "vault",
+        previewId: "preview",
+        deletionId: "deletion",
+        confirmation: "DELETE Synthetic runtime vault",
+      }),
+    ).resolves.toMatchObject({ status: "deleted" });
+    expect(requests.map((request) => request.operation.sessionId)).toEqual([
+      "native-session-42",
+      "native-session-42",
+    ]);
+    await expect(database.diagnostics()).rejects.toMatchObject({ code: "session_closed" });
+  });
+  it("rejects a mismatched native deletion preview instead of exposing it", async () => {
+    const database = await openNativeSqliteDatabase({
+      databaseName: "runtime-drift.sqlite3",
+      transport: {
+        invoke: async (request: NativeStorageRequest) => ({
+          protocolVersion: 1,
+          requestId: request.requestId,
+          data: { type: "opened", sessionId: "native-session-1" },
+        }),
+      },
+      vaultTransport: {
+        invokeVault: async (request) => ({
+          protocolVersion: 1,
+          requestId: request.requestId,
+          data: {
+            type: "deletion_preview",
+            previewId: "other-preview",
+            vaultId: "vault",
+            vaultName: "Synthetic vault",
+            storageMode: "desktop",
+            inventory,
+            lastSuccessfulPortableExportAt: null,
+            requiredConfirmation: "DELETE Synthetic vault",
+          },
+        }),
+      },
+    });
+    await expect(
+      database.previewVaultDeletion({ vaultId: "vault", previewId: "preview" }),
+    ).rejects.toMatchObject({ code: "invalid_response" });
+  });
   it("copies a path-free deletion preview and exact confirmation contract", () => {
     const response = parseNativeVaultResponse(
       {

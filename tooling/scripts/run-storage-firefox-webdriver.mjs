@@ -6,7 +6,7 @@ import { readdir } from "node:fs/promises";
 const firefoxPath = process.env["COREDRILL_FIREFOX_PATH"];
 const expectedVersion = process.env["COREDRILL_EXPECTED_BROWSER_VERSION"];
 const geckodriverPath = process.env["COREDRILL_GECKODRIVER_PATH"] ?? "geckodriver";
-const appUrl = "http://127.0.0.1:4175";
+const appUrl = "http://127.0.0.1:4175/storage-verification.html";
 const webdriverUrl = "http://127.0.0.1:4445";
 const migrationVersions = (await readdir(new URL("../../migrations/", import.meta.url)))
   .map((fileName) => /^(\d{4})_[a-z0-9_]+\.sql$/u.exec(fileName)?.[1])

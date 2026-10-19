@@ -72,6 +72,7 @@ describe("ApplicationShell contract", () => {
       "Storage risk",
       "Offline · local work available",
       "Migration required",
+      "Vault health not checked",
     ];
     expect(VAULT_HEALTH_STATES).toHaveLength(expectedLabels.length);
     for (const [index, health] of VAULT_HEALTH_STATES.entries()) {

@@ -1,4 +1,5 @@
 /** Thin native SQLite adapter over the versioned Tauri command boundary. */
+export { isTauri as isNativeRuntime } from "@tauri-apps/api/core";
 export {
   deserializeNativeArchiveError,
   NATIVE_ARCHIVE_PROTOCOL_VERSION,

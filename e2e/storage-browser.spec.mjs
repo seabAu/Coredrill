@@ -89,7 +89,7 @@ const openHarness = async (context, logs) => {
   page.on("console", (message) => {
     if (message.text().startsWith("COREDRILL_STORAGE ")) logs.push(message.text());
   });
-  await page.goto("/");
+  await page.goto("/storage-verification.html");
   await expect(page.getByRole("status")).toHaveText("Harness ready");
   await page.waitForFunction(() => globalThis.coredrillStorageSpike !== undefined);
   return page;

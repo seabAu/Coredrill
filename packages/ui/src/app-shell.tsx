@@ -135,6 +135,7 @@ export const VAULT_HEALTH_STATES = Object.freeze([
   "storage-risk",
   "offline",
   "migration-required",
+  "unverified",
 ] as const);
 export type VaultHealthState = (typeof VAULT_HEALTH_STATES)[number];
 export type VaultKind = "browser" | "desktop";
@@ -163,6 +164,11 @@ const VAULT_HEALTH_COPY: Readonly<
     { readonly detail: string; readonly icon: UiIconName; readonly label: string }
   >
 > = Object.freeze({
+  unverified: {
+    detail: "Vault identity and storage health have not been verified in this view.",
+    icon: "alert-triangle",
+    label: "Vault health not checked",
+  },
   healthy: {
     detail: "Local storage is ready.",
     icon: "check",

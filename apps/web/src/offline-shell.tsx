@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { RUNTIME_KIND } from "./runtime-kind.js";
 
 export interface OfflineShellState {
   readonly controlled: boolean;
@@ -88,7 +89,7 @@ export const initializeOfflineShell = (): void => {
   initialized = true;
   globalThis.coredrillOfflineShell = api;
 
-  if (!import.meta.env.PROD || !("serviceWorker" in navigator)) return;
+  if (RUNTIME_KIND === "native" || !import.meta.env.PROD || !("serviceWorker" in navigator)) return;
 
   navigator.serviceWorker.addEventListener("controllerchange", () => {
     emit({ controlled: true });

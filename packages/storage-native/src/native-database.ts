@@ -36,14 +36,34 @@ import {
   type NativeAutomaticBackupMetadata,
   type NativePortableDatabase,
 } from "./archive-protocol.js";
+import {
+  NATIVE_VAULT_PROTOCOL_VERSION,
+  parseNativeVaultResponse,
+  deserializeNativeVaultError,
+  NativeVaultProtocolError,
+  type NativeVaultTransport,
+  type NativeVaultDeletionPreview,
+  type NativeVaultDeleted,
+} from "./vault-protocol.js";
 
 export interface OpenNativeSqliteOptions {
   readonly databaseName: string;
   readonly transport: NativeStorageTransport;
   readonly archiveTransport?: NativeArchiveTransport;
+  readonly vaultTransport?: NativeVaultTransport;
 }
 
 export interface NativeSqliteDatabase extends DatabasePort {
+  previewVaultDeletion(input: {
+    readonly vaultId: string;
+    readonly previewId: string;
+  }): Promise<NativeVaultDeletionPreview>;
+  deleteVault(input: {
+    readonly vaultId: string;
+    readonly previewId: string;
+    readonly deletionId: string;
+    readonly confirmation: string;
+  }): Promise<NativeVaultDeleted>;
   writePortableAttachment(input: {
     readonly contentId: string;
     readonly byteLength: number;
@@ -110,7 +130,85 @@ class NativeSqliteDatabaseAdapter implements NativeSqliteDatabase {
     private readonly transport: NativeStorageTransport,
     private readonly sessionId: string,
     private readonly archiveTransport?: NativeArchiveTransport,
+    private readonly vaultTransport?: NativeVaultTransport,
   ) {}
+
+  public previewVaultDeletion(input: {
+    readonly vaultId: string;
+    readonly previewId: string;
+  }): Promise<NativeVaultDeletionPreview> {
+    const { vaultId, previewId } = input;
+    return this.runExclusive(async () => {
+      const data = await this.sendVaultData({
+        type: "preview_deletion",
+        sessionId: this.sessionId,
+        vaultId,
+        previewId,
+      });
+      if (
+        data.type !== "deletion_preview" ||
+        data.vaultId !== vaultId ||
+        data.previewId !== previewId ||
+        data.requiredConfirmation !== `DELETE ${data.vaultName}`
+      )
+        throw new NativeVaultProtocolError(
+          "invalid_response",
+          "The native deletion preview did not match its request.",
+          false,
+        );
+      return data;
+    });
+  }
+
+  public deleteVault(input: {
+    readonly vaultId: string;
+    readonly previewId: string;
+    readonly deletionId: string;
+    readonly confirmation: string;
+  }): Promise<NativeVaultDeleted> {
+    const { vaultId, previewId, deletionId, confirmation } = input;
+    return this.runExclusive(async () => {
+      const data = await this.sendVaultData({
+        type: "delete",
+        sessionId: this.sessionId,
+        vaultId,
+        previewId,
+        deletionId,
+        confirmation,
+      });
+      if (data.type !== "deleted" || data.vaultId !== vaultId || data.deletionId !== deletionId)
+        throw new NativeVaultProtocolError(
+          "invalid_response",
+          "The native deletion result did not match its request.",
+          false,
+        );
+      this.closed = true;
+      return data;
+    });
+  }
+
+  private async sendVaultData(
+    operation: Parameters<NativeVaultTransport["invokeVault"]>[0]["operation"],
+  ) {
+    this.assertOpen();
+    if (this.vaultTransport === undefined)
+      throw new NativeStorageCapabilityError("native-vault-deletion");
+    const requestId = `native-vault-${String(this.requestSequence)}`;
+    this.requestSequence += 1;
+    try {
+      return parseNativeVaultResponse(
+        await this.vaultTransport.invokeVault({
+          protocolVersion: NATIVE_VAULT_PROTOCOL_VERSION,
+          requestId,
+          operation,
+        }),
+        requestId,
+      ).data;
+    } catch (error) {
+      if (error instanceof NativeVaultProtocolError) throw error;
+      throw deserializeNativeVaultError(error);
+    }
+  }
 
   public query<Row extends QueryRow = QueryRow>(statement: SqlStatement): Promise<readonly Row[]> {
     return this.runExclusive(() => this.queryDirect<Row>(statement));
@@ -577,6 +675,11 @@ export const openNativeSqliteDatabase = async (
     opened.sessionId,
     options.archiveTransport ??
       (supportsNativeArchive(options.transport) ? options.transport : undefined),
+    options.vaultTransport ??
+      (typeof (options.transport as NativeStorageTransport & Partial<NativeVaultTransport>)
+        .invokeVault === "function"
+        ? (options.transport as NativeStorageTransport & NativeVaultTransport)
+        : undefined),
   );
 };
 

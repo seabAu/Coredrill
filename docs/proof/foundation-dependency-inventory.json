@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "inventoryId": "JW-DI-001",
-  "version": "1.28.0",
-  "reviewedAt": "2026-10-19T08:05:31Z",
+  "version": "1.28.1",
+  "reviewedAt": "2026-10-19T17:22:21Z",
   "scope": {
     "included": [
       "Pinned Node.js, pnpm, and Rust foundation toolchains",
@@ -17,7 +17,7 @@
   },
   "lockfile": {
     "path": "pnpm-lock.yaml",
-    "sha256": "b9f2eed77cc98a222dd1291da22a93360bbf9e2f4e728544841f2594bf34f456"
+    "sha256": "29dba2a1e56f8c9fac9629c5868e7dc78656a7d150127ac73bb0fc004e15afe8"
   },
   "toolchains": [
     {
@@ -1077,8 +1077,8 @@
   "advisoryReview": {
     "command": "pnpm audit --json",
     "source": "https://pnpm.io/cli/audit",
-    "reviewedAt": "2026-10-19T08:05:31Z",
-    "lockfileSha256": "b9f2eed77cc98a222dd1291da22a93360bbf9e2f4e728544841f2594bf34f456",
+    "reviewedAt": "2026-10-19T17:22:21Z",
+    "lockfileSha256": "29dba2a1e56f8c9fac9629c5868e7dc78656a7d150127ac73bb0fc004e15afe8",
     "resolvedDependencyCount": 935,
     "maintenanceNote": "Six newly observed advisories are removed without audit exclusions. Exact reviewed overrides select shell-quote 1.11.0, source-map-js 1.2.2, prosemirror-view 1.42.3, postcss-selector-parser 7.1.6, and http-cache-semantics 4.3.0. Mammoth 1.12.1 alone receives argparse 2.0.1, retaining its v1 compatibility API while eliminating unpatched sprintf-js. The accepted direct dependencies and Tiptap 3.30.5 pins remain unchanged. See dependency-security-maintenance-2026-10-19.md for primary sources and compatibility proof.",
     "optionalDependencyCount": 108,
@@ -1092,8 +1092,8 @@
   },
   "licenseReview": {
     "command": "pnpm check:licenses",
-    "reviewedAt": "2026-10-19T08:05:31Z",
-    "lockfileSha256": "b9f2eed77cc98a222dd1291da22a93360bbf9e2f4e728544841f2594bf34f456",
+    "reviewedAt": "2026-10-19T17:22:21Z",
+    "lockfileSha256": "29dba2a1e56f8c9fac9629c5868e7dc78656a7d150127ac73bb0fc004e15afe8",
     "resolvedPackageRecords": 520,
     "result": "pass",
     "note": "License records and advisory dependency counts use different tool scopes and are not expected to match. The current graph contains 935 external resolutions and 520 license records. The accepted direct dependencies, restricted Tiptap 3.30.5 editor, Mammoth 1.12.1 importer, local SQLite storage, and offline Workbox shell remain unchanged. The 2026-10-19 security maintenance replaces five affected transitive resolutions and scopes argparse 2.0.1 to Mammoth, removing sprintf-js. All selected licenses pass the existing policy, and all selected versions are more than 24 hours old. No new external direct dependency is added. Historical selection details remain in the earlier proof records and Git history."

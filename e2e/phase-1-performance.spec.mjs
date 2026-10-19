@@ -164,7 +164,7 @@ test("records Phase 1 reference-data startup, query, board, and table performanc
     seed: fixture.seed,
   };
 
-  await page.goto("/");
+  await page.goto("/storage-verification.html");
   await page.waitForFunction(() => globalThis.coredrillStorageSpike !== undefined);
   const storage = await callStorageBenchmark(page, benchmarkInput);
   const query = await callJobSearchBenchmark(page, benchmarkInput);

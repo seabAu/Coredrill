@@ -92,7 +92,7 @@ test("durably stores before acknowledgement and safely retries the exact Chromiu
     expect(queued).toMatchObject({ success: true, type: "capture.queued.v1", outboxCount: 1 });
 
     const app = await context.newPage();
-    await app.goto(`${appOrigin}/`);
+    await app.goto(`${appOrigin}/storage-verification.html`);
     await app.waitForFunction(
       () =>
         globalThis.coredrillStorageSpike !== undefined &&
@@ -259,7 +259,7 @@ test("durably stores before acknowledgement and safely retries the exact Chromiu
     });
 
     const restartedApp = await context.newPage();
-    await restartedApp.goto(`${appOrigin}/`);
+    await restartedApp.goto(`${appOrigin}/storage-verification.html`);
     await restartedApp.waitForFunction(
       () =>
         globalThis.coredrillStorageSpike !== undefined &&
@@ -345,7 +345,7 @@ test("durably stores before acknowledgement and safely retries the exact Chromiu
     });
 
     const postAckApp = await context.newPage();
-    await postAckApp.goto(`${appOrigin}/`);
+    await postAckApp.goto(`${appOrigin}/storage-verification.html`);
     await postAckApp.waitForFunction(
       () =>
         globalThis.coredrillStorageSpike !== undefined &&

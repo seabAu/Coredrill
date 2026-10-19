@@ -124,6 +124,9 @@ importers:
       '@coredrill/storage-core':
         specifier: workspace:*
         version: link:../../packages/storage-core
+      '@coredrill/storage-native':
+        specifier: workspace:*
+        version: link:../../packages/storage-native
       '@coredrill/ui':
         specifier: workspace:*
         version: link:../../packages/ui

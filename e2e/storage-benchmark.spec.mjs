@@ -26,7 +26,7 @@ test("benchmarks create, migrate, import, search, export, restore, and startup",
   page,
 }, testInfo) => {
   test.setTimeout(240_000);
-  await page.goto("/");
+  await page.goto("/storage-verification.html");
   await page.waitForFunction(() => globalThis.coredrillStorageSpike !== undefined);
 
   const results = [];
@@ -119,7 +119,7 @@ test("benchmarks production FTS5 and normalized-token job search", async ({
   page,
 }, testInfo) => {
   test.setTimeout(240_000);
-  await page.goto("/");
+  await page.goto("/storage-verification.html");
   await page.waitForFunction(() => globalThis.coredrillStorageSpike !== undefined);
 
   const results = [];

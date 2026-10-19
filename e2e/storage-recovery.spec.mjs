@@ -54,7 +54,7 @@ const callHarness = (page, method, argument) =>
 
 const openHarness = async (context) => {
   const page = await context.newPage();
-  await page.goto("/");
+  await page.goto("/storage-verification.html");
   await expect(page.getByRole("status")).toHaveText("Harness ready");
   await page.waitForFunction(() => globalThis.coredrillStorageSpike !== undefined);
   return page;

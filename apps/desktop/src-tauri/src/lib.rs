@@ -3,6 +3,8 @@ pub mod native_archive;
 pub mod native_secrets;
 pub mod native_storage;
 pub mod native_vault;
+#[cfg(any(feature = "desktop-shell", test))]
+mod startup_diagnostics;
 
 #[cfg(feature = "desktop-shell")]
 use std::sync::Arc;
@@ -137,8 +139,11 @@ pub fn run() {
                 }
             }
         })
-        .setup(|app| {
-            let storage_root = native_storage_app_data_root(app)?;
+        .setup(move |app| {
+            let storage_root = startup_diagnostics::storage_root(
+                native_storage_app_data_root(app)?,
+                startup_benchmark,
+            )?;
             let storage = Arc::new(
                 NativeStorageService::new(storage_root)
                     .map_err(|_| std::io::Error::other("native storage initialization failed"))?,

@@ -19,7 +19,7 @@ const callHarness = (page, method, argument) =>
 
 const openHarness = async (context) => {
   const page = await context.newPage();
-  await page.goto("/");
+  await page.goto("/storage-verification.html");
   await page.waitForFunction(() => globalThis.coredrillStorageSpike !== undefined);
   return page;
 };

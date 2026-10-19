@@ -60,7 +60,7 @@ test("imports the checksummed Firefox JSON fallback idempotently into durable SQ
 }) => {
   const now = new Date();
   const exported = await createExport(now);
-  await page.goto("/");
+  await page.goto("/storage-verification.html");
   await page.waitForFunction(() => globalThis.coredrillExtensionInbox !== undefined);
   await callStorage(page, "delete");
   await expect(callStorage(page, "openAndMigrate")).resolves.toMatchObject({

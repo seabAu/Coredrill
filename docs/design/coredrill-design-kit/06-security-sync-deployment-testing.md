@@ -113,6 +113,17 @@ Any URL fetcher enforces scheme/port, DNS and redirect revalidation, private/lin
 
 ### Database/file loss
 
+The production workspace now selects native SQLite/attachments in Tauri and
+browser SQLite/OPFS only on web; a native failure never starts a browser vault.
+Browser-only diagnostics and persistence/service-worker requests reject or are
+skipped on desktop. Package launch benchmarks use a confined
+`startup-diagnostics/` app-data subroot so loading the real entry cannot open or
+migrate a production vault. Normal app-data paths and IPC permissions are
+unchanged. Deletion clears the active workspace presentation while preserving a
+cleanup-pending warning; browser cleanup failure must not claim native restart
+recovery. See [runtime proof](../../proof/production-root-runtime-verification.md)
+for exact scope, simulated-host limits and remaining production setup work.
+
 - Transactional writes, WAL/config verified per adapter, foreign keys on.
 - Browser storage/quota/persistence diagnostics and recurring export reminders.
 - Desktop atomic timestamped backups with retention and restore verification.

@@ -102,6 +102,11 @@ import {
   type BrowserSqliteDatabase,
   type BrowserStorageHealthSnapshot,
 } from "@coredrill/storage-browser";
+import { openNativeSqliteDatabase, TauriNativeStorageTransport } from "@coredrill/storage-native";
+import { nativeVaultOperation } from "./native-vault-errors.js";
+import { createRuntimeDatabase, RuntimeCapabilityError } from "./runtime-database.js";
+import { RUNTIME_KIND } from "./runtime-kind.js";
+import { invalidateDeletedVaultViews } from "./vault-lifecycle.js";
 import {
   applySqlMigrations,
   commitPortableArchiveRestoreV1,
@@ -456,6 +461,13 @@ export interface TemplateCoverLetterVersionResult {
 }
 
 export interface CoredrillStorageSpikeApi {
+  readonly runtimeKind: "browser" | "native";
+  prepareVaultDeletion(): Promise<ApplicationResult<VaultDeletionPreviewDto>>;
+  deleteCurrentVault(input: {
+    readonly vaultId: string;
+    readonly previewId: string;
+    readonly confirmation: string;
+  }): Promise<ApplicationResult<VaultDeletionResultDto>>;
   createAppliedStage(
     input: CreateAppliedStageInput,
   ): Promise<ApplicationResult<CreatedAppliedStageDto>>;
@@ -566,8 +578,16 @@ declare global {
   var coredrillExtensionInbox: ExtensionInboxApi;
 }
 
-let database: BrowserSqliteDatabase | undefined;
-let databaseOpen: Promise<BrowserSqliteDatabase> | undefined;
+const runtimeDatabase = createRuntimeDatabase({
+  kind: RUNTIME_KIND,
+  openBrowser: (expectedExisting) =>
+    openBrowserSqliteDatabase({ databaseName: DATABASE_NAME, expectedExisting }),
+  openNative: () =>
+    openNativeSqliteDatabase({
+      databaseName: "coredrill.sqlite3",
+      transport: new TauriNativeStorageTransport(),
+    }),
+});
 let attachmentStore: BrowserAttachmentStore | undefined;
 const statusElement = document.querySelector<HTMLElement>("#status");
 
@@ -882,23 +902,12 @@ const migrations = async () =>
     ...(await additionalMigrations()),
   ]);
 
-const getDatabase = async (options: OpenOptions = {}): Promise<BrowserSqliteDatabase> => {
-  if (database !== undefined) return database;
-
-  databaseOpen ??= openBrowserSqliteDatabase({
-    databaseName: DATABASE_NAME,
-    expectedExisting: options.expectedExisting ?? false,
-  });
-
-  try {
-    database = await databaseOpen;
-    return database;
-  } catch (error) {
-    databaseOpen = undefined;
-    throw error;
-  } finally {
-    if (database !== undefined) databaseOpen = undefined;
-  }
+const getDatabase = (options: OpenOptions = {}) =>
+  runtimeDatabase.database(options.expectedExisting ?? false);
+const getBrowserDatabase = (options: OpenOptions = {}) =>
+  runtimeDatabase.browser(options.expectedExisting ?? false);
+const requireBrowserRuntime = (): void => {
+  if (RUNTIME_KIND !== "browser") throw new RuntimeCapabilityError();
 };
 
 interface CareerEntryRecordBase {
@@ -1883,15 +1892,26 @@ const resumeImportInput = async (input: LocalDocumentInput): Promise<QueueResume
   });
 };
 
-const getAttachmentStore = async (): Promise<BrowserAttachmentStore> => {
+const getBrowserAttachmentStore = async (): Promise<BrowserAttachmentStore> => {
+  if (RUNTIME_KIND !== "browser") throw new RuntimeCapabilityError();
   attachmentStore ??= await BrowserAttachmentStore.open();
   return attachmentStore;
+};
+
+const getAttachmentStore = async (): Promise<Pick<BrowserAttachmentStore, "put" | "read">> => {
+  if (RUNTIME_KIND === "browser") return getBrowserAttachmentStore();
+  const database = await runtimeDatabase.native();
+  return Object.freeze({
+    put: (input: Parameters<BrowserAttachmentStore["put"]>[0]) =>
+      database.writePortableAttachment(input),
+    read: (contentId: string) => database.readPortableAttachment(contentId),
+  });
 };
 
 const readBrowserExportReminder = async (
   nowUnixMs: number,
 ): Promise<BrowserExportReminderProof> => {
-  const client = await getDatabase();
+  const client = await getBrowserDatabase();
   await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
   const stored = await createTrackerRepositories(client).settings.get(
     BROWSER_EXPORT_REMINDER_SETTING_KEY,
@@ -1938,7 +1958,7 @@ const browserVaultDeletionSnapshots = new Map<string, BrowserVaultDeletionSnapsh
 
 const browserVaultDeletionPort: VaultDeletionPort = Object.freeze({
   preview: async (input: PreviewVaultDeletionPortInput) => {
-    const client = await getDatabase();
+    const client = await getBrowserDatabase();
     await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
     const rows = await client.query<VaultRow>(
       sqlStatement(
@@ -1995,7 +2015,7 @@ const browserVaultDeletionPort: VaultDeletionPort = Object.freeze({
     if (snapshot?.vaultId !== input.vaultId) {
       throw new VaultDeletionError("stale_preview");
     }
-    const client = await getDatabase();
+    const client = await getBrowserDatabase();
     const rows = await client.query<VaultRow>(
       sqlStatement(
         "SELECT id, name, schema_version, created_at, last_opened_at FROM vault ORDER BY id",
@@ -2014,10 +2034,10 @@ const browserVaultDeletionPort: VaultDeletionPort = Object.freeze({
     }
     const deleted = await client.delete();
     if (!deleted) throw new VaultDeletionError("cleanup_failed");
-    database = undefined;
+    await runtimeDatabase.forget(client);
     let attachmentCleanupPending = false;
     try {
-      await (await getAttachmentStore()).deleteAll();
+      await (await getBrowserAttachmentStore()).deleteAll();
       attachmentStore = undefined;
     } catch {
       attachmentCleanupPending = true;
@@ -2038,7 +2058,44 @@ const browserVaultDeletionPort: VaultDeletionPort = Object.freeze({
   },
 });
 
-const browserVaultDeletionOperations = createVaultDeletionOperations(browserVaultDeletionPort);
+const nativeVaultDeletionPort: VaultDeletionPort = Object.freeze({
+  preview: async (input: PreviewVaultDeletionPortInput) => {
+    const client = await runtimeDatabase.native();
+    await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
+    const preview = await nativeVaultOperation(() =>
+      client.previewVaultDeletion({
+        vaultId: input.vaultId,
+        previewId: input.previewId,
+      }),
+    );
+    return {
+      vaultId: input.vaultId,
+      vaultName: preview.vaultName,
+      storageMode: "desktop" as const,
+      inventory: preview.inventory,
+      lastSuccessfulPortableExportAt:
+        preview.lastSuccessfulPortableExportAt === null
+          ? null
+          : instant(preview.lastSuccessfulPortableExportAt),
+    };
+  },
+  delete: async (input: DeleteVaultPortInput) => {
+    const client = await runtimeDatabase.native();
+    const result = await nativeVaultOperation(() =>
+      client.deleteVault({
+        vaultId: input.vaultId,
+        previewId: input.previewId,
+        deletionId: input.deletionId,
+        confirmation: input.confirmation,
+      }),
+    );
+    await runtimeDatabase.forget(client);
+    return { ...result, vaultId: input.vaultId, deletionId: input.deletionId };
+  },
+});
+const vaultDeletionOperations = createVaultDeletionOperations(
+  RUNTIME_KIND === "native" ? nativeVaultDeletionPort : browserVaultDeletionPort,
+);
 
 const logOpenProof = (diagnostics: StorageDiagnostics): void => {
   console.info(
@@ -3161,6 +3218,7 @@ const createCurrentPortableArchive = async (input: PortableRecoveryFixtureInput)
 };
 
 const createBrowserContractAdapter = () => {
+  requireBrowserRuntime();
   let sequence = 1;
   return {
     name: "official-sqlite-wasm-opfs-sahpool",
@@ -3179,6 +3237,35 @@ const createBrowserContractAdapter = () => {
 };
 
 const api: CoredrillStorageSpikeApi = {
+  runtimeKind: RUNTIME_KIND,
+  prepareVaultDeletion: async () => {
+    const client = await getDatabase();
+    await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
+    const vaults = await client.query<VaultRow>(
+      sqlStatement(
+        "SELECT id, name, schema_version, created_at, last_opened_at FROM vault ORDER BY id",
+      ),
+    );
+    if (vaults.length !== 1 || vaults[0] === undefined)
+      return applicationFailure({
+        code: "not_found",
+        message:
+          "A single vault identity is required for deletion review. Stored records may still exist; production vault setup is not connected to this view yet.",
+        retryable: false,
+      });
+    return vaultDeletionOperations.previewVaultDeletionQuery.execute(
+      { vaultId: vaults[0].id },
+      careerProfileOperationContext(),
+    );
+  },
+  deleteCurrentVault: async (input) => {
+    const result = await vaultDeletionOperations.deleteVaultCommand.execute(
+      input,
+      careerProfileOperationContext(),
+    );
+    if (result.ok) invalidateDeletedVaultViews();
+    return result;
+  },
   pipeline: createStoredPipelineApi(async () => {
     const client = await getDatabase();
     await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
@@ -3258,7 +3345,7 @@ const api: CoredrillStorageSpikeApi = {
   installDocumentsWorkspaceReferenceFixture: async () => {
     const client = await getDatabase();
     await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
-    await installDocumentsWorkspaceReferenceFixture(client, await getAttachmentStore());
+    await installDocumentsWorkspaceReferenceFixture(client, await getBrowserAttachmentStore());
   },
   listPendingResumeImports: async () =>
     resumeImportOperations.listPendingQuery.execute(undefined, careerProfileOperationContext()),
@@ -3366,11 +3453,11 @@ const api: CoredrillStorageSpikeApi = {
     });
   },
   restorePortable: async (portable) => {
-    await (await getDatabase()).restorePortable(toPortableDatabase(portable));
+    await (await getBrowserDatabase()).restorePortable(toPortableDatabase(portable));
   },
   diagnostics: async () => (await getDatabase()).diagnostics(),
-  storageHealth: async () => (await getDatabase()).refreshStorageHealth(),
-  requestPersistentStorage: async () => (await getDatabase()).requestPersistentStorage(),
+  storageHealth: async () => (await getBrowserDatabase()).refreshStorageHealth(),
+  requestPersistentStorage: async () => (await getBrowserDatabase()).requestPersistentStorage(),
   getBrowserExportReminder: readBrowserExportReminder,
   updateBrowserExportReminder: writeBrowserExportReminder,
   previewVaultDeletion: async (input) => {
@@ -3378,7 +3465,7 @@ const api: CoredrillStorageSpikeApi = {
       operationId: entityId("application-operation", input.previewId),
       initiatedAt: instant(input.previewedAt),
     });
-    return browserVaultDeletionOperations.previewVaultDeletionQuery.execute(
+    return vaultDeletionOperations.previewVaultDeletionQuery.execute(
       { vaultId: input.vaultId },
       context,
     );
@@ -3388,7 +3475,7 @@ const api: CoredrillStorageSpikeApi = {
       operationId: entityId("application-operation", input.deletionId),
       initiatedAt: instant(input.deletedAt),
     });
-    return browserVaultDeletionOperations.deleteVaultCommand.execute(
+    return vaultDeletionOperations.deleteVaultCommand.execute(
       {
         vaultId: input.vaultId,
         previewId: input.previewId,
@@ -3398,21 +3485,28 @@ const api: CoredrillStorageSpikeApi = {
     );
   },
   close: async () => {
-    if (database === undefined) return;
-    await database.close();
-    database = undefined;
+    await runtimeDatabase.close();
   },
   delete: async () => {
-    const client = await getDatabase();
-    await (await getAttachmentStore()).deleteAll();
+    const client = await getBrowserDatabase();
+    await (await getBrowserAttachmentStore()).deleteAll();
     const deleted = await client.delete();
-    database = undefined;
+    await runtimeDatabase.forget(client);
     attachmentStore = undefined;
     return deleted;
   },
-  runBenchmark: (input) => runStorageBenchmark(input),
-  runJobSearchBenchmark: async (input) => runJobSearchBenchmark(input, await migrations()),
-  runPortableArchiveWriterProof,
+  runBenchmark: async (input) => {
+    requireBrowserRuntime();
+    return runStorageBenchmark(input);
+  },
+  runJobSearchBenchmark: async (input) => {
+    requireBrowserRuntime();
+    return runJobSearchBenchmark(input, await migrations());
+  },
+  runPortableArchiveWriterProof: async () => {
+    requireBrowserRuntime();
+    return runPortableArchiveWriterProof();
+  },
   exportHumanReadable: async (input) => {
     const bundle = await createPortableDataExportV1({
       database: await getDatabase(),
@@ -3430,7 +3524,7 @@ const api: CoredrillStorageSpikeApi = {
     });
   },
   runPortableArchiveRestoreProof: async (input) => {
-    const client = await getDatabase();
+    const client = await getBrowserDatabase();
     const originalVaults = await client.query<VaultRow>(
       sqlStatement(
         "SELECT id, name, schema_version, created_at, last_opened_at FROM vault ORDER BY id",
@@ -3616,7 +3710,7 @@ const api: CoredrillStorageSpikeApi = {
     });
   },
   createPortableRecoveryFixture: async (input) => {
-    const client = await getDatabase();
+    const client = await getBrowserDatabase();
     const attachmentContentIds = await seedRepresentativePhase1Vault(client, input.vaultId);
     const phase3Inventory = await readPhase3RecoveryInventory(client);
     const { archive, portable, dataBundle } = await createCurrentPortableArchive(input);
@@ -3640,7 +3734,7 @@ const api: CoredrillStorageSpikeApi = {
     });
   },
   restorePortableRecoveryFixture: async (input) => {
-    const client = await getDatabase();
+    const client = await getBrowserDatabase();
     const archiveBytes = base64ToBytes(input.archiveBytesBase64);
     const schemaVersion = (await client.diagnostics()).schemaVersion;
     const inspected = await inspectPortableArchiveV1({
@@ -3651,7 +3745,7 @@ const api: CoredrillStorageSpikeApi = {
     if (inspected.manifest.vault.id !== input.vaultId) {
       throw new Error("The recovery fixture changed vault identity.");
     }
-    const store = await getAttachmentStore();
+    const store = await getBrowserAttachmentStore();
     const port = createBrowserPortableArchiveRestorePortV1({
       database: client,
       attachments: store,
@@ -3735,10 +3829,10 @@ const api: CoredrillStorageSpikeApi = {
     runPhase1CanonicalJourney({
       runtime: "browser",
       prepareSource: async () => {
-        const client = await getDatabase();
-        await (await getAttachmentStore()).deleteAll();
+        const client = await getBrowserDatabase();
+        await (await getBrowserAttachmentStore()).deleteAll();
         await client.delete();
-        database = undefined;
+        await runtimeDatabase.forget(client);
         attachmentStore = undefined;
         const source = await getDatabase();
         await applySqlMigrations(source, await migrations(), MIGRATION_APPLIED_AT);
@@ -3753,7 +3847,7 @@ const api: CoredrillStorageSpikeApi = {
       createRestorePort: async (target, vaultId) =>
         createBrowserPortableArchiveRestorePortV1({
           database: target as BrowserSqliteDatabase,
-          attachments: await getAttachmentStore(),
+          attachments: await getBrowserAttachmentStore(),
           expectedVaultId: vaultId,
         }),
       readRestoredAttachment: async (_target, contentId) =>

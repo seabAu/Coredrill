@@ -246,8 +246,13 @@ existing payloads on ordinary writes, and returns only content identity metadata
 This fills the native document-runtime retention gap without changing SQLite
 schema, archive file format, generic filesystem access or permissions. See
 [contract](native-attachment-write-v3.md) and [verification](../../proof/native-attachment-write-verification.md).
-Production runtime/entry composition remains unfinished; this adapter capability
-alone is not native UI proof.
+The production root now composes a host-selected database/attachment runtime:
+Tauri uses native SQLite and native content-addressed bytes; browser-only
+capabilities reject there and native failure never falls back to OPFS. `/` is
+the workspace, with diagnostics at `/storage-verification.html`. Real-process
+integration evidence and remaining packaged-WebView/setup boundaries are in
+[runtime proof](../../proof/production-root-runtime-verification.md). Adapter or
+simulated-host evidence alone is not installed desktop UI proof.
 
 - `NAT-001` through `NAT-008` establish an accepted capability-gated Tauri boundary with a strict, versioned operation protocol over a narrow `rusqlite` 0.40.1 service. The shared TypeScript `DatabasePort`, reviewed SQL migration ledger, and repository contracts remain the public surface; Rust/Tauri/SQLite types do not cross into storage-core.
 - Opaque session identifiers retain one native connection for callback transactions. Query/execute separation, tagged bound values, request/value/result limits, unknown-field denial, serialized access, foreign keys, `trusted_schema = OFF`, WAL, and content-free errors are enforced at the privileged boundary.

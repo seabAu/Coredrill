@@ -90,7 +90,7 @@ test("retains the complete Phase 2 extension capture and correction journey", as
     const popup = await context.newPage();
     await popup.goto(`chrome-extension://${extensionId}/popup.html`);
     const root = await context.newPage();
-    await root.goto(`${appOrigin}/`);
+    await root.goto(`${appOrigin}/storage-verification.html`);
     await root.waitForFunction(
       () =>
         globalThis.coredrillStorageSpike !== undefined &&

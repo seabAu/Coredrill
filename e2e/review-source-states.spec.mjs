@@ -4,7 +4,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
 const openCleanShell = async (page) => {
-  await page.goto("/");
+  await page.goto("/storage-verification.html");
   await page.waitForFunction(() => globalThis.coredrillStorageSpike !== undefined);
   await page.evaluate(async () => {
     await globalThis.coredrillStorageSpike.delete();

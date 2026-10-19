@@ -15,7 +15,10 @@ test("discovers a manually saved job through normal Pipeline navigation offline"
     external.push(route.request().url());
     return route.abort("blockedbyclient");
   });
-  await page.goto("/app-shell.html");
+  await page.goto("/");
+  await expect(
+    page.getByRole("button", { name: "Browser vault: Local workspace. Vault health not checked" }),
+  ).toBeVisible();
   await page.waitForFunction(
     () => globalThis.coredrillOfflineShell?.getState().registered === true,
   );
