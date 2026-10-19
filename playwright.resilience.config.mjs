@@ -21,6 +21,7 @@ export default defineConfig({
     "document-creation.spec.mjs",
     "document-navigation.spec.mjs",
     "phase-3-canonical-journey.spec.mjs",
+    "phase-3-unseeded-journey.spec.mjs",
     "phase-1-resilience.spec.mjs",
     "storage-concurrency.spec.mjs",
     "storage-failures.spec.mjs",
