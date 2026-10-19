@@ -1,0 +1,23 @@
+# Windows package proof: exited-process handling
+
+Date: 2026-10-19. Scope: verification repair while `Q3-005` remains open.
+
+## Finding and repair
+
+Hosted navigation run `39237755795` failed its Windows installed-package resource sampler with `Unable to find type [System.Management.Automation.ProcessCommandException]`. The native contracts, secure store, recovery, lint and installer build had passed. The invalid namespace was latent until a process exited between process-tree enumeration and sampling. Both sampling and final process cleanup used it.
+
+The actual local PowerShell runtime reports `Microsoft.PowerShell.Commands.ProcessCommandException` for an already-exited PID, with `NoProcessFoundForGivenId` as its stable error identity. Both handlers now use that real type and ignore only the already-gone condition. Permission and other process errors propagate rather than being counted as a successful sample or cleanup. The exact executable check, root ownership, timeouts, installer isolation, hash/signature reporting and uninstall/data-preservation checks are unchanged.
+
+## Executable evidence
+
+The new Windows-only `native-packaging.test.mjs` regression parses the checked-in PowerShell script and executes only its actual `Get-ResourceSample` and `Stop-CoredrillProcessTree` function definitions. It does not run installer/uninstaller or filesystem-cleanup code. Controlled process-tree records include the live test PowerShell process and an already-absent child PID. The test proves live-root resource sampling, safe handling of the absent child during sampling and cleanup, unchanged executable-path confinement, and propagation of synthetic non-exit errors in both sampling and cleanup using the real process exception type. Cleanup is never given the live root as a force-stop target. It emits `NATIVE_PACKAGE_PROCESS_RACE_PROOF` only after all assertions pass.
+
+The regression failed against the old script with the exact hosted invalid-type error, then passed after the repair. All six focused packaging tests pass; the final report is retained at `test-results/native-package-process-race.json`. The test's explicit 25-second budget includes two exercised five-second graceful waits in the unchanged production cleanup and a bounded child PowerShell process; no production timeout or assertion was relaxed. CI now runs the focused regression explicitly on Windows, in addition to the real installed-package proof. Other platforms skip only the Windows runtime regression and still validate package configuration and workflow wiring.
+
+## Remaining verification
+
+The targeted extension rerun of `39237755795` was cancelled after the subsequent source-review push; it is not success evidence. The new source-review run `39240572656` owns that checkpoint's live verification. Its status must be inspected separately from this Windows repair.
+
+The complete local `pnpm verify` passed with exit 0, including static/type/lint/unit/coverage/build checks, all browser suites, shared browser/native storage contracts and recovery, real secure-store/archive/backup harnesses, schemas/reports, licenses, secrets and dependency policy. The final expanded cleanup-error regression independently passed six focused tests and retained the JSON report. npm has zero known vulnerabilities; Cargo retains the same ten reviewed warnings. Fresh clean-commit hosted installed-package proof remains pending. The old locally retained installer is from August and is not presented as proof of this implementation. No public-release, reference-hardware or signing gate is closed by this repair. No application code, dependency, schema, permission, network destination or Accepted decision changes; no runtime Changeset is required for test-only tooling maintenance.
+
+Source-review run `39240572656` repeated the extension routing failure in `extension-transfer.spec.mjs`, this time fetching the local `0038_document_kind_update_guard.sql?import&raw` asset. Its six other extension tests passed, including the canonical journey that failed in the preceding run. Both failures occur inside the local-origin forwarding callback with `route.fetch: socket hang up`, followed by an in-flight route/context-close error. The shared test forwarding and teardown boundary needs an explicit repair and proof; this is not dismissed as a one-off or a green transfer claim.

@@ -169,6 +169,9 @@ jobs:
       - name: Build installable Tauri package
         run: pnpm --filter @coredrill/desktop build:installer:windows
 
+      - name: Prove package sampler and cleanup process races
+        run: pnpm exec vitest run tooling/tests/native-packaging.test.mjs
+
       - name: Prove installed startup and resources
         shell: pwsh
         run: >-

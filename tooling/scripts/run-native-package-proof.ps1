@@ -168,7 +168,10 @@ function Get-ResourceSample {
                 $webviewVersion = [Diagnostics.FileVersionInfo]::GetVersionInfo($record.ExecutablePath).FileVersion
             }
         }
-        catch [System.Management.Automation.ProcessCommandException] {
+        catch [Microsoft.PowerShell.Commands.ProcessCommandException] {
+            if ($_.FullyQualifiedErrorId -notlike "NoProcessFoundForGivenId,*") {
+                throw
+            }
             continue
         }
     }
@@ -207,7 +210,10 @@ function Stop-CoredrillProcessTree {
         try {
             Stop-Process -Id ([int]$record.ProcessId) -Force -ErrorAction Stop
         }
-        catch [System.Management.Automation.ProcessCommandException] {
+        catch [Microsoft.PowerShell.Commands.ProcessCommandException] {
+            if ($_.FullyQualifiedErrorId -notlike "NoProcessFoundForGivenId,*") {
+                throw
+            }
             continue
         }
     }
