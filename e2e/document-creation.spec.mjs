@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { initializeDefaultWorkspace } from "./production-workspace.mjs";
 
 test("creates reusable documents from an empty local library offline and retains exact first versions", async ({
   page,
@@ -14,6 +15,7 @@ test("creates reusable documents from an empty local library offline and retains
     return route.abort("blockedbyclient");
   });
   await page.goto("/app-shell.html");
+  await initializeDefaultWorkspace(page);
   await page.waitForFunction(
     () => globalThis.coredrillOfflineShell?.getState().registered === true,
   );

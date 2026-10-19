@@ -104,6 +104,7 @@ const OnboardingCatalog = () => {
 
   return (
     <main>
+      <p role="note">Onboarding reference catalog: these previews do not create saved records.</p>
       <FirstRunExperience
         initialRuntime={appearance.runtime}
         onComplete={(completion) => {

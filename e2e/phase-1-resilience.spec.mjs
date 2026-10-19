@@ -2,6 +2,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { expect, test } from "@playwright/test";
+import { initializeDefaultWorkspace } from "./production-workspace.mjs";
 
 const serviceWorkerPath = path.resolve("apps/web/dist/service-worker.js");
 const sentinelName = "q1-002-service-worker-update-sentinel";
@@ -36,6 +37,7 @@ test("keeps the production shell offline and applies a waiting update without to
   const originalServiceWorker = await readFile(serviceWorkerPath, "utf8");
   try {
     await page.goto("/");
+    await initializeDefaultWorkspace(page);
     await expect(page.getByTestId("page-title")).toHaveText("Keep the next move clear");
     await waitForOfflineShell(page);
 

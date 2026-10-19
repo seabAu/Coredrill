@@ -2,6 +2,7 @@ import { readFile, writeFile } from "node:fs/promises";
 
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { initializeDefaultWorkspace } from "./production-workspace.mjs";
 
 const hostileHtml = await readFile(
   new URL("../fixtures/capture/hostile-source.html", import.meta.url),
@@ -17,6 +18,7 @@ const openCleanShell = async (page) => {
     await globalThis.coredrillStorageSpike.delete();
   });
   await page.goto("/app-shell.html");
+  await initializeDefaultWorkspace(page);
   await page.waitForFunction(
     () =>
       globalThis.coredrillAppShell !== undefined &&

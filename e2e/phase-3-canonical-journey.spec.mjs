@@ -4,6 +4,7 @@ import path from "node:path";
 
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { initializeDefaultWorkspace } from "./production-workspace.mjs";
 
 test("Phase 3 carries reviewed resume evidence through a durable submitted set", async ({
   page,
@@ -23,6 +24,7 @@ test("Phase 3 carries reviewed resume evidence through a durable submitted set",
   });
   await page.setViewportSize({ width: 1440, height: 960 });
   await page.goto("/app-shell.html");
+  await initializeDefaultWorkspace(page);
   await page.waitForFunction(() => globalThis.coredrillStorageSpike !== undefined);
   await page.waitForFunction(
     () => globalThis.coredrillOfflineShell?.getState().registered === true,

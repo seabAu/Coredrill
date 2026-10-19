@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { initializeDefaultWorkspace } from "./production-workspace.mjs";
 
 test("starts a durable local application from a manually captured job without seeded records", async ({
   page,
@@ -13,6 +14,7 @@ test("starts a durable local application from a manually captured job without se
     return route.abort("blockedbyclient");
   });
   await page.goto("/app-shell.html");
+  await initializeDefaultWorkspace(page);
   await page.waitForFunction(
     () => globalThis.coredrillOfflineShell?.getState().registered === true,
   );

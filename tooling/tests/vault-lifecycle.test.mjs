@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   invalidateDeletedVaultViews,
   installVaultViewInvalidation,
+  expectsLocalVault,
+  markLocalVaultInitialized,
 } from "../../apps/web/src/vault-lifecycle.ts";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -14,11 +16,21 @@ const environment = () => {
   vi.stubGlobal("localStorage", {
     getItem: (key) => values.get(key) ?? null,
     setItem: (key, value) => values.set(key, value),
+    removeItem: (key) => values.delete(key),
   });
   return { values, target, reload };
 };
 
 describe("deleted vault view invalidation", () => {
+  it("retains only a boolean recovery hint and clears it after acknowledged deletion", () => {
+    const { values } = environment();
+    expect(expectsLocalVault()).toBe(false);
+    markLocalVaultInitialized();
+    expect(expectsLocalVault()).toBe(true);
+    expect([...values.entries()]).toEqual([["coredrill-vault-initialized-v1", "true"]]);
+    invalidateDeletedVaultViews();
+    expect(expectsLocalVault()).toBe(false);
+  });
   it("stores only an opaque generation and invalidates restored pages", () => {
     const { values, target, reload } = environment();
     installVaultViewInvalidation();

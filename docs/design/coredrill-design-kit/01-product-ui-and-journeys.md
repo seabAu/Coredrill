@@ -352,3 +352,7 @@ Export a versioned portable archive containing SQLite data, attachments, manifes
 - Salary mapping ambiguous or data too coarse/stale.
 
 Every error preserves user work, explains what remains local, and offers export/manual fallback. See [09 — Interface system](09-interface-system.md) for shell dimensions, visual language, responsive layout, keyboard commands, accessibility, and full component states.
+
+## Production first-run composition checkpoint (2026-10-19)
+
+The normal entry inspects the actual local identity before mounting stored views. Existing named vaults reopen; explicit Quick start, Guided setup or safe-default initialization names an absent identity without replacing prior records. Quick start retains supplied values as capture candidates for Inbox review, not automatically confirmed jobs; both tracks converge on Home. Completion waits for durable acknowledgement. Capture failure after vault creation retains that saved identity and form inputs for retry without a second root. Unconnected backup, lock, imports, AI-provider and pairing actions are disabled and explicitly deferred, not reported as configured. Demo records remain session-only. This checkpoint does not close `Q3-005` or the complete first-run/recovery experience; see [verification](../../proof/production-first-run-verification.md).

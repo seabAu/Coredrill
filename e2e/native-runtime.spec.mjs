@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { createInterface } from "node:readline";
 import { expect, test } from "@playwright/test";
+import { initializeDefaultWorkspace } from "./production-workspace.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
 const executable = path.join(
@@ -128,9 +129,10 @@ test("normal root uses real native SQLite for capture and documents without OPFS
     });
     await page.goto("/");
     await page.waitForFunction(() => globalThis.coredrillStorageSpike?.runtimeKind === "native");
+    await initializeDefaultWorkspace(page);
     await expect(
       page.getByRole("button", {
-        name: "Desktop vault: Local workspace. Vault health not checked",
+        name: "Desktop vault: My job search. Vault healthy",
       }),
     ).toBeVisible();
     const primary = page.getByRole("navigation", { name: "Primary", exact: true });
@@ -290,13 +292,10 @@ test("native IPC failure shows retry without browser storage fallback", async ({
     throw new Error("synthetic private native detail");
   });
   await page.goto("/");
-  await page
-    .getByRole("navigation", { name: "Primary", exact: true })
-    .getByRole("link", { name: "Pipeline", exact: true })
-    .click();
   await expect(
-    page.getByRole("region", { name: "Stored Pipeline status", exact: true }),
-  ).toContainText("Retry");
+    page.getByRole("heading", { name: "Local vault unavailable", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Retry local vault", exact: true })).toBeVisible();
   await expect(page.getByText("synthetic private native detail", { exact: false })).toHaveCount(0);
   expect(await page.evaluate(() => globalThis.coredrillBrowserCapabilityProbe)).toEqual({
     opfs: 0,

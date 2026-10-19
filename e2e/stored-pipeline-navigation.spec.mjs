@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { initializeDefaultWorkspace } from "./production-workspace.mjs";
 
 test("discovers a manually saved job through normal Pipeline navigation offline", async ({
   page,
@@ -16,9 +17,8 @@ test("discovers a manually saved job through normal Pipeline navigation offline"
     return route.abort("blockedbyclient");
   });
   await page.goto("/");
-  await expect(
-    page.getByRole("button", { name: "Browser vault: Local workspace. Vault health not checked" }),
-  ).toBeVisible();
+  await initializeDefaultWorkspace(page);
+  await expect(page.getByRole("button", { name: /Browser vault: My job search/u })).toBeVisible();
   await page.waitForFunction(
     () => globalThis.coredrillOfflineShell?.getState().registered === true,
   );

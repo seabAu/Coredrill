@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { initializeDefaultWorkspace } from "./production-workspace.mjs";
 
 test("reviews retained requirement sources offline without seeded job or requirement records", async ({
   page,
@@ -13,6 +14,7 @@ test("reviews retained requirement sources offline without seeded job or require
     return route.abort("blockedbyclient");
   });
   await page.goto("/app-shell.html");
+  await initializeDefaultWorkspace(page);
   await page.waitForFunction(
     () => globalThis.coredrillOfflineShell?.getState().registered === true,
   );

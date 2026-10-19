@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { initializeDefaultWorkspace } from "./production-workspace.mjs";
 
 test("flushes local document navigation, blocks failed Back, and ignores abandoned loads offline", async ({
   page,
@@ -13,6 +14,7 @@ test("flushes local document navigation, blocks failed Back, and ignores abandon
     return route.abort("blockedbyclient");
   });
   await page.goto("/app-shell.html");
+  await initializeDefaultWorkspace(page);
   await page.waitForFunction(
     () => globalThis.coredrillOfflineShell?.getState().registered === true,
   );

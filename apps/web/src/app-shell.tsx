@@ -116,6 +116,7 @@ import {
   type RecordApplicationExportInput,
   type VaultDeletionPreviewDto,
   type VaultDeletionResultDto,
+  type VaultSessionDto,
 } from "@coredrill/application";
 import { entityId, instant } from "@coredrill/domain";
 import {
@@ -129,6 +130,8 @@ import "./app-shell.css";
 import "./main.js";
 import { RUNTIME_KIND } from "./runtime-kind.js";
 import { StoredVaultSettings } from "./stored-vault-settings.js";
+import { StoredVaultRoot } from "./stored-vault-root.js";
+import { storedVaultHealth } from "./vault-presentation.js";
 import { installVaultViewInvalidation } from "./vault-lifecycle.js";
 import { CanonicalJourneyPanel } from "./canonical-journey-panel.js";
 import { createGuardedNavigation } from "./guarded-navigation.js";
@@ -1732,7 +1735,13 @@ const moveBoardJob = (
   });
 };
 
-const AppShellCatalog = () => {
+const AppShellCatalog = ({
+  vaultSession,
+  onVaultObserved,
+}: {
+  readonly vaultSession?: VaultSessionDto;
+  readonly onVaultObserved?: ((session: VaultSessionDto) => void) | undefined;
+}) => {
   const referenceCatalog = useMemo(() => globalThis.coredrillReferenceShellCatalog === true, []);
   const [storedPipeline, setStoredPipeline] = useState<StoredPipelineSnapshot | null>(null);
   const [storedPipelineState, setStoredPipelineState] = useState<"loading" | "ready" | "error">(
@@ -4228,13 +4237,15 @@ const AppShellCatalog = () => {
       }
       vault={{
         health: !referenceCatalog
-          ? "unverified"
+          ? vaultSession === undefined
+            ? "unverified"
+            : storedVaultHealth(vaultSession.diagnostics)
           : appearance.workspaceState === "offline"
             ? "offline"
             : appearance.vaultHealth,
         kind: RUNTIME_KIND === "native" ? "desktop" : "browser",
         name: !referenceCatalog
-          ? "Local workspace"
+          ? (vaultSession?.vault.name ?? "Local workspace")
           : canonicalJourneyMode
             ? "Canonical local job search"
             : "Job search 2026",
@@ -4777,6 +4788,8 @@ const AppShellCatalog = () => {
         ) : activeDestination === "settings" && !referenceCatalog ? (
           <StoredVaultSettings
             api={globalThis.coredrillStorageSpike}
+            session={vaultSession}
+            onSessionObserved={onVaultObserved}
             onDeleted={(result) => {
               setVaultDeletionStatus(result.status);
             }}
@@ -4887,4 +4900,12 @@ initializeOfflineShell();
 installVaultViewInvalidation();
 const rootElement = document.querySelector<HTMLElement>("#root");
 if (rootElement === null) throw new Error("Application shell root is missing.");
-createRoot(rootElement).render(<AppShellCatalog />);
+createRoot(rootElement).render(
+  globalThis.coredrillReferenceShellCatalog === true ? (
+    <AppShellCatalog />
+  ) : (
+    <StoredVaultRoot>
+      {(session, observed) => <AppShellCatalog vaultSession={session} onVaultObserved={observed} />}
+    </StoredVaultRoot>
+  ),
+);

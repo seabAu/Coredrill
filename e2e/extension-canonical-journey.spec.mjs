@@ -4,6 +4,7 @@ import path from "node:path";
 
 import AxeBuilder from "@axe-core/playwright";
 import { chromium, expect, test } from "@playwright/test";
+import { initializeDefaultWorkspace } from "./production-workspace.mjs";
 
 import {
   closeHostedAppContext,
@@ -124,6 +125,7 @@ test("retains the complete Phase 2 extension capture and correction journey", as
 
     const app = await context.newPage();
     await app.goto(`${appOrigin}/app-shell.html`);
+    await initializeDefaultWorkspace(app);
     await app.waitForFunction(
       () =>
         globalThis.coredrillAppShell !== undefined &&

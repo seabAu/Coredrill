@@ -1,24 +1,13 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { initializeDefaultWorkspace } from "./production-workspace.mjs";
 
 for (const pending of [false, true]) {
   test(`single-vault settings deletion clears private views and retains ${pending ? "pending cleanup" : "successful deletion"} notice`, async ({
     page,
   }) => {
     await page.goto("/");
-    // Explicit synthetic identity prerequisite, NOT proof of production onboarding.
-    // Ordinary document creation currently does not initialize a vault identity.
-    await page.waitForFunction(() => globalThis.coredrillStorageSpike !== undefined);
-    await page.evaluate(async () => {
-      const api = globalThis.coredrillStorageSpike;
-      await api.openAndMigrate();
-      await api.writeVault({
-        id: "0199b300-0000-7000-8000-000000000099",
-        name: "Synthetic deletion vault",
-        createdAt: "2026-10-19T12:00:00.000Z",
-        lastOpenedAt: "2026-10-19T12:00:00.000Z",
-      });
-    });
+    await initializeDefaultWorkspace(page);
     const primary = page.getByRole("navigation", { name: "Primary", exact: true });
     await primary.getByRole("link", { name: "Documents", exact: true }).click();
     await page.getByRole("button", { name: "New document", exact: true }).click();
@@ -75,6 +64,7 @@ for (const pending of [false, true]) {
     }
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
     await page.getByRole("button", { name: "Return to an empty workspace", exact: true }).click();
+    await initializeDefaultWorkspace(page);
     await primary.getByRole("link", { name: "Documents", exact: true }).click();
     await expect(page.locator(".cd-document-card")).toHaveCount(0);
   });

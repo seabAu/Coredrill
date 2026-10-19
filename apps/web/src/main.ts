@@ -23,6 +23,9 @@ import {
   createResumeImportOperations,
   createResumeImportReviewOperations,
   createVaultDeletionOperations,
+  createVaultBootstrapOperations,
+  type VaultBootstrapStateDto,
+  type VaultSessionDto,
   deriveBrowserExportReminderFromPreference,
   parseBrowserExportReminderPreference,
   serializeBrowserExportReminderPreference,
@@ -106,9 +109,10 @@ import { openNativeSqliteDatabase, TauriNativeStorageTransport } from "@coredril
 import { nativeVaultOperation } from "./native-vault-errors.js";
 import { createRuntimeDatabase, RuntimeCapabilityError } from "./runtime-database.js";
 import { RUNTIME_KIND } from "./runtime-kind.js";
-import { invalidateDeletedVaultViews } from "./vault-lifecycle.js";
+import { expectsLocalVault, invalidateDeletedVaultViews } from "./vault-lifecycle.js";
 import {
   applySqlMigrations,
+  createDatabaseVaultBootstrapPort,
   commitPortableArchiveRestoreV1,
   createPortableArchiveContentHashV1,
   createPortableDataExportV1,
@@ -462,6 +466,11 @@ export interface TemplateCoverLetterVersionResult {
 
 export interface CoredrillStorageSpikeApi {
   readonly runtimeKind: "browser" | "native";
+  readonly vault: {
+    inspect(): Promise<ApplicationResult<VaultBootstrapStateDto>>;
+    create(input: { readonly name: string }): Promise<ApplicationResult<VaultSessionDto>>;
+    open(input: { readonly vaultId: string }): Promise<ApplicationResult<VaultSessionDto>>;
+  };
   prepareVaultDeletion(): Promise<ApplicationResult<VaultDeletionPreviewDto>>;
   deleteCurrentVault(input: {
     readonly vaultId: string;
@@ -1856,6 +1865,21 @@ const careerProfileOperationContext = (): ApplicationOperationContext =>
     initiatedAt: instant(new Date().toISOString()),
   });
 
+const runtimeVaultPort = async () => {
+  const client = await getDatabase({ expectedExisting: expectsLocalVault() });
+  await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
+  return createDatabaseVaultBootstrapPort(client);
+};
+const runtimeVaultOperations = createVaultBootstrapOperations({
+  lifecycle: {
+    create: async (input) => (await runtimeVaultPort()).create(input),
+    open: async (input) => (await runtimeVaultPort()).open(input),
+    inspect: async () => (await runtimeVaultPort()).inspect(),
+    diagnostics: async () => (await runtimeVaultPort()).diagnostics(),
+  },
+  createVaultId: () => generateEntityId("vault"),
+});
+
 const resumeImportInput = async (input: LocalDocumentInput): Promise<QueueResumeImportInput> => {
   const { documentIrToPlainText, importLocalDocument } =
     await import("@coredrill/documents/browser");
@@ -3238,6 +3262,14 @@ const createBrowserContractAdapter = () => {
 
 const api: CoredrillStorageSpikeApi = {
   runtimeKind: RUNTIME_KIND,
+  vault: Object.freeze({
+    inspect: () =>
+      runtimeVaultOperations.inspectVaultQuery.execute(undefined, careerProfileOperationContext()),
+    create: (input: { readonly name: string }) =>
+      runtimeVaultOperations.createVaultCommand.execute(input, careerProfileOperationContext()),
+    open: (input: { readonly vaultId: string }) =>
+      runtimeVaultOperations.openVaultCommand.execute(input, careerProfileOperationContext()),
+  }),
   prepareVaultDeletion: async () => {
     const client = await getDatabase();
     await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);

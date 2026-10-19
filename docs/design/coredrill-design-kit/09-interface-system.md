@@ -655,3 +655,7 @@ A screen/journey is complete only when it has:
 - component, integration, and E2E coverage proportional to risk;
 - updated screenshots or story states in the design/dev catalog;
 - linked checklist proof.
+
+### Production setup and observed health checkpoint (2026-10-19)
+
+Production setup makes pending saves inert, announces progress, focuses a failure alert, retains editable input and warns before unloading unsaved entries. Completion is not shown before acknowledgement. A saved vault name cannot be silently renamed on a capture retry. The shell badge uses the actual identity and observed storage diagnostics: only ready, durable, writable storage without warnings is healthy. Best-effort/unavailable/read-only storage remains a risk; schema mismatch is a migration warning unless unavailable/read-only takes precedence. Settings shows the browser origin where relevant and offers passive health refresh without requesting persistence permission. Observations are snapshots, not continuous monitoring. The separate onboarding/reference catalog remains explicitly labeled and is not persistence evidence. See [verification](../../proof/production-first-run-verification.md).
