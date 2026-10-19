@@ -15,6 +15,7 @@ export default defineConfig({
     "stored-vault-deletion.spec.mjs",
     "stored-pipeline-navigation.spec.mjs",
     "stored-status-actions.spec.mjs",
+    "stored-job-timeline.spec.mjs",
     "application-attempt.spec.mjs",
     "stored-requirement-source.spec.mjs",
     "document-creation.spec.mjs",

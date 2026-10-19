@@ -5235,6 +5235,16 @@ textarea {
   white-space: pre-wrap;
 }
 
+.cd-stored-job-timeline .cd-job-timeline-item-heading {
+  flex-wrap: wrap;
+}
+
+.cd-stored-job-timeline p,
+.cd-stored-job-timeline h4,
+.cd-stored-job-timeline time {
+  overflow-wrap: anywhere;
+}
+
 .cd-job-company-stats .cd-text-button {
   margin-top: var(--space-2);
 }

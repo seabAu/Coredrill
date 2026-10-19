@@ -13,6 +13,7 @@ export * from "./documents-workspace.js";
 export * from "./job-document-preparation.js";
 export * from "./first-run.js";
 export * from "./focus-restoration.js";
+export * from "./stored-job-timeline.js";
 export * from "./foundations.js";
 export * from "./home-dashboard.js";
 export * from "./icon.js";

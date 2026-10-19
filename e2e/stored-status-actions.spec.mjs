@@ -224,6 +224,13 @@ test("normal user-created stages support durable Board/Table status changes and 
     .getByRole("row")
     .filter({ has: page.getByRole("button", { name: "Synthetic movable role", exact: true }) });
   await expect(row).toContainText("Unassigned");
+  await row.getByRole("button", { name: "Synthetic movable role", exact: true }).click();
+  await page.getByRole("button", { name: "Timeline", exact: true }).click();
+  const history = page.getByRole("region", { name: "Stored job timeline", exact: true });
+  await expect(history).toContainText("My deliberate drafting stage");
+  await expect(history).toContainText("Reversed by a recorded undo");
+  await expect(history.locator("[data-timeline-id]")).toHaveCount(1);
+  await page.getByRole("button", { name: /Close Job workspace|Back to Pipeline/u }).click();
   await table
     .getByRole("button", { name: "Edit status for Synthetic movable role", exact: true })
     .click();
@@ -311,10 +318,11 @@ test("normal user-created stages support durable Board/Table status changes and 
   await editor.selectOption({ label: "My deliberate drafting stage" });
   await table.getByRole("button", { name: "Save", exact: true }).click();
   await expect(changes.getByRole("status")).toContainText("Saved Synthetic movable role");
-  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  // Verify the interaction before axe opens/closes its separate finishRun page.
   await expect(
     table.getByRole("button", { name: "Edit status for Synthetic movable role", exact: true }),
   ).toBeFocused();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   // A delayed acknowledgement must not pull focus out of an intentional search.
   await changes
     .getByRole("button", { name: "Undo status change for Synthetic movable role", exact: true })

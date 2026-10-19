@@ -291,6 +291,13 @@ Header contains title, company, semantic status, priority, source/freshness, nex
 - **Company:** company notes, contacts, other roles, outcome history, salary observations.
 - **Source:** captured snapshot, extracted candidates, provenance, diffs, refresh policy.
 
+Normal Timeline composition now uses actual stored status/interaction pages,
+with recorded undo annotations, explicit retries and older-page navigation.
+Root-owned ephemeral read coordination survives responsive frame replacement;
+current status is never inferred from the historical event list. Stage labels
+are identified as current stored metadata. Note editing and normal scheduling
+remain separate integration work; see [Timeline proof](../../proof/normal-stored-job-timeline-verification.md).
+
 The most important job actions—Change status, Set next action, Prepare application—are always reachable without opening `•••`.
 
 ### Requirements and evidence

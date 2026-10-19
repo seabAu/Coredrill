@@ -204,6 +204,13 @@ test("normal root uses real native SQLite for capture and documents without OPFS
     await expect(statusActions.getByRole("status")).toContainText(
       "Restored Synthetic native movable role",
     );
+    await page.getByRole("button", { name: "Synthetic native movable role", exact: true }).click();
+    await page.getByRole("button", { name: "Timeline", exact: true }).click();
+    const history = page.getByRole("region", { name: "Stored job timeline", exact: true });
+    await expect(history).toContainText("Native drafting");
+    await expect(history).toContainText("Reversed by a recorded undo");
+    await expect(history.locator("[data-timeline-id]")).toHaveCount(1);
+    await page.getByRole("button", { name: /Close Job workspace|Back to Pipeline/u }).click();
     await page
       .getByRole("button", { name: "Edit status for Synthetic native movable role", exact: true })
       .click();

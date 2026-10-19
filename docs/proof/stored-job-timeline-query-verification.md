@@ -31,6 +31,8 @@ No new UI is introduced, so no Timeline visual, manual assistive-technology, pac
 
 ## Remaining
 
+Hosted run `39338734668` at exact query commit `c81e1e3d39dc965c71daf5949c911ac9e0f1493b` passes all browser, extension, Windows/macOS/diagnostic Linux and secret lanes, but its aggregate fails the existing status-action focus assertion immediately after an axe scan. The query-specific shared contracts pass. This is not an aggregate-green checkpoint. The subsequent normal Timeline slice isolates the unchanged focus assertion before the unchanged accessibility audit: installed `@axe-core/playwright` `finishRun` creates and closes a separate browser page. That interference is a plausible explanation, not a confirmed production focus defect or proof that a rerun will pass. See [normal Timeline proof](normal-stored-job-timeline-verification.md) for fresh verification.
+
 Predecessor focus checkpoint `c828eb36afa11c3fda17246665463ff3617e0a39` passes every required hosted job in [run 39336936560](https://github.com/seabAu/Coredrill/actions/runs/39336936560). That result does not verify this subsequent query implementation.
 
 Complete clean-commit hosted CI. Then compose the normal Timeline loading/empty/error/retry/pagination surface and prove offline navigation/reload without reference fixtures. No milestone gate closes on this prerequisite.

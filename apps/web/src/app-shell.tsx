@@ -147,6 +147,7 @@ import {
 } from "./job-comparison-view.js";
 import type { SuppliedCaptureMode } from "./supplied-capture.js";
 import { useStoredStatusActions } from "./stored-status-actions.js";
+import { useStoredJobTimeline } from "./stored-job-timeline.js";
 import {
   loadStoredPipelineSnapshot,
   storedPipelineBoardColumns,
@@ -1945,6 +1946,10 @@ const AppShellCatalog = ({
     >
   >({});
   const storedJobId = workspaceRoute?.jobId;
+  const storedTimelineContent = useStoredJobTimeline({
+    jobId: !referenceCatalog && workspaceRoute?.tab === "timeline" ? workspaceRoute.jobId : null,
+    api: referenceCatalog ? null : globalThis.coredrillStorageSpike.pipeline,
+  });
   useEffect(() => {
     if (referenceCatalog) return;
     const controller = new AbortController();
@@ -4171,6 +4176,9 @@ const AppShellCatalog = ({
         />
       );
     }
+    if (workspaceRoute.tab === "timeline") {
+      return storedTimelineContent;
+    }
     if (workspaceRoute.tab === "overview") {
       return (
         <section aria-label="Stored job overview">
@@ -4186,11 +4194,7 @@ const AppShellCatalog = ({
     return (
       <section aria-label="Stored job view unavailable">
         <h2>
-          {workspaceRoute.tab === "source"
-            ? "Source and provenance"
-            : workspaceRoute.tab === "timeline"
-              ? "Timeline"
-              : "Company and contacts"}
+          {workspaceRoute.tab === "source" ? "Source and provenance" : "Company and contacts"}
         </h2>
         <p>
           This stored-record view is not connected yet. Retained data remains in the local vault;

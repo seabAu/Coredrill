@@ -10,12 +10,12 @@ const context = () => ({
 });
 
 describe("stored Pipeline runtime boundary", () => {
-  it.each(["counts", "groups", "page", "workspace"])(
+  it.each(["counts", "groups", "page", "workspace", "timeline"])(
     "keeps %s storage-open failures retryable and content-free",
     async (operation) => {
       const open = vi.fn().mockRejectedValue(new Error("private vault path and SQL"));
       const result = await createStoredPipelineApi(open, context)[operation](
-        operation === "workspace" ? { jobId } : {},
+        operation === "workspace" || operation === "timeline" ? { jobId } : {},
       );
       expect(result).toMatchObject({ ok: false, error: { code: "unavailable", retryable: true } });
       expect(JSON.stringify(result)).not.toContain("private vault");
@@ -40,6 +40,7 @@ describe("stored Pipeline runtime boundary", () => {
       await api.page({ statusId: "bad" }),
       await api.counts({ includeArchived: "yes" }),
       await api.workspace({ jobId: "bad" }),
+      await api.timeline({ jobId: "bad" }),
     ]) {
       expect(result).toMatchObject({ ok: false, error: { code: "validation" } });
     }

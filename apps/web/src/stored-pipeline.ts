@@ -1,13 +1,20 @@
 import {
   PipelineQueryError,
   createPipelineQueryOperations,
+  createJobTimelineQuery,
+  JobTimelineError,
+  type ListJobTimelineInput,
   type ApplicationOperationContext,
   type GetJobWorkspaceInput,
   type ListPipelineJobsInput,
   type PipelineQueryPort,
   type PipelineScopeInput,
 } from "@coredrill/application";
-import { createPipelineQueryRepository, type DatabasePort } from "@coredrill/storage-core";
+import {
+  createPipelineQueryRepository,
+  createJobTimelineRepository,
+  type DatabasePort,
+} from "@coredrill/storage-core";
 
 /** Runtime composition: UI receives only the existing validated application DTOs. */
 export const createStoredPipelineApi = (
@@ -31,7 +38,18 @@ export const createStoredPipelineApi = (
       getJobWorkspace: (input) => read((repository) => repository.getJobWorkspace(input)),
     },
   });
+  const history = createJobTimelineQuery({
+    listPage: async (input) => {
+      try {
+        return await createJobTimelineRepository(await database()).listPage(input);
+      } catch (error) {
+        if (error instanceof JobTimelineError) throw error;
+        throw new JobTimelineError("unavailable");
+      }
+    },
+  });
   return Object.freeze({
+    timeline: (input: ListJobTimelineInput) => history.execute(input, context()),
     counts: (input: PipelineScopeInput = {}) =>
       operations.getPipelineCountsQuery.execute(input, context()),
     groups: (input: PipelineScopeInput = {}) =>
