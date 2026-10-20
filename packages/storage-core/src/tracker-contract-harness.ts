@@ -5,6 +5,9 @@ import {
   createJobSourceSnapshotQuery,
   createJobSourceContentQuery,
   createJobSourceEvidenceQuery,
+  createJobSourceEvidenceValueQuery,
+  type GetJobSourceEvidenceValueInput,
+  type JobSourceEvidenceValueCursor,
   type JobSourceEvidenceCursor,
   type JobSourceEvidenceDto,
   type JobSourceContentCursor,
@@ -12,6 +15,7 @@ import {
 import { createJobSourceSnapshotRepository } from "./job-source-snapshot-repository.js";
 import { createJobSourceContentRepository } from "./job-source-content-repository.js";
 import { createJobSourceEvidenceRepository } from "./job-source-evidence-repository.js";
+import { createJobSourceEvidenceValueRepository } from "./job-source-evidence-value-repository.js";
 import { createJobRequirementRepository } from "./job-requirement-repository.js";
 import { createDatabaseVaultBootstrapPort } from "./application-ports.js";
 
@@ -82,6 +86,243 @@ const SYNTHETIC_IR: JsonValue = {
 const assertContract = (condition: boolean, message: string): void => {
   if (!condition) throw new DatabaseContractViolation(message);
 };
+
+async function verifySourceEvidenceValues(
+  database: DatabasePort,
+  longId: string,
+  requirementId: string,
+  requirementProvenanceId: string,
+  otherJobId: string,
+): Promise<void> {
+  const tracker = createTrackerRepositories(database);
+  const unicodeId = entityId("field-value", "0198e102-0000-7000-8000-0000000000a0");
+  // Kind-qualified identity must distinguish records with the same UUID in separate tables.
+  const legacyRequirementId = entityId("job-requirement", unicodeId);
+  const jsonNullId = entityId("field-value", "0198e102-0000-7000-8000-0000000000a3");
+  const emptyId = entityId("field-value", "0198e102-0000-7000-8000-0000000000a4");
+  const literal = "\uFEFFa\u0000é中🙂\r\n<script>neverExecute()</script>\uFEFF";
+  for (const fixture of [
+    { id: unicodeId, fieldName: "unicode_payload", normalized: { literal }, raw: literal },
+    { id: emptyId, fieldName: "empty_payload", normalized: "", raw: "" },
+  ]) {
+    await tracker.fieldValues.append({
+      id: fixture.id,
+      entityType: "job",
+      entityId: IDS.job,
+      fieldName: fixture.fieldName,
+      normalizedValue: fixture.normalized,
+      rawValue: fixture.raw,
+      provenanceId: IDS.provenance,
+      userConfirmation: null,
+      createdAt: REPLACED_AT,
+      updatedAt: REPLACED_AT,
+    });
+  }
+  // Schema-valid compatibility fixtures do not relax the existing writer's policy.
+  await database.execute(
+    sqlStatement(
+      `INSERT INTO field_value(id, entity_type, entity_id, field_name, normalized_json, raw_json, provenance_id, created_at, updated_at)
+     VALUES (?, 'job', ?, 'json_null_payload', 'null', 'null', ?, ?, ?)`,
+      [jsonNullId, IDS.job, IDS.provenance, REPLACED_AT, REPLACED_AT],
+    ),
+  );
+  await database.execute(
+    sqlStatement(
+      `INSERT INTO job_requirement(id, job_id, category, source_category, normalized_text, raw_text, provenance_id, confidence, sort_order, created_at, updated_at)
+     VALUES (?, ?, 'required', 'required', ?, ?, ?, 1, 1, ?, ?)`,
+      [legacyRequirementId, IDS.job, literal, literal, IDS.provenance, REPLACED_AT, REPLACED_AT],
+    ),
+  );
+  const query = createJobSourceEvidenceValueQuery(createJobSourceEvidenceValueRepository(database));
+  const context = {
+    operationId: entityId("application-operation", "0198e102-0000-7000-8000-0000000000a7"),
+    initiatedAt: REPLACED_AT,
+  };
+  const fieldInput = (evidenceId: string): GetJobSourceEvidenceValueInput => ({
+    jobId: IDS.job,
+    snapshotId: IDS.snapshot,
+    evidenceKind: "field-value",
+    evidenceId,
+    part: "normalized",
+  });
+  const requirementInput: GetJobSourceEvidenceValueInput = {
+    ...fieldInput(requirementId),
+    evidenceKind: "requirement",
+  };
+  const legacyInput: GetJobSourceEvidenceValueInput = {
+    ...requirementInput,
+    evidenceId: legacyRequirementId,
+  };
+  const state = async () =>
+    JSON.stringify({
+      jobs: await database.query(sqlStatement("SELECT * FROM job ORDER BY id")),
+      sources: await database.query(sqlStatement("SELECT * FROM job_source ORDER BY id")),
+      snapshots: await database.query(sqlStatement("SELECT * FROM source_snapshot ORDER BY id")),
+      provenance: await database.query(sqlStatement("SELECT * FROM provenance ORDER BY id")),
+      fields: await database.query(sqlStatement("SELECT * FROM field_value ORDER BY id")),
+      requirements: await database.query(sqlStatement("SELECT * FROM job_requirement ORDER BY id")),
+    });
+  const before = await state();
+  const readAll = async (
+    input: GetJobSourceEvidenceValueInput,
+    expected: string | null,
+    expectedProvenance = IDS.provenance as string,
+    limitBytes = 4,
+  ): Promise<JobSourceEvidenceValueCursor | null> => {
+    let after: JobSourceEvidenceValueCursor | null = null;
+    let firstCursor: JobSourceEvidenceValueCursor | null = null;
+    let combined = "";
+    let offset = 0;
+    let iterations = 0;
+    do {
+      const result = await query.execute({ ...input, limitBytes, after }, context);
+      if (!result.ok)
+        throw new DatabaseContractViolation(
+          `Full source evidence value failed: ${result.error.code}`,
+        );
+      const value = result.value;
+      assertContract(
+        value.jobId === input.jobId &&
+          value.snapshotId === input.snapshotId &&
+          value.evidenceId === input.evidenceId &&
+          value.evidenceKind === input.evidenceKind &&
+          value.part === input.part &&
+          value.provenanceId === expectedProvenance &&
+          value.byteOffset === offset &&
+          value.asOf === REPLACED_AT &&
+          value.format === (input.evidenceKind === "field-value" ? "json" : "text") &&
+          value.bytesRead <= limitBytes &&
+          Object.isFrozen(value),
+        "Full source evidence identity, format or bounded offset changed.",
+      );
+      if (expected === null) {
+        assertContract(
+          value.text === null &&
+            value.byteLength === null &&
+            value.bytesRead === 0 &&
+            !value.hasMore &&
+            value.nextCursor === null,
+          "Absent raw evidence became a serialized value.",
+        );
+      } else {
+        assertContract(
+          value.text !== null &&
+            value.bytesRead > 0 &&
+            value.byteLength === new TextEncoder().encode(expected).byteLength,
+          "Full source evidence value lost its exact byte length or made no progress.",
+        );
+        if (value.text === null)
+          throw new DatabaseContractViolation("Retained value text disappeared.");
+        combined += value.text;
+      }
+      offset += value.bytesRead;
+      after = value.nextCursor;
+      firstCursor ??= after;
+      iterations += 1;
+      assertContract(iterations < 1000, "Full source evidence continuation did not terminate.");
+    } while (after !== null);
+    assertContract(
+      expected === null ||
+        (combined === expected && offset === new TextEncoder().encode(expected).byteLength),
+      "Full source evidence literal reconstruction changed bytes, Unicode or inert text.",
+    );
+    return firstCursor;
+  };
+  for (const [id, value] of [
+    [IDS.currentFieldValue, "Platform Engineer"],
+    [IDS.replacementFieldValue, "Senior Platform Engineer"],
+    [emptyId, ""],
+  ] as const) {
+    for (const part of ["normalized", "raw"] as const)
+      await readAll({ ...fieldInput(id), part }, JSON.stringify(value));
+  }
+  await readAll(fieldInput(longId), JSON.stringify("x".repeat(1024)), IDS.provenance, 64);
+  await readAll({ ...fieldInput(longId), part: "raw" }, null);
+  const fieldCursor = await readAll(fieldInput(unicodeId), JSON.stringify({ literal }));
+  await readAll({ ...fieldInput(unicodeId), part: "raw" }, JSON.stringify(literal));
+  for (const part of ["normalized", "raw"] as const) {
+    await readAll({ ...fieldInput(jsonNullId), part }, "null");
+    await readAll({ ...legacyInput, part }, literal);
+  }
+  const requirementCursor = await readAll(
+    requirementInput,
+    "TypeScript experience",
+    requirementProvenanceId,
+  );
+  await readAll(
+    { ...requirementInput, part: "raw" },
+    "Synthetic TypeScript experience",
+    requirementProvenanceId,
+  );
+  const legacyCursor = await readAll(legacyInput, literal);
+  if (legacyCursor === null || fieldCursor === null || requirementCursor === null)
+    throw new DatabaseContractViolation("Full value fixtures did not exercise continuation.");
+  for (const after of [
+    { ...legacyCursor, byteOffset: 1 },
+    { ...legacyCursor, provenanceId: entityId("provenance", IDS.snapshot) },
+    { ...legacyCursor, rowVersion: legacyCursor.rowVersion + 1 },
+    { ...legacyCursor, byteLength: legacyCursor.byteLength + 1 },
+  ]) {
+    const rejected = await query.execute({ ...legacyInput, after }, context);
+    assertContract(
+      !rejected.ok && rejected.error.code === "conflict",
+      "Invalid scalar/provenance/version/length continuation was accepted.",
+    );
+  }
+  for (const input of [
+    { ...fieldInput(unicodeId), jobId: otherJobId },
+    { ...fieldInput(unicodeId), snapshotId: otherJobId },
+    { ...fieldInput(IDS.currentFieldValue), evidenceKind: "requirement" as const },
+  ]) {
+    const denied = await query.execute(input, context);
+    assertContract(
+      !denied.ok && denied.error.code === "not_found",
+      "Full evidence value escaped its job/snapshot/kind scope.",
+    );
+  }
+  const fenced = await query.execute(fieldInput(longId), { ...context, initiatedAt: UPDATED_AT });
+  assertContract(
+    !fenced.ok && fenced.error.code === "not_found",
+    "Full evidence value escaped its creation ceiling.",
+  );
+  assertContract((await state()) === before, "Full evidence value reads mutated canonical data.");
+
+  // Real review mutations invalidate an in-flight read even though source values stay unchanged.
+  await tracker.fieldValues.confirm(
+    unicodeId,
+    {
+      id: entityId("field-confirmation", "0198e102-0000-7000-8000-0000000000a5"),
+      confirmedAt: REPLACED_AT,
+      confirmedValueHash: VALUE_HASH,
+    },
+    REPLACED_AT,
+  );
+  await createJobRequirementRepository(database).correct({
+    id: entityId("job-requirement", requirementId),
+    category: "constraint",
+    expectedRowVersion: 2,
+    updatedAt: REPLACED_AT,
+  });
+  const afterReview = await state();
+  for (const [input, after] of [
+    [fieldInput(unicodeId), fieldCursor],
+    [requirementInput, requirementCursor],
+  ] as const) {
+    const stale = await query.execute({ ...input, after }, context);
+    assertContract(
+      !stale.ok && stale.error.code === "conflict",
+      "Review mutation did not invalidate an older full-value cursor.",
+    );
+    assertContract(
+      (await query.execute(input, context)).ok,
+      "A fresh value read did not recover after review mutation.",
+    );
+  }
+  assertContract(
+    (await state()) === afterReview,
+    "Rejected stale or fresh value read wrote canonical data.",
+  );
+}
 
 async function verifySourceEvidence(database: DatabasePort): Promise<void> {
   const tracker = createTrackerRepositories(database);
@@ -258,6 +499,7 @@ async function verifySourceEvidence(database: DatabasePort): Promise<void> {
     !foreign.ok && foreign.error.code === "not_found",
     "Existing foreign job accessed another job's evidence.",
   );
+  await verifySourceEvidenceValues(database, longId, requirementId, provenanceId, otherJobId);
   await database.execute(
     sqlStatement(
       "UPDATE job SET archived_at = ?, updated_at = ?, row_version = row_version + 1 WHERE id = ?",
@@ -274,8 +516,35 @@ async function verifySourceEvidence(database: DatabasePort): Promise<void> {
     { ...context, initiatedAt: REPLACED_AT },
   );
   assertContract(
-    included.ok && included.value.items.length === 4,
+    included.ok && included.value.items.length === 8,
     "Explicit archive scope lost retained evidence.",
+  );
+  const valueQuery = createJobSourceEvidenceValueQuery(
+    createJobSourceEvidenceValueRepository(database),
+  );
+  const valueInput: GetJobSourceEvidenceValueInput = {
+    jobId: IDS.job,
+    snapshotId: IDS.snapshot,
+    evidenceKind: "field-value",
+    evidenceId: longId,
+    part: "normalized",
+  };
+  const hiddenValue = await valueQuery.execute(valueInput, {
+    ...context,
+    initiatedAt: REPLACED_AT,
+  });
+  assertContract(
+    !hiddenValue.ok && hiddenValue.error.code === "not_found",
+    "Full value exposed archived job by default.",
+  );
+  assertContract(
+    (
+      await valueQuery.execute(
+        { ...valueInput, includeArchived: true },
+        { ...context, initiatedAt: REPLACED_AT },
+      )
+    ).ok,
+    "Explicit archive scope lost a full retained evidence value.",
   );
 }
 

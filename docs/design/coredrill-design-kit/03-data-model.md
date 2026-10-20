@@ -128,6 +128,17 @@ timestamp. Serialized JSON/text previews are explicitly incomplete when bounded;
 they are not substitutes for full-value access or the main entity's resolved
 value. See [evidence-page proof](../../proof/source-evidence-query-verification.md).
 
+Full normalized/raw evidence values have a separate bounded UTF-8 continuation
+query. Field candidates return exact serialized JSON; requirements return exact
+text, without interpretation or rendering. Only a field candidate's raw value
+may be absent; SQL NULL, JSON `null`, and serialized empty string remain distinct.
+Continuation binds exact job/snapshot/evidence kind/ID/value part/archive and
+creation-ceiling scope plus provenance ID, current row version and byte length.
+A concurrent confirmation/category/supersession update invalidates the read even
+if source text stays unchanged. This is record-version continuity, not a new
+content hash or historical review-state reconstruction. See [full-value query
+proof](../../proof/source-evidence-value-query-verification.md).
+
 `REV-006` compares explicit immutable `source_snapshot` projections without a
 schema change. The comparison input carries snapshot identity/time/hash plus
 bounded normalized requirements, structured compensation, deadline, and

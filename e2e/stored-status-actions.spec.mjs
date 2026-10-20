@@ -2,6 +2,31 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { initializeDefaultWorkspace } from "./production-workspace.mjs";
 
+test.use({ trace: "retain-on-failure" });
+
+const expectOwnedEditFocus = async (target) => {
+  try {
+    await expect(target).toBeFocused();
+  } catch (error) {
+    const witness = await target
+      .evaluate((element) => {
+        const active = document.activeElement;
+        return {
+          expectedConnected: element.isConnected,
+          expectedIsActive: active === element,
+          documentHasFocus: document.hasFocus(),
+          activeIsBody: active === document.body,
+          activeInTable: (active?.closest('[data-testid="pipeline-table"]') ?? null) !== null,
+          activeIsInput: active instanceof HTMLInputElement,
+          activeIsButton: active instanceof HTMLButtonElement,
+        };
+      })
+      .catch(() => ({ witnessUnavailable: true }));
+    console.info(`STATUS_EDIT_FOCUS_FAILURE_WITNESS ${JSON.stringify(witness)}`);
+    throw error;
+  }
+};
+
 const workOffline = async (page, context) => {
   await page.waitForFunction(
     () => globalThis.coredrillOfflineShell?.getState().registered === true,
@@ -308,9 +333,9 @@ test("normal user-created stages support durable Board/Table status changes and 
   await expect(row.getByRole("note")).toContainText("changed since editing began");
   await expect(table.getByRole("button", { name: "Save", exact: true })).toBeDisabled();
   await table.getByRole("button", { name: "Cancel", exact: true }).click();
-  await expect(
+  await expectOwnedEditFocus(
     table.getByRole("button", { name: "Edit status for Synthetic movable role", exact: true }),
-  ).toBeFocused();
+  );
   await expect(row).toContainText("Unassigned");
   await table
     .getByRole("button", { name: "Edit status for Synthetic movable role", exact: true })
@@ -319,9 +344,9 @@ test("normal user-created stages support durable Board/Table status changes and 
   await table.getByRole("button", { name: "Save", exact: true }).click();
   await expect(changes.getByRole("status")).toContainText("Saved Synthetic movable role");
   // Verify the interaction before axe opens/closes its separate finishRun page.
-  await expect(
+  await expectOwnedEditFocus(
     table.getByRole("button", { name: "Edit status for Synthetic movable role", exact: true }),
-  ).toBeFocused();
+  );
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   // A delayed acknowledgement must not pull focus out of an intentional search.
   await changes

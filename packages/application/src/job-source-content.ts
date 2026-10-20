@@ -1,6 +1,7 @@
 import { entityId, instant, type EntityId, type Instant } from "@coredrill/domain";
 import { defineQuery } from "./operation.js";
 import { applicationFailure, applicationSuccess } from "./result.js";
+import { decodeLiteralUtf8Chunk } from "./literal-utf8-chunk.js";
 
 export const JOB_SOURCE_CONTENT_KINDS = ["text", "markup", "structured"] as const;
 export type JobSourceContentKind = (typeof JOB_SOURCE_CONTENT_KINDS)[number];
@@ -166,28 +167,12 @@ const copyChunk = (
     if (chunk["bytes"] !== null || input.after !== null) throw new TypeError();
     return Object.freeze({ ...base, text: null, bytesRead: 0, hasMore: false, nextCursor: null });
   }
-  const bytes = chunk["bytes"];
-  if (
-    offset > byteLength ||
-    !(bytes instanceof Uint8Array) ||
-    bytes.byteLength !== Math.min(input.limitBytes, byteLength - offset)
-  )
-    throw new TypeError();
-  const atEnd = offset + bytes.byteLength === byteLength;
-  // Streaming decode leaves only an incomplete trailing scalar for the next bounded read.
-  // ignoreBOM preserves the actual U+FEFF instead of silently discarding it per chunk.
-  const literal = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes, {
-    stream: !atEnd,
-  });
-  const bytesRead = new TextEncoder().encode(literal).byteLength;
-  if (
-    bytesRead > bytes.byteLength ||
-    (atEnd && bytesRead !== bytes.byteLength) ||
-    (!atEnd && bytesRead < 1)
-  )
-    throw new TypeError();
+  const {
+    text: literal,
+    bytesRead,
+    hasMore,
+  } = decodeLiteralUtf8Chunk(chunk["bytes"], byteLength, offset, input.limitBytes);
   const nextOffset = offset + bytesRead;
-  const hasMore = nextOffset < byteLength;
   const nextCursor = hasMore
     ? Object.freeze({
         jobId: input.jobId,
