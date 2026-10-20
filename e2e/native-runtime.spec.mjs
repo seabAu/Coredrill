@@ -242,6 +242,20 @@ test("normal root uses real native SQLite for capture and documents without OPFS
       sourceJobId,
     );
     expect(afterSource).toEqual(beforeSource);
+    const originalCapture = await page.evaluate(async (jobId) => {
+      const snapshots = await globalThis.coredrillStorageSpike.pipeline.sourceSnapshots({ jobId });
+      if (!snapshots.ok) throw new Error("Source snapshot unavailable");
+      return globalThis.coredrillStorageSpike.pipeline.sourceCapture({
+        jobId,
+        snapshotId: snapshots.value.items[0].id,
+      });
+    }, sourceJobId);
+    expect(originalCapture.ok).toBe(true);
+    expect(originalCapture.value.availability).toBe("retained");
+    expect(
+      originalCapture.value.capture.fieldCandidates.find(({ fieldName }) => fieldName === "title")
+        .value,
+    ).toBe("Synthetic native movable role");
     await page.reload();
     await expect(
       source.getByRole("region", { name: "primary literal retained content", exact: true }),

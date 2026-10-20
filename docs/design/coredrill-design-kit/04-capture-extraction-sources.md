@@ -271,6 +271,22 @@ write, and carries literal proof that no refresh or trusted-field mutation
 occurred. A later policy-authorized user action may create a new snapshot, but
 this diff can never apply its values automatically.
 
+Normal stored comparison now has a separate capture-time evidence read boundary.
+It associates a promoted snapshot with its retained original receipt using the
+same job, capture instant, recorded content fingerprint, resolved review and
+promotion time, and only the known capture-envelope extractor/retention profile.
+The receipt is revalidated through the version dispatcher, checked against the
+snapshot identity facts, and verified for both semantic content and full-envelope
+checksum by injected runtime functions. It does not reconstruct original facts
+from mutable field confirmations or accepted requirements. Missing or legacy
+unlinked receipts are explicitly `not_retained`, not an empty semantic snapshot.
+Historical transfer expiry does not expire retained local evidence. This bounded
+reader accepts at most 2 MiB, 20,000 JSON values and 40 nesting levels; oversized,
+corrupt or unsupported evidence fails visibly rather than being truncated or
+silently treated as absent. This is a comparison prerequisite, not completed
+normal structured Listing changes; see [capture-time evidence
+proof](../../proof/source-capture-query-verification.md).
+
 #### Schema.org `JobPosting`
 
 Parse JSON-LD from a single job detail page. Validate `@context`, `@type`, title, description, hiring organization, location/remote fields, date, validity, identifier, employment type, and base salary. Treat it as untrusted page input and compare to visible content. Google documents the format and requires the structured data to represent the visible job page: [JobPosting documentation](https://developers.google.com/search/docs/appearance/structured-data/job-posting).

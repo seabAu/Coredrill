@@ -7,6 +7,8 @@ import {
   createJobSourceContentQuery,
   createJobSourceEvidenceQuery,
   createJobSourceEvidenceValueQuery,
+  createJobSourceCaptureQuery,
+  type GetJobSourceCaptureInput,
   type ListJobSourceSnapshotsInput,
   type GetJobSourceContentInput,
   type ListJobSourceEvidenceInput,
@@ -25,8 +27,10 @@ import {
   createJobSourceContentRepository,
   createJobSourceEvidenceRepository,
   createJobSourceEvidenceValueRepository,
+  createJobSourceCaptureRepository,
   type DatabasePort,
 } from "@coredrill/storage-core";
+import { sha256CanonicalJson, verifyCaptureEnvelopeContentHashV1 } from "@coredrill/capture-core";
 
 /** Runtime composition: UI receives only the existing validated application DTOs. */
 export const createStoredPipelineApi = (
@@ -73,7 +77,17 @@ export const createStoredPipelineApi = (
     readChunk: async (input) =>
       createJobSourceEvidenceValueRepository(await database()).readChunk(input),
   });
+  const sourceCapture = createJobSourceCaptureQuery(
+    {
+      readCapture: async (input) =>
+        createJobSourceCaptureRepository(await database()).readCapture(input),
+    },
+    async (capture, checksum) =>
+      (await verifyCaptureEnvelopeContentHashV1(capture)) &&
+      (await sha256CanonicalJson(capture)) === checksum,
+  );
   return Object.freeze({
+    sourceCapture: (input: GetJobSourceCaptureInput) => sourceCapture.execute(input, context()),
     sourceSnapshots: (input: ListJobSourceSnapshotsInput) => snapshots.execute(input, context()),
     sourceContent: (input: GetJobSourceContentInput) => sourceContent.execute(input, context()),
     sourceEvidence: (input: ListJobSourceEvidenceInput) => sourceEvidence.execute(input, context()),

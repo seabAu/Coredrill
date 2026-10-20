@@ -78,6 +78,20 @@ test("normal Source inspects exact retained evidence and explicit snapshot pairs
   expect(snapshots.ok).toBe(true);
   expect(snapshots.value.items).toHaveLength(2);
   const [latest, older] = snapshots.value.items;
+  const original = await page.evaluate(
+    ({ jobId, snapshotId }) =>
+      globalThis.coredrillStorageSpike.pipeline.sourceCapture({ jobId, snapshotId }),
+    { jobId, snapshotId: latest.id },
+  );
+  expect(original.ok).toBe(true);
+  expect(original.value.availability).toBe("retained");
+  expect(
+    original.value.capture.fieldCandidates.find(({ fieldName }) => fieldName === "title").value,
+  ).toBe(changedTitle);
+  expect(
+    original.value.capture.fieldCandidates.find(({ fieldName }) => fieldName === "title")
+      .userConfirmation,
+  ).toBeUndefined();
   const selected = source.getByRole("article", { name: "Selected retained snapshot", exact: true });
   await expect(selected).toHaveAttribute("data-source-snapshot", latest.id);
   await expect(

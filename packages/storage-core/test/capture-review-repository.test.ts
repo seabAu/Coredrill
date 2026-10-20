@@ -5,12 +5,13 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { entityId } from "@coredrill/domain";
+import { entityId, instant } from "@coredrill/domain";
 
 import {
   CaptureReviewRepositoryError,
   applySqlMigrations,
   createCaptureReviewRepository,
+  createJobSourceCaptureRepository,
   defineSqlMigrations,
   sqlStatement,
   type CaptureReviewPromotionInput,
@@ -244,6 +245,111 @@ const expectCode = async (
 };
 
 describe("capture review repository", () => {
+  it.each(["extractor", "version", "retention", "promotion_time", "capture_time", "receipt_time"])(
+    "does not infer original receipt membership from a hash alone: %s",
+    async (kind) => {
+      const database = new TestDatabase();
+      try {
+        await applySqlMigrations(database, migrations, NOW);
+        const receipt = await insertReceipt(database, 900);
+        const base = promotion({ ...receipt, suffix: 910, resolution: { kind: "save_new" } });
+        const snapshot = {
+          ...base.snapshot,
+          ...(kind === "extractor" ? { extractorId: "synthetic.other" } : {}),
+          ...(kind === "version" ? { extractorVersion: "2.0.0" } : {}),
+          ...(kind === "retention" ? { retentionClass: "other" } : {}),
+          ...(kind === "promotion_time" ? { createdAt: NOW } : {}),
+          ...(kind === "capture_time" ? { capturedAt: "2026-09-26T19:59:59.000Z" } : {}),
+        };
+        if (kind === "receipt_time")
+          await database.execute(
+            sqlStatement("UPDATE capture_inbox SET received_at = ? WHERE envelope_id = ?", [
+              "2026-10-01T12:00:00.000Z",
+              receipt.envelopeId,
+            ]),
+          );
+        await createCaptureReviewRepository(database).promote({ ...base, snapshot });
+        expect(
+          await createJobSourceCaptureRepository(database).readCapture({
+            jobId: id("job", 911),
+            snapshotId: snapshot.id,
+            includeArchived: false,
+            asOf: instant("2026-10-19T12:00:00.000Z"),
+          }),
+        ).toMatchObject({ receipt: null });
+      } finally {
+        database.close();
+      }
+    },
+  );
+  it("reads an original receipt only through exact same-job capture promotion identity", async () => {
+    const database = new TestDatabase();
+    try {
+      await applySqlMigrations(database, migrations, NOW);
+      const receipt = await insertReceipt(database, 900);
+      const input = promotion({ ...receipt, suffix: 910, resolution: { kind: "save_new" } });
+      await createCaptureReviewRepository(database).promote(input);
+      const jobId = id("job", 911);
+      const scope = {
+        jobId,
+        snapshotId: input.snapshot.id,
+        includeArchived: false,
+        asOf: instant("2026-10-19T12:00:00.000Z"),
+      };
+      const reader = createJobSourceCaptureRepository(database);
+      const otherReceipt = await insertReceipt(database, 1000);
+      const otherInput = promotion({
+        ...otherReceipt,
+        suffix: 1010,
+        resolution: { kind: "save_new" },
+      });
+      await createCaptureReviewRepository(database).promote(otherInput);
+      const before = await database.query(sqlStatement("SELECT total_changes() AS writes"));
+      const captured = await reader.readCapture(scope);
+      expect(captured).toMatchObject({
+        capturedAt: NOW,
+        contentHash: receipt.contentHash,
+        receipt: { envelopeId: receipt.envelopeId },
+      });
+      expect(captured?.receipt?.envelopeJson).toBeTruthy();
+      expect(await reader.readCapture({ ...scope, jobId: id("job", 1011) })).toBeUndefined();
+      expect(
+        await reader.readCapture({ ...scope, snapshotId: otherInput.snapshot.id }),
+      ).toBeUndefined();
+      // Scope is checked by SQLite, not assumed from a caller's known snapshot ID.
+      expect(await reader.readCapture({ ...scope, jobId: id("job", 999) })).toBeUndefined();
+      expect(
+        await reader.readCapture({ ...scope, snapshotId: id("source-snapshot", 999) }),
+      ).toBeUndefined();
+      expect(await reader.readCapture({ ...scope, asOf: instant(NOW) })).toBeUndefined();
+      expect(await database.query(sqlStatement("SELECT total_changes() AS writes"))).toEqual(
+        before,
+      );
+      await database.execute(
+        sqlStatement(
+          "UPDATE job SET archived_at = ?, updated_at = ?, row_version = row_version + 1 WHERE id = ?",
+          ["2026-10-01T12:00:00.000Z", "2026-10-01T12:00:00.000Z", jobId],
+        ),
+      );
+      expect(await reader.readCapture(scope)).toBeUndefined();
+      expect(await reader.readCapture({ ...scope, includeArchived: true })).toEqual({
+        ...captured,
+        includeArchived: true,
+      });
+      // Existing receipt data can be corrupt: never transfer an oversized body.
+      await database.execute(
+        sqlStatement("UPDATE capture_inbox SET envelope_json = ? WHERE envelope_id = ?", [
+          "x".repeat(2 * 1024 * 1024 + 1),
+          receipt.envelopeId,
+        ]),
+      );
+      await expect(reader.readCapture({ ...scope, includeArchived: true })).rejects.toMatchObject({
+        code: "invalid_state",
+      });
+    } finally {
+      database.close();
+    }
+  });
   it("persists snooze, discard, single-use undo, and guarded state transitions", async () => {
     const database = new TestDatabase();
     try {

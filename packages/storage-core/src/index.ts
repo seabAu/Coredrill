@@ -419,3 +419,4 @@ export { createJobSourceSnapshotRepository } from "./job-source-snapshot-reposit
 export { createJobSourceContentRepository } from "./job-source-content-repository.js";
 export { createJobSourceEvidenceRepository } from "./job-source-evidence-repository.js";
 export { createJobSourceEvidenceValueRepository } from "./job-source-evidence-value-repository.js";
+export { createJobSourceCaptureRepository } from "./job-source-capture-repository.js";
