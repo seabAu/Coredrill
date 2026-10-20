@@ -1,10 +1,10 @@
-# Normal Timeline local notes — work in progress
+# Normal Timeline local notes — verification
 
-Date: 2026-10-20. Scope: `INT-002`. Runtime/storage and draft coordination are
-implemented locally, and normal UI composition has initial browser/native proof.
-Expanded lifetime, complete final-source and separate extension verification pass.
-Final documentation/policy checks also pass; exact hosted proof remains required.
-This record does not complete the checklist item or any milestone gate.
+Date: 2026-10-20. Scope: `INT-002`, complete at exact hosted-green `c594637`.
+Runtime/storage, normal UI, owned draft lifetime, browser/native/offline journeys,
+full local/extension/policy checks and exact hosted witnesses pass. Earlier
+checkpoints and failures below remain historical evidence. No milestone or
+independent human/manual/release gate closes through this integration item.
 
 ## Runtime and storage prerequisite
 
@@ -246,3 +246,9 @@ verification is still required; the failed `afeb554` run remains failed.
 ## Hosted regression-witness follow-up at fbcda1e (2026-10-20)
 
 Exact hosted run `39379112047` fails only its aggregate job: the added missed-breakpoint regression expects a dropped callback on a replaceable application subscription, but observes zero. Both exact Chrome lanes and every other required non-aggregate job pass; the aggregate's other 31 resilience cases, including normal note and header journeys, pass. The failed snapshot shows full-page mode and retained exact note text, so this is not evidence of recurring page overflow. The [prerequisite follow-up](normal-next-action-verification.md#prerequisite-full-checkpoint-and-predecessor-hosted-follow-up) retains raw logs/artifact and records the independent native-transition observer, unchanged draft/layout/overflow assertions and timeout, a passing focused run, and failure at contextual-vs-full-page when immediate production reconciliation is deliberately removed. The production fix is restored. Fresh final-source/hosted proof remains; `INT-002` stays unchecked.
+
+## Exact hosted completion at c594637
+
+Commit `c5946371321e306cae082778a76433064390cfcf` passes every required job in [Foundation CI 39382637084](https://github.com/seabAu/Coredrill/actions/runs/39382637084), terminal success. Aggregate `118495020986` explicitly passes the repaired missed-breakpoint regression, the normal offline note/lifetime journey and real-native runtime note behavior, with all 32 resilience cases green. Retained log: `test-results/next-action-prerequisite-hosted-aggregate-success.log`.
+
+Together with the requirement-by-requirement implementation and local/extension/policy proof above, this closes `INT-002`: bounded exact inert text, owner-only retained drafts, pending single flight, active-job rejection, explicit retry/discard, acknowledged-save/read failure separation, unload cancellation, held older-history invalidation, cross-job/late-result isolation, narrow/keyboard/accessibility and browser/native/reload behavior are covered. The prior two hosted failures remain failures. This does not prove editable job notes, task scheduling, sending, manual assistive-technology/reference-device acceptance, public distribution or any milestone gate.

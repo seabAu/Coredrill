@@ -12,16 +12,17 @@ ADRs record material choices and preserve why they changed. The [design decision
 
 ## Index
 
-| ADR                                                         | Status   | Decision/register coverage                                                              |
-| ----------------------------------------------------------- | -------- | --------------------------------------------------------------------------------------- |
-| [0000](0000-template.md)                                    | Template | Required ADR fields                                                                     |
-| [0001](0001-adopt-design-baseline.md)                       | Accepted | Repository adoption of every decision marked Accepted on 2026-08-21                     |
-| [0002](0002-adopt-coredrill-identity-and-apache-license.md) | Accepted | `D-054`, `D-055`, the license portion of `Q-013`, and working-name selection in `Q-001` |
-| [0003](0003-adopt-browser-storage-support-floor.md)         | Accepted | `D-025`, resolved `Q-002`, and `STG-004` through `STG-008`; exact hosted lanes passed   |
-| [0004](0004-adopt-tauri-rusqlite-native-boundary.md)        | Accepted | `D-022`, `D-024`, resolved `Q-003`, and `NAT-001` through `NAT-008`                     |
-| [0005](0005-adopt-wxt-multisurface-extension-baseline.md)   | Accepted | `D-023`, resolved `Q-005`, and `EXT-001` through `EXT-008`; exact packages reproduced   |
-| [0006](0006-adopt-tiptap-local-document-baseline.md)        | Accepted | `D-027`, resolved `Q-004`, and `EDT-001` through `EDT-006`; local import/export proven  |
-| [0007](0007-patch-tiptap-prototype-manipulation.md)         | Accepted | Security patch to the exact Tiptap baseline in `D-027` and resolved `Q-004`             |
-| [0008](0008-patch-tiptap-markdown-redos.md)                 | Accepted | Follow-up security patch to the exact Tiptap baseline in `D-027` and resolved `Q-004`   |
+| ADR                                                         | Status   | Decision/register coverage                                                                                                             |
+| ----------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| [0000](0000-template.md)                                    | Template | Required ADR fields                                                                                                                    |
+| [0001](0001-adopt-design-baseline.md)                       | Accepted | Repository adoption of every decision marked Accepted on 2026-08-21                                                                    |
+| [0002](0002-adopt-coredrill-identity-and-apache-license.md) | Accepted | `D-054`, `D-055`, the license portion of `Q-013`, and working-name selection in `Q-001`                                                |
+| [0003](0003-adopt-browser-storage-support-floor.md)         | Accepted | `D-025`, resolved `Q-002`, and `STG-004` through `STG-008`; exact hosted lanes passed                                                  |
+| [0004](0004-adopt-tauri-rusqlite-native-boundary.md)        | Accepted | `D-022`, `D-024`, resolved `Q-003`, and `NAT-001` through `NAT-008`                                                                    |
+| [0005](0005-adopt-wxt-multisurface-extension-baseline.md)   | Accepted | `D-023`, resolved `Q-005`, and `EXT-001` through `EXT-008`; exact packages reproduced                                                  |
+| [0006](0006-adopt-tiptap-local-document-baseline.md)        | Accepted | `D-027`, resolved `Q-004`, and `EDT-001` through `EDT-006`; local import/export proven                                                 |
+| [0007](0007-patch-tiptap-prototype-manipulation.md)         | Accepted | Security patch to the exact Tiptap baseline in `D-027` and resolved `Q-004`                                                            |
+| [0008](0008-patch-tiptap-markdown-redos.md)                 | Accepted | Follow-up security patch to the exact Tiptap baseline in `D-027` and resolved `Q-004`                                                  |
+| [0009](0009-propose-explicit-civil-time-resolution.md)      | Proposed | `D-056`: narrow Temporal scheduling resolver after observed date-fns-tz gap/overlap failures; owner acceptance required, not installed |
 
 Provisional decisions `D-010`, `D-012`, and `D-015` retain their named Phase 0/usability gates. ADR-0003 promotes D-025 after exact hosted browser lanes passed and resolves Q-002 with an explicit unsupported-platform fallback. ADR-0004 accepts the Tauri 2 plus narrow `rusqlite` native boundary, resolves Q-003, and retains the local browser app plus portable export as the Linux fallback while native GTK3 risk remains unresolved. ADR-0005 accepts the exact WXT multi-surface, transfer/fallback, and reproducible store/source package baseline after clean-commit hosted proof. ADR-0006 accepts the restricted Tiptap/local import/export baseline after schema, sanitation, stress, keyboard semantics, tagged PDF, DOCX, and rendered-fixture proof; ADR-0007 and ADR-0008 successively supersede only its exact Tiptap package pin, now the first Markdown-ReDoS-patched 3.30.5 release. Deferred `D-052` does not authorize a sync service or account dependency.

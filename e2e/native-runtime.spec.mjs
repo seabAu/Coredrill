@@ -9,6 +9,7 @@ import { expect, test } from "@playwright/test";
 import { initializeDefaultWorkspace } from "./production-workspace.mjs";
 import { exerciseStoredListingComparison } from "./listing-comparison-journey.mjs";
 import { exerciseStoredJobNote } from "./job-note-journey.mjs";
+import { exerciseNextActionRuntime } from "./next-action-runtime-journey.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
 const executable = path.join(
@@ -226,6 +227,15 @@ test("normal root uses real native SQLite for capture and documents without OPFS
       "Restored Synthetic native movable role",
     );
     await expect(page.locator(".cd-job-workspace-context")).toContainText("Unassigned");
+    const nextActionRuntime = await exerciseNextActionRuntime(page);
+    await testInfo.attach("native-next-action-runtime-proof.json", {
+      body: JSON.stringify({
+        ...nextActionRuntime,
+        actualRustSqlite: true,
+        simulatedTauriHost: true,
+      }),
+      contentType: "application/json",
+    });
     const storedOverview = page.getByRole("region", { name: "Stored job overview", exact: true });
     await expect(storedOverview).toContainText("Synthetic native movable role");
     await expect(storedOverview).toContainText("No unarchived application attempt recorded.");

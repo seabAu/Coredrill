@@ -1,5 +1,10 @@
 import type { CoredrillStorageSpikeApi } from "./main.js";
-import type { MutationUndoTokenDto, UndoableStatusChangeDto } from "@coredrill/application";
+import type {
+  MutationUndoTokenDto,
+  UndoableStatusChangeDto,
+  UndoableNextActionDto,
+} from "@coredrill/application";
+import type { InteractiveNextActionInput } from "./stored-next-actions.js";
 
 export interface ViewedStatusMove {
   readonly jobId: string;
@@ -19,6 +24,8 @@ export type StoredStatusMoveOutcome =
   | { readonly kind: "saved"; readonly change: UndoableStatusChangeDto };
 export type StoredStatusUndoOutcome =
   Failure | { readonly kind: "undone"; readonly token: MutationUndoTokenDto };
+export type StoredNextActionOutcome =
+  Failure | { readonly kind: "saved"; readonly change: UndoableNextActionDto };
 
 const failed = (message: string, retryable = true): Failure => ({
   kind: "failed",
@@ -30,19 +37,22 @@ const failed = (message: string, retryable = true): Failure => ({
 export const createStoredStatusController = (
   getApi: () => Pick<
     CoredrillStorageSpikeApi,
-    "pipeline" | "pipelineMutations" | "loadApplicationSubmissionReview"
+    "pipeline" | "pipelineMutations" | "loadApplicationSubmissionReview" | "nextActions"
   >,
 ) => {
   let running = false;
-  const run = async <Value>(action: () => Promise<Value>): Promise<Value | Failure> => {
+  const run = async <Value>(
+    action: () => Promise<Value>,
+    label: "status" | "next-action" = "status",
+  ): Promise<Value | Failure> => {
     if (running)
-      return failed("A local status operation is already pending. Wait for it to finish.");
+      return failed("A local tracking operation is already pending. Wait for it to finish.");
     running = true;
     try {
       return await action();
     } catch {
       return failed(
-        "The local status operation could not be confirmed. Refresh to check the saved value; your requested change is retained.",
+        `The local ${label} operation could not be confirmed. Refresh to check the saved value; your requested change is retained.`,
       );
     } finally {
       running = false;
@@ -99,12 +109,41 @@ export const createStoredStatusController = (
           : failed(changed.error.message, changed.error.retryable);
       });
     },
-    undo: (tokenId: string): Promise<StoredStatusUndoOutcome> =>
+    addNextAction: (input: InteractiveNextActionInput): Promise<StoredNextActionOutcome> =>
+      run(async () => {
+        const request = Object.freeze({ ...input, expected: Object.freeze({ ...input.expected }) });
+        if (
+          !Number.isSafeInteger(request.expected.jobRowVersion) ||
+          request.expected.jobRowVersion < 1
+        )
+          return failed("Refresh the local Pipeline before adding a next action.", false);
+        const api = getApi();
+        const loaded = await api.pipeline.workspace({ jobId: request.jobId });
+        if (!loaded.ok) return failed(loaded.error.message, loaded.error.retryable);
+        const { job } = loaded.value;
+        if (
+          job.id !== request.jobId ||
+          job.rowVersion !== request.expected.jobRowVersion ||
+          job.archivedAt !== null
+        )
+          return failed(
+            "This job changed since the task draft opened. Review its current value before starting another edit.",
+            false,
+          );
+        const result = await api.nextActions.setNextAction(request);
+        return result.ok
+          ? { kind: "saved", change: result.value }
+          : failed(result.error.message, result.error.retryable);
+      }, "next-action"),
+    undo: (
+      tokenId: string,
+      label: "status" | "next-action" = "status",
+    ): Promise<StoredStatusUndoOutcome> =>
       run(async () => {
         const result = await getApi().pipelineMutations.undo({ tokenId });
         return result.ok
           ? { kind: "undone", token: result.value }
           : failed(result.error.message, result.error.retryable);
-      }),
+      }, label),
   });
 };

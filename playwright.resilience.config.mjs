@@ -17,6 +17,7 @@ export default defineConfig({
     "stored-status-actions.spec.mjs",
     "stored-job-timeline.spec.mjs",
     "stored-job-notes.spec.mjs",
+    "stored-next-action-runtime.spec.mjs",
     "stored-job-details.spec.mjs",
     "stored-job-source.spec.mjs",
     "stored-listing-comparison.spec.mjs",

@@ -1,4 +1,6 @@
-# Normal Job header status composition — work in progress
+# Normal Job header status composition — verification
+
+Current result: `INT-003` complete at exact hosted-green `c594637`. Earlier dated checkpoints and failures below remain historical evidence; independent manual/reference-device and milestone gates stay open.
 
 ## Scope
 
@@ -154,3 +156,9 @@ independently open. No scheduling or next-action composition is claimed.
 ## Hosted aggregate follow-up at fbcda1e (2026-10-20)
 
 Exact run `39379112047` is terminal failure, not success. All non-aggregate required jobs pass, including both exact Chrome lanes, Firefox, Windows/macOS/Ubuntu native diagnostics, extension and secret scan. The aggregate passes the header and normal note journeys but fails the new missed-breakpoint fault-injection test's subscribed-event counter (zero); retained snapshot already shows full-page mode and exact note draft. Raw log and artifact are retained locally. The [next-action prerequisite follow-up](normal-next-action-verification.md#prerequisite-full-checkpoint-and-predecessor-hosted-follow-up) records an independent native-event observer, unchanged behavioral assertions and timeout, a passing focused run and a deliberate failure without production reconciliation. `INT-002` and `INT-003` remain open pending fresh exact hosted proof; no product fix or milestone completion is inferred from the failed aggregate.
+
+## Exact hosted completion at c594637
+
+Commit `c5946371321e306cae082778a76433064390cfcf` passes every required job in [Foundation CI 39382637084](https://github.com/seabAu/Coredrill/actions/runs/39382637084), terminal success. Aggregate `118495020986` explicitly passes header draft ownership/pending/navigation/focus, normal offline header change/canonical readback/reachable undo, reviewed submission protection and the native runtime header save/undo path; all 32 resilience cases pass. Retained log: `test-results/next-action-prerequisite-hosted-aggregate-success.log`.
+
+Together with the implementation and local/extension/policy scope audit above, this closes `INT-003`: captured viewed tuple, failure/stale retention, terminal reopening confirmation, initial Applied review and immutable submitted artifacts, canonical header/Overview updates, contextual/full-page feedback and undo, foreign-job/late-focus isolation, long-stage reflow and explicit discard focus are covered. The failed predecessor aggregate is preserved as failed. Next-action creation/form/lifecycle, installed full-workflow acceptance and independent human/manual/reference-device/publication gates are not covered by this closure.

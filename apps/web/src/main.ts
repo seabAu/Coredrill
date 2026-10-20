@@ -217,6 +217,7 @@ import { installDocumentsWorkspaceReferenceFixture } from "./documents-reference
 import { createStoredJobComparisonApi, type StoredJobComparisonApi } from "./job-comparison.js";
 import { createStoredPipelineApi, type StoredPipelineApi } from "./stored-pipeline.js";
 import { createStoredJobNoteApi, type StoredJobNoteApi } from "./stored-job-notes.js";
+import { createStoredNextActionApi, type StoredNextActionApi } from "./stored-next-actions.js";
 import {
   createStoredPipelineMutationApi,
   type StoredPipelineMutationApi,
@@ -495,6 +496,7 @@ export interface CoredrillStorageSpikeApi {
   readonly pipeline: StoredPipelineApi;
   readonly pipelineMutations: StoredPipelineMutationApi;
   readonly jobNotes: StoredJobNoteApi;
+  readonly nextActions: StoredNextActionApi;
   createReusableDocument(
     input: CreateReusableDocumentInput,
   ): Promise<ApplicationResult<CreatedReusableDocumentDto>>;
@@ -3311,6 +3313,15 @@ const api: CoredrillStorageSpikeApi = {
     return client;
   }, careerProfileOperationContext),
   jobNotes: createStoredJobNoteApi(
+    async () => {
+      const client = await getDatabase();
+      await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
+      return client;
+    },
+    careerProfileOperationContext,
+    generateEntityId,
+  ),
+  nextActions: createStoredNextActionApi(
     async () => {
       const client = await getDatabase();
       await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);

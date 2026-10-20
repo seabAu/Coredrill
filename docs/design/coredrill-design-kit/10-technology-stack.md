@@ -74,6 +74,8 @@ Phase 0 records exact Node, pnpm, Rust, and OS build prerequisites in `.tool-ver
 
 Tiptap’s React bindings work with Vite and its product offers an open-source headless core ([Tiptap React guide](https://tiptap.dev/docs/editor/getting-started/install/react), [Tiptap docs](https://tiptap.dev/docs)). Do not depend on Tiptap Cloud, paid conversion, collaboration, or AI features for v1.
 
+**Pending date-conversion proposal, not an adopted stack change:** [ADR-0009](../../adr/0009-propose-explicit-civil-time-resolution.md) / provisional `D-056` proposes an exact imported Temporal helper only for civil-time scheduling after date-fns-tz gap/overlap/host-independence failures. Owner acceptance is required before product installation or replacement of the date-conversion direction. Current domain strings, formatter choices, support floor and production dependency graph are unchanged by the proposal.
+
 ### Durable-state rule
 
 SQLite is the source of truth. TanStack Query caches query results; Zustand stores interaction state. Neither persists canonical jobs, evidence, documents, or sync metadata. UI code calls typed application commands/queries, never SQL or Tauri directly.
