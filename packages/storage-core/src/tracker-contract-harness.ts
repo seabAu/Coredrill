@@ -4,10 +4,15 @@ import {
   VaultLifecycleError,
   createJobSourceSnapshotQuery,
   createJobSourceContentQuery,
+  createJobSourceEvidenceQuery,
+  type JobSourceEvidenceCursor,
+  type JobSourceEvidenceDto,
   type JobSourceContentCursor,
 } from "@coredrill/application";
 import { createJobSourceSnapshotRepository } from "./job-source-snapshot-repository.js";
 import { createJobSourceContentRepository } from "./job-source-content-repository.js";
+import { createJobSourceEvidenceRepository } from "./job-source-evidence-repository.js";
+import { createJobRequirementRepository } from "./job-requirement-repository.js";
 import { createDatabaseVaultBootstrapPort } from "./application-ports.js";
 
 import {
@@ -77,6 +82,202 @@ const SYNTHETIC_IR: JsonValue = {
 const assertContract = (condition: boolean, message: string): void => {
   if (!condition) throw new DatabaseContractViolation(message);
 };
+
+async function verifySourceEvidence(database: DatabasePort): Promise<void> {
+  const tracker = createTrackerRepositories(database);
+  const requirements = createJobRequirementRepository(database);
+  const requirementId = entityId("job-requirement", "0198e102-0000-7000-8000-000000000090");
+  const provenanceId = entityId("provenance", "0198e102-0000-7000-8000-000000000091");
+  await tracker.provenance.append({
+    id: provenanceId,
+    sourceSnapshotId: IDS.snapshot,
+    extractionMethod: "heuristic",
+    sourcePointer: "synthetic.requirement",
+    sourceExcerpt: "Synthetic TypeScript experience",
+    confidence: confidence(0.8),
+    capturedAt: CREATED_AT,
+    licenseNote: "Synthetic disposable fixture.",
+    createdAt: UPDATED_AT,
+  });
+  await requirements.create({
+    id: requirementId,
+    jobId: IDS.job,
+    category: "required",
+    sourceCategory: "required",
+    normalizedText: "TypeScript experience",
+    rawText: "Synthetic TypeScript experience",
+    provenanceId,
+    sortOrder: 0,
+    createdAt: UPDATED_AT,
+    userConfirmed: true,
+  });
+  await requirements.correct({
+    id: requirementId,
+    category: "desired",
+    expectedRowVersion: 1,
+    updatedAt: REPLACED_AT,
+  });
+  const query = createJobSourceEvidenceQuery(createJobSourceEvidenceRepository(database));
+  const context = {
+    operationId: entityId("application-operation", "0198e102-0000-7000-8000-000000000092"),
+    initiatedAt: UPDATED_AT,
+  };
+  const storedState = async () =>
+    JSON.stringify({
+      jobs: await database.query(sqlStatement("SELECT * FROM job ORDER BY id")),
+      sources: await database.query(sqlStatement("SELECT * FROM job_source ORDER BY id")),
+      snapshots: await database.query(sqlStatement("SELECT * FROM source_snapshot ORDER BY id")),
+      provenance: await database.query(sqlStatement("SELECT * FROM provenance ORDER BY id")),
+      fields: await database.query(sqlStatement("SELECT * FROM field_value ORDER BY id")),
+      requirements: await database.query(sqlStatement("SELECT * FROM job_requirement ORDER BY id")),
+    });
+  const before = await storedState();
+  const items: JobSourceEvidenceDto[] = [];
+  let after: JobSourceEvidenceCursor | null = null;
+  do {
+    const result = await query.execute(
+      { jobId: IDS.job, snapshotId: IDS.snapshot, limit: 1, after },
+      context,
+    );
+    if (!result.ok)
+      throw new DatabaseContractViolation(`Source evidence page failed: ${result.error.code}`);
+    items.push(...result.value.items);
+    after = result.value.nextCursor;
+    assertContract(items.length <= 3, "Source evidence cursor did not advance.");
+  } while (after !== null);
+  assertContract(
+    items.map(({ id }) => id).join(",") ===
+      [IDS.replacementFieldValue, requirementId, IDS.currentFieldValue].join(","),
+    "Source evidence lost deterministic field/requirement membership or ordering.",
+  );
+  const oldField = items[2];
+  const newField = items[0];
+  const requirement = items[1];
+  assertContract(
+    oldField?.kind === "field-value" &&
+      oldField.currentReview.confirmation?.id === IDS.firstConfirmation &&
+      oldField.currentReview.confirmation.confirmedValueHash === VALUE_HASH &&
+      oldField.currentReview.supersededBy?.id === IDS.replacementFieldValue &&
+      oldField.currentReview.supersededBy.snapshotId === IDS.snapshot &&
+      oldField.currentReview.supersededBy.jobId === IDS.job &&
+      oldField.currentReview.supersededBy.fieldName === "title",
+    "Source evidence discarded the original confirmation or supersession reference.",
+  );
+  assertContract(
+    newField?.kind === "field-value" &&
+      newField.currentReview.confirmation?.id === IDS.replacementConfirmation &&
+      newField.currentReview.confirmation.confirmedAt === REPLACED_AT &&
+      newField.currentReview.updatedAt === REPLACED_AT &&
+      newField.currentReview.supersededBy === null &&
+      newField.normalized.text === JSON.stringify("Senior Platform Engineer") &&
+      newField.normalized.complete,
+    "Source evidence misrepresented the replacement/current review after the membership ceiling.",
+  );
+  assertContract(
+    requirement?.kind === "requirement" &&
+      requirement.sourceCategory === "required" &&
+      requirement.currentReview.category === "desired" &&
+      requirement.currentReview.userConfirmed &&
+      requirement.currentReview.updatedAt === REPLACED_AT &&
+      requirement.provenance.id === provenanceId &&
+      requirement.provenance.confidence === 0.8 &&
+      requirement.normalized.format === "text" &&
+      !("confirmation" in requirement.currentReview),
+    "Source evidence conflated immutable requirement origin with current review annotations.",
+  );
+  const missing = await query.execute({ jobId: IDS.job, snapshotId: provenanceId }, context);
+  assertContract(
+    !missing.ok && missing.error.code === "not_found",
+    "Missing snapshot was not denied.",
+  );
+  const stale = await query.execute(
+    {
+      jobId: IDS.job,
+      snapshotId: IDS.snapshot,
+      after: {
+        jobId: IDS.job,
+        snapshotId: IDS.snapshot,
+        includeArchived: false,
+        asOf: UPDATED_AT,
+        createdAt: UPDATED_AT,
+        kind: "field-value",
+        id: provenanceId,
+      },
+    },
+    context,
+  );
+  assertContract(
+    !stale.ok && stale.error.code === "conflict",
+    "Missing evidence anchor was accepted.",
+  );
+  assertContract(
+    (await storedState()) === before,
+    "Reading Source evidence mutated canonical data.",
+  );
+
+  const longId = entityId("field-value", "0198e102-0000-7000-8000-000000000093");
+  await tracker.fieldValues.append({
+    id: longId,
+    entityType: "job",
+    entityId: IDS.job,
+    fieldName: "long_payload",
+    normalizedValue: "x".repeat(1024),
+    rawValue: null,
+    provenanceId: IDS.provenance,
+    userConfirmation: null,
+    createdAt: REPLACED_AT,
+    updatedAt: REPLACED_AT,
+  });
+  const fenced = await query.execute({ jobId: IDS.job, snapshotId: IDS.snapshot }, context);
+  assertContract(
+    fenced.ok && fenced.value.items.length === 3,
+    "Late candidate leaked into older membership ceiling.",
+  );
+  const fresh = await query.execute(
+    { jobId: IDS.job, snapshotId: IDS.snapshot },
+    { ...context, initiatedAt: REPLACED_AT },
+  );
+  if (!fresh.ok) throw new DatabaseContractViolation("Fresh source evidence query failed.");
+  const long = fresh.value.items[0];
+  assertContract(
+    long?.id === longId &&
+      !long.normalized.complete &&
+      long.normalized.text.length === 256 &&
+      long.normalized.byteLength === 1026 &&
+      long.raw === null,
+    "Long field content was not explicitly identified as an incomplete literal preview.",
+  );
+
+  const otherJobId = entityId("job", "0198e102-0000-7000-8000-000000000094");
+  const job = await tracker.jobs.findById(IDS.job);
+  if (job === undefined)
+    throw new DatabaseContractViolation("Source evidence fixture job missing.");
+  await tracker.jobs.create({ ...job, id: otherJobId });
+  const foreign = await query.execute({ jobId: otherJobId, snapshotId: IDS.snapshot }, context);
+  assertContract(
+    !foreign.ok && foreign.error.code === "not_found",
+    "Existing foreign job accessed another job's evidence.",
+  );
+  await database.execute(
+    sqlStatement(
+      "UPDATE job SET archived_at = ?, updated_at = ?, row_version = row_version + 1 WHERE id = ?",
+      [REPLACED_AT, REPLACED_AT, IDS.job],
+    ),
+  );
+  const archived = await query.execute({ jobId: IDS.job, snapshotId: IDS.snapshot }, context);
+  assertContract(
+    !archived.ok && archived.error.code === "not_found",
+    "Default Source evidence exposed archived job.",
+  );
+  const included = await query.execute(
+    { jobId: IDS.job, snapshotId: IDS.snapshot, includeArchived: true },
+    { ...context, initiatedAt: REPLACED_AT },
+  );
+  assertContract(
+    included.ok && included.value.items.length === 4,
+    "Explicit archive scope lost retained evidence.",
+  );
+}
 
 async function verifySourceContent(
   database: DatabasePort,
@@ -714,6 +915,19 @@ export const createTrackerRepositoryContractSuite = (
       run: async (database) => {
         await setup.migrate(database);
         await createSourceAggregate(database);
+        const empty = await createJobSourceEvidenceQuery(
+          createJobSourceEvidenceRepository(database),
+        ).execute(
+          { jobId: IDS.job, snapshotId: IDS.snapshot },
+          {
+            operationId: entityId("application-operation", "0198e102-0000-7000-8000-000000000095"),
+            initiatedAt: CREATED_AT,
+          },
+        );
+        assertContract(
+          empty.ok && empty.value.items.length === 0,
+          "Owned empty snapshot did not return an empty evidence page.",
+        );
         await appendFieldValues(database);
         const repositories = createTrackerRepositories(database);
 
@@ -757,6 +971,7 @@ export const createTrackerRepositoryContractSuite = (
           "Explicit replacement did not persist its user confirmation.",
         );
         assertContract(candidates.length === 2, "Field candidate history was not retained.");
+        await verifySourceEvidence(database);
       },
     },
     {

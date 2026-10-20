@@ -417,3 +417,4 @@ export { createApplicationAttemptRepository } from "./application-attempt-reposi
 export { createJobTimelineRepository } from "./job-timeline-repository.js";
 export { createJobSourceSnapshotRepository } from "./job-source-snapshot-repository.js";
 export { createJobSourceContentRepository } from "./job-source-content-repository.js";
+export { createJobSourceEvidenceRepository } from "./job-source-evidence-repository.js";

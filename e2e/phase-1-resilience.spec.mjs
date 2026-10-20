@@ -22,6 +22,54 @@ const waitForOfflineShell = async (page) => {
   }
 };
 
+for (const width of [1440, 320]) {
+  test(`keeps a visible offline notice in workspace flow at ${width}px`, async ({
+    browser,
+  }, testInfo) => {
+    const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    try {
+      const page = await context.newPage();
+      await page.goto("/");
+      await initializeDefaultWorkspace(page);
+      await page.setViewportSize({ width, height: 900 });
+      await page.waitForFunction(
+        () => globalThis.coredrillOfflineShell?.getState().offlineReady === true,
+      );
+      const notice = page.getByTestId("offline-shell-notice");
+      await expect(notice).toContainText("Coredrill is ready for offline work.");
+      await expect(notice).toHaveAttribute("role", "status");
+      // This fails against the old fixed toast, even if timing happens not to obscure a button.
+      await expect(notice).toHaveCSS("position", "static");
+      const bounds = await notice.boundingBox();
+      expect(bounds).not.toBeNull();
+      expect(bounds.x).toBeGreaterThanOrEqual(0);
+      expect(bounds.x + bounds.width).toBeLessThanOrEqual(width);
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+      ).toBe(true);
+      await page.screenshot({
+        path: testInfo.outputPath(`offline-notice-${width}.png`),
+        fullPage: true,
+      });
+      // The notice stays present during the actual application action; do not dismiss it to unblock work.
+      await page.getByRole("button", { name: "Add a job", exact: true }).click();
+      await expect(page.getByRole("dialog")).toBeVisible();
+      await page.getByRole("button", { name: "Close capture dialog", exact: true }).click();
+      await expect(notice).toBeVisible();
+      const dismiss = notice.getByRole("button", { name: "Dismiss", exact: true });
+      await dismiss.focus();
+      await expect(dismiss).toBeFocused();
+      await page.keyboard.press("Enter");
+      await expect(notice).toHaveCount(0);
+      expect(
+        await page.evaluate(() => globalThis.coredrillOfflineShell?.getState().offlineReady),
+      ).toBe(false);
+    } finally {
+      await context.close();
+    }
+  });
+}
+
 test("keeps the production shell offline and applies a waiting update without touching OPFS", async ({
   browser,
 }) => {

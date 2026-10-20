@@ -117,6 +117,17 @@ Requirement category: `required`, `desired`, `responsibility`, `context`, or `co
 
 The main entity contains the current resolved value for efficient queries. `field_value` retains candidates/history and explains why it was chosen. User confirmation wins until the user accepts a new value.
 
+The read-only retained-source evidence page combines job field candidates and
+accepted requirements for one owned snapshot. Membership is bounded by immutable
+local creation time, ordered by creation descending then evidence kind/UUID
+ascending. Current confirmation, supersession and requirement category annotations
+remain explicitly current, not reconstructed as-of history. Old confirmed rows
+retain their original confirmation and navigable replacement references. A
+requirement's confirmation boolean does not imply a field-confirmation ID or
+timestamp. Serialized JSON/text previews are explicitly incomplete when bounded;
+they are not substitutes for full-value access or the main entity's resolved
+value. See [evidence-page proof](../../proof/source-evidence-query-verification.md).
+
 `REV-006` compares explicit immutable `source_snapshot` projections without a
 schema change. The comparison input carries snapshot identity/time/hash plus
 bounded normalized requirements, structured compensation, deadline, and

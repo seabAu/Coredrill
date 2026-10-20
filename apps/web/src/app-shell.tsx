@@ -4332,6 +4332,7 @@ const AppShellCatalog = ({
       }}
     >
       <div className="mx-auto grid max-w-[90rem] gap-5">
+        <OfflineShellNotice />
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="m-0 text-xs font-bold uppercase tracking-[0.12em] text-[var(--color-text-subtle)]">
@@ -4962,7 +4963,6 @@ const AppShellCatalog = ({
           </section>
         )}
       </div>
-      <OfflineShellNotice />
       {captureDialogMode === null ? null : (
         <CaptureEntryDialog
           initialMode={captureDialogMode}

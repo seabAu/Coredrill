@@ -150,12 +150,8 @@
 
 /* The production PWA announces offline readiness and waits for explicit consent before reload. */
 .cd-offline-shell-notice {
-  position: fixed;
-  right: 1rem;
-  bottom: 1rem;
-  z-index: 50;
   display: grid;
-  max-width: min(28rem, calc(100vw - 2rem));
+  min-width: 0;
   gap: 0.75rem;
   padding: 1rem;
   color: var(--color-text);
@@ -167,6 +163,7 @@
 
 .cd-offline-shell-notice p {
   margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .cd-offline-shell-notice__actions {
