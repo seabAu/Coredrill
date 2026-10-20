@@ -7,6 +7,7 @@ import path from "node:path";
 import { createInterface } from "node:readline";
 import { expect, test } from "@playwright/test";
 import { initializeDefaultWorkspace } from "./production-workspace.mjs";
+import { exerciseStoredListingComparison } from "./listing-comparison-journey.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
 const executable = path.join(
@@ -337,6 +338,7 @@ test("normal root uses real native SQLite for capture and documents without OPFS
     ).toEqual(bytes);
     await page.reload();
     await expect(preparation).toContainText("Ready for export review");
+    const listingComparison = await exerciseStoredListingComparison(page);
     const capabilities = await page.evaluate(() => ({
       calls: globalThis.coredrillBrowserCapabilityProbe,
       offline: globalThis.coredrillOfflineShell.getState(),
@@ -358,6 +360,7 @@ test("normal root uses real native SQLite for capture and documents without OPFS
           seededRecords: false,
           invocations,
           nativeRetainedDocxSha256: hash,
+          listingComparison,
           heldBeginAcknowledgements: heldAcknowledgements,
           retiredDocuments: retiredDocuments.size,
           capabilities,

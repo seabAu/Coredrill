@@ -8,6 +8,8 @@ import {
   createJobSourceEvidenceQuery,
   createJobSourceEvidenceValueQuery,
   createJobSourceCaptureQuery,
+  createJobSourceComparisonQuery,
+  type CompareJobSourceSnapshotsInput,
   type GetJobSourceCaptureInput,
   type ListJobSourceSnapshotsInput,
   type GetJobSourceContentInput,
@@ -31,6 +33,7 @@ import {
   type DatabasePort,
 } from "@coredrill/storage-core";
 import { sha256CanonicalJson, verifyCaptureEnvelopeContentHashV1 } from "@coredrill/capture-core";
+import { analyzeRetainedListing } from "./retained-listing-analysis.js";
 
 /** Runtime composition: UI receives only the existing validated application DTOs. */
 export const createStoredPipelineApi = (
@@ -86,7 +89,13 @@ export const createStoredPipelineApi = (
       (await verifyCaptureEnvelopeContentHashV1(capture)) &&
       (await sha256CanonicalJson(capture)) === checksum,
   );
+  const sourceComparison = createJobSourceComparisonQuery({
+    readCapture: (input, context) => sourceCapture.execute(input, context),
+    analyze: analyzeRetainedListing,
+  });
   return Object.freeze({
+    sourceComparison: (input: CompareJobSourceSnapshotsInput) =>
+      sourceComparison.execute(input, context()),
     sourceCapture: (input: GetJobSourceCaptureInput) => sourceCapture.execute(input, context()),
     sourceSnapshots: (input: ListJobSourceSnapshotsInput) => snapshots.execute(input, context()),
     sourceContent: (input: GetJobSourceContentInput) => sourceContent.execute(input, context()),

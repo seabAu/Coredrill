@@ -18,6 +18,7 @@ export default defineConfig({
     "stored-job-timeline.spec.mjs",
     "stored-job-details.spec.mjs",
     "stored-job-source.spec.mjs",
+    "stored-listing-comparison.spec.mjs",
     "application-attempt.spec.mjs",
     "stored-requirement-source.spec.mjs",
     "document-creation.spec.mjs",

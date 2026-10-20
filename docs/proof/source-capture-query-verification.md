@@ -1,4 +1,4 @@
-# Capture-time source evidence — local verification
+# Capture-time source evidence — verification
 
 Date: 2026-10-19. Scope: a read-only prerequisite for `INT-001` structured Listing changes. This does not complete the semantic projection or comparison UI.
 
@@ -31,3 +31,9 @@ The complete unchanged-source `pnpm verify` process finishes with terminal `SOUR
 The separate final-source extension suite also passes all nine cases, terminal `SOURCE_CAPTURE_EXTENSION_EXIT=0`, log `test-results/source-capture-extension-full.log`, including capture/correction/reload, durable retry/restart, hostile/oversized input and Firefox manual fallback.
 
 Only documentation changes follow these full runs. Final formatting, boundary/foundation, license and secret checks pass, log `test-results/source-capture-final-doc-policy.log`. Implementation is committed locally as `5cc1cd6`; clean-commit hosted proof for this query remains pending. Source UI predecessor `8655ad1f159f9ab4eb81530830e8e89650b75b6e` passes every required job in [CI run 39362307044](https://github.com/seabAu/Coredrill/actions/runs/39362307044), terminal success; its result is independent of this new lookup. `INT-001` remains open for structured projection and normal field-by-field Listing changes.
+
+## Clean-commit hosted result
+
+Implementation `5cc1cd6` and its documentation-only successor are pushed at exact checkpoint `b2acd3d15838423908c90a7d579023b967a184aa`. [Foundation CI 39364386186](https://github.com/seabAu/Coredrill/actions/runs/39364386186) is terminal **success**, with every required aggregate, Chrome 151/152, Firefox 153/154, Windows/macOS/Ubuntu, extension and full-history-secret job successful. Pull-request dependency review is skipped for the main push, not counted as executed proof.
+
+Retained aggregate log `test-results/source-capture-hosted-aggregate-success.log` witnesses both real-native runtime journeys, the normal Source journey with original-capture assertions, and all 27 resilience cases. These results prove the capture-time lookup at that exact pushed checkpoint, not the subsequent structured comparison query or its still-pending normal UI controls. Earlier failed/cancelled runs remain unchanged. `INT-001` stays open.

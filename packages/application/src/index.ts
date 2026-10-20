@@ -617,3 +617,4 @@ export * from "./job-source-content.js";
 export * from "./job-source-evidence.js";
 export * from "./job-source-evidence-value.js";
 export * from "./job-source-capture.js";
+export * from "./job-source-comparison.js";

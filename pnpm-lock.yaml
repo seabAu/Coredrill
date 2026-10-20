@@ -115,6 +115,9 @@ importers:
       '@coredrill/extension-bridge':
         specifier: workspace:*
         version: link:../../packages/extension-bridge
+      '@coredrill/extractors':
+        specifier: workspace:*
+        version: link:../../packages/extractors
       '@coredrill/source-policy':
         specifier: workspace:*
         version: link:../../packages/source-policy

@@ -287,6 +287,29 @@ silently treated as absent. This is a comparison prerequisite, not completed
 normal structured Listing changes; see [capture-time evidence
 proof](../../proof/source-capture-query-verification.md).
 
+The subsequent structured comparison query uses two explicitly ordered snapshots
+and that original-capture boundary. A disclosed version-1 current local analysis
+normalizes original candidates and re-analyzes retained Schema.org JSON-LD,
+including explicit JSON-LD in saved JSON payloads. It never claims those derived
+candidates were extracted at capture time. Generic non-JSON-LD API payloads are
+not guessed into source-specific facts. The existing requirement parser can
+analyze retained plain-text lines when structured requirement candidates are
+absent; current accepted requirement rows and confirmations are never read.
+
+Each field is known, missing, ambiguous or unavailable before its diff can be
+changed, unchanged or not comparable. Missing fields are not empty snapshots;
+invalid siblings and multiple postings cannot disappear behind surviving valid
+candidates. Explicit retained empty requirement arrays have separate literal
+absence evidence, allowing complete removal without inventing absence from a
+missing property. Requirement changes use retained extraction/line coordinates,
+not fuzzy prose identity, and differing analysis bases are not comparable.
+Compensation retains exact decimals, currency scale, minor units and interval;
+deadline dates and instants remain distinct; remote eligibility is separate from
+physical location. Raw values, pointers, excerpts, methods and confidence remain
+visible in the read model. Current-analysis facts have no invented durable
+candidate ID or confirmation. Normal Source controls are not yet connected;
+see [structured query proof](../../proof/retained-listing-comparison-verification.md).
+
 #### Schema.org `JobPosting`
 
 Parse JSON-LD from a single job detail page. Validate `@context`, `@type`, title, description, hiring organization, location/remote fields, date, validity, identifier, employment type, and base salary. Treat it as untrusted page input and compare to visible content. Google documents the format and requires the structured data to represent the visible job page: [JobPosting documentation](https://developers.google.com/search/docs/appearance/structured-data/job-posting).
