@@ -306,6 +306,20 @@ attempt and unarchived counts, not all attempts or verified employer facts.
 These read-only views do not imply completed compensation, editing, activity,
 contact navigation or full Source integration; see [details proof](../../proof/normal-stored-job-details-verification.md).
 
+Normal Source inspection now reads actual bounded snapshot history, literal
+text/markup/structured parts, field/requirement provenance pages and complete
+serialized value parts through validated application queries. History/evidence
+pages replace one another; body/value inspection holds one UTF-8 part at a time,
+with explicit byte offsets, First/Next controls and incomplete-preview labels.
+Source metadata and review annotations are labeled current when read, never
+capture-time state. Root-owned read coordination survives responsive frame
+replacement and discards disposed/old-job results. Explicitly choosing a second
+snapshot enables paired inspection and recorded-fingerprint comparison only;
+structured field-by-field Listing changes composition remains pending rather
+than inventing empty requirements, compensation, deadline or location values.
+No source is visited, markup executed, or confirmed value changed. See [stored
+Source inspection proof](../../proof/normal-stored-job-source-verification.md).
+
 Normal requirement review disables its named review fieldset through each job's
 acknowledged save and canonical readback. Dependent decisions cannot race a
 pending evidence selection; pending feedback remains available and other job

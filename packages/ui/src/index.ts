@@ -28,3 +28,4 @@ export * from "./pipeline-table.js";
 export * from "./vault-backup-settings.js";
 export * from "./vault-deletion.js";
 export * from "./workspace-state.js";
+export * from "./stored-job-source.js";

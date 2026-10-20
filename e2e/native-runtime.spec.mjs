@@ -217,6 +217,35 @@ test("normal root uses real native SQLite for capture and documents without OPFS
     await expect(history).toContainText("Native drafting");
     await expect(history).toContainText("Reversed by a recorded undo");
     await expect(history.locator("[data-timeline-id]")).toHaveCount(1);
+    const sourceJobId = new URL(page.url()).pathname.split("/")[2];
+    const beforeSource = await page.evaluate(
+      (jobId) => globalThis.coredrillStorageSpike.pipeline.workspace({ jobId }),
+      sourceJobId,
+    );
+    await page.getByRole("button", { name: "Source", exact: true }).click();
+    const source = page.getByRole("region", { name: "Stored job Source", exact: true });
+    await expect(
+      source.getByRole("region", { name: "primary literal retained content", exact: true }),
+    ).toHaveText("Native status and undo fixture.");
+    const titleSource = source
+      .locator("[data-source-evidence]")
+      .filter({ has: page.getByText(/^Field candidate: title/u) });
+    await titleSource.locator("summary").click();
+    await titleSource
+      .getByRole("button", { name: "Inspect normalized value", exact: true })
+      .click();
+    await expect(
+      source.getByRole("region", { name: "primary full value literal part", exact: true }),
+    ).toHaveText(JSON.stringify("Synthetic native movable role"));
+    const afterSource = await page.evaluate(
+      (jobId) => globalThis.coredrillStorageSpike.pipeline.workspace({ jobId }),
+      sourceJobId,
+    );
+    expect(afterSource).toEqual(beforeSource);
+    await page.reload();
+    await expect(
+      source.getByRole("region", { name: "primary literal retained content", exact: true }),
+    ).toHaveText("Native status and undo fixture.");
     await page.getByRole("button", { name: /Close Job workspace|Back to Pipeline/u }).click();
     await page
       .getByRole("button", { name: "Edit status for Synthetic native movable role", exact: true })

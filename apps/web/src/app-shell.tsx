@@ -150,6 +150,7 @@ import type { SuppliedCaptureMode } from "./supplied-capture.js";
 import { useStoredStatusActions } from "./stored-status-actions.js";
 import { useStoredJobTimeline } from "./stored-job-timeline.js";
 import { useStoredJobDetails } from "./stored-job-details.js";
+import { useStoredJobSource } from "./stored-job-source.js";
 import { createStoredRequirementReviewGate } from "./stored-requirement-review-gate.js";
 import {
   loadStoredPipelineSnapshot,
@@ -1966,6 +1967,11 @@ const AppShellCatalog = ({
     jobId: !referenceCatalog && workspaceRoute?.tab === "timeline" ? workspaceRoute.jobId : null,
     api: referenceCatalog ? null : globalThis.coredrillStorageSpike.pipeline,
   });
+  const storedSourceContent = useStoredJobSource(
+    vaultDeletionStatus === null && !referenceCatalog && workspaceRoute?.tab === "source"
+      ? workspaceRoute.jobId
+      : null,
+  );
   useEffect(() => {
     if (referenceCatalog) return;
     const controller = new AbortController();
@@ -4236,6 +4242,9 @@ const AppShellCatalog = ({
     if (workspaceRoute.tab === "timeline") {
       return storedTimelineContent;
     }
+    if (workspaceRoute.tab === "source") {
+      return storedSourceContent;
+    }
     if (workspaceRoute.tab === "overview" || workspaceRoute.tab === "company") {
       return storedDetailsContent;
     }
@@ -4331,7 +4340,7 @@ const AppShellCatalog = ({
             : "Job search 2026",
       }}
     >
-      <div className="mx-auto grid max-w-[90rem] gap-5">
+      <div className="mx-auto grid min-w-0 max-w-[90rem] gap-5">
         <OfflineShellNotice />
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div>
