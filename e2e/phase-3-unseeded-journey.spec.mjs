@@ -142,7 +142,104 @@ test("an empty normal workspace carries reviewed resume evidence into an exact i
     userConfirmed: true,
   });
   const evidence = workspace.getByLabel(`Evidence for ${requirementText}`, { exact: true });
+  await page.evaluate(() => {
+    const api = globalThis.coredrillStorageSpike.jobComparison;
+    globalThis.coredrillEvidenceSaveProbe = {
+      release: null,
+      releaseRead: null,
+      holdRead: false,
+      calls: 0,
+      failCoverage: true,
+    };
+    globalThis.coredrillStorageSpike = {
+      ...globalThis.coredrillStorageSpike,
+      jobComparison: {
+        ...api,
+        select: async (input) => {
+          globalThis.coredrillEvidenceSaveProbe.calls += 1;
+          await new Promise((resolve) => {
+            globalThis.coredrillEvidenceSaveProbe.release = resolve;
+          });
+          const result = await api.select(input);
+          globalThis.coredrillEvidenceSaveProbe.holdRead = true;
+          return result;
+        },
+        load: async (input) => {
+          if (globalThis.coredrillEvidenceSaveProbe.holdRead) {
+            globalThis.coredrillEvidenceSaveProbe.holdRead = false;
+            await new Promise((resolve) => {
+              globalThis.coredrillEvidenceSaveProbe.releaseRead = resolve;
+            });
+          }
+          return api.load(input);
+        },
+        setCoverage: async (input) => {
+          if (globalThis.coredrillEvidenceSaveProbe.failCoverage) {
+            globalThis.coredrillEvidenceSaveProbe.failCoverage = false;
+            return {
+              ok: false,
+              error: {
+                code: "unavailable",
+                retryable: true,
+                message: "Synthetic review failure. Retry your decision.",
+              },
+            };
+          }
+          return api.setCoverage(input);
+        },
+      },
+    };
+  });
   await evidence.getByRole("button", { name: /Select Product Engineer/u }).click();
+  await page.waitForFunction(() => globalThis.coredrillEvidenceSaveProbe.release !== null);
+  await expect(
+    evidence.getByRole("combobox", {
+      name: `Coverage decision for ${requirementText}`,
+      exact: true,
+    }),
+  ).toBeDisabled();
+  await page.evaluate(() => globalThis.coredrillEvidenceSaveProbe.release());
+  await page.waitForFunction(() => globalThis.coredrillEvidenceSaveProbe.releaseRead !== null);
+  await expect(
+    evidence.getByRole("combobox", {
+      name: `Coverage decision for ${requirementText}`,
+      exact: true,
+    }),
+  ).toBeDisabled();
+  await expect(
+    workspace.getByText("Saving requirement review and loading acknowledged local facts…", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  expect(await page.evaluate(() => globalThis.coredrillEvidenceSaveProbe.calls)).toBe(1);
+  await page.setViewportSize({ width: 320, height: 900 });
+  await expect(
+    evidence.getByRole("combobox", {
+      name: `Coverage decision for ${requirementText}`,
+      exact: true,
+    }),
+  ).toBeDisabled();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({
+    path: testInfo.outputPath("requirement-review-pending-320.png"),
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  expect(await page.evaluate(() => globalThis.coredrillEvidenceSaveProbe.calls)).toBe(1);
+  await page.evaluate(() => globalThis.coredrillEvidenceSaveProbe.releaseRead());
+  await expect(evidence.getByRole("button", { name: /Remove Product Engineer/u })).toBeEnabled();
+  await evidence
+    .getByRole("combobox", { name: `Coverage decision for ${requirementText}`, exact: true })
+    .selectOption("partial");
+  await expect(
+    page.getByText("Synthetic review failure. Retry your decision.", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    evidence.getByRole("combobox", {
+      name: `Coverage decision for ${requirementText}`,
+      exact: true,
+    }),
+  ).toBeEnabled();
   await evidence
     .getByRole("combobox", { name: `Coverage decision for ${requirementText}`, exact: true })
     .selectOption("partial");
@@ -162,6 +259,13 @@ test("an empty normal workspace carries reviewed resume evidence into an exact i
   const selectedEvidence = job.evidence[0].selectedEvidence;
   expect(selectedEvidence).toHaveLength(1);
   expect(selectedEvidence[0].evidenceId).toBe(confirmed.id);
+  const coverageDecision = job.evidence[0].coverage;
+  expect(coverageDecision).toMatchObject({
+    source: "user-confirmed",
+    state: "partial",
+    stale: false,
+  });
+  expect(coverageDecision.rowVersion).not.toBeNull();
   const applied = workspace.getByRole("form", { name: "Create local Applied stage", exact: true });
   await applied.getByLabel("Applied stage name", { exact: true }).fill("My recorded submission");
   await applied.getByRole("button", { name: "Create Applied stage locally", exact: true }).click();
@@ -366,6 +470,7 @@ test("an empty normal workspace carries reviewed resume evidence into an exact i
   expect(after.career.value.find((entry) => entry.id === confirmed.id)).toEqual(confirmed);
   expect(after.career.value).toHaveLength(1);
   expect(after.comparison.value.evidence[0].selectedEvidence[0].evidenceId).toBe(confirmed.id);
+  expect(after.comparison.value.evidence[0].coverage).toEqual(coverageDecision);
   expect(after.source.snapshots[0].rawText).toBe(listingText);
   expect(after.jobs).toMatchObject({ ok: true, value: { all: 1 } });
   expect(after.workspace).toMatchObject({
@@ -403,6 +508,9 @@ test("an empty normal workspace carries reviewed resume evidence into an exact i
         jobId,
         applicationId,
         requirement: accepted.requirements[0],
+        coverageDecision,
+        evidenceWriteAndReadbackHeld: true,
+        explicitCoverageFailureRetried: true,
         documents,
         cover,
         exportHash,

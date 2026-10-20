@@ -27,6 +27,7 @@ import {
   getRootAppearanceAttributes,
   isJobWorkspaceContentTab,
   matchesLocalSearchQuery,
+  restoreFocusAfterChange,
   snoozeBrowserExportReminder,
   VaultDeletionSettings,
   type BrowserExportReminder,
@@ -149,6 +150,7 @@ import type { SuppliedCaptureMode } from "./supplied-capture.js";
 import { useStoredStatusActions } from "./stored-status-actions.js";
 import { useStoredJobTimeline } from "./stored-job-timeline.js";
 import { useStoredJobDetails } from "./stored-job-details.js";
+import { createStoredRequirementReviewGate } from "./stored-requirement-review-gate.js";
 import {
   loadStoredPipelineSnapshot,
   storedPipelineBoardColumns,
@@ -1940,6 +1942,11 @@ const AppShellCatalog = ({
   >("idle");
   const [workspaceRoute, setWorkspaceRoute] = useState<JobRouteState | null>(initialJobRoute);
   const [storedJob, setStoredJob] = useState<StoredJobComparison | null>(null);
+  const [pendingRequirementJobs, setPendingRequirementJobs] = useState<readonly string[]>([]);
+  const requirementReviewGate = useMemo(
+    () => createStoredRequirementReviewGate(setPendingRequirementJobs),
+    [],
+  );
   const [rejectedStoredProposals, setRejectedStoredProposals] = useState<readonly string[]>([]);
   const [storedCoverageComparisons, setStoredCoverageComparisons] = useState<
     Readonly<
@@ -3414,15 +3421,30 @@ const AppShellCatalog = ({
       ].includes(request.id)
     ) {
       const jobId = storedJob.jobId;
-      void applyStoredRequirementAction(
-        globalThis.coredrillStorageSpike.jobComparison,
-        storedJob,
-        request,
-        (requirementId, comparison) => {
-          setStoredCoverageComparisons((current) => ({ ...current, [requirementId]: comparison }));
-        },
-      )
-        .then(async (result) => {
+      const viewedJob = storedJob;
+      const origin = document.activeElement;
+      const restoreReviewFocus = () => {
+        restoreFocusAfterChange(origin, () => {
+          if (origin instanceof HTMLElement && origin.isConnected && !origin.matches(":disabled"))
+            return origin;
+          return document.querySelector<HTMLFieldSetElement>(
+            `[data-stored-requirements="${jobId}"]`,
+          );
+        });
+      };
+      void requirementReviewGate
+        .run(jobId, async () => {
+          const result = await applyStoredRequirementAction(
+            globalThis.coredrillStorageSpike.jobComparison,
+            viewedJob,
+            request,
+            (requirementId, comparison) => {
+              setStoredCoverageComparisons((current) => ({
+                ...current,
+                [requirementId]: comparison,
+              }));
+            },
+          );
           if (!result?.ok) {
             setLastActivity(
               result === null
@@ -3441,8 +3463,12 @@ const AppShellCatalog = ({
             );
           } else setLastActivity(refreshed.error.message);
         })
+        .then((completed) => {
+          if (completed) restoreReviewFocus();
+        })
         .catch(() => {
           setLastActivity("The local requirement review failed. Reload before trying again.");
+          restoreReviewFocus();
         });
       return;
     }
@@ -4176,7 +4202,29 @@ const AppShellCatalog = ({
       !isJobWorkspaceContentTab(workspaceRoute.tab)
     )
       return null;
-    if (referenceCatalog || workspaceRoute.tab === "requirements") {
+    if (!referenceCatalog && workspaceRoute.tab === "requirements") {
+      const busy = pendingRequirementJobs.includes(workspaceRoute.jobId);
+      return (
+        <fieldset
+          className="cd-stored-requirement-review"
+          data-stored-requirements={workspaceRoute.jobId}
+          disabled={busy}
+          aria-busy={busy}
+          tabIndex={-1}
+        >
+          <legend>Local requirement review</legend>
+          {busy ? (
+            <p role="status">Saving requirement review and loading acknowledged local facts…</p>
+          ) : null}
+          <JobWorkspaceContent
+            activeTab="requirements"
+            model={workspaceContentModel}
+            onAction={recordWorkspaceContentAction}
+          />
+        </fieldset>
+      );
+    }
+    if (referenceCatalog) {
       return (
         <JobWorkspaceContent
           activeTab={workspaceRoute.tab}

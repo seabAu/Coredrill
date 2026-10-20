@@ -306,6 +306,12 @@ attempt and unarchived counts, not all attempts or verified employer facts.
 These read-only views do not imply completed compensation, editing, activity,
 contact navigation or full Source integration; see [details proof](../../proof/normal-stored-job-details-verification.md).
 
+Normal requirement review disables its named review fieldset through each job's
+acknowledged save and canonical readback. Dependent decisions cannot race a
+pending evidence selection; pending feedback remains available and other job
+navigation stays usable. Failure permits explicit retry, and completion restores
+keyboard context without stealing deliberate focus; see [ordering proof](../../proof/requirement-review-ordering-verification.md).
+
 The most important job actions—Change status, Set next action, Prepare application—are always reachable without opening `•••`.
 
 ### Requirements and evidence
