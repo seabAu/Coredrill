@@ -44,6 +44,8 @@ const fixture = () => ({
   jobId: id,
   busy: false,
   error: null,
+  listingChanges: null,
+  comparisonLiteral: null,
   history: { items: [], hasMore: false },
   comparison: null,
   primary: {
@@ -98,6 +100,9 @@ const render = (model: unknown) =>
       onReload: () => undefined,
       onRetry: () => undefined,
       onHistoryMore: () => undefined,
+      onCompare: () => undefined,
+      onComparisonInspect: () => undefined,
+      onComparisonPart: () => undefined,
       onSelect: () => undefined,
       onContent: () => undefined,
       onEvidencePage: () => undefined,
@@ -150,7 +155,7 @@ describe("inert normal Source presentation", () => {
     expect(html).not.toContain("Confirmation ID");
     expect(html).not.toContain("Confirmed at");
   });
-  it("separates explicit paired fingerprint inspection from the still-pending structured comparison", () => {
+  it("keeps structured comparison explicit rather than inferring changes from paired fingerprints", () => {
     const model = fixture();
     const html = render({
       ...model,
@@ -165,7 +170,8 @@ describe("inert normal Source presentation", () => {
     });
     expect(html).toContain("Recorded capture fingerprints differ");
     expect(html).toContain("not newly calculated body-integrity certificates");
-    expect(html).toContain("Structured field-by-field Listing changes is not connected yet");
+    expect(html).toContain("Compare retained listing fields");
+    expect(html).toContain("Missing evidence is never inferred to be unchanged");
     expect(html).toContain("no absent field is inferred to be unchanged");
   });
   it.each([

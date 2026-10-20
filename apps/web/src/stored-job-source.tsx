@@ -10,12 +10,15 @@ export const useStoredJobSource = (jobId: string | null) => {
   const [focusRequest, setFocusRequest] = useState<{
     readonly owner: ReturnType<typeof createStoredJobSourceReader>;
     readonly origin: Element | null;
+    readonly target: "origin" | "comparisonValue";
   } | null>(null);
   useLayoutEffect(() => {
     if (focusRequest?.owner !== reader.current || state?.busy !== false) return;
-    const { owner, origin } = focusRequest;
+    const { owner, origin, target } = focusRequest;
     restoreFocusAfterChange(origin, () => {
       if (reader.current !== owner) return null;
+      if (target === "comparisonValue")
+        return container.current?.querySelector<HTMLElement>("[data-comparison-value]") ?? null;
       return origin instanceof HTMLElement && origin.isConnected
         ? origin
         : (container.current?.querySelector<HTMLButtonElement>("[data-source-reload]") ?? null);
@@ -42,12 +45,14 @@ export const useStoredJobSource = (jobId: string | null) => {
   if (jobId === null) return null;
   const act = (
     action: (current: ReturnType<typeof createStoredJobSourceReader>) => Promise<boolean>,
+    target: "origin" | "comparisonValue" = "origin",
   ) => {
     const current = reader.current;
     if (current === null) return;
     const origin = document.activeElement;
     void action(current).then((completed) => {
-      if (completed && reader.current === current) setFocusRequest({ owner: current, origin });
+      if (completed && reader.current === current)
+        setFocusRequest({ owner: current, origin, target });
     });
   };
   return (
@@ -62,6 +67,15 @@ export const useStoredJobSource = (jobId: string | null) => {
         }}
         onHistoryMore={() => {
           act((current) => current.historyMore());
+        }}
+        onCompare={() => {
+          act((current) => current.compare());
+        }}
+        onComparisonInspect={(selection) => {
+          act((current) => current.inspectComparison(selection), "comparisonValue");
+        }}
+        onComparisonPart={(more) => {
+          act((current) => current.comparisonPart(more));
         }}
         onSelect={(slot, id) => {
           act((current) => current.select(slot, id));

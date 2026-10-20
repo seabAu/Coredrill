@@ -338,7 +338,7 @@ test("normal root uses real native SQLite for capture and documents without OPFS
     ).toEqual(bytes);
     await page.reload();
     await expect(preparation).toContainText("Ready for export review");
-    const listingComparison = await exerciseStoredListingComparison(page);
+    const listingComparison = await exerciseStoredListingComparison(page, testInfo);
     const capabilities = await page.evaluate(() => ({
       calls: globalThis.coredrillBrowserCapabilityProbe,
       offline: globalThis.coredrillOfflineShell.getState(),

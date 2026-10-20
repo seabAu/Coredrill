@@ -145,9 +145,18 @@ test("normal Source inspects exact retained evidence and explicit snapshot pairs
       exact: true,
     }),
   ).toContainText("Recorded capture fingerprints differ");
-  await expect(source).toContainText(
-    "Structured field-by-field Listing changes is not connected yet",
-  );
+  const listingChanges = source.getByRole("region", {
+    name: "Retained listing changes",
+    exact: true,
+  });
+  await listingChanges
+    .getByRole("button", { name: "Compare retained listing fields", exact: true })
+    .click();
+  await expect(
+    listingChanges.getByRole("heading", { name: "Requirements — Not comparable", exact: true }),
+  ).toBeVisible();
+  await expect(listingChanges).toContainText("Local analysis unavailable");
+  await expect(listingChanges).not.toContainText("0 added");
   expect(await page.evaluate(() => globalThis.neverExecute)).toBeUndefined();
   expect(
     await page
@@ -277,7 +286,8 @@ test("normal Source inspects exact retained evidence and explicit snapshot pairs
       jobId,
       snapshotIds: snapshots.value.items.map(({ id }) => id),
       pairedInspection: true,
-      semanticComparisonComplete: false,
+      comparisonInvoked: true,
+      incompleteFieldsRemainNotComparable: true,
       privateMutations: 0,
       offline: true,
       externalRequests: external.length,

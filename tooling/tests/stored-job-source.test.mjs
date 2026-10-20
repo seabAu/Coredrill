@@ -8,7 +8,7 @@ const id = "0198e207-0000-7000-8000-000000000004";
 const snapshot = (snapshotId) => ({
   id: snapshotId,
   jobId,
-  capturedAt: "2026-10-19T12:00:00.000Z",
+  capturedAt: snapshotId === a ? "2026-10-19T12:00:00.000Z" : "2026-10-19T11:00:00.000Z",
 });
 const success = (value) => ({ ok: true, value });
 const history = (items = [snapshot(a), snapshot(b)], nextCursor = null) => ({
@@ -47,6 +47,7 @@ const value = (part = "normalized", nextCursor = null) => ({
 });
 const setup = () => {
   const api = {
+    sourceComparison: vi.fn().mockResolvedValue(success(comparison())),
     sourceSnapshots: vi.fn().mockResolvedValue(success(history())),
     sourceContent: vi.fn((input) => Promise.resolve(success(body(input.snapshotId, input.kind)))),
     sourceEvidence: vi.fn((input) => Promise.resolve(success(evidence(input.snapshotId)))),
@@ -56,6 +57,221 @@ const setup = () => {
   const reader = createStoredJobSourceReader(jobId, () => api, changed);
   return { api, reader, changed };
 };
+
+const comparisonFact = (rawValueJson = null) => ({
+  key: "retained-requirement-slot",
+  valueJson: JSON.stringify({ text: "\uFEFFé中🙂 <script>neverExecute()</script> ".repeat(2500) }),
+  sourceValueJson: JSON.stringify("exact source candidate"),
+  rawValueJson,
+  candidateId: null,
+  sourceType: "capture",
+  sourceId: id,
+  sourcePointer: "/content/apiPayload/qualifications/0",
+});
+const comparison = (rawValueJson = null) => ({
+  specVersion: 1,
+  jobId,
+  baselineSnapshotId: b,
+  currentSnapshotId: a,
+  baselineCapturedAt: snapshot(b).capturedAt,
+  currentCapturedAt: snapshot(a).capturedAt,
+  analyzedAt: "2026-10-20T04:00:00.000Z",
+  refreshPerformed: false,
+  trustedFieldMutationPerformed: false,
+  fields: {
+    requirements: {
+      before: { items: [comparisonFact(rawValueJson)], absenceEvidence: [] },
+      after: { items: [comparisonFact(rawValueJson)], absenceEvidence: [] },
+    },
+  },
+});
+const selectCompared = async () => {
+  const setupValue = setup();
+  await setupValue.reader.reload();
+  await setupValue.reader.select("comparison", b);
+  await setupValue.reader.compare();
+  return setupValue;
+};
+const selection = (patch = {}) => ({
+  analysisTime: comparison().analyzedAt,
+  side: "after",
+  field: "requirements",
+  index: 0,
+  key: comparisonFact().key,
+  part: "comparison",
+  ...patch,
+});
+
+describe("normal Source structured comparison lifetime and bounded inspector", () => {
+  it("never compares automatically and uses the explicit pair in chronological order", async () => {
+    const { api, reader } = setup();
+    expect(await reader.compare()).toBe(false);
+    await reader.reload();
+    expect(api.sourceComparison).not.toHaveBeenCalled();
+    await reader.select("comparison", b);
+    expect(api.sourceComparison).not.toHaveBeenCalled();
+    await reader.compare();
+    expect(api.sourceComparison).toHaveBeenCalledExactlyOnceWith({
+      jobId,
+      baselineSnapshotId: b,
+      currentSnapshotId: a,
+    });
+    expect(reader.current().listingChanges).toEqual(comparison());
+  });
+  it("reconstructs complete Unicode literal JSON in scalar-safe bounded replacement parts", async () => {
+    const { api, reader } = await selectCompared();
+    await reader.inspectComparison(selection());
+    let actual = "";
+    let offset = 0;
+    let more = true;
+    while (more) {
+      const part = reader.current().comparisonLiteral;
+      expect(part.byteOffset).toBe(offset);
+      expect(part.bytesRead).toBeLessThanOrEqual(32768);
+      actual += part.text;
+      offset += part.bytesRead;
+      more = part.hasMore;
+      if (more) await reader.comparisonPart(true);
+    }
+    expect(actual).toBe(comparisonFact().valueJson);
+    expect(offset).toBe(new globalThis.TextEncoder().encode(actual).byteLength);
+    expect(await reader.comparisonPart(true)).toBe(false);
+    await reader.comparisonPart(false);
+    expect(reader.current().comparisonLiteral.byteOffset).toBe(0);
+    expect(api.sourceComparison).toHaveBeenCalledTimes(1);
+    expect(api.sourceContent).toHaveBeenCalledTimes(2);
+  });
+  it("inspects explicit absence evidence without inventing a retained item", async () => {
+    const { api, reader } = await selectCompared();
+    const result = comparison();
+    const absent = {
+      ...comparisonFact(),
+      key: "explicit-empty-array",
+      valueJson: "[]",
+      sourceValueJson: "[]",
+    };
+    result.fields.requirements.after = { items: [], absenceEvidence: [absent] };
+    api.sourceComparison.mockResolvedValueOnce(success(result));
+    await reader.compare();
+    expect(await reader.inspectComparison(selection({ key: absent.key }))).toBe(true);
+    expect(reader.current().comparisonLiteral).toMatchObject({
+      text: "[]",
+      byteLength: 2,
+      hasMore: false,
+    });
+    expect(await reader.inspectComparison(selection({ key: absent.key, index: 1 }))).toBe(false);
+  });
+  it("keeps absent raw, JSON null and serialized empty string distinct", async () => {
+    const { api, reader } = await selectCompared();
+    await reader.inspectComparison(selection({ part: "raw" }));
+    expect(reader.current().comparisonLiteral).toMatchObject({
+      text: null,
+      byteLength: null,
+      bytesRead: 0,
+      hasMore: false,
+    });
+    for (const raw of ["null", '""']) {
+      api.sourceComparison.mockResolvedValueOnce(success(comparison(raw)));
+      await reader.compare();
+      await reader.inspectComparison(selection({ part: "raw" }));
+      expect(reader.current().comparisonLiteral).toMatchObject({
+        text: raw,
+        byteLength: new globalThis.TextEncoder().encode(raw).byteLength,
+      });
+    }
+  });
+  it.each([
+    { analysisTime: "old" },
+    { key: "foreign" },
+    { index: -1 },
+    { index: 100 },
+    { side: "foreign" },
+    { field: "foreign" },
+    { part: "foreign" },
+  ])("ignores stale or invalid inspector identity without changing prior data", async (patch) => {
+    const { reader } = await selectCompared();
+    await reader.inspectComparison(selection());
+    const before = reader.current();
+    expect(await reader.inspectComparison(selection(patch))).toBe(false);
+    expect(reader.current()).toBe(before);
+  });
+  it("clears obsolete comparisons/parts on snapshot selection, removal and newest reset", async () => {
+    const { reader } = await selectCompared();
+    await reader.inspectComparison(selection());
+    await reader.select("primary", a);
+    expect(reader.current()).toMatchObject({ listingChanges: null, comparisonLiteral: null });
+    await reader.compare();
+    await reader.select("comparison", "");
+    expect(reader.current()).toMatchObject({
+      listingChanges: null,
+      comparisonLiteral: null,
+      comparison: null,
+    });
+    await reader.select("comparison", b);
+    await reader.compare();
+    await reader.reload();
+    expect(reader.current()).toMatchObject({ listingChanges: null, comparisonLiteral: null });
+  });
+  it("retains a prior result and literal part on failure, redacts errors, and retries the same explicit pair", async () => {
+    const { api, reader } = await selectCompared();
+    await reader.inspectComparison(selection());
+    const prior = reader.current().listingChanges;
+    const literal = reader.current().comparisonLiteral;
+    api.sourceComparison.mockRejectedValueOnce(new Error("C:/private/source"));
+    await reader.compare();
+    expect(reader.current().listingChanges).toBe(prior);
+    expect(reader.current().comparisonLiteral).toBe(literal);
+    expect(reader.current().error).not.toContain("private");
+    await reader.retry();
+    expect(reader.current()).toMatchObject({ error: null, comparisonLiteral: null });
+  });
+  it.each([
+    { currentSnapshotId: b },
+    { jobId: b },
+    { baselineCapturedAt: snapshot(a).capturedAt },
+    { refreshPerformed: true },
+    { trustedFieldMutationPerformed: true },
+    { specVersion: 2 },
+  ])(
+    "rejects mismatched or non-read-only comparison echoes without publishing success",
+    async (patch) => {
+      const { api, reader } = await selectCompared();
+      const prior = reader.current().listingChanges;
+      api.sourceComparison.mockResolvedValueOnce(success({ ...comparison(), ...patch }));
+      await reader.compare();
+      expect(reader.current().listingChanges).toBe(prior);
+      expect(reader.current().error).not.toBeNull();
+    },
+  );
+  it("keeps comparison single-flight and suppresses results after owner disposal", async () => {
+    const { api, reader, changed } = await selectCompared();
+    let release;
+    api.sourceComparison.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          release = resolve;
+        }),
+    );
+    const pending = reader.compare();
+    expect(await reader.compare()).toBe(false);
+    expect(await reader.inspectComparison(selection())).toBe(false);
+    reader.dispose();
+    const count = changed.mock.calls.length;
+    release(success(comparison()));
+    expect(await pending).toBe(false);
+    expect(changed).toHaveBeenCalledTimes(count);
+  });
+  it("does not invent order for equal capture timestamps", async () => {
+    const { api, reader } = setup();
+    api.sourceSnapshots.mockResolvedValueOnce(
+      success(history([snapshot(a), { ...snapshot(b), capturedAt: snapshot(a).capturedAt }])),
+    );
+    await reader.reload();
+    await reader.select("comparison", b);
+    expect(await reader.compare()).toBe(false);
+    expect(api.sourceComparison).not.toHaveBeenCalled();
+  });
+});
 
 describe("root-owned bounded normal Source coordination", () => {
   it("does not read until requested, then inspects one newest snapshot without choosing a comparison", async () => {

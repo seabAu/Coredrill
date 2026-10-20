@@ -7,7 +7,13 @@ import type {
   JobSourceSnapshotMetadataDto,
   JobSourceSnapshotPageDto,
   SourceEvidenceValuePart,
+  JobSourceComparisonDto,
 } from "@coredrill/application";
+import {
+  StoredListingChanges,
+  type ComparisonLiteralValue,
+  type ComparisonValueSelection,
+} from "./stored-listing-changes.js";
 
 export type StoredSourceSlot = "primary" | "comparison";
 export interface StoredSourcePane {
@@ -23,12 +29,17 @@ export interface StoredJobSourceModel {
   readonly comparison: StoredSourcePane | null;
   readonly busy: boolean;
   readonly error: string | null;
+  readonly listingChanges: JobSourceComparisonDto | null;
+  readonly comparisonLiteral: ComparisonLiteralValue | null;
 }
 export interface StoredJobSourceProps {
   readonly model: StoredJobSourceModel;
   readonly onReload: () => void;
   readonly onRetry: () => void;
   readonly onHistoryMore: () => void;
+  readonly onCompare: () => void;
+  readonly onComparisonInspect: (selection: ComparisonValueSelection) => void;
+  readonly onComparisonPart: (more: boolean) => void;
   readonly onSelect: (slot: StoredSourceSlot, id: string) => void;
   readonly onContent: (slot: StoredSourceSlot, kind: JobSourceContentKind, more: boolean) => void;
   readonly onEvidencePage: (slot: StoredSourceSlot, more: boolean) => void;
@@ -421,11 +432,23 @@ export const StoredJobSource = (props: StoredJobSourceProps) => {
             These are recorded capture identities, not newly calculated body-integrity certificates.
           </p>
           <p>
-            Structured field-by-field Listing changes is not connected yet. Inspect the exact
-            retained parts and provenance below; no absent field is inferred to be unchanged.
+            Compare the selected retained fields below; no absent field is inferred to be unchanged.
           </p>
         </aside>
       ) : null}
+      {primary !== null && comparison !== null ? (
+        <StoredListingChanges
+          changes={model.listingChanges ?? null}
+          literal={model.comparisonLiteral ?? null}
+          busy={busy}
+          chronological={primary.snapshot.capturedAt !== comparison.snapshot.capturedAt}
+          onCompare={props.onCompare}
+          onInspect={props.onComparisonInspect}
+          onPart={props.onComparisonPart}
+        />
+      ) : (
+        <p>Select a second retained snapshot to compare listing fields.</p>
+      )}
       <div className="cd-stored-source-panes">
         {primary === null ? null : renderPane("primary", primary)}
         {comparison === null ? null : renderPane("comparison", comparison)}

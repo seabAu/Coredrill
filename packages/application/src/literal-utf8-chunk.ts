@@ -1,4 +1,4 @@
-/** Internal shared decoder: exact literal text, not markup/JSON interpretation. */
+/** Shared bounded literal decoder: exact text, never markup/JSON interpretation. */
 export const decodeLiteralUtf8Chunk = (
   bytes: unknown,
   byteLength: number,

@@ -134,6 +134,42 @@ textarea {
   min-width: 0;
   max-width: 100%;
 }
+.cd-stored-listing-changes,
+.cd-stored-listing-field,
+.cd-stored-listing-sides,
+.cd-stored-listing-sides > article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  gap: 0.875rem;
+}
+.cd-stored-listing-changes :where(p, h4, h5, h6, summary, dd) {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.cd-stored-listing-changes :where(button, summary, pre, [data-comparison-value]):focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}
+.cd-stored-listing-field {
+  border-top: 1px solid var(--color-border);
+  padding-block: 0.875rem;
+}
+.cd-stored-listing-changes h6 {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+.cd-stored-listing-sides {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
+}
+.cd-stored-listing-sides details {
+  min-width: 0;
+  padding-block: 0.625rem;
+  border-top: 1px solid var(--color-border);
+}
+.cd-stored-listing-sides summary {
+  cursor: pointer;
+}
 .cd-shell-page-title,
 .cd-job-workspace-heading-row h2,
 .cd-job-workspace-company {

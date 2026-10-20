@@ -307,8 +307,11 @@ Compensation retains exact decimals, currency scale, minor units and interval;
 deadline dates and instants remain distinct; remote eligibility is separate from
 physical location. Raw values, pointers, excerpts, methods and confidence remain
 visible in the read model. Current-analysis facts have no invented durable
-candidate ID or confirmation. Normal Source controls are not yet connected;
-see [structured query proof](../../proof/retained-listing-comparison-verification.md).
+candidate ID or confirmation. Normal Source controls now invoke this query only
+after an explicit comparison of the chosen pair. They expose per-field uncertainty,
+retained-slot deltas and complete bounded literal inspection without refreshing,
+promoting or overwriting values. See [structured query proof](../../proof/retained-listing-comparison-verification.md)
+and [controls verification](../../proof/stored-listing-comparison-controls-verification.md).
 
 #### Schema.org `JobPosting`
 

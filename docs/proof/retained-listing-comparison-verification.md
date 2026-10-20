@@ -44,3 +44,10 @@ The subsequent full unchanged-source/fixture run passes, terminal `LISTING_COMPA
 The separate final-source extension suite also passes all nine cases, terminal `LISTING_COMPARISON_EXTENSION_EXIT=0`, log `test-results/listing-comparison-extension-full.log`. Capture/correction/reload, durable transfer/restart, hostile/oversized input and Firefox manual fallback remain covered.
 
 Only documentation changes follow these passing full runs. Final repository formatting and boundary/foundation/license/secret policy checks pass, log `test-results/listing-comparison-final-doc-policy.log`; `git diff --check` is clean. Clean-commit hosted proof remains pending. Normal Source comparison controls remain unconnected, so `INT-001` stays open.
+
+## Hosted query checkpoint
+
+Exact pushed checkpoint `ee95f361d48f27af2a655a4b111159610af31461` subsequently
+passes every required job in [Foundation CI 39367958347](https://github.com/seabAu/Coredrill/actions/runs/39367958347),
+terminal success. This closes the query/runtime hosted proof above, not the later
+normal Source controls tracked in [their separate verification record](stored-listing-comparison-controls-verification.md).

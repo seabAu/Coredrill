@@ -314,11 +314,20 @@ with explicit byte offsets, First/Next controls and incomplete-preview labels.
 Source metadata and review annotations are labeled current when read, never
 capture-time state. Root-owned read coordination survives responsive frame
 replacement and discards disposed/old-job results. Explicitly choosing a second
-snapshot enables paired inspection and recorded-fingerprint comparison only;
-structured field-by-field Listing changes composition remains pending rather
-than inventing empty requirements, compensation, deadline or location values.
+snapshot enables paired inspection and recorded-fingerprint comparison. The
+explicit Compare action orders the selected pair chronologically and presents
+requirements, compensation, deadline and locations separately. Known, missing,
+ambiguous and unavailable evidence remain distinct; unknown fields never become
+zero-change totals. Requirement deltas describe retained slots, not inferred
+semantic identities. Both capture times and the current analysis identity are
+disclosed alongside original/current-analysis provenance. A focused inspector
+provides complete comparison/source/raw serialized values in scalar-safe UTF-8
+parts; absent raw data is distinct from JSON null or an empty string. Selection
+changes clear obsolete comparisons; failures retain explicitly stale results
+with retry. Controls and the bounded inspector reflow without losing read state.
 No source is visited, markup executed, or confirmed value changed. See [stored
-Source inspection proof](../../proof/normal-stored-job-source-verification.md).
+Source inspection proof](../../proof/normal-stored-job-source-verification.md)
+and [comparison controls verification](../../proof/stored-listing-comparison-controls-verification.md).
 
 Normal requirement review disables its named review fieldset through each job's
 acknowledged save and canonical readback. Dependent decisions cannot race a
