@@ -613,3 +613,4 @@ export {
   type GuardedApplicationAnswerTemplateResult,
 } from "./template-drafting-policy.js";
 export * from "./job-source-snapshots.js";
+export * from "./job-source-content.js";

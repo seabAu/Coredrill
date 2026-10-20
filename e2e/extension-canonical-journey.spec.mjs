@@ -72,6 +72,7 @@ test("retains the complete Phase 2 extension capture and correction journey", as
 }, testInfo) => {
   const userDataDirectory = await mkdtemp(path.join(tmpdir(), "coredrill-q2-journey-"));
   const context = await launchExtensionContext(userDataDirectory);
+  await context.tracing.start({ screenshots: true, snapshots: true, sources: true });
   try {
     await routeHostedApp(context);
     const unexpectedRequests = [];
@@ -229,8 +230,12 @@ test("retains the complete Phase 2 extension capture and correction journey", as
 
     await followUp
       .getByLabel("Correct confirmed title")
-      .fill("Principal Canonical Platform Engineer");
-    await followUp.getByRole("button", { name: "Apply manual correction" }).click();
+      .fill("Principal Canonical Platform Engineer", { timeout: 10_000 });
+    console.info("Q2 journey stage: correction input filled");
+    await followUp
+      .getByRole("button", { name: "Apply manual correction" })
+      .click({ timeout: 10_000 });
+    console.info("Q2 journey stage: correction action clicked");
     await expect(
       followUp.getByText(
         "Correction saved. The prior confirmed title and provenance remain in history.",
@@ -302,6 +307,13 @@ test("retains the complete Phase 2 extension capture and correction journey", as
       contentType: "application/json",
     });
     console.info(`Q2_CANONICAL_CAPTURE_REVIEW_PROOF ${JSON.stringify(proof)}`);
+    await context.tracing.stop();
+  } catch (error) {
+    // Diagnostic capture cannot turn the original test failure into a pass.
+    await context.tracing
+      .stop({ path: testInfo.outputPath("extension-canonical-failure-trace.zip") })
+      .catch(() => undefined);
+    throw error;
   } finally {
     await closeHostedAppContext(context);
     await rm(userDataDirectory, { recursive: true, force: true });

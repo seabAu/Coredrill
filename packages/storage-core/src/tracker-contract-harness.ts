@@ -1,7 +1,13 @@
 import type { JsonValue } from "@coredrill/contracts";
 import { confidence, dateOnly, entityId, instant, webUrl } from "@coredrill/domain";
-import { VaultLifecycleError, createJobSourceSnapshotQuery } from "@coredrill/application";
+import {
+  VaultLifecycleError,
+  createJobSourceSnapshotQuery,
+  createJobSourceContentQuery,
+  type JobSourceContentCursor,
+} from "@coredrill/application";
 import { createJobSourceSnapshotRepository } from "./job-source-snapshot-repository.js";
+import { createJobSourceContentRepository } from "./job-source-content-repository.js";
 import { createDatabaseVaultBootstrapPort } from "./application-ports.js";
 
 import {
@@ -71,6 +77,143 @@ const SYNTHETIC_IR: JsonValue = {
 const assertContract = (condition: boolean, message: string): void => {
   if (!condition) throw new DatabaseContractViolation(message);
 };
+
+async function verifySourceContent(
+  database: DatabasePort,
+  jobId: string,
+  jobSourceId: string,
+): Promise<void> {
+  const snapshotId = entityId("source-snapshot", "0198e102-0000-7000-8000-000000000088");
+  const emptyId = entityId("source-snapshot", "0198e102-0000-7000-8000-000000000089");
+  const literal = "\uFEFFa\u0000é中🙂\r\n<script>neverExecute()</script>\uFEFF";
+  const markup = "<img src=x onerror=neverExecute()>é🙂";
+  const structured = JSON.stringify({ literal, markup });
+  // Reader fixtures exercise schema-valid legacy values without relaxing current writer policy.
+  for (const fixture of [
+    { id: snapshotId, raw: literal, html: markup, json: structured, hash: "d".repeat(64) },
+    { id: emptyId, raw: "", html: null, json: null, hash: "e".repeat(64) },
+  ]) {
+    await database.execute(
+      sqlStatement(
+        `INSERT INTO source_snapshot(id, job_source_id, captured_at, extractor_id, extractor_version, raw_text, sanitized_html, structured_json, content_hash, retention_class, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          fixture.id,
+          jobSourceId,
+          CREATED_AT,
+          "synthetic.content",
+          "1.0.0",
+          fixture.raw,
+          fixture.html,
+          fixture.json,
+          fixture.hash,
+          "capture_review",
+          CREATED_AT,
+        ],
+      ),
+    );
+  }
+  const context = {
+    operationId: entityId("application-operation", "0198e102-0000-7000-8000-000000000090"),
+    initiatedAt: UPDATED_AT,
+  };
+  const query = createJobSourceContentQuery(createJobSourceContentRepository(database));
+  const canonical = async () =>
+    JSON.stringify({
+      snapshots: await database.query(sqlStatement("SELECT * FROM source_snapshot ORDER BY id")),
+      sources: await database.query(sqlStatement("SELECT * FROM job_source ORDER BY id")),
+      jobs: await database.query(sqlStatement("SELECT * FROM job ORDER BY id")),
+      provenance: await database.query(sqlStatement("SELECT * FROM provenance ORDER BY id")),
+      fields: await database.query(sqlStatement("SELECT * FROM field_value ORDER BY id")),
+    });
+  const before = await canonical();
+  let firstTextCursor: JobSourceContentCursor | null = null;
+  for (const [kind, expected] of [
+    ["text", literal],
+    ["markup", markup],
+    ["structured", structured],
+  ] as const) {
+    let after: JobSourceContentCursor | null = null;
+    let recovered = "";
+    let consumed = 0;
+    do {
+      const result = await query.execute(
+        { jobId, snapshotId, kind, limitBytes: 4, after },
+        context,
+      );
+      if (!result.ok || result.value.text === null)
+        throw new DatabaseContractViolation("Retained source chunk read failed.");
+      const value = result.value;
+      assertContract(
+        value.byteOffset === consumed &&
+          value.bytesRead <= 4 &&
+          value.byteLength === new TextEncoder().encode(expected).byteLength &&
+          value.jobSourceId === jobSourceId,
+        "Source chunk byte/source scope changed.",
+      );
+      recovered += result.value.text;
+      consumed += value.bytesRead;
+      after = value.nextCursor;
+      if (kind === "text" && firstTextCursor === null && after !== null) firstTextCursor = after;
+    } while (after !== null);
+    assertContract(
+      recovered === expected && consumed === new TextEncoder().encode(expected).byteLength,
+      "Source chunk round-trip lost BOM/NUL, Unicode or literal markup/structured text.",
+    );
+  }
+  if (firstTextCursor === null)
+    throw new DatabaseContractViolation("Source cursor fixture missing.");
+  const empty = await query.execute({ jobId, snapshotId: emptyId, kind: "text" }, context);
+  const absent = await query.execute({ jobId, snapshotId: emptyId, kind: "markup" }, context);
+  assertContract(
+    empty.ok &&
+      empty.value.text === "" &&
+      empty.value.byteLength === 0 &&
+      !empty.value.hasMore &&
+      absent.ok &&
+      absent.value.text === null &&
+      absent.value.byteLength === null,
+    "Absent and empty retained content were conflated.",
+  );
+  for (const after of [
+    { ...firstTextCursor, contentHash: "f".repeat(64) },
+    { ...firstTextCursor, byteLength: firstTextCursor.byteLength + 1 },
+    { ...firstTextCursor, byteOffset: 1 },
+  ]) {
+    const result = await query.execute({ jobId, snapshotId, kind: "text", after }, context);
+    assertContract(
+      !result.ok && result.error.code === "conflict",
+      "Stale or mid-scalar source continuation was accepted.",
+    );
+  }
+  const foreign = await query.execute(
+    { jobId: IDS.job, snapshotId, kind: "text", includeArchived: true },
+    context,
+  );
+  assertContract(
+    !foreign.ok && foreign.error.code === "not_found",
+    "Retained content leaked across jobs.",
+  );
+  assertContract(
+    (await canonical()) === before,
+    "Content reads mutated canonical source/job/provenance state.",
+  );
+  await database.execute(
+    sqlStatement("UPDATE job SET archived_at = ?, updated_at = ? WHERE id = ?", [
+      UPDATED_AT,
+      UPDATED_AT,
+      jobId,
+    ]),
+  );
+  const archived = await query.execute({ jobId, snapshotId, kind: "text" }, context);
+  const included = await query.execute(
+    { jobId, snapshotId, kind: "text", includeArchived: true },
+    context,
+  );
+  assertContract(
+    !archived.ok && archived.error.code === "not_found" && included.ok,
+    "Content archive scope was not enforced.",
+  );
+}
 
 /** Identical source query assertions run in Node, browser OPFS and native SQLite. */
 async function verifySourceSnapshotHistory(database: DatabasePort): Promise<void> {
@@ -229,6 +372,7 @@ async function verifySourceSnapshotHistory(database: DatabasePort): Promise<void
       included.value.items.length === 2,
     "Source history archive scope was not enforced.",
   );
+  await verifySourceContent(database, emptyJobId, foreignSourceId);
 }
 
 const expectRepositoryFailure = async (

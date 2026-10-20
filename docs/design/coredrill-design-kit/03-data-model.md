@@ -95,6 +95,14 @@ connector identity, observation times and primary state as current stored
 metadata, never a historical snapshot at the capture or pagination time. See
 [query proof](../../proof/source-snapshot-history-query-verification.md).
 
+Retained snapshot content is read separately, one text/markup/structured body at
+a time through bounded UTF-8 byte continuation. Literal output preserves BOM,
+embedded NUL and scalar boundaries, distinguishes absent from empty content and
+never renders stored markup or executes structured data. Continuation binds
+job/snapshot/kind/archive/read-time scope plus recorded capture hash and byte
+length; it is not a new body-integrity or truth certificate. See [content query
+proof](../../proof/source-content-query-verification.md).
+
 `job_requirement(id, job_id, category, source_category, normalized_text, raw_text, provenance_id, confidence, user_confirmed, sort_order, created_at, updated_at, row_version)`
 
 Requirement category: `required`, `desired`, `responsibility`, `context`, or `constraint`. Education, certification, work authorization, skill, years, and seniority remain separate extracted mappings or constraint details rather than competing top-level UI categories.

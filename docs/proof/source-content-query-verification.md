@@ -1,0 +1,33 @@
+# Retained Source content query — verification in progress
+
+Date: 2026-10-19. `INT-001` remains open; this is a query prerequisite, not normal Source UI or field-provenance/comparison completion.
+
+## Contract and boundary
+
+`GetJobSourceContentQuery` accepts one owned job/snapshot and one reviewed `text`, `markup` or `structured` content kind. It validates context, archive scope, 4–65,536-byte read limit (default 32,768) and optional continuation before storage access. Cursors bind job, snapshot, kind, archive scope, immutable local-creation ceiling, recorded capture fingerprint, total body byte length and next UTF-8 byte offset. The fingerprint remains the recorded capture identity, not a newly calculated checksum or truth certification for the returned body.
+
+The shared SQLite adapter chooses a column only from a fixed enum map and binds IDs/offsets/lengths. One transaction reads one bounded BLOB substring and its byte length, with exact ownership/archive/creation guards. It never loads all three bodies, parses retained markup/JSON, fetches a URL, confirms a field, writes canonical data or changes SQL/native permissions.
+
+The application validates scope, size, identity, hash/length continuity and binary shape, then decodes fatal UTF-8 with BOM preservation. Only an incomplete trailing scalar is deferred; the next read resumes at the exact consumed byte count, so concatenation preserves the full retained body without replacement characters or silent truncation. Output is copied/frozen literal text, including structured JSON text, never rendering instructions. Null body and zero retained bytes remain distinct. The existing writer's stricter NUL/blank policy is unchanged; read-only compatibility tests deliberately insert schema-valid legacy values into isolated fixtures.
+
+## Focused proof and iteration
+
+All 34 typecheck tasks pass. Initial changed-source lint catches a forbidden non-null assertion and a nullable fixture-string alias; explicit narrowing repairs both without suppressions. Forty-two application tests plus eleven real Node SQLite tracker tests then expose a genuine SQLite quirk: `substr(CAST('' AS BLOB), 1, n)` returns SQL NULL despite byte length zero. A direct in-memory SQLite diagnostic confirms that result. The adapter normalizes only this zero-length/null-substring combination to an empty byte array; an actually absent body retains null length and null content. All 53 focused tests and changed-source lint pass afterward.
+
+The shared tracker contract now reconstructs text, markup and JSON in four-byte reads across BOM, embedded NUL, accented/CJK/supplementary Unicode, CRLF and hostile-looking literal markup. It checks exact UTF-8 length, monotonic offsets, source identity, absent/empty distinction, stale hash/length and mid-scalar cursor rejection, cross-job denial, unchanged canonical job/source/snapshot/provenance/field tables and archive visibility. Browser OPFS and native SQLite must run these same assertions before full proof is claimed.
+
+No schema, dependency, permission or Accepted decision change is required. An additive minor Changeset covers both application/storage APIs. Normal UI text sinks and per-field provenance/comparison remain `INT-001` work.
+
+## Independent extension CI failure and observability
+
+Predecessor metadata-query run [39350099052](https://github.com/seabAu/Coredrill/actions/runs/39350099052), exact SHA `8d96e1820058e6bdda41246093c8fb9e7921a350`, has a terminal extension-lane failure after the source-diff witness and before manual correction finishes: global 120-second timeout, eight other cases pass. This is not the old socket failure and no cause is established. Its exact log is retained at `test-results/source-metadata-hosted-extension-failure.log`; other lanes were still under observation when this record was written. Do not call the run green.
+
+Failure diagnostics now record a custom-context Playwright trace and upload extension artifacts even when the test fails, preserving the original failure. Correction fill/click use a tighter explicit ten-second action allowance instead of consuming the whole 120-second test budget; no allowance or assertion is increased or removed. Static correction-stage markers identify the stalled action without printing private data. The unchanged canonical correction assertions pass three local fresh-context repeats on production app assets (`test-results/extension-correction-diagnostic-stress.log`, terminal 0). This does not prove the hosted timeout's cause or claim that diagnostics fixed it.
+
+## Final local proof and remaining hosted verification
+
+Complete final-source `pnpm verify` exits 0, directly observed with marker `SOURCE_CONTENT_VERIFY_EXIT=0` in `test-results/source-content-full-verify.log`: 147 unit files / 1,244 tests plus coverage; seven UI foundations, 76 shell, one diagnostic performance, 24 resilience, seven onboarding, 13 documents and nine storage cases; Rust core 14 passed / one intentionally ignored, all 14 native adapter cases, secure storage/archive/backup checks; formatting, strict typecheck, lint, build, generated/architecture/foundation records, license/secret/audit checks and Changesets. The same source-content assertions, including actual BOM/NUL/Unicode byte reconstruction and absent/empty normalization, pass in Node, browser OPFS and real native SQLite. npm reports no known vulnerabilities; ten previously allowed Cargo warnings remain. Source/fixtures stayed frozen; process-local `VITEST_MAX_WORKERS=4` changes scheduling only.
+
+The complete extension suite then passes all nine cases with `SOURCE_CONTENT_EXTENSION_EXIT=0` in `test-results/source-content-extension-full.log`, including the instrumented correction flow and unchanged real-error teardown, malicious-page, outbox/restart and Firefox fallback assertions. Three earlier fresh-context correction repeats also pass. Failure tracing/always-upload diagnostics are added and original failures remain rethrown; these passing runs do not establish the hosted timeout's cause.
+
+Predecessor `39350099052` is now terminal **failure**, with every required non-extension lane successful and only the correction timeout failing. This verifies the unchanged metadata-query component in its clean-commit browser/native/aggregate lanes but is not a green workflow or proof of this subsequent content query. Do not rewrite that run or reopen the independently proven `Q3-005` journey as if it were the failed correction case. Final documentation/policy checks and fresh clean-commit hosted verification remain. Keep `INT-001` and the overall product goal open and continue normal Source provenance/comparison/UI integration after these prerequisites.

@@ -416,3 +416,4 @@ export { createDocumentCreationRepository } from "./document-creation-repository
 export { createApplicationAttemptRepository } from "./application-attempt-repository.js";
 export { createJobTimelineRepository } from "./job-timeline-repository.js";
 export { createJobSourceSnapshotRepository } from "./job-source-snapshot-repository.js";
+export { createJobSourceContentRepository } from "./job-source-content-repository.js";
