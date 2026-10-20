@@ -22,7 +22,7 @@ const capture = async (page, title) => {
 
 test("a missed breakpoint notification cannot strand a retained note in contextual layout", async ({
   page,
-}) => {
+}, testInfo) => {
   await page.addInitScript(() => {
     const original = window.matchMedia.bind(window);
     window.matchMedia = (query) => {
@@ -30,6 +30,13 @@ test("a missed breakpoint notification cannot strand a retained note in contextu
       if (query !== "(min-width: 80rem)") return media;
       const add = media.addEventListener.bind(media);
       const remove = media.removeEventListener.bind(media);
+      // Observe the real transition independently of React's replaceable subscription.
+      // A render may detach that subscription before the browser dispatches change.
+      add("change", () => {
+        if (globalThis.suppressWorkspaceBreakpoint === true)
+          globalThis.observedWorkspaceBreakpoints =
+            (globalThis.observedWorkspaceBreakpoints ?? 0) + 1;
+      });
       const wrappers = new Map();
       media.addEventListener = (type, listener, options) => {
         if (type !== "change" || typeof listener !== "function")
@@ -62,13 +69,19 @@ test("a missed breakpoint notification cannot strand a retained note in contextu
   await page.getByRole("button", { name: "Timeline", exact: true }).click();
   const field = page.getByRole("textbox", { name: "Local note text", exact: true });
   await field.fill("Retain my exact draft across a missed breakpoint notification.");
+  await expect(page.locator("[data-job-workspace]")).toHaveAttribute(
+    "data-workspace-mode",
+    "contextual",
+  );
+  expect(await page.evaluate(() => window.matchMedia("(min-width: 80rem)").matches)).toBe(true);
   await page.evaluate(() => {
     globalThis.suppressWorkspaceBreakpoint = true;
   });
   await page.setViewportSize({ width: 320, height: 900 });
   await expect
-    .poll(() => page.evaluate(() => globalThis.missedWorkspaceBreakpoints ?? 0))
+    .poll(() => page.evaluate(() => globalThis.observedWorkspaceBreakpoints ?? 0))
     .toBeGreaterThan(0);
+  expect(await page.evaluate(() => window.matchMedia("(min-width: 80rem)").matches)).toBe(false);
   await page.getByRole("button", { name: "Overview", exact: true }).click();
   await page.getByRole("button", { name: "Timeline", exact: true }).click();
   await expect(page.locator("[data-job-workspace]")).toHaveAttribute(
@@ -81,6 +94,16 @@ test("a missed breakpoint notification cannot strand a retained note in contextu
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
     ),
   ).toBe(false);
+  await testInfo.attach("missed-breakpoint-proof.json", {
+    body: JSON.stringify(
+      await page.evaluate(() => ({
+        suppressionActive: globalThis.suppressWorkspaceBreakpoint === true,
+        nativeTransitionsObserved: globalThis.observedWorkspaceBreakpoints ?? 0,
+        subscribedNotificationsDropped: globalThis.missedWorkspaceBreakpoints ?? 0,
+      })),
+    ),
+    contentType: "application/json",
+  });
 });
 
 test("normal Timeline records exact notes offline and preserves bounded draft ownership", async ({

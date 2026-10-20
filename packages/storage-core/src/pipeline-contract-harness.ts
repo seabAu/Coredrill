@@ -5,8 +5,12 @@ import {
   createPipelineQueryOperations,
   createJobTimelineQuery,
   JobTimelineError,
+  JobActivityError,
 } from "@coredrill/application";
-import { createDatabaseMutationUndoPort } from "./application-ports.js";
+import {
+  createDatabaseMutationUndoPort,
+  createDatabaseJobActivityPort,
+} from "./application-ports.js";
 import { createAppliedStageRepository } from "./applied-stage-repository.js";
 import { createPipelineQueryRepository } from "./pipeline-query-repository.js";
 import { createJobTimelineRepository } from "./job-timeline-repository.js";
@@ -765,6 +769,98 @@ export const createPipelineRepositoryContractSuite = (
         await setup.migrate(database);
         await createPipelineAggregate(database);
         const repositories = createPipelineRepositories(database);
+        const viewed = await createTrackerRepositories(database).jobs.findById(IDS.job);
+        if (viewed === undefined)
+          throw new DatabaseContractViolation("Next-action guard fixture has no owned job.");
+        const guardedAction = {
+          id: IDS.nextAction,
+          jobId: IDS.job,
+          applicationId: null,
+          interactionId: null,
+          title: "Guarded next action",
+          dueAt: ACTION_DUE_AT,
+          timeZone: EASTERN,
+          state: "pending" as const,
+          completedAt: null,
+          createdAt: APPLIED_AT,
+          updatedAt: APPLIED_AT,
+        };
+        const writeState = async () =>
+          JSON.stringify({
+            jobs: await database.query(sqlStatement("SELECT * FROM job ORDER BY id")),
+            actions: await database.query(sqlStatement("SELECT * FROM next_action ORDER BY id")),
+            tokens: await database.query(
+              sqlStatement("SELECT * FROM mutation_undo_token ORDER BY id"),
+            ),
+          });
+        await database.execute(
+          sqlStatement(
+            "UPDATE job SET row_version = row_version + 1, updated_at = ? WHERE id = ?",
+            [APPLIED_AT, IDS.job],
+          ),
+        );
+        const beforeStale = await writeState();
+        await expectFailure(
+          () =>
+            setNextAction(database, guardedAction, IDS.nextActionUndo, {
+              jobRowVersion: viewed.rowVersion,
+            }),
+          (error) =>
+            error instanceof PipelineRepositoryConflictError &&
+            error.code === "pipeline_projection_conflict",
+          "A viewed next-action draft overwrote a later job version.",
+        );
+        assertContract(
+          (await writeState()) === beforeStale,
+          "Stale next-action rejection left partial job/action/undo writes.",
+        );
+        await expectFailure(
+          () =>
+            createDatabaseJobActivityPort(database).setNextAction({
+              ...guardedAction,
+              undoTokenId: IDS.nextActionUndo,
+              expected: { jobRowVersion: viewed.rowVersion },
+            }),
+          (error) => error instanceof JobActivityError && error.code === "scheduling_conflict",
+          "Concrete next-action port dropped the viewed version or safe conflict mapping.",
+        );
+        assertContract(
+          (await writeState()) === beforeStale,
+          "Concrete next-action port left partial writes after rejection.",
+        );
+        await database.execute(
+          sqlStatement(
+            "UPDATE job SET archived_at = ?, updated_at = ?, row_version = row_version + 1 WHERE id = ?",
+            [APPLIED_AT, APPLIED_AT, IDS.job],
+          ),
+        );
+        const archived = await createTrackerRepositories(database).jobs.findById(IDS.job);
+        if (archived === undefined)
+          throw new DatabaseContractViolation("Archived next-action fixture disappeared.");
+        const beforeArchived = await writeState();
+        await expectFailure(
+          () =>
+            setNextAction(database, guardedAction, IDS.nextActionUndo, {
+              jobRowVersion: archived.rowVersion,
+            }),
+          (error) =>
+            error instanceof PipelineRepositoryConflictError &&
+            error.code === "pipeline_projection_conflict",
+          "A current-version next action was written to an archived job.",
+        );
+        assertContract(
+          (await writeState()) === beforeArchived,
+          "Archived next-action rejection left partial job/action/undo writes.",
+        );
+        await database.execute(
+          sqlStatement(
+            "UPDATE job SET archived_at = NULL, row_version = row_version + 1 WHERE id = ?",
+            [IDS.job],
+          ),
+        );
+        const current = await createTrackerRepositories(database).jobs.findById(IDS.job);
+        if (current === undefined)
+          throw new DatabaseContractViolation("Current next-action fixture disappeared.");
         await setNextAction(
           database,
           {
@@ -781,7 +877,46 @@ export const createPipelineRepositoryContractSuite = (
             updatedAt: APPLIED_AT,
           },
           IDS.nextActionUndo,
+          { jobRowVersion: current.rowVersion },
         );
+        for (const [suffix, dueAt, zone] of [
+          ["0100", null, null],
+          ["0101", REMINDER_AT, EASTERN],
+          ["0102", APPLIED_AT, EASTERN],
+        ] as const) {
+          const actionId = entityId("next-action", `0198e103-0000-7000-8000-00000000${suffix}`);
+          const tokenId = entityId(
+            "mutation-undo-token",
+            `0198e103-0000-7000-8000-00000001${suffix}`,
+          );
+          const before = await createTrackerRepositories(database).jobs.findById(IDS.job);
+          if (before === undefined)
+            throw new DatabaseContractViolation("Pending projection fixture disappeared.");
+          const added = await createDatabaseJobActivityPort(database).setNextAction({
+            ...guardedAction,
+            id: actionId,
+            undoTokenId: tokenId,
+            dueAt,
+            timeZone: zone,
+            expected: { jobRowVersion: before.rowVersion },
+          });
+          const expectedDue = suffix === "0102" ? APPLIED_AT : ACTION_DUE_AT;
+          assertContract(
+            added.nextAction.dueAt === dueAt &&
+              added.nextAction.timeZone === zone &&
+              (await createTrackerRepositories(database).jobs.findById(IDS.job))?.nextActionAt ===
+                expectedDue &&
+              (await repositories.nextActions.findById(IDS.nextAction))?.state === "pending",
+            "Adding an unscheduled/later/earlier action lost a task or corrupted earliest due.",
+          );
+          await consumeMutationUndoToken(database, { id: tokenId, consumedAt: REJECTED_AT });
+          assertContract(
+            (await createTrackerRepositories(database).jobs.findById(IDS.job))?.nextActionAt ===
+              ACTION_DUE_AT &&
+              (await repositories.nextActions.findById(actionId))?.state === "dismissed",
+            "Additional-action undo did not restore the earliest pending projection.",
+          );
+        }
         const replacement = await setNextAction(
           database,
           {
@@ -789,7 +924,7 @@ export const createPipelineRepositoryContractSuite = (
             jobId: IDS.job,
             applicationId: IDS.application,
             interactionId: null,
-            title: "Reversible replacement action",
+            title: "Reversible additional action",
             dueAt: INTERVIEW_AT,
             timeZone: EASTERN,
             state: "pending",
@@ -801,7 +936,10 @@ export const createPipelineRepositoryContractSuite = (
         );
         assertContract(
           replacement.undoToken.previousNextActionAt === ACTION_DUE_AT &&
-            replacement.undoToken.expectedNextActionAt === INTERVIEW_AT,
+            replacement.undoToken.expectedNextActionAt === ACTION_DUE_AT &&
+            (await createTrackerRepositories(database).jobs.findById(IDS.job))?.nextActionAt ===
+              ACTION_DUE_AT &&
+            (await repositories.nextActions.findById(IDS.nextAction))?.state === "pending",
           "Next-action undo token did not retain both projection values.",
         );
         await repositories.reminders.create({

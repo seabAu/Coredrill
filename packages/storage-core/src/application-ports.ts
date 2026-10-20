@@ -298,7 +298,7 @@ export const createDatabaseJobActivityPort = (database: DatabasePort): JobActivi
   Object.freeze({
     setNextAction: async (input: Parameters<JobActivityPort["setNextAction"]>[0]) => {
       try {
-        const stored = await setNextAction(database, input, input.undoTokenId);
+        const stored = await setNextAction(database, input, input.undoTokenId, input.expected);
         return Object.freeze({
           nextAction: Object.freeze({ ...stored.nextAction }),
           undoToken: Object.freeze({ ...stored.undoToken }),

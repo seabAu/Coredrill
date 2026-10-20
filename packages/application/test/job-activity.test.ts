@@ -12,6 +12,7 @@ import {
   type JobActivityPort,
   type NextActionDto,
   type ReminderDto,
+  type SetNextActionInput,
   type UndoableNextActionDto,
 } from "../src/index.js";
 
@@ -125,6 +126,49 @@ const operationsFor = (activity: JobActivityPort) =>
   });
 
 describe("job activity application operations", () => {
+  it("copies and freezes the viewed job version before passing a next-action write to storage", async () => {
+    const activity = activityPort();
+    const expected = { jobRowVersion: 7 };
+    await operationsFor(activity).setNextActionCommand.execute(
+      {
+        jobId: JOB_ID,
+        applicationId: APPLICATION_ID,
+        interactionId: INTERACTION_ID,
+        title: nextAction().title,
+        dueAt: FUTURE,
+        timeZone: NEW_YORK,
+        expected,
+      } as SetNextActionInput,
+      context,
+    );
+    const passed = vi.mocked(activity.setNextAction).mock.calls[0]?.[0] as unknown as {
+      expected: { jobRowVersion: number };
+    };
+    expect(passed.expected).toEqual({ jobRowVersion: 7 });
+    expect(passed.expected).not.toBe(expected);
+    expect(Object.isFrozen(passed.expected)).toBe(true);
+    expected.jobRowVersion = 99;
+    expect(passed.expected.jobRowVersion).toBe(7);
+  });
+
+  it.each([
+    null,
+    {},
+    { jobRowVersion: 0 },
+    { jobRowVersion: -1 },
+    { jobRowVersion: 1.5 },
+    { jobRowVersion: "1" },
+    { jobRowVersion: Number.MAX_SAFE_INTEGER + 1 },
+  ])("rejects malformed viewed next-action context %j before storage", async (expected) => {
+    const activity = activityPort();
+    const result = await operationsFor(activity).setNextActionCommand.execute(
+      { jobId: JOB_ID, title: "Research the team", expected } as unknown as SetNextActionInput,
+      context,
+    );
+    expect(result).toMatchObject({ ok: false, error: { code: "validation" } });
+    expect(activity.setNextAction).not.toHaveBeenCalled();
+  });
+
   it("sets one pending next action with an explicit future-time interpretation", async () => {
     const activity = activityPort();
     const { setNextActionCommand } = operationsFor(activity);

@@ -266,6 +266,7 @@ export {
   type JobActivityOperations,
   type JobActivityPort,
   type NextActionDto,
+  type NextActionExpectation,
   type NextActionState,
   type RecordInteractionInput,
   type RecordInteractionPortInput,

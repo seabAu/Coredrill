@@ -86,9 +86,14 @@ export interface ReminderDto {
   readonly rowVersion: number;
 }
 
+export interface NextActionExpectation {
+  readonly jobRowVersion: number;
+}
+
 export interface SetNextActionPortInput {
   readonly id: EntityId<"next-action">;
   readonly undoTokenId: EntityId<"mutation-undo-token">;
+  readonly expected?: NextActionExpectation;
   readonly jobId: EntityId<"job">;
   readonly applicationId: EntityId<"application"> | null;
   readonly interactionId: EntityId<"interaction"> | null;
@@ -180,6 +185,7 @@ export class JobActivityError extends Error {
 
 export interface SetNextActionInput {
   readonly jobId: string;
+  readonly expected?: NextActionExpectation;
   readonly applicationId?: string | null;
   readonly interactionId?: string | null;
   readonly title: string;
@@ -672,6 +678,16 @@ export const createJobActivityOperations = (
           state: "pending",
           completedAt: null,
         };
+        const expected = untrustedInput["expected"];
+        if (expected !== undefined) {
+          if (!isRecord(expected)) throw new TypeError("Invalid viewed next-action context.");
+          parsed = {
+            ...parsed,
+            expected: Object.freeze({
+              jobRowVersion: requireRowVersion(expected["jobRowVersion"]),
+            }),
+          };
+        }
       } catch {
         return applicationFailure(VALID_NEXT_ACTION_ERROR);
       }

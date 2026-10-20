@@ -1038,6 +1038,7 @@ export const setNextAction = async (
   database: DatabasePort,
   record: NewNextAction,
   undoTokenIdInput: EntityId<"mutation-undo-token">,
+  expected?: Readonly<{ jobRowVersion: number }>,
 ): Promise<UndoableNextActionRecord> => {
   if (record.state !== "pending" || record.completedAt !== null) {
     throw new TypeError("A new next action must be pending and incomplete.");
@@ -1045,10 +1046,11 @@ export const setNextAction = async (
   const audit = auditTimestamps(record.createdAt, record.updatedAt);
   return database.transaction(async (transaction) => {
     const jobId = entityId("job", record.jobId);
-    const jobRows = await transaction.query<JobProjectionRow>(
-      sqlStatement("SELECT current_status_id, next_action_at, row_version FROM job WHERE id = ?", [
-        jobId,
-      ]),
+    const jobRows = await transaction.query<ViewedJobProjectionRow>(
+      sqlStatement(
+        "SELECT current_status_id, next_action_at, row_version, archived_at FROM job WHERE id = ?",
+        [jobId],
+      ),
     );
     const job = jobRows[0];
     if (job === undefined) {
@@ -1056,6 +1058,12 @@ export const setNextAction = async (
     }
     const jobRowVersion = rowVersion(job.row_version);
     const previousNextActionAt = optionalInstant(job.next_action_at);
+    if (
+      expected !== undefined &&
+      (job.archived_at !== null || jobRowVersion !== rowVersion(expected.jobRowVersion))
+    ) {
+      throw new PipelineRepositoryConflictError("pipeline_projection_conflict");
+    }
     if (record.applicationId !== null) {
       const rows = await transaction.query<CountRow>(
         sqlStatement("SELECT count(*) AS total FROM application WHERE id = ? AND job_id = ?", [
@@ -1102,12 +1110,20 @@ export const setNextAction = async (
       ),
     );
     assertOneRow(inserted.rowsAffected, "create");
+    const pendingDue = await transaction.query<QueryRow & { readonly due_at: string | null }>(
+      sqlStatement(
+        `SELECT min(due_at) AS due_at FROM next_action
+         WHERE job_id = ? AND state = 'pending' AND due_at IS NOT NULL`,
+        [jobId],
+      ),
+    );
+    const nextDue = optionalInstant(pendingDue[0]?.due_at ?? null);
     const updated = await transaction.execute(
       sqlStatement(
         `UPDATE job
          SET next_action_at = ?, updated_at = ?, row_version = row_version + 1
          WHERE id = ? AND next_action_at IS ? AND row_version = ?`,
-        [dueAt, audit.updatedAt, jobId, previousNextActionAt, jobRowVersion],
+        [nextDue, audit.updatedAt, jobId, previousNextActionAt, jobRowVersion],
       ),
     );
     assertOneRow(updated.rowsAffected, "projection");
@@ -1123,7 +1139,7 @@ export const setNextAction = async (
           jobId,
           nextActionId,
           previousNextActionAt,
-          dueAt,
+          nextDue,
           jobRowVersion + 1,
           audit.createdAt,
         ],
@@ -1156,7 +1172,7 @@ export const setNextAction = async (
       nextActionId,
       expectedNextActionRowVersion: 1,
       previousNextActionAt,
-      expectedNextActionAt: dueAt,
+      expectedNextActionAt: nextDue,
       expectedJobRowVersion: jobRowVersion + 1,
       createdAt: audit.createdAt,
       consumedAt: null,

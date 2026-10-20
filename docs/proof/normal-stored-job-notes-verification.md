@@ -242,3 +242,7 @@ verification is still required; the failed `afeb554` run remains failed.
 - No sending, scheduling, editable-job-note mutation, external dependency, schema,
   archive version, permission or Accepted decision changes. Exact hosted proof remains pending
   before marking this integration item complete.
+
+## Hosted regression-witness follow-up at fbcda1e (2026-10-20)
+
+Exact hosted run `39379112047` fails only its aggregate job: the added missed-breakpoint regression expects a dropped callback on a replaceable application subscription, but observes zero. Both exact Chrome lanes and every other required non-aggregate job pass; the aggregate's other 31 resilience cases, including normal note and header journeys, pass. The failed snapshot shows full-page mode and retained exact note text, so this is not evidence of recurring page overflow. The [prerequisite follow-up](normal-next-action-verification.md#prerequisite-full-checkpoint-and-predecessor-hosted-follow-up) retains raw logs/artifact and records the independent native-transition observer, unchanged draft/layout/overflow assertions and timeout, a passing focused run, and failure at contextual-vs-full-page when immediate production reconciliation is deliberately removed. The production fix is restored. Fresh final-source/hosted proof remains; `INT-002` stays unchecked.

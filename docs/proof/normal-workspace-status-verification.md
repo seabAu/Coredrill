@@ -150,3 +150,7 @@ checks pass, terminal `WORKSPACE_STATUS_FINAL_POLICY_EXIT=0`, log
 Exact clean-commit hosted CI remains required.
 `INT-003` remains unchecked. Manual/reference-device and milestone gates remain
 independently open. No scheduling or next-action composition is claimed.
+
+## Hosted aggregate follow-up at fbcda1e (2026-10-20)
+
+Exact run `39379112047` is terminal failure, not success. All non-aggregate required jobs pass, including both exact Chrome lanes, Firefox, Windows/macOS/Ubuntu native diagnostics, extension and secret scan. The aggregate passes the header and normal note journeys but fails the new missed-breakpoint fault-injection test's subscribed-event counter (zero); retained snapshot already shows full-page mode and exact note draft. Raw log and artifact are retained locally. The [next-action prerequisite follow-up](normal-next-action-verification.md#prerequisite-full-checkpoint-and-predecessor-hosted-follow-up) records an independent native-event observer, unchanged behavioral assertions and timeout, a passing focused run and a deliberate failure without production reconciliation. `INT-002` and `INT-003` remain open pending fresh exact hosted proof; no product fix or milestone completion is inferred from the failed aggregate.
