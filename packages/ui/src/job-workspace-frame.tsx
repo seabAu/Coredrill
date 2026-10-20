@@ -44,6 +44,7 @@ export interface JobWorkspaceFrameProps {
   readonly onRequestClose: () => void;
   readonly onTabChange?: (tab: JobWorkspaceTabId) => void;
   readonly statusUnavailable?: boolean;
+  readonly nextActionUnavailable?: boolean;
 }
 
 const TAB_LABELS: Readonly<Record<JobWorkspaceTabId, string>> = Object.freeze({
@@ -89,6 +90,7 @@ export const JobWorkspaceFrame = ({
   onRequestClose,
   onTabChange,
   statusUnavailable = false,
+  nextActionUnavailable = false,
 }: JobWorkspaceFrameProps) => {
   validateModel(model, activeTab, contextualWidth);
   const headingId = useId();
@@ -177,6 +179,8 @@ export const JobWorkspaceFrame = ({
             Change status
           </button>
           <button
+            data-workspace-action="set-next-action"
+            disabled={nextActionUnavailable}
             className="cd-button cd-button-secondary"
             onClick={() => {
               onAction?.("set-next-action");

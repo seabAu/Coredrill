@@ -152,6 +152,7 @@ import { useStoredJobTimeline } from "./stored-job-timeline.js";
 import { useStoredJobNote, type StoredNoteAcknowledgement } from "./stored-job-note.js";
 import { useStoredJobDetails } from "./stored-job-details.js";
 import { useStoredWorkspaceStatus } from "./stored-workspace-status.js";
+import { useStoredWorkspaceNextAction } from "./stored-workspace-next-action.js";
 import { useStoredJobSource } from "./stored-job-source.js";
 import { createStoredRequirementReviewGate } from "./stored-requirement-review-gate.js";
 import {
@@ -3410,6 +3411,10 @@ const AppShellCatalog = ({
       workspaceStatus.open();
       return;
     }
+    if (!referenceCatalog && action === "set-next-action") {
+      workspaceTask.open();
+      return;
+    }
     if (action === "open-source") {
       changeWorkspaceTab("source");
       return;
@@ -4232,6 +4237,13 @@ const AppShellCatalog = ({
     busy: storedStatusActions.busy,
     move: storedStatusActions.editWorkspace,
   });
+  const workspaceTask = useStoredWorkspaceNextAction({
+    enabled: !referenceCatalog && vaultDeletionStatus === null,
+    jobId: workspaceRoute?.jobId ?? null,
+    snapshot: storedPipeline,
+    busy: storedStatusActions.busy,
+    save: storedStatusActions.addNextAction,
+  });
 
   const renderWorkspaceContent = () => {
     if (
@@ -4420,10 +4432,12 @@ const AppShellCatalog = ({
               model={workspaceModel}
               onAction={recordWorkspaceAction}
               statusUnavailable={!referenceCatalog && !workspaceStatus.available}
+              nextActionUnavailable={!referenceCatalog && !workspaceTask.available}
               onRequestClose={closeWorkspace}
               onTabChange={changeWorkspaceTab}
             >
               {workspaceStatus.content}
+              {workspaceTask.content}
               {storedStatusActions.panel}
               {workspaceRoute.tab === "documents" ? (
                 <JobDocumentPreparation
@@ -4777,11 +4791,13 @@ const AppShellCatalog = ({
                   model={workspaceModel}
                   onAction={recordWorkspaceAction}
                   statusUnavailable={!referenceCatalog && !workspaceStatus.available}
+                  nextActionUnavailable={!referenceCatalog && !workspaceTask.available}
                   onContextualWidthChange={setWorkspaceWidth}
                   onRequestClose={closeWorkspace}
                   onTabChange={changeWorkspaceTab}
                 >
                   {workspaceStatus.content}
+                  {workspaceTask.content}
                   {storedStatusActions.panel}
                   {workspaceRoute.tab === "documents" ? (
                     <JobDocumentPreparation

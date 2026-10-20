@@ -79,6 +79,11 @@ describe("JobWorkspaceFrame contract", () => {
     expect(markup).toContain("Back to Pipeline");
     expect(markup).not.toContain("Job workspace width");
   });
+  it("keeps the next-action control identifiable but unavailable when its runtime is not ready", () => {
+    const markup = renderFrame({ nextActionUnavailable: true });
+    expect(markup).toMatch(/<button[^>]*data-workspace-action="set-next-action"[^>]*disabled=""/u);
+    expect(markup).toContain("Set next action");
+  });
 
   it("rejects unsafe model identity and out-of-range contextual widths", () => {
     expect(() => renderFrame({ model: { ...MODEL, title: " " } })).toThrowError(

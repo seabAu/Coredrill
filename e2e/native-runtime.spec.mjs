@@ -10,6 +10,7 @@ import { initializeDefaultWorkspace } from "./production-workspace.mjs";
 import { exerciseStoredListingComparison } from "./listing-comparison-journey.mjs";
 import { exerciseStoredJobNote } from "./job-note-journey.mjs";
 import { exerciseNextActionRuntime } from "./next-action-runtime-journey.mjs";
+import { exerciseNormalTaskEntry } from "./task-entry-journey.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
 const executable = path.join(
@@ -193,7 +194,9 @@ test("normal root uses real native SQLite for capture and documents without OPFS
     await page
       .getByRole("combobox", { name: "Move Synthetic native movable role to stage" })
       .selectOption({ label: "Native drafting" });
-    const statusActions = page.getByRole("region", { name: "Local status changes", exact: true });
+    const statusActions = page.getByRole("region", {
+      name: /^Local status(?: and task)? changes$/u,
+    });
     await expect(statusActions.getByRole("status")).toContainText(
       "Saved Synthetic native movable role",
     );
@@ -234,6 +237,11 @@ test("normal root uses real native SQLite for capture and documents without OPFS
         actualRustSqlite: true,
         simulatedTauriHost: true,
       }),
+      contentType: "application/json",
+    });
+    const taskEntry = await exerciseNormalTaskEntry(page, testInfo);
+    await testInfo.attach("native-task-entry-proof.json", {
+      body: JSON.stringify({ ...taskEntry, actualRustSqlite: true, simulatedTauriHost: true }),
       contentType: "application/json",
     });
     const storedOverview = page.getByRole("region", { name: "Stored job overview", exact: true });
