@@ -4,6 +4,7 @@ import {
   loadStoredPipelineSnapshot,
   storedPipelineBoardColumns,
   storedPipelineTableRow,
+  storedJobHeaderNextAction,
 } from "../../apps/web/src/stored-pipeline-view.ts";
 
 const job = (id) => ({
@@ -56,6 +57,21 @@ const api = (jobs, options = {}) => {
   };
 };
 describe("stored Pipeline presentation projection", () => {
+  it("distinguishes unavailable facts, no pending task and an unscheduled task in the header", () => {
+    expect(storedJobHeaderNextAction(undefined)).toBe("Next action unavailable");
+    expect(storedJobHeaderNextAction(job("synthetic"))).toBeNull();
+    expect(
+      storedJobHeaderNextAction({
+        nextAction: { id: "task", title: "Research the team", dueAt: null },
+      }),
+    ).toBe("Research the team — Unscheduled");
+  });
+  it("retains the exact title and full UTC instant without inventing a local zone or truncating", () => {
+    const title = "é中🙂 <inert-task> ".padEnd(512, "x");
+    const value = { nextAction: { id: "task", title, dueAt: "2026-11-01T05:30:42.123Z" } };
+    expect(storedJobHeaderNextAction(value)).toBe(`${title} — Due 2026-11-01 05:30:42.123 UTC`);
+    expect(value.nextAction.dueAt).toBe("2026-11-01T05:30:42.123Z");
+  });
   it("reads all keyset pages rather than silently truncating the shared corpus", async () => {
     const source = api(Array.from({ length: 205 }, (_, index) => job(String(index))));
     const snapshot = await loadStoredPipelineSnapshot(source, new AbortController().signal);

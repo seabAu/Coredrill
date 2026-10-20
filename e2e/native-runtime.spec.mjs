@@ -227,7 +227,7 @@ test("normal root uses real native SQLite for capture and documents without OPFS
       "Restored Synthetic native movable role",
     );
     await expect(page.locator(".cd-job-workspace-context")).toContainText("Unassigned");
-    const nextActionRuntime = await exerciseNextActionRuntime(page);
+    const nextActionRuntime = await exerciseNextActionRuntime(page, testInfo);
     await testInfo.attach("native-next-action-runtime-proof.json", {
       body: JSON.stringify({
         ...nextActionRuntime,

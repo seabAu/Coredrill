@@ -158,6 +158,7 @@ import {
   loadStoredPipelineSnapshot,
   storedPipelineBoardColumns,
   storedPipelineTableRow,
+  storedJobHeaderNextAction,
   type StoredPipelineSnapshot,
 } from "./stored-pipeline-view.js";
 
@@ -2213,8 +2214,13 @@ const AppShellCatalog = ({
       : Object.freeze({
           company: workspaceJob.company,
           id: workspaceJob.id,
-          nextAction:
-            workspaceJob.nextActionDate === null ? null : `Due ${workspaceJob.nextActionDate}`,
+          nextAction: referenceCatalog
+            ? workspaceJob.nextActionDate === null
+              ? null
+              : `Due ${workspaceJob.nextActionDate}`
+            : storedJobHeaderNextAction(
+                storedPipeline?.jobs.find(({ id }) => id === workspaceJob.id),
+              ),
           priority: workspaceJob.priority,
           sourceFreshness:
             workspaceJob.capturedDate === null

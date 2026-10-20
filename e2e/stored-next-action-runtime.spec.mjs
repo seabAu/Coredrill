@@ -43,7 +43,7 @@ test("normal runtime composes guarded scheduled/unscheduled tasks and undo offli
   await expect(review.getByText("No durable captures yet")).toBeVisible();
   await page.locator('[data-pipeline-view-option="table"]').click();
   await page.getByRole("button", { name: "Synthetic task runtime role", exact: true }).click();
-  const proof = await exerciseNextActionRuntime(page);
+  const proof = await exerciseNextActionRuntime(page, testInfo);
   expect(errors).toEqual([]);
   expect(external).toEqual([]);
   await testInfo.attach("next-action-runtime-proof.json", {

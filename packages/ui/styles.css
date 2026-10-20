@@ -3995,6 +3995,7 @@ textarea {
 .cd-job-workspace-context dd {
   margin-top: var(--space-1);
   font-weight: 750;
+  overflow-wrap: anywhere;
 }
 
 .cd-job-workspace-context dd small {

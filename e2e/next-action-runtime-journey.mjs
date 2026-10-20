@@ -1,9 +1,16 @@
 import { expect } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 
 /** Direct production-command composition proof, not the unfinished normal task form. */
-export const exerciseNextActionRuntime = async (page) => {
+export const exerciseNextActionRuntime = async (page, testInfo) => {
+  const originalViewport = page.viewportSize();
   const jobId = new URL(page.url()).pathname.split("/")[2];
-  const title = "Synthetic runtime task — é中🙂";
+  const title = "Synthetic runtime task — é中🙂 <inert-task> ".padEnd(512, "x");
+  const header = page
+    .locator(".cd-job-workspace-context")
+    .getByText("Next action", { exact: true })
+    .locator("..")
+    .locator("dd");
   const first = await page.evaluate(
     async ({ jobId, title }) => {
       const api = globalThis.coredrillStorageSpike;
@@ -63,6 +70,21 @@ export const exerciseNextActionRuntime = async (page) => {
       attention: { nextAction: { id: scheduledId, timeZone: "America/New_York" } },
     },
   });
+  await expect(header).toHaveText(`${title} — Due 2026-11-01 05:30:00.000 UTC`);
+  await page.setViewportSize({ width: 320, height: 900 });
+  await expect(page.locator("[data-job-workspace]")).toHaveAttribute(
+    "data-workspace-mode",
+    "full-page",
+  );
+  await expect(header).toHaveText(`${title} — Due 2026-11-01 05:30:00.000 UTC`);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    ),
+  ).toBe(false);
+  const accessibility = await new AxeBuilder({ page }).include("[data-job-workspace]").analyze();
+  expect(accessibility.violations).toEqual([]);
+  await page.screenshot({ path: testInfo.outputPath("task-header-512-320.png"), fullPage: true });
   const second = await page.evaluate(
     async ({ jobId, title, tokenId }) => {
       const api = globalThis.coredrillStorageSpike;
@@ -94,6 +116,7 @@ export const exerciseNextActionRuntime = async (page) => {
   });
   await page.reload();
   await expect(page.locator("[data-job-workspace]")).toBeVisible();
+  await expect(header).toHaveText(`${title} — Unscheduled`);
   const final = await page.evaluate(
     async ({ jobId, tokenId }) => {
       const api = globalThis.coredrillStorageSpike;
@@ -117,6 +140,7 @@ export const exerciseNextActionRuntime = async (page) => {
   expect(final.after.value.job.nextAction).toBeNull();
   await page.reload();
   await expect(page.locator("[data-job-workspace]")).toBeVisible();
+  if (originalViewport !== null) await page.setViewportSize(originalViewport);
   return {
     mandatoryContext: true,
     staleRejected: true,
@@ -126,5 +150,8 @@ export const exerciseNextActionRuntime = async (page) => {
     reloadReadback: true,
     undoAndReplay: true,
     normalTaskFormProven: false,
+    canonicalTaskHeader: true,
+    fullTitleReachable: true,
+    narrowHeaderReflow: true,
   };
 };

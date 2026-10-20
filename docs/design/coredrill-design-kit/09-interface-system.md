@@ -358,6 +358,8 @@ is reachable inside either Job workspace layout. Header and Overview status come
 from refreshed canonical reads, never historical events or a stale submission
 review. See [implementation proof and remaining checks](../../proof/normal-workspace-status-verification.md).
 
+Normal pending-task header readback retains the canonical task title rather than only its date. A null due instant displays Unscheduled, not Not set; Not set is reserved for no pending task, and unavailable facts remain explicitly unavailable. Scheduled header text retains the complete UTC instant while Overview shows the stored IANA zone separately. Long metadata wraps without truncating valid task titles. This is readback, not a clock converter or proof that the creation form is connected. See [task header proof](../../proof/normal-task-header-verification.md); ADR-0009 remains a separate unaccepted scheduling proposal.
+
 ### Requirements and evidence
 
 Avoid a single circular score as the primary visualization.

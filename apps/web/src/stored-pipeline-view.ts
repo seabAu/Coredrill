@@ -79,6 +79,18 @@ export const storedPipelineTableRow = (job: PipelineJobSummaryDto): PipelineTabl
   source: "Unknown source",
 });
 
+/** A null due date does not mean there is no pending task. Keep the full stored title/instant. */
+export const storedJobHeaderNextAction = (
+  job: Pick<PipelineJobSummaryDto, "nextAction"> | undefined,
+): string | null => {
+  if (job === undefined) return "Next action unavailable";
+  const action = job.nextAction;
+  if (action === null) return null;
+  return action.dueAt === null
+    ? `${action.title} — Unscheduled`
+    : `${action.title} — Due ${action.dueAt.replace("T", " ").replace(/Z$/u, " UTC")}`;
+};
+
 export const storedPipelineBoardColumns = (
   snapshot: StoredPipelineSnapshot,
 ): readonly BoardColumn[] =>
