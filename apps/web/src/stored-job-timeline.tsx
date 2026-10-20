@@ -5,18 +5,22 @@ import {
   type StoredTimelineState,
 } from "./stored-job-timeline-reader.js";
 import type { StoredPipelineApi } from "./stored-pipeline.js";
+import type { StoredNoteAcknowledgement } from "./stored-job-note.js";
 
 /** Root-owned reads survive responsive frame replacement; job changes dispose late work. */
 export const useStoredJobTimeline = ({
   jobId,
   api,
+  noteSaved = null,
 }: {
   readonly jobId: string | null;
   readonly api: Pick<StoredPipelineApi, "timeline"> | null;
+  readonly noteSaved?: StoredNoteAcknowledgement | null;
 }) => {
   const container = useRef<HTMLDivElement>(null);
   const [state, setState] = useState<StoredTimelineState | null>(null);
   const reader = useRef<ReturnType<typeof createStoredTimelineReader> | null>(null);
+  const refreshedNote = useRef<string | null>(null);
   useEffect(() => {
     if (jobId === null || api === null) {
       setState(null);
@@ -30,6 +34,19 @@ export const useStoredJobTimeline = ({
       reader.current = null;
     };
   }, [jobId, api]);
+  useEffect(() => {
+    if (
+      noteSaved?.jobId !== jobId ||
+      refreshedNote.current === noteSaved.id ||
+      state?.jobId !== jobId ||
+      state.busy
+    )
+      return;
+    const current = reader.current;
+    if (current === null || current.current().busy) return;
+    refreshedNote.current = noteSaved.id;
+    void current.refresh();
+  }, [noteSaved, jobId, state?.jobId, state?.busy]);
   const request = async (mode: "refresh" | "more") => {
     const current = reader.current;
     if (current === null) return;

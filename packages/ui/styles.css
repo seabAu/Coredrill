@@ -134,6 +134,21 @@ textarea {
   min-width: 0;
   max-width: 100%;
 }
+.cd-stored-job-note {
+  min-width: 0;
+  display: grid;
+  gap: 0.875rem;
+}
+.cd-stored-job-note :where(p, h3, label) {
+  overflow-wrap: anywhere;
+}
+.cd-stored-job-note .cd-job-quick-note {
+  grid-template-columns: minmax(0, 1fr);
+}
+.cd-timeline-interaction-summary {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 .cd-stored-listing-changes,
 .cd-stored-listing-field,
 .cd-stored-listing-sides,

@@ -149,6 +149,7 @@ import {
 import type { SuppliedCaptureMode } from "./supplied-capture.js";
 import { useStoredStatusActions } from "./stored-status-actions.js";
 import { useStoredJobTimeline } from "./stored-job-timeline.js";
+import { useStoredJobNote, type StoredNoteAcknowledgement } from "./stored-job-note.js";
 import { useStoredJobDetails } from "./stored-job-details.js";
 import { useStoredJobSource } from "./stored-job-source.js";
 import { createStoredRequirementReviewGate } from "./stored-requirement-review-gate.js";
@@ -1963,9 +1964,16 @@ const AppShellCatalog = ({
     tab: workspaceRoute?.tab === "company" ? "company" : "overview",
     api: referenceCatalog ? null : globalThis.coredrillStorageSpike.pipeline,
   });
+  const [storedNoteSaved, setStoredNoteSaved] = useState<StoredNoteAcknowledgement | null>(null);
+  const storedNoteContent = useStoredJobNote({
+    jobId: workspaceRoute?.jobId ?? null,
+    enabled: !referenceCatalog && vaultDeletionStatus === null,
+    onSaved: setStoredNoteSaved,
+  });
   const storedTimelineContent = useStoredJobTimeline({
     jobId: !referenceCatalog && workspaceRoute?.tab === "timeline" ? workspaceRoute.jobId : null,
     api: referenceCatalog ? null : globalThis.coredrillStorageSpike.pipeline,
+    noteSaved: storedNoteSaved,
   });
   const storedSourceContent = useStoredJobSource(
     vaultDeletionStatus === null && !referenceCatalog && workspaceRoute?.tab === "source"
@@ -4240,7 +4248,12 @@ const AppShellCatalog = ({
       );
     }
     if (workspaceRoute.tab === "timeline") {
-      return storedTimelineContent;
+      return (
+        <>
+          {storedNoteContent}
+          {storedTimelineContent}
+        </>
+      );
     }
     if (workspaceRoute.tab === "source") {
       return storedSourceContent;

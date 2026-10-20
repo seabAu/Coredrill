@@ -269,6 +269,30 @@ const withinTransaction = async <Value>(
   work: (session: DatabaseSession) => Promise<Value>,
 ): Promise<Value> => database.transaction(work);
 
+/** Interactive note writes must not add hidden activity to an archived job. */
+export const createDatabaseJobNotePort = (
+  database: DatabasePort,
+): Pick<JobActivityPort, "recordInteraction"> =>
+  Object.freeze({
+    recordInteraction: async (input: Parameters<JobActivityPort["recordInteraction"]>[0]) => {
+      try {
+        return await withinTransaction(database, async (transaction) => {
+          const job = await createTrackerRepositories(transaction).jobs.findById(input.jobId);
+          if (job?.archivedAt !== null) throw new JobActivityError("not_found");
+          if (input.type !== "note" || input.contactId !== null || input.direction !== "unknown")
+            throw new JobActivityError("invalid_state");
+          const interactions = createPipelineRepositories(transaction).interactions;
+          await interactions.append(input);
+          const stored = await interactions.findById(input.id);
+          if (stored === undefined) throw new JobActivityError("invalid_state");
+          return Object.freeze({ ...stored });
+        });
+      } catch (error) {
+        return activityFailure(error);
+      }
+    },
+  });
+
 /** Concrete SQLite composition for local interactions, interviews, reminders, and next actions. */
 export const createDatabaseJobActivityPort = (database: DatabasePort): JobActivityPort =>
   Object.freeze({

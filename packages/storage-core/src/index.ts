@@ -21,6 +21,7 @@ export {
 } from "./audit-integrity.js";
 export {
   createDatabaseJobActivityPort,
+  createDatabaseJobNotePort,
   createDatabaseJobPipelinePort,
   createDatabaseMutationUndoPort,
   createDatabaseJobRequirementPort,

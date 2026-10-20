@@ -295,8 +295,18 @@ Normal Timeline composition now uses actual stored status/interaction pages,
 with recorded undo annotations, explicit retries and older-page navigation.
 Root-owned ephemeral read coordination survives responsive frame replacement;
 current status is never inferred from the historical event list. Stage labels
-are identified as current stored metadata. Note editing and normal scheduling
-remain separate integration work; see [Timeline proof](../../proof/normal-stored-job-timeline-verification.md).
+are identified as current stored metadata. The normal local-note form now keeps
+one bounded 2,000-character session draft above responsive/tab replacement.
+Navigating to another job cannot silently replace that draft; the UI identifies
+its owner and offers explicit two-step discard without showing the old job's
+draft text in the new job. Pending acknowledgement disables duplicate saves and
+editing, and only an acknowledged save clears text. A separate history refresh
+cannot turn a read failure into another write. Browser unload warnings explain
+unsaved/pending work without claiming crash-proof draft durability. Recorded
+notes are append-only interactions, not editable job notes, inferred contact,
+sent outreach or scheduled work. Job-note editing and normal scheduling remain
+separate integration work; see [Timeline proof](../../proof/normal-stored-job-timeline-verification.md)
+and [normal note verification](../../proof/normal-stored-job-notes-verification.md).
 
 Normal Overview and Company composition reads the validated stored workspace
 query, with explicit refresh/retry, stale-fact warnings and cross-job isolation.

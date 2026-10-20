@@ -8,6 +8,7 @@ import { createInterface } from "node:readline";
 import { expect, test } from "@playwright/test";
 import { initializeDefaultWorkspace } from "./production-workspace.mjs";
 import { exerciseStoredListingComparison } from "./listing-comparison-journey.mjs";
+import { exerciseStoredJobNote } from "./job-note-journey.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
 const executable = path.join(
@@ -339,6 +340,7 @@ test("normal root uses real native SQLite for capture and documents without OPFS
     await page.reload();
     await expect(preparation).toContainText("Ready for export review");
     const listingComparison = await exerciseStoredListingComparison(page, testInfo);
+    const localNote = await exerciseStoredJobNote(page, testInfo);
     const capabilities = await page.evaluate(() => ({
       calls: globalThis.coredrillBrowserCapabilityProbe,
       offline: globalThis.coredrillOfflineShell.getState(),
@@ -361,6 +363,7 @@ test("normal root uses real native SQLite for capture and documents without OPFS
           invocations,
           nativeRetainedDocxSha256: hash,
           listingComparison,
+          localNote,
           heldBeginAcknowledgements: heldAcknowledgements,
           retiredDocuments: retiredDocuments.size,
           capabilities,

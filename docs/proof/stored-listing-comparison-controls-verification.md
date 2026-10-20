@@ -2,8 +2,8 @@
 
 Date: 2026-10-20. Scope: `INT-001`, explicit normal Source comparison controls and
 bounded complete-value inspection. Full final-source and separate extension verification pass;
-exact hosted verification is still required. This record does not
-close the checklist item yet.
+exact hosted verification also passes at the checkpoint below. The `INT-001`
+scope audit is complete; independent human/release gates remain open.
 
 ## Implementation
 
@@ -118,6 +118,23 @@ clean. Exact clean-commit hosted proof remains.
   tests; neither is mislabeled as the other.
 - No viewing action fetches a source, executes markup, promotes a candidate or
   overwrites a user-confirmed value. AI/account/network are not required.
-- Exact clean-commit hosted proof remains pending
-  before marking the integration item complete. Human/manual/reference-device and
-  publication gates remain open independently of `INT-001`.
+- Exact clean-commit hosted proof subsequently passes as recorded below, completing
+  the integration scope. Human/manual/reference-device and publication gates remain
+  open independently of `INT-001`.
+
+## Hosted controls checkpoint and integration completion
+
+Exact commit `5a34d29b4b8fdafab7200ec1524b087d186c13f4` passes every required job in
+[Foundation CI 39371142252](https://github.com/seabAu/Coredrill/actions/runs/39371142252),
+terminal success. Aggregate job `118459051497` explicitly witnesses normal Source
+inspection, structured comparison controls/lifetime and actual native-runtime UI
+journeys, with all 28 resilience cases passing. The retained aggregate log is
+`test-results/listing-comparison-controls-hosted-aggregate-success.log`. Both exact
+Chrome, both Firefox, extension, Windows/macOS/diagnostic Ubuntu, aggregate and
+full-history secret lanes succeed; the pull-request-only dependency review is
+correctly skipped on this main push.
+
+Together with the audited prerequisite/query/value and normal Source proofs,
+this completes `INT-001`. It does not prove the subsequent uncommitted Timeline
+note work, manual assistive technology, installed-WebView usability, exact reference
+hardware, public distribution, or any milestone gate.

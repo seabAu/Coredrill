@@ -216,6 +216,7 @@ import { createExtensionInbox, type ExtensionInboxApi } from "./extension-transf
 import { installDocumentsWorkspaceReferenceFixture } from "./documents-reference-fixture.js";
 import { createStoredJobComparisonApi, type StoredJobComparisonApi } from "./job-comparison.js";
 import { createStoredPipelineApi, type StoredPipelineApi } from "./stored-pipeline.js";
+import { createStoredJobNoteApi, type StoredJobNoteApi } from "./stored-job-notes.js";
 import {
   createStoredPipelineMutationApi,
   type StoredPipelineMutationApi,
@@ -493,6 +494,7 @@ export interface CoredrillStorageSpikeApi {
   readonly jobComparison: StoredJobComparisonApi;
   readonly pipeline: StoredPipelineApi;
   readonly pipelineMutations: StoredPipelineMutationApi;
+  readonly jobNotes: StoredJobNoteApi;
   createReusableDocument(
     input: CreateReusableDocumentInput,
   ): Promise<ApplicationResult<CreatedReusableDocumentDto>>;
@@ -3308,6 +3310,15 @@ const api: CoredrillStorageSpikeApi = {
     await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
     return client;
   }, careerProfileOperationContext),
+  jobNotes: createStoredJobNoteApi(
+    async () => {
+      const client = await getDatabase();
+      await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
+      return client;
+    },
+    careerProfileOperationContext,
+    generateEntityId,
+  ),
   pipelineMutations: createStoredPipelineMutationApi(
     async () => {
       const client = await getDatabase();

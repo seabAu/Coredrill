@@ -11,12 +11,14 @@ import { createMutationUndoOperations } from "@coredrill/application";
 import {
   applySqlMigrations,
   createDatabaseJobActivityPort,
+  createDatabaseJobNotePort,
   createDatabaseJobPipelinePort,
   createDatabaseMutationUndoPort,
   createDatabaseVaultLifecyclePort,
   createDatabaseVaultBootstrapPort,
   createPhase1RepositoryContractSuite,
   createPipelineRepositories,
+  createTrackerRepositories,
   defineSqlMigrations,
   normalizeJobSearchTokens,
   openJobSearchRepository,
@@ -402,6 +404,69 @@ describe("Phase 1 tracker repository contracts", () => {
 });
 
 describe("SQLite application port composition", () => {
+  it.each(["active", "archived", "missing", "wrong-kind"] as const)(
+    "records an interactive note only for its active job (%s)",
+    async (state) => {
+      const database = new NodeSqliteTestDatabase();
+      const at = instant("2026-10-20T05:00:00.000Z");
+      const jobId = entityId("job", "0199b365-0000-7000-8000-000000000001");
+      const id = entityId("interaction", "0199b365-0000-7000-8000-000000000002");
+      try {
+        await applySqlMigrations(database, migrations, APPLIED_AT);
+        if (state !== "missing")
+          await createTrackerRepositories(database).jobs.create({
+            id: jobId,
+            companyId: null,
+            title: "Synthetic note job",
+            normalizedTitle: null,
+            descriptionText: "",
+            employmentType: null,
+            workplaceType: null,
+            seniority: null,
+            locationId: null,
+            remoteRegion: null,
+            datePosted: null,
+            validThrough: null,
+            currentStatusId: null,
+            nextActionAt: null,
+            archivedAt: state === "archived" ? at : null,
+            createdAt: at,
+            updatedAt: at,
+          });
+        const before = await database.query(sqlStatement("SELECT * FROM job ORDER BY id"));
+        const input = {
+          id,
+          jobId,
+          contactId: null,
+          type: state === "wrong-kind" ? "email" : "note",
+          occurredAt: at,
+          direction: "unknown" as const,
+          summary: "  é中🙂 <script>neverExecute()</script>\nExact note.  ",
+          nextActionAt: null,
+          createdAt: at,
+          updatedAt: at,
+        };
+        const write = () => createDatabaseJobNotePort(database).recordInteraction(input);
+        if (state === "active") {
+          await expect(write()).resolves.toMatchObject({ ...input, rowVersion: 1 });
+          await expect(
+            database.execute(
+              sqlStatement("UPDATE interaction SET summary = ? WHERE id = ?", ["changed", id]),
+            ),
+          ).rejects.toThrow();
+        } else
+          await expect(write()).rejects.toMatchObject({
+            code: state === "wrong-kind" ? "invalid_state" : "not_found",
+          });
+        expect(await database.query(sqlStatement("SELECT * FROM job ORDER BY id"))).toEqual(before);
+        expect(await database.query(sqlStatement("SELECT summary FROM interaction"))).toEqual(
+          state === "active" ? [{ summary: input.summary }] : [],
+        );
+      } finally {
+        database.close();
+      }
+    },
+  );
   it("inspects read-only storage without beginning a transaction or making a write", async () => {
     class ReadOnlyDatabase extends NodeSqliteTestDatabase {
       restricted = false;

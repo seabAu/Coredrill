@@ -101,7 +101,7 @@ export const StoredJobTimeline = (props: StoredJobTimelineProps) => (
               ) : (
                 <>
                   <p>Recorded direction: {item.direction}.</p>
-                  <p>{item.summary}</p>
+                  <p className="cd-timeline-interaction-summary">{item.summary}</p>
                 </>
               )}
               <small>Append-only local record</small>
