@@ -32,6 +32,12 @@ const renderFrame = (overrides: Partial<Parameters<typeof JobWorkspaceFrame>[0]>
   );
 
 describe("JobWorkspaceFrame contract", () => {
+  it("keeps the status focus target stable and disables a pending unavailable action", () => {
+    expect(renderFrame({ statusUnavailable: true })).toContain(
+      'data-workspace-action="change-status" disabled=""',
+    );
+    expect(renderFrame()).toContain('data-workspace-action="change-status" class=');
+  });
   it("freezes the reviewed tabs and always-reachable actions", () => {
     expect(JOB_WORKSPACE_TABS).toEqual([
       "overview",

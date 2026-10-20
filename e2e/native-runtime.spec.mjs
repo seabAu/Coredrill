@@ -207,6 +207,25 @@ test("normal root uses real native SQLite for capture and documents without OPFS
       "Restored Synthetic native movable role",
     );
     await page.getByRole("button", { name: "Synthetic native movable role", exact: true }).click();
+    await page.getByRole("button", { name: "Change status", exact: true }).click();
+    const headerStatus = page.getByRole("form", { name: "Change local job status", exact: true });
+    await headerStatus
+      .getByLabel("New local stage", { exact: true })
+      .selectOption({ label: "Native drafting" });
+    await headerStatus.getByRole("button", { name: "Save local status", exact: true }).click();
+    await expect(headerStatus).toHaveCount(0);
+    await expect(page.locator(".cd-job-workspace-context")).toContainText("Native drafting");
+    await expect(statusActions).toHaveCount(1);
+    await statusActions
+      .getByRole("button", {
+        name: "Undo status change for Synthetic native movable role",
+        exact: true,
+      })
+      .click();
+    await expect(statusActions.getByRole("status")).toContainText(
+      "Restored Synthetic native movable role",
+    );
+    await expect(page.locator(".cd-job-workspace-context")).toContainText("Unassigned");
     const storedOverview = page.getByRole("region", { name: "Stored job overview", exact: true });
     await expect(storedOverview).toContainText("Synthetic native movable role");
     await expect(storedOverview).toContainText("No unarchived application attempt recorded.");
@@ -218,7 +237,9 @@ test("normal root uses real native SQLite for capture and documents without OPFS
     const history = page.getByRole("region", { name: "Stored job timeline", exact: true });
     await expect(history).toContainText("Native drafting");
     await expect(history).toContainText("Reversed by a recorded undo");
-    await expect(history.locator("[data-timeline-id]")).toHaveCount(1);
+    // Board and header each append their own event; undo preserves both.
+    await expect(history.locator("[data-timeline-id]")).toHaveCount(2);
+    await expect(history.getByText(/Reversed by a recorded undo/u)).toHaveCount(2);
     const sourceJobId = new URL(page.url()).pathname.split("/")[2];
     const beforeSource = await page.evaluate(
       (jobId) => globalThis.coredrillStorageSpike.pipeline.workspace({ jobId }),

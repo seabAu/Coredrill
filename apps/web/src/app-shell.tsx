@@ -151,6 +151,7 @@ import { useStoredStatusActions } from "./stored-status-actions.js";
 import { useStoredJobTimeline } from "./stored-job-timeline.js";
 import { useStoredJobNote, type StoredNoteAcknowledgement } from "./stored-job-note.js";
 import { useStoredJobDetails } from "./stored-job-details.js";
+import { useStoredWorkspaceStatus } from "./stored-workspace-status.js";
 import { useStoredJobSource } from "./stored-job-source.js";
 import { createStoredRequirementReviewGate } from "./stored-requirement-review-gate.js";
 import {
@@ -1963,6 +1964,7 @@ const AppShellCatalog = ({
         : null,
     tab: workspaceRoute?.tab === "company" ? "company" : "overview",
     api: referenceCatalog ? null : globalThis.coredrillStorageSpike.pipeline,
+    rowVersion: storedPipeline?.jobs.find(({ id }) => id === workspaceRoute?.jobId)?.rowVersion,
   });
   const [storedNoteSaved, setStoredNoteSaved] = useState<StoredNoteAcknowledgement | null>(null);
   const storedNoteContent = useStoredJobNote({
@@ -2220,7 +2222,7 @@ const AppShellCatalog = ({
               : `Captured ${workspaceJob.capturedDate}`,
           sourceLabel: workspaceJob.source,
           status:
-            applicationSubmissionReview?.jobId === workspaceJob.id
+            referenceCatalog && applicationSubmissionReview?.jobId === workspaceJob.id
               ? applicationSubmissionReview.currentStatusName
               : (workspaceJob.status?.name ?? "Unassigned"),
           title: workspaceJob.title,
@@ -2783,6 +2785,7 @@ const AppShellCatalog = ({
       const result = await globalThis.coredrillStorageSpike.markApplicationApplied(input);
       if (result.ok) {
         setApplicationSubmissionReview(result.value);
+        if (!referenceCatalog) setStoredPipelineRefresh((value) => value + 1);
         setApplicationSubmissionLoadedFor(result.value.applicationId);
         setJobDocumentPreparationLoadedFor(null);
         setDocumentsLoaded(false);
@@ -3397,6 +3400,10 @@ const AppShellCatalog = ({
   };
 
   const recordWorkspaceAction = (action: JobWorkspaceActionId): void => {
+    if (!referenceCatalog && action === "change-status") {
+      workspaceStatus.open();
+      return;
+    }
     if (action === "open-source") {
       changeWorkspaceTab("source");
       return;
@@ -4021,6 +4028,9 @@ const AppShellCatalog = ({
       if (mode !== workspaceRoute.mode) setWorkspaceRoute({ ...workspaceRoute, mode });
     };
     widePipeline.addEventListener("change", updateWorkspaceMode);
+    // A breakpoint can change between render and passive subscription. Reconcile
+    // its current value as well as listening for later notifications.
+    updateWorkspaceMode();
     return () => {
       widePipeline.removeEventListener("change", updateWorkspaceMode);
     };
@@ -4209,6 +4219,14 @@ const AppShellCatalog = ({
     },
   });
 
+  const workspaceStatus = useStoredWorkspaceStatus({
+    enabled: !referenceCatalog && vaultDeletionStatus === null,
+    jobId: workspaceRoute?.jobId ?? null,
+    snapshot: storedPipeline,
+    busy: storedStatusActions.busy,
+    move: storedStatusActions.editWorkspace,
+  });
+
   const renderWorkspaceContent = () => {
     if (
       workspaceRoute === null ||
@@ -4395,9 +4413,12 @@ const AppShellCatalog = ({
               mode="full-page"
               model={workspaceModel}
               onAction={recordWorkspaceAction}
+              statusUnavailable={!referenceCatalog && !workspaceStatus.available}
               onRequestClose={closeWorkspace}
               onTabChange={changeWorkspaceTab}
             >
+              {workspaceStatus.content}
+              {storedStatusActions.panel}
               {workspaceRoute.tab === "documents" ? (
                 <JobDocumentPreparation
                   applicationStart={applicationAttemptStart}
@@ -4511,7 +4532,9 @@ const AppShellCatalog = ({
                   );
                 }}
               >
-                {pipelineView === "inbox" ? null : storedStatusActions.panel}
+                {pipelineView === "inbox" || workspaceModel !== null
+                  ? null
+                  : storedStatusActions.panel}
                 {pipelineView === "inbox" ? (
                   <>
                     <CaptureInboxReview
@@ -4747,10 +4770,13 @@ const AppShellCatalog = ({
                   mode="contextual"
                   model={workspaceModel}
                   onAction={recordWorkspaceAction}
+                  statusUnavailable={!referenceCatalog && !workspaceStatus.available}
                   onContextualWidthChange={setWorkspaceWidth}
                   onRequestClose={closeWorkspace}
                   onTabChange={changeWorkspaceTab}
                 >
+                  {workspaceStatus.content}
+                  {storedStatusActions.panel}
                   {workspaceRoute.tab === "documents" ? (
                     <JobDocumentPreparation
                       applicationStart={applicationAttemptStart}

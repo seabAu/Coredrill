@@ -103,7 +103,7 @@ export const useStoredStatusActions = (options: {
   };
   const perform = async (
     request: RequestedMove,
-    focusOwner: "board" | "table" = "board",
+    focusOwner: "board" | "table" | "workspace" = "board",
   ): Promise<PipelineTableEditResult> => {
     if (!live.current.enabled || owner.current)
       return fail("A local status operation is already pending. Wait for it to finish.");
@@ -116,14 +116,14 @@ export const useStoredStatusActions = (options: {
     try {
       const outcome = await controller.move(request.viewed);
       if (outcome.kind === "failed") {
-        setRetry(outcome.retryable ? request : null);
-        restoreFailureFocus(focusOrigin);
+        setRetry(outcome.retryable && focusOwner !== "workspace" ? request : null);
+        if (focusOwner !== "workspace") restoreFailureFocus(focusOrigin);
         return fail(outcome.message);
       }
       if (outcome.kind === "review-applied") {
         setRetry(null);
         setAppliedReview(outcome.jobId);
-        restoreFailureFocus(focusOrigin);
+        if (focusOwner !== "workspace") restoreFailureFocus(focusOrigin);
         return fail(
           "Applied requires a separate exact-document review. No status was changed by this request. Choose Review Mark Applied to continue.",
         );
@@ -217,6 +217,23 @@ export const useStoredStatusActions = (options: {
             "This job changed since editing began. Cancel the draft and review the current value.",
         }
       : perform(request, "table");
+  };
+  const editWorkspace = async (input: ViewedStatusMove): Promise<PipelineTableEditResult> => {
+    if (pendingReopen !== null) return fail("Finish or cancel the pending reopen review first.");
+    const request = resolve(
+      input.jobId,
+      input.rowVersion,
+      input.fromStatusId,
+      input.toStatusId,
+      input.allowReopen,
+    );
+    return request === null
+      ? {
+          ok: false,
+          error:
+            "This job changed since editing began. Cancel the draft and review the current value.",
+        }
+      : perform(request, "workspace");
   };
   const undo = async (entry: UndoEntry) => {
     if (owner.current || pendingReopen !== null || entry.consumed || entry.unavailable) return;
@@ -396,5 +413,5 @@ export const useStoredStatusActions = (options: {
         )}
       </section>
     );
-  return { busy: busy || pendingReopen !== null, moveBoard, editTable, panel };
+  return { busy: busy || pendingReopen !== null, moveBoard, editTable, editWorkspace, panel };
 };

@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { initializeDefaultWorkspace } from "./production-workspace.mjs";
+import { exerciseWorkspaceStatusLifetime } from "./workspace-status-lifetime.mjs";
 
 test.use({ trace: "retain-on-failure" });
 
@@ -55,6 +56,148 @@ const addJob = async (page, title) => {
   await expect(review.getByText("No durable captures yet")).toBeVisible();
   await page.locator('[data-pipeline-view-option="board"]').click();
 };
+
+test("header status drafts retain ownership and focus across pending writes and job navigation", async ({
+  page,
+  context,
+}, testInfo) => {
+  test.setTimeout(120_000);
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/");
+  await initializeDefaultWorkspace(page);
+  await workOffline(page, context);
+  await page
+    .getByRole("navigation", { name: "Primary", exact: true })
+    .getByRole("link", { name: "Pipeline", exact: true })
+    .click();
+  const proof = await exerciseWorkspaceStatusLifetime(page, addJob, testInfo);
+  expect(errors).toEqual([]);
+  await testInfo.attach("header-status-lifetime-proof.json", {
+    body: JSON.stringify({ ...proof, offline: true, seededRecords: false }),
+    contentType: "application/json",
+  });
+});
+
+test("normal Job header changes status with owned draft, canonical readback and reachable undo offline", async ({
+  page,
+  context,
+}, testInfo) => {
+  test.setTimeout(120_000);
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/");
+  await initializeDefaultWorkspace(page);
+  await workOffline(page, context);
+  await page
+    .getByRole("navigation", { name: "Primary", exact: true })
+    .getByRole("link", { name: "Pipeline", exact: true })
+    .click();
+  await addJob(page, "Header stage owner");
+  await page.getByRole("button", { name: "Header stage owner", exact: true }).click();
+  await page.getByRole("button", { name: "Documents", exact: true }).click();
+  const preparation = page.getByRole("form", { name: "Start local application preparation" });
+  await preparation.getByLabel("Preparation stage name").fill("Header drafting");
+  await preparation.getByRole("button", { name: "Start preparation locally" }).click();
+  await expect(page.locator('[data-preparation-status="missing"]')).toBeVisible();
+  await page.getByRole("button", { name: /Close Job workspace|Back to Pipeline/u }).click();
+  await addJob(page, "Header movable job");
+  await page.getByRole("button", { name: "Header movable job", exact: true }).click();
+  const jobId = new URL(page.url()).pathname.split("/")[2];
+  const header = page.locator(".cd-job-workspace-header");
+  const change = header.getByRole("button", { name: "Change status", exact: true });
+  const form = page.getByRole("form", { name: "Change local job status", exact: true });
+  const stage = form.getByLabel("New local stage", { exact: true });
+  await change.click();
+  await expect(stage).toBeFocused();
+  await stage.selectOption({ label: "Header drafting" });
+  // A peer-view write may invalidate, but must never rebase, an open header draft.
+  await page
+    .getByRole("combobox", { name: "Move Header movable job to stage", exact: true })
+    .selectOption({ label: "Header drafting" });
+  await expect(form.getByRole("alert")).toContainText("This job changed since this draft opened");
+  await expect(form.getByRole("button", { name: "Save local status", exact: true })).toBeDisabled();
+  await form.getByRole("button", { name: "Cancel status draft", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Undo status change for Header movable job", exact: true })
+    .click();
+  await expect(header.locator(".cd-job-workspace-context")).toContainText("Unassigned");
+  await change.click();
+  await stage.selectOption({ label: "Header drafting" });
+  await page.evaluate(() => {
+    const original = globalThis.coredrillStorageSpike;
+    globalThis.headerStatusOriginal = original;
+    globalThis.coredrillStorageSpike = {
+      ...original,
+      pipelineMutations: {
+        ...original.pipelineMutations,
+        changeStatus: async () => {
+          throw new Error("SYNTHETIC_PRIVATE_STATUS_PATH");
+        },
+      },
+    };
+  });
+  await form.getByRole("button", { name: "Save local status", exact: true }).click();
+  await expect(form.getByRole("alert")).toContainText("could not be confirmed");
+  await expect(form.getByRole("alert")).toBeFocused();
+  await expect(stage.locator("option:checked")).toHaveText("Header drafting");
+  await expect(header.locator(".cd-job-workspace-context")).toContainText("Unassigned");
+  await expect(page.getByText("SYNTHETIC_PRIVATE_STATUS_PATH", { exact: false })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Retry status move", exact: true })).toHaveCount(0);
+  await page.evaluate(() => {
+    globalThis.coredrillStorageSpike = globalThis.headerStatusOriginal;
+  });
+  await page.getByRole("button", { name: "Source", exact: true }).click();
+  await expect(stage.locator("option:checked")).toHaveText("Header drafting");
+  await page.setViewportSize({ width: 320, height: 900 });
+  await expect(stage.locator("option:checked")).toHaveText("Header drafting");
+  await form.getByRole("button", { name: "Save local status", exact: true }).click();
+  await expect(form).toHaveCount(0);
+  await expect(change).toBeFocused();
+  await expect(header.locator(".cd-job-workspace-context")).toContainText("Header drafting");
+  const changes = page.getByRole("region", { name: "Local status changes", exact: true });
+  await expect(changes).toHaveCount(1);
+  await expect(changes.getByRole("status")).toContainText("Saved Header movable job");
+  await page.getByRole("button", { name: "Overview", exact: true }).click();
+  await expect(
+    page.getByRole("region", { name: "Stored job overview", exact: true }),
+  ).toContainText("Header drafting");
+  const saved = await page.evaluate(
+    (jobId) => globalThis.coredrillStorageSpike.pipeline.workspace({ jobId }),
+    jobId,
+  );
+  expect(saved.ok).toBe(true);
+  expect(saved.value.job.status.name).toBe("Header drafting");
+  await changes
+    .getByRole("button", { name: "Undo status change for Header movable job", exact: true })
+    .click();
+  await expect(changes.getByRole("status")).toContainText("Restored Header movable job");
+  await expect(header.locator(".cd-job-workspace-context")).toContainText("Unassigned");
+  await expect(
+    page.getByRole("region", { name: "Stored job overview", exact: true }),
+  ).not.toContainText("Header drafting");
+  await page.emulateMedia({ forcedColors: "active", reducedMotion: "reduce" });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    ),
+  ).toBe(false);
+  expect(
+    (await new AxeBuilder({ page }).include(".cd-job-workspace").analyze()).violations,
+  ).toEqual([]);
+  await page.screenshot({
+    path: testInfo.outputPath("header-status-undo-320.png"),
+    fullPage: true,
+  });
+  await page.reload();
+  await expect(header.locator(".cd-job-workspace-context")).toContainText("Unassigned");
+  const reloaded = await page.evaluate(
+    (jobId) => globalThis.coredrillStorageSpike.pipeline.workspace({ jobId }),
+    jobId,
+  );
+  expect(reloaded.value.job.status).toBeNull();
+  expect(errors).toEqual([]);
+});
 
 test("reviewed submission survives normal terminal moves, reopen cancellation, confirmation and undo", async ({
   page,
@@ -114,6 +257,36 @@ test("reviewed submission survives normal terminal moves, reopen cancellation, c
     );
     return { application, snapshot: review.value.snapshot };
   }, jobId);
+  // This workspace still holds the older submission review. The header must
+  // follow acknowledged canonical status, not that cached review's label.
+  await page.getByRole("button", { name: "Change status", exact: true }).click();
+  const headerEditor = page.getByRole("form", { name: "Change local job status", exact: true });
+  await headerEditor
+    .getByLabel("New local stage", { exact: true })
+    .selectOption({ label: "Reference closed" });
+  await headerEditor.getByRole("button", { name: "Save local status", exact: true }).click();
+  await expect(headerEditor).toHaveCount(0);
+  await expect(page.locator(".cd-job-workspace-context")).toContainText("Reference closed");
+  await page.getByRole("button", { name: "Change status", exact: true }).click();
+  await headerEditor
+    .getByLabel("New local stage", { exact: true })
+    .selectOption({ label: "Preparing application" });
+  await expect(
+    headerEditor.getByRole("button", { name: "Save local status", exact: true }),
+  ).toBeDisabled();
+  await headerEditor.getByRole("checkbox", { name: /I explicitly confirm reopening/u }).check();
+  await expect(
+    headerEditor.getByRole("button", { name: "Save local status", exact: true }),
+  ).toBeEnabled();
+  await headerEditor.getByRole("button", { name: "Cancel status draft", exact: true }).click();
+  await expect(page.locator(".cd-job-workspace-context")).toContainText("Reference closed");
+  await page
+    .getByRole("button", {
+      name: "Undo status change for Synthetic submission status role",
+      exact: true,
+    })
+    .click();
+  await expect(page.locator(".cd-job-workspace-context")).toContainText("Reference applied");
   await page.getByRole("button", { name: /Close Job workspace|Back to Pipeline/u }).click();
   const board = page.getByTestId("pipeline-board");
   const move = board.getByRole("combobox", {

@@ -182,6 +182,43 @@ checks pass, terminal `STORED_JOB_NOTE_POLICY_EXIT=0`, log
 `test-results/stored-job-note-final-policy.log`. `git diff --check` is clean.
 Exact clean-commit hosted verification remains pending.
 
+## Hosted failure and responsive recovery follow-up
+
+Exact commit `afeb5548f4e5693c5a66b22ffc5ee1525d3b7bfc` finishes
+[run 39374605483](https://github.com/seabAu/Coredrill/actions/runs/39374605483)
+with failure in aggregate job `118469809638` and Chrome 151 job `118469809645`.
+Both fail the same 320px no-horizontal-overflow assertion after exact note save
+and canonical readback. All other required jobs pass. Retained logs are
+`test-results/stored-job-note-hosted-aggregate-failure.log` and
+`test-results/stored-job-note-chrome151-hosted-failure.log`; synthetic artifact
+`12243128224` was downloaded for inspection. This is not hosted completion.
+
+The aggregate error snapshot still shows contextual width controls and the
+underlying Table at 320px. Local Edge passes the original journey and added
+Arial/monospace metrics. A deterministic suppressed breakpoint notification
+reproduces the stranded contextual mode even after tab-driven renders, log
+`test-results/stored-note-missed-breakpoint-before.log`, terminal 1. The existing
+effect only listened for future changes and did not reconcile current matches
+when subscribing. It now reconciles immediately as well. This proves recovery
+from that missed-event condition; the exact scheduling of the hosted event loss
+is not directly observed, so a fresh hosted result is still required.
+
+The repaired deterministic case, original note/lifetime journey and native
+regression pass in the seven-case focused run recorded at
+`test-results/workspace-status-note-responsive-focused.log`, terminal
+`WORKSPACE_STATUS_NOTE_FOCUSED_EXIT=0`. Content-free geometry witnesses and wider
+font checks strengthen the original no-overflow assertion rather than relaxing
+it. Full final-source, extension and fresh hosted verification remain.
+
+The final shared status/responsive sources subsequently pass complete
+`pnpm verify`, terminal `WORKSPACE_STATUS_FINAL_VERIFY_EXIT=0`, log
+`test-results/workspace-status-final-verify.log`, including both note regressions
+and all 32 resilience journeys. All nine separate extension cases pass, terminal
+`WORKSPACE_STATUS_FINAL_EXTENSION_EXIT=0`. These final-source checks retain the
+original note no-overflow assertion, strengthened font/geometry coverage and
+the deterministic missed-notification regression. Exact clean-commit hosted
+verification is still required; the failed `afeb554` run remains failed.
+
 ## `INT-002` scope audit
 
 - Explicit normal Timeline note entry invokes the validated fixed-shape activity

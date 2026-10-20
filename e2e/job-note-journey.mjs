@@ -44,6 +44,63 @@ export const exerciseStoredJobNote = async (page, testInfo) => {
   expect(stored.workspace.value.application).toEqual(before.value.application);
   expect(stored.workspace.value.timelineItemCount).toBe(before.value.timelineItemCount + 1);
   await page.emulateMedia({ forcedColors: "active", reducedMotion: "reduce" });
+  // Cross-platform fallback fonts can change intrinsic widths even at the same viewport.
+  for (const font of ["Arial", "monospace"]) {
+    await page
+      .locator(".cd-stored-job-note, .cd-stored-job-timeline")
+      .evaluateAll((nodes, font) => {
+        for (const node of nodes) node.style.fontFamily = font;
+      }, font);
+    const geometry = await page.evaluate(() => ({
+      width: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+      overflowing: Array.from(document.querySelectorAll("body *"))
+        .flatMap((node) => {
+          const rect = node.getBoundingClientRect();
+          return rect.right > document.documentElement.clientWidth + 1 && rect.width > 0
+            ? [
+                {
+                  tag: node.tagName,
+                  className: node.className,
+                  width: rect.width,
+                  right: rect.right,
+                },
+              ]
+            : [];
+        })
+        .slice(0, 20),
+    }));
+    if (geometry.scrollWidth > geometry.width)
+      console.info(`NOTE_FONT_REFLOW_FAILURE ${JSON.stringify({ font, ...geometry })}`);
+    expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.width);
+  }
+  await page.locator(".cd-stored-job-note, .cd-stored-job-timeline").evaluateAll((nodes) => {
+    for (const node of nodes) node.style.removeProperty("font-family");
+  });
+  const reflow = await page.evaluate(() => {
+    const width = document.documentElement.clientWidth;
+    return {
+      width,
+      scrollWidth: document.documentElement.scrollWidth,
+      overflowing: Array.from(document.querySelectorAll("body *"))
+        .flatMap((node) => {
+          const rect = node.getBoundingClientRect();
+          return rect.right > width + 1 && rect.width > 0
+            ? [
+                {
+                  tag: node.tagName,
+                  className: node.className,
+                  width: rect.width,
+                  right: rect.right,
+                },
+              ]
+            : [];
+        })
+        .slice(0, 20),
+    };
+  });
+  if (reflow.scrollWidth > reflow.width)
+    console.info(`NOTE_REFLOW_FAILURE ${JSON.stringify(reflow)}`);
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth,

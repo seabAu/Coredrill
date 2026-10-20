@@ -43,6 +43,7 @@ export interface JobWorkspaceFrameProps {
   readonly onContextualWidthChange?: (width: number) => void;
   readonly onRequestClose: () => void;
   readonly onTabChange?: (tab: JobWorkspaceTabId) => void;
+  readonly statusUnavailable?: boolean;
 }
 
 const TAB_LABELS: Readonly<Record<JobWorkspaceTabId, string>> = Object.freeze({
@@ -87,6 +88,7 @@ export const JobWorkspaceFrame = ({
   onContextualWidthChange,
   onRequestClose,
   onTabChange,
+  statusUnavailable = false,
 }: JobWorkspaceFrameProps) => {
   validateModel(model, activeTab, contextualWidth);
   const headingId = useId();
@@ -164,6 +166,8 @@ export const JobWorkspaceFrame = ({
 
         <div aria-label="Important Job actions" className="cd-job-workspace-actions">
           <button
+            data-workspace-action="change-status"
+            disabled={statusUnavailable}
             className="cd-button cd-button-secondary"
             onClick={() => {
               onAction?.("change-status");

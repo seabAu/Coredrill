@@ -20,6 +20,69 @@ const capture = async (page, title) => {
   await expect(review.getByText("No durable captures yet")).toBeVisible();
 };
 
+test("a missed breakpoint notification cannot strand a retained note in contextual layout", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const original = window.matchMedia.bind(window);
+    window.matchMedia = (query) => {
+      const media = original(query);
+      if (query !== "(min-width: 80rem)") return media;
+      const add = media.addEventListener.bind(media);
+      const remove = media.removeEventListener.bind(media);
+      const wrappers = new Map();
+      media.addEventListener = (type, listener, options) => {
+        if (type !== "change" || typeof listener !== "function")
+          return add(type, listener, options);
+        const wrapped = (event) => {
+          if (globalThis.suppressWorkspaceBreakpoint === true) {
+            globalThis.missedWorkspaceBreakpoints =
+              (globalThis.missedWorkspaceBreakpoints ?? 0) + 1;
+            return;
+          }
+          listener.call(media, event);
+        };
+        wrappers.set(listener, wrapped);
+        return add(type, wrapped, options);
+      };
+      media.removeEventListener = (type, listener, options) =>
+        remove(type, wrappers.get(listener) ?? listener, options);
+      return media;
+    };
+  });
+  await page.goto("/");
+  await initializeDefaultWorkspace(page);
+  await page
+    .getByRole("navigation", { name: "Primary", exact: true })
+    .getByRole("link", { name: "Pipeline", exact: true })
+    .click();
+  await capture(page, "Missed breakpoint note");
+  await page.locator('[data-pipeline-view-option="table"]').click();
+  await page.getByRole("button", { name: "Missed breakpoint note", exact: true }).click();
+  await page.getByRole("button", { name: "Timeline", exact: true }).click();
+  const field = page.getByRole("textbox", { name: "Local note text", exact: true });
+  await field.fill("Retain my exact draft across a missed breakpoint notification.");
+  await page.evaluate(() => {
+    globalThis.suppressWorkspaceBreakpoint = true;
+  });
+  await page.setViewportSize({ width: 320, height: 900 });
+  await expect
+    .poll(() => page.evaluate(() => globalThis.missedWorkspaceBreakpoints ?? 0))
+    .toBeGreaterThan(0);
+  await page.getByRole("button", { name: "Overview", exact: true }).click();
+  await page.getByRole("button", { name: "Timeline", exact: true }).click();
+  await expect(page.locator("[data-job-workspace]")).toHaveAttribute(
+    "data-workspace-mode",
+    "full-page",
+  );
+  await expect(field).toHaveValue("Retain my exact draft across a missed breakpoint notification.");
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    ),
+  ).toBe(false);
+});
+
 test("normal Timeline records exact notes offline and preserves bounded draft ownership", async ({
   page,
   context,

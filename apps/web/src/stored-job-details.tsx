@@ -11,10 +11,12 @@ export const useStoredJobDetails = ({
   jobId,
   tab,
   api,
+  rowVersion,
 }: {
   readonly jobId: string | null;
   readonly tab: "overview" | "company";
   readonly api: Pick<StoredPipelineApi, "workspace"> | null;
+  readonly rowVersion?: number | undefined;
 }) => {
   const [state, setState] = useState<StoredJobDetailsState | null>(null);
   const reader = useRef<ReturnType<typeof createStoredJobDetailsReader> | null>(null);
@@ -31,7 +33,7 @@ export const useStoredJobDetails = ({
       current.dispose();
       reader.current = null;
     };
-  }, [jobId, api]);
+  }, [jobId, api, rowVersion]);
   if (jobId === null || api === null) return null;
   const visible = state?.jobId === jobId ? state : { value: null, busy: true, error: null };
   return (

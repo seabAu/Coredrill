@@ -347,6 +347,17 @@ keyboard context without stealing deliberate focus; see [ordering proof](../../p
 
 The most important job actions—Change status, Set next action, Prepare application—are always reachable without opening `•••`.
 
+Normal Change status uses the same guarded local status/undo path as Board/Table.
+Its session draft retains the viewed job version and source stage across tabs,
+responsive replacement and navigation; a changed job requires cancellation and a
+fresh edit, not silent rebasing. A draft for another job remains explicitly
+owned and cannot change the current job. Pending acknowledgement blocks duplicate
+submission/discard. Terminal reopening requires explicit confirmation and initial
+Applied retains separate exact-document review. One shared feedback/undo region
+is reachable inside either Job workspace layout. Header and Overview status come
+from refreshed canonical reads, never historical events or a stale submission
+review. See [implementation proof and remaining checks](../../proof/normal-workspace-status-verification.md).
+
 ### Requirements and evidence
 
 Avoid a single circular score as the primary visualization.
