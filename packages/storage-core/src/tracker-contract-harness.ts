@@ -1,6 +1,7 @@
 import type { JsonValue } from "@coredrill/contracts";
 import { confidence, dateOnly, entityId, instant, webUrl } from "@coredrill/domain";
-import { VaultLifecycleError } from "@coredrill/application";
+import { VaultLifecycleError, createJobSourceSnapshotQuery } from "@coredrill/application";
+import { createJobSourceSnapshotRepository } from "./job-source-snapshot-repository.js";
 import { createDatabaseVaultBootstrapPort } from "./application-ports.js";
 
 import {
@@ -70,6 +71,165 @@ const SYNTHETIC_IR: JsonValue = {
 const assertContract = (condition: boolean, message: string): void => {
   if (!condition) throw new DatabaseContractViolation(message);
 };
+
+/** Identical source query assertions run in Node, browser OPFS and native SQLite. */
+async function verifySourceSnapshotHistory(database: DatabasePort): Promise<void> {
+  const repositories = createTrackerRepositories(database);
+  const original = await repositories.provenance.findSnapshotById(IDS.snapshot);
+  const job = await repositories.jobs.findById(IDS.job);
+  if (original === undefined || job === undefined)
+    throw new DatabaseContractViolation("Source fixture is unavailable.");
+  const tiedId = entityId("source-snapshot", "0198e102-0000-7000-8000-000000000081");
+  const lateId = entityId("source-snapshot", "0198e102-0000-7000-8000-000000000082");
+  const emptyJobId = entityId("job", "0198e102-0000-7000-8000-000000000083");
+  const foreignSourceId = entityId("job-source", "0198e102-0000-7000-8000-000000000084");
+  const foreignSnapshotId = entityId("source-snapshot", "0198e102-0000-7000-8000-000000000085");
+  await repositories.provenance.appendSnapshot({
+    ...original,
+    id: tiedId,
+    contentHash: "b".repeat(64),
+    rawText: "Another same-time synthetic capture",
+  });
+  await repositories.jobs.create({
+    ...job,
+    id: emptyJobId,
+    title: "Empty retained source history",
+  });
+  const context = {
+    operationId: entityId("application-operation", "0198e102-0000-7000-8000-000000000086"),
+    initiatedAt: UPDATED_AT,
+  };
+  const query = createJobSourceSnapshotQuery(createJobSourceSnapshotRepository(database));
+  const empty = await query.execute({ jobId: emptyJobId }, context);
+  assertContract(
+    empty.ok && empty.value.items.length === 0,
+    "Existing empty source history was not distinct from missing job.",
+  );
+  const source = await repositories.jobSources.findById(IDS.jobSource);
+  if (source === undefined) throw new DatabaseContractViolation("Source fixture missing.");
+  await repositories.jobSources.create({
+    ...source,
+    id: foreignSourceId,
+    jobId: emptyJobId,
+    externalId: "other-synthetic-posting",
+    canonicalUrl: webUrl("https://jobs.example.test/other-synthetic-posting"),
+  });
+  await repositories.provenance.appendSnapshot({
+    ...original,
+    id: foreignSnapshotId,
+    jobSourceId: foreignSourceId,
+  });
+  const canonical = async () =>
+    JSON.stringify({
+      snapshots: await database.query(sqlStatement("SELECT * FROM source_snapshot ORDER BY id")),
+      sources: await database.query(sqlStatement("SELECT * FROM job_source ORDER BY id")),
+      jobs: await database.query(sqlStatement("SELECT * FROM job ORDER BY id")),
+      provenance: await database.query(sqlStatement("SELECT * FROM provenance ORDER BY id")),
+      fields: await database.query(sqlStatement("SELECT * FROM field_value ORDER BY id")),
+    });
+  const before = await canonical();
+  const first = await query.execute({ jobId: IDS.job, limit: 1 }, context);
+  if (!first.ok || first.value.nextCursor === null)
+    throw new DatabaseContractViolation("Source history first page failed.");
+  const metadata = first.value.items[0];
+  assertContract(
+    metadata?.id === IDS.snapshot &&
+      metadata.contentHash === CONTENT_HASH &&
+      metadata.extractorId === original.extractorId &&
+      metadata.currentSource.id === IDS.jobSource &&
+      metadata.currentSource.primary,
+    "Exact source metadata or tie order changed.",
+  );
+  assertContract(
+    !Object.hasOwn(metadata ?? {}, "rawText") && !Object.hasOwn(metadata ?? {}, "structuredData"),
+    "Metadata page disclosed retained raw content.",
+  );
+  const second = await query.execute(
+    { jobId: IDS.job, limit: 1, after: first.value.nextCursor },
+    context,
+  );
+  assertContract(
+    second.ok && second.value.items[0]?.id === tiedId && !second.value.hasMore,
+    "Source keyset continuation leaked, skipped or duplicated a snapshot.",
+  );
+  assertContract(
+    (await canonical()) === before,
+    "Source read mutated canonical job/source/provenance state.",
+  );
+  // Newly appended historical captures must not enter the older page's creation ceiling.
+  await repositories.provenance.appendSnapshot({
+    ...original,
+    id: lateId,
+    contentHash: "c".repeat(64),
+    rawText: "Later retained synthetic capture",
+    createdAt: REPLACED_AT,
+  });
+  const stable = await query.execute(
+    { jobId: IDS.job, limit: 50, after: first.value.nextCursor },
+    { ...context, initiatedAt: REPLACED_AT },
+  );
+  assertContract(
+    stable.ok &&
+      stable.value.items.length === 1 &&
+      stable.value.items[0]?.id === tiedId &&
+      stable.value.asOf === UPDATED_AT,
+    "A later append changed bounded snapshot membership.",
+  );
+  const fresh = await query.execute(
+    { jobId: IDS.job, limit: 50 },
+    { ...context, initiatedAt: REPLACED_AT },
+  );
+  assertContract(
+    fresh.ok && fresh.value.items.length === 3,
+    "Explicit source refresh did not include the newly retained snapshot.",
+  );
+  const forged = await query.execute(
+    { jobId: IDS.job, after: { ...first.value.nextCursor, id: foreignSnapshotId } },
+    context,
+  );
+  assertContract(
+    !forged.ok && forged.error.code === "conflict",
+    "Cross-job source anchor did not fail closed.",
+  );
+  const missing = await query.execute(
+    {
+      jobId: IDS.job,
+      after: {
+        ...first.value.nextCursor,
+        id: entityId("source-snapshot", "0198e102-0000-7000-8000-000000000087"),
+      },
+    },
+    context,
+  );
+  assertContract(
+    !missing.ok && missing.error.code === "conflict",
+    "Missing source anchor was accepted.",
+  );
+  await database.execute(
+    sqlStatement("UPDATE job_source SET is_primary = 0 WHERE id = ?", [IDS.jobSource]),
+  );
+  const current = await query.execute({ jobId: IDS.job }, context);
+  assertContract(
+    current.ok && current.value.items.every((entry) => !entry.currentSource.primary),
+    "Current source metadata was falsely frozen at a capture time.",
+  );
+  await database.execute(
+    sqlStatement("UPDATE job SET archived_at = ?, updated_at = ? WHERE id = ?", [
+      UPDATED_AT,
+      UPDATED_AT,
+      IDS.job,
+    ]),
+  );
+  const archived = await query.execute({ jobId: IDS.job }, context);
+  const included = await query.execute({ jobId: IDS.job, includeArchived: true }, context);
+  assertContract(
+    !archived.ok &&
+      archived.error.code === "not_found" &&
+      included.ok &&
+      included.value.items.length === 2,
+    "Source history archive scope was not enforced.",
+  );
+}
 
 const expectRepositoryFailure = async (
   operation: () => Promise<unknown>,
@@ -402,6 +562,7 @@ export const createTrackerRepositoryContractSuite = (
           "Structured snapshot data did not round-trip.",
         );
         assertContract(provenance?.confidence === 1, "Provenance confidence did not persist.");
+        await verifySourceSnapshotHistory(database);
       },
     },
     {

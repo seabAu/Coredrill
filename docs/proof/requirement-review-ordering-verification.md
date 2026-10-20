@@ -1,6 +1,6 @@
-# Normal requirement-review ordering — verification in progress
+# Normal requirement-review ordering — verification
 
-Date: 2026-10-19. Checklist `Q3-005` and all milestone gates remain open.
+Date: 2026-10-19. Checklist `Q3-005` completes at the hosted checkpoint below; all milestone gates remain independently open.
 
 ## Observed failure and regression
 
@@ -20,10 +20,10 @@ No dependency, schema, permission or Accepted decision changes. A web patch Chan
 
 The same old CI run independently fails `route.fetch: socket hang up` for a development-server SQL-module request, followed by disposal errors during cleanup. Root cause is not established. Extension E2E now builds and serves the production bundle through the existing exact-origin forwarding harness. All nine existing Chromium/Firefox cases pass (`test-results/extension-production-transfer.log`, terminal 0), including unchanged held-response teardown proofs which explicitly do not ignore real fetch errors. Source/header/auth/permission/handshake, malicious-page, restart/outbox and idempotent fallback assertions remain intact. No retry or error-swallowing logic is added. This strengthens the tested production asset boundary; a successful run is not causal proof about the old socket failure.
 
-## Final local proof and remaining hosted verification
+## Final local and hosted proof
 
 The durable-decision focused suite passes (`test-results/evidence-pending-durable-focused.log`, two cases, terminal 0), including exact equality of the confirmed coverage DTO after reload. Final `pnpm verify` then exits 0 with marker `EVIDENCE_REVIEW_VERIFY_EXIT=0` in `test-results/evidence-review-full-verify.log`: 145 files / 1,168 unit tests plus coverage; seven UI foundations, 76 shell, one diagnostic performance, 24 resilience, seven onboarding, 13 documents and nine storage cases; native core 14 passed / one intentionally ignored, 14 native adapter cases, secure storage/archive/backup checks; formatting, typecheck, lint, build, generated/architecture/foundation records, license/secret/audit checks and Changesets. npm reports no known vulnerabilities; ten previously allowed Cargo warnings remain. Process-local `VITEST_MAX_WORKERS=4` affects scheduling only. Source/fixtures remained frozen throughout the final run.
 
 The final run covers the held-readback 320-pixel frame replacement and return to wide layout without a duplicate selection call; dependent controls remain disabled and the document has no horizontal overflow. The original-size `requirement-review-pending-320.png` is inspected: visible local pending feedback, neutral disabled controls, source excerpts and long labels wrap. Automated final axe assertions pass. This is not manual assistive-technology acceptance. `phase-3-unseeded-canonical.json` retains the exact user-confirmed decision and the fault-window witnesses.
 
-Commit/push alongside the locally verified Overview/Company checkpoint `a11dd0f` and observe clean-commit hosted verification before closing `Q3-005`. Do not retry or relabel the old failed run as green. Keep representative-user/manual-assistive-technology/reference-device and public-distribution gates independent. Unexpected write/readback failures retain the existing reload guidance; this slice does not claim exhaustive normal-workspace recovery composition.
+Clean commit `9ffc13e1f0ecc3300f597f4b92769e544b9047c7`, containing this repair and Overview/Company checkpoint `a11dd0f`, passes every required job in [run 39348202319](https://github.com/seabAu/Coredrill/actions/runs/39348202319). Both exact Chrome lanes and aggregate explicitly pass the strengthened unseeded case and all 24 resilience cases; the production-bundle extension lane also passes. Successful canonical log witnesses are retained under `test-results/canonical-repair-hosted-*-success.log`. This verifies the repaired production ordering path and supports `Q3-005` closure; it does not establish the old socket failure's cause or rewrite that failed run. Keep representative-user/manual-assistive-technology/reference-device and public-distribution gates independent. Unexpected write/readback failures retain existing reload guidance; this slice does not claim exhaustive normal-workspace recovery composition.

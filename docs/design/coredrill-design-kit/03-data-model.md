@@ -87,6 +87,14 @@ A contact field is nullable and never guessed. Store public data only when sourc
 
 `source_snapshot(id, job_source_id, captured_at, extractor_id, extractor_version, raw_text, sanitized_html, structured_json, content_hash, retention_class)`
 
+The read-only Source-history metadata query pages immutable snapshot membership
+by capture time descending and UUID ascending, with job/archive/read-time-bound
+cursors and a local creation ceiling. Body content is not part of the metadata
+page. Its `currentSource` projection explicitly identifies mutable source URLs,
+connector identity, observation times and primary state as current stored
+metadata, never a historical snapshot at the capture or pagination time. See
+[query proof](../../proof/source-snapshot-history-query-verification.md).
+
 `job_requirement(id, job_id, category, source_category, normalized_text, raw_text, provenance_id, confidence, user_confirmed, sort_order, created_at, updated_at, row_version)`
 
 Requirement category: `required`, `desired`, `responsibility`, `context`, or `constraint`. Education, certification, work authorization, skill, years, and seniority remain separate extracted mappings or constraint details rather than competing top-level UI categories.

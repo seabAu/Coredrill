@@ -1,6 +1,6 @@
-# Phase 3 unseeded canonical journey — verification in progress
+# Phase 3 unseeded canonical journey — verification
 
-Date: 2026-10-19. Checklist `Q3-005` remains open pending successful hosted verification.
+Date: 2026-10-19. Checklist `Q3-005` is complete at clean-commit hosted checkpoint `9ffc13e`; `GATE-3` and the overall product goal remain open.
 
 ## Scope and trust boundary
 
@@ -43,10 +43,12 @@ The narrow submitted-set artifact was visually inspected: the selected older cov
 
 Predecessor Timeline checkpoint `d6a130cc077c68963f8d290632a476f2d20f1952` passes every required hosted job in [run 39341919878](https://github.com/seabAu/Coredrill/actions/runs/39341919878). That verifies the Timeline/query source and isolated focus test, not this subsequent unseeded test.
 
-## Remaining closure
+## Hosted completion and remaining gates
 
 The [ordering repair](requirement-review-ordering-verification.md) deterministically reproduces enabled dependent controls during a held evidence write, then protects both write/readback windows with per-job pending coordination. The canonical test retains the exact manual Partial assertion, adds explicit command failure/retry, pending 320-pixel frame replacement and exact `user-confirmed` decision equality after reload. Complete final-source verification exits 0 with 145 files / 1,168 unit tests and all 24 resilience plus browser/native/recovery/policy checks. All nine extension tests separately pass against built app assets without suppressing real transport errors. Fresh hosted proof remains; these local results do not rewrite the failed run below.
 
 Commit `986e2528618d71252c849cddc88927c137e8a420` is pushed. Hosted [run 39344803133](https://github.com/seabAu/Coredrill/actions/runs/39344803133) is terminal failure: exact Chrome 151/152 and aggregate all show automatic Partial instead of the requested explicit manual Partial at line 149 (22 other resilience cases pass in each). The test immediately chooses coverage after selecting evidence. Pending-action/read-refresh ordering in normal requirement review needs deterministic investigation; no assertion or timeout is relaxed. The extension lane independently fails a local test-server `route.fetch: socket hang up` (eight passed / one failed). Native Windows/macOS/Ubuntu, exact Firefox and secret lanes pass. Failure logs remain under `test-results/unseeded-hosted-*-failure.log`. Subsequent local full verification of the Overview/Company slice still passes this unchanged canonical test; that does not supersede the hosted failure.
 
-Obtain clean-commit hosted verification of the unseeded case and then assess `Q3-005` against its exact proof requirements. Keep `GATE-3`, independent human/reference-device gates and the overall product goal open; remaining normal workspace/activity/recovery and later AI/salary/discovery/beta work are not completed by this test.
+Clean commit `9ffc13e1f0ecc3300f597f4b92769e544b9047c7` passes every required job in [run 39348202319](https://github.com/seabAu/Coredrill/actions/runs/39348202319). Exact successful logs are inspected for both Chrome lanes and aggregate: the named unseeded journey passes, with all 24 resilience cases in each. Local retained witnesses are `test-results/canonical-repair-hosted-{chrome151,chrome152,aggregate}-success.log`. Extension transfer and exact Firefox, Windows/macOS/Ubuntu package/security and secret lanes also pass. This supplies the previously missing clean-commit proof for the exact import → confirmation → comparison → preparation → local Applied → immutable retrieval journey, with explicit provenance, no confirmed overwrite, offline/AI-disabled/zero-egress, exact version/artifact hashes, reflow and accessibility assertions. `Q3-005` is complete; the old failed run remains failed. This is not an installed-native full resume-import claim or human usability/accessibility study.
+
+Keep `GATE-3` open for `Q3-002` representative-user validation. Independent human/reference-device gates and the overall product goal also stay open; normal Source/activity/recovery and later AI/salary/discovery/beta work are not completed by this journey.
