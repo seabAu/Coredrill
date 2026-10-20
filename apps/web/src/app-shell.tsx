@@ -148,6 +148,7 @@ import {
 import type { SuppliedCaptureMode } from "./supplied-capture.js";
 import { useStoredStatusActions } from "./stored-status-actions.js";
 import { useStoredJobTimeline } from "./stored-job-timeline.js";
+import { useStoredJobDetails } from "./stored-job-details.js";
 import {
   loadStoredPipelineSnapshot,
   storedPipelineBoardColumns,
@@ -1946,6 +1947,14 @@ const AppShellCatalog = ({
     >
   >({});
   const storedJobId = workspaceRoute?.jobId;
+  const storedDetailsContent = useStoredJobDetails({
+    jobId:
+      !referenceCatalog && (workspaceRoute?.tab === "overview" || workspaceRoute?.tab === "company")
+        ? workspaceRoute.jobId
+        : null,
+    tab: workspaceRoute?.tab === "company" ? "company" : "overview",
+    api: referenceCatalog ? null : globalThis.coredrillStorageSpike.pipeline,
+  });
   const storedTimelineContent = useStoredJobTimeline({
     jobId: !referenceCatalog && workspaceRoute?.tab === "timeline" ? workspaceRoute.jobId : null,
     api: referenceCatalog ? null : globalThis.coredrillStorageSpike.pipeline,
@@ -4179,23 +4188,12 @@ const AppShellCatalog = ({
     if (workspaceRoute.tab === "timeline") {
       return storedTimelineContent;
     }
-    if (workspaceRoute.tab === "overview") {
-      return (
-        <section aria-label="Stored job overview">
-          <h2>Stored job details</h2>
-          <p>{storedJob?.description ?? "Loading stored job details…"}</p>
-          <p>
-            Additional normalized facts and history are not connected to this workspace view yet. No
-            sample source, contact, or timeline data is substituted.
-          </p>
-        </section>
-      );
+    if (workspaceRoute.tab === "overview" || workspaceRoute.tab === "company") {
+      return storedDetailsContent;
     }
     return (
       <section aria-label="Stored job view unavailable">
-        <h2>
-          {workspaceRoute.tab === "source" ? "Source and provenance" : "Company and contacts"}
-        </h2>
+        <h2>Source and provenance</h2>
         <p>
           This stored-record view is not connected yet. Retained data remains in the local vault;
           reference catalog content is not shown as your data.

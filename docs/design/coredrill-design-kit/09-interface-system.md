@@ -298,6 +298,14 @@ current status is never inferred from the historical event list. Stage labels
 are identified as current stored metadata. Note editing and normal scheduling
 remain separate integration work; see [Timeline proof](../../proof/normal-stored-job-timeline-verification.md).
 
+Normal Overview and Company composition reads the validated stored workspace
+query, with explicit refresh/retry, stale-fact warnings and cross-job isolation.
+Missing normalized descriptions remain distinct from retained source notes.
+Application/relationship summaries explicitly describe the latest unarchived
+attempt and unarchived counts, not all attempts or verified employer facts.
+These read-only views do not imply completed compensation, editing, activity,
+contact navigation or full Source integration; see [details proof](../../proof/normal-stored-job-details-verification.md).
+
 The most important job actions—Change status, Set next action, Prepare application—are always reachable without opening `•••`.
 
 ### Requirements and evidence

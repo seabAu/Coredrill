@@ -71,7 +71,7 @@ test("discovers a manually saved job through normal Pipeline navigation offline"
     .click();
   await expect(
     page.getByRole("region", { name: "Stored job overview", exact: true }),
-  ).toContainText("No sample source, contact, or timeline data is substituted.");
+  ).toContainText("Synthetic discoverable local role");
   await expect(page).toHaveURL(/\/jobs\/[a-f0-9-]{36}\/overview$/u);
   // The URL/ID was discovered by normal UI navigation, never read from a test API.
   const discoveredUrl = page.url();

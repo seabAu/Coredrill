@@ -205,6 +205,13 @@ test("normal root uses real native SQLite for capture and documents without OPFS
       "Restored Synthetic native movable role",
     );
     await page.getByRole("button", { name: "Synthetic native movable role", exact: true }).click();
+    const storedOverview = page.getByRole("region", { name: "Stored job overview", exact: true });
+    await expect(storedOverview).toContainText("Synthetic native movable role");
+    await expect(storedOverview).toContainText("No unarchived application attempt recorded.");
+    await page.getByRole("button", { name: "Company", exact: true }).click();
+    await expect(
+      page.getByRole("region", { name: "Stored job company", exact: true }),
+    ).toContainText("Synthetic Runtime Lab");
     await page.getByRole("button", { name: "Timeline", exact: true }).click();
     const history = page.getByRole("region", { name: "Stored job timeline", exact: true });
     await expect(history).toContainText("Native drafting");

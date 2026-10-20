@@ -402,6 +402,34 @@
   }
 }
 
+.cd-stored-job-details {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.cd-stored-job-details dl {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+}
+
+.cd-stored-job-details dl > div {
+  min-width: 0;
+}
+
+.cd-stored-job-details dt {
+  font-weight: 600;
+}
+
+.cd-stored-job-details dd {
+  margin: 0.25rem 0 0;
+  white-space: pre-wrap;
+}
+
+.cd-stored-job-text {
+  white-space: pre-wrap;
+}
+
 .cd-capture-follow-up {
   display: grid;
   gap: 1rem;

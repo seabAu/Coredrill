@@ -1,6 +1,6 @@
 # Phase 3 unseeded canonical journey — verification in progress
 
-Date: 2026-10-19. Checklist `Q3-005` remains open pending full and hosted verification.
+Date: 2026-10-19. Checklist `Q3-005` remains open pending successful hosted verification.
 
 ## Scope and trust boundary
 
@@ -44,5 +44,7 @@ The narrow submitted-set artifact was visually inspected: the selected older cov
 Predecessor Timeline checkpoint `d6a130cc077c68963f8d290632a476f2d20f1952` passes every required hosted job in [run 39341919878](https://github.com/seabAu/Coredrill/actions/runs/39341919878). That verifies the Timeline/query source and isolated focus test, not this subsequent unseeded test.
 
 ## Remaining closure
+
+Commit `986e2528618d71252c849cddc88927c137e8a420` is pushed. Hosted [run 39344803133](https://github.com/seabAu/Coredrill/actions/runs/39344803133) is terminal failure: exact Chrome 151/152 and aggregate all show automatic Partial instead of the requested explicit manual Partial at line 149 (22 other resilience cases pass in each). The test immediately chooses coverage after selecting evidence. Pending-action/read-refresh ordering in normal requirement review needs deterministic investigation; no assertion or timeout is relaxed. The extension lane independently fails a local test-server `route.fetch: socket hang up` (eight passed / one failed). Native Windows/macOS/Ubuntu, exact Firefox and secret lanes pass. Failure logs remain under `test-results/unseeded-hosted-*-failure.log`. Subsequent local full verification of the Overview/Company slice still passes this unchanged canonical test; that does not supersede the hosted failure.
 
 Obtain clean-commit hosted verification of the unseeded case and then assess `Q3-005` against its exact proof requirements. Keep `GATE-3`, independent human/reference-device gates and the overall product goal open; remaining normal workspace/activity/recovery and later AI/salary/discovery/beta work are not completed by this test.
