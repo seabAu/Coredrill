@@ -66,6 +66,10 @@ const PHASE_1_REPOSITORY_CONTRACT_COMPONENTS = Object.freeze({
     rerunCoverageAfterSourceEdits:
       "re-runs coverage after evidence and source-document edits with a preserved decision and field diff",
   }),
+  companyDirectory: component("stored-company-directory", {
+    readScopedPages:
+      "reads bounded viewed-vault company pages without private notes or canonical writes",
+  }),
 });
 
 const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
@@ -75,8 +79,8 @@ const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
 );
 
 export const PHASE_1_REPOSITORY_CONTRACT_MANIFEST = Object.freeze({
-  schemaVersion: 10 as const,
-  suiteName: "phase-1-repository-contracts-v10",
+  schemaVersion: 11 as const,
+  suiteName: "phase-1-repository-contracts-v11",
   components: PHASE_1_REPOSITORY_CONTRACT_COMPONENTS,
   caseNames: PHASE_1_REPOSITORY_CONTRACT_CASES,
 });

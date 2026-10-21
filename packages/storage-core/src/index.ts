@@ -1,4 +1,5 @@
 /** Storage ports, shared repository contracts, and migration coordination. */
+export { createCompanyDirectoryRepository } from "./company-directory-repository.js";
 export { createDocumentDerivationRepository } from "./document-derivation-repository.js";
 export { createAppliedStageRepository } from "./applied-stage-repository.js";
 export { createPipelineQueryRepository } from "./pipeline-query-repository.js";

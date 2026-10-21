@@ -317,6 +317,18 @@ export {
   type CreateUserEnteredContactInput,
 } from "./company-contact.js";
 export {
+  CompanyDirectoryError,
+  createCompanyDirectoryQuery,
+  parseCompanyDirectoryRequestV1,
+  compareCompanyDirectoryEntries,
+  type CompanyDirectoryPort,
+  type CompanyDirectorySummaryV1,
+  type CompanyDirectoryCursorV1,
+  type CompanyDirectoryPageV1,
+  type ListCompanyDirectoryInputV1,
+  type ListCompanyDirectoryPortInputV1,
+} from "./company-directory.js";
+export {
   PIPELINE_QUERY_ERROR_CODES,
   PipelineQueryError,
   createPipelineQueryOperations,
