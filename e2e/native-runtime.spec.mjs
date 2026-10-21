@@ -11,6 +11,7 @@ import { exerciseStoredListingComparison } from "./listing-comparison-journey.mj
 import { exerciseStoredJobNote } from "./job-note-journey.mjs";
 import { exerciseNextActionRuntime } from "./next-action-runtime-journey.mjs";
 import { exerciseVaultExportPreparation } from "./vault-export-runtime-journey.mjs";
+import { exerciseNormalVaultPreparation } from "./normal-vault-export-journey.mjs";
 import { exerciseNormalTaskEntry } from "./task-entry-journey.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
@@ -382,6 +383,11 @@ test("normal root uses real native SQLite for capture and documents without OPFS
     const listingComparison = await exerciseStoredListingComparison(page, testInfo);
     const localNote = await exerciseStoredJobNote(page, testInfo);
     const vaultExportPreparation = await exerciseVaultExportPreparation(page, testInfo, 1);
+    const vaultExportPanel = await exerciseNormalVaultPreparation(page, "native");
+    await expect(vaultExportPanel).toContainText("Retained attachments");
+    await vaultExportPanel
+      .getByRole("button", { name: "Discard prepared archive", exact: true })
+      .click();
     const capabilities = await page.evaluate(() => ({
       calls: globalThis.coredrillBrowserCapabilityProbe,
       offline: globalThis.coredrillOfflineShell.getState(),
@@ -406,6 +412,8 @@ test("normal root uses real native SQLite for capture and documents without OPFS
           listingComparison,
           localNote,
           vaultExportPreparation,
+          normalSettingsPreparation: true,
+          normalNativeArchiveSaveProven: false,
           heldBeginAcknowledgements: heldAcknowledgements,
           retiredDocuments: retiredDocuments.size,
           capabilities,

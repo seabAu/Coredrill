@@ -4655,6 +4655,26 @@ textarea {
   gap: var(--space-3);
 }
 
+.cd-vault-export {
+  overflow-wrap: anywhere;
+}
+
+.cd-vault-export label {
+  display: block;
+  margin-block: var(--space-3);
+}
+
+.cd-vault-export input[type="file"] {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.cd-vault-export dd {
+  margin-inline-start: 0;
+}
+
 .cd-job-content-section-heading > div:first-child {
   min-width: 0;
 }

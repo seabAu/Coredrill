@@ -131,6 +131,7 @@ import "./app-shell.css";
 import "./main.js";
 import { RUNTIME_KIND } from "./runtime-kind.js";
 import { StoredVaultSettings } from "./stored-vault-settings.js";
+import { useStoredVaultExportSession } from "./stored-vault-export-session.js";
 import { StoredVaultRoot } from "./stored-vault-root.js";
 import { storedVaultHealth } from "./vault-presentation.js";
 import { installVaultViewInvalidation } from "./vault-lifecycle.js";
@@ -1827,6 +1828,11 @@ const AppShellCatalog = ({
     VaultDeletionResultDto["status"] | null
   >(null);
   const [vaultDeletionSubmitCount, setVaultDeletionSubmitCount] = useState(0);
+  const vaultExportSession = useStoredVaultExportSession({
+    api: globalThis.coredrillStorageSpike,
+    ownerId: vaultSession?.vault.id ?? null,
+    enabled: !referenceCatalog && vaultDeletionStatus === null,
+  });
   const [networkInteractionDraftCount, setNetworkInteractionDraftCount] = useState(0);
   const [documents, setDocuments] = useState<readonly DocumentWorkspaceItemDto[]>([]);
   const [documentsLoaded, setDocumentsLoaded] = useState(false);
@@ -4964,6 +4970,7 @@ const AppShellCatalog = ({
         ) : activeDestination === "settings" && !referenceCatalog ? (
           <StoredVaultSettings
             api={globalThis.coredrillStorageSpike}
+            exportSession={vaultExportSession}
             session={vaultSession}
             onSessionObserved={onVaultObserved}
             onDeleted={(result) => {

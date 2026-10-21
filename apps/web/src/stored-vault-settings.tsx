@@ -6,6 +6,7 @@ import type {
 } from "@coredrill/application";
 import { useEffect, useState } from "react";
 import type { CoredrillStorageSpikeApi } from "./main.js";
+import type { useStoredVaultExportSession } from "./stored-vault-export-session.js";
 
 /** Actual runtime facts and typed deletion, never the catalog's invented preview. */
 export const StoredVaultSettings = ({
@@ -13,11 +14,13 @@ export const StoredVaultSettings = ({
   onDeleted,
   session,
   onSessionObserved,
+  exportSession,
 }: {
   readonly api: CoredrillStorageSpikeApi;
   readonly onDeleted: (result: VaultDeletionResultDto) => void;
   readonly session?: VaultSessionDto | undefined;
   readonly onSessionObserved?: ((session: VaultSessionDto) => void) | undefined;
+  readonly exportSession: ReturnType<typeof useStoredVaultExportSession>;
 }) => {
   const [observed, setObserved] = useState(session ?? null);
   useEffect(() => {
@@ -52,7 +55,7 @@ export const StoredVaultSettings = ({
       <button
         type="button"
         className="cd-button"
-        disabled={busy}
+        disabled={busy || exportSession.busy}
         onClick={() => {
           setBusy(true);
           setMessage("");
@@ -91,14 +94,15 @@ export const StoredVaultSettings = ({
           ? "SQLite and retained document bytes use native managed storage. Browser OPFS and browser persistence permissions are not used."
           : "SQLite and retained document bytes use this browser origin's local storage."}
       </p>
+      {exportSession.panel(busy)}
       <p>
-        Backup and restore controls are not connected to this settings view yet. No sample backup
-        history or successful export is claimed.
+        Native save, persistent verified-export history and restore controls remain unfinished. No
+        sample backup history or restore success is claimed.
       </p>
       <button
         type="button"
         className="cd-button"
-        disabled={busy}
+        disabled={busy || exportSession.busy}
         onClick={() => {
           setBusy(true);
           setMessage("");
@@ -122,14 +126,16 @@ export const StoredVaultSettings = ({
       {preview === null ? null : (
         <VaultDeletionSettings
           preview={preview}
-          onDelete={(input) => api.deleteCurrentVault(input)}
+          onDelete={(input) =>
+            exportSession.mutate(input.vaultId, () => api.deleteCurrentVault(input))
+          }
           onDeleted={(result) => {
             setPreview(null);
             onDeleted(result);
           }}
           onExportPortableArchive={() => {
             setMessage(
-              "Portable archive export is not connected to this settings view. Do not delete until you have verified a recoverable copy.",
+              "Close this warning and use Portable vault export above. This does not submit deletion; do not delete until you have verified a recoverable copy.",
             );
           }}
         />
