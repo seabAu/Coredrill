@@ -30,6 +30,8 @@ import {
   NATIVE_ARCHIVE_PROTOCOL_VERSION,
   NATIVE_ATTACHMENT_MAX_BYTES,
   NATIVE_PORTABLE_SAVE_LIMITS,
+  NATIVE_PORTABLE_READ_LIMITS,
+  type NativePortableReadOutcome,
   type NativePortableSaveInput,
   type NativePortableSaveOutcome,
   parseNativeArchiveResponse,
@@ -79,6 +81,7 @@ export interface NativeSqliteDatabase extends DatabasePort {
   }): Promise<void>;
   exportRecoveryArchive(): Promise<NativeArchiveOutcome>;
   savePortableArchive(input: NativePortableSaveInput): Promise<NativePortableSaveOutcome>;
+  selectPortableArchive(): Promise<NativePortableReadOutcome>;
   restoreRecoveryArchive(): Promise<NativeArchiveOutcome>;
   createAutomaticBackup(retentionCount: number): Promise<NativeAutomaticBackupMetadata>;
   inspectPortable(
@@ -543,6 +546,92 @@ class NativeSqliteDatabaseAdapter implements NativeSqliteDatabase {
 
   public exportRecoveryArchive(): Promise<NativeArchiveOutcome> {
     return this.runExclusive(() => this.sendArchive({ type: "export", sessionId: this.sessionId }));
+  }
+
+  public selectPortableArchive(): Promise<NativePortableReadOutcome> {
+    return this.runExclusive(async () => {
+      const selectionId = [...globalThis.crypto.getRandomValues(new Uint8Array(32))]
+        .map((byte) => byte.toString(16).padStart(2, "0"))
+        .join("");
+      const release = async () => {
+        const released = await this.sendArchiveData({
+          type: "portable_read_release",
+          sessionId: this.sessionId,
+          selectionId,
+        });
+        if (released.type !== "portable_read_released" || released.selectionId !== selectionId)
+          throw this.invalidArchiveResponse("correlated portable_read_released", released.type);
+      };
+      let outcome: NativePortableReadOutcome;
+      try {
+        outcome = await (async (): Promise<NativePortableReadOutcome> => {
+          const selected = await this.sendArchiveData({
+            type: "portable_read_begin",
+            sessionId: this.sessionId,
+            selectionId,
+          });
+          if (selected.type === "portable_read_cancelled" && selected.selectionId === selectionId) {
+            return Object.freeze({ status: "cancelled" as const });
+          }
+          if (selected.type !== "portable_read_ready" || selected.selectionId !== selectionId)
+            throw this.invalidArchiveResponse("correlated portable_read_ready", selected.type);
+          const bytes = new Uint8Array(selected.byteLength);
+          for (let offset = 0; offset < selected.byteLength;) {
+            const chunk = await this.sendArchiveData({
+              type: "portable_read_chunk",
+              sessionId: this.sessionId,
+              selectionId,
+              offset,
+            });
+            const expectedLength = Math.min(
+              NATIVE_PORTABLE_READ_LIMITS.maxChunkBytes,
+              selected.byteLength - offset,
+            );
+            if (
+              chunk.type !== "portable_read_chunk" ||
+              chunk.selectionId !== selectionId ||
+              chunk.offset !== offset ||
+              chunk.bytes.length !== expectedLength ||
+              chunk.complete !== (offset + expectedLength === selected.byteLength)
+            )
+              throw this.invalidArchiveResponse("correlated portable_read_chunk", chunk.type);
+            bytes.set(chunk.bytes, offset);
+            offset += expectedLength;
+          }
+          const sha256 = [
+            ...new Uint8Array(await globalThis.crypto.subtle.digest("SHA-256", bytes)),
+          ]
+            .map((byte) => byte.toString(16).padStart(2, "0"))
+            .join("");
+          if (sha256 !== selected.sha256)
+            throw this.invalidArchiveResponse(
+              "verified portable archive bytes",
+              "checksum_mismatch",
+            );
+          return Object.freeze({
+            status: "selected" as const,
+            byteLength: bytes.byteLength,
+            sha256,
+            bytes,
+          });
+        })();
+      } catch (error) {
+        // Preserve the primary failure if cleanup also fails; never fabricate selected bytes.
+        await release().catch(() => undefined);
+        if (
+          error instanceof NativeStorageProtocolError ||
+          error instanceof NativeStorageCapabilityError
+        )
+          throw error;
+        throw new NativeStorageProtocolError(
+          "archive_io_failed",
+          "The selected portable archive could not be read. The local vault was not restored.",
+          false,
+        );
+      }
+      await release();
+      return outcome;
+    });
   }
 
   public restoreRecoveryArchive(): Promise<NativeArchiveOutcome> {

@@ -94,7 +94,7 @@ describe("native complete portable archive save transport", () => {
     const transmitted = createHash("sha256");
     for (const chunk of chunks) transmitted.update(Uint8Array.from(chunk.bytes));
     expect(transmitted.digest("hex")).toBe(expectedSha256);
-    expect(requests.every((request) => request.protocolVersion === 4)).toBe(true);
+    expect(requests.every((request) => request.protocolVersion === 5)).toBe(true);
     for (const request of requests) expect(Object.keys(request.operation)).not.toContain("path");
   });
   it("rejects invalid identity, lengths and content before archive IPC", async () => {
@@ -153,11 +153,13 @@ describe("native complete portable archive save transport", () => {
   );
   it("rejects old versions, foreign acknowledgements, excessive progress and path-bearing responses", () => {
     const valid = {
-      protocolVersion: 4,
+      protocolVersion: NATIVE_ARCHIVE_PROTOCOL_VERSION,
       requestId: "native-save",
       data: { type: "portable_saved", vaultId, archiveId, byteLength: 40, sha256: "0".repeat(64) },
     };
+    expect(parseNativeArchiveResponse(valid, "native-save").data.type).toBe("portable_saved");
     for (const invalid of [
+      { ...valid, protocolVersion: 4 },
       { ...valid, protocolVersion: 3 },
       { ...valid, data: { ...valid.data, archiveId: "other" } },
       { ...valid, data: { ...valid.data, path: "PRIVATE_PATH" } },

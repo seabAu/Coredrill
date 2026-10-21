@@ -198,6 +198,8 @@ impl NativeStorageError {
 pub(crate) struct NativeSession {
     #[cfg(any(feature = "desktop-shell", feature = "native-storage-probe", test))]
     pub(crate) portable_save: Option<crate::native_archive::NativePortableSaveStage>,
+    #[cfg(any(feature = "desktop-shell", feature = "native-storage-probe", test))]
+    pub(crate) portable_read: Option<crate::native_archive::NativePortableReadStage>,
     pub(crate) connection: Connection,
     pub(crate) database_path: PathBuf,
     pub(crate) transaction_active: bool,
@@ -420,6 +422,8 @@ impl NativeStorageService {
             NativeSession {
                 #[cfg(any(feature = "desktop-shell", feature = "native-storage-probe", test))]
                 portable_save: None,
+                #[cfg(any(feature = "desktop-shell", feature = "native-storage-probe", test))]
+                portable_read: None,
                 connection,
                 database_path,
                 transaction_active: false,

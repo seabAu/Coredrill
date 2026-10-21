@@ -13,6 +13,7 @@ import {
   commitPortableArchiveRestoreV1,
   createPortableArchiveContentHashV1,
   createPortableArchiveRestorePreviewV1,
+  discardPortableArchiveRestorePreviewV1,
   createPortableDataExportV1,
   createPortableVaultContentHashV1,
   createCareerRepositoryContractSuite,
@@ -151,7 +152,7 @@ class ProbeTransport implements NativeStorageTransport, NativeArchiveTransport {
     executable: string,
     private readonly root: string,
   ) {
-    this.child = spawn(executable, [root], {
+    this.child = spawn(executable, [root, "", this.portableArchiveSelectionPath()], {
       stdio: "pipe",
       windowsHide: true,
     });
@@ -170,6 +171,10 @@ class ProbeTransport implements NativeStorageTransport, NativeArchiveTransport {
 
   public invokeArchive(request: NativeArchiveRequest): Promise<unknown> {
     return this.send(request);
+  }
+
+  public portableArchiveSelectionPath(): string {
+    return path.join(this.root, "selected-portable.coredrill.zip");
   }
 
   private send(request: NativeStorageRequest | NativeArchiveRequest): Promise<unknown> {
@@ -305,6 +310,59 @@ afterAll(async () => {
 });
 
 describe("native SQLite repository and migration contracts", () => {
+  it("selects a complete archive through actual Rust without restoring or changing the target", async () => {
+    const archive = new Uint8Array(
+      await readFile(
+        path.join(
+          repositoryRoot,
+          "fixtures",
+          "recovery",
+          "phase-1-vault-schema-160-v1.coredrill.zip",
+        ),
+      ),
+    );
+    await writeFile(transport.portableArchiveSelectionPath(), archive);
+    const database = await openNativeSqliteDatabase({
+      databaseName: nextDatabaseName(),
+      transport,
+    });
+    try {
+      await applySqlMigrations(database, migrations(), APPLIED_AT);
+      const before = await database.exportPortable();
+      const selected = await database.selectPortableArchive();
+      if (selected.status !== "selected") throw new Error("Expected selected portable archive");
+      expect(Buffer.from(selected.bytes).equals(Buffer.from(archive))).toBe(true);
+      expect(selected.sha256).toBe(createHash("sha256").update(archive).digest("hex"));
+      const inspected = await inspectPortableArchiveV1({
+        bytes: selected.bytes,
+        expectedSchemaVersion: 160,
+        expectedArchiveSha256: selected.sha256,
+      });
+      expect(inspected.attachments.length).toBeGreaterThan(0);
+      const preview = await createPortableArchiveRestorePreviewV1({
+        archiveBytes: selected.bytes,
+        expectedSchemaVersion: 160,
+        expectedArchiveSha256: selected.sha256,
+        port: createNativePortableArchiveRestorePortV1({
+          database,
+          expectedVaultId: inspected.manifest.vault.id,
+        }),
+      });
+      expect(preview).toMatchObject({ target: { state: "empty" }, requiredConfirmation: "commit" });
+      expect(
+        Buffer.from((await database.exportPortable()).bytes).equals(Buffer.from(before.bytes)),
+      ).toBe(true);
+      expect(discardPortableArchiveRestorePreviewV1(preview)).toBe(true);
+      const second = await database.selectPortableArchive();
+      expect(second).toMatchObject({ status: "selected", sha256: selected.sha256 });
+      expect(
+        Buffer.from((await database.exportPortable()).bytes).equals(Buffer.from(before.bytes)),
+      ).toBe(true);
+    } finally {
+      await database.delete();
+    }
+  });
+
   it("initializes canonical database and content-addressed attachment roots", async () => {
     const database = await openNativeSqliteDatabase({
       databaseName: nextDatabaseName(),
@@ -613,33 +671,64 @@ describe("native SQLite repository and migration contracts", () => {
   });
 
   it("enforces query/execute separation and exposes the path-free archive boundary", async () => {
+    const step = async <Result>(stage: string, work: () => Promise<Result>): Promise<Result> => {
+      const startedAt = performance.now();
+      console.info("NATIVE_ARCHIVE_BOUNDARY_STAGE", JSON.stringify({ stage, state: "started" }));
+      try {
+        return await work();
+      } finally {
+        console.info(
+          "NATIVE_ARCHIVE_BOUNDARY_STAGE",
+          JSON.stringify({
+            stage,
+            state: "settled",
+            elapsedMs: Math.round(performance.now() - startedAt),
+          }),
+        );
+      }
+    };
     const database = await openNativeSqliteDatabase({
       databaseName: nextDatabaseName(),
       transport,
     });
-    await expect(
-      database.query(sqlStatement("CREATE TABLE no_query(id INTEGER)")),
-    ).rejects.toMatchObject({
-      code: "invalid_statement",
-    });
-    await expect(database.execute(sqlStatement("SELECT 1"))).rejects.toMatchObject({
-      code: "invalid_statement",
-    });
-    await applySqlMigrations(database, migrations(), APPLIED_AT);
-    await expect(database.exportPortable()).resolves.toMatchObject({
-      schemaVersion: 160,
-      byteLength: expect.any(Number),
-      sha256: expect.stringMatching(/^[a-f0-9]{64}$/u),
-    });
-    await expect(database.exportRecoveryArchive()).resolves.toEqual({ status: "cancelled" });
-    await expect(database.restoreRecoveryArchive()).resolves.toEqual({ status: "cancelled" });
-    await expect(database.createAutomaticBackup(7)).resolves.toMatchObject({
-      retentionCount: 7,
-      knownGoodBackups: 1,
-      cleanupPending: false,
-      archive: { schemaVersion: 160, sha256: expect.stringMatching(/^[a-f0-9]{64}$/u) },
-    });
-    await database.delete();
+    try {
+      await step("query-ddl-rejection", () =>
+        expect(
+          database.query(sqlStatement("CREATE TABLE no_query(id INTEGER)")),
+        ).rejects.toMatchObject({
+          code: "invalid_statement",
+        }),
+      );
+      await step("execute-select-rejection", () =>
+        expect(database.execute(sqlStatement("SELECT 1"))).rejects.toMatchObject({
+          code: "invalid_statement",
+        }),
+      );
+      await step("migrations", () => applySqlMigrations(database, migrations(), APPLIED_AT));
+      await step("portable-export", () =>
+        expect(database.exportPortable()).resolves.toMatchObject({
+          schemaVersion: 160,
+          byteLength: expect.any(Number),
+          sha256: expect.stringMatching(/^[a-f0-9]{64}$/u),
+        }),
+      );
+      await step("export-cancellation", () =>
+        expect(database.exportRecoveryArchive()).resolves.toEqual({ status: "cancelled" }),
+      );
+      await step("restore-cancellation", () =>
+        expect(database.restoreRecoveryArchive()).resolves.toEqual({ status: "cancelled" }),
+      );
+      await step("automatic-backup", () =>
+        expect(database.createAutomaticBackup(7)).resolves.toMatchObject({
+          retentionCount: 7,
+          knownGoodBackups: 1,
+          cleanupPending: false,
+          archive: { schemaVersion: 160, sha256: expect.stringMatching(/^[a-f0-9]{64}$/u) },
+        }),
+      );
+    } finally {
+      await step("cleanup", () => database.delete());
+    }
   });
 
   it("persists immutable path-free attachment writes durably and rejects forged payloads in Rust", async () => {

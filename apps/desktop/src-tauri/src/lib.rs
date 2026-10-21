@@ -54,6 +54,11 @@ async fn native_archive_invoke(
             .file()
             .add_filter("Coredrill database recovery", &["coredrill-db"]);
         let selected = match &request.operation {
+            NativeArchiveOperation::PortableReadBegin { .. } => app
+                .dialog()
+                .file()
+                .add_filter("Coredrill portable archive", &["zip"])
+                .blocking_pick_file(),
             NativeArchiveOperation::PortableSaveFinish { archive_id, .. } => app
                 .dialog()
                 .file()
@@ -69,6 +74,8 @@ async fn native_archive_invoke(
             | NativeArchiveOperation::PortableSaveBegin { .. }
             | NativeArchiveOperation::PortableSaveAppend { .. }
             | NativeArchiveOperation::PortableSaveAbort { .. }
+            | NativeArchiveOperation::PortableReadChunk { .. }
+            | NativeArchiveOperation::PortableReadRelease { .. }
             | NativeArchiveOperation::PortableInspect { .. }
             | NativeArchiveOperation::PortableTarget { .. }
             | NativeArchiveOperation::AttachmentRead { .. }

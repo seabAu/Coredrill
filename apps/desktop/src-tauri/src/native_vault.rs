@@ -650,6 +650,8 @@ fn restore_session(
         NativeSession {
             #[cfg(any(feature = "desktop-shell", feature = "native-storage-probe", test))]
             portable_save: None,
+            #[cfg(any(feature = "desktop-shell", feature = "native-storage-probe", test))]
+            portable_read: None,
             connection,
             database_path: database_path.to_path_buf(),
             transaction_active: false,

@@ -5,6 +5,8 @@ export {
   NATIVE_ARCHIVE_PROTOCOL_VERSION,
   NATIVE_ATTACHMENT_MAX_BYTES,
   NATIVE_PORTABLE_SAVE_LIMITS,
+  NATIVE_PORTABLE_READ_LIMITS,
+  type NativePortableReadOutcome,
   type NativePortableSaveIdentity,
   type NativePortableSaveInput,
   type NativePortableSaveOutcome,

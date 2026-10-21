@@ -1,10 +1,19 @@
 import { deserializeNativeStorageError, NativeStorageProtocolError } from "./protocol.js";
 
-export const NATIVE_ARCHIVE_PROTOCOL_VERSION = 4 as const;
+export const NATIVE_ARCHIVE_PROTOCOL_VERSION = 5 as const;
 export const NATIVE_PORTABLE_SAVE_LIMITS = Object.freeze({
   maxArchiveBytes: 544 * 1024 * 1024,
   maxChunkBytes: 1024 * 1024,
 });
+export const NATIVE_PORTABLE_READ_LIMITS = NATIVE_PORTABLE_SAVE_LIMITS;
+export type NativePortableReadOutcome =
+  | { readonly status: "cancelled" }
+  | {
+      readonly status: "selected";
+      readonly bytes: Uint8Array;
+      readonly byteLength: number;
+      readonly sha256: string;
+    };
 
 export interface NativePortableSaveIdentity {
   readonly vaultId: string;
@@ -38,6 +47,17 @@ export interface NativeArchiveRequest {
 }
 
 export type NativeArchiveOperation =
+  | {
+      readonly type: "portable_read_begin" | "portable_read_release";
+      readonly sessionId: string;
+      readonly selectionId: string;
+    }
+  | {
+      readonly type: "portable_read_chunk";
+      readonly sessionId: string;
+      readonly selectionId: string;
+      readonly offset: number;
+    }
   | (NativePortableSaveIdentity & {
       readonly type: "portable_save_begin" | "portable_save_finish";
       readonly sessionId: string;
@@ -137,6 +157,23 @@ export interface NativeAutomaticBackupMetadata {
 }
 
 export type NativeArchiveResponseData =
+  | {
+      readonly type: "portable_read_ready";
+      readonly selectionId: string;
+      readonly byteLength: number;
+      readonly sha256: string;
+    }
+  | {
+      readonly type: "portable_read_chunk";
+      readonly selectionId: string;
+      readonly offset: number;
+      readonly bytes: readonly number[];
+      readonly complete: boolean;
+    }
+  | {
+      readonly type: "portable_read_released" | "portable_read_cancelled";
+      readonly selectionId: string;
+    }
   | {
       readonly type: "portable_save_progress";
       readonly archiveId: string;
@@ -334,6 +371,53 @@ const parsePortableSaveId = (value: unknown): string => {
 const parseResponseData = (value: unknown): NativeArchiveResponseData => {
   if (!isRecord(value) || typeof value["type"] !== "string") throw invalidResponse();
   switch (value["type"]) {
+    case "portable_read_ready": {
+      const byteLength = requireSafeInteger(value, "byteLength");
+      if (
+        byteLength < 22 ||
+        byteLength > NATIVE_PORTABLE_READ_LIMITS.maxArchiveBytes ||
+        Object.keys(value).some(
+          (key) => !["type", "selectionId", "byteLength", "sha256"].includes(key),
+        )
+      )
+        throw invalidResponse();
+      return Object.freeze({
+        type: "portable_read_ready",
+        selectionId: parseSha256(value["selectionId"]),
+        byteLength,
+        sha256: parseSha256(value["sha256"]),
+      });
+    }
+    case "portable_read_chunk": {
+      const offset = requireSafeInteger(value, "offset");
+      const bytes = value["bytes"];
+      const complete = value["complete"];
+      if (
+        offset > NATIVE_PORTABLE_READ_LIMITS.maxArchiveBytes ||
+        !Array.isArray(bytes) ||
+        bytes.length < 1 ||
+        bytes.length > NATIVE_PORTABLE_READ_LIMITS.maxChunkBytes ||
+        offset + bytes.length > NATIVE_PORTABLE_READ_LIMITS.maxArchiveBytes ||
+        typeof complete !== "boolean" ||
+        Object.keys(value).some(
+          (key) => !["type", "selectionId", "offset", "bytes", "complete"].includes(key),
+        )
+      )
+        throw invalidResponse();
+      return Object.freeze({
+        type: "portable_read_chunk",
+        selectionId: parseSha256(value["selectionId"]),
+        offset,
+        bytes: parseBytes(bytes, bytes.length),
+        complete,
+      });
+    }
+    case "portable_read_released":
+    case "portable_read_cancelled": {
+      if (Object.keys(value).some((key) => !["type", "selectionId"].includes(key)))
+        throw invalidResponse();
+      return Object.freeze({ type: value["type"], selectionId: parseSha256(value["selectionId"]) });
+    }
     case "portable_save_progress": {
       const archiveId = parsePortableSaveId(value["archiveId"]);
       const receivedBytes = requireSafeInteger(value, "receivedBytes");
@@ -453,7 +537,8 @@ export const parseNativeArchiveResponse = (
   if (!isRecord(value)) throw invalidResponse();
   if (
     value["protocolVersion"] !== NATIVE_ARCHIVE_PROTOCOL_VERSION ||
-    value["requestId"] !== requestId
+    value["requestId"] !== requestId ||
+    Object.keys(value).some((key) => !["protocolVersion", "requestId", "data"].includes(key))
   ) {
     throw invalidResponse();
   }

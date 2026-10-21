@@ -41,3 +41,19 @@ Final whole-workspace formatting and policy pass `RESTORE_PREVIEW_LIFETIME_FINAL
 This does not expose normal restore controls or complete `INT-006`. Normal browser selection and Rust-owned native full-ZIP selection, owned root/session/UI integration, exact preview/confirmation, single-flight coordination with export/deletion, onboarding/clean-target recovery, and real browser/native navigation/reflow/failure/exact-content recovery still require implementation and proof. The older backend and diagnostic recovery suites remain supporting evidence, not substitutes.
 
 The preceding pushed handoff commit `1e1ad4d` now passes exact hosted run `39585320481`; its watch ends `DELETION_EXPORT_HANDOFF_HOSTED_EXIT=0` and aggregate output is retained. See [exact handoff closure](deletion-export-handoff-verification.md#exact-hosted-closure). This uncommitted coordinator change has no hosted proof yet.
+
+## Pushed checkpoint
+
+Exact `34d0c44b04ea3bf321956b65ba5a074dc39f217f` is pushed to origin/main from a clean worktree. [Run 39588226575](https://github.com/seabAu/Coredrill/actions/runs/39588226575) is confirmed in progress. One watch is retained as session 64484, writing `test-results/restore-preview-lifetime-hosted-watch.log` with eventual marker `RESTORE_PREVIEW_LIFETIME_HOSTED_EXIT`. Resume that same handle or inspect authoritative external state; observation timeout is not terminal and must not cause restart or a superseding push. No hosted success is inferred. Normal restore and INT-006 remain unfinished.
+
+## Hosted Windows finding
+
+While the overall run remains live, completed Windows job `119182356418` reports 17 native-adapter passes and a timeout of the existing query/execute/path-free archive-boundary case at 5,015 ms under its unchanged five-second default. The job log is retained through the completed-job API as `test-results/restore-preview-lifetime-hosted-windows-job.log`. Both Chrome, Firefox, extension, macOS, diagnostic Ubuntu and secrets jobs pass; the aggregate job is still active at this observation. No hosted success is claimed and the run must not be superseded while live.
+
+The timeout alone does not establish a coordinator defect or production root cause. Subsequent native-input work adds content-free stage timings and finally cleanup to that existing case without dropping assertions or increasing its time limit. That later source needs independent local/hosted proof; it cannot relabel this checkpoint green.
+
+## Terminal hosted outcome
+
+Run `39588226575` is now terminal **failure**, solely in the Windows native-contract step described above. The retained watch ends `RESTORE_PREVIEW_LIFETIME_HOSTED_EXIT=1`. All other required jobs succeed; PR-only dependency review is skipped. Do not restart or relabel this historical run.
+
+Successful aggregate job `119182356510` is retained in `test-results/restore-preview-lifetime-hosted-aggregate-success.log`: 1,858 units and coverage plus one platform skip (1,859 total), 41 resilience, 11 browser-storage, 17 native plus one Windows-only skip, native recovery/security/policy/audit/Changesets. Its real-native tracking/documents journeys finish in 1.0 / 1.1 minutes under the unchanged 120-second limits. Both exact Chrome and Firefox generations pass independently, along with extension, macOS, diagnostic Ubuntu and secrets. That evidence supports the coordinator only at its actual scope; it does not erase the Windows failure or complete INT-006. Later native-input source and the diagnostic test change require a fresh exact committed run.

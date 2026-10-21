@@ -227,6 +227,18 @@ replacement and bounded target readback. Cancel/abort/session retirement release
 staging. This is exact saved-byte evidence, not encryption, permanent possession,
 backup-history persistence or restore proof. See [native portable save v4](native-portable-save-v4.md).
 
+Native archive IPC version 5 adds non-mutating complete-ZIP input. Only Rust's
+user-invoked picker selects a source; no path crosses IPC. A session/selection
+bound read-only handle streams bounded chunks and rejects changed content using
+initial and transferred hashes; TypeScript independently checks complete bytes
+before the existing shared inspector/preview coordinator. Unknown request/new
+response fields and old versions fail closed. At most one read handle or save
+stage exists globally, with explicit release, expiry and session teardown.
+Input selection never authorizes commit or invokes legacy database restore.
+No new dependency, permission, archive format or encryption claim is introduced.
+Normal restore and the full privileged-surface/TOCTOU audit remain separate.
+See [native portable input v5](native-portable-read-v5.md).
+
 Normal export verification stores a separate bounded historical observation,
 not a path or a reusable filesystem capability. Strict version/vault/archive,
 creation/verification time, schema, length, digest and method checks precede

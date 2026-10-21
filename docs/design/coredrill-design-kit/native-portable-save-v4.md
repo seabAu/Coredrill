@@ -1,6 +1,6 @@
 # Native complete portable archive save — IPC version 4
 
-Status: implemented with full local and extension proof; exact hosted verification pending. INT-006 remains open.
+Status: implemented; see [checkpoint-specific verification](../../proof/native-portable-save-verification.md) for local/hosted evidence. INT-006 remains open. This document records the version-4 save introduction; [IPC version 5](native-portable-read-v5.md) subsequently adds non-mutating input and requires aligned frontend/Rust versions while retaining these save operation semantics.
 Date: 2026-10-21. Authority: ADR-0004, D-020/D-024/D-050/D-051 and INT-006.
 
 ## Purpose and ownership

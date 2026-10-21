@@ -50,6 +50,7 @@ fn invoke_line(
     vault: &NativeVaultService,
     line: &str,
     portable_save_target: Option<&PathBuf>,
+    portable_read_source: Option<&PathBuf>,
     cancel_next_save: &mut bool,
 ) -> ProbeEnvelope {
     let value = match serde_json::from_str::<Value>(line) {
@@ -105,6 +106,11 @@ fn invoke_line(
                 } else {
                     portable_save_target.cloned()
                 }
+            } else if matches!(
+                &request.operation,
+                NativeArchiveOperation::PortableReadBegin { .. }
+            ) {
+                portable_read_source.cloned()
             } else {
                 None
             };
@@ -133,7 +139,14 @@ fn main() {
         Err(_) => std::process::exit(2),
     });
     let vault = NativeVaultService::new(Arc::clone(&service), Arc::new(NativeSecretService::new()));
-    let portable_save_target = env::args_os().nth(2).map(PathBuf::from);
+    let portable_save_target = env::args_os()
+        .nth(2)
+        .filter(|value| !value.is_empty())
+        .map(PathBuf::from);
+    let portable_read_source = env::args_os()
+        .nth(3)
+        .filter(|value| !value.is_empty())
+        .map(PathBuf::from);
     let mut cancel_next_save = false;
 
     let stdin = io::stdin();
@@ -147,6 +160,7 @@ fn main() {
                     &vault,
                     &line,
                     portable_save_target.as_ref(),
+                    portable_read_source.as_ref(),
                     &mut cancel_next_save,
                 ),
             ),

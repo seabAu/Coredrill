@@ -266,6 +266,17 @@ WebView requests/results, and native failure cannot fall back to a browser save.
 No save implies permanent possession, current-vault freshness, a durable backup
 history entry or a tested restore. See [native portable save v4](native-portable-save-v4.md).
 
+Archive IPC version 5 adds user-selected complete-ZIP input without immediate
+restore. Rust owns the picker and a session-bound read handle, emits ordered
+1 MiB chunks within the existing 544 MiB ceiling and checks initial/transferred
+hashes; TypeScript assembles owned bytes and independently verifies them before
+shared inspection. A read handle and save stage are mutually exclusive across
+sessions. Release, completion, expiry and session retirement drop the handle.
+No path, generic file interface, new permission or browser fallback is added.
+Frontend/Rust versions advance together; file formats do not change. Normal
+restore preview/confirmation/commit composition remains required. See
+[native portable input v5](native-portable-read-v5.md).
+
 The subsequent INT-006 verification-observation composition records only an
 exact browser selected-copy hash match or correlated native readback. A strict
 bounded version-1 `app_setting` value retains at most 20 path-free observations
