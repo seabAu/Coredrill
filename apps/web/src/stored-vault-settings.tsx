@@ -7,6 +7,7 @@ import type {
 import { useEffect, useState } from "react";
 import type { CoredrillStorageSpikeApi } from "./main.js";
 import type { useStoredVaultExportSession } from "./stored-vault-export-session.js";
+import { StoredVaultExportHistory } from "./stored-vault-export-history.js";
 
 /** Actual runtime facts and typed deletion, never the catalog's invented preview. */
 export const StoredVaultSettings = ({
@@ -95,9 +96,29 @@ export const StoredVaultSettings = ({
           : "SQLite and retained document bytes use this browser origin's local storage."}
       </p>
       {exportSession.panel(busy)}
+      <StoredVaultExportHistory
+        api={api.vaultExport}
+        vaultId={observed?.vault.id ?? null}
+        blocked={busy || exportSession.busy}
+        revision={exportSession.recordRevision}
+        onReminder={(action) => {
+          const vaultId = observed?.vault.id;
+          if (vaultId === undefined)
+            return Promise.resolve({
+              ok: false,
+              error: {
+                code: "conflict",
+                retryable: false,
+                message: "Review the current vault before continuing.",
+              },
+            });
+          return exportSession.mutate(vaultId, () =>
+            api.vaultExport.updateReminder({ vaultId, action }),
+          );
+        }}
+      />
       <p>
-        Persistent verified-export history and restore controls remain unfinished. No sample backup
-        history or restore success is claimed.
+        Restore controls remain unfinished. Verification history is not a successful restore claim.
       </p>
       <button
         type="button"

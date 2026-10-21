@@ -1,9 +1,10 @@
 # Native complete portable archive save verification
 
 Date: 2026-10-21. Scope: INT-006 native save prerequisite and normal Settings
-composition under ADR-0004. Status: original full local, extension and final policy
-verification passed, but exact commit `6baab05` hosted verification failed. The
-isolated repair is in progress; its full and hosted proof remain. INT-006 is not complete.
+composition under ADR-0004. Status: exact repair commit `358b3fc` passes full
+local, isolated extension/final policy and all required hosted jobs in run
+`39572747129`. Original `6baab05` hosted failure remains recorded below.
+Later uncommitted history work needs independent proof. INT-006 is not complete.
 
 ## Required behavior
 
@@ -204,3 +205,23 @@ and policy, terminal `NATIVE_SAVE_REPAIR_FINAL_POLICY_EXIT=0`: 19 boundaries,
 51 dependencies / three toolchains / 16 targets / ten accessibility cases,
 520 npm / 498 Cargo licenses and secrets. Diff whitespace is clean. Only result
 documentation follows these checks; commit and exact hosted proof remain.
+
+## Exact hosted repair closure
+
+Exact `358b3fc7676164882348bcfa1ae2c7978ac0eac6` passes
+[Foundation CI run 39572747129](https://github.com/seabAu/Coredrill/actions/runs/39572747129).
+Every required job is successful: aggregate, both exact Chrome and Firefox
+lanes, extension transfer, Windows/macOS/diagnostic Ubuntu native secure-store
+and packaging, and full-history secrets. PR-only dependency review is skipped.
+The single retained watch ends `NATIVE_SAVE_REPAIR_HOSTED_EXIT=0`.
+
+Retained aggregate job `119130709061` output is
+`native-save-repair-hosted-aggregate-live.log` (the filename retains its original
+live-observation label; the downloaded job output is terminal). It explicitly
+passes 37 resilience cases, including isolated real-native tracking in 1.1
+minutes and documents/archive in 53.5 seconds under the unchanged 120-second
+per-test limit. All 11 browser-storage cases, 17 native-adapter cases with one
+Windows-only skip, 20 Rust core passes plus the separately exercised ignored
+secret case, secure-store/archive, audits and final Changesets complete.
+Local Windows separately covers all 18 native-adapter cases. No history or
+restore behavior is inferred from this repair's source or hosted success.

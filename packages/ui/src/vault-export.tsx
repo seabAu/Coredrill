@@ -15,6 +15,9 @@ export interface VaultExportPanelState {
   readonly metadata: Omit<PreparedVaultExportDto, "bytes" | "state"> | null;
   readonly error: string | null;
   readonly message: string;
+  readonly recordStatus: "not_recorded" | "recording" | "recorded" | "failed";
+  readonly recordError: string | null;
+  readonly recordRetryAvailable: boolean;
 }
 export interface VaultExportPanelProps {
   readonly state: VaultExportPanelState;
@@ -25,6 +28,7 @@ export interface VaultExportPanelProps {
   readonly onSave: () => void;
   readonly onVerify: (file: File) => void;
   readonly onDiscard: () => void;
+  readonly onRetryRecord: () => void;
 }
 /** Preparation, browser handoff and matched-copy evidence never share a success label. */
 export const VaultExportPanel = ({
@@ -36,6 +40,7 @@ export const VaultExportPanel = ({
   onSave,
   onVerify,
   onDiscard,
+  onRetryRecord,
 }: VaultExportPanelProps) => {
   const disabled = blocked || state.busy || state.ownerId === null;
   const metadata = state.metadata;
@@ -162,10 +167,25 @@ export const VaultExportPanel = ({
       ) : (
         <p role="alert">{state.error}</p>
       )}
+      {state.recordStatus === "recording" ? (
+        <p>Recording this exact byte verification in the local vault…</p>
+      ) : null}
+      {state.recordStatus === "recorded" ? (
+        <p>
+          Historical byte verification recorded in this vault. This does not prove a successful
+          restore or current file possession.
+        </p>
+      ) : null}
+      {state.recordError === null ? null : <p role="alert">{state.recordError}</p>}
+      {state.recordRetryAvailable ? (
+        <button type="button" className="cd-button" disabled={disabled} onClick={onRetryRecord}>
+          Retry recording verification only
+        </button>
+      ) : null}
       <p>
         Matching a selected copy is not a restore test or proof that the file will remain available.
-        No successful-backup timestamp is recorded by these staged controls. Restore controls remain
-        unfinished.
+        History records only exact byte verification, never preparation, download handoff or
+        cancellation. Restore controls remain unfinished.
       </p>
     </section>
   );

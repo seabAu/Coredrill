@@ -4675,6 +4675,28 @@ textarea {
   margin-inline-start: 0;
 }
 
+.cd-vault-export-history {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.cd-vault-export-history ol {
+  padding-inline-start: 1.25rem;
+}
+
+.cd-vault-export-history li {
+  margin-block: 1rem;
+}
+
+.cd-vault-export-history dd {
+  margin-inline-start: 0;
+}
+
+.cd-vault-export-history .cd-button {
+  max-width: 100%;
+  white-space: normal;
+}
+
 .cd-job-content-section-heading > div:first-child {
   min-width: 0;
 }

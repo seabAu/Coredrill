@@ -84,6 +84,15 @@ does not. The next reminder is due 30 days after success. `Remind me later`
 snoozes for seven days. `Turn off reminders` persists until the user turns them
 on again.
 
+The normal export integration records only exact selected-local-copy hash
+verification, not preparation or browser download handoff. Its version-1 bounded
+history and reminder update share one original-vault-bound SQLite transaction;
+native saved-byte readback uses the same observation model with a distinct
+method. Verified success preserves an explicitly disabled reminder. Record-only
+retry uses the original verified instant and cannot rewrite a later deliberate
+preference when the observation already exists. See
+[export verification observations](vault-export-verification-v1.md).
+
 The reminder is informational, never modal, and has no streak, countdown,
 application target, repeated urgency, penalty, or negative language. Its copy
 explicitly says that Coredrill keeps working if the user chooses to export

@@ -432,3 +432,4 @@ export { createJobSourceCaptureRepository } from "./job-source-capture-repositor
 export { createDatabaseNextActionCompletionPort } from "./next-action-completion-repository.js";
 export { createDatabaseNextActionDismissalPort } from "./next-action-dismissal-repository.js";
 export { createJobNextActionsRepository } from "./job-next-actions-repository.js";
+export { createSqliteVaultExportVerificationPort } from "./vault-export-verification.js";

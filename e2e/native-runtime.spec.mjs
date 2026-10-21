@@ -400,6 +400,18 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
       await page.reload();
       await expect(preparation).toContainText("Ready for export review");
       const vaultExportPreparation = await exerciseVaultExportPreparation(page, testInfo, 1);
+      await page.getByRole("link", { name: "Settings", exact: true }).click();
+      const verificationHistory = page.getByRole("region", {
+        name: "Verified export history",
+        exact: true,
+      });
+      await expect(verificationHistory).toContainText("No export verification observations");
+      await verificationHistory
+        .getByRole("button", { name: "Turn off export reminders", exact: true })
+        .click();
+      await expect(
+        verificationHistory.getByRole("button", { name: "Turn on export reminders", exact: true }),
+      ).toBeVisible();
       const vaultExportPanel = await exerciseNormalVaultPreparation(page, "native");
       await expect(vaultExportPanel).toContainText("Retained attachments");
       await page.setViewportSize({ width: 320, height: 900 });
@@ -428,6 +440,12 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
         timeout: 30_000,
       });
       await expect(stat(selectedArchive)).rejects.toMatchObject({ code: "ENOENT" });
+      expect(
+        await page.evaluate(
+          async () => (await globalThis.coredrillStorageSpike.exportPortable()).sha256,
+        ),
+      ).toBe(beforeSaveHash);
+      await expect(verificationHistory).toContainText("No export verification observations");
       await writeFile(selectedArchive, "synthetic prior target bytes");
       let fullArchiveDownloads = 0;
       page.on("download", () => {
@@ -441,6 +459,8 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
       const savedBytes = new Uint8Array(await readFile(selectedArchive));
       const savedSha256 = createHash("sha256").update(savedBytes).digest("hex");
       await expect(vaultExportPanel).toContainText(savedSha256);
+      await expect(vaultExportPanel).toContainText("Historical byte verification recorded");
+      await expect(verificationHistory).toContainText(savedSha256);
       const savedArchive = await inspectPortableArchiveV1({
         bytes: savedBytes,
         expectedSchemaVersion: 160,
@@ -452,14 +472,55 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
       await vaultExportPanel.screenshot({
         path: testInfo.outputPath("native-portable-save-320.png"),
       });
-      expect(
-        await page.evaluate(
-          async () => (await globalThis.coredrillStorageSpike.exportPortable()).sha256,
-        ),
-      ).toBe(beforeSaveHash);
+      const observed = await page.evaluate(
+        async (vaultId) =>
+          globalThis.coredrillStorageSpike.vaultExport.readVerifications({ vaultId }),
+        savedArchive.manifest.vault.id,
+      );
+      expect(observed).toMatchObject({
+        ok: true,
+        value: {
+          history: {
+            observations: [
+              {
+                archiveId: savedArchive.manifest.archiveId,
+                archiveCreatedAt: savedArchive.manifest.createdAt,
+                schemaVersion: 160,
+                byteLength: savedBytes.length,
+                sha256: savedSha256,
+                method: "native_readback",
+              },
+            ],
+          },
+          reminder: { enabled: false },
+        },
+      });
+      expect(observed.value.history.observations).toHaveLength(1);
       await vaultExportPanel
         .getByRole("button", { name: "Discard prepared archive", exact: true })
         .click();
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.reload();
+      await page.getByRole("link", { name: "Settings", exact: true }).click();
+      await expect(verificationHistory).toContainText(savedSha256);
+      await expect(verificationHistory.getByRole("listitem")).toHaveCount(1);
+      await expect(verificationHistory).toContainText("Native saved-byte readback");
+      await expect(
+        verificationHistory.getByRole("button", { name: "Turn on export reminders", exact: true }),
+      ).toBeVisible();
+      await page.setViewportSize({ width: 320, height: 900 });
+      expect(
+        (await new AxeBuilder({ page }).include('[aria-label="Verified export history"]').analyze())
+          .violations,
+      ).toEqual([]);
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+        ),
+      ).toBe(true);
+      await verificationHistory.screenshot({
+        path: testInfo.outputPath("native-export-verification-history-320.png"),
+      });
       Object.assign(journeyProof, {
         nativeRetainedDocxSha256: hash,
         vaultExportPreparation,
@@ -471,6 +532,8 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
         nativeSaveUsedBrowserDownload: false,
         nativeSaveNarrowReflow: true,
         nativeSaveAutomatedAxeViolations: 0,
+        nativeVerificationHistoryPersisted: true,
+        nativeDisabledReminderPreserved: true,
       });
     }
     const capabilities = await page.evaluate(() => ({

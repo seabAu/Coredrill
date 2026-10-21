@@ -164,7 +164,6 @@ export const updateBrowserExportReminderPreference = (
     case "record-success":
       return Object.freeze({
         ...current,
-        enabled: true,
         lastSuccessfulExportAtUnixMs: now,
         snoozedUntilUnixMs: null,
       });

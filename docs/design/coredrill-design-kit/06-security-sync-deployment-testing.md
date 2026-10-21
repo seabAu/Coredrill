@@ -216,6 +216,20 @@ replacement and bounded target readback. Cancel/abort/session retirement release
 staging. This is exact saved-byte evidence, not encryption, permanent possession,
 backup-history persistence or restore proof. See [native portable save v4](native-portable-save-v4.md).
 
+Normal export verification stores a separate bounded historical observation,
+not a path or a reusable filesystem capability. Strict version/vault/archive,
+creation/verification time, schema, length, digest and method checks precede
+SQLite access. The storage transaction rejects absent/wrong/multiple vaults and
+corrupt/foreign settings without resetting them. History/reminder writes roll
+back together; idempotent retry preserves later reminder choices. Recording
+cannot follow preparation, download handoff, cancellation, mismatch or uncertain
+save acknowledgement. Record failure leaves exact file verification acknowledged
+and permits only an explicit evidence-preserving record-only retry. Settings
+redacts private read/write errors and suppresses abandoned-view publication.
+The UI labels observations as historical and potentially imported from another
+device, never as current possession, encryption, freshness or tested recovery.
+See [version-1 observation contract](vault-export-verification-v1.md).
+
 `BKP-001` adds the adapter-neutral D-051 writer. It rechecks exported database
 length/schema/checksum, requires every recorded content-addressed attachment to
 resolve and match its length/hash, calculates JSON/CSV checksums, validates the

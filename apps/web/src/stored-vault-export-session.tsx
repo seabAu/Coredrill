@@ -25,6 +25,7 @@ export const useStoredVaultExportSession = (options: {
     const current = createVaultExportSession({
       ownerId,
       prepare: (input) => liveApi.current.vaultExport.prepare(input),
+      recordVerification: (input) => liveApi.current.vaultExport.recordVerification(input),
       save:
         options.api.runtimeKind === "native"
           ? async (artifact) => {
@@ -71,6 +72,10 @@ export const useStoredVaultExportSession = (options: {
           metadata: null,
           error: null,
           message: "No portable archive is prepared.",
+          recordStatus: "not_recorded",
+          recordError: null,
+          recordRetryAvailable: false,
+          recordRevision: 0,
         };
   const prepare = () => {
     const current = controller.current;
@@ -105,6 +110,7 @@ export const useStoredVaultExportSession = (options: {
   };
   return {
     busy: visible.busy,
+    recordRevision: visible.recordRevision,
     mutate,
     panel: (blocked: boolean) => (
       <div ref={container}>
@@ -126,6 +132,9 @@ export const useStoredVaultExportSession = (options: {
           }}
           onDiscard={() => {
             if (!blocked) scoped()?.discard();
+          }}
+          onRetryRecord={() => {
+            if (!blocked) void scoped()?.retryRecord();
           }}
         />
       </div>

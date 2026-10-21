@@ -266,6 +266,21 @@ WebView requests/results, and native failure cannot fall back to a browser save.
 No save implies permanent possession, current-vault freshness, a durable backup
 history entry or a tested restore. See [native portable save v4](native-portable-save-v4.md).
 
+The subsequent INT-006 verification-observation composition records only an
+exact browser selected-copy hash match or correlated native readback. A strict
+bounded version-1 `app_setting` value retains at most 20 path-free observations
+bound transactionally to the sole original viewed vault. History and reminder
+updates commit together; exact retry does not rewrite either setting or undo a
+later user preference. A disabled reminder stays disabled and success time never
+moves backward. The root-owned export session keeps file verification separate
+from record acknowledgement and retains immutable original evidence for an
+explicit record-only retry. Normal Settings reads canonical history after
+reload with loading/empty/error/refresh and guarded neutral reminder controls;
+late unmounted/superseded reads cannot publish. No new schema or permission is
+needed. History does not prove possession, restore or freshness, including when
+restored from another device. See [contract](vault-export-verification-v1.md) and
+[in-progress proof](../../proof/vault-export-verification-observations.md).
+
 The production root now composes a host-selected database/attachment runtime:
 Tauri uses native SQLite and native content-addressed bytes; browser-only
 capabilities reject there and native failure never falls back to OPFS. `/` is
