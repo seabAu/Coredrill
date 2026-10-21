@@ -1,4 +1,4 @@
-import { useId, useRef, useState, type CSSProperties } from "react";
+import { useId, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { restoreFocusAfterChange } from "./focus-restoration.js";
 
 export const PIPELINE_TABLE_COLUMN_IDS = Object.freeze([
@@ -307,22 +307,32 @@ export const PipelineTable = ({
   const headingId = useId();
   const savingEdit = useRef(false);
   const tableRoot = useRef<HTMLElement>(null);
+  const pendingFocusRestoration = useRef<(() => void) | null>(null);
+  useLayoutEffect(() => {
+    // A frame requested in the event handler can run before React commits the
+    // replacement Edit button and incorrectly select the table fallback.
+    const restore = pendingFocusRestoration.current;
+    pendingFocusRestoration.current = null;
+    restore?.();
+  });
   const restoreEditFocus = (
     row: PipelineTableJob,
     field: PipelineTableEditField,
     origin: Element | null = document.activeElement,
   ): void => {
-    restoreFocusAfterChange(origin, () => {
-      const label = `Edit ${COLUMN_LABELS[field].toLocaleLowerCase()} for ${row.title}`;
-      const targetRow = Array.from(
-        tableRoot.current?.querySelectorAll<HTMLTableRowElement>("tr[data-table-job]") ?? [],
-      ).find((item) => item.dataset["tableJob"] === row.id);
-      const buttons = targetRow?.querySelectorAll<HTMLButtonElement>("button");
-      const target = Array.from(buttons ?? []).find(
-        (button) => button.getAttribute("aria-label") === label,
-      );
-      return target ?? tableRoot.current;
-    });
+    pendingFocusRestoration.current = () => {
+      restoreFocusAfterChange(origin, () => {
+        const label = `Edit ${COLUMN_LABELS[field].toLocaleLowerCase()} for ${row.title}`;
+        const targetRow = Array.from(
+          tableRoot.current?.querySelectorAll<HTMLTableRowElement>("tr[data-table-job]") ?? [],
+        ).find((item) => item.dataset["tableJob"] === row.id);
+        const buttons = targetRow?.querySelectorAll<HTMLButtonElement>("button");
+        const target = Array.from(buttons ?? []).find(
+          (button) => button.getAttribute("aria-label") === label,
+        );
+        return target ?? tableRoot.current;
+      });
+    };
   };
   const [visibleStart, setVisibleStart] = useState(0);
   const [editor, setEditor] = useState<EditorState | null>(null);

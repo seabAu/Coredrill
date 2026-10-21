@@ -505,7 +505,44 @@ test("normal user-created stages support durable Board/Table status changes and 
   await expect(changes.getByRole("status")).toContainText("Restored Synthetic movable role");
   await expect(row.getByRole("note")).toContainText("changed since editing began");
   await expect(table.getByRole("button", { name: "Save", exact: true })).toBeDisabled();
-  await table.getByRole("button", { name: "Cancel", exact: true }).click();
+  // Observe scheduling, without delaying frames or moving focus: a focus restorer
+  // must not resolve its fallback before React commits the replacement Edit control.
+  await page.evaluate(() => {
+    const original = globalThis.requestAnimationFrame;
+    const witness = { original, editPresentAtSchedule: [] };
+    globalThis.coredrillTableFocusCommitWitness = witness;
+    globalThis.requestAnimationFrame = (callback) => {
+      witness.editPresentAtSchedule.push(
+        document.querySelector(
+          '[data-testid="pipeline-table"] button[aria-label="Edit status for Synthetic movable role"]',
+        ) !== null,
+      );
+      return original.call(globalThis, callback);
+    };
+  });
+  let focusCommitWitness;
+  try {
+    await table.getByRole("button", { name: "Cancel", exact: true }).click();
+    await expectOwnedEditFocus(
+      table.getByRole("button", { name: "Edit status for Synthetic movable role", exact: true }),
+    );
+  } finally {
+    focusCommitWitness = await page.evaluate(() => {
+      const witness = globalThis.coredrillTableFocusCommitWitness;
+      globalThis.requestAnimationFrame = witness.original;
+      delete globalThis.coredrillTableFocusCommitWitness;
+      return witness.editPresentAtSchedule;
+    });
+  }
+  expect(focusCommitWitness.length).toBeGreaterThan(0);
+  expect(focusCommitWitness.every(Boolean)).toBe(true);
+  console.info(
+    "TABLE_FOCUS_COMMIT_PROOF",
+    JSON.stringify({
+      frames: focusCommitWitness.length,
+      replacementCommittedBeforeSchedule: true,
+    }),
+  );
   await expectOwnedEditFocus(
     table.getByRole("button", { name: "Edit status for Synthetic movable role", exact: true }),
   );

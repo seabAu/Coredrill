@@ -1,5 +1,7 @@
 # Normal next-action integration verification (in progress)
 
+Current status (2026-10-21): ADR-0009 / D-056 is now explicitly owner-Accepted. The normal form, imported strict converter, task-kind feedback/undo, owned scheduled/unscheduled lifetime and offline browser/native readback are implemented; [current scheduling proof and retained hosted follow-up](accepted-civil-time-scheduling-verification.md) supersede the unfinished/proposed snapshots below. Exact `dfe36a8` CI fails two independently diagnosed native-test timing/Table focus checks, so INT-004 remains unchecked pending repaired current-source and exact hosted proof. Earlier proposal/dependency and missing-form statements below describe their historical checkpoints, not a request to accept ADR-0009 again.
+
 Scope: `INT-004`, beginning with transactional prerequisites. This is not proof of complete normal UI integration or task lifecycle support.
 
 ## Requirements and observed regressions

@@ -37,6 +37,8 @@ import {
 } from "@coredrill/storage-core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { JsonLineFramer } from "./helpers/json-line-framer.js";
+
 import {
   NativeStorageProtocolError,
   NATIVE_ARCHIVE_PROTOCOL_VERSION,
@@ -145,7 +147,7 @@ const APPLIED_AT = "2026-08-24T12:00:00.000Z";
 class ProbeTransport implements NativeStorageTransport, NativeArchiveTransport {
   private readonly child: ChildProcessWithoutNullStreams;
   private readonly pending: PendingInvocation[] = [];
-  private stdoutBuffer = "";
+  private readonly stdoutFramer = new JsonLineFramer();
   private closed = false;
 
   public constructor(
@@ -208,11 +210,7 @@ class ProbeTransport implements NativeStorageTransport, NativeArchiveTransport {
   }
 
   private consumeOutput(chunk: string): void {
-    this.stdoutBuffer += chunk;
-    let newline = this.stdoutBuffer.indexOf("\n");
-    while (newline >= 0) {
-      const line = this.stdoutBuffer.slice(0, newline);
-      this.stdoutBuffer = this.stdoutBuffer.slice(newline + 1);
+    this.stdoutFramer.consume(chunk, (line) => {
       const pending = this.pending.shift();
       if (pending !== undefined) {
         try {
@@ -223,8 +221,7 @@ class ProbeTransport implements NativeStorageTransport, NativeArchiveTransport {
           pending.reject(this.transportClosed());
         }
       }
-      newline = this.stdoutBuffer.indexOf("\n");
-    }
+    });
   }
 
   private rejectPending(): void {
@@ -311,55 +308,83 @@ afterAll(async () => {
 
 describe("native SQLite repository and migration contracts", () => {
   it("selects a complete archive through actual Rust without restoring or changing the target", async () => {
+    const timed = async <T>(stage: string, work: () => Promise<T>): Promise<T> => {
+      const startedAt = performance.now();
+      try {
+        return await work();
+      } finally {
+        console.info(
+          "NATIVE_PORTABLE_READ_STAGE",
+          JSON.stringify({
+            stage,
+            elapsedMs: Math.round(performance.now() - startedAt),
+          }),
+        );
+      }
+    };
     const archive = new Uint8Array(
-      await readFile(
-        path.join(
-          repositoryRoot,
-          "fixtures",
-          "recovery",
-          "phase-1-vault-schema-160-v1.coredrill.zip",
+      await timed("fixture_read", () =>
+        readFile(
+          path.join(
+            repositoryRoot,
+            "fixtures",
+            "recovery",
+            "phase-1-vault-schema-160-v1.coredrill.zip",
+          ),
         ),
       ),
     );
-    await writeFile(transport.portableArchiveSelectionPath(), archive);
-    const database = await openNativeSqliteDatabase({
-      databaseName: nextDatabaseName(),
-      transport,
-    });
+    await timed("fixture_write", () =>
+      writeFile(transport.portableArchiveSelectionPath(), archive),
+    );
+    const database = await timed("open", () =>
+      openNativeSqliteDatabase({
+        databaseName: nextDatabaseName(),
+        transport,
+      }),
+    );
     try {
-      await applySqlMigrations(database, migrations(), APPLIED_AT);
-      const before = await database.exportPortable();
-      const selected = await database.selectPortableArchive();
+      await timed("migrations", () => applySqlMigrations(database, migrations(), APPLIED_AT));
+      const before = await timed("export_before", () => database.exportPortable());
+      const selected = await timed("select_first", () => database.selectPortableArchive());
       if (selected.status !== "selected") throw new Error("Expected selected portable archive");
       expect(Buffer.from(selected.bytes).equals(Buffer.from(archive))).toBe(true);
       expect(selected.sha256).toBe(createHash("sha256").update(archive).digest("hex"));
-      const inspected = await inspectPortableArchiveV1({
-        bytes: selected.bytes,
-        expectedSchemaVersion: 160,
-        expectedArchiveSha256: selected.sha256,
-      });
-      expect(inspected.attachments.length).toBeGreaterThan(0);
-      const preview = await createPortableArchiveRestorePreviewV1({
-        archiveBytes: selected.bytes,
-        expectedSchemaVersion: 160,
-        expectedArchiveSha256: selected.sha256,
-        port: createNativePortableArchiveRestorePortV1({
-          database,
-          expectedVaultId: inspected.manifest.vault.id,
+      const inspected = await timed("inspect", () =>
+        inspectPortableArchiveV1({
+          bytes: selected.bytes,
+          expectedSchemaVersion: 160,
+          expectedArchiveSha256: selected.sha256,
         }),
-      });
+      );
+      expect(inspected.attachments.length).toBeGreaterThan(0);
+      const preview = await timed("preview", () =>
+        createPortableArchiveRestorePreviewV1({
+          archiveBytes: selected.bytes,
+          expectedSchemaVersion: 160,
+          expectedArchiveSha256: selected.sha256,
+          port: createNativePortableArchiveRestorePortV1({
+            database,
+            expectedVaultId: inspected.manifest.vault.id,
+          }),
+        }),
+      );
       expect(preview).toMatchObject({ target: { state: "empty" }, requiredConfirmation: "commit" });
       expect(
-        Buffer.from((await database.exportPortable()).bytes).equals(Buffer.from(before.bytes)),
+        Buffer.from(
+          (await timed("export_after_preview", () => database.exportPortable())).bytes,
+        ).equals(Buffer.from(before.bytes)),
       ).toBe(true);
       expect(discardPortableArchiveRestorePreviewV1(preview)).toBe(true);
-      const second = await database.selectPortableArchive();
+      const second = await timed("select_second", () => database.selectPortableArchive());
       expect(second).toMatchObject({ status: "selected", sha256: selected.sha256 });
       expect(
-        Buffer.from((await database.exportPortable()).bytes).equals(Buffer.from(before.bytes)),
+        Buffer.from(
+          (await timed("export_after_second", () => database.exportPortable())).bytes,
+        ).equals(Buffer.from(before.bytes)),
       ).toBe(true);
     } finally {
-      await database.delete();
+      await timed("cleanup", () => database.delete());
     }
   });
 
