@@ -19,6 +19,7 @@ import { exerciseNormalTaskEntry } from "./task-entry-journey.mjs";
 import { exerciseScheduledTaskEntry } from "./scheduled-task-entry-journey.mjs";
 import { exerciseTaskEntryLifetime } from "./task-entry-lifetime.mjs";
 import { exerciseCompanyDirectory } from "./company-directory-journey.mjs";
+import { exerciseCompanyWorkspace } from "./company-workspace-journey.mjs";
 import {
   createNativeRestoreOperationRecorder,
   observeNativeRestoreReview,
@@ -216,6 +217,7 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
     if (journey === "network") {
       Object.assign(journeyProof, {
         companyDirectory: await exerciseCompanyDirectory(page, testInfo, "Synthetic Runtime Lab"),
+        companyWorkspace: await exerciseCompanyWorkspace(page, testInfo),
       });
     } else if (journey === "tracking") {
       await page.getByRole("button", { name: "Add", exact: true }).click();
@@ -827,7 +829,7 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
 };
 
 for (const [journey, description] of [
-  ["network", "stored company directory and owned read recovery"],
+  ["network", "stored company directory, creation, notes and owned recovery"],
   ["tracking", "capture, tasks, status, source comparison and notes"],
   ["documents", "documents and complete archive cancellation/save"],
 ]) {

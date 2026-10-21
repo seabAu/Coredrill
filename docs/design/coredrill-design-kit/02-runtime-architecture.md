@@ -565,6 +565,10 @@ Initially, Coredrill owns `prompt-engine` in a clean package and can import/expo
 - Provider keys, pairing secrets, sync keys, and connector credentials are never public build variables.
 - Feature flags default off for networked connectors, hosted AI, sync, telemetry, and experimental extractors.
 
+### Normal company runtime and owned UI composition (2026-10-21)
+
+Normal Companies now composes the selected-runtime workspace port, with one explicit draft-owned creation ID and copied first-attempt context, plus viewed-version-bound notes commands. Drafts live above destination/responsive replacements; SQLite alone owns saved facts. Writes pass the existing captured-vault mutation exclusion, and restore's reload-required/deletion lifetimes prevent stale mutation ownership. Uncertain acknowledgement checks read the known company identity without another write; an acknowledged save and subsequent canonical readback remain separate. Directory summaries do not preload notes or relationships. Current browser/actual-Rust normal journeys and remaining full-source/hosted requirements are tracked in [normal UI proof](../../proof/normal-company-workspace-ui-verification.md); this does not complete full contact/relationship/interaction integration.
+
 ### Selected-company persistence follow-through (2026-10-21)
 
 The additive version-1 company workspace boundary reads selected scalar details separately from bounded directory summaries. Explicit manual creation and notes-only edits check the original viewed vault against the sole physical root in the same SQLite transaction; notes also require the viewed row version, active archive state and monotonic audit instant. Exact acknowledgement is validated before commit, and notes edits preserve unrelated company facts. Shared repository inventory v12 adds these cases for all adapters without a durable schema change. This is persistence work, not proof of normal UI/draft composition or full INT-007; see [current evidence and remaining requirements](../../proof/company-workspace-verification.md).

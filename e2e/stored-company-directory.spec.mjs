@@ -4,7 +4,7 @@ import { exerciseCompanyDirectory } from "./company-directory-journey.mjs";
 
 test("normal company directory paging reads 26 UI-created companies without totals or skipped retry cursors", async ({
   page,
-}) => {
+}, testInfo) => {
   test.setTimeout(120_000);
   await page.goto("/");
   await initializeDefaultWorkspace(page);
@@ -63,6 +63,24 @@ test("normal company directory paging reads 26 UI-created companies without tota
   await expect(network.getByRole("alert")).toContainText("could not be read");
   await expect(list.getByRole("listitem")).toHaveCount(25);
   await expect(network).not.toContainText("PRIVATE_NEXT_PAGE_PATH");
+  await page.evaluate(() => {
+    const original = globalThis.requestAnimationFrame.bind(globalThis);
+    const observations = [];
+    globalThis.coredrillCompanyPagingFocus = observations;
+    globalThis.requestAnimationFrame = (callback) => {
+      const first = globalThis.document.querySelector('[data-company-read="first"]');
+      const observation = {
+        firstEnabledAtSchedule: first !== null && !first.disabled,
+        firstEnabledAtCallback: null,
+      };
+      observations.push(observation);
+      return original((time) => {
+        const target = globalThis.document.querySelector('[data-company-read="first"]');
+        observation.firstEnabledAtCallback = target !== null && !target.disabled;
+        callback(time);
+      });
+    };
+  });
   await network.getByRole("button", { name: "Retry company page", exact: true }).click();
   await expect(list.getByRole("listitem")).toHaveCount(1);
   await expect(list.getByRole("heading")).toHaveText("Synthetic directory page company 00");
@@ -79,7 +97,18 @@ test("normal company directory paging reads 26 UI-created companies without tota
     }),
   ).toBe(true);
   const first = network.getByRole("button", { name: "Load first company page", exact: true });
+  const focusObservation = await page.evaluate(() => ({
+    frames: globalThis.coredrillCompanyPagingFocus,
+    firstActive: globalThis.document.activeElement?.matches('[data-company-read="first"]') ?? false,
+    documentHasFocus: globalThis.document.hasFocus(),
+  }));
+  await testInfo.attach("company-paging-focus-commit", {
+    body: JSON.stringify(focusObservation),
+    contentType: "application/json",
+  });
   await expect(first).toBeFocused();
+  expect(focusObservation.frames.length).toBeGreaterThan(0);
+  expect(focusObservation.frames.every((frame) => frame.firstEnabledAtSchedule)).toBe(true);
   await page.keyboard.press("Enter");
   await expect(list.getByRole("listitem")).toHaveCount(25);
 });

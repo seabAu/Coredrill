@@ -529,7 +529,7 @@
   outline-offset: -4px;
 }
 
-.cd-stored-companies :where(button, input):focus-visible {
+.cd-stored-companies :where(button, input, textarea):focus-visible {
   outline: 3px solid var(--color-focus);
   outline-offset: 3px;
 }
@@ -561,5 +561,52 @@
 }
 
 .cd-stored-companies__list dd {
+  margin-inline-start: 0;
+}
+
+.cd-company-editor,
+.cd-company-details {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  margin-block: 1rem;
+  min-width: 0;
+  padding: 1rem;
+}
+
+.cd-company-editor fieldset {
+  border: 1px solid var(--color-border);
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  min-inline-size: 0;
+}
+
+.cd-company-editor__field {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.cd-company-editor input,
+.cd-company-editor textarea {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 0.25rem;
+  box-sizing: border-box;
+  color: var(--color-text);
+  font: inherit;
+  min-height: 2.75rem;
+  min-width: 0;
+  padding: 0.5rem;
+  width: 100%;
+}
+
+.cd-company-literal,
+.cd-company-details dd {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.cd-company-details dd {
   margin-inline-start: 0;
 }

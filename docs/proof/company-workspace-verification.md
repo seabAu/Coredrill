@@ -1,5 +1,19 @@
 # Normal company details, creation and notes — INT-007 follow-through
 
+## Exact hosted prerequisite closure — 2026-10-21
+
+Exact **`fed15d72f00a8f3bc5252e9daedeb0974b0fd9d8`** passes [Foundation CI39655254726](https://github.com/seabAu/Coredrill/actions/runs/39655254726): workflow and every required job are terminal success; PR-only dependency review is skipped. Original watch79422 is consumed with durable **`COMPANY_WORKSPACE_HOSTED_EXIT=0`**, not live. Actual aggregate and Windows logs are retained as `company-workspace-hosted-aggregate.log` / `company-workspace-hosted-windows.log`; the exact Firefox153/154 logs were already inspected.
+
+Aggregate executes 192 files /2,123 unit passes plus one platform skip (2,124 total), coverage, all54 resilience cases, browser/recovery/policy/audit checks and 18 native passes plus one platform skip; Windows independently passes all19 native tests and its package checks. Actual native UI restore-stage observations in the resilience section (not the earlier mocked unit-helper records) report same-vault review at about4,300.1ms and empty-target review at about4,318.1ms, under unchanged assertions. These are actual hosted observations, not proof of the prior uninstrumented timeout's cause or reference-hardware acceptance. The old run39647494483 remains failed.
+
+This closes only the selected-company/create/notes persistence prerequisite and scoped diagnostic follow-through. It does not prove the subsequent uncommitted normal company runtime/forms or complete full INT-007. Dependency pins, durable schema160, permissions and Accepted decisions remain unchanged. The full goal and independent manual/release gates remain open.
+
+## Pushed prerequisite / exact hosted wait
+
+Completed exact Firefox153/154 jobs `119413687550` / `119413686485` pass. Actual inspected output is retained in `company-workspace-hosted-firefox153.log` / `company-workspace-hosted-firefox154.log`: reviewed repository version12 /29 cases / suite `phase-1-repository-contracts-v12`, schema160 and the unchanged full runner predicates/completed-case equality. Extension, macOS and secrets also report success at this observation; other required jobs and the aggregate remain live. This is partial exact-SHA evidence, not whole-run success or proof of newer local runtime composition.
+
+Exact **`fed15d72f00a8f3bc5252e9daedeb0974b0fd9d8`** is committed and pushed normally to origin/main from a clean tree (20 scoped files, 1,559 insertions /39 deletions). [Foundation CI39655254726](https://github.com/seabAu/Coredrill/actions/runs/39655254726) is confirmed live for that exact SHA. One retained **watch79422** writes `test-results/company-workspace-hosted-watch.log` and must report `COMPANY_WORKSPACE_HOSTED_EXIT`. Resume it on observation timeout; never start a duplicate watch or supersede a live run with a new push. All local verification handles are consumed; no hosted success is inferred, and old failed run39647494483 remains failed. Later local UI sources require independent proof. The full INT-007/INT-008 and overall goal remain open.
+
 ## Complete final-source local gate — 2026-10-21
 
 ### Final checkpoint before commit

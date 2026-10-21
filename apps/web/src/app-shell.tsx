@@ -154,6 +154,7 @@ import { useStoredJobTimeline } from "./stored-job-timeline.js";
 import { useStoredJobNote, type StoredNoteAcknowledgement } from "./stored-job-note.js";
 import { useStoredJobDetails } from "./stored-job-details.js";
 import { StoredCompanyDirectoryView } from "./stored-company-directory-view.js";
+import { useStoredCompanyEditor } from "./stored-company-workspace-view.js";
 import { useStoredWorkspaceStatus } from "./stored-workspace-status.js";
 import { useStoredWorkspaceNextAction } from "./stored-workspace-next-action.js";
 import { useStoredJobTasks } from "./stored-job-tasks.js";
@@ -1900,7 +1901,8 @@ const AppShellCatalog = ({
   const [networkSelectedCompanyId, setNetworkSelectedCompanyId] = useState<string | null>(
     initialLocation.kind === "network" &&
       initialLocation.tab === "companies" &&
-      NETWORK_MODEL.companies.some(({ id }) => id === initialLocation.recordId)
+      (!referenceCatalog ||
+        NETWORK_MODEL.companies.some(({ id }) => id === initialLocation.recordId))
       ? initialLocation.recordId
       : null,
   );
@@ -1911,6 +1913,7 @@ const AppShellCatalog = ({
       ? initialLocation.recordId
       : null,
   );
+  const [companyRevision, setCompanyRevision] = useState(0);
   const [pipelineFilters, setPipelineFilters] = useState<readonly PipelineFilterChip[]>(
     initialPipelineSnapshot?.filters ?? (referenceCatalog ? INITIAL_PIPELINE_FILTERS : []),
   );
@@ -2106,6 +2109,32 @@ const AppShellCatalog = ({
   useEffect(() => {
     navigationHistory.initialize();
   }, [navigationHistory]);
+  const selectStoredCompany = (id: string | null) => {
+    if (
+      networkSelectedCompanyId === id &&
+      networkTab === "companies" &&
+      activeDestination === "network"
+    )
+      return;
+    navigationHistory.pushState(null, "", networkUrl("companies", id ?? undefined));
+    setNetworkSelectedCompanyId(id);
+    setNetworkTab("companies");
+    setActiveDestination("network");
+  };
+  const companyEditor = useStoredCompanyEditor({
+    api: globalThis.coredrillStorageSpike.companyWorkspace,
+    vaultId: vaultSession?.vault.id ?? null,
+    selectedCompanyId: networkSelectedCompanyId,
+    enabled: !referenceCatalog && vaultDeletionStatus === null,
+    visible: activeDestination === "network" && networkTab === "companies",
+    mutationBlocked: vaultExportSession.busy,
+    needsReopen: vaultRestoreSession.needsReopen,
+    exclusive: (vaultId, work) => vaultExportSession.mutate(vaultId, work),
+    onSelect: selectStoredCompany,
+    onSaved: () => {
+      setCompanyRevision((value) => value + 1);
+    },
+  });
   const resetDocumentEditor = useCallback(() => {
     documentLoadGeneration.current += 1;
     setDocumentEditor(null);
@@ -3847,7 +3876,16 @@ const AppShellCatalog = ({
 
   const changeNetworkTab = (tab: NetworkTabId): void => {
     if (tab === networkTab) return;
-    navigationHistory.pushState(null, "", networkUrl(tab));
+    navigationHistory.pushState(
+      null,
+      "",
+      networkUrl(
+        tab,
+        !referenceCatalog && tab === "companies"
+          ? (networkSelectedCompanyId ?? undefined)
+          : undefined,
+      ),
+    );
     setNetworkTab(tab);
     setLastActivity(`Opened local Network view: ${tab}.`);
   };
@@ -4000,7 +4038,8 @@ const AppShellCatalog = ({
           setActiveDestination("network");
           setNetworkSelectedCompanyId(
             location.tab === "companies" &&
-              NETWORK_MODEL.companies.some(({ id }) => id === location.recordId)
+              (!referenceCatalog ||
+                NETWORK_MODEL.companies.some(({ id }) => id === location.recordId))
               ? location.recordId
               : null,
           );
@@ -4979,6 +5018,11 @@ const AppShellCatalog = ({
         ) : activeDestination === "network" && !referenceCatalog ? (
           <StoredCompanyDirectoryView
             api={globalThis.coredrillStorageSpike.companyDirectory}
+            workspaceApi={globalThis.coredrillStorageSpike.companyWorkspace}
+            editor={companyEditor}
+            revision={companyRevision}
+            mutationBlocked={vaultExportSession.busy}
+            onSelectCompany={selectStoredCompany}
             vaultId={vaultSession?.vault.id ?? null}
             activeTab={networkTab}
             onTabChange={changeNetworkTab}

@@ -226,6 +226,10 @@ import {
   createStoredCompanyDirectoryApi,
   type StoredCompanyDirectoryApi,
 } from "./stored-company-directory.js";
+import {
+  createStoredCompanyWorkspaceApi,
+  type StoredCompanyWorkspaceApi,
+} from "./stored-company-workspace.js";
 import { createStoredJobNoteApi, type StoredJobNoteApi } from "./stored-job-notes.js";
 import { createStoredNextActionApi, type StoredNextActionApi } from "./stored-next-actions.js";
 import { createStoredVaultExportApi, type StoredVaultExportApi } from "./stored-vault-export.js";
@@ -508,6 +512,7 @@ export interface CoredrillStorageSpikeApi {
   readonly jobComparison: StoredJobComparisonApi;
   readonly pipeline: StoredPipelineApi;
   readonly companyDirectory: StoredCompanyDirectoryApi;
+  readonly companyWorkspace: StoredCompanyWorkspaceApi;
   readonly pipelineMutations: StoredPipelineMutationApi;
   readonly jobNotes: StoredJobNoteApi;
   readonly nextActions: StoredNextActionApi;
@@ -3340,6 +3345,15 @@ const api: CoredrillStorageSpikeApi = {
     await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
     return client;
   }, careerProfileOperationContext),
+  companyWorkspace: createStoredCompanyWorkspaceApi(
+    async () => {
+      const client = await getDatabase();
+      await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
+      return client;
+    },
+    careerProfileOperationContext,
+    () => generateEntityId("company"),
+  ),
   jobNotes: createStoredJobNoteApi(
     async () => {
       const client = await getDatabase();
