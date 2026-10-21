@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "inventoryId": "JW-DI-001",
-  "version": "1.28.2",
-  "reviewedAt": "2026-10-20T03:55:27Z",
+  "version": "1.29.0",
+  "reviewedAt": "2026-10-21T02:45:49Z",
   "scope": {
     "included": [
       "Pinned Node.js, pnpm, and Rust foundation toolchains",
@@ -17,7 +17,7 @@
   },
   "lockfile": {
     "path": "pnpm-lock.yaml",
-    "sha256": "f8088f74d198baab637599b3c590aca3970f0db1e8f69bf11eebcee77e1fc496"
+    "sha256": "5d0075b47fa68055a2fb09b27c3fa1df73ecd3545a7633e39b44727e82289269"
   },
   "toolchains": [
     {
@@ -263,15 +263,15 @@
       "manifest": "apps/web/package.json",
       "dependencyType": "devDependencies",
       "name": "vite",
-      "version": "8.2.2",
-      "upstreamLatest": "8.2.2",
-      "selectionStatus": "current",
+      "version": "8.2.4",
+      "upstreamLatest": "8.3.4",
+      "selectionStatus": "current-selected-channel",
       "license": "MIT",
       "maintainers": ["yyx990803", "vitebot"],
       "repository": "https://github.com/vitejs/vite",
-      "metadataSource": "https://registry.npmjs.org/vite/8.2.2",
+      "metadataSource": "https://registry.npmjs.org/vite/8.2.4",
       "knownAdvisories": [],
-      "selectionNote": "Current Vite 8.2.2 was published at 2026-08-20T04:14:39.107Z and is deliberately selected inside the 60-day review window. The prior 8.1.0 graph retained esbuild 0.27.7 after GHSA-g7r4-m6w7-qqqr; 8.2.2 removes that dependency and the complete reviewed lockfile audit is clean."
+      "selectionNote": "Select the patched existing 8.2 maintenance line: official October 6 release 8.2.4 fixes bundled launch-editor advisories GHSA-587h-7wmj-h5pm, GHSA-698v-4r3x-3vcv and GHSA-r825-w8mm-5pxw. Node ^20.19.0 || >=22.12.0 includes pinned Node 24.19.0; MIT license is unchanged. Registry latest is 8.3.4, not silently adopted during bounded security maintenance. All locked Vite users resolve 8.2.4; standalone launch-editor resolves 2.14.2. Frozen scripts-disabled install, zero-finding audit and existing license policies pass. Full regression/hosted proof is recorded separately."
     },
     {
       "manifest": "apps/web/package.json",
@@ -1077,10 +1077,10 @@
   "advisoryReview": {
     "command": "pnpm audit --json",
     "source": "https://pnpm.io/cli/audit",
-    "reviewedAt": "2026-10-20T03:55:27Z",
-    "lockfileSha256": "f8088f74d198baab637599b3c590aca3970f0db1e8f69bf11eebcee77e1fc496",
+    "reviewedAt": "2026-10-21T02:45:49Z",
+    "lockfileSha256": "5d0075b47fa68055a2fb09b27c3fa1df73ecd3545a7633e39b44727e82289269",
     "resolvedDependencyCount": 935,
-    "maintenanceNote": "Six newly observed advisories are removed without audit exclusions. Exact reviewed overrides select shell-quote 1.11.0, source-map-js 1.2.2, prosemirror-view 1.42.3, postcss-selector-parser 7.1.6, and http-cache-semantics 4.3.0. Mammoth 1.12.1 alone receives argparse 2.0.1, retaining its v1 compatibility API while eliminating unpatched sprintf-js. The accepted direct dependencies and Tiptap 3.30.5 pins remain unchanged. See dependency-security-maintenance-2026-10-19.md for primary sources and compatibility proof.",
+    "maintenanceNote": "The October 20 audit adds six findings for three launch-editor advisories affecting both standalone launch-editor 2.14.1 and Vite 8.2.2's bundled copy. Reviewed existing-line patches select Vite 8.2.4 and launch-editor 2.14.2 with no audit exclusions. Scripts-disabled frozen install and fresh audit report zero findings across 935 resolutions; license policy passes. Earlier October 19 overrides remain unchanged, as do Tiptap 3.30.5 and every accepted architecture/library choice. See dependency-security-maintenance-2026-10-20.md for official sources, integrity and pending/full verification evidence.",
     "optionalDependencyCount": 108,
     "vulnerabilities": {
       "info": 0,
@@ -1092,11 +1092,11 @@
   },
   "licenseReview": {
     "command": "pnpm check:licenses",
-    "reviewedAt": "2026-10-20T03:55:27Z",
-    "lockfileSha256": "f8088f74d198baab637599b3c590aca3970f0db1e8f69bf11eebcee77e1fc496",
+    "reviewedAt": "2026-10-21T02:45:49Z",
+    "lockfileSha256": "5d0075b47fa68055a2fb09b27c3fa1df73ecd3545a7633e39b44727e82289269",
     "resolvedPackageRecords": 520,
     "result": "pass",
-    "note": "License records and advisory dependency counts use different tool scopes and are not expected to match. The current graph contains 935 external resolutions and 520 license records. The accepted direct dependencies, restricted Tiptap 3.30.5 editor, Mammoth 1.12.1 importer, local SQLite storage, and offline Workbox shell remain unchanged. The 2026-10-19 security maintenance replaces five affected transitive resolutions and scopes argparse 2.0.1 to Mammoth, removing sprintf-js. All selected licenses pass the existing policy, and all selected versions are more than 24 hours old. No new external direct dependency is added. Historical selection details remain in the earlier proof records and Git history."
+    "note": "The patched graph retains 935 external resolutions and 520 npm license records; Cargo retains 498 license records. Vite 8.2.4 and launch-editor 2.14.2 are MIT and more than 24 hours old. Existing October 19 overrides, restricted Tiptap 3.30.5 editor, Mammoth importer, SQLite storage and offline Workbox boundary remain unchanged. No external direct dependency is added. Earlier selection history remains in proof records and Git history."
   },
   "maintenanceWatch": [
     {
@@ -1136,8 +1136,8 @@
     },
     {
       "dependency": "vite",
-      "reason": "Current 8.2.2 is intentionally selected inside the 60-day window because the prior 8.1.0 graph retained advisory-affected esbuild 0.27.7. Recheck the current graph and audit with WXT.",
-      "nextReviewOn": "2026-08-31"
+      "reason": "Selected 8.2 maintenance patch 8.2.4 fixes bundled launch-editor advisories; current upstream latest 8.3.4 is recorded but not silently substituted during bounded security maintenance. Recheck the complete WXT/PWA/Vitest graph and advisory review.",
+      "nextReviewOn": "2026-10-28"
     },
     {
       "dependency": "vite-plugin-pwa",

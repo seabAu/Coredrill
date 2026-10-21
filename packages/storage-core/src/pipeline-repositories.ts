@@ -1310,7 +1310,21 @@ export const completeNextAction = async (
   database: DatabasePort,
   id: EntityId<"next-action">,
   completedAt: Instant,
+  expected?: Readonly<{
+    jobId: EntityId<"job">;
+    jobRowVersion: number;
+    nextActionRowVersion: number;
+  }>,
 ): Promise<void> => {
+  // Copy caller intent before awaiting the transaction; never rebase it to a fresh read.
+  const viewed =
+    expected === undefined
+      ? undefined
+      : Object.freeze({
+          jobId: entityId("job", expected.jobId),
+          jobRowVersion: rowVersion(expected.jobRowVersion),
+          nextActionRowVersion: rowVersion(expected.nextActionRowVersion),
+        });
   await database.transaction(async (transaction) => {
     const repositories = createPipelineRepositories(transaction);
     const current = await repositories.nextActions.findById(id);
@@ -1320,13 +1334,29 @@ export const completeNextAction = async (
     if (current.state !== "pending") {
       throw new PipelineRepositoryConflictError("next_action_not_pending");
     }
+    if (viewed !== undefined) {
+      const jobs = await transaction.query<ViewedJobProjectionRow>(
+        sqlStatement(
+          "SELECT current_status_id, next_action_at, row_version, archived_at FROM job WHERE id = ?",
+          [current.jobId],
+        ),
+      );
+      const job = jobs[0];
+      if (
+        current.jobId !== viewed.jobId ||
+        current.rowVersion !== viewed.nextActionRowVersion ||
+        job?.archived_at !== null ||
+        rowVersion(job.row_version) !== viewed.jobRowVersion
+      )
+        throw new PipelineRepositoryConflictError("pipeline_projection_conflict");
+    }
     const timestamp = instant(completedAt);
     const completed = await transaction.execute(
       sqlStatement(
         `UPDATE next_action
          SET state = 'completed', completed_at = ?, updated_at = ?, row_version = row_version + 1
-         WHERE id = ? AND state = 'pending'`,
-        [timestamp, timestamp, entityId("next-action", id)],
+         WHERE id = ? AND state = 'pending' AND row_version = ?`,
+        [timestamp, timestamp, entityId("next-action", id), current.rowVersion],
       ),
     );
     assertOneRow(completed.rowsAffected, "projection");

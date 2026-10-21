@@ -6,7 +6,10 @@ import {
   createJobTimelineQuery,
   JobTimelineError,
   JobActivityError,
+  NextActionCompletionError,
+  createCompleteNextActionCommand,
 } from "@coredrill/application";
+import { createDatabaseNextActionCompletionPort } from "./next-action-completion-repository.js";
 import {
   createDatabaseMutationUndoPort,
   createDatabaseJobActivityPort,
@@ -542,12 +545,126 @@ export const createPipelineRepositoryContractSuite = (
           "Reminder firing did not persist atomically.",
         );
 
-        await completeNextAction(database, IDS.nextAction, REOPENED_AT);
+        if (jobWithAction === undefined || action === undefined)
+          throw new DatabaseContractViolation("Completion fixture has no viewed task owner.");
+        const completionExpected = {
+          jobId: IDS.job,
+          jobRowVersion: jobWithAction.rowVersion,
+          nextActionRowVersion: action.rowVersion,
+        };
+        const completionPort = createDatabaseNextActionCompletionPort(database);
+        const completionState = async () =>
+          JSON.stringify({
+            jobs: await database.query(sqlStatement("SELECT * FROM job ORDER BY id")),
+            actions: await database.query(sqlStatement("SELECT * FROM next_action ORDER BY id")),
+            reminders: await database.query(sqlStatement("SELECT * FROM reminder ORDER BY id")),
+            tokens: await database.query(
+              sqlStatement("SELECT * FROM mutation_undo_token ORDER BY id"),
+            ),
+          });
+        for (const expected of [
+          { ...completionExpected, jobRowVersion: jobWithAction.rowVersion + 1 },
+          { ...completionExpected, nextActionRowVersion: action.rowVersion + 1 },
+          { ...completionExpected, jobId: entityId("job", IDS.additionalApplication) },
+        ]) {
+          const before = await completionState();
+          await expectFailure(
+            () => completeNextAction(database, IDS.nextAction, REOPENED_AT, expected),
+            (error) =>
+              error instanceof PipelineRepositoryConflictError &&
+              error.code === "pipeline_projection_conflict",
+            "Completion accepted stale or wrong-owner viewed context.",
+          );
+          await expectFailure(
+            () =>
+              completionPort.complete({
+                jobId: expected.jobId,
+                nextActionId: IDS.nextAction,
+                expected: {
+                  jobRowVersion: expected.jobRowVersion,
+                  nextActionRowVersion: expected.nextActionRowVersion,
+                },
+                completedAt: REOPENED_AT,
+              }),
+            (error) => error instanceof NextActionCompletionError && error.code === "conflict",
+            "Concrete completion port lost captured ownership or failure vocabulary.",
+          );
+          assertContract(
+            (await completionState()) === before,
+            "Rejected task completion left partial job/action/reminder/undo writes.",
+          );
+        }
+        await database.execute(
+          sqlStatement(
+            "UPDATE job SET archived_at = ?, updated_at = ?, row_version = row_version + 1 WHERE id = ?",
+            [REOPENED_AT, REOPENED_AT, IDS.job],
+          ),
+        );
+        const beforeArchivedCompletion = await completionState();
+        await expectFailure(
+          () =>
+            completeNextAction(database, IDS.nextAction, REOPENED_AT, {
+              ...completionExpected,
+              jobRowVersion: jobWithAction.rowVersion + 1,
+            }),
+          (error) =>
+            error instanceof PipelineRepositoryConflictError &&
+            error.code === "pipeline_projection_conflict",
+          "Completion accepted a current-version archived owner.",
+        );
+        assertContract(
+          (await completionState()) === beforeArchivedCompletion,
+          "Archived task completion left partial writes.",
+        );
+        await database.execute(
+          sqlStatement(
+            "UPDATE job SET archived_at = NULL, row_version = row_version + 1 WHERE id = ?",
+            [IDS.job],
+          ),
+        );
+        const completion = await createCompleteNextActionCommand(completionPort).execute(
+          {
+            jobId: IDS.job,
+            nextActionId: IDS.nextAction,
+            expected: {
+              jobRowVersion: jobWithAction.rowVersion + 2,
+              nextActionRowVersion: action.rowVersion,
+            },
+          },
+          {
+            operationId: entityId("application-operation", IDS.nextActionUndo),
+            initiatedAt: REOPENED_AT,
+          },
+        );
+        assertContract(
+          completion.ok &&
+            completion.value.completedAt === REOPENED_AT &&
+            completion.value.jobRowVersion === jobWithAction.rowVersion + 3 &&
+            completion.value.nextActionRowVersion === action.rowVersion + 1,
+          "Completion command/port did not acknowledge the exact durable version transition.",
+        );
         const completed = await repositories.nextActions.findById(IDS.nextAction);
         const jobAfterCompletion = await createTrackerRepositories(database).jobs.findById(IDS.job);
         assertContract(
           completed?.state === "completed" && jobAfterCompletion?.nextActionAt === null,
           "Completing the action did not refresh the job projection.",
+        );
+        const beforeReplay = await completionState();
+        await expectFailure(
+          () =>
+            completeNextAction(database, IDS.nextAction, REOPENED_AT, {
+              ...completionExpected,
+              jobRowVersion: jobAfterCompletion?.rowVersion ?? 1,
+              nextActionRowVersion: completed?.rowVersion ?? 1,
+            }),
+          (error) =>
+            error instanceof PipelineRepositoryConflictError &&
+            error.code === "next_action_not_pending",
+          "Completion replay was accepted.",
+        );
+        assertContract(
+          (await completionState()) === beforeReplay,
+          "Completion replay left partial writes.",
         );
       },
     },

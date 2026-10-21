@@ -421,3 +421,4 @@ export { createJobSourceContentRepository } from "./job-source-content-repositor
 export { createJobSourceEvidenceRepository } from "./job-source-evidence-repository.js";
 export { createJobSourceEvidenceValueRepository } from "./job-source-evidence-value-repository.js";
 export { createJobSourceCaptureRepository } from "./job-source-capture-repository.js";
+export { createDatabaseNextActionCompletionPort } from "./next-action-completion-repository.js";

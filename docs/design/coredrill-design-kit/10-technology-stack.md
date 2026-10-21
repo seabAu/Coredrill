@@ -93,6 +93,8 @@ SQLite is the source of truth. TanStack Query caches query results; Zustand stor
 
 The Phase 0 proof harness uses Vite 8.2.2 and Playwright 1.61.1, both exact-reviewed development dependencies rather than product runtime services. Vite moved from the originally proven 8.1.0 to current 8.2.2 when the advisory gate identified affected esbuild 0.27.7 in the older graph; the complete storage browser suite remains green on the replacement. On Edge 151 it opens SQLite 3.53.0 with `opfs-sahpool` in a dedicated Worker and proves transactional migration, durability, checksummed export, clean-context restore, delete, persistence/quota/missing-data diagnostics, corrupt-restore preservation, tab contention/handoff, abrupt reload recovery, and deterministic 100/2,000/10,000-record benchmarks. `STG-004`–`STG-008` are complete and D-025 is Accepted through [ADR-0003](../../adr/0003-adopt-browser-storage-support-floor.md).
 
+Security maintenance on 2026-10-20 moves the existing Vite 8.2 line to patched 8.2.4 and standalone launch-editor to 2.14.2 after the advisory gate reports their editor-launch findings. The accepted React/Vite/WXT/PWA choices and runtime support floor are unchanged; reviewed versions are pinned in the lockfile and inventory. No audit exclusion is introduced. Fresh full regression/hosted evidence is tracked in [the maintenance proof](../../proof/dependency-security-maintenance-2026-10-20.md).
+
 `BKP-005` adds no external package. It uses the existing StorageManager APIs,
 application policy package, generic SQLite `app_setting` repository, shared UI,
 and browser test harness. The versioned preference and UI contract are recorded
