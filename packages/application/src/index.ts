@@ -639,3 +639,22 @@ export * from "./vault-export.js";
 export * from "./vault-export-save.js";
 export * from "./vault-export-verification.js";
 export * from "./vault-restore.js";
+export {
+  CompanyWorkspaceError,
+  createCompanyWorkspaceOperations,
+  parseReadCompanyWorkspaceRequestV1,
+  parseCreateViewedCompanyPortInputV1,
+  parseUpdateCompanyNotesPortInputV1,
+  parseCompanyWorkspaceV1,
+  validateCreatedCompanyWorkspaceV1,
+  validateUpdatedCompanyNotesV1,
+  type CompanyWorkspaceErrorCode,
+  type CompanyWorkspacePortV1,
+  type CompanyWorkspaceV1,
+  type ReadCompanyWorkspaceInputV1,
+  type ReadCompanyWorkspaceRequestV1,
+  type CreateViewedCompanyInputV1,
+  type CreateViewedCompanyPortInputV1,
+  type UpdateCompanyNotesInputV1,
+  type UpdateCompanyNotesPortInputV1,
+} from "./company-workspace.js";

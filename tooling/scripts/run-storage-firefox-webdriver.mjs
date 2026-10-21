@@ -292,7 +292,7 @@ try {
     proof.typedVaultDeletionPreview !== true ||
     proof.typedVaultDeletionRejectedSafely !== true ||
     proof.typedVaultDeletionCleanProfile !== true ||
-    proof.repositoryContractCases !== 27 ||
+    proof.repositoryContractCases !== 29 ||
     proof.careerRepositoryContractCases !== 4 ||
     proof.humanReadableDataFiles !== 114 ||
     proof.humanReadableDatasets !== 57 ||
@@ -317,7 +317,7 @@ try {
     typeof archiveRestore.archiveSha256 !== "string" ||
     !/^[a-f0-9]{64}$/u.test(archiveRestore.archiveSha256) ||
     proof.repositoryContractSuite !== repositoryContracts.manifest.suiteName ||
-    proof.repositoryContractVersion !== 11 ||
+    proof.repositoryContractVersion !== 12 ||
     proof.careerRepositoryContractVersion !== 3 ||
     proof.careerRepositoryContractSuite !== careerRepositoryContracts.manifest.suiteName ||
     !Array.isArray(careerRepositoryContracts.run.completedCases) ||

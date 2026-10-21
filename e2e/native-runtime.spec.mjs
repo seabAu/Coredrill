@@ -19,6 +19,10 @@ import { exerciseNormalTaskEntry } from "./task-entry-journey.mjs";
 import { exerciseScheduledTaskEntry } from "./scheduled-task-entry-journey.mjs";
 import { exerciseTaskEntryLifetime } from "./task-entry-lifetime.mjs";
 import { exerciseCompanyDirectory } from "./company-directory-journey.mjs";
+import {
+  createNativeRestoreOperationRecorder,
+  observeNativeRestoreReview,
+} from "./native-restore-stage-proof.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
 const executable = path.join(
@@ -108,14 +112,20 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
   let holdNextBegin = false;
   let heldAcknowledgements = 0;
   let releaseHeldBegin = () => undefined;
+  const restoreOperations = createNativeRestoreOperationRecorder();
   const send = async (request) => {
-    invocations += 1;
-    child.stdin.write(`${JSON.stringify(request)}\n`);
-    const line = await lines.next();
-    if (line.done) throw new Error("Native proof process stopped");
-    const envelope = JSON.parse(line.value);
-    if (!envelope.ok) throw envelope.error;
-    return envelope.response;
+    const finishObservation = restoreOperations.measure(request.operation?.type);
+    try {
+      invocations += 1;
+      child.stdin.write(`${JSON.stringify(request)}\n`);
+      const line = await lines.next();
+      if (line.done) throw new Error("Native proof process stopped");
+      const envelope = JSON.parse(line.value);
+      if (!envelope.ok) throw envelope.error;
+      return envelope.response;
+    } finally {
+      finishObservation();
+    }
   };
   const errors = [];
   const external = [];
@@ -603,10 +613,20 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
       });
       const restore = page.getByRole("region", { name: "Portable vault restore", exact: true });
       await expect(restore.locator('input[type="file"]')).toHaveCount(0);
-      await restore.getByRole("button", { name: "Choose archive to review", exact: true }).click();
-      await expect(
-        restore.getByRole("heading", { name: "Review exact restore changes", exact: true }),
-      ).toBeVisible();
+      await observeNativeRestoreReview(
+        restore,
+        testInfo,
+        restoreOperations,
+        "same_vault",
+        async () => {
+          await restore
+            .getByRole("button", { name: "Choose archive to review", exact: true })
+            .click();
+          await expect(
+            restore.getByRole("heading", { name: "Review exact restore changes", exact: true }),
+          ).toBeVisible();
+        },
+      );
       await expect(restore).toContainText(savedSha256);
       await expect(restore).toContainText("Later edits not in the archive will be lost");
       expect(
@@ -689,10 +709,20 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
       await page
         .getByRole("button", { name: "Restore an existing archive instead", exact: true })
         .click();
-      await restore.getByRole("button", { name: "Choose archive to review", exact: true }).click();
-      await expect(
-        restore.getByRole("heading", { name: "Review exact restore changes", exact: true }),
-      ).toBeVisible();
+      await observeNativeRestoreReview(
+        restore,
+        testInfo,
+        restoreOperations,
+        "empty_target",
+        async () => {
+          await restore
+            .getByRole("button", { name: "Choose archive to review", exact: true })
+            .click();
+          await expect(
+            restore.getByRole("heading", { name: "Review exact restore changes", exact: true }),
+          ).toBeVisible();
+        },
+      );
       await expect(restore).toContainText("Empty target (no vault identity)");
       expect(
         (await page.evaluate(async () => globalThis.coredrillStorageSpike.vault.inspect())).value

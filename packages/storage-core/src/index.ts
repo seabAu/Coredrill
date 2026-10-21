@@ -435,3 +435,4 @@ export { createDatabaseNextActionCompletionPort } from "./next-action-completion
 export { createDatabaseNextActionDismissalPort } from "./next-action-dismissal-repository.js";
 export { createJobNextActionsRepository } from "./job-next-actions-repository.js";
 export { createSqliteVaultExportVerificationPort } from "./vault-export-verification.js";
+export { createCompanyWorkspaceRepository } from "./company-workspace-repository.js";

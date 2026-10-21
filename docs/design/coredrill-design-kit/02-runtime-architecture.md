@@ -565,6 +565,10 @@ Initially, Coredrill owns `prompt-engine` in a clean package and can import/expo
 - Provider keys, pairing secrets, sync keys, and connector credentials are never public build variables.
 - Feature flags default off for networked connectors, hosted AI, sync, telemetry, and experimental extractors.
 
+### Selected-company persistence follow-through (2026-10-21)
+
+The additive version-1 company workspace boundary reads selected scalar details separately from bounded directory summaries. Explicit manual creation and notes-only edits check the original viewed vault against the sole physical root in the same SQLite transaction; notes also require the viewed row version, active archive state and monotonic audit instant. Exact acknowledgement is validated before commit, and notes edits preserve unrelated company facts. Shared repository inventory v12 adds these cases for all adapters without a durable schema change. This is persistence work, not proof of normal UI/draft composition or full INT-007; see [current evidence and remaining requirements](../../proof/company-workspace-verification.md).
+
 ### Production identity startup (2026-10-19)
 
 The runtime root composes the strict single-identity bootstrap port through validated application commands/queries. Browser and native use their actual selected database with no cross-runtime fallback. Runtime inspection first applies reviewed migrations; the underlying identity query itself remains read-only. SQLite owns identity/name; localStorage carries only an optional boolean prior-initialization recovery hint, cleared on acknowledged deletion. A missing identity with that hint requires explicit recovery review rather than automatic replacement. The hint cannot guarantee missing-file detection if browser storage is cleared or unavailable. Setup state is ephemeral, and vault creation plus first capture are separate acknowledged operations with retained partial progress, not one claimed atomic transaction. See [proof and limits](../../proof/production-first-run-verification.md).

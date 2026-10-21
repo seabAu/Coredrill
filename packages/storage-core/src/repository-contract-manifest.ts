@@ -70,6 +70,12 @@ const PHASE_1_REPOSITORY_CONTRACT_COMPONENTS = Object.freeze({
     readScopedPages:
       "reads bounded viewed-vault company pages without private notes or canonical writes",
   }),
+  companyWorkspace: component("stored-company-workspace", {
+    createAndRead:
+      "creates and reads exact viewed-vault company details without invented relationships",
+    guardedNotes:
+      "updates exact viewed-company notes with stale replay archive and rollback guards",
+  }),
 });
 
 const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
@@ -79,8 +85,8 @@ const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
 );
 
 export const PHASE_1_REPOSITORY_CONTRACT_MANIFEST = Object.freeze({
-  schemaVersion: 11 as const,
-  suiteName: "phase-1-repository-contracts-v11",
+  schemaVersion: 12 as const,
+  suiteName: "phase-1-repository-contracts-v12",
   components: PHASE_1_REPOSITORY_CONTRACT_COMPONENTS,
   caseNames: PHASE_1_REPOSITORY_CONTRACT_CASES,
 });

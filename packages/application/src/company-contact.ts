@@ -370,7 +370,25 @@ interface ExpectedCompany {
   readonly createdAt: Instant;
 }
 
-const copyCompany = (value: unknown, expected: ExpectedCompany): CompanyDto => {
+/** Shared company field rules; callers own their serialized shape/version checks. */
+export const parseManualCompanyFields = (
+  value: unknown,
+): Omit<CreateCompanyPortInput, "id" | "createdAt" | "updatedAt"> => {
+  if (!isRecord(value) || value["origin"] !== "user_entered") {
+    throw new TypeError("Company creation requires an explicit user-entered origin.");
+  }
+  return Object.freeze({
+    canonicalName: requiredText(value["canonicalName"], 512),
+    websiteUrl: optionalWebUrl(value["websiteUrl"]),
+    domain: canonicalDomain(value["domain"]),
+    locationId: optionalEntityId("location", value["locationId"]),
+    notes: notesText(value["notes"]),
+    archivedAt: null,
+  });
+};
+
+/** Copies stored scalar facts, without inferring origin or public/license evidence. */
+export const parseCompanyDto = (value: unknown): CompanyDto => {
   if (!isRecord(value)) throw new TypeError("Invalid company result.");
   const copied: CompanyDto = Object.freeze({
     id: entityId("company", value["id"] as string),
@@ -383,6 +401,12 @@ const copyCompany = (value: unknown, expected: ExpectedCompany): CompanyDto => {
     updatedAt: instant(value["updatedAt"] as string),
     rowVersion: requireRowVersion(value["rowVersion"]),
   });
+  if (copied.updatedAt < copied.createdAt) throw new TypeError("Invalid company audit order.");
+  return copied;
+};
+
+const copyCompany = (value: unknown, expected: ExpectedCompany): CompanyDto => {
+  const copied = parseCompanyDto(value);
   if (
     copied.id !== expected.id ||
     copied.canonicalName !== expected.canonicalName ||
@@ -532,17 +556,7 @@ export const createCompanyContactOperations = (
 
       let parsed: Omit<CreateCompanyPortInput, "id" | "createdAt" | "updatedAt">;
       try {
-        if (untrustedInput["origin"] !== "user_entered") {
-          throw new TypeError("Company creation requires an explicit user-entered origin.");
-        }
-        parsed = {
-          canonicalName: requiredText(untrustedInput["canonicalName"], 512),
-          websiteUrl: optionalWebUrl(untrustedInput["websiteUrl"]),
-          domain: canonicalDomain(untrustedInput["domain"]),
-          locationId: optionalEntityId("location", untrustedInput["locationId"]),
-          notes: notesText(untrustedInput["notes"]),
-          archivedAt: null,
-        };
+        parsed = parseManualCompanyFields(untrustedInput);
       } catch {
         return applicationFailure(VALID_COMPANY_ERROR);
       }
