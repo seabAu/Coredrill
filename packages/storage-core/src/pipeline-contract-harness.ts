@@ -8,8 +8,11 @@ import {
   JobActivityError,
   NextActionCompletionError,
   createCompleteNextActionCommand,
+  createJobNextActionsQuery,
+  JobNextActionsError,
 } from "@coredrill/application";
 import { createDatabaseNextActionCompletionPort } from "./next-action-completion-repository.js";
+import { createJobNextActionsRepository } from "./job-next-actions-repository.js";
 import {
   createDatabaseMutationUndoPort,
   createDatabaseJobActivityPort,
@@ -665,6 +668,234 @@ export const createPipelineRepositoryContractSuite = (
         assertContract(
           (await completionState()) === beforeReplay,
           "Completion replay left partial writes.",
+        );
+        for (const [id, dueAt, zone] of [
+          [IDS.replacementAction, ACTION_DUE_AT, EASTERN],
+          [IDS.staleAction, null, null],
+        ] as const) {
+          await setNextAction(
+            database,
+            {
+              id,
+              jobId: IDS.job,
+              applicationId: null,
+              interactionId: null,
+              title: `Literal é中🙂 <task> ${id}`,
+              dueAt,
+              timeZone: zone,
+              state: "pending",
+              completedAt: null,
+              createdAt: REOPENED_AT,
+              updatedAt: REOPENED_AT,
+            },
+            id === IDS.replacementAction ? IDS.replacementActionUndo : IDS.staleActionUndo,
+          );
+        }
+        if (jobAfterCompletion === undefined)
+          throw new DatabaseContractViolation("Missing task query fixture owner.");
+        const otherTaskJobId = entityId("job", IDS.additionalApplication);
+        await createTrackerRepositories(database).jobs.create({
+          ...jobAfterCompletion,
+          id: otherTaskJobId,
+          title: "Other synthetic task owner",
+          nextActionAt: null,
+          currentStatusId: IDS.saved,
+        });
+        await repositories.applications.create({
+          ...newApplication(IDS.additionalApplication),
+          jobId: otherTaskJobId,
+        });
+        await setNextAction(
+          database,
+          {
+            id: entityId("next-action", IDS.interview),
+            jobId: otherTaskJobId,
+            applicationId: null,
+            interactionId: null,
+            title: "OTHER_JOB_TASK_DO_NOT_LEAK",
+            dueAt: null,
+            timeZone: null,
+            state: "pending",
+            completedAt: null,
+            createdAt: REOPENED_AT,
+            updatedAt: REOPENED_AT,
+          },
+          entityId("mutation-undo-token", IDS.interview),
+        );
+        const taskPort = createJobNextActionsRepository(database);
+        const taskQuery = createJobNextActionsQuery(taskPort);
+        const queryContext = {
+          operationId: entityId("application-operation", IDS.nextActionUndo),
+          initiatedAt: REOPENED_AT,
+        };
+        const beforeTaskReads = await completionState();
+        const firstTasks = await taskQuery.execute({ jobId: IDS.job, limit: 1 }, queryContext);
+        assertContract(
+          firstTasks.ok &&
+            firstTasks.value.items[0]?.id === IDS.replacementAction &&
+            firstTasks.value.hasMore,
+          "Task query did not bound or deterministically order the first pending record.",
+        );
+        if (!firstTasks.ok || firstTasks.value.nextCursor === null)
+          throw new DatabaseContractViolation("Missing task-page cursor.");
+        const firstTaskCursor = firstTasks.value.nextCursor;
+        const otherTasks = await taskQuery.execute({ jobId: otherTaskJobId }, queryContext);
+        assertContract(
+          otherTasks.ok &&
+            otherTasks.value.items.length === 1 &&
+            otherTasks.value.items[0]?.title === "OTHER_JOB_TASK_DO_NOT_LEAK",
+          "Job task scope mixed records belonging to different jobs.",
+        );
+        const crossJobCursor = await taskQuery.execute(
+          { jobId: otherTaskJobId, after: firstTaskCursor },
+          queryContext,
+        );
+        assertContract(
+          !crossJobCursor.ok && crossJobCursor.error.code === "validation",
+          "A task cursor was reused for another job.",
+        );
+        const secondTasks = await taskQuery.execute(
+          { jobId: IDS.job, limit: 1, after: firstTaskCursor },
+          queryContext,
+        );
+        assertContract(
+          secondTasks.ok &&
+            secondTasks.value.items[0]?.id === IDS.staleAction &&
+            secondTasks.value.items[0].dueAt === null &&
+            secondTasks.value.items[0].timeZone === null &&
+            secondTasks.value.hasMore,
+          "Task query lost the tied unscheduled record or its null schedule pair.",
+        );
+        if (!secondTasks.ok || secondTasks.value.nextCursor === null)
+          throw new DatabaseContractViolation("Missing second task-page cursor.");
+        const finalTasks = await taskQuery.execute(
+          { jobId: IDS.job, limit: 1, after: secondTasks.value.nextCursor },
+          queryContext,
+        );
+        assertContract(
+          finalTasks.ok &&
+            finalTasks.value.items[0]?.id === IDS.nextAction &&
+            finalTasks.value.items[0].state === "completed" &&
+            finalTasks.value.items[0].completedAt === REOPENED_AT &&
+            !finalTasks.value.hasMore &&
+            finalTasks.value.nextCursor === null,
+          "Task query hid completed history, lost its completion instant or invented another page.",
+        );
+        await expectFailure(
+          () =>
+            taskPort.listPage({
+              jobId: IDS.job,
+              includeArchived: false,
+              limit: 1,
+              after: { ...firstTaskCursor, id: entityId("next-action", IDS.interview) },
+            }),
+          (error) => error instanceof JobNextActionsError && error.code === "cursor_invalidated",
+          "Task query accepted a forged missing anchor.",
+        );
+        await expectFailure(
+          () =>
+            taskPort.listPage({
+              jobId: IDS.job,
+              includeArchived: false,
+              limit: 1,
+              after: { ...firstTaskCursor, rowVersion: firstTaskCursor.rowVersion + 1 },
+            }),
+          (error) => error instanceof JobNextActionsError && error.code === "cursor_invalidated",
+          "Task query ignored the captured anchor row version.",
+        );
+        assertContract(
+          (await completionState()) === beforeTaskReads,
+          "Task page reads changed durable state.",
+        );
+        await database.execute(
+          sqlStatement(
+            "UPDATE next_action SET application_id = ?, row_version = row_version + 1 WHERE id = ?",
+            [IDS.additionalApplication, IDS.nextAction],
+          ),
+        );
+        const beforeInvalidTaskRead = await completionState();
+        const invalidTaskPage = await taskQuery.execute({ jobId: IDS.job }, queryContext);
+        assertContract(
+          !invalidTaskPage.ok && invalidTaskPage.error.code === "internal",
+          "Task read accepted an application belonging to another job.",
+        );
+        assertContract(
+          (await completionState()) === beforeInvalidTaskRead,
+          "Invalid task linkage read changed stored data.",
+        );
+        await database.execute(
+          sqlStatement(
+            "UPDATE next_action SET application_id = ?, row_version = row_version + 1 WHERE id = ?",
+            [IDS.application, IDS.nextAction],
+          ),
+        );
+        const viewedTask = firstTasks.value.items[0];
+        if (viewedTask === undefined)
+          throw new DatabaseContractViolation("Missing viewed completion task.");
+        await completeNextAction(database, viewedTask.id, REOPENED_AT, {
+          jobId: IDS.job,
+          jobRowVersion: firstTasks.value.jobRowVersion,
+          nextActionRowVersion: viewedTask.rowVersion,
+        });
+        const beforeStaleTaskRead = await completionState();
+        const changedTasks = await taskQuery.execute(
+          { jobId: IDS.job, limit: 1, after: firstTaskCursor },
+          queryContext,
+        );
+        assertContract(
+          !changedTasks.ok && changedTasks.error.code === "conflict",
+          "Task pagination silently rebased after a real canonical completion.",
+        );
+        assertContract(
+          (await completionState()) === beforeStaleTaskRead,
+          "Stale task page rejection wrote data.",
+        );
+        const dismissedTaskId = entityId("next-action", IDS.replacementReminder);
+        const dismissedTaskUndoId = entityId("mutation-undo-token", IDS.replacementReminder);
+        await setNextAction(
+          database,
+          {
+            id: dismissedTaskId,
+            jobId: IDS.job,
+            applicationId: null,
+            interactionId: null,
+            title: "Retained dismissed task",
+            dueAt: null,
+            timeZone: null,
+            state: "pending",
+            completedAt: null,
+            createdAt: REOPENED_AT,
+            updatedAt: REOPENED_AT,
+          },
+          dismissedTaskUndoId,
+        );
+        await consumeMutationUndoToken(database, {
+          id: dismissedTaskUndoId,
+          consumedAt: REOPENED_AT,
+        });
+        await database.execute(
+          sqlStatement(
+            "UPDATE job SET archived_at = ?, updated_at = ?, row_version = row_version + 1 WHERE id = ?",
+            [FINAL_UNDO_AT, FINAL_UNDO_AT, IDS.job],
+          ),
+        );
+        const hiddenTasks = await taskQuery.execute({ jobId: IDS.job }, queryContext);
+        const archivedTasks = await taskQuery.execute(
+          { jobId: IDS.job, includeArchived: true },
+          queryContext,
+        );
+        assertContract(
+          !hiddenTasks.ok &&
+            hiddenTasks.error.code === "not_found" &&
+            archivedTasks.ok &&
+            archivedTasks.value.items.length === 4 &&
+            archivedTasks.value.items.some(
+              (item) =>
+                item.id === dismissedTaskId &&
+                item.state === "dismissed" &&
+                item.completedAt === null,
+            ),
+          "Task query ignored explicit archived read scope or lost retained records.",
         );
       },
     },

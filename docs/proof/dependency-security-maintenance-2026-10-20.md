@@ -1,6 +1,6 @@
 # Dependency security maintenance — 2026-10-20
 
-Status: full local and extension verification passes; final policy and exact hosted proof pending.
+Status: complete local and exact hosted verification at `a5851c1` / run `39536020133`.
 
 The completion prerequisite's initial full gate passed functional, coverage, build, browser/native, recovery, schema, license and secret checks, then failed npm audit with six findings: three advisories affecting both Vite 8.2.2's bundled editor-launch implementation and standalone launch-editor 2.14.1. The failed run is retained as `test-results/task-completion-full-verify.log`, terminal `TASK_COMPLETION_VERIFY_EXIT=1`. It is not called green. Separate nine-case extension proof passed on that older graph and must be rerun after patching.
 
@@ -36,3 +36,7 @@ Fresh complete `pnpm verify` passes terminal `TASK_COMPLETION_PATCHED_VERIFY_EXI
 All nine separate extension cases pass terminal `TASK_COMPLETION_PATCHED_EXTENSION_EXIT=0`, in `test-results/task-completion-patched-extension.log`. This includes the real canonical transfer and Firefox manual fallback on the patched graph. Only documentation changes follow these full/extension gates. Final documentation policy, commit/push and exact hosted observation remain.
 
 Final formatting and existing policy pass terminal `TASK_COMPLETION_POLICY_EXIT=0` in `test-results/task-completion-final-policy.log`; exact inventory/lock binding, boundaries, licenses and secrets are clean. Only result documentation follows. Exact hosted verification remains required after commit/push.
+
+## Exact hosted patched checkpoint
+
+The reviewed graph is pushed at `a5851c1d3a38e80cf982e83c824c18e20b0e55c6`. [Run 39536020133](https://github.com/seabAu/Coredrill/actions/runs/39536020133) is terminal success across every required job. Retained aggregate `119012732668` explicitly passes clean npm audit, all 34 resilience journeys, actual Rust runtime and shared browser repository contracts. Exact Chrome/Firefox, extension, Windows/macOS/diagnostic Ubuntu packages and full-history secret lanes also pass. The old six-finding run remains recorded; no finding was excluded. This closes the security-maintenance checkpoint, not the remaining product/task lifecycle or independent human/manual gates.
