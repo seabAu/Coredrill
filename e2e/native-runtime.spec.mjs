@@ -48,12 +48,18 @@ test.beforeAll(async () => {
 
 /** Simulated host IPC only: every database operation runs in the actual Rust process. */
 const attachNativeHost = async (page, invoke) => {
-  await page.exposeFunction("coredrillNativeProofInvoke", invoke);
+  // Playwright recursively serializes every array element in exposed-function
+  // results. Carry the actual Rust JSON as one string instead; the runtime still
+  // receives the same object and runs every production protocol validator.
+  await page.exposeFunction("coredrillNativeProofInvoke", async (...args) =>
+    JSON.stringify(await invoke(...args)),
+  );
   await page.addInitScript(() => {
     globalThis.isTauri = true;
     const documentId = crypto.randomUUID();
     globalThis.__TAURI_INTERNALS__ = {
-      invoke: (command, args) => globalThis.coredrillNativeProofInvoke(command, args, documentId),
+      invoke: async (command, args) =>
+        JSON.parse(await globalThis.coredrillNativeProofInvoke(command, args, documentId)),
     };
     const calls = { opfs: 0, persistent: 0, serviceWorker: 0, worker: 0 };
     globalThis.coredrillBrowserCapabilityProbe = calls;

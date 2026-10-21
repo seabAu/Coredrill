@@ -67,14 +67,14 @@ Phase 0 records exact Node, pnpm, Rust, and OS build prerequisites in `.tool-ver
 | Icons | Lucide React 1.35.0 | One open icon language |
 | Editor | Tiptap open-source core 3.30.5 + selected extensions | Accepted restricted schema and versioned Coredrill IR; no cloud/collaboration dependency |
 | Charts | Recharts | Small accessible reports; always pair with data table |
-| Dates | date-fns + date-fns-tz | Explicit date-only vs instant/time-zone types in domain |
+| Dates | Imported @js-temporal/polyfill 0.5.1 / jsbi 4.3.2 for civil-time scheduling (ADR-0009); date-fns utilities remain separately scoped for other uses | Explicit date-only vs instant/time-zone strings in domain; adoption and production proof pending |
 | Sanitization | DOMPurify plus plain-text/source-snapshot rules | Defense in depth; raw source never mounted as active HTML |
 | Generic article extraction | Mozilla Readability + platform DOM APIs | Last-resort user-invoked page parsing |
 | Command menu | cmdk or a small Radix-based implementation | Validate bundle/accessibility during spike |
 
 Tiptap’s React bindings work with Vite and its product offers an open-source headless core ([Tiptap React guide](https://tiptap.dev/docs/editor/getting-started/install/react), [Tiptap docs](https://tiptap.dev/docs)). Do not depend on Tiptap Cloud, paid conversion, collaboration, or AI features for v1.
 
-**Pending date-conversion proposal, not an adopted stack change:** [ADR-0009](../../adr/0009-propose-explicit-civil-time-resolution.md) / provisional `D-056` proposes an exact imported Temporal helper only for civil-time scheduling after date-fns-tz gap/overlap/host-independence failures. Owner acceptance is required before product installation or replacement of the date-conversion direction. Current domain strings, formatter choices, support floor and production dependency graph are unchanged by the proposal.
+**Accepted date-conversion direction, implementation pending:** The owner accepted [ADR-0009](../../adr/0009-propose-explicit-civil-time-resolution.md) / `D-056` on 2026-10-21. Exact @js-temporal/polyfill 0.5.1 / jsbi 4.3.2 is authorized only for imported, bounded civil-time scheduling after date-fns-tz gap/overlap/host-independence failures. Installation, lockfile/inventory review, lazy offline/CSP chunk and supported-runtime/UI proof remain required in INT-004. No global patch, UTC-only substitute, stored Temporal object, schema or permission change is authorized. Current domain strings, formatter choices, support floor and installed production dependency graph are unchanged by the acceptance record.
 
 ### Durable-state rule
 

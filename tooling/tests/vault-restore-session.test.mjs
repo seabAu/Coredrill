@@ -89,6 +89,11 @@ describe("root-owned normal restore session", () => {
       const file = { size, arrayBuffer: vi.fn() };
       expect(await session.select(file)).toBe(false);
       expect(file.arrayBuffer).not.toHaveBeenCalled();
+      expect(session.current()).toMatchObject({
+        phase: "idle",
+        busy: false,
+        message: "Archive review stopped. No restore was submitted.",
+      });
     }
     expect(await session.select({ size: 32, arrayBuffer: async () => new ArrayBuffer(31) })).toBe(
       false,
@@ -103,6 +108,7 @@ describe("root-owned normal restore session", () => {
     ).toBe(false);
     expect(api.preview).not.toHaveBeenCalled();
     expect(session.current().error).not.toContain("private-path");
+    expect(session.current().message).toBe("Archive review stopped. No restore was submitted.");
   });
   it("guards duplicate handlers synchronously and disposes late previews with their original owner", async () => {
     const { session, api, onChange } = setup();
@@ -156,6 +162,9 @@ describe("root-owned normal restore session", () => {
         });
       expect(await session.commit()).toBe(false);
       expect(session.current()).toMatchObject({ phase: "reopen", preview: null, confirmed: false });
+      expect(session.current().message).toBe(
+        "Restore was not confirmed. The vault may have changed. Reload local storage before a new review; no automatic retry will occur.",
+      );
       expect(session.current().error).not.toContain("private-path");
       expect(await session.commit()).toBe(false);
       expect(await session.discard()).toBe(false);
@@ -189,9 +198,75 @@ describe("root-owned normal restore session", () => {
     const mutating = exported.runVaultMutation(ownerId, () => held.promise);
     expect(await session.commit()).toBe(false);
     expect(session.current().phase).toBe("review");
+    expect(session.current().message).toBe(
+      "Restore was not submitted. Review these changes before trying again.",
+    );
     expect(api.commit).not.toHaveBeenCalled();
     held.resolve({ ok: true, value: null });
     await mutating;
     expect(await session.commit()).toBe(true);
   });
+  it("ends a thrown pre-submit mutex operation with a retained review and no commit", async () => {
+    const exclusive = vi.fn(async (work) => work());
+    const { session, api } = setup({ exclusive });
+    await session.select(selected());
+    session.confirm(true);
+    exclusive.mockRejectedValueOnce(new Error("private-path"));
+    expect(await session.commit()).toBe(false);
+    expect(session.current()).toMatchObject({
+      phase: "review",
+      busy: false,
+      confirmed: true,
+      message: "Restore was not submitted. Review these changes before trying again.",
+    });
+    expect(session.current().preview).toEqual(view());
+    expect(session.current().error).not.toContain("private-path");
+    expect(api.commit).not.toHaveBeenCalled();
+    expect(await session.commit()).toBe(true);
+    expect(api.commit).toHaveBeenCalledTimes(1);
+  });
+  it("reports failed file reads through the real mutation mutex as stopped before submission, not an uncertain write", async () => {
+    const exported = createVaultExportSession({ ownerId, prepare: vi.fn(), onChange: vi.fn() });
+    const { session, api } = setup({
+      exclusive: (work) => exported.runVaultMutation(ownerId, work),
+    });
+    expect(
+      await session.select({
+        size: 32,
+        arrayBuffer: async () => {
+          throw new Error("private-path");
+        },
+      }),
+    ).toBe(false);
+    expect(session.current()).toMatchObject({
+      phase: "idle",
+      busy: false,
+      message: "Archive review stopped. No restore was submitted.",
+      error: "The selected archive could not be reviewed. No restore was submitted.",
+    });
+    expect(api.preview).not.toHaveBeenCalled();
+    expect(api.commit).not.toHaveBeenCalled();
+    expect(exported.current().busy).toBe(false);
+    expect(await session.select(selected())).toBe(true);
+  });
+  it.each(["preview", "native-selection"])(
+    "ends an unexpected %s failure without an ongoing status or implicit retry",
+    async (failure) => {
+      const { session, api } = setup({ runtime: failure === "preview" ? "browser" : "native" });
+      if (failure === "preview") api.preview.mockRejectedValueOnce(new Error("private-path"));
+      else api.selectNative.mockRejectedValueOnce(new Error("private-path"));
+      expect(await session.select(failure === "preview" ? selected() : undefined)).toBe(false);
+      expect(session.current()).toMatchObject({
+        phase: "idle",
+        busy: false,
+        preview: null,
+        confirmed: false,
+        message: "Archive review stopped. No restore was submitted.",
+      });
+      expect(session.current().error).not.toContain("private-path");
+      expect(api.commit).not.toHaveBeenCalled();
+      expect(api.selectNative).toHaveBeenCalledTimes(failure === "preview" ? 0 : 1);
+      expect(api.preview).toHaveBeenCalledTimes(failure === "preview" ? 1 : 0);
+    },
+  );
 });

@@ -374,3 +374,51 @@ test("normal Settings explicitly replaces a different vault only after its disti
     await other.close();
   }
 });
+
+test("a failed local archive read ends its progress status, preserves data and permits a fresh explicit review", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await initializeDefaultWorkspace(page);
+  await page.getByRole("link", { name: "Settings", exact: true }).click();
+  const before = await page.evaluate(
+    async () => (await globalThis.coredrillStorageSpike.exportPortable()).sha256,
+  );
+  await page.evaluate(() => {
+    const original = File.prototype.arrayBuffer;
+    File.prototype.arrayBuffer = function () {
+      File.prototype.arrayBuffer = original;
+      return Promise.reject(new Error("synthetic-private-path"));
+    };
+  });
+  const panel = restorePanel(page);
+  await select(panel, Buffer.alloc(32));
+  await expect(panel.getByRole("alert")).toContainText("No restore was submitted");
+  await expect(panel.getByRole("alert")).not.toContainText("synthetic-private-path");
+  await expect(panel.getByRole("status")).toHaveText(
+    "Archive review stopped. No restore was submitted.",
+  );
+  await expect(panel.getByLabel("Choose archive to review", { exact: true })).toBeEnabled();
+  await expect(
+    panel.getByRole("button", { name: "Confirm and restore reviewed archive", exact: true }),
+  ).toHaveCount(0);
+  expect(
+    await page.evaluate(
+      async () => (await globalThis.coredrillStorageSpike.exportPortable()).sha256,
+    ),
+  ).toBe(before);
+  const { buffer } = await downloadArchive(page);
+  await select(panel, buffer);
+  await expect(
+    panel.getByRole("heading", { name: "Review exact restore changes", exact: true }),
+  ).toBeVisible();
+  await panel.getByRole("button", { name: "Discard restore preview", exact: true }).click();
+  await expect(panel.getByRole("status")).toHaveText(
+    "Restore preview discarded. No restore was submitted.",
+  );
+  expect(
+    await page.evaluate(
+      async () => (await globalThis.coredrillStorageSpike.exportPortable()).sha256,
+    ),
+  ).toBe(before);
+});

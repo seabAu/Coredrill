@@ -456,6 +456,10 @@ The optional `ChangeStatus` viewed-state tuple is validated before the persisten
 
 ## Application use cases
 
+### Accepted civil-time resolver direction — implementation pending
+
+Owner acceptance of ADR-0009 / D-056 on 2026-10-21 authorizes one bounded TypeScript helper importing exact @js-temporal/polyfill 0.5.1 with reviewed jsbi 4.3.2. Load it only for explicit local scheduling, on both browser and native paths without global patches or a native/polyfill split. Reject nonexistent local times; ambiguous times require a deliberate occurrence. Public application/storage contracts retain validated UTC/IANA strings, not library objects. No native IPC, permission, schema or service is added. Helper installation, owned loading/failure/cancellation, production offline/CSP chunk and full runtime/UI proof remain INT-004 work; this acceptance record does not claim integration.
+
 The stored Timeline prerequisite adds a separate `ListJobTimelineQuery` over a
 read-only `JobTimelinePort`. Shared SQLite composition reads status events and
 interactions transactionally with bounded job-scoped keyset pages. The cursor

@@ -185,6 +185,8 @@ Seed categories: `viewed`, `saved`, `preparing`, `applied`, `response`, `intervi
 
 `next_action(id, job_id, application_id, interaction_id, title, due_at, timezone, state, completed_at)`
 
+ADR-0009 / D-056 was owner-accepted on 2026-10-21 for explicit local-clock resolution only. Durable scheduling remains the exact UTC instant plus canonical IANA string, or both null for an unscheduled action. No Temporal object, candidate list or civil-time resolver state becomes canonical storage; no migration, reinterpretation or backfill is authorized. The future form must reject gaps and require an explicit overlap occurrence before issuing the existing guarded creation command. Dependency adoption and normal scheduled-entry proof remain INT-004 work.
+
 `interview(id, application_id, stage_name, starts_at, timezone, duration_minutes, location_or_url, contact_ids_json, preparation_notes, outcome)`
 
 `application(id, job_id, applied_at, channel, current_status_id, selected_resume_version_id, selected_cover_letter_version_id, notes)`

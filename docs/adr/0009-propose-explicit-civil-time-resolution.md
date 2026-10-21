@@ -1,9 +1,9 @@
 # ADR-0009 — Use explicit Temporal resolution for local schedules
 
-- **Status:** Proposed — owner acceptance required; not authorized for product installation
+- **Status:** Accepted — explicit owner approval received 2026-10-21; production integration and verification remain pending
 - **Date:** 2026-10-20
 - **Owners:** Project owner
-- **Decision register IDs:** `D-056` (Provisional); `D-020`, `D-022`, `D-024`, `D-025` unchanged
+- **Decision register IDs:** `D-056` (Accepted); `D-020`, `D-022`, `D-024`, `D-025` unchanged
 - **Checklist IDs:** `INT-004`; later interview/reminder composition reuses the accepted contract if approved
 
 ## Problem and evidence
@@ -34,7 +34,7 @@ An isolated review of **@js-temporal/polyfill 0.5.1** with **jsbi 4.3.2** passes
 
 ## Decision and rationale
 
-**Propose option 4, pending owner acceptance.** Add exact @js-temporal/polyfill 0.5.1 with jsbi resolved/pinned to reviewed 4.3.2 in the product lockfile only after acceptance. Use the same imported implementation on supported browser/native paths, not a native-vs-polyfill behavior split. Never install a global Temporal object or modify Date/Intl prototypes.
+**Accept option 4.** The owner explicitly accepted this ADR on 2026-10-21. Add exact @js-temporal/polyfill 0.5.1 with jsbi resolved/pinned to reviewed 4.3.2 in the product lockfile during the bounded INT-004 implementation slice. Acceptance authorizes these pins and semantics; it does not claim installation, integration or passing production proof. Use the same imported implementation on supported browser/native paths, not a native-vs-polyfill behavior split. Never install a global Temporal object or modify Date/Intl prototypes.
 
 Replace the document-10 date-fns-tz direction **only for civil-time-to-exact-instant scheduling resolution**. Existing date display/domain value objects remain unchanged. Do not install unused date-fns/date-fns-tz packages merely to preserve a nominal stack row; their later non-conversion uses remain separately scoped. Public application/storage contracts expose only validated strings and explicit candidates, never library types.
 
@@ -56,7 +56,7 @@ No source connector, account, external fetch, telemetry, credential, privileged 
 
 ## Documents, contracts, checklist IDs, and tests to update
 
-- On owner acceptance: mark this ADR Accepted, promote `D-056`, update technology document 10's date row/note and relevant architecture/interface/data-model descriptions in the implementation change. Until then, the existing accepted baseline remains unchanged.
+- Owner acceptance recorded 2026-10-21: this ADR and `D-056` are Accepted; technology document 10 and the interface note distinguish the authorized direction from unimplemented production behavior. Update relevant architecture/interface/data-model implementation descriptions coherently with helper adoption.
 - After acceptance: exact product lockfile/inventory/license/Changeset changes, a bounded helper and owned lazy-load composition. No durable schema or native protocol changes.
 - `INT-004` remains unchecked until the normal form, title/unscheduled header, shared task feedback/undo, canonical offline/reload readback and full browser/native/lifetime/failure/reflow proof pass.
 - Extend frozen DST cases with strict invalid/leap/precision/boundary inputs, explicit occurrence changes, host-zone changes, alias/canonical-zone behavior and loading failure/cancellation. Run exact Chrome/Firefox and real-native process paths; retain installed-WebView/manual gates separately.

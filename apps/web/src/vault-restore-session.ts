@@ -1,5 +1,6 @@
 import {
   applicationFailure,
+  applicationSuccess,
   parseVaultRestorePreviewDto,
   VAULT_RESTORE_MAX_ARCHIVE_BYTES,
   type ApplicationResult,
@@ -20,6 +21,9 @@ const unavailable = () =>
     message:
       "Another local vault operation is pending. Review the current vault before continuing.",
   });
+const unconfirmedMessage =
+  "Restore was not confirmed. The vault may have changed. Reload local storage before a new review; no automatic retry will occur.";
+const notSubmittedMessage = "Restore was not submitted. Review these changes before trying again.";
 
 /** Root-owned review lifetime. Bytes remain in function scope and the runtime capability only. */
 export const createVaultRestoreSession = (options: {
@@ -56,6 +60,34 @@ export const createVaultRestoreSession = (options: {
       viewedVaultId: preview.viewedVaultId,
     });
   const canSelect = () => !disposed && !state.busy && retained === null && state.phase !== "reopen";
+  const readSelection = async (
+    file?: RestoreFile,
+  ): Promise<ApplicationResult<Uint8Array | null>> => {
+    try {
+      if (runtime === "native") {
+        const selected = await api.selectNative();
+        if (!selected.ok) return selected;
+        return applicationSuccess(
+          selected.value.status === "cancelled" ? null : selected.value.bytes,
+        );
+      }
+      if (file === undefined) throw new Error("No archive was selected.");
+      const size = file.size;
+      if (!Number.isSafeInteger(size) || size < 22 || size > VAULT_RESTORE_MAX_ARCHIVE_BYTES)
+        throw new Error("Invalid selected archive size.");
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      if (bytes.byteLength !== size) throw new Error("The selected archive changed.");
+      return applicationSuccess(bytes);
+    } catch {
+      // A local read failure is known to precede restore submission. Do not let
+      // the generic mutation mutex mislabel it as an uncertain write acknowledgement.
+      return applicationFailure({
+        code: "unavailable",
+        retryable: false,
+        message: "The selected archive could not be reviewed. No restore was submitted.",
+      });
+    }
+  };
   const select = async (file?: RestoreFile): Promise<boolean> => {
     if (!canSelect() || (runtime === "browser" ? file === undefined : file !== undefined))
       return false;
@@ -68,20 +100,10 @@ export const createVaultRestoreSession = (options: {
     });
     try {
       const result = await exclusive<VaultRestorePreviewDto | null>(async () => {
-        let bytes: Uint8Array;
-        if (runtime === "native") {
-          const selected = await api.selectNative();
-          if (!selected.ok) return selected;
-          if (selected.value.status === "cancelled") return { ok: true as const, value: null };
-          bytes = selected.value.bytes;
-        } else {
-          if (file === undefined) throw new Error("No archive was selected.");
-          const size = file.size;
-          if (!Number.isSafeInteger(size) || size < 22 || size > VAULT_RESTORE_MAX_ARCHIVE_BYTES)
-            throw new Error("Invalid selected archive size.");
-          bytes = new Uint8Array(await file.arrayBuffer());
-          if (bytes.byteLength !== size) throw new Error("The selected archive changed.");
-        }
+        const selected = await readSelection(file);
+        if (!selected.ok) return selected;
+        if (selected.value === null) return applicationSuccess(null);
+        const bytes = selected.value;
         if (isDisposed()) return unavailable();
         publish({
           phase: "inspecting",
@@ -102,7 +124,7 @@ export const createVaultRestoreSession = (options: {
         publish({
           phase: "idle",
           error: result.error.message,
-          message: "No restore was submitted.",
+          message: "Archive review stopped. No restore was submitted.",
         });
         return false;
       }
@@ -123,6 +145,7 @@ export const createVaultRestoreSession = (options: {
       publish({
         phase: "idle",
         error: "The selected archive could not be reviewed. No restore was submitted.",
+        message: "Archive review stopped. No restore was submitted.",
       });
       return false;
     } finally {
@@ -198,6 +221,7 @@ export const createVaultRestoreSession = (options: {
           publish({
             phase: "review",
             error: result.ok ? "Restore was not submitted." : result.error.message,
+            message: notSubmittedMessage,
           });
           return false;
         }
@@ -209,7 +233,7 @@ export const createVaultRestoreSession = (options: {
           error: result.ok ? null : result.error.message,
           message: result.ok
             ? "Restore committed and its acknowledgement validated. Reload the local vault to open restored records; current drafts will close."
-            : "Restore was not confirmed. The vault may have changed. Reload local storage before a new review; no automatic retry will occur.",
+            : unconfirmedMessage,
         });
         return result.ok;
       } catch {
@@ -221,11 +245,13 @@ export const createVaultRestoreSession = (options: {
             confirmed: false,
             error:
               "Restore could not be confirmed. The vault may have changed. Reload local storage; do not retry blindly.",
+            message: unconfirmedMessage,
           });
         } else
           publish({
             phase: "review",
             error: "Another local operation prevented restore. Review before trying again.",
+            message: notSubmittedMessage,
           });
         return false;
       } finally {
