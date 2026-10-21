@@ -1,6 +1,6 @@
 # Task-list index migration verification
 
-Status: full local, extension and policy proof passes; commit/push and exact hosted proof remain. Not a completed integration or release gate.
+Status: full local, extension, policy and exact hosted proof pass at `d15a4c2`. Not a completed integration or release gate.
 
 ## Scope
 
@@ -30,6 +30,12 @@ The initial browser generation run (`task-list-index-browser-recovery-generate.l
 
 All nine separate extension cases pass terminal `TASK_INDEX_EXTENSION_EXIT=0` in `task-list-index-extension-final.log`. The earlier passing extension run exposed a stale hard-coded schema 126 in Firefox's informational proof log; only that test's logging was changed to use the actual asserted migration result. The final full extension rerun confirms schema 159. No production source changed after the successful full gate.
 
-## Remaining work
+## Exact hosted closure
 
-Final whole-repository formatting and policy pass terminal `TASK_INDEX_POLICY_EXIT=0` in `task-list-index-final-policy.log`, including 19 boundaries, 51 reviewed direct dependencies / three toolchains / 16 targets / ten accessibility cases, 520 npm / 498 Cargo licenses and secrets. `git diff --check` is clean; only result documentation follows these gates. Commit/push and exact hosted checks remain. Reference-device performance acceptance remains open separately. Normal task-list/completion/dismissal/reminder UI remains unfinished; `INT-005` stays unchecked. No dependency, permission or Accepted decision changes; ADR-0009 is still Proposed.
+Commit `d15a4c28698a145a0c29dd0597f962b0041e7cba` is pushed and terminal success in [run 39541786325](https://github.com/seabAu/Coredrill/actions/runs/39541786325). Every required job is successful; only PR-only dependency review is skipped on this push. Retained aggregate `task-index-hosted-aggregate-success.log`, job `119030955315`, explicitly passes legacy schema-158 restore/upgrade, current-schema restore and all 34 resilience cases. Unit and coverage each report 1,649 passing / one platform skip; native reports 14 passing / one platform skip. Local Windows has all 1,650 unit and all 15 native cases passing. Separate browser, extension, full-history secrets and Windows/macOS/Ubuntu native packaging/secure-storage lanes are successful. npm audit is clean. This closes migration/query recovery proof, not lifecycle UI, reference-device acceptance or `INT-005`.
+
+Final whole-repository formatting and policy pass terminal `TASK_INDEX_POLICY_EXIT=0` in `task-list-index-final-policy.log`, including 19 boundaries, 51 reviewed direct dependencies / three toolchains / 16 targets / ten accessibility cases, 520 npm / 498 Cargo licenses and secrets. `git diff --check` is clean; only result documentation follows those source gates.
+
+## Remaining product work
+
+Reference-device performance acceptance remains open separately. Normal task-list/completion integration is tracked in its subsequent UI proof; dismissal/reminder semantics remain unfinished and `INT-005` stays unchecked. No dependency, permission or Accepted decision changes; ADR-0009 is still Proposed.

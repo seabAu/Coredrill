@@ -153,6 +153,7 @@ import { useStoredJobNote, type StoredNoteAcknowledgement } from "./stored-job-n
 import { useStoredJobDetails } from "./stored-job-details.js";
 import { useStoredWorkspaceStatus } from "./stored-workspace-status.js";
 import { useStoredWorkspaceNextAction } from "./stored-workspace-next-action.js";
+import { useStoredJobTasks } from "./stored-job-tasks.js";
 import { useStoredJobSource } from "./stored-job-source.js";
 import { createStoredRequirementReviewGate } from "./stored-requirement-review-gate.js";
 import {
@@ -4245,6 +4246,15 @@ const AppShellCatalog = ({
     save: storedStatusActions.addNextAction,
   });
 
+  const storedTaskContent = useStoredJobTasks({
+    enabled: !referenceCatalog && vaultDeletionStatus === null,
+    jobId: workspaceRoute?.jobId ?? null,
+    rowVersion: storedPipeline?.jobs.find(({ id }) => id === workspaceRoute?.jobId)?.rowVersion,
+    busy: storedStatusActions.busy,
+    complete: storedStatusActions.completeNextAction,
+    refreshWorkspace: storedStatusActions.refreshWorkspace,
+  });
+
   const renderWorkspaceContent = () => {
     if (
       workspaceRoute === null ||
@@ -4295,7 +4305,12 @@ const AppShellCatalog = ({
       return storedSourceContent;
     }
     if (workspaceRoute.tab === "overview" || workspaceRoute.tab === "company") {
-      return storedDetailsContent;
+      return (
+        <>
+          {storedDetailsContent}
+          {workspaceRoute.tab === "overview" ? storedTaskContent : null}
+        </>
+      );
     }
     return (
       <section aria-label="Stored job view unavailable">

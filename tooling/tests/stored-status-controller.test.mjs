@@ -37,6 +37,7 @@ const fixture = () => {
       })),
     },
     nextActions: {
+      complete: vi.fn(async (input) => ({ ok: true, value: { ...input, state: "completed" } })),
       setNextAction: vi.fn(async () => ({
         ok: true,
         value: {
@@ -50,6 +51,104 @@ const fixture = () => {
   return { api, controller: createStoredStatusController(() => api) };
 };
 describe("stored status controller", () => {
+  const completion = () => ({
+    jobId: "synthetic-job",
+    nextActionId: "synthetic-task",
+    expected: { jobRowVersion: 2, nextActionRowVersion: 4 },
+  });
+  it("forwards deliberate completion without implicit undo or attempt/submission work", async () => {
+    const { api, controller } = fixture();
+    expect(await controller.completeNextAction(completion())).toMatchObject({
+      kind: "completed",
+      change: { nextActionId: "synthetic-task", state: "completed" },
+    });
+    expect(api.nextActions.complete).toHaveBeenCalledExactlyOnceWith(completion());
+    expect(api.pipeline.groups).not.toHaveBeenCalled();
+    expect(api.loadApplicationSubmissionReview).not.toHaveBeenCalled();
+    expect(api.pipelineMutations.undo).not.toHaveBeenCalled();
+  });
+  it.each([{ rowVersion: 3 }, { id: "other-job" }, { archivedAt: "archived" }])(
+    "rejects changed completion owner/context before writing: %j",
+    async (change) => {
+      const { api, controller } = fixture();
+      const current = (await api.pipeline.workspace()).value;
+      api.pipeline.workspace.mockResolvedValue({
+        ok: true,
+        value: { ...current, job: { ...current.job, ...change } },
+      });
+      expect(await controller.completeNextAction(completion())).toMatchObject({
+        kind: "failed",
+        retryable: false,
+      });
+      expect(api.nextActions.complete).not.toHaveBeenCalled();
+    },
+  );
+  it.each([0, -1, 1.5, Number.MAX_SAFE_INTEGER])(
+    "rejects invalid viewed task version %s before preflight",
+    async (value) => {
+      const { api, controller } = fixture();
+      expect(
+        await controller.completeNextAction({
+          ...completion(),
+          expected: { jobRowVersion: 2, nextActionRowVersion: value },
+        }),
+      ).toMatchObject({ kind: "failed", retryable: false });
+      expect(api.pipeline.workspace).not.toHaveBeenCalled();
+      expect(api.nextActions.complete).not.toHaveBeenCalled();
+    },
+  );
+  it("copies completion before preflight and serializes completion, creation, status and undo", async () => {
+    const { api, controller } = fixture();
+    const current = await api.pipeline.workspace();
+    let release;
+    api.pipeline.workspace.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          release = resolve;
+        }),
+    );
+    const request = completion();
+    const pending = controller.completeNextAction(request);
+    request.jobId = "other-job";
+    request.expected.jobRowVersion = 99;
+    request.expected.nextActionRowVersion = 88;
+    expect(await controller.completeNextAction(completion())).toMatchObject({ kind: "failed" });
+    expect(
+      await controller.addNextAction({
+        jobId: "synthetic-job",
+        title: "Task",
+        expected: { jobRowVersion: 2 },
+      }),
+    ).toMatchObject({ kind: "failed" });
+    expect(await controller.move(move())).toMatchObject({ kind: "failed" });
+    expect(await controller.undo("synthetic-undo")).toMatchObject({ kind: "failed" });
+    release(current);
+    expect(await pending).toMatchObject({ kind: "completed" });
+    expect(api.nextActions.complete).toHaveBeenCalledExactlyOnceWith(completion());
+    expect(Object.isFrozen(api.nextActions.complete.mock.calls[0][0].expected)).toBe(true);
+  });
+  it("redacts an unconfirmed completion and releases the mutation lock without automatic retry", async () => {
+    const { api, controller } = fixture();
+    api.nextActions.complete.mockRejectedValueOnce(new Error("SYNTHETIC_PRIVATE_PATH"));
+    const outcome = await controller.completeNextAction(completion());
+    expect(outcome).toMatchObject({ kind: "failed" });
+    expect(JSON.stringify(outcome)).not.toContain("PRIVATE");
+    expect(api.nextActions.complete).toHaveBeenCalledOnce();
+    expect(await controller.completeNextAction(completion())).toMatchObject({ kind: "completed" });
+  });
+  it("preserves canonical completion conflict without attempting a newer version", async () => {
+    const { api, controller } = fixture();
+    api.nextActions.complete.mockResolvedValue({
+      ok: false,
+      error: { message: "Review the task.", retryable: false },
+    });
+    expect(await controller.completeNextAction(completion())).toEqual({
+      kind: "failed",
+      message: "Review the task.",
+      retryable: false,
+    });
+    expect(api.nextActions.complete).toHaveBeenCalledExactlyOnceWith(completion());
+  });
   const task = () => ({
     jobId: "synthetic-job",
     title: "Research the team",

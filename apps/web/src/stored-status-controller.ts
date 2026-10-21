@@ -3,6 +3,8 @@ import type {
   MutationUndoTokenDto,
   UndoableStatusChangeDto,
   UndoableNextActionDto,
+  CompleteNextActionInput,
+  CompletedNextActionDto,
 } from "@coredrill/application";
 import type { InteractiveNextActionInput } from "./stored-next-actions.js";
 
@@ -26,6 +28,8 @@ export type StoredStatusUndoOutcome =
   Failure | { readonly kind: "undone"; readonly token: MutationUndoTokenDto };
 export type StoredNextActionOutcome =
   Failure | { readonly kind: "saved"; readonly change: UndoableNextActionDto };
+export type StoredTaskCompletionOutcome =
+  Failure | { readonly kind: "completed"; readonly change: CompletedNextActionDto };
 
 const failed = (message: string, retryable = true): Failure => ({
   kind: "failed",
@@ -133,6 +137,30 @@ export const createStoredStatusController = (
         const result = await api.nextActions.setNextAction(request);
         return result.ok
           ? { kind: "saved", change: result.value }
+          : failed(result.error.message, result.error.retryable);
+      }, "next-action"),
+    completeNextAction: (input: CompleteNextActionInput): Promise<StoredTaskCompletionOutcome> =>
+      run(async () => {
+        const request = Object.freeze({ ...input, expected: Object.freeze({ ...input.expected }) });
+        const { jobRowVersion, nextActionRowVersion } = request.expected;
+        if (
+          ![jobRowVersion, nextActionRowVersion].every(
+            (value) => Number.isSafeInteger(value) && value >= 1 && value < Number.MAX_SAFE_INTEGER,
+          )
+        )
+          return failed("Review the current job and pending task before completing it.", false);
+        const api = getApi();
+        const loaded = await api.pipeline.workspace({ jobId: request.jobId });
+        if (!loaded.ok) return failed(loaded.error.message, loaded.error.retryable);
+        const { job } = loaded.value;
+        if (job.id !== request.jobId || job.rowVersion !== jobRowVersion || job.archivedAt !== null)
+          return failed(
+            "This job changed since the task was viewed. Refresh and review it before completing the task.",
+            false,
+          );
+        const result = await api.nextActions.complete(request);
+        return result.ok
+          ? { kind: "completed", change: result.value }
           : failed(result.error.message, result.error.retryable);
       }, "next-action"),
     undo: (

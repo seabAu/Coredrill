@@ -1,11 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { JobActivityError } from "../../packages/application/dist/index.js";
+import {
+  JobActivityError,
+  NextActionCompletionError,
+  JobNextActionsError,
+} from "../../packages/application/dist/index.js";
 import { createStoredNextActionApi } from "../../apps/web/src/stored-next-actions.ts";
 
-const { write } = vi.hoisted(() => ({ write: vi.fn() }));
+const { write, list, complete } = vi.hoisted(() => ({
+  write: vi.fn(),
+  list: vi.fn(),
+  complete: vi.fn(),
+}));
 vi.mock("../../packages/storage-core/dist/index.js", async (original) => ({
   ...(await original()),
   createDatabaseJobActivityPort: () => ({ setNextAction: write }),
+  createJobNextActionsRepository: () => ({ listPage: list }),
+  createDatabaseNextActionCompletionPort: () => ({ complete }),
 }));
 const jobId = "0199b366-0000-7000-8000-000000000001";
 const actionId = "0199b366-0000-7000-8000-000000000002";
@@ -20,6 +30,24 @@ const setup = () => {
 };
 beforeEach(() => {
   write.mockReset();
+  list.mockReset();
+  complete.mockReset();
+  list.mockResolvedValue({
+    jobId,
+    jobRowVersion: 3,
+    includeArchived: false,
+    items: [],
+    hasMore: false,
+    nextCursor: null,
+  });
+  complete.mockImplementation(async (request) => ({
+    jobId: request.jobId,
+    nextActionId: request.nextActionId,
+    state: "completed",
+    completedAt: request.completedAt,
+    jobRowVersion: request.expected.jobRowVersion + 1,
+    nextActionRowVersion: request.expected.nextActionRowVersion + 1,
+  }));
   write.mockImplementation(async ({ undoTokenId, expected: _expected, ...action }) => ({
     nextAction: { ...action, rowVersion: 1 },
     undoToken: {
@@ -33,9 +61,120 @@ beforeEach(() => {
   }));
 });
 describe("normal next-action runtime boundary", () => {
+  const completion = () => ({
+    jobId,
+    nextActionId: actionId,
+    expected: { jobRowVersion: 3, nextActionRowVersion: 2 },
+  });
+  it("reads the bounded validated page without task writes or generated identities", async () => {
+    const { api, open, createId } = setup();
+    expect(await api.listPage({ jobId })).toMatchObject({
+      ok: true,
+      value: { jobId, items: [], jobRowVersion: 3 },
+    });
+    expect(list).toHaveBeenCalledExactlyOnceWith({
+      jobId,
+      includeArchived: false,
+      limit: 50,
+      after: null,
+    });
+    expect(open).toHaveBeenCalledOnce();
+    expect(write).not.toHaveBeenCalled();
+    expect(complete).not.toHaveBeenCalled();
+    expect(createId).not.toHaveBeenCalled();
+  });
+  it.each([{ jobId, limit: 101 }, { jobId: "invalid" }, { jobId, includeArchived: "yes" }])(
+    "rejects invalid page intent before opening: %j",
+    async (bad) => {
+      const { api, open } = setup();
+      expect(await api.listPage(bad)).toMatchObject({ ok: false, error: { code: "validation" } });
+      expect(open).not.toHaveBeenCalled();
+      expect(list).not.toHaveBeenCalled();
+    },
+  );
+  it("copies completion context before awaiting storage and owns completion time", async () => {
+    const { api, open, createId } = setup();
+    let release;
+    open.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          release = resolve;
+        }),
+    );
+    const request = completion();
+    const pending = api.complete(request);
+    request.jobId = tokenId;
+    request.expected.jobRowVersion = 99;
+    release({});
+    expect(await pending).toMatchObject({
+      ok: true,
+      value: {
+        jobId,
+        nextActionId: actionId,
+        state: "completed",
+        completedAt: at,
+        jobRowVersion: 4,
+        nextActionRowVersion: 3,
+      },
+    });
+    expect(complete).toHaveBeenCalledExactlyOnceWith({
+      jobId,
+      nextActionId: actionId,
+      expected: { jobRowVersion: 3, nextActionRowVersion: 2 },
+      completedAt: at,
+    });
+    expect(Object.isFrozen(complete.mock.calls[0][0].expected)).toBe(true);
+    expect(createId).not.toHaveBeenCalled();
+    expect(write).not.toHaveBeenCalled();
+  });
+  it.each([
+    {},
+    { jobId, nextActionId: actionId },
+    { ...completion(), expected: { jobRowVersion: 0, nextActionRowVersion: 2 } },
+    { ...completion(), completedAt: at },
+  ])("rejects invalid/forged completion before opening: %j", async (bad) => {
+    const { api, open } = setup();
+    expect(await api.complete(bad)).toMatchObject({ ok: false, error: { code: "validation" } });
+    expect(open).not.toHaveBeenCalled();
+    expect(complete).not.toHaveBeenCalled();
+  });
+  it.each(["listPage", "complete"])(
+    "redacts %s database failures without retry",
+    async (method) => {
+      const { api, open } = setup();
+      open.mockRejectedValue(new Error("SYNTHETIC_PRIVATE_PATH"));
+      const result = await api[method](method === "complete" ? completion() : { jobId });
+      expect(result).toMatchObject({ ok: false, error: { code: "unavailable" } });
+      expect(JSON.stringify(result)).not.toContain("PRIVATE");
+      expect(open).toHaveBeenCalledOnce();
+    },
+  );
+  it("preserves task-read and completion conflicts without retry or private data", async () => {
+    const { api } = setup();
+    list.mockRejectedValue(new JobNextActionsError("cursor_invalidated"));
+    complete.mockRejectedValue(new NextActionCompletionError("conflict"));
+    expect(await api.listPage({ jobId })).toMatchObject({ ok: false, error: { code: "conflict" } });
+    expect(await api.complete(completion())).toMatchObject({
+      ok: false,
+      error: { code: "conflict" },
+    });
+    expect(list).toHaveBeenCalledOnce();
+    expect(complete).toHaveBeenCalledOnce();
+  });
+  it("rejects forged read and completion acknowledgements", async () => {
+    const { api } = setup();
+    list.mockResolvedValue({ jobId: tokenId });
+    complete.mockResolvedValue({ ...completion(), state: "completed" });
+    expect(await api.listPage({ jobId })).toMatchObject({ ok: false, error: { code: "internal" } });
+    expect(await api.complete(completion())).toMatchObject({
+      ok: false,
+      error: { code: "unavailable" },
+    });
+    expect(complete).toHaveBeenCalledOnce();
+  });
   it("requires viewed context, creates only job-scoped tasks and owns audit/identities", async () => {
     const { api, createId, open } = setup();
-    expect(Object.keys(api)).toEqual(["setNextAction"]);
+    expect(Object.keys(api)).toEqual(["listPage", "complete", "setNextAction"]);
     const result = await api.setNextAction({
       ...input,
       applicationId: tokenId,

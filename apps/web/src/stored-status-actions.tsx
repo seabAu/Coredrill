@@ -8,6 +8,7 @@ import {
 import { createStoredStatusController, type ViewedStatusMove } from "./stored-status-controller.js";
 import type { StoredPipelineSnapshot } from "./stored-pipeline-view.js";
 import type { InteractiveNextActionInput } from "./stored-next-actions.js";
+import type { CompleteNextActionInput } from "@coredrill/application";
 
 interface RequestedMove {
   readonly viewed: ViewedStatusMove;
@@ -281,6 +282,32 @@ export const useStoredStatusActions = (options: {
       setBusy(false);
     }
   };
+  const completeNextAction = async (
+    input: CompleteNextActionInput,
+  ): Promise<PipelineTableEditResult> => {
+    if (!live.current.enabled || owner.current || pendingReopen !== null)
+      return fail("Finish the pending local tracking operation before completing a task.");
+    const job = live.current.snapshot?.jobs.find(({ id }) => id === input.jobId);
+    if (job?.rowVersion !== input.expected.jobRowVersion)
+      return fail("This job changed since the task was viewed. Refresh and review again.");
+    owner.current = true;
+    setBusy(true);
+    setError(false);
+    setFeedbackKind("next-action");
+    setRetry(null);
+    setAppliedReview(null);
+    setMessage(`Recording task completion for ${job.title} locally…`);
+    try {
+      const outcome = await controller.completeNextAction(input);
+      if (outcome.kind === "failed") return fail(outcome.message);
+      const announcement = `Task marked complete for ${job.title}. Its history is retained. Nothing was sent; completion has no undo action.`;
+      await reread(announcement);
+      return { ok: true, announcement };
+    } finally {
+      owner.current = false;
+      setBusy(false);
+    }
+  };
   const undo = async (entry: UndoEntry) => {
     if (owner.current || pendingReopen !== null || entry.consumed || entry.unavailable) return;
     const focusOrigin = document.activeElement;
@@ -481,6 +508,8 @@ export const useStoredStatusActions = (options: {
     editTable,
     editWorkspace,
     addNextAction,
+    completeNextAction,
+    refreshWorkspace: refresh,
     panel,
   };
 };

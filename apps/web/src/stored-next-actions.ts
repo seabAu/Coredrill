@@ -2,12 +2,21 @@ import {
   JobActivityError,
   applicationFailure,
   createJobActivityOperations,
+  createJobNextActionsQuery,
+  createCompleteNextActionCommand,
   type ApplicationOperationContext,
+  type ListJobNextActionsInput,
+  type CompleteNextActionInput,
   type NextActionExpectation,
   type SetNextActionInput,
 } from "@coredrill/application";
 import { entityId } from "@coredrill/domain";
-import { createDatabaseJobActivityPort, type DatabasePort } from "@coredrill/storage-core";
+import {
+  createDatabaseJobActivityPort,
+  createJobNextActionsRepository,
+  createDatabaseNextActionCompletionPort,
+  type DatabasePort,
+} from "@coredrill/storage-core";
 
 export type InteractiveNextActionInput = Pick<
   SetNextActionInput,
@@ -22,12 +31,20 @@ const hasViewedInput = (value: unknown): value is InteractiveNextActionInput => 
   return (value as Record<string, unknown>)["expected"] !== undefined;
 };
 
-/** Job-scoped local task creation only; no sending, interviews or implicit attempt binding. */
+/** Job-scoped local task lifecycle; no sending, interviews or implicit attempt binding. */
 export const createStoredNextActionApi = (
   database: () => Promise<DatabasePort>,
   context: () => ApplicationOperationContext,
   createId: (kind: "next-action" | "mutation-undo-token") => string,
 ) => {
+  // Application boundaries validate and capture intent before these lazy ports open storage.
+  const taskQuery = createJobNextActionsQuery({
+    listPage: async (input) => createJobNextActionsRepository(await database()).listPage(input),
+  });
+  const completeTask = createCompleteNextActionCommand({
+    complete: async (input) =>
+      createDatabaseNextActionCompletionPort(await database()).complete(input),
+  });
   const operations = createJobActivityOperations({
     createNextActionId: () => entityId("next-action", createId("next-action")),
     createUndoTokenId: () => entityId("mutation-undo-token", createId("mutation-undo-token")),
@@ -49,6 +66,8 @@ export const createStoredNextActionApi = (
     },
   });
   return Object.freeze({
+    listPage: (input: ListJobNextActionsInput) => taskQuery.execute(input, context()),
+    complete: (input: CompleteNextActionInput) => completeTask.execute(input, context()),
     setNextAction: (input: InteractiveNextActionInput) => {
       if (!hasViewedInput(input)) {
         return Promise.resolve(

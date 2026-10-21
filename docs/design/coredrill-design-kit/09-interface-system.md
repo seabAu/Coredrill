@@ -364,6 +364,8 @@ Normal Set next action currently stages unscheduled creation through one session
 
 ### Requirements and evidence
 
+Normal stored Overview now includes a bounded task list: one page of up to 25 current pending/completed/dismissed records, explicit first-page job/task refresh and older-page navigation. Completion uses a root-owned deliberate review of the literal task title and original job/task versions; stale context is never silently rebound. Review state survives tab/reflow replacement and hides its task literal under another job. Acknowledged completion retains history and offers no invented undo; readback failure must not repeat the write. Expanded normal offline browser/native, keyboard/320px, held/cross-job/failure/pagination checks pass; full local, separate extension and final policy checks pass; exact hosted UI proof remains. Dismissal/reminder semantics and scheduled entry are not yet complete; see [task UI proof](../../proof/normal-task-list-ui-verification.md).
+
 Avoid a single circular score as the primary visualization.
 
 ```text

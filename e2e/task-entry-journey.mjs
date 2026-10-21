@@ -64,6 +64,8 @@ export const exerciseNormalTaskEntry = async (page, testInfo) => {
     fullPage: true,
   });
   await feedback
+    .locator("[data-task-undo-id]")
+    .filter({ hasText: title })
     .getByRole("button", { name: `Undo next action for ${jobTitle}`, exact: true })
     .click();
   await expect(feedback.getByRole("status")).toContainText("Undid next-action creation");

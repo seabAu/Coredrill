@@ -489,3 +489,20 @@
     grid-template-columns: minmax(0, 1fr) auto;
   }
 }
+.cd-stored-job-tasks {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.cd-stored-job-tasks ol {
+  padding-inline-start: 1.25rem;
+}
+
+.cd-stored-job-tasks li {
+  margin-block: 1rem;
+}
+
+.cd-stored-job-tasks .cd-button {
+  white-space: normal;
+  max-width: 100%;
+}

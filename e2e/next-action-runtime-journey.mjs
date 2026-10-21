@@ -1,5 +1,10 @@
 import { expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { exerciseNormalTaskCompletion } from "./task-completion-journey.mjs";
+import {
+  exerciseTaskCompletionHardening,
+  exerciseTaskCompletionCrossJob,
+} from "./task-completion-hardening.mjs";
 
 /** Direct production-command composition proof, not the unfinished normal task form. */
 export const exerciseNextActionRuntime = async (page, testInfo) => {
@@ -138,8 +143,103 @@ export const exerciseNextActionRuntime = async (page, testInfo) => {
   expect(final.undone).toMatchObject({ ok: true });
   expect(final.replay).toMatchObject({ ok: false, error: { code: "conflict" } });
   expect(final.after.value.job.nextAction).toBeNull();
+  const lifecycle = await page.evaluate(
+    async ({ jobId }) => {
+      const api = globalThis.coredrillStorageSpike;
+      const before = await api.pipeline.workspace({ jobId });
+      if (!before.ok) throw new Error("Synthetic task owner is unavailable");
+      const created = await api.nextActions.setNextAction({
+        jobId,
+        title: "Deliberately complete this local task",
+        expected: { jobRowVersion: before.value.job.rowVersion },
+        dueAt: "2026-11-01T06:30:00.000Z",
+        timeZone: "America/New_York",
+      });
+      if (!created.ok) throw new Error("Synthetic task creation failed");
+      const page = await api.nextActions.listPage({ jobId, limit: 1 });
+      if (!page.ok) throw new Error("Synthetic task page is unavailable");
+      const request = {
+        jobId,
+        nextActionId: created.value.nextAction.id,
+        expected: {
+          jobRowVersion: page.value.jobRowVersion,
+          nextActionRowVersion: created.value.nextAction.rowVersion,
+        },
+      };
+      const stale = await api.nextActions.complete({
+        ...request,
+        expected: {
+          ...request.expected,
+          nextActionRowVersion: request.expected.nextActionRowVersion + 1,
+        },
+      });
+      const unchanged = await api.nextActions.listPage({ jobId, limit: 1 });
+      const completed = await api.nextActions.complete(request);
+      const replay = await api.nextActions.complete(request);
+      const invalidatedPage = await api.nextActions.listPage({
+        jobId,
+        limit: 1,
+        after: page.value.nextCursor,
+      });
+      const after = await api.pipeline.workspace({ jobId });
+      const history = await api.nextActions.listPage({ jobId });
+      return {
+        before,
+        created,
+        page,
+        stale,
+        unchanged,
+        completed,
+        replay,
+        invalidatedPage,
+        after,
+        history,
+      };
+    },
+    { jobId },
+  );
+  expect(lifecycle.page).toMatchObject({ ok: true, value: { jobId, hasMore: true } });
+  expect(lifecycle.stale).toMatchObject({ ok: false, error: { code: "conflict" } });
+  expect(lifecycle.unchanged).toEqual(lifecycle.page);
+  expect(lifecycle.completed).toMatchObject({
+    ok: true,
+    value: {
+      jobId,
+      nextActionId: lifecycle.created.value.nextAction.id,
+      state: "completed",
+      jobRowVersion: lifecycle.page.value.jobRowVersion + 1,
+      nextActionRowVersion: 2,
+    },
+  });
+  expect(lifecycle.replay).toMatchObject({ ok: false, error: { code: "conflict" } });
+  expect(lifecycle.invalidatedPage).toMatchObject({ ok: false, error: { code: "conflict" } });
+  expect(lifecycle.after.value.job.nextAction).toBeNull();
+  expect(lifecycle.after.value.application).toEqual(lifecycle.before.value.application);
+  expect(lifecycle.history.value.items).toHaveLength(3);
+  expect(lifecycle.history.value.items).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        id: lifecycle.created.value.nextAction.id,
+        state: "completed",
+        dueAt: "2026-11-01T06:30:00.000Z",
+        timeZone: "America/New_York",
+        completedAt: lifecycle.completed.value.completedAt,
+      }),
+      expect.objectContaining({ id: scheduledId, state: "dismissed" }),
+      expect.objectContaining({ id: second.unscheduled.value.nextAction.id, state: "dismissed" }),
+    ]),
+  );
   await page.reload();
   await expect(page.locator("[data-job-workspace]")).toBeVisible();
+  await expect(header).toHaveText("Not set");
+  const durableHistory = await page.evaluate(
+    (jobId) => globalThis.coredrillStorageSpike.nextActions.listPage({ jobId }),
+    jobId,
+  );
+  expect(durableHistory).toEqual(lifecycle.history);
+  const normalCompletion = await exerciseNormalTaskCompletion(page, testInfo);
+  const completionHardening = await exerciseTaskCompletionHardening(page);
+  const completionCrossJob = await exerciseTaskCompletionCrossJob(page);
   if (originalViewport !== null) await page.setViewportSize(originalViewport);
   return {
     mandatoryContext: true,
@@ -149,9 +249,18 @@ export const exerciseNextActionRuntime = async (page, testInfo) => {
     unscheduledNullPair: true,
     reloadReadback: true,
     undoAndReplay: true,
-    normalTaskFormProven: false,
+    normalScheduledTaskFormProven: false,
     canonicalTaskHeader: true,
     fullTitleReachable: true,
     narrowHeaderReflow: true,
+    runtimeTaskListAndCompletion: true,
+    staleTaskAndReplayRejected: true,
+    completionInvalidatesCursor: true,
+    completedAndDismissedHistoryRetained: true,
+    normalCompletion,
+    completionHardening,
+    completionCrossJob,
+    normalTaskCompletionControlsProven: true,
+    normalTaskLifecycleControlsProven: false,
   };
 };
