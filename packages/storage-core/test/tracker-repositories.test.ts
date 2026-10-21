@@ -390,8 +390,8 @@ describe("Phase 1 tracker repository contracts", () => {
   it("passes the versioned Phase 1 repository contract manifest in fast SQLite", async () => {
     const suite = createPhase1RepositoryContractSuite({
       expectedFts5: true,
-      migrate: async (database) => {
-        await applySqlMigrations(database, migrations, APPLIED_AT);
+      migrate: async (database, throughVersion) => {
+        await applySqlMigrations(database, migrations.slice(0, throughVersion), APPLIED_AT);
       },
     });
 
@@ -527,7 +527,7 @@ describe("SQLite application port composition", () => {
         name: "Explicit local name",
         createdAt: instant(APPLIED_AT),
       });
-      expect(created.vault.schemaVersion).toBe(158);
+      expect(created.vault.schemaVersion).toBe(159);
       expect((await port.inspect()).vault).toEqual(created.vault);
       await expect(
         port.create({
@@ -565,13 +565,13 @@ describe("SQLite application port composition", () => {
         name: "Keep my name",
         createdAt: APPLIED_AT,
         lastOpenedAt: openedAt,
-        schemaVersion: 158,
+        schemaVersion: 159,
       });
       await expect(port.open({ vaultId: id, openedAt: instant(APPLIED_AT) })).rejects.toMatchObject(
         { code: "invalid_state" },
       );
       await database.execute(
-        sqlStatement("UPDATE vault SET schema_version = 159 WHERE id = ?", [id]),
+        sqlStatement("UPDATE vault SET schema_version = 160 WHERE id = ?", [id]),
       );
       const before = await database.query(sqlStatement("SELECT * FROM vault"));
       await expect(port.open({ vaultId: id, openedAt })).rejects.toMatchObject({
@@ -579,7 +579,7 @@ describe("SQLite application port composition", () => {
       });
       expect(await database.query(sqlStatement("SELECT * FROM vault"))).toEqual(before);
       await database.execute(
-        sqlStatement("INSERT INTO vault VALUES (?, ?, 158, ?, ?)", [
+        sqlStatement("INSERT INTO vault VALUES (?, ?, 159, ?, ?)", [
           "0199a200-0000-7000-8000-000000000002",
           "Ambiguous",
           APPLIED_AT,

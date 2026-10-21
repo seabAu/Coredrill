@@ -14,7 +14,7 @@ import { createViewRepositoryContractSuite } from "./view-contract-harness.js";
 
 export interface Phase1RepositoryContractSetup {
   readonly expectedFts5: boolean;
-  readonly migrate: (database: DatabasePort) => Promise<void>;
+  readonly migrate: (database: DatabasePort, throughVersion?: number) => Promise<void>;
 }
 
 const assertComponentMatches = (

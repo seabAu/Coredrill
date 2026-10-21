@@ -489,6 +489,18 @@ describe("portable human-readable data export", () => {
     expect(textFile(bundle, "data/document_derivation_origin.csv")).toContain(
       origin.source_version_id,
     );
+    database.schemaVersion = 159;
+    const indexed = await createPortableDataExportV1({
+      database,
+      generatedAt: GENERATED_AT,
+      vaultId: VAULT_ID,
+    });
+    expect(indexed.sourceSchemaVersion).toBe(159);
+    expect(indexed.datasetCount).toBe(57);
+    expect(indexed.dataFiles).toHaveLength(114);
+    expect(indexed.datasets).toEqual(
+      bundle.datasets.map((dataset) => ({ ...dataset, sourceSchemaVersion: 159 })),
+    );
     database.schemaVersion = 154;
     const historical = await createPortableDataExportV1({
       database,

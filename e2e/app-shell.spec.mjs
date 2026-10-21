@@ -77,7 +77,7 @@ test("runs and records the complete accountless browser recovery journey", async
       version: 1,
       runtime: "browser",
       adapterName: "official-sqlite-wasm-opfs-sahpool",
-      schemaVersion: 158,
+      schemaVersion: 159,
       vaultName: "Canonical local job search",
       jobTitle: "Research Operations Lead",
       finalStage: "Interviewing",

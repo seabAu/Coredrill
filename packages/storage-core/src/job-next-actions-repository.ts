@@ -87,7 +87,7 @@ export const createJobNextActionsRepository = (database: DatabasePort): JobNextA
             ),
           );
           if (anchor.length !== 1) throw new JobNextActionsError("cursor_invalidated");
-          predicate = "(n.created_at < ? OR (n.created_at = ? AND n.id > ?))";
+          predicate = "(n.created_at <= ? AND (n.created_at < ? OR n.id > ?))";
           parameters.push(anchorAt, anchorAt, anchorId);
         }
         const rows = await session.query(

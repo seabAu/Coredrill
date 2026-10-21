@@ -340,11 +340,11 @@ describe("native SQLite repository and migration contracts", () => {
         name: "applies the shared migration and reopens its ledger",
         run: async (database) => {
           await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
-            schemaVersion: 158,
-            appliedVersions: Array.from({ length: 158 }, (_, index) => index + 1),
+            schemaVersion: 159,
+            appliedVersions: Array.from({ length: 159 }, (_, index) => index + 1),
           });
           await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
-            schemaVersion: 158,
+            schemaVersion: 159,
             appliedVersions: [],
           });
         },
@@ -390,8 +390,8 @@ describe("native SQLite repository and migration contracts", () => {
   it("passes the versioned Phase 1 repository contract manifest", async () => {
     const suite = createPhase1RepositoryContractSuite({
       expectedFts5: true,
-      migrate: async (database) => {
-        await applySqlMigrations(database, migrations(), APPLIED_AT);
+      migrate: async (database, throughVersion) => {
+        await applySqlMigrations(database, migrations().slice(0, throughVersion), APPLIED_AT);
       },
     });
     expect(PHASE_1_REPOSITORY_CONTRACT_MANIFEST.schemaVersion).toBe(10);
@@ -451,7 +451,7 @@ describe("native SQLite repository and migration contracts", () => {
       adapterName: "native-rusqlite-candidate",
       health: "ready",
       persistence: "durable",
-      schemaVersion: 158,
+      schemaVersion: 159,
     });
     await expect(reopened.delete()).resolves.toBe(true);
   });
@@ -471,7 +471,7 @@ describe("native SQLite repository and migration contracts", () => {
     });
     await applySqlMigrations(database, migrations(), APPLIED_AT);
     await expect(database.exportPortable()).resolves.toMatchObject({
-      schemaVersion: 158,
+      schemaVersion: 159,
       byteLength: expect.any(Number),
       sha256: expect.stringMatching(/^[a-f0-9]{64}$/u),
     });
@@ -481,7 +481,7 @@ describe("native SQLite repository and migration contracts", () => {
       retentionCount: 7,
       knownGoodBackups: 1,
       cleanupPending: false,
-      archive: { schemaVersion: 158, sha256: expect.stringMatching(/^[a-f0-9]{64}$/u) },
+      archive: { schemaVersion: 159, sha256: expect.stringMatching(/^[a-f0-9]{64}$/u) },
     });
     await database.delete();
   });
@@ -582,121 +582,123 @@ describe("native SQLite repository and migration contracts", () => {
     await reopened.delete();
   });
 
-  it("restores complete evidence relationships and attachments through the native boundary", async () => {
-    const manifest = JSON.parse(
-      await readFile(
-        path.join(repositoryRoot, "fixtures", "recovery", "phase-1-vault-v1.json"),
-        "utf8",
-      ),
-    ) as {
-      readonly archiveSha256: string;
-      readonly contentSha256: string;
-      readonly databaseSha256: string;
-      readonly generatedAt: string;
-      readonly vaultId: string;
-      readonly schemaVersion: number;
-      readonly attachmentCount: number;
-      readonly attachmentContentIds: readonly string[];
-      readonly phase3Inventory: Readonly<Record<string, number>>;
-      readonly documentRoundTrip: {
-        readonly specVersion: 1;
-        readonly datasets: readonly {
-          readonly dataset: string;
-          readonly rowCount: number;
-          readonly rows: readonly Readonly<Record<string, unknown>>[];
-        }[];
+  it.each(["phase-1-vault-v1", "phase-1-vault-schema-159-v1"])(
+    "restores complete evidence relationships and attachments through the native boundary: %s",
+    async (fixtureName) => {
+      const manifest = JSON.parse(
+        await readFile(
+          path.join(repositoryRoot, "fixtures", "recovery", `${fixtureName}.json`),
+          "utf8",
+        ),
+      ) as {
+        readonly archiveSha256: string;
+        readonly contentSha256: string;
+        readonly databaseSha256: string;
+        readonly generatedAt: string;
+        readonly vaultId: string;
+        readonly schemaVersion: number;
+        readonly attachmentCount: number;
+        readonly attachmentContentIds: readonly string[];
+        readonly phase3Inventory: Readonly<Record<string, number>>;
+        readonly documentRoundTrip: {
+          readonly specVersion: 1;
+          readonly datasets: readonly {
+            readonly dataset: string;
+            readonly rowCount: number;
+            readonly rows: readonly Readonly<Record<string, unknown>>[];
+          }[];
+        };
       };
-    };
-    const archiveBytes = new Uint8Array(
-      await readFile(
-        path.join(repositoryRoot, "fixtures", "recovery", "phase-1-vault-v1.coredrill.zip"),
-      ),
-    );
-    const inspected = await inspectPortableArchiveV1({
-      bytes: archiveBytes,
-      expectedSchemaVersion: manifest.schemaVersion,
-      expectedArchiveSha256: manifest.archiveSha256,
-    });
-    await expect(createPortableArchiveContentHashV1(inspected)).resolves.toMatchObject({
-      sha256: manifest.contentSha256,
-    });
-
-    const database = await openNativeSqliteDatabase({
-      databaseName: nextDatabaseName(),
-      transport,
-    });
-    try {
-      const port = createNativePortableArchiveRestorePortV1({
-        database,
-        expectedVaultId: manifest.vaultId,
-      });
-      const preview = await createPortableArchiveRestorePreviewV1({
-        archiveBytes,
+      const archiveBytes = new Uint8Array(
+        await readFile(
+          path.join(repositoryRoot, "fixtures", "recovery", `${fixtureName}.coredrill.zip`),
+        ),
+      );
+      const inspected = await inspectPortableArchiveV1({
+        bytes: archiveBytes,
         expectedSchemaVersion: manifest.schemaVersion,
         expectedArchiveSha256: manifest.archiveSha256,
-        port,
       });
-      expect(preview).toMatchObject({
-        conflict: "none",
-        requiredConfirmation: "commit",
-        target: { state: "empty", attachmentCount: 0 },
-        changes: {
-          database: "create",
-          attachmentsAdded: manifest.attachmentCount,
-          attachmentsReused: 0,
-          attachmentsRemoved: 0,
-        },
-      });
-      await expect(
-        commitPortableArchiveRestoreV1({ preview, confirmation: "commit" }),
-      ).resolves.toMatchObject({
-        committed: true,
-        archiveSha256: manifest.archiveSha256,
-        databaseSha256: manifest.databaseSha256,
-        attachmentCount: manifest.attachmentCount,
+      await expect(createPortableArchiveContentHashV1(inspected)).resolves.toMatchObject({
+        sha256: manifest.contentSha256,
       });
 
-      const restoredContent = await createPortableVaultContentHashV1({
-        database,
-        generatedAt: manifest.generatedAt,
-        vaultId: manifest.vaultId,
-        readAttachment: (contentId) => database.readPortableAttachment(contentId),
+      const database = await openNativeSqliteDatabase({
+        databaseName: nextDatabaseName(),
+        transport,
       });
-      expect(restoredContent.sha256).toBe(manifest.contentSha256);
-      const restoredData = await createPortableDataExportV1({
-        database,
-        generatedAt: manifest.generatedAt,
-        vaultId: manifest.vaultId,
-      });
-      const restoredDocumentDatasets = manifest.documentRoundTrip.datasets.map(
-        ({ dataset: datasetName }) => {
-          const dataset = restoredData.datasets.find(
-            (candidate) => candidate.dataset === datasetName,
-          );
-          if (dataset === undefined) {
-            throw new Error("The native restore omitted a document round-trip dataset.");
-          }
-          return {
-            dataset: dataset.dataset,
-            rowCount: dataset.rowCount,
-            rows: dataset.rows,
-          };
-        },
-      );
-      expect({ specVersion: 1, datasets: restoredDocumentDatasets }).toEqual(
-        manifest.documentRoundTrip,
-      );
-      await expect(
-        database.query<{ readonly content_id: string } & QueryRow>(
-          sqlStatement("SELECT content_id FROM attachment_manifest ORDER BY content_id"),
-        ),
-      ).resolves.toEqual(
-        manifest.attachmentContentIds.map((contentId) => ({ content_id: contentId })),
-      );
-      await expect(
-        database.query<QueryRow>(
-          sqlStatement(
-            `SELECT
+      try {
+        const port = createNativePortableArchiveRestorePortV1({
+          database,
+          expectedVaultId: manifest.vaultId,
+        });
+        const preview = await createPortableArchiveRestorePreviewV1({
+          archiveBytes,
+          expectedSchemaVersion: manifest.schemaVersion,
+          expectedArchiveSha256: manifest.archiveSha256,
+          port,
+        });
+        expect(preview).toMatchObject({
+          conflict: "none",
+          requiredConfirmation: "commit",
+          target: { state: "empty", attachmentCount: 0 },
+          changes: {
+            database: "create",
+            attachmentsAdded: manifest.attachmentCount,
+            attachmentsReused: 0,
+            attachmentsRemoved: 0,
+          },
+        });
+        await expect(
+          commitPortableArchiveRestoreV1({ preview, confirmation: "commit" }),
+        ).resolves.toMatchObject({
+          committed: true,
+          archiveSha256: manifest.archiveSha256,
+          databaseSha256: manifest.databaseSha256,
+          attachmentCount: manifest.attachmentCount,
+        });
+
+        const restoredContent = await createPortableVaultContentHashV1({
+          database,
+          generatedAt: manifest.generatedAt,
+          vaultId: manifest.vaultId,
+          readAttachment: (contentId) => database.readPortableAttachment(contentId),
+        });
+        expect(restoredContent.sha256).toBe(manifest.contentSha256);
+        const restoredData = await createPortableDataExportV1({
+          database,
+          generatedAt: manifest.generatedAt,
+          vaultId: manifest.vaultId,
+        });
+        const restoredDocumentDatasets = manifest.documentRoundTrip.datasets.map(
+          ({ dataset: datasetName }) => {
+            const dataset = restoredData.datasets.find(
+              (candidate) => candidate.dataset === datasetName,
+            );
+            if (dataset === undefined) {
+              throw new Error("The native restore omitted a document round-trip dataset.");
+            }
+            return {
+              dataset: dataset.dataset,
+              rowCount: dataset.rowCount,
+              rows: dataset.rows,
+            };
+          },
+        );
+        expect({ specVersion: 1, datasets: restoredDocumentDatasets }).toEqual(
+          manifest.documentRoundTrip,
+        );
+        await expect(
+          database.query<{ readonly content_id: string } & QueryRow>(
+            sqlStatement("SELECT content_id FROM attachment_manifest ORDER BY content_id"),
+          ),
+        ).resolves.toEqual(
+          manifest.attachmentContentIds.map((contentId) => ({ content_id: contentId })),
+        );
+        await expect(
+          database.query<QueryRow>(
+            sqlStatement(
+              `SELECT
                (SELECT count(*) FROM job_requirement) AS jobRequirements,
                (SELECT count(*) FROM experience) +
                (SELECT count(*) FROM education) +
@@ -728,27 +730,80 @@ describe("native SQLite repository and migration contracts", () => {
                (SELECT count(*) FROM application_answer_selection) AS applicationAnswerSelections,
                (SELECT count(*) FROM submitted_snapshot) AS submittedSnapshots,
                (SELECT count(*) FROM submitted_snapshot_item) AS submittedSnapshotItems`,
+            ),
           ),
-        ),
-      ).resolves.toEqual([manifest.phase3Inventory]);
-      const restoredDatabase = await database.exportPortable();
-      expect(restoredDatabase).toMatchObject({
-        schemaVersion: manifest.schemaVersion,
-        sha256: expect.stringMatching(/^[a-f0-9]{64}$/u),
-      });
-      console.info(
-        `BKP007_NATIVE_PROOF ${JSON.stringify({
-          archiveSha256: manifest.archiveSha256,
-          contentSha256: restoredContent.sha256,
-          databaseMatchesArchive: restoredDatabase.sha256 === manifest.databaseSha256,
-          attachmentCount: manifest.attachmentCount,
-          cleanInstallRestore: true,
-        })}`,
-      );
-    } finally {
-      await database.delete();
-    }
-  });
+        ).resolves.toEqual([manifest.phase3Inventory]);
+        const restoredDatabase = await database.exportPortable();
+        expect(restoredDatabase).toMatchObject({
+          schemaVersion: manifest.schemaVersion,
+          sha256: expect.stringMatching(/^[a-f0-9]{64}$/u),
+        });
+        // The restore commit above verifies the original payload hash. Native SQLite
+        // re-export bytes need not match the browser archive's physical page layout;
+        // preserve canonical content and every dataset row across the upgrade.
+        const originalLedger = await database.query<QueryRow>(
+          sqlStatement(
+            "SELECT version, name, sha256 FROM coredrill_schema_migration ORDER BY version",
+          ),
+        );
+        expect([158, 159]).toContain(manifest.schemaVersion);
+        expect(originalLedger).toHaveLength(manifest.schemaVersion);
+        await expect(
+          database.query<QueryRow>(
+            sqlStatement("SELECT name FROM sqlite_schema WHERE type = 'index' AND name = ?", [
+              "next_action_job_created_idx",
+            ]),
+          ),
+        ).resolves.toEqual(
+          manifest.schemaVersion === 158 ? [] : [{ name: "next_action_job_created_idx" }],
+        );
+        await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
+          schemaVersion: 159,
+          appliedVersions: manifest.schemaVersion === 158 ? [159] : [],
+        });
+        const upgradedLedger = await database.query<QueryRow>(
+          sqlStatement(
+            "SELECT version, name, sha256 FROM coredrill_schema_migration ORDER BY version",
+          ),
+        );
+        expect(upgradedLedger).toHaveLength(159);
+        expect(upgradedLedger.slice(0, manifest.schemaVersion)).toEqual(originalLedger);
+        await expect(
+          database.query<QueryRow>(
+            sqlStatement("SELECT name FROM sqlite_schema WHERE type = 'index' AND name = ?", [
+              "next_action_job_created_idx",
+            ]),
+          ),
+        ).resolves.toEqual([{ name: "next_action_job_created_idx" }]);
+        const upgradedData = await createPortableDataExportV1({
+          database,
+          generatedAt: manifest.generatedAt,
+          vaultId: manifest.vaultId,
+        });
+        expect(upgradedData.datasets).toEqual(
+          restoredData.datasets.map((dataset) => ({ ...dataset, sourceSchemaVersion: 159 })),
+        );
+        for (const contentId of manifest.attachmentContentIds) {
+          const attachment = await database.readPortableAttachment(contentId);
+          if (attachment === undefined) {
+            throw new Error("The schema upgrade lost a restored attachment.");
+          }
+          expect(createHash("sha256").update(attachment).digest("hex")).toBe(contentId);
+        }
+        console.info(
+          `BKP007_NATIVE_PROOF ${JSON.stringify({
+            archiveSha256: manifest.archiveSha256,
+            contentSha256: restoredContent.sha256,
+            databaseMatchesArchive: restoredDatabase.sha256 === manifest.databaseSha256,
+            attachmentCount: manifest.attachmentCount,
+            cleanInstallRestore: true,
+          })}`,
+        );
+      } finally {
+        await database.delete();
+      }
+    },
+  );
 
   it.runIf(process.platform === "win32")(
     "runs the complete Phase 1 canonical journey through the Windows native process",
@@ -860,7 +915,7 @@ describe("native SQLite repository and migration contracts", () => {
           version: 1,
           runtime: "windows-native",
           adapterName: "native-rusqlite-candidate",
-          schemaVersion: 158,
+          schemaVersion: 159,
           vaultName: "Canonical local job search",
           jobTitle: "Research Operations Lead",
           finalStage: "Interviewing",

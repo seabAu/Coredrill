@@ -384,6 +384,7 @@ interface PortableRecoveryRestoreInput {
   readonly archiveSha256: string;
   readonly generatedAt: string;
   readonly vaultId: string;
+  readonly sourceSchemaVersion?: number;
 }
 
 interface PortableRecoveryRestoreProof {
@@ -3804,7 +3805,11 @@ const api: CoredrillStorageSpikeApi = {
   restorePortableRecoveryFixture: async (input) => {
     const client = await getBrowserDatabase();
     const archiveBytes = base64ToBytes(input.archiveBytesBase64);
-    const schemaVersion = (await client.diagnostics()).schemaVersion;
+    const currentSchemaVersion = (await client.diagnostics()).schemaVersion;
+    const schemaVersion = input.sourceSchemaVersion ?? currentSchemaVersion;
+    if (schemaVersion !== 158 && schemaVersion !== currentSchemaVersion) {
+      throw new Error("The recovery fixture source schema is not reviewed.");
+    }
     const inspected = await inspectPortableArchiveV1({
       bytes: archiveBytes,
       expectedSchemaVersion: schemaVersion,
@@ -3867,8 +3872,12 @@ const api: CoredrillStorageSpikeApi = {
       createBrowserContractAdapter(),
       createPhase1RepositoryContractSuite({
         expectedFts5: true,
-        migrate: async (client) => {
-          await applySqlMigrations(client, reviewedMigrations, MIGRATION_APPLIED_AT);
+        migrate: async (client, throughVersion) => {
+          await applySqlMigrations(
+            client,
+            reviewedMigrations.slice(0, throughVersion),
+            MIGRATION_APPLIED_AT,
+          );
         },
       }),
     );

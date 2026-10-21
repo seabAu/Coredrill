@@ -63,9 +63,10 @@ test("imports the checksummed Firefox JSON fallback idempotently into durable SQ
   await page.goto("/storage-verification.html");
   await page.waitForFunction(() => globalThis.coredrillExtensionInbox !== undefined);
   await callStorage(page, "delete");
-  await expect(callStorage(page, "openAndMigrate")).resolves.toMatchObject({
-    appliedVersions: Array.from({ length: 158 }, (_, index) => index + 1),
-    diagnostics: { schemaVersion: 158 },
+  const opened = await callStorage(page, "openAndMigrate");
+  expect(opened).toMatchObject({
+    appliedVersions: Array.from({ length: 159 }, (_, index) => index + 1),
+    diagnostics: { schemaVersion: 159 },
   });
 
   const json = JSON.stringify(exported);
@@ -101,7 +102,7 @@ test("imports the checksummed Firefox JSON fallback idempotently into durable SQ
       manifestTransferMode: "manual-json-export-import",
       checksumRejected: true,
       idempotent: true,
-      durableSchemaVersion: 126,
+      durableSchemaVersion: opened.diagnostics.schemaVersion,
     })}`,
   );
 });

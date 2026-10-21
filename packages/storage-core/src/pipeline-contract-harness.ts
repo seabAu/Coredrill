@@ -26,7 +26,12 @@ import {
   defineDatabaseContractSuite,
   type DatabaseContractSuite,
 } from "./contract-harness.js";
-import { sqlStatement, type DatabasePort } from "./database-port.js";
+import {
+  sqlStatement,
+  type DatabasePort,
+  type QueryRow,
+  type SqlStatement,
+} from "./database-port.js";
 import { PHASE_1_REPOSITORY_CONTRACT_MANIFEST } from "./repository-contract-manifest.js";
 import {
   PipelineRepositoryConflictError,
@@ -39,7 +44,7 @@ import {
 import { createTrackerRepositories } from "./tracker-repositories.js";
 
 export interface PipelineRepositoryContractSetup {
-  readonly migrate: (database: DatabasePort) => Promise<void>;
+  readonly migrate: (database: DatabasePort, throughVersion?: number) => Promise<void>;
 }
 
 const IDS = Object.freeze({
@@ -470,7 +475,11 @@ export const createPipelineRepositoryContractSuite = (
     {
       name: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components.pipeline.cases.persistScheduling,
       run: async (database) => {
-        await setup.migrate(database);
+        await setup.migrate(database, 158);
+        assertContract(
+          (await database.diagnostics()).schemaVersion === 158,
+          "Task index upgrade fixture did not start at schema 158.",
+        );
         await createPipelineAggregate(database);
         const repositories = createPipelineRepositories(database);
         await repositories.interactions.append({
@@ -564,6 +573,13 @@ export const createPipelineRepositoryContractSuite = (
             tokens: await database.query(
               sqlStatement("SELECT * FROM mutation_undo_token ORDER BY id"),
             ),
+            applications: await database.query(
+              sqlStatement("SELECT * FROM application ORDER BY id"),
+            ),
+            interactions: await database.query(
+              sqlStatement("SELECT * FROM interaction ORDER BY id"),
+            ),
+            events: await database.query(sqlStatement("SELECT * FROM status_event ORDER BY id")),
           });
         for (const expected of [
           { ...completionExpected, jobRowVersion: jobWithAction.rowVersion + 1 },
@@ -722,7 +738,76 @@ export const createPipelineRepositoryContractSuite = (
           },
           entityId("mutation-undo-token", IDS.interview),
         );
-        const taskPort = createJobNextActionsRepository(database);
+        const beforeIndexUpgrade = await completionState();
+        const ledgerBeforeIndex = await database.query(
+          sqlStatement(
+            "SELECT version, name, sha256 FROM coredrill_schema_migration ORDER BY version",
+          ),
+        );
+        await setup.migrate(database);
+        assertContract(
+          (await completionState()) === beforeIndexUpgrade,
+          "Task list index migration changed retained data/history.",
+        );
+        const taskIndex = await database.query(
+          sqlStatement("SELECT name FROM sqlite_schema WHERE type = 'index' AND name = ?", [
+            "next_action_job_created_idx",
+          ]),
+        );
+        assertContract(taskIndex.length === 1, "Task-list query index is missing after upgrade.");
+        assertContract(
+          (await database.diagnostics()).schemaVersion === 159,
+          "Task index upgrade did not advance to schema 159.",
+        );
+        const ledgerAfterIndex = await database.query(
+          sqlStatement(
+            "SELECT version, name, sha256 FROM coredrill_schema_migration ORDER BY version",
+          ),
+        );
+        assertContract(
+          ledgerAfterIndex.length === 159 &&
+            JSON.stringify(ledgerAfterIndex.slice(0, 158)) === JSON.stringify(ledgerBeforeIndex),
+          "Task index upgrade rewrote prior migration identities/checksums.",
+        );
+        const taskPlanKinds = new Set<"initial" | "cursor">();
+        const observedTaskDatabase: DatabasePort = {
+          query: <Row extends QueryRow>(statement: SqlStatement) => database.query<Row>(statement),
+          execute: (statement) => database.execute(statement),
+          diagnostics: () => database.diagnostics(),
+          exportPortable: () => database.exportPortable(),
+          transaction: (work) =>
+            database.transaction((session) =>
+              work({
+                execute: (statement) => session.execute(statement),
+                query: async <Row extends QueryRow>(statement: SqlStatement) => {
+                  if (statement.sql.includes("FROM next_action n LEFT JOIN")) {
+                    const plan = await session.query(
+                      sqlStatement(`EXPLAIN QUERY PLAN ${statement.sql}`, statement.parameters),
+                    );
+                    const details = plan.map((row) => String(row["detail"]));
+                    assertContract(
+                      details.some((detail) =>
+                        detail.includes("SEARCH n USING INDEX next_action_job_created_idx"),
+                      ) &&
+                        details.every(
+                          (detail) => !detail.includes("SCAN n") && !detail.includes("TEMP B-TREE"),
+                        ),
+                      "Actual task-list query scans or sorts instead of using its job/creation index.",
+                    );
+                    if (statement.sql.includes("n.created_at <=")) {
+                      assertContract(
+                        details.some((detail) => detail.includes("created_at<?")),
+                        "Task cursor did not seek its creation-time range.",
+                      );
+                      taskPlanKinds.add("cursor");
+                    } else taskPlanKinds.add("initial");
+                  }
+                  return session.query<Row>(statement);
+                },
+              }),
+            ),
+        };
+        const taskPort = createJobNextActionsRepository(observedTaskDatabase);
         const taskQuery = createJobNextActionsQuery(taskPort);
         const queryContext = {
           operationId: entityId("application-operation", IDS.nextActionUndo),
@@ -806,6 +891,10 @@ export const createPipelineRepositoryContractSuite = (
         assertContract(
           (await completionState()) === beforeTaskReads,
           "Task page reads changed durable state.",
+        );
+        assertContract(
+          taskPlanKinds.has("initial") && taskPlanKinds.has("cursor"),
+          "Task list did not prove both initial and cursor range plans.",
         );
         await database.execute(
           sqlStatement(

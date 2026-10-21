@@ -29,7 +29,7 @@ A final shared assertion also rejects a wrong anchor row version; complete final
 
 ## Outstanding
 
-Fresh full final-source verification, separate extension regression and exact hosted proof remain. Completion/security checkpoint `a5851c1` / run `39536020133` is separately under observation and does not verify these uncommitted query sources. Normal task-list/completion UI, lifecycle reminder consistency and required human/manual/release gates remain unfinished.
+The query prerequisite is now locally and hosted verified; see the final hosted checkpoint below. Normal task-list/completion UI, lifecycle reminder consistency and required human/manual/release gates remain unfinished. The separately tracked schema-159 index migration is not verified by the earlier query commit.
 
 ## Scale/query-plan diagnostic
 
@@ -48,3 +48,7 @@ Complete final-source `pnpm verify` passes terminal `TASK_LIST_VERIFY_EXIT=0` in
 All nine separate extension cases pass terminal `TASK_LIST_EXTENSION_EXIT=0` in `test-results/task-list-query-extension.log`. Full verification includes all 34 resilience cases, 14 actual native-adapter cases and existing recovery/security gates; npm audit reports no known vulnerabilities and Cargo retains ten reviewed allowed warnings. Only documentation follows these source gates. Final policy and exact hosted proof remain; index/range migration and normal UI remain explicit follow-through.
 
 Final whole-repository formatting and policy pass terminal `TASK_LIST_POLICY_EXIT=0` in `test-results/task-list-query-final-policy.log`: 19 boundaries, 51 direct dependencies / three toolchains / 16 targets / ten accessibility cases, 520 npm / 498 Cargo licenses and secret scan. `git diff --check` is clean. Only result/preceding-checkpoint documentation follows these gates; exact hosted query proof remains separate.
+
+## Exact hosted checkpoint
+
+Commit `7bb73c117ef0f4287a7e5721dd73f46eee038127` is terminal success in [run 39538442140](https://github.com/seabAu/Coredrill/actions/runs/39538442140). Retained aggregate log `test-results/task-query-hosted-aggregate-success.log`, job `119020413303`, confirms unit and coverage each at 1,649 passing / one platform skip, all 34 resilience cases, native contracts at 13 passing / one platform skip, and clean npm audit. Local Windows proof has all 1,650 unit and all 14 native cases passing. Separate hosted browser and native packaging/secure-storage lanes are successful; the PR-only dependency-review job is skipped on this push. This closes the query checkpoint, not `INT-005`, schema-159 migration proof, or reference-device performance.
