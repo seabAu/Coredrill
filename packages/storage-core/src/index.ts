@@ -321,6 +321,7 @@ export {
   PortableArchiveRestoreError,
   commitPortableArchiveRestoreV1,
   createPortableArchiveRestorePreviewV1,
+  discardPortableArchiveRestorePreviewV1,
   inspectPortableArchiveV1,
   type InspectedPortableArchiveV1,
   type PortableArchiveDatabaseInspectionV1,

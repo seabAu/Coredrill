@@ -105,3 +105,20 @@ policy, terminal `DELETION_EXPORT_HANDOFF_FINAL_POLICY_EXIT=0`: 19 boundaries,
 51 dependencies / three toolchains / 16 execution targets / ten accessibility
 cases, 520 npm / 498 Cargo licenses and secrets. Diff whitespace is clean. Only
 result documentation follows; no production change follows the passing full gate.
+
+## Pushed checkpoint
+
+Exact commit `1e1ad4d9c7b5871953e34dd20ab43d376db6567c` is pushed to origin/main
+from a clean worktree. [Foundation CI run 39585320481](https://github.com/seabAu/Coredrill/actions/runs/39585320481)
+is confirmed live. One retained watch writes
+`deletion-export-handoff-hosted-watch.log`; no hosted success is inferred.
+Normal restore remains unfinished, so neither INT-006 nor the overall goal is
+complete.
+
+## Exact hosted closure
+
+Exact `1e1ad4d9c7b5871953e34dd20ab43d376db6567c` passes [run 39585320481](https://github.com/seabAu/Coredrill/actions/runs/39585320481), terminal success. Every required aggregate, Chrome 151/152, Firefox 153/154, extension, Windows, macOS, diagnostic Ubuntu and full-history secret job succeeds; pull-request-only dependency review is skipped. The retained watch ends `DELETION_EXPORT_HANDOFF_HOSTED_EXIT=0`.
+
+Aggregate job `119172665850` output is retained in `test-results/deletion-export-handoff-hosted-aggregate-success.log`. It includes 1,849 unit/coverage passes plus one platform skip (1,850 total), all 41 resilience cases, 11 browser-storage cases, 17 native-adapter passes plus one Windows-only skip, 21 Rust core passes plus one ignored secret case exercised by the separate secure-store proof, archive/schema/license/secret/audit/Changesets checks. The real-native tracking and document journeys finish in 40.6 / 37.8 seconds under the unchanged 120-second per-test limits. Local Windows covers all 18 native-adapter cases. npm reports no known vulnerabilities; Cargo retains ten reviewed allowed warnings.
+
+This closes hosted uncertainty for the handoff/strict-decoder commit only. Later restore coordinator work has separate proof; normal restore, INT-006, manual/reference-device gates, SEC-003 and the overall goal remain open.

@@ -173,6 +173,7 @@ interface PreviewPayload {
   readonly expectedSchemaVersion: number;
   readonly target: PortableArchiveRestoreTargetSnapshotV1;
   readonly port: PortableArchiveRestorePortV1;
+  phase: "ready" | "checking" | "committing";
 }
 
 const SHA256_PATTERN = /^[a-f0-9]{64}$/;
@@ -180,7 +181,6 @@ const UUID_V7_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}
 const SAFE_PATH_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*(?:\/[A-Za-z0-9][A-Za-z0-9._-]*)*$/;
 const decoder = new TextDecoder("utf-8", { fatal: true });
 const previews = new WeakMap<PortableArchiveRestorePreviewV1, PreviewPayload>();
-const completedPreviews = new WeakSet<PortableArchiveRestorePreviewV1>();
 
 const restoreError = (code: PortableArchiveRestoreErrorCode): PortableArchiveRestoreError =>
   new PortableArchiveRestoreError(code);
@@ -268,16 +268,17 @@ export const inspectPortableArchiveV1 = async (input: {
   readonly expectedSchemaVersion: number;
   readonly expectedArchiveSha256?: string;
 }): Promise<InspectedPortableArchiveV1> => {
+  const { expectedSchemaVersion, expectedArchiveSha256 } = input;
   const bytes = copyArchiveBytes(input.bytes);
   if (
-    !Number.isSafeInteger(input.expectedSchemaVersion) ||
-    input.expectedSchemaVersion < 1 ||
-    (input.expectedArchiveSha256 !== undefined && !SHA256_PATTERN.test(input.expectedArchiveSha256))
+    !Number.isSafeInteger(expectedSchemaVersion) ||
+    expectedSchemaVersion < 1 ||
+    (expectedArchiveSha256 !== undefined && !SHA256_PATTERN.test(expectedArchiveSha256))
   ) {
     throw restoreError("invalid_input");
   }
   const archiveSha256 = await sha256(bytes);
-  if (input.expectedArchiveSha256 !== undefined && archiveSha256 !== input.expectedArchiveSha256) {
+  if (expectedArchiveSha256 !== undefined && archiveSha256 !== expectedArchiveSha256) {
     throw restoreError("checksum_mismatch");
   }
 
@@ -332,7 +333,7 @@ export const inspectPortableArchiveV1 = async (input: {
     throw restoreError("manifest_invalid");
   }
   const manifest = readManifest(manifestBytes);
-  if (manifest.vault.schemaVersion !== input.expectedSchemaVersion) {
+  if (manifest.vault.schemaVersion !== expectedSchemaVersion) {
     throw restoreError("schema_mismatch");
   }
   assertExpectedEntries(entries, manifest);
@@ -466,19 +467,18 @@ export const createPortableArchiveRestorePreviewV1 = async (input: {
   readonly expectedArchiveSha256?: string;
   readonly port: PortableArchiveRestorePortV1;
 }): Promise<PortableArchiveRestorePreviewV1> => {
+  const { expectedSchemaVersion, expectedArchiveSha256, port } = input;
   const archiveBytes = copyArchiveBytes(input.archiveBytes);
   const archive = await inspectPortableArchiveV1({
     bytes: archiveBytes,
-    expectedSchemaVersion: input.expectedSchemaVersion,
-    ...(input.expectedArchiveSha256 === undefined
-      ? {}
-      : { expectedArchiveSha256: input.expectedArchiveSha256 }),
+    expectedSchemaVersion,
+    ...(expectedArchiveSha256 === undefined ? {} : { expectedArchiveSha256 }),
   });
 
   let databaseInspection: unknown;
   let target: PortableArchiveRestoreTargetSnapshotV1;
   try {
-    databaseInspection = await input.port.inspectDatabase({
+    databaseInspection = await port.inspectDatabase({
       ...archive.database,
       bytes: archive.database.bytes.slice(),
     });
@@ -491,14 +491,14 @@ export const createPortableArchiveRestorePreviewV1 = async (input: {
   const inspectedDatabase = databaseInspection as Readonly<Record<string, unknown>>;
   if (
     inspectedDatabase["integrity"] !== "ok" ||
-    inspectedDatabase["schemaVersion"] !== input.expectedSchemaVersion ||
+    inspectedDatabase["schemaVersion"] !== expectedSchemaVersion ||
     inspectedDatabase["schemaVersion"] !== archive.manifest.vault.schemaVersion ||
     inspectedDatabase["vaultId"] !== archive.manifest.vault.id
   ) {
     throw restoreError("database_invalid");
   }
   try {
-    target = validateTarget(await input.port.inspectTarget());
+    target = validateTarget(await port.inspectTarget());
   } catch (error) {
     if (error instanceof PortableArchiveRestoreError) throw error;
     throw restoreError("invalid_input");
@@ -563,61 +563,80 @@ export const createPortableArchiveRestorePreviewV1 = async (input: {
   });
   previews.set(preview, {
     archiveBytes,
-    expectedSchemaVersion: input.expectedSchemaVersion,
+    expectedSchemaVersion,
     target,
-    port: input.port,
+    port,
+    phase: "ready",
   });
   return preview;
+};
+
+/** Retires private bytes/capability; cannot cancel an adapter mutation already in progress. */
+export const discardPortableArchiveRestorePreviewV1 = (
+  preview: PortableArchiveRestorePreviewV1,
+): boolean => {
+  const payload = previews.get(preview);
+  if (payload === undefined || payload.phase === "committing") return false;
+  return previews.delete(preview);
 };
 
 export const commitPortableArchiveRestoreV1 = async (input: {
   readonly preview: PortableArchiveRestorePreviewV1;
   readonly confirmation: PortableArchiveRestoreConfirmationV1;
 }): Promise<PortableArchiveRestoreCommitResultV1> => {
-  const payload = previews.get(input.preview);
-  if (
-    payload === undefined ||
-    completedPreviews.has(input.preview) ||
-    input.confirmation !== input.preview.requiredConfirmation
-  ) {
+  const { preview, confirmation } = input;
+  const payload = previews.get(preview);
+  if (payload?.phase !== "ready" || confirmation !== preview.requiredConfirmation) {
     throw restoreError("invalid_input");
   }
-
-  let currentTarget: PortableArchiveRestoreTargetSnapshotV1;
+  // Acquire before the first await, not after successful mutation.
+  payload.phase = "checking";
   try {
-    currentTarget = validateTarget(await payload.port.inspectTarget());
-  } catch (error) {
-    if (error instanceof PortableArchiveRestoreError) throw error;
-    throw restoreError("stale_target");
-  }
-  if (!sameTarget(payload.target, currentTarget)) throw restoreError("stale_target");
+    let currentTarget: PortableArchiveRestoreTargetSnapshotV1;
+    try {
+      currentTarget = validateTarget(await payload.port.inspectTarget());
+    } catch (error) {
+      if (error instanceof PortableArchiveRestoreError) throw error;
+      throw restoreError("stale_target");
+    }
+    if (previews.get(preview) !== payload) throw restoreError("invalid_input");
+    if (!sameTarget(payload.target, currentTarget)) throw restoreError("stale_target");
 
-  const archive = await inspectPortableArchiveV1({
-    bytes: payload.archiveBytes,
-    expectedSchemaVersion: payload.expectedSchemaVersion,
-    expectedArchiveSha256: input.preview.archive.sha256,
-  });
-  try {
-    await payload.port.commit({
-      specVersion: 1,
-      archiveSha256: archive.archiveSha256,
-      expectedTargetFingerprint: payload.target.fingerprint,
-      vaultId: archive.manifest.vault.id,
-      database: Object.freeze({ ...archive.database, bytes: archive.database.bytes.slice() }),
-      attachments: Object.freeze(
-        archive.attachments.map((entry) => Object.freeze({ ...entry, bytes: entry.bytes.slice() })),
-      ),
+    const archive = await inspectPortableArchiveV1({
+      bytes: payload.archiveBytes,
+      expectedSchemaVersion: payload.expectedSchemaVersion,
+      expectedArchiveSha256: preview.archive.sha256,
     });
-  } catch {
-    throw restoreError("commit_failed");
+    if (previews.get(preview) !== payload) throw restoreError("invalid_input");
+    // There is no await between the final retirement check and adapter invocation.
+    payload.phase = "committing";
+    try {
+      await payload.port.commit({
+        specVersion: 1,
+        archiveSha256: archive.archiveSha256,
+        expectedTargetFingerprint: payload.target.fingerprint,
+        vaultId: archive.manifest.vault.id,
+        database: Object.freeze({ ...archive.database, bytes: archive.database.bytes.slice() }),
+        attachments: Object.freeze(
+          archive.attachments.map((entry) =>
+            Object.freeze({ ...entry, bytes: entry.bytes.slice() }),
+          ),
+        ),
+      });
+    } catch {
+      throw restoreError("commit_failed");
+    }
+    previews.delete(preview);
+    return Object.freeze({
+      committed: true as const,
+      archiveSha256: archive.archiveSha256,
+      vaultId: archive.manifest.vault.id,
+      schemaVersion: archive.manifest.vault.schemaVersion,
+      databaseSha256: archive.database.sha256,
+      attachmentCount: archive.attachments.length,
+    });
+  } finally {
+    // Only preserved, still-owned previews may be retried after a failure.
+    if (previews.get(preview) === payload) payload.phase = "ready";
   }
-  completedPreviews.add(input.preview);
-  return Object.freeze({
-    committed: true as const,
-    archiveSha256: archive.archiveSha256,
-    vaultId: archive.manifest.vault.id,
-    schemaVersion: archive.manifest.vault.schemaVersion,
-    databaseSha256: archive.database.sha256,
-    attachmentCount: archive.attachments.length,
-  });
 };

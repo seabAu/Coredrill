@@ -50,6 +50,10 @@ Commit accepts only the exact confirmation required by the coordinator-issued pr
 
 The adapter commit receives copied database and attachment bytes plus the expected target fingerprint. Its contract is atomic: replace the database and attachment set together, or leave the previous usable target intact. A successful preview is single-use. An adapter failure returns a stable `commit_failed` result and leaves the preview retryable after the adapter has preserved the old target.
 
+The coordinator acquires a per-preview in-flight guard before its first commit await, rejecting simultaneous reuse as well as replay after success. Inspection expectations, selected adapter, and commit preview are captured before asynchronous work so caller-owned request mutation cannot redirect the capability. Success removes the private retained archive/adapter mapping.
+
+An owning session may explicitly retire a preview with `discardPortableArchiveRestorePreviewV1`. Retirement is non-mutating and prevents future commit, including a commit still awaiting target inspection or archive revalidation. The coordinator checks retirement again immediately before invoking the adapter. Once adapter mutation is in progress, retirement returns false: this API cannot cancel or promise rollback of an in-flight storage operation. A failed commit releases its guard for explicit retry only if the preview remains owned; a retired preview is never revived.
+
 The browser database-byte implementation validates the target checksum at its replacement boundary, retains the existing recovery snapshot behavior, and restores the original bytes if replacement or reopen validation fails. The Phase 1 browser proof carries no attachment payload because browser attachment persistence is not yet composed; generic port tests prove atomic database-plus-attachment handoff. `BKP-007` owns clean browser and desktop restoration of a full vault with attachments.
 
 ## Proof obligations

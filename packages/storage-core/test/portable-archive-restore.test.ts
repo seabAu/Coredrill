@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
 import { unzipSync, zipSync } from "fflate";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   PortableArchiveRestoreError,
@@ -9,6 +9,7 @@ import {
   createPortableArchiveContentHashV1,
   createPortableArchiveRestorePreviewV1,
   createPortableRestoreTargetFingerprintV1,
+  discardPortableArchiveRestorePreviewV1,
   inspectPortableArchiveV1,
   writePortableArchiveV1,
   type PortableArchiveDatabaseInspectionV1,
@@ -24,6 +25,14 @@ const ARCHIVE_ID = "0198e102-0000-7000-8000-000000000103";
 const SCHEMA_VERSION = 101;
 
 const digest = (bytes: Uint8Array): string => createHash("sha256").update(bytes).digest("hex");
+
+const deferred = () => {
+  let resolve = () => {};
+  const promise = new Promise<void>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+};
 
 const emptyTarget = (): PortableArchiveRestoreTargetSnapshotV1 => ({
   state: "empty",
@@ -158,6 +167,264 @@ const repack = (
 };
 
 describe("portable archive restore", () => {
+  it("captures standalone inspection expectations and archive bytes before asynchronous hashing", async () => {
+    const { archive } = await createArchive();
+    const request = {
+      bytes: archive.bytes.slice(),
+      expectedSchemaVersion: SCHEMA_VERSION,
+      expectedArchiveSha256: archive.sha256,
+    };
+    const inspecting = inspectPortableArchiveV1(request);
+    request.bytes.fill(0);
+    request.expectedSchemaVersion += 1;
+    request.expectedArchiveSha256 = "f".repeat(64);
+    await expect(inspecting).resolves.toMatchObject({
+      archiveSha256: archive.sha256,
+      database: { schemaVersion: SCHEMA_VERSION },
+    });
+  });
+
+  it("releases the in-flight guard after a non-mutating target inspection failure", async () => {
+    const { archive } = await createArchive();
+    const port = new FixtureRestorePort(emptyTarget());
+    const preview = await createPortableArchiveRestorePreviewV1({
+      archiveBytes: archive.bytes,
+      expectedSchemaVersion: SCHEMA_VERSION,
+      port,
+    });
+    const originalInspect = port.inspectTarget.bind(port);
+    port.inspectTarget = () => {
+      throw new Error("synthetic private inspection error");
+    };
+    await expectCode(
+      commitPortableArchiveRestoreV1({ preview, confirmation: "commit" }),
+      "stale_target",
+    );
+    expect(port.commits).toHaveLength(0);
+    port.inspectTarget = originalInspect;
+    await expect(
+      commitPortableArchiveRestoreV1({ preview, confirmation: "commit" }),
+    ).resolves.toMatchObject({ committed: true });
+  });
+
+  it("retires only a genuine issued preview without mutating storage or retaining a commit capability", async () => {
+    const { archive } = await createArchive();
+    const port = new FixtureRestorePort(emptyTarget());
+    const preview = await createPortableArchiveRestorePreviewV1({
+      archiveBytes: archive.bytes,
+      expectedSchemaVersion: SCHEMA_VERSION,
+      port,
+    });
+    expect(discardPortableArchiveRestorePreviewV1({ ...preview })).toBe(false);
+    expect(discardPortableArchiveRestorePreviewV1(preview)).toBe(true);
+    expect(discardPortableArchiveRestorePreviewV1(preview)).toBe(false);
+    await expectCode(
+      commitPortableArchiveRestoreV1({ preview, confirmation: "commit" }),
+      "invalid_input",
+    );
+    expect(port.commits).toHaveLength(0);
+    expect(port.target).toEqual(emptyTarget());
+    const fresh = await createPortableArchiveRestorePreviewV1({
+      archiveBytes: archive.bytes,
+      expectedSchemaVersion: SCHEMA_VERSION,
+      port,
+    });
+    await expect(
+      commitPortableArchiveRestoreV1({ preview: fresh, confirmation: "commit" }),
+    ).resolves.toMatchObject({ committed: true });
+    expect(discardPortableArchiveRestorePreviewV1(fresh)).toBe(false);
+  });
+
+  it("blocks replay and retirement races while target inspection awaits, without entering mutation", async () => {
+    const { archive } = await createArchive();
+    const port = new FixtureRestorePort(emptyTarget());
+    const preview = await createPortableArchiveRestorePreviewV1({
+      archiveBytes: archive.bytes,
+      expectedSchemaVersion: SCHEMA_VERSION,
+      port,
+    });
+    const pending = deferred();
+    const entered = deferred();
+    port.inspectTarget = async () => {
+      entered.resolve();
+      await pending.promise;
+      return port.target;
+    };
+    const committing = commitPortableArchiveRestoreV1({ preview, confirmation: "commit" });
+    await entered.promise;
+    await expectCode(
+      commitPortableArchiveRestoreV1({ preview, confirmation: "commit" }),
+      "invalid_input",
+    );
+    expect(discardPortableArchiveRestorePreviewV1(preview)).toBe(true);
+    pending.resolve();
+    await expectCode(committing, "invalid_input");
+    expect(port.commits).toHaveLength(0);
+    await expectCode(
+      commitPortableArchiveRestoreV1({ preview, confirmation: "commit" }),
+      "invalid_input",
+    );
+  });
+
+  it("checks retirement again after the retained archive hash awaits", async () => {
+    const { archive } = await createArchive();
+    const port = new FixtureRestorePort(emptyTarget());
+    const preview = await createPortableArchiveRestorePreviewV1({
+      archiveBytes: archive.bytes,
+      expectedSchemaVersion: SCHEMA_VERSION,
+      port,
+    });
+    const pending = deferred();
+    const entered = deferred();
+    const originalDigest = globalThis.crypto.subtle.digest.bind(globalThis.crypto.subtle);
+    const spy = vi
+      .spyOn(globalThis.crypto.subtle, "digest")
+      .mockImplementation(async (algorithm, bytes) => {
+        entered.resolve();
+        await pending.promise;
+        return originalDigest(algorithm, bytes);
+      });
+    try {
+      const committing = commitPortableArchiveRestoreV1({ preview, confirmation: "commit" });
+      await entered.promise;
+      expect(discardPortableArchiveRestorePreviewV1(preview)).toBe(true);
+      pending.resolve();
+      await expectCode(committing, "invalid_input");
+      expect(port.commits).toHaveLength(0);
+    } finally {
+      pending.resolve();
+      spy.mockRestore();
+    }
+  });
+
+  it("does not claim cancellation after adapter mutation starts and permits retry after preserved-target failure", async () => {
+    const { archive } = await createArchive();
+    const port = new FixtureRestorePort(emptyTarget());
+    const preview = await createPortableArchiveRestorePreviewV1({
+      archiveBytes: archive.bytes,
+      expectedSchemaVersion: SCHEMA_VERSION,
+      port,
+    });
+    const pending = deferred();
+    const entered = deferred();
+    const originalCommit = port.commit.bind(port);
+    port.commit = async () => {
+      entered.resolve();
+      await pending.promise;
+      throw new Error("synthetic preserved-target failure");
+    };
+    const committing = commitPortableArchiveRestoreV1({ preview, confirmation: "commit" });
+    await entered.promise;
+    expect(discardPortableArchiveRestorePreviewV1(preview)).toBe(false);
+    await expectCode(
+      commitPortableArchiveRestoreV1({ preview, confirmation: "commit" }),
+      "invalid_input",
+    );
+    pending.resolve();
+    await expectCode(committing, "commit_failed");
+    expect(port.target).toEqual(emptyTarget());
+    port.commit = originalCommit;
+    await expect(
+      commitPortableArchiveRestoreV1({ preview, confirmation: "commit" }),
+    ).resolves.toMatchObject({ committed: true });
+  });
+
+  it("captures the issued preview before commit awaits and does not consume a substituted preview", async () => {
+    const { archive } = await createArchive();
+    const port = new FixtureRestorePort(emptyTarget());
+    const options = { archiveBytes: archive.bytes, expectedSchemaVersion: SCHEMA_VERSION, port };
+    const preview = await createPortableArchiveRestorePreviewV1(options);
+    const substitute = await createPortableArchiveRestorePreviewV1(options);
+    const pending = deferred();
+    const entered = deferred();
+    port.inspectTarget = async () => {
+      entered.resolve();
+      await pending.promise;
+      return port.target;
+    };
+    const request = { preview, confirmation: "commit" as const };
+    const committing = commitPortableArchiveRestoreV1(request);
+    await entered.promise;
+    request.preview = substitute;
+    pending.resolve();
+    await expect(committing).resolves.toMatchObject({ committed: true });
+    await expectCode(
+      commitPortableArchiveRestoreV1({ preview, confirmation: "commit" }),
+      "invalid_input",
+    );
+    expect(discardPortableArchiveRestorePreviewV1(substitute)).toBe(true);
+  });
+
+  it("rejects simultaneous reuse before a pending adapter commit acknowledges success", async () => {
+    const { archive, attachmentSha256, databaseSha256 } = await createArchive();
+    const port = new FixtureRestorePort(
+      presentTarget(VAULT_ID, databaseSha256, [attachmentSha256]),
+    );
+    const preview = await createPortableArchiveRestorePreviewV1({
+      archiveBytes: archive.bytes,
+      expectedSchemaVersion: SCHEMA_VERSION,
+      port,
+    });
+    let acknowledge: (() => void) | undefined;
+    const pending = new Promise<void>((resolve) => {
+      acknowledge = resolve;
+    });
+    let entered: (() => void) | undefined;
+    const enteredCommit = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    port.commit = async (payload) => {
+      port.commits.push(payload);
+      entered?.();
+      await pending;
+    };
+    const first = commitPortableArchiveRestoreV1({ preview, confirmation: "commit" });
+    await enteredCommit;
+    const second = commitPortableArchiveRestoreV1({ preview, confirmation: "commit" });
+    // Let both invocations finish: the old implementation commits identical state twice.
+    acknowledge?.();
+    const results = await Promise.allSettled([first, second]);
+    expect(results[0]).toMatchObject({ status: "fulfilled", value: { committed: true } });
+    expect(results[1]).toMatchObject({ status: "rejected", reason: { code: "invalid_input" } });
+    expect(port.commits).toHaveLength(1);
+  });
+
+  it("retains the originally selected adapter and request while preview inspection awaits", async () => {
+    const { archive } = await createArchive();
+    const original = new FixtureRestorePort(emptyTarget());
+    const substituted = new FixtureRestorePort(presentTarget(OTHER_VAULT_ID, "d".repeat(64)));
+    let continueInspection: (() => void) | undefined;
+    const pending = new Promise<void>((resolve) => {
+      continueInspection = resolve;
+    });
+    let entered: (() => void) | undefined;
+    const enteredInspection = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    original.inspectDatabase = async () => {
+      entered?.();
+      await pending;
+      return original.databaseInspection;
+    };
+    const request = {
+      archiveBytes: archive.bytes,
+      expectedSchemaVersion: SCHEMA_VERSION,
+      expectedArchiveSha256: archive.sha256,
+      port: original,
+    };
+    const preparing = createPortableArchiveRestorePreviewV1(request);
+    await enteredInspection;
+    request.port = substituted;
+    request.expectedSchemaVersion += 1;
+    request.expectedArchiveSha256 = "e".repeat(64);
+    continueInspection?.();
+    const preview = await preparing;
+    expect(preview).toMatchObject({ conflict: "none", target: { state: "empty" } });
+    await commitPortableArchiveRestoreV1({ preview, confirmation: "commit" });
+    expect(original.commits).toHaveLength(1);
+    expect(substituted.commits).toHaveLength(0);
+  });
+
   it("derives a stable adapter-neutral content hash and sorted target fingerprint", async () => {
     const { archive, attachmentSha256 } = await createArchive();
     const inspected = await inspectPortableArchiveV1({
