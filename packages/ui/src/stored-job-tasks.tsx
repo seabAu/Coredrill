@@ -1,4 +1,5 @@
 import type { NextActionDto } from "@coredrill/application";
+export type TaskResolutionKind = "complete" | "dismiss";
 
 export interface StoredJobTasksProps {
   readonly items: readonly NextActionDto[];
@@ -9,6 +10,7 @@ export interface StoredJobTasksProps {
   readonly mutating: boolean;
   readonly hasMore: boolean;
   readonly foreignReview: boolean;
+  readonly reviewKind: TaskResolutionKind;
   readonly notice: string | null;
   readonly review: {
     readonly title: string;
@@ -18,7 +20,7 @@ export interface StoredJobTasksProps {
   } | null;
   readonly onRefresh: () => void;
   readonly onMore: () => void;
-  readonly onReview: (task: NextActionDto) => void;
+  readonly onReview: (task: NextActionDto, kind: TaskResolutionKind) => void;
   readonly onConfirm: () => void;
   readonly onCancel: () => void;
 }
@@ -52,15 +54,15 @@ export const StoredJobTasks = (props: StoredJobTasksProps) => (
     {props.error === null ? null : <p role="alert">{props.error}</p>}
     {props.stale && props.loaded ? (
       <p>
-        These task values may be stale. Refresh and review the current job before completing a task.
+        These task values may be stale. Refresh and review the current job before resolving a task.
       </p>
     ) : null}
     {props.notice === null ? null : <p role="status">{props.notice}</p>}
     {props.foreignReview ? (
       <section aria-label="Task review belongs to another job">
         <p>
-          A completion review belongs to another job. Its task text is hidden here. Return to its
-          job or cancel that review before starting another.
+          A task review belongs to another job. Its task text is hidden here. Return to its job or
+          cancel that review before starting another.
         </p>
         <button
           type="button"
@@ -68,20 +70,28 @@ export const StoredJobTasks = (props: StoredJobTasksProps) => (
           disabled={props.mutating}
           onClick={props.onCancel}
         >
-          Cancel other job's completion review
+          Cancel other job's {props.reviewKind === "complete" ? "completion" : "dismissal"} review
         </button>
       </section>
     ) : null}
     {props.review === null ? null : (
-      <section aria-label="Review task completion" className="cd-panel">
-        <h4 tabIndex={-1} data-task-completion-review="true">
-          Mark this task complete?
+      <section
+        aria-label={
+          props.reviewKind === "complete" ? "Review task completion" : "Review task dismissal"
+        }
+        className="cd-panel"
+      >
+        <h4 tabIndex={-1} data-task-resolution-review="true">
+          {props.reviewKind === "complete" ? "Mark this task complete?" : "Dismiss this task?"}
         </h4>
         <p>{props.review.title}</p>
         <p>
-          This records completion locally and retains the task. It does not send a message, apply
-          for a job, or create an undo action.
+          {props.reviewKind === "complete"
+            ? "This records completion locally and retains the task."
+            : "This dismisses the task locally without marking it completed or deleting its history."}{" "}
+          It does not send a message, apply for a job, or create an undo action.
         </p>
+        <p>Pending linked reminders will be dismissed; fired reminder history is retained.</p>
         {props.review.error === null ? null : <p role="alert">{props.review.error}</p>}
         {props.review.stale ? (
           <p>
@@ -95,7 +105,13 @@ export const StoredJobTasks = (props: StoredJobTasksProps) => (
           disabled={props.mutating || props.review.busy || props.review.stale}
           onClick={props.onConfirm}
         >
-          {props.review.busy ? "Recording completion…" : "Confirm completion"}
+          {props.reviewKind === "complete"
+            ? props.review.busy
+              ? "Recording completion…"
+              : "Confirm completion"
+            : props.review.busy
+              ? "Recording dismissal…"
+              : "Confirm dismissal"}
         </button>
         <button
           type="button"
@@ -103,7 +119,7 @@ export const StoredJobTasks = (props: StoredJobTasksProps) => (
           disabled={props.mutating || props.review.busy}
           onClick={props.onCancel}
         >
-          Cancel completion review
+          Cancel {props.reviewKind === "complete" ? "completion" : "dismissal"} review
         </button>
       </section>
     )}
@@ -136,10 +152,28 @@ export const StoredJobTasks = (props: StoredJobTasksProps) => (
                   props.foreignReview
                 }
                 onClick={() => {
-                  props.onReview(task);
+                  props.onReview(task, "complete");
                 }}
               >
                 Mark complete
+              </button>
+            )}
+            {task.state !== "pending" ? null : (
+              <button
+                type="button"
+                className="cd-button"
+                disabled={
+                  props.busy ||
+                  props.mutating ||
+                  props.stale ||
+                  props.review !== null ||
+                  props.foreignReview
+                }
+                onClick={() => {
+                  props.onReview(task, "dismiss");
+                }}
+              >
+                Dismiss task
               </button>
             )}
           </article>

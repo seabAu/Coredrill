@@ -621,4 +621,5 @@ export * from "./job-source-capture.js";
 export * from "./job-source-comparison.js";
 export { decodeLiteralUtf8Chunk } from "./literal-utf8-chunk.js";
 export * from "./next-action-completion.js";
+export * from "./next-action-dismissal.js";
 export * from "./job-next-actions.js";

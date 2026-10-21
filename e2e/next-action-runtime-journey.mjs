@@ -1,6 +1,7 @@
 import { expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { exerciseNormalTaskCompletion } from "./task-completion-journey.mjs";
+import { exerciseNormalTaskDismissal } from "./task-dismissal-journey.mjs";
 import {
   exerciseTaskCompletionHardening,
   exerciseTaskCompletionCrossJob,
@@ -240,6 +241,9 @@ export const exerciseNextActionRuntime = async (page, testInfo) => {
   const normalCompletion = await exerciseNormalTaskCompletion(page, testInfo);
   const completionHardening = await exerciseTaskCompletionHardening(page);
   const completionCrossJob = await exerciseTaskCompletionCrossJob(page);
+  const normalDismissal = await exerciseNormalTaskDismissal(page, testInfo);
+  const dismissalHardening = await exerciseTaskCompletionHardening(page, "dismiss");
+  const dismissalCrossJob = await exerciseTaskCompletionCrossJob(page, "dismiss");
   if (originalViewport !== null) await page.setViewportSize(originalViewport);
   return {
     mandatoryContext: true,
@@ -260,6 +264,10 @@ export const exerciseNextActionRuntime = async (page, testInfo) => {
     normalCompletion,
     completionHardening,
     completionCrossJob,
+    normalDismissal,
+    dismissalHardening,
+    dismissalCrossJob,
+    normalTaskDismissalControlsProven: true,
     normalTaskCompletionControlsProven: true,
     normalTaskLifecycleControlsProven: false,
   };

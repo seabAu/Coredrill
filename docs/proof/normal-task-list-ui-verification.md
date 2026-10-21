@@ -1,6 +1,6 @@
 # Normal task-list and completion UI verification
 
-Status: expanded normal browser/native hardening, full local verification, separate extension and final policy pass; commit/push and exact hosted proof remain. `INT-005` stays open.
+Status: expanded normal browser/native hardening, full local/extension/policy and exact hosted proof pass at `9ebe1b4`. Subsequent dismissal/reminder work is tracked separately and `INT-005` stays open.
 
 ## Composition
 
@@ -38,3 +38,7 @@ The replacement run is now terminal `TASK_LIFECYCLE_UI_VERIFY_EXIT=0`: 163 files
 All nine separate extension cases pass terminal `TASK_LIFECYCLE_UI_EXTENSION_EXIT=0` in `task-lifecycle-ui-extension.log` against the same production sources.
 
 Final whole-repository formatting and policy pass terminal `TASK_LIFECYCLE_UI_POLICY_EXIT=0` in `task-lifecycle-ui-final-policy.log`: 19 import boundaries, 51 direct dependencies / three toolchains / 16 targets / ten accessibility cases, 520 npm / 498 Cargo licenses and secret scan. `git diff --check` is clean. Only result documentation follows these gates; commit/push and exact hosted proof remain.
+
+## Exact hosted closure
+
+Commit `9ebe1b445a1a8e1eb3528d81cea65b39422b5097` is pushed and terminal success in [run 39544807904](https://github.com/seabAu/Coredrill/actions/runs/39544807904). Every required job is successful; only PR-only dependency review is skipped on this push. Retained aggregate `task-ui-hosted-aggregate-success.log`, job `119040447480`, explicitly passes the actual Rust normal UI journey, expanded browser task workflow and all 34 resilience cases. Unit/coverage each report 1,680 passing / one platform skip; native reports 14 passing / one platform skip. Local Windows has all 1,681 unit and all 15 native cases passing. Separate browser, extension, secrets and Windows/macOS/Ubuntu native packaging/secure-storage lanes are successful; npm audit is clean. This closes that exact normal task-list/completion checkpoint, not later uncommitted dismissal/reminder changes, reference-device acceptance or `INT-005`.

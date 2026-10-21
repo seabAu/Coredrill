@@ -188,6 +188,7 @@ export {
   StatusEventRepository,
   changePipelineStatus,
   completeNextAction,
+  dismissNextAction,
   consumeMutationUndoToken,
   createPipelineRepositories,
   setNextAction,
@@ -200,6 +201,7 @@ export {
   type NewStatusDefinition,
   type PipelineRepositories,
   type PipelineRepositoryConflictCode,
+  type ViewedNextActionResolution,
 } from "./pipeline-repositories.js";
 export type {
   ApplicationRecord,
@@ -422,4 +424,5 @@ export { createJobSourceEvidenceRepository } from "./job-source-evidence-reposit
 export { createJobSourceEvidenceValueRepository } from "./job-source-evidence-value-repository.js";
 export { createJobSourceCaptureRepository } from "./job-source-capture-repository.js";
 export { createDatabaseNextActionCompletionPort } from "./next-action-completion-repository.js";
+export { createDatabaseNextActionDismissalPort } from "./next-action-dismissal-repository.js";
 export { createJobNextActionsRepository } from "./job-next-actions-repository.js";

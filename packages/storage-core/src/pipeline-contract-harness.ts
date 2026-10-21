@@ -10,8 +10,11 @@ import {
   createCompleteNextActionCommand,
   createJobNextActionsQuery,
   JobNextActionsError,
+  NextActionDismissalError,
+  createDismissNextActionCommand,
 } from "@coredrill/application";
 import { createDatabaseNextActionCompletionPort } from "./next-action-completion-repository.js";
+import { createDatabaseNextActionDismissalPort } from "./next-action-dismissal-repository.js";
 import { createJobNextActionsRepository } from "./job-next-actions-repository.js";
 import {
   createDatabaseMutationUndoPort,
@@ -37,6 +40,7 @@ import {
   PipelineRepositoryConflictError,
   changePipelineStatus,
   completeNextAction,
+  dismissNextAction,
   consumeMutationUndoToken,
   createPipelineRepositories,
   setNextAction,
@@ -70,6 +74,15 @@ const IDS = Object.freeze({
   replacementReminder: entityId("reminder", "0198e103-0000-7000-8000-000000000014"),
   staleAction: entityId("next-action", "0198e103-0000-7000-8000-000000000015"),
   staleActionUndo: entityId("mutation-undo-token", "0198e103-0000-7000-8000-000000000016"),
+  completionReminder: entityId("reminder", "0198e103-0000-7000-8000-000000000017"),
+  standaloneReminder: entityId("reminder", "0198e103-0000-7000-8000-000000000018"),
+  dismissedReminder: entityId("reminder", "0198e103-0000-7000-8000-000000000019"),
+  foreignReminder: entityId("reminder", "0198e103-0000-7000-8000-00000000001a"),
+  dismissalAction: entityId("next-action", "0198e103-0000-7000-8000-00000000001b"),
+  laterAction: entityId("next-action", "0198e103-0000-7000-8000-00000000001c"),
+  dismissalReminder: entityId("reminder", "0198e103-0000-7000-8000-00000000001d"),
+  firedDismissalReminder: entityId("reminder", "0198e103-0000-7000-8000-00000000001e"),
+  foreignDismissalReminder: entityId("reminder", "0198e103-0000-7000-8000-00000000001f"),
 });
 
 const CREATED_AT = instant("2026-08-25T14:00:00.000Z");
@@ -559,6 +572,30 @@ export const createPipelineRepositoryContractSuite = (
 
         if (jobWithAction === undefined || action === undefined)
           throw new DatabaseContractViolation("Completion fixture has no viewed task owner.");
+        for (const [id, nextActionId, state] of [
+          [IDS.completionReminder, IDS.nextAction, "pending"],
+          [IDS.standaloneReminder, null, "pending"],
+          [IDS.dismissedReminder, IDS.nextAction, "dismissed"],
+        ] as const) {
+          await repositories.reminders.create({
+            id,
+            jobId: IDS.job,
+            nextActionId,
+            interviewId: null,
+            remindAt: REMINDER_AT,
+            timeZone: EASTERN,
+            state,
+            note: "Synthetic terminal-task reminder preservation.",
+            firedAt: null,
+            createdAt: APPLIED_AT,
+            updatedAt: APPLIED_AT,
+          });
+        }
+        const retainedReminders = JSON.stringify({
+          fired: reminder,
+          standalone: await repositories.reminders.findById(IDS.standaloneReminder),
+          dismissed: await repositories.reminders.findById(IDS.dismissedReminder),
+        });
         const completionExpected = {
           jobId: IDS.job,
           jobRowVersion: jobWithAction.rowVersion,
@@ -641,6 +678,38 @@ export const createPipelineRepositoryContractSuite = (
             [IDS.job],
           ),
         );
+        const beforeInterruptedCompletion = await completionState();
+        const interruption = new Error("Synthetic final job-projection interruption.");
+        const interruptedDatabase: DatabasePort = {
+          query: <Row extends QueryRow>(statement: SqlStatement) => database.query<Row>(statement),
+          execute: (statement) => database.execute(statement),
+          diagnostics: () => database.diagnostics(),
+          exportPortable: () => database.exportPortable(),
+          transaction: (work) =>
+            database.transaction((session) =>
+              work({
+                query: <Row extends QueryRow>(statement: SqlStatement) =>
+                  session.query<Row>(statement),
+                execute: (statement) => {
+                  if (statement.sql.startsWith("UPDATE job")) throw interruption;
+                  return session.execute(statement);
+                },
+              }),
+            ),
+        };
+        await expectFailure(
+          () =>
+            completeNextAction(interruptedDatabase, IDS.nextAction, REOPENED_AT, {
+              ...completionExpected,
+              jobRowVersion: jobWithAction.rowVersion + 2,
+            }),
+          (error) => error === interruption,
+          "Completion did not reach the injected final projection failure.",
+        );
+        assertContract(
+          (await completionState()) === beforeInterruptedCompletion,
+          "Interrupted completion left task/reminder/job partial writes.",
+        );
         const completion = await createCompleteNextActionCommand(completionPort).execute(
           {
             jobId: IDS.job,
@@ -663,6 +732,22 @@ export const createPipelineRepositoryContractSuite = (
           "Completion command/port did not acknowledge the exact durable version transition.",
         );
         const completed = await repositories.nextActions.findById(IDS.nextAction);
+        const dismissedPending = await repositories.reminders.findById(IDS.completionReminder);
+        assertContract(
+          dismissedPending?.state === "dismissed" &&
+            dismissedPending.firedAt === null &&
+            dismissedPending.rowVersion === 2 &&
+            dismissedPending.updatedAt === REOPENED_AT,
+          "Completion left a linked reminder pending or lost its dismissal audit.",
+        );
+        assertContract(
+          JSON.stringify({
+            fired: await repositories.reminders.findById(IDS.reminder),
+            standalone: await repositories.reminders.findById(IDS.standaloneReminder),
+            dismissed: await repositories.reminders.findById(IDS.dismissedReminder),
+          }) === retainedReminders,
+          "Completion rewrote fired, dismissed or unrelated reminder history.",
+        );
         const jobAfterCompletion = await createTrackerRepositories(database).jobs.findById(IDS.job);
         assertContract(
           completed?.state === "completed" && jobAfterCompletion?.nextActionAt === null,
@@ -744,7 +829,7 @@ export const createPipelineRepositoryContractSuite = (
             "SELECT version, name, sha256 FROM coredrill_schema_migration ORDER BY version",
           ),
         );
-        await setup.migrate(database);
+        await setup.migrate(database, 159);
         assertContract(
           (await completionState()) === beforeIndexUpgrade,
           "Task list index migration changed retained data/history.",
@@ -769,6 +854,102 @@ export const createPipelineRepositoryContractSuite = (
             JSON.stringify(ledgerAfterIndex.slice(0, 158)) === JSON.stringify(ledgerBeforeIndex),
           "Task index upgrade rewrote prior migration identities/checksums.",
         );
+        const beforeReminderIndex = await completionState();
+        await setup.migrate(database);
+        assertContract(
+          (await completionState()) === beforeReminderIndex,
+          "Reminder index upgrade rewrote retained data/history.",
+        );
+        const reminderIndex = await database.query(
+          sqlStatement("SELECT name FROM sqlite_schema WHERE type = 'index' AND name = ?", [
+            "reminder_next_action_job_state_idx",
+          ]),
+        );
+        assertContract(
+          reminderIndex.length === 1,
+          "Terminal reminder lookup index is missing after upgrade.",
+        );
+        assertContract(
+          (await database.diagnostics()).schemaVersion === 160,
+          "Reminder index upgrade did not advance to schema 160.",
+        );
+        const reminderLedger = await database.query(
+          sqlStatement(
+            "SELECT version, name, sha256 FROM coredrill_schema_migration ORDER BY version",
+          ),
+        );
+        assertContract(
+          reminderLedger.length === 160 &&
+            JSON.stringify(reminderLedger.slice(0, 159)) === JSON.stringify(ledgerAfterIndex),
+          "Reminder index upgrade changed prior migration identities/checksums.",
+        );
+        const reminderPlanKinds = new Set<"guard" | "pending">();
+        const observedResolutionStates = new Set<"completed" | "dismissed">();
+        const observedResolutionDatabase: DatabasePort = {
+          query: <Row extends QueryRow>(statement: SqlStatement) => database.query<Row>(statement),
+          execute: (statement) => database.execute(statement),
+          diagnostics: () => database.diagnostics(),
+          exportPortable: () => database.exportPortable(),
+          transaction: (work) =>
+            database.transaction((session) => {
+              const assertReminderPlan = async (
+                statement: SqlStatement,
+                kind: "guard" | "pending",
+              ) => {
+                const plan = await session.query(
+                  sqlStatement(`EXPLAIN QUERY PLAN ${statement.sql}`, statement.parameters),
+                );
+                const details = plan.map((row) => String(row["detail"]));
+                assertContract(
+                  details.some(
+                    (detail) =>
+                      detail.includes("SEARCH reminder") &&
+                      detail.includes("reminder_next_action_job_state_idx"),
+                  ) && details.every((detail) => !detail.includes("SCAN reminder")),
+                  "Terminal reminder lookup scans instead of searching its task/owner/state index.",
+                );
+                if (kind === "pending")
+                  assertContract(
+                    details.some((detail) =>
+                      detail.includes("next_action_id=? AND job_id=? AND state=?"),
+                    ),
+                    "Pending reminder predicate did not seek task, owner and state.",
+                  );
+                reminderPlanKinds.add(kind);
+              };
+              return work({
+                query: async <Row extends QueryRow>(statement: SqlStatement) => {
+                  if (statement.sql.includes("FROM reminder WHERE next_action_id"))
+                    await assertReminderPlan(statement, "guard");
+                  return session.query<Row>(statement);
+                },
+                execute: async (statement) => {
+                  if (statement.sql.startsWith("UPDATE next_action")) {
+                    const state = statement.parameters[0];
+                    if (state === "completed" || state === "dismissed")
+                      observedResolutionStates.add(state);
+                  }
+                  if (statement.sql.startsWith("UPDATE reminder")) {
+                    const where = statement.sql.indexOf("WHERE ");
+                    assertContract(
+                      where >= 0 && statement.parameters.length === 3,
+                      "Reminder write changed its reviewed audit/predicate parameter layout.",
+                    );
+                    // Explain its exact selection predicate with a SELECT: native query confinement
+                    // remains read-only, and the original UPDATE still executes exactly once below.
+                    await assertReminderPlan(
+                      sqlStatement(
+                        `SELECT id FROM reminder ${statement.sql.slice(where)}`,
+                        statement.parameters.slice(1),
+                      ),
+                      "pending",
+                    );
+                  }
+                  return session.execute(statement);
+                },
+              });
+            }),
+        };
         const taskPlanKinds = new Set<"initial" | "cursor">();
         const observedTaskDatabase: DatabasePort = {
           query: <Row extends QueryRow>(statement: SqlStatement) => database.query<Row>(statement),
@@ -921,11 +1102,56 @@ export const createPipelineRepositoryContractSuite = (
         const viewedTask = firstTasks.value.items[0];
         if (viewedTask === undefined)
           throw new DatabaseContractViolation("Missing viewed completion task.");
-        await completeNextAction(database, viewedTask.id, REOPENED_AT, {
+        await repositories.reminders.create({
+          id: IDS.foreignReminder,
+          jobId: otherTaskJobId,
+          nextActionId: viewedTask.id,
+          interviewId: null,
+          remindAt: REMINDER_AT,
+          timeZone: EASTERN,
+          state: "pending",
+          note: "Synthetic deliberately corrupt cross-job reminder.",
+          firedAt: null,
+          createdAt: REOPENED_AT,
+          updatedAt: REOPENED_AT,
+        });
+        const beforeForeignReminderCompletion = await completionState();
+        await expectFailure(
+          () =>
+            completeNextAction(observedResolutionDatabase, viewedTask.id, REOPENED_AT, {
+              jobId: IDS.job,
+              jobRowVersion: firstTasks.value.jobRowVersion,
+              nextActionRowVersion: viewedTask.rowVersion,
+            }),
+          (error) =>
+            error instanceof PipelineRepositoryConflictError &&
+            error.code === "pipeline_projection_conflict",
+          "Completion accepted a reminder linked to a different job.",
+        );
+        assertContract(
+          (await completionState()) === beforeForeignReminderCompletion,
+          "Foreign-linked reminder rejection changed task/reminder/job/history state.",
+        );
+        // Repair only this deliberately corrupted synthetic fixture; product code must not reassign it.
+        await database.execute(
+          sqlStatement(
+            "UPDATE reminder SET job_id = ?, row_version = row_version + 1 WHERE id = ? AND job_id = ?",
+            [IDS.job, IDS.foreignReminder, otherTaskJobId],
+          ),
+        );
+        await completeNextAction(observedResolutionDatabase, viewedTask.id, REOPENED_AT, {
           jobId: IDS.job,
           jobRowVersion: firstTasks.value.jobRowVersion,
           nextActionRowVersion: viewedTask.rowVersion,
         });
+        const repairedReminder = await repositories.reminders.findById(IDS.foreignReminder);
+        assertContract(
+          repairedReminder?.state === "dismissed" &&
+            repairedReminder.rowVersion === 3 &&
+            repairedReminder.updatedAt === REOPENED_AT &&
+            repairedReminder.firedAt === null,
+          "Owned reminder was not dismissed after the explicit synthetic ownership repair.",
+        );
         const beforeStaleTaskRead = await completionState();
         const changedTasks = await taskQuery.execute(
           { jobId: IDS.job, limit: 1, after: firstTaskCursor },
@@ -962,6 +1188,285 @@ export const createPipelineRepositoryContractSuite = (
           id: dismissedTaskUndoId,
           consumedAt: REOPENED_AT,
         });
+        for (const [id, dueAt] of [
+          [IDS.dismissalAction, ACTION_DUE_AT],
+          [IDS.laterAction, INTERVIEW_AT],
+        ] as const) {
+          await setNextAction(
+            database,
+            {
+              id,
+              jobId: IDS.job,
+              applicationId: null,
+              interactionId: null,
+              title: "Synthetic deliberate dismissal and remaining due projection",
+              dueAt,
+              timeZone: EASTERN,
+              state: "pending",
+              completedAt: null,
+              createdAt: REOPENED_AT,
+              updatedAt: REOPENED_AT,
+            },
+            entityId("mutation-undo-token", id),
+          );
+        }
+        for (const [id, state] of [
+          [IDS.dismissalReminder, "pending"],
+          [IDS.firedDismissalReminder, "fired"],
+        ] as const) {
+          await repositories.reminders.create({
+            id,
+            jobId: IDS.job,
+            nextActionId: IDS.dismissalAction,
+            interviewId: null,
+            remindAt: REMINDER_AT,
+            timeZone: EASTERN,
+            state,
+            note: "Synthetic dismissal reminder",
+            firedAt: state === "fired" ? REMINDER_AT : null,
+            createdAt: REOPENED_AT,
+            updatedAt: REOPENED_AT,
+          });
+        }
+        const dismissalOwner = await createTrackerRepositories(database).jobs.findById(IDS.job);
+        if (dismissalOwner?.nextActionAt !== ACTION_DUE_AT)
+          throw new DatabaseContractViolation("Dismissal fixture has no earliest scheduled owner.");
+        const dismissalExpected = {
+          jobId: IDS.job,
+          jobRowVersion: dismissalOwner.rowVersion,
+          nextActionRowVersion: 1,
+        };
+        const dismissalPort = createDatabaseNextActionDismissalPort(observedResolutionDatabase);
+        const beforeMissingDismissal = await completionState();
+        await expectFailure(
+          () =>
+            Promise.resolve(
+              Reflect.apply(dismissNextAction, undefined, [
+                database,
+                IDS.dismissalAction,
+                FINAL_UNDO_AT,
+              ]),
+            ),
+          (error) => error instanceof TypeError,
+          "Dismissal accepted missing viewed expectations.",
+        );
+        assertContract(
+          (await completionState()) === beforeMissingDismissal,
+          "Missing dismissal expectations wrote data.",
+        );
+        for (const expected of [
+          { ...dismissalExpected, jobRowVersion: dismissalExpected.jobRowVersion + 1 },
+          { ...dismissalExpected, nextActionRowVersion: 2 },
+          { ...dismissalExpected, jobId: otherTaskJobId },
+        ]) {
+          const before = await completionState();
+          await expectFailure(
+            () =>
+              dismissalPort.dismiss({
+                jobId: expected.jobId,
+                nextActionId: IDS.dismissalAction,
+                expected: {
+                  jobRowVersion: expected.jobRowVersion,
+                  nextActionRowVersion: expected.nextActionRowVersion,
+                },
+                dismissedAt: FINAL_UNDO_AT,
+              }),
+            (error) => error instanceof NextActionDismissalError && error.code === "conflict",
+            "Dismissal port lost viewed ownership/version guards.",
+          );
+          assertContract(
+            (await completionState()) === before,
+            "Rejected dismissal left partial writes.",
+          );
+        }
+        await database.execute(
+          sqlStatement(
+            "UPDATE job SET archived_at = ?, row_version = row_version + 1 WHERE id = ?",
+            [FINAL_UNDO_AT, IDS.job],
+          ),
+        );
+        const beforeArchivedDismissal = await completionState();
+        await expectFailure(
+          () =>
+            dismissNextAction(database, IDS.dismissalAction, FINAL_UNDO_AT, {
+              ...dismissalExpected,
+              jobRowVersion: dismissalExpected.jobRowVersion + 1,
+            }),
+          (error) =>
+            error instanceof PipelineRepositoryConflictError &&
+            error.code === "pipeline_projection_conflict",
+          "Dismissal accepted a current archived job.",
+        );
+        assertContract(
+          (await completionState()) === beforeArchivedDismissal,
+          "Archived dismissal wrote data.",
+        );
+        await database.execute(
+          sqlStatement(
+            "UPDATE job SET archived_at = NULL, row_version = row_version + 1 WHERE id = ?",
+            [IDS.job],
+          ),
+        );
+        const currentDismissalExpected = {
+          ...dismissalExpected,
+          jobRowVersion: dismissalExpected.jobRowVersion + 2,
+        };
+        await repositories.reminders.create({
+          id: IDS.foreignDismissalReminder,
+          jobId: otherTaskJobId,
+          nextActionId: IDS.dismissalAction,
+          interviewId: null,
+          remindAt: REMINDER_AT,
+          timeZone: EASTERN,
+          state: "pending",
+          note: "Synthetic corrupt dismissal owner",
+          firedAt: null,
+          createdAt: REOPENED_AT,
+          updatedAt: REOPENED_AT,
+        });
+        const beforeForeignDismissal = await completionState();
+        await expectFailure(
+          () =>
+            dismissNextAction(
+              database,
+              IDS.dismissalAction,
+              FINAL_UNDO_AT,
+              currentDismissalExpected,
+            ),
+          (error) =>
+            error instanceof PipelineRepositoryConflictError &&
+            error.code === "pipeline_projection_conflict",
+          "Dismissal accepted a foreign linked reminder.",
+        );
+        assertContract(
+          (await completionState()) === beforeForeignDismissal,
+          "Foreign dismissal changed either job's records.",
+        );
+        // Explicit synthetic fixture repair only; never a product data-reassignment path.
+        await database.execute(
+          sqlStatement(
+            "UPDATE reminder SET job_id = ?, row_version = row_version + 1 WHERE id = ?",
+            [IDS.job, IDS.foreignDismissalReminder],
+          ),
+        );
+        const beforeInterruptedDismissal = await completionState();
+        await expectFailure(
+          () =>
+            dismissNextAction(
+              interruptedDatabase,
+              IDS.dismissalAction,
+              FINAL_UNDO_AT,
+              currentDismissalExpected,
+            ),
+          (error) => error === interruption,
+          "Dismissal did not reach the injected late projection failure.",
+        );
+        assertContract(
+          (await completionState()) === beforeInterruptedDismissal,
+          "Interrupted dismissal left partial task/reminder/job writes.",
+        );
+        const preservedDismissalFacts = JSON.stringify({
+          fired: await repositories.reminders.findById(IDS.firedDismissalReminder),
+          unrelated: await repositories.reminders.findById(IDS.standaloneReminder),
+          tokens: await database.query(
+            sqlStatement("SELECT * FROM mutation_undo_token ORDER BY id"),
+          ),
+          applications: await database.query(sqlStatement("SELECT * FROM application ORDER BY id")),
+          events: await database.query(sqlStatement("SELECT * FROM status_event ORDER BY id")),
+          otherJob: await createTrackerRepositories(database).jobs.findById(otherTaskJobId),
+        });
+        const beforeDismissalPage = await taskQuery.execute(
+          { jobId: IDS.job, limit: 1 },
+          queryContext,
+        );
+        if (!beforeDismissalPage.ok || beforeDismissalPage.value.nextCursor === null)
+          throw new DatabaseContractViolation("Dismissal cursor fixture is missing.");
+        const dismissal = await createDismissNextActionCommand(dismissalPort).execute(
+          {
+            jobId: IDS.job,
+            nextActionId: IDS.dismissalAction,
+            expected: {
+              jobRowVersion: currentDismissalExpected.jobRowVersion,
+              nextActionRowVersion: 1,
+            },
+          },
+          {
+            operationId: entityId("application-operation", IDS.dismissalAction),
+            initiatedAt: FINAL_UNDO_AT,
+          },
+        );
+        assertContract(
+          dismissal.ok &&
+            dismissal.value.dismissedAt === FINAL_UNDO_AT &&
+            dismissal.value.jobRowVersion === currentDismissalExpected.jobRowVersion + 1 &&
+            dismissal.value.nextActionRowVersion === 2,
+          "Dismissal command/port acknowledgement lost terminal state, time or versions.",
+        );
+        const dismissedAction = await repositories.nextActions.findById(IDS.dismissalAction);
+        const afterDismissalOwner = await createTrackerRepositories(database).jobs.findById(
+          IDS.job,
+        );
+        const dismissedLinkedReminder = await repositories.reminders.findById(
+          IDS.dismissalReminder,
+        );
+        assertContract(
+          dismissedAction?.state === "dismissed" &&
+            dismissedAction.completedAt === null &&
+            dismissedAction.updatedAt === FINAL_UNDO_AT &&
+            afterDismissalOwner?.nextActionAt === INTERVIEW_AT &&
+            dismissedLinkedReminder?.state === "dismissed" &&
+            dismissedLinkedReminder.rowVersion === 2,
+          "Dismissal lost retained task/reminder facts or the remaining earliest due projection.",
+        );
+        assertContract(
+          JSON.stringify({
+            fired: await repositories.reminders.findById(IDS.firedDismissalReminder),
+            unrelated: await repositories.reminders.findById(IDS.standaloneReminder),
+            tokens: await database.query(
+              sqlStatement("SELECT * FROM mutation_undo_token ORDER BY id"),
+            ),
+            applications: await database.query(
+              sqlStatement("SELECT * FROM application ORDER BY id"),
+            ),
+            events: await database.query(sqlStatement("SELECT * FROM status_event ORDER BY id")),
+            otherJob: await createTrackerRepositories(database).jobs.findById(otherTaskJobId),
+          }) === preservedDismissalFacts,
+          "Dismissal rewrote fired/unrelated/audit/other-job history or consumed undo.",
+        );
+        const beforeDismissalReplay = await completionState();
+        await expectFailure(
+          () =>
+            dismissalPort.dismiss({
+              jobId: IDS.job,
+              nextActionId: IDS.dismissalAction,
+              expected: {
+                jobRowVersion: currentDismissalExpected.jobRowVersion + 1,
+                nextActionRowVersion: 2,
+              },
+              dismissedAt: FINAL_UNDO_AT,
+            }),
+          (error) => error instanceof NextActionDismissalError && error.code === "conflict",
+          "Dismissal replay was accepted with fresh versions.",
+        );
+        assertContract(
+          (await completionState()) === beforeDismissalReplay,
+          "Dismissal replay wrote data.",
+        );
+        const invalidDismissalCursor = await taskQuery.execute(
+          { jobId: IDS.job, after: beforeDismissalPage.value.nextCursor },
+          queryContext,
+        );
+        assertContract(
+          !invalidDismissalCursor.ok && invalidDismissalCursor.error.code === "conflict",
+          "Dismissal did not invalidate an old task page.",
+        );
+        assertContract(
+          reminderPlanKinds.has("guard") &&
+            reminderPlanKinds.has("pending") &&
+            observedResolutionStates.has("completed") &&
+            observedResolutionStates.has("dismissed"),
+          "Both terminal actions did not exercise indexed reminder ownership/update predicates.",
+        );
         await database.execute(
           sqlStatement(
             "UPDATE job SET archived_at = ?, updated_at = ?, row_version = row_version + 1 WHERE id = ?",
@@ -977,7 +1482,7 @@ export const createPipelineRepositoryContractSuite = (
           !hiddenTasks.ok &&
             hiddenTasks.error.code === "not_found" &&
             archivedTasks.ok &&
-            archivedTasks.value.items.length === 4 &&
+            archivedTasks.value.items.length === 6 &&
             archivedTasks.value.items.some(
               (item) =>
                 item.id === dismissedTaskId &&

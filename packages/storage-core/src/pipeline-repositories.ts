@@ -1306,15 +1306,18 @@ export const consumeMutationUndoToken = async (
     return Object.freeze({ ...token, consumedAt, rowVersion: token.rowVersion + 1 });
   });
 
-export const completeNextAction = async (
+export interface ViewedNextActionResolution {
+  readonly jobId: EntityId<"job">;
+  readonly jobRowVersion: number;
+  readonly nextActionRowVersion: number;
+}
+
+const resolveNextAction = async (
   database: DatabasePort,
   id: EntityId<"next-action">,
-  completedAt: Instant,
-  expected?: Readonly<{
-    jobId: EntityId<"job">;
-    jobRowVersion: number;
-    nextActionRowVersion: number;
-  }>,
+  resolvedAt: Instant,
+  targetState: "completed" | "dismissed",
+  expected?: ViewedNextActionResolution,
 ): Promise<void> => {
   // Copy caller intent before awaiting the transaction; never rebase it to a fresh read.
   const viewed =
@@ -1350,16 +1353,38 @@ export const completeNextAction = async (
       )
         throw new PipelineRepositoryConflictError("pipeline_projection_conflict");
     }
-    const timestamp = instant(completedAt);
-    const completed = await transaction.execute(
+    const foreignReminders = await transaction.query(
+      sqlStatement("SELECT id FROM reminder WHERE next_action_id = ? AND job_id <> ? LIMIT 1", [
+        current.id,
+        current.jobId,
+      ]),
+    );
+    if (foreignReminders.length !== 0)
+      throw new PipelineRepositoryConflictError("pipeline_projection_conflict");
+    const timestamp = instant(resolvedAt);
+    const resolved = await transaction.execute(
       sqlStatement(
         `UPDATE next_action
-         SET state = 'completed', completed_at = ?, updated_at = ?, row_version = row_version + 1
+         SET state = ?, completed_at = ?, updated_at = ?, row_version = row_version + 1
          WHERE id = ? AND state = 'pending' AND row_version = ?`,
-        [timestamp, timestamp, entityId("next-action", id), current.rowVersion],
+        [
+          targetState,
+          targetState === "completed" ? timestamp : null,
+          timestamp,
+          entityId("next-action", id),
+          current.rowVersion,
+        ],
       ),
     );
-    assertOneRow(completed.rowsAffected, "projection");
+    assertOneRow(resolved.rowsAffected, "projection");
+    await transaction.execute(
+      sqlStatement(
+        `UPDATE reminder
+         SET state = 'dismissed', fired_at = NULL, updated_at = ?, row_version = row_version + 1
+         WHERE next_action_id = ? AND job_id = ? AND state = 'pending'`,
+        [timestamp, current.id, current.jobId],
+      ),
+    );
     interface DueRow extends QueryRow {
       readonly due_at: string | null;
     }
@@ -1382,4 +1407,27 @@ export const completeNextAction = async (
     );
     assertOneRow(updated.rowsAffected, "projection");
   });
+};
+
+/** Preserve the trusted legacy completion signature; interactive ports always require context. */
+export const completeNextAction = (
+  database: DatabasePort,
+  id: EntityId<"next-action">,
+  completedAt: Instant,
+  expected?: ViewedNextActionResolution,
+): Promise<void> => resolveNextAction(database, id, completedAt, "completed", expected);
+
+const hasViewedTaskResolution = (value: unknown): boolean =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+/** Deliberate dismissal is never an unguarded legacy operation or a deletion. */
+export const dismissNextAction = (
+  database: DatabasePort,
+  id: EntityId<"next-action">,
+  dismissedAt: Instant,
+  expected: ViewedNextActionResolution,
+): Promise<void> => {
+  if (!hasViewedTaskResolution(expected))
+    return Promise.reject(new TypeError("Dismissal requires the viewed job and task context."));
+  return resolveNextAction(database, id, dismissedAt, "dismissed", expected);
 };

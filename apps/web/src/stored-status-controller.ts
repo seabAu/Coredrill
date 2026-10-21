@@ -5,6 +5,8 @@ import type {
   UndoableNextActionDto,
   CompleteNextActionInput,
   CompletedNextActionDto,
+  DismissNextActionInput,
+  DismissedNextActionDto,
 } from "@coredrill/application";
 import type { InteractiveNextActionInput } from "./stored-next-actions.js";
 
@@ -30,6 +32,8 @@ export type StoredNextActionOutcome =
   Failure | { readonly kind: "saved"; readonly change: UndoableNextActionDto };
 export type StoredTaskCompletionOutcome =
   Failure | { readonly kind: "completed"; readonly change: CompletedNextActionDto };
+export type StoredTaskDismissalOutcome =
+  Failure | { readonly kind: "dismissed"; readonly change: DismissedNextActionDto };
 
 const failed = (message: string, retryable = true): Failure => ({
   kind: "failed",
@@ -161,6 +165,30 @@ export const createStoredStatusController = (
         const result = await api.nextActions.complete(request);
         return result.ok
           ? { kind: "completed", change: result.value }
+          : failed(result.error.message, result.error.retryable);
+      }, "next-action"),
+    dismissNextAction: (input: DismissNextActionInput): Promise<StoredTaskDismissalOutcome> =>
+      run(async () => {
+        const request = Object.freeze({ ...input, expected: Object.freeze({ ...input.expected }) });
+        const { jobRowVersion, nextActionRowVersion } = request.expected;
+        if (
+          ![jobRowVersion, nextActionRowVersion].every(
+            (value) => Number.isSafeInteger(value) && value >= 1 && value < Number.MAX_SAFE_INTEGER,
+          )
+        )
+          return failed("Review the current job and pending task before dismissing it.", false);
+        const api = getApi();
+        const loaded = await api.pipeline.workspace({ jobId: request.jobId });
+        if (!loaded.ok) return failed(loaded.error.message, loaded.error.retryable);
+        const { job } = loaded.value;
+        if (job.id !== request.jobId || job.rowVersion !== jobRowVersion || job.archivedAt !== null)
+          return failed(
+            "This job changed since the task was viewed. Refresh and review it before dismissing the task.",
+            false,
+          );
+        const result = await api.nextActions.dismiss(request);
+        return result.ok
+          ? { kind: "dismissed", change: result.value }
           : failed(result.error.message, result.error.retryable);
       }, "next-action"),
     undo: (

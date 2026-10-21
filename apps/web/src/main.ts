@@ -3807,7 +3807,7 @@ const api: CoredrillStorageSpikeApi = {
     const archiveBytes = base64ToBytes(input.archiveBytesBase64);
     const currentSchemaVersion = (await client.diagnostics()).schemaVersion;
     const schemaVersion = input.sourceSchemaVersion ?? currentSchemaVersion;
-    if (schemaVersion !== 158 && schemaVersion !== currentSchemaVersion) {
+    if (schemaVersion !== 158 && schemaVersion !== 159 && schemaVersion !== currentSchemaVersion) {
       throw new Error("The recovery fixture source schema is not reviewed.");
     }
     const inspected = await inspectPortableArchiveV1({

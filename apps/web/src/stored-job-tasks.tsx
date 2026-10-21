@@ -1,9 +1,14 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import type { CompleteNextActionInput, NextActionDto } from "@coredrill/application";
+import type {
+  CompleteNextActionInput,
+  DismissNextActionInput,
+  NextActionDto,
+} from "@coredrill/application";
 import {
   StoredJobTasks,
   restoreFocusAfterChange,
   type PipelineTableEditResult,
+  type TaskResolutionKind,
 } from "@coredrill/ui";
 import {
   createStoredTaskReader,
@@ -13,6 +18,7 @@ import {
 
 interface Review extends CompleteNextActionInput {
   readonly title: string;
+  readonly kind: TaskResolutionKind;
 }
 /** Root session owns read/review state. Responsive frames only render shared controls. */
 export const useStoredJobTasks = (options: {
@@ -21,6 +27,7 @@ export const useStoredJobTasks = (options: {
   readonly rowVersion: number | undefined;
   readonly busy: boolean;
   readonly complete: (input: CompleteNextActionInput) => Promise<PipelineTableEditResult>;
+  readonly dismiss: (input: DismissNextActionInput) => Promise<PipelineTableEditResult>;
   readonly refreshWorkspace: () => Promise<void>;
 }) => {
   const live = useRef(options);
@@ -64,7 +71,7 @@ export const useStoredJobTasks = (options: {
       if (!live.current.enabled || live.current.jobId !== request.jobId) return null;
       return (
         container.current?.querySelector<HTMLElement>(
-          request.target === "review" ? "[data-task-completion-review]" : "[data-stored-tasks]",
+          request.target === "review" ? "[data-task-resolution-review]" : "[data-stored-tasks]",
         ) ?? null
       );
     });
@@ -86,7 +93,7 @@ export const useStoredJobTasks = (options: {
     if (reader.current === current && live.current.jobId === jobId)
       setFocus({ jobId, origin, target: "list" });
   };
-  const choose = (task: NextActionDto) => {
+  const choose = (task: NextActionDto, kind: TaskResolutionKind) => {
     if (
       review !== null ||
       stale ||
@@ -102,6 +109,7 @@ export const useStoredJobTasks = (options: {
         jobId,
         nextActionId: task.id,
         title: task.title,
+        kind,
         expected: Object.freeze({
           jobRowVersion: visible.jobRowVersion,
           nextActionRowVersion: task.rowVersion,
@@ -120,11 +128,15 @@ export const useStoredJobTasks = (options: {
     setCompleting(true);
     setFailure(null);
     try {
-      const result = await live.current.complete({
+      const input = {
         jobId: request.jobId,
         nextActionId: request.nextActionId,
         expected: request.expected,
-      });
+      };
+      const result =
+        request.kind === "complete"
+          ? await live.current.complete(input)
+          : await live.current.dismiss(input);
       if (!result.ok) {
         setFailure(result.error);
         return;
@@ -133,14 +145,17 @@ export const useStoredJobTasks = (options: {
       setReview((current) => (current === request ? null : current));
       setNotice({
         jobId: request.jobId,
-        text: "Task marked complete locally. History is retained. Refreshing tasks never repeats completion.",
+        text:
+          request.kind === "complete"
+            ? "Task marked complete locally. History is retained. Refreshing tasks never repeats completion."
+            : "Task dismissed locally. History is retained without completion. Refreshing tasks never repeats dismissal.",
       });
       const current = reader.current;
       if (live.current.jobId === request.jobId && current?.current().jobId === request.jobId)
         await current.refresh();
     } catch {
       setFailure(
-        "Task completion could not be confirmed. Refresh and review the stored state before trying again.",
+        `Task ${request.kind === "complete" ? "completion" : "dismissal"} could not be confirmed. Refresh and review the stored state before trying again.`,
       );
     } finally {
       pending.current = false;
@@ -160,6 +175,7 @@ export const useStoredJobTasks = (options: {
         mutating={options.busy || completing}
         hasMore={visible.nextCursor !== null}
         foreignReview={review !== null && review.jobId !== jobId}
+        reviewKind={review?.kind ?? "complete"}
         notice={notice?.jobId === jobId ? notice.text : null}
         review={
           review?.jobId === jobId

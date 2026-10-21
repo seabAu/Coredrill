@@ -37,6 +37,10 @@ const fixture = () => {
       })),
     },
     nextActions: {
+      dismiss: vi.fn(async (input) => ({
+        ok: true,
+        value: { ...input, state: "dismissed", completedAt: null },
+      })),
       complete: vi.fn(async (input) => ({ ok: true, value: { ...input, state: "completed" } })),
       setNextAction: vi.fn(async () => ({
         ok: true,
@@ -67,6 +71,77 @@ describe("stored status controller", () => {
     expect(api.loadApplicationSubmissionReview).not.toHaveBeenCalled();
     expect(api.pipelineMutations.undo).not.toHaveBeenCalled();
   });
+  it("forwards deliberate dismissal distinctly, without undo or submission work", async () => {
+    const { api, controller } = fixture();
+    expect(await controller.dismissNextAction(completion())).toMatchObject({
+      kind: "dismissed",
+      change: { state: "dismissed", completedAt: null },
+    });
+    expect(api.nextActions.dismiss).toHaveBeenCalledExactlyOnceWith(completion());
+    expect(api.nextActions.complete).not.toHaveBeenCalled();
+    expect(api.pipelineMutations.undo).not.toHaveBeenCalled();
+    expect(api.loadApplicationSubmissionReview).not.toHaveBeenCalled();
+  });
+  it.each([{ rowVersion: 3 }, { id: "other-job" }, { archivedAt: "archived" }])(
+    "rejects changed dismissal context before writing: %j",
+    async (change) => {
+      const { api, controller } = fixture();
+      const current = (await api.pipeline.workspace()).value;
+      api.pipeline.workspace.mockResolvedValue({
+        ok: true,
+        value: { ...current, job: { ...current.job, ...change } },
+      });
+      expect(await controller.dismissNextAction(completion())).toMatchObject({
+        kind: "failed",
+        retryable: false,
+      });
+      expect(api.nextActions.dismiss).not.toHaveBeenCalled();
+    },
+  );
+  it("copies dismissal before preflight and serializes it with completion, creation, status and undo", async () => {
+    const { api, controller } = fixture();
+    const current = await api.pipeline.workspace();
+    let release;
+    api.pipeline.workspace.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          release = resolve;
+        }),
+    );
+    const request = completion();
+    const pending = controller.dismissNextAction(request);
+    request.jobId = "other-job";
+    request.expected.nextActionRowVersion = 99;
+    expect(await controller.completeNextAction(completion())).toMatchObject({ kind: "failed" });
+    expect(await controller.dismissNextAction(completion())).toMatchObject({ kind: "failed" });
+    expect(await controller.move(move())).toMatchObject({ kind: "failed" });
+    expect(await controller.undo("synthetic-undo")).toMatchObject({ kind: "failed" });
+    expect(
+      await controller.addNextAction({
+        jobId: "synthetic-job",
+        title: "Task",
+        expected: { jobRowVersion: 2 },
+      }),
+    ).toMatchObject({ kind: "failed" });
+    release(current);
+    expect(await pending).toMatchObject({ kind: "dismissed" });
+    expect(api.nextActions.dismiss).toHaveBeenCalledExactlyOnceWith(completion());
+    expect(Object.isFrozen(api.nextActions.dismiss.mock.calls[0][0].expected)).toBe(true);
+  });
+  it.each([0, Number.MAX_SAFE_INTEGER])(
+    "rejects invalid dismissal version %s before preflight",
+    async (value) => {
+      const { api, controller } = fixture();
+      expect(
+        await controller.dismissNextAction({
+          ...completion(),
+          expected: { jobRowVersion: value, nextActionRowVersion: 1 },
+        }),
+      ).toMatchObject({ kind: "failed", retryable: false });
+      expect(api.pipeline.workspace).not.toHaveBeenCalled();
+      expect(api.nextActions.dismiss).not.toHaveBeenCalled();
+    },
+  );
   it.each([{ rowVersion: 3 }, { id: "other-job" }, { archivedAt: "archived" }])(
     "rejects changed completion owner/context before writing: %j",
     async (change) => {

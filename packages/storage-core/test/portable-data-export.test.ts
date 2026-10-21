@@ -501,6 +501,18 @@ describe("portable human-readable data export", () => {
     expect(indexed.datasets).toEqual(
       bundle.datasets.map((dataset) => ({ ...dataset, sourceSchemaVersion: 159 })),
     );
+    database.schemaVersion = 160;
+    const reminderIndexed = await createPortableDataExportV1({
+      database,
+      generatedAt: GENERATED_AT,
+      vaultId: VAULT_ID,
+    });
+    expect(reminderIndexed.sourceSchemaVersion).toBe(160);
+    expect(reminderIndexed.datasetCount).toBe(57);
+    expect(reminderIndexed.dataFiles).toHaveLength(114);
+    expect(reminderIndexed.datasets).toEqual(
+      indexed.datasets.map((dataset) => ({ ...dataset, sourceSchemaVersion: 160 })),
+    );
     database.schemaVersion = 154;
     const historical = await createPortableDataExportV1({
       database,

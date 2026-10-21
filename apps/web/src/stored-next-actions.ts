@@ -4,9 +4,11 @@ import {
   createJobActivityOperations,
   createJobNextActionsQuery,
   createCompleteNextActionCommand,
+  createDismissNextActionCommand,
   type ApplicationOperationContext,
   type ListJobNextActionsInput,
   type CompleteNextActionInput,
+  type DismissNextActionInput,
   type NextActionExpectation,
   type SetNextActionInput,
 } from "@coredrill/application";
@@ -15,6 +17,7 @@ import {
   createDatabaseJobActivityPort,
   createJobNextActionsRepository,
   createDatabaseNextActionCompletionPort,
+  createDatabaseNextActionDismissalPort,
   type DatabasePort,
 } from "@coredrill/storage-core";
 
@@ -45,6 +48,10 @@ export const createStoredNextActionApi = (
     complete: async (input) =>
       createDatabaseNextActionCompletionPort(await database()).complete(input),
   });
+  const dismissTask = createDismissNextActionCommand({
+    dismiss: async (input) =>
+      createDatabaseNextActionDismissalPort(await database()).dismiss(input),
+  });
   const operations = createJobActivityOperations({
     createNextActionId: () => entityId("next-action", createId("next-action")),
     createUndoTokenId: () => entityId("mutation-undo-token", createId("mutation-undo-token")),
@@ -68,6 +75,7 @@ export const createStoredNextActionApi = (
   return Object.freeze({
     listPage: (input: ListJobNextActionsInput) => taskQuery.execute(input, context()),
     complete: (input: CompleteNextActionInput) => completeTask.execute(input, context()),
+    dismiss: (input: DismissNextActionInput) => dismissTask.execute(input, context()),
     setNextAction: (input: InteractiveNextActionInput) => {
       if (!hasViewedInput(input)) {
         return Promise.resolve(

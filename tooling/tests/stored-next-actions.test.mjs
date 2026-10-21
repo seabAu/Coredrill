@@ -2,20 +2,23 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   JobActivityError,
   NextActionCompletionError,
+  NextActionDismissalError,
   JobNextActionsError,
 } from "../../packages/application/dist/index.js";
 import { createStoredNextActionApi } from "../../apps/web/src/stored-next-actions.ts";
 
-const { write, list, complete } = vi.hoisted(() => ({
+const { write, list, complete, dismiss } = vi.hoisted(() => ({
   write: vi.fn(),
   list: vi.fn(),
   complete: vi.fn(),
+  dismiss: vi.fn(),
 }));
 vi.mock("../../packages/storage-core/dist/index.js", async (original) => ({
   ...(await original()),
   createDatabaseJobActivityPort: () => ({ setNextAction: write }),
   createJobNextActionsRepository: () => ({ listPage: list }),
   createDatabaseNextActionCompletionPort: () => ({ complete }),
+  createDatabaseNextActionDismissalPort: () => ({ dismiss }),
 }));
 const jobId = "0199b366-0000-7000-8000-000000000001";
 const actionId = "0199b366-0000-7000-8000-000000000002";
@@ -32,6 +35,16 @@ beforeEach(() => {
   write.mockReset();
   list.mockReset();
   complete.mockReset();
+  dismiss.mockReset();
+  dismiss.mockImplementation(async (request) => ({
+    jobId: request.jobId,
+    nextActionId: request.nextActionId,
+    state: "dismissed",
+    completedAt: null,
+    dismissedAt: request.dismissedAt,
+    jobRowVersion: request.expected.jobRowVersion + 1,
+    nextActionRowVersion: request.expected.nextActionRowVersion + 1,
+  }));
   list.mockResolvedValue({
     jobId,
     jobRowVersion: 3,
@@ -82,6 +95,74 @@ describe("normal next-action runtime boundary", () => {
     expect(write).not.toHaveBeenCalled();
     expect(complete).not.toHaveBeenCalled();
     expect(createId).not.toHaveBeenCalled();
+  });
+  it("copies dismissal context before storage opens and returns a distinct non-completed acknowledgement", async () => {
+    const { api, open, createId } = setup();
+    let release;
+    open.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          release = resolve;
+        }),
+    );
+    const request = completion();
+    const pending = api.dismiss(request);
+    request.jobId = tokenId;
+    request.expected.jobRowVersion = 99;
+    release({});
+    expect(await pending).toMatchObject({
+      ok: true,
+      value: {
+        jobId,
+        nextActionId: actionId,
+        state: "dismissed",
+        completedAt: null,
+        dismissedAt: at,
+        jobRowVersion: 4,
+        nextActionRowVersion: 3,
+      },
+    });
+    expect(dismiss).toHaveBeenCalledExactlyOnceWith({
+      jobId,
+      nextActionId: actionId,
+      expected: { jobRowVersion: 3, nextActionRowVersion: 2 },
+      dismissedAt: at,
+    });
+    expect(Object.isFrozen(dismiss.mock.calls[0][0].expected)).toBe(true);
+    expect(createId).not.toHaveBeenCalled();
+    expect(complete).not.toHaveBeenCalled();
+    expect(write).not.toHaveBeenCalled();
+  });
+  it.each([
+    null,
+    {},
+    { ...completion(), expected: undefined },
+    { ...completion(), dismissedAt: at },
+    { ...completion(), completedAt: at },
+    { ...completion(), expected: { jobRowVersion: 3, nextActionRowVersion: 0 } },
+  ])("rejects invalid/forged dismissal before database access: %j", async (bad) => {
+    const { api, open } = setup();
+    expect(await api.dismiss(bad)).toMatchObject({ ok: false, error: { code: "validation" } });
+    expect(open).not.toHaveBeenCalled();
+    expect(dismiss).not.toHaveBeenCalled();
+  });
+  it("redacts dismissal opening failures and does not retry", async () => {
+    const { api, open } = setup();
+    open.mockRejectedValue(new Error("PRIVATE_DISMISSAL_PATH"));
+    const result = await api.dismiss(completion());
+    expect(result).toMatchObject({ ok: false, error: { code: "unavailable" } });
+    expect(JSON.stringify(result)).not.toContain("PRIVATE");
+    expect(open).toHaveBeenCalledOnce();
+  });
+  it("preserves a dismissal conflict without substituting completion or retrying", async () => {
+    const { api } = setup();
+    dismiss.mockRejectedValue(new NextActionDismissalError("conflict"));
+    expect(await api.dismiss(completion())).toMatchObject({
+      ok: false,
+      error: { code: "conflict" },
+    });
+    expect(dismiss).toHaveBeenCalledOnce();
+    expect(complete).not.toHaveBeenCalled();
   });
   it.each([{ jobId, limit: 101 }, { jobId: "invalid" }, { jobId, includeArchived: "yes" }])(
     "rejects invalid page intent before opening: %j",
@@ -174,7 +255,7 @@ describe("normal next-action runtime boundary", () => {
   });
   it("requires viewed context, creates only job-scoped tasks and owns audit/identities", async () => {
     const { api, createId, open } = setup();
-    expect(Object.keys(api)).toEqual(["listPage", "complete", "setNextAction"]);
+    expect(Object.keys(api)).toEqual(["listPage", "complete", "dismiss", "setNextAction"]);
     const result = await api.setNextAction({
       ...input,
       applicationId: tokenId,

@@ -4252,6 +4252,7 @@ const AppShellCatalog = ({
     rowVersion: storedPipeline?.jobs.find(({ id }) => id === workspaceRoute?.jobId)?.rowVersion,
     busy: storedStatusActions.busy,
     complete: storedStatusActions.completeNextAction,
+    dismiss: storedStatusActions.dismissNextAction,
     refreshWorkspace: storedStatusActions.refreshWorkspace,
   });
 

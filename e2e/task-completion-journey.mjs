@@ -23,6 +23,9 @@ export const exerciseNormalTaskCompletion = async (page, testInfo) => {
   const review = tasks.getByRole("region", { name: "Review task completion", exact: true });
   await expect(review.getByRole("heading")).toBeFocused();
   await expect(review).toContainText(title);
+  await expect(review).toContainText(
+    "Pending linked reminders will be dismissed; fired reminder history is retained.",
+  );
   await review.getByRole("button", { name: "Cancel completion review", exact: true }).click();
   await expect(review).toHaveCount(0);
   await expect(task).toContainText("State: pending.");
