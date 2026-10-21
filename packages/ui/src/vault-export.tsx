@@ -137,10 +137,15 @@ export const VaultExportPanel = ({
               </label>
             </>
           ) : (
-            <p>
-              Native portable-archive saving and selected-copy reading are not connected yet. This
-              does not use a browser-download fallback or browser file picker.
-            </p>
+            <>
+              <button type="button" className="cd-button" disabled={disabled} onClick={onSave}>
+                {state.phase === "saving" ? "Saving archive…" : "Save prepared archive"}
+              </button>
+              <p>
+                The desktop save boundary owns the OS picker and verifies exact saved bytes. This
+                does not use a browser-download fallback or browser file picker.
+              </p>
+            </>
           )}
           <button
             type="button"

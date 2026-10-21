@@ -347,7 +347,9 @@ jobs:
   browser-storage-chrome:
     name: Browser storage / Chrome ${{ matrix.chrome }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # f3af852 reached onboarding after all 36 resilience cases passed, then hit 15m.
+    # Execution headroom only; retain every suite and its individual timeout.
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:

@@ -3342,6 +3342,9 @@ const api: CoredrillStorageSpikeApi = {
     getAttachmentStore,
     careerProfileOperationContext,
     "0.0.0",
+    RUNTIME_KIND === "native"
+      ? { save: async (input) => (await runtimeDatabase.native()).savePortableArchive(input) }
+      : undefined,
   ),
   pipelineMutations: createStoredPipelineMutationApi(
     async () => {

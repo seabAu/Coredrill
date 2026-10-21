@@ -1,6 +1,23 @@
 import { deserializeNativeStorageError, NativeStorageProtocolError } from "./protocol.js";
 
-export const NATIVE_ARCHIVE_PROTOCOL_VERSION = 3 as const;
+export const NATIVE_ARCHIVE_PROTOCOL_VERSION = 4 as const;
+export const NATIVE_PORTABLE_SAVE_LIMITS = Object.freeze({
+  maxArchiveBytes: 544 * 1024 * 1024,
+  maxChunkBytes: 1024 * 1024,
+});
+
+export interface NativePortableSaveIdentity {
+  readonly vaultId: string;
+  readonly archiveId: string;
+  readonly byteLength: number;
+  readonly sha256: string;
+}
+export interface NativePortableSaveInput extends NativePortableSaveIdentity {
+  readonly bytes: Uint8Array;
+}
+export type NativePortableSaveOutcome =
+  | { readonly status: "cancelled" }
+  | (NativePortableSaveIdentity & { readonly status: "saved_verified" });
 export const NATIVE_ATTACHMENT_MAX_BYTES = 256 * 1024 * 1024;
 const NATIVE_ARCHIVE_FORMAT_VERSION = 1 as const;
 const MAX_ARCHIVE_DATABASE_BYTES = 64 * 1024 * 1024 * 1024;
@@ -21,6 +38,18 @@ export interface NativeArchiveRequest {
 }
 
 export type NativeArchiveOperation =
+  | (NativePortableSaveIdentity & {
+      readonly type: "portable_save_begin" | "portable_save_finish";
+      readonly sessionId: string;
+    })
+  | {
+      readonly type: "portable_save_append";
+      readonly sessionId: string;
+      readonly archiveId: string;
+      readonly offset: number;
+      readonly bytes: readonly number[];
+    }
+  | { readonly type: "portable_save_abort"; readonly sessionId: string; readonly archiveId: string }
   | { readonly type: "export"; readonly sessionId: string }
   | { readonly type: "restore"; readonly sessionId: string }
   | {
@@ -108,6 +137,16 @@ export interface NativeAutomaticBackupMetadata {
 }
 
 export type NativeArchiveResponseData =
+  | {
+      readonly type: "portable_save_progress";
+      readonly archiveId: string;
+      readonly receivedBytes: number;
+    }
+  | {
+      readonly type: "portable_save_aborted" | "portable_save_cancelled";
+      readonly archiveId: string;
+    }
+  | (NativePortableSaveIdentity & { readonly type: "portable_saved" })
   | { readonly type: "cancelled"; readonly operation: "export" | "restore" }
   | { readonly type: "exported"; readonly archive: NativeArchiveMetadata }
   | { readonly type: "restored"; readonly archive: NativeArchiveMetadata }
@@ -283,9 +322,53 @@ const parseAutomaticBackupMetadata = (value: unknown): NativeAutomaticBackupMeta
   });
 };
 
+const parsePortableSaveId = (value: unknown): string => {
+  if (
+    typeof value !== "string" ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(value)
+  )
+    throw invalidResponse();
+  return value;
+};
+
 const parseResponseData = (value: unknown): NativeArchiveResponseData => {
   if (!isRecord(value) || typeof value["type"] !== "string") throw invalidResponse();
   switch (value["type"]) {
+    case "portable_save_progress": {
+      const archiveId = parsePortableSaveId(value["archiveId"]);
+      const receivedBytes = requireSafeInteger(value, "receivedBytes");
+      if (receivedBytes > NATIVE_PORTABLE_SAVE_LIMITS.maxArchiveBytes) throw invalidResponse();
+      if (Object.keys(value).some((key) => !["type", "archiveId", "receivedBytes"].includes(key)))
+        throw invalidResponse();
+      return Object.freeze({ type: "portable_save_progress", archiveId, receivedBytes });
+    }
+    case "portable_save_aborted":
+    case "portable_save_cancelled": {
+      if (Object.keys(value).some((key) => !["type", "archiveId"].includes(key)))
+        throw invalidResponse();
+      return Object.freeze({
+        type: value["type"],
+        archiveId: parsePortableSaveId(value["archiveId"]),
+      });
+    }
+    case "portable_saved": {
+      const byteLength = requireSafeInteger(value, "byteLength");
+      if (
+        byteLength < 22 ||
+        byteLength > NATIVE_PORTABLE_SAVE_LIMITS.maxArchiveBytes ||
+        Object.keys(value).some(
+          (key) => !["type", "vaultId", "archiveId", "byteLength", "sha256"].includes(key),
+        )
+      )
+        throw invalidResponse();
+      return Object.freeze({
+        type: "portable_saved",
+        vaultId: parsePortableSaveId(value["vaultId"]),
+        archiveId: parsePortableSaveId(value["archiveId"]),
+        byteLength,
+        sha256: parseSha256(value["sha256"]),
+      });
+    }
     case "cancelled": {
       const operation = value["operation"];
       if (operation !== "export" && operation !== "restore") throw invalidResponse();

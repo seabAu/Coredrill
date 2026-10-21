@@ -15,7 +15,7 @@ const vaultId = "0198e102-0000-7000-8000-000000000001";
 const archiveId = "0198e102-0000-7000-8000-000000000002";
 const createdAt = "2026-10-21T06:00:00.000Z";
 const input = () => ({ vaultId, acknowledgeUnencrypted: true });
-const setup = () => {
+const setup = (savePort) => {
   const database = {};
   const open = vi.fn(async () => database);
   const read = vi.fn();
@@ -30,6 +30,7 @@ const setup = () => {
       store,
       () => ({ operationId: archiveId, initiatedAt: createdAt }),
       "0.0.0",
+      savePort,
     ),
   };
 };
@@ -73,9 +74,9 @@ beforeEach(() => {
   });
 });
 describe("lazy normal vault export preparation runtime", () => {
-  it("exposes preparation only and binds the selected database, store and app version", async () => {
+  it("exposes explicit preparation/save and binds preparation to the selected database, store and app version", async () => {
     const { api, database, open, store, read } = setup();
-    expect(Object.keys(api)).toEqual(["prepare"]);
+    expect(Object.keys(api)).toEqual(["prepare", "save"]);
     expect(await api.prepare(input())).toMatchObject({
       ok: true,
       value: { state: "prepared_not_saved", vaultId, archiveId, createdAt, encryptionMode: "none" },
@@ -104,6 +105,63 @@ describe("lazy normal vault export preparation runtime", () => {
     expect(open).not.toHaveBeenCalled();
     expect(store).not.toHaveBeenCalled();
     expect(prepare).not.toHaveBeenCalled();
+  });
+  it("revalidates the complete ZIP and manifest ownership before the native save port", async () => {
+    const save = vi.fn(async (value) => ({
+      status: "saved_verified",
+      vaultId: value.vaultId,
+      archiveId: value.archiveId,
+      byteLength: value.byteLength,
+      sha256: value.sha256,
+    }));
+    const { api } = setup({ save });
+    const prepared = await api.prepare(input());
+    expect(prepared.ok).toBe(true);
+    const artifact = prepared.value;
+    const intent = {
+      vaultId,
+      archiveId,
+      schemaVersion: artifact.schemaVersion,
+      byteLength: artifact.byteLength,
+      sha256: artifact.sha256,
+      bytes: artifact.bytes,
+      acknowledgeUnencrypted: true,
+    };
+    expect(await api.save(intent)).toMatchObject({
+      ok: true,
+      value: { status: "saved_verified", archiveId },
+    });
+    expect(save).toHaveBeenCalledTimes(1);
+    save.mockClear();
+    expect(await api.save({ ...intent, vaultId: archiveId })).toMatchObject({ ok: false });
+    const forged = new Uint8Array(40).fill(65);
+    forged.set([80, 75, 3, 4]);
+    expect(
+      await api.save({
+        ...intent,
+        bytes: forged,
+        byteLength: forged.length,
+        sha256: createHash("sha256").update(forged).digest("hex"),
+      }),
+    ).toMatchObject({ ok: false });
+    expect(save).not.toHaveBeenCalled();
+  });
+  it("has no native-save fallback in a runtime without the save port", async () => {
+    const { api, open, store } = setup();
+    const bytes = new Uint8Array(40).fill(65);
+    expect(
+      await api.save({
+        vaultId,
+        archiveId,
+        schemaVersion: 160,
+        byteLength: bytes.length,
+        bytes,
+        sha256: createHash("sha256").update(bytes).digest("hex"),
+        acknowledgeUnencrypted: true,
+      }),
+    ).toMatchObject({ ok: false, error: { code: "unavailable", retryable: false } });
+    expect(open).not.toHaveBeenCalled();
+    expect(store).not.toHaveBeenCalled();
   });
   it("copies original identity before a held database open", async () => {
     const { api, open, database } = setup();

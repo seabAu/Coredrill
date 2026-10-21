@@ -64,7 +64,7 @@ describe("native recovery archive protocol", () => {
     await pending;
     expect(requests).toHaveLength(1);
     expect(requests[0]).toMatchObject({
-      protocolVersion: 3,
+      protocolVersion: NATIVE_ARCHIVE_PROTOCOL_VERSION,
       operation: {
         type: "attachment_put",
         sessionId: "native-session-1",
@@ -117,7 +117,7 @@ describe("native recovery archive protocol", () => {
           data: { type: "opened", sessionId: "native-session-1" },
         }),
         invokeArchive: async (request: NativeArchiveRequest) => ({
-          protocolVersion: 3,
+          protocolVersion: NATIVE_ARCHIVE_PROTOCOL_VERSION,
           requestId: request.requestId,
           data: { type: "attachment_stored", contentId, sha256: contentId, byteLength: 2 },
         }),
@@ -129,7 +129,7 @@ describe("native recovery archive protocol", () => {
     expect(() =>
       parseNativeArchiveResponse(
         {
-          protocolVersion: 2,
+          protocolVersion: 3,
           requestId: "old-archive",
           data: { type: "attachment_stored", contentId, sha256: contentId, byteLength: 1 },
         },
@@ -140,7 +140,7 @@ describe("native recovery archive protocol", () => {
       expect(() =>
         parseNativeArchiveResponse(
           {
-            protocolVersion: 3,
+            protocolVersion: NATIVE_ARCHIVE_PROTOCOL_VERSION,
             requestId: "bad-attachment",
             data: { type: "attachment_stored", contentId, sha256: contentId, byteLength },
           },

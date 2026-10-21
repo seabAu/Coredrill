@@ -204,6 +204,18 @@ permission crosses the WebView boundary. SQLite remains canonical metadata and
 no write implies selection or submission. See [native attachment write contract](native-attachment-write-v3.md)
 and [verification](../../proof/native-attachment-write-verification.md).
 
+Native archive IPC version 4 adds complete portable-ZIP saving to that same
+allowlisted command. Shared runtime inspection validates the full manifest,
+inventory, schema, bytes and hashes before the native save port runs. Rust bounds
+each decoded chunk at 1 MiB and one staged archive at 544 MiB across live service
+sessions, checks current vault ownership before/after its OS picker, and consumes
+staging before publication so an uncertain acknowledgement cannot replay a save.
+The destination stays inside Rust and outside managed app data; same-directory
+temporary files are created privately on Unix, synced and verified before atomic
+replacement and bounded target readback. Cancel/abort/session retirement release
+staging. This is exact saved-byte evidence, not encryption, permanent possession,
+backup-history persistence or restore proof. See [native portable save v4](native-portable-save-v4.md).
+
 `BKP-001` adds the adapter-neutral D-051 writer. It rechecks exported database
 length/schema/checksum, requires every recorded content-addressed attachment to
 resolve and match its length/hash, calculates JSON/CSV checksums, validates the

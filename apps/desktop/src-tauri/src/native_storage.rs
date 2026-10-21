@@ -195,6 +195,7 @@ impl NativeStorageError {
 }
 
 pub(crate) struct NativeSession {
+    pub(crate) portable_save: Option<crate::native_archive::NativePortableSaveStage>,
     pub(crate) connection: Connection,
     pub(crate) database_path: PathBuf,
     pub(crate) transaction_active: bool,
@@ -415,6 +416,7 @@ impl NativeStorageService {
         state.sessions.insert(
             session_id.clone(),
             NativeSession {
+                portable_save: None,
                 connection,
                 database_path,
                 transaction_active: false,

@@ -255,6 +255,17 @@ existing payloads on ordinary writes, and returns only content identity metadata
 This fills the native document-runtime retention gap without changing SQLite
 schema, archive file format, generic filesystem access or permissions. See
 [contract](native-attachment-write-v3.md) and [verification](../../proof/native-attachment-write-verification.md).
+
+Archive IPC version 4 adds a bounded, session-owned full-ZIP save over that same
+command. Shared runtime/application layers validate the complete prepared archive,
+consent, owned bytes and correlated metadata; Rust stages ordered 1 MiB chunks
+under the existing 544 MiB ceiling, owns the OS picker and publishes/rereads exact
+bytes atomically outside managed app data. One staged archive is allowed across
+the service, with expiry and abort/close/retirement release. Paths never enter
+WebView requests/results, and native failure cannot fall back to a browser save.
+No save implies permanent possession, current-vault freshness, a durable backup
+history entry or a tested restore. See [native portable save v4](native-portable-save-v4.md).
+
 The production root now composes a host-selected database/attachment runtime:
 Tauri uses native SQLite and native content-addressed bytes; browser-only
 capabilities reject there and native failure never falls back to OPFS. `/` is

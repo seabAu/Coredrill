@@ -25,7 +25,22 @@ export const useStoredVaultExportSession = (options: {
     const current = createVaultExportSession({
       ownerId,
       prepare: (input) => liveApi.current.vaultExport.prepare(input),
-      save: createBrowserVaultExportHandoff(options.api.runtimeKind),
+      save:
+        options.api.runtimeKind === "native"
+          ? async (artifact) => {
+              const result = await liveApi.current.vaultExport.save({
+                vaultId: artifact.vaultId,
+                archiveId: artifact.archiveId,
+                schemaVersion: artifact.schemaVersion,
+                byteLength: artifact.byteLength,
+                sha256: artifact.sha256,
+                bytes: artifact.bytes,
+                acknowledgeUnencrypted: true,
+              });
+              if (!result.ok) throw new Error("Native archive save was not confirmed.");
+              return result.value;
+            }
+          : createBrowserVaultExportHandoff("browser"),
       onChange: setModel,
     });
     controller.current = current;

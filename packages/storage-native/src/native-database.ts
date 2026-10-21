@@ -29,6 +29,9 @@ import {
   deserializeNativeArchiveError,
   NATIVE_ARCHIVE_PROTOCOL_VERSION,
   NATIVE_ATTACHMENT_MAX_BYTES,
+  NATIVE_PORTABLE_SAVE_LIMITS,
+  type NativePortableSaveInput,
+  type NativePortableSaveOutcome,
   parseNativeArchiveResponse,
   type NativeArchiveOperation,
   type NativeArchiveOutcome,
@@ -75,6 +78,7 @@ export interface NativeSqliteDatabase extends DatabasePort {
     readonly bytes: Uint8Array;
   }): Promise<void>;
   exportRecoveryArchive(): Promise<NativeArchiveOutcome>;
+  savePortableArchive(input: NativePortableSaveInput): Promise<NativePortableSaveOutcome>;
   restoreRecoveryArchive(): Promise<NativeArchiveOutcome>;
   createAutomaticBackup(retentionCount: number): Promise<NativeAutomaticBackupMetadata>;
   inspectPortable(
@@ -430,6 +434,109 @@ class NativeSqliteDatabaseAdapter implements NativeSqliteDatabase {
         data.attachmentCount !== payload.attachments.length
       ) {
         throw this.invalidArchiveResponse("portable_committed", data.type);
+      }
+    });
+  }
+
+  public async savePortableArchive(
+    input: NativePortableSaveInput,
+  ): Promise<NativePortableSaveOutcome> {
+    const { vaultId, archiveId, byteLength, sha256 } = input;
+    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+    if (
+      !uuid.test(vaultId) ||
+      !uuid.test(archiveId) ||
+      !Number.isSafeInteger(byteLength) ||
+      byteLength < 22 ||
+      byteLength > NATIVE_PORTABLE_SAVE_LIMITS.maxArchiveBytes ||
+      !/^[0-9a-f]{64}$/.test(sha256) ||
+      !(input.bytes instanceof Uint8Array) ||
+      input.bytes.byteLength !== byteLength
+    ) {
+      throw new NativeStorageProtocolError(
+        "invalid_request",
+        "The portable archive save input is invalid.",
+        false,
+      );
+    }
+    const bytes = Uint8Array.from(input.bytes);
+    const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
+    if ([...digest].map((value) => value.toString(16).padStart(2, "0")).join("") !== sha256) {
+      throw new NativeStorageProtocolError(
+        "invalid_request",
+        "The portable archive bytes do not match their identity.",
+        false,
+      );
+    }
+    const identity = Object.freeze({ vaultId, archiveId, byteLength, sha256 });
+    return this.runExclusive(async () => {
+      let terminal = false;
+      try {
+        const begin = await this.sendArchiveData({
+          type: "portable_save_begin",
+          sessionId: this.sessionId,
+          ...identity,
+        });
+        if (
+          begin.type !== "portable_save_progress" ||
+          begin.archiveId !== archiveId ||
+          begin.receivedBytes !== 0
+        )
+          throw this.invalidArchiveResponse("portable_save_progress", begin.type);
+        for (
+          let offset = 0;
+          offset < bytes.byteLength;
+          offset += NATIVE_PORTABLE_SAVE_LIMITS.maxChunkBytes
+        ) {
+          const chunk = Object.freeze([
+            ...bytes.subarray(offset, offset + NATIVE_PORTABLE_SAVE_LIMITS.maxChunkBytes),
+          ]);
+          const progress = await this.sendArchiveData({
+            type: "portable_save_append",
+            sessionId: this.sessionId,
+            archiveId,
+            offset,
+            bytes: chunk,
+          });
+          if (
+            progress.type !== "portable_save_progress" ||
+            progress.archiveId !== archiveId ||
+            progress.receivedBytes !== offset + chunk.length
+          )
+            throw this.invalidArchiveResponse("portable_save_progress", progress.type);
+        }
+        const saved = await this.sendArchiveData({
+          type: "portable_save_finish",
+          sessionId: this.sessionId,
+          ...identity,
+        });
+        if (saved.type === "portable_save_cancelled" && saved.archiveId === archiveId) {
+          terminal = true;
+          return Object.freeze({ status: "cancelled" as const });
+        }
+        if (
+          saved.type !== "portable_saved" ||
+          saved.vaultId !== vaultId ||
+          saved.archiveId !== archiveId ||
+          saved.byteLength !== byteLength ||
+          saved.sha256 !== sha256
+        )
+          throw this.invalidArchiveResponse("portable_saved", saved.type);
+        terminal = true;
+        return Object.freeze({ status: "saved_verified" as const, ...identity });
+      } finally {
+        if (!terminal) {
+          // Best-effort cleanup only; never retry finish/publication after uncertain acknowledgement.
+          try {
+            await this.sendArchiveData({
+              type: "portable_save_abort",
+              sessionId: this.sessionId,
+              archiveId,
+            });
+          } catch {
+            /* Session close/retirement also releases bounded staging. */
+          }
+        }
       }
     });
   }

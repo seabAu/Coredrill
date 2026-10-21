@@ -96,8 +96,8 @@ export const StoredVaultSettings = ({
       </p>
       {exportSession.panel(busy)}
       <p>
-        Native save, persistent verified-export history and restore controls remain unfinished. No
-        sample backup history or restore success is claimed.
+        Persistent verified-export history and restore controls remain unfinished. No sample backup
+        history or restore success is claimed.
       </p>
       <button
         type="button"

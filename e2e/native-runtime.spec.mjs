@@ -1,17 +1,19 @@
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { once } from "node:events";
-import { mkdtemp, readFile, realpath, rm, stat } from "node:fs/promises";
+import { mkdtemp, readFile, realpath, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { createInterface } from "node:readline";
 import { expect, test } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 import { initializeDefaultWorkspace } from "./production-workspace.mjs";
 import { exerciseStoredListingComparison } from "./listing-comparison-journey.mjs";
 import { exerciseStoredJobNote } from "./job-note-journey.mjs";
 import { exerciseNextActionRuntime } from "./next-action-runtime-journey.mjs";
 import { exerciseVaultExportPreparation } from "./vault-export-runtime-journey.mjs";
 import { exerciseNormalVaultPreparation } from "./normal-vault-export-journey.mjs";
+import { inspectPortableArchiveV1 } from "../packages/storage-core/dist/index.js";
 import { exerciseNormalTaskEntry } from "./task-entry-journey.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
@@ -80,7 +82,12 @@ test("normal root uses real native SQLite for capture and documents without OPFS
 }, testInfo) => {
   test.setTimeout(120_000);
   const temporaryRoot = await mkdtemp(path.join(tmpdir(), "coredrill-native-ui-"));
-  const child = spawn(executable, [temporaryRoot], { windowsHide: true, stdio: "pipe" });
+  const managedRoot = path.join(temporaryRoot, "managed");
+  const selectedArchive = path.join(temporaryRoot, "selected.coredrill.zip");
+  const child = spawn(executable, [managedRoot, selectedArchive], {
+    windowsHide: true,
+    stdio: "pipe",
+  });
   const stopped = once(child, "exit");
   const lines = createInterface({ input: child.stdout })[Symbol.asyncIterator]();
   let queue = Promise.resolve();
@@ -375,7 +382,7 @@ test("normal root uses real native SQLite for capture and documents without OPFS
     await expect(exportReview.getByRole("status")).toContainText("retained for Mark Applied");
     expect(
       await readFile(
-        path.join(temporaryRoot, "attachments", "sha256", hash.slice(0, 2), hash.slice(2, 4), hash),
+        path.join(managedRoot, "attachments", "sha256", hash.slice(0, 2), hash.slice(2, 4), hash),
       ),
     ).toEqual(bytes);
     await page.reload();
@@ -385,6 +392,61 @@ test("normal root uses real native SQLite for capture and documents without OPFS
     const vaultExportPreparation = await exerciseVaultExportPreparation(page, testInfo, 1);
     const vaultExportPanel = await exerciseNormalVaultPreparation(page, "native");
     await expect(vaultExportPanel).toContainText("Retained attachments");
+    await page.setViewportSize({ width: 320, height: 900 });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+      ),
+    ).toBe(true);
+    expect(
+      (await new AxeBuilder({ page }).include(".cd-vault-export").analyze()).violations,
+    ).toEqual([]);
+    const beforeSaveHash = await page.evaluate(
+      async () => (await globalThis.coredrillStorageSpike.exportPortable()).sha256,
+    );
+    const nativeSaveButton = vaultExportPanel.getByRole("button", {
+      name: "Save prepared archive",
+      exact: true,
+    });
+    const cancelledSelection = queue.then(() =>
+      send({ proofOperation: "cancel_next_portable_save" }),
+    );
+    queue = cancelledSelection.then(() => undefined);
+    await cancelledSelection;
+    await nativeSaveButton.click();
+    await expect(vaultExportPanel.getByRole("status")).toContainText("Saving was cancelled", {
+      timeout: 30_000,
+    });
+    await expect(stat(selectedArchive)).rejects.toMatchObject({ code: "ENOENT" });
+    await writeFile(selectedArchive, "synthetic prior target bytes");
+    let fullArchiveDownloads = 0;
+    page.on("download", () => {
+      fullArchiveDownloads += 1;
+    });
+    await nativeSaveButton.click();
+    await expect(vaultExportPanel.getByRole("status")).toContainText(
+      "confirmed the exact archive bytes",
+      { timeout: 30_000 },
+    );
+    const savedBytes = new Uint8Array(await readFile(selectedArchive));
+    const savedSha256 = createHash("sha256").update(savedBytes).digest("hex");
+    await expect(vaultExportPanel).toContainText(savedSha256);
+    const savedArchive = await inspectPortableArchiveV1({
+      bytes: savedBytes,
+      expectedSchemaVersion: 160,
+      expectedArchiveSha256: savedSha256,
+    });
+    expect(savedArchive.dataFiles).toHaveLength(114);
+    expect(savedArchive.attachments.length).toBeGreaterThanOrEqual(1);
+    expect(fullArchiveDownloads).toBe(0);
+    await vaultExportPanel.screenshot({
+      path: testInfo.outputPath("native-portable-save-320.png"),
+    });
+    expect(
+      await page.evaluate(
+        async () => (await globalThis.coredrillStorageSpike.exportPortable()).sha256,
+      ),
+    ).toBe(beforeSaveHash);
     await vaultExportPanel
       .getByRole("button", { name: "Discard prepared archive", exact: true })
       .click();
@@ -395,7 +457,7 @@ test("normal root uses real native SQLite for capture and documents without OPFS
     expect(capabilities.calls).toEqual({ opfs: 0, persistent: 0, serviceWorker: 0, worker: 0 });
     expect(capabilities.offline.registered).toBe(false);
     expect(invocations).toBeGreaterThan(100);
-    expect((await stat(path.join(temporaryRoot, "databases", "coredrill.sqlite3"))).isFile()).toBe(
+    expect((await stat(path.join(managedRoot, "databases", "coredrill.sqlite3"))).isFile()).toBe(
       true,
     );
     expect(external).toEqual([]);
@@ -413,7 +475,13 @@ test("normal root uses real native SQLite for capture and documents without OPFS
           localNote,
           vaultExportPreparation,
           normalSettingsPreparation: true,
-          normalNativeArchiveSaveProven: false,
+          normalNativeArchiveSaveProven: true,
+          nativePortableSavedSha256: savedSha256,
+          nativeSaveCancellationProven: true,
+          nativeSavePicker: "simulated host selection; real Rust file publication/readback",
+          nativeSaveUsedBrowserDownload: false,
+          nativeSaveNarrowReflow: true,
+          nativeSaveAutomatedAxeViolations: 0,
           heldBeginAcknowledgements: heldAcknowledgements,
           retiredDocuments: retiredDocuments.size,
           capabilities,

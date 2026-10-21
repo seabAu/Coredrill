@@ -54,12 +54,21 @@ async fn native_archive_invoke(
             .file()
             .add_filter("Coredrill database recovery", &["coredrill-db"]);
         let selected = match &request.operation {
+            NativeArchiveOperation::PortableSaveFinish { archive_id, .. } => app
+                .dialog()
+                .file()
+                .add_filter("Coredrill portable archive", &["zip"])
+                .set_file_name(format!("coredrill-{archive_id}.coredrill.zip"))
+                .blocking_save_file(),
             NativeArchiveOperation::Export { .. } => picker
                 .set_file_name("coredrill-recovery.coredrill-db")
                 .blocking_save_file(),
             NativeArchiveOperation::Restore { .. } => picker.blocking_pick_file(),
             NativeArchiveOperation::AutomaticBackup { .. } => None,
             NativeArchiveOperation::PortableExport { .. }
+            | NativeArchiveOperation::PortableSaveBegin { .. }
+            | NativeArchiveOperation::PortableSaveAppend { .. }
+            | NativeArchiveOperation::PortableSaveAbort { .. }
             | NativeArchiveOperation::PortableInspect { .. }
             | NativeArchiveOperation::PortableTarget { .. }
             | NativeArchiveOperation::AttachmentRead { .. }

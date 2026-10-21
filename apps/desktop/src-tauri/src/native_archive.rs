@@ -3,7 +3,7 @@ use std::{
     io::{self, Read, Seek, SeekFrom, Write},
     path::{Path, PathBuf},
     sync::atomic::{AtomicU64, Ordering},
-    time::{SystemTime, UNIX_EPOCH},
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
 use rusqlite::{Connection, OpenFlags};
@@ -15,7 +15,10 @@ use crate::native_storage::{
     validate_session_id,
 };
 
-pub const NATIVE_ARCHIVE_PROTOCOL_VERSION: u16 = 3;
+pub const NATIVE_ARCHIVE_PROTOCOL_VERSION: u16 = 4;
+const MAX_PORTABLE_SAVE_BYTES: u64 = 544 * 1024 * 1024;
+const MAX_PORTABLE_SAVE_CHUNK_BYTES: usize = 1024 * 1024;
+const PORTABLE_SAVE_LIFETIME: Duration = Duration::from_secs(15 * 60);
 
 const ARCHIVE_MAGIC: [u8; 16] = *b"COREDRILL_DB_V1\0";
 const ARCHIVE_FORMAT_VERSION: u16 = 1;
@@ -53,6 +56,31 @@ pub struct NativeArchiveRequest {
     deny_unknown_fields
 )]
 pub enum NativeArchiveOperation {
+    PortableSaveBegin {
+        session_id: String,
+        vault_id: String,
+        archive_id: String,
+        byte_length: u64,
+        sha256: String,
+    },
+    PortableSaveAppend {
+        session_id: String,
+        archive_id: String,
+        offset: u64,
+        #[serde(deserialize_with = "deserialize_portable_save_chunk")]
+        bytes: Vec<u8>,
+    },
+    PortableSaveFinish {
+        session_id: String,
+        vault_id: String,
+        archive_id: String,
+        byte_length: u64,
+        sha256: String,
+    },
+    PortableSaveAbort {
+        session_id: String,
+        archive_id: String,
+    },
     Export {
         session_id: String,
     },
@@ -106,6 +134,22 @@ pub struct NativeArchiveResponse {
     rename_all_fields = "camelCase"
 )]
 pub enum NativeArchiveResponseData {
+    PortableSaveProgress {
+        archive_id: String,
+        received_bytes: u64,
+    },
+    PortableSaveAborted {
+        archive_id: String,
+    },
+    PortableSaveCancelled {
+        archive_id: String,
+    },
+    PortableSaved {
+        vault_id: String,
+        archive_id: String,
+        byte_length: u64,
+        sha256: String,
+    },
     Cancelled {
         operation: NativeArchiveOperationName,
     },
@@ -239,6 +283,65 @@ pub struct NativeArchiveError {
     pub retryable: bool,
 }
 
+/// Ephemeral owned bytes only. Dropping the owning session releases the staging.
+pub(crate) struct NativePortableSaveStage {
+    vault_id: String,
+    archive_id: String,
+    byte_length: u64,
+    sha256: String,
+    bytes: Vec<u8>,
+    started_at: Instant,
+}
+
+fn deserialize_portable_save_chunk<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Vec<u8>, D::Error> {
+    struct ChunkVisitor;
+    impl<'de> serde::de::Visitor<'de> for ChunkVisitor {
+        type Value = Vec<u8>;
+        fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            formatter.write_str("a bounded portable archive chunk")
+        }
+        fn visit_seq<A: serde::de::SeqAccess<'de>>(
+            self,
+            mut sequence: A,
+        ) -> Result<Self::Value, A::Error> {
+            let mut bytes = Vec::new();
+            bytes
+                .try_reserve_exact(MAX_PORTABLE_SAVE_CHUNK_BYTES)
+                .map_err(|_| serde::de::Error::custom("portable archive chunk unavailable"))?;
+            while let Some(byte) = sequence.next_element::<u8>()? {
+                if bytes.len() >= MAX_PORTABLE_SAVE_CHUNK_BYTES {
+                    return Err(serde::de::Error::custom(
+                        "portable archive chunk exceeds its limit",
+                    ));
+                }
+                bytes.push(byte);
+            }
+            if bytes.is_empty() {
+                return Err(serde::de::Error::custom("portable archive chunk is empty"));
+            }
+            Ok(bytes)
+        }
+    }
+    deserializer.deserialize_seq(ChunkVisitor)
+}
+
+impl NativePortableSaveStage {
+    fn verify(&self, archive_id: &str, complete: bool) -> Result<(), NativeArchiveError> {
+        if self.archive_id != archive_id
+            || self.started_at.elapsed() > PORTABLE_SAVE_LIFETIME
+            || (complete
+                && (self.bytes.len() as u64 != self.byte_length
+                    || !self.bytes.starts_with(b"PK\x03\x04")
+                    || digest_hex(&digest_bytes(&self.bytes)) != self.sha256))
+        {
+            return Err(NativeArchiveError::invalid_request());
+        }
+        Ok(())
+    }
+}
+
 impl NativeArchiveError {
     fn new(code: &str, message: &str, retryable: bool) -> Self {
         Self {
@@ -370,7 +473,11 @@ fn validate_native_archive_request(
 ) -> Result<(), NativeArchiveError> {
     validate_request(request)?;
     let session_id = match &request.operation {
-        NativeArchiveOperation::Export { session_id }
+        NativeArchiveOperation::PortableSaveBegin { session_id, .. }
+        | NativeArchiveOperation::PortableSaveAppend { session_id, .. }
+        | NativeArchiveOperation::PortableSaveFinish { session_id, .. }
+        | NativeArchiveOperation::PortableSaveAbort { session_id, .. }
+        | NativeArchiveOperation::Export { session_id }
         | NativeArchiveOperation::Restore { session_id }
         | NativeArchiveOperation::AutomaticBackup { session_id, .. }
         | NativeArchiveOperation::PortableExport { session_id }
@@ -381,6 +488,47 @@ fn validate_native_archive_request(
         | NativeArchiveOperation::PortableCommit { session_id, .. } => session_id,
     };
     validate_archive_session_id(session_id)?;
+    match &request.operation {
+        NativeArchiveOperation::PortableSaveBegin {
+            vault_id,
+            archive_id,
+            byte_length,
+            sha256,
+            ..
+        }
+        | NativeArchiveOperation::PortableSaveFinish {
+            vault_id,
+            archive_id,
+            byte_length,
+            sha256,
+            ..
+        } => {
+            validate_vault_id(vault_id)?;
+            validate_vault_id(archive_id)?;
+            validate_sha256_hex(sha256)?;
+            if !(22..=MAX_PORTABLE_SAVE_BYTES).contains(byte_length) {
+                return Err(NativeArchiveError::invalid_request());
+            }
+        }
+        NativeArchiveOperation::PortableSaveAppend {
+            archive_id,
+            offset,
+            bytes,
+            ..
+        } => {
+            validate_vault_id(archive_id)?;
+            if bytes.is_empty()
+                || bytes.len() > MAX_PORTABLE_SAVE_CHUNK_BYTES
+                || *offset > MAX_PORTABLE_SAVE_BYTES
+            {
+                return Err(NativeArchiveError::invalid_request());
+            }
+        }
+        NativeArchiveOperation::PortableSaveAbort { archive_id, .. } => {
+            validate_vault_id(archive_id)?
+        }
+        _ => {}
+    }
     if let NativeArchiveOperation::AutomaticBackup {
         retention_count, ..
     } = &request.operation
@@ -398,7 +546,11 @@ impl NativeStorageService {
     ) -> Result<(), NativeArchiveError> {
         validate_native_archive_request(request)?;
         let session_id = match &request.operation {
-            NativeArchiveOperation::Export { session_id }
+            NativeArchiveOperation::PortableSaveBegin { session_id, .. }
+            | NativeArchiveOperation::PortableSaveAppend { session_id, .. }
+            | NativeArchiveOperation::PortableSaveFinish { session_id, .. }
+            | NativeArchiveOperation::PortableSaveAbort { session_id, .. }
+            | NativeArchiveOperation::Export { session_id }
             | NativeArchiveOperation::Restore { session_id }
             | NativeArchiveOperation::AutomaticBackup { session_id, .. }
             | NativeArchiveOperation::PortableExport { session_id }
@@ -421,7 +573,36 @@ impl NativeStorageService {
         }
         self.layout
             .verify_database_path(&session.database_path)
-            .map_err(|_| NativeArchiveError::archive_io_failure())
+            .map_err(|_| NativeArchiveError::archive_io_failure())?;
+        if session
+            .portable_save
+            .as_ref()
+            .is_some_and(|stage| stage.started_at.elapsed() > PORTABLE_SAVE_LIFETIME)
+        {
+            session.portable_save = None;
+        }
+        if let NativeArchiveOperation::PortableSaveFinish {
+            vault_id,
+            archive_id,
+            byte_length,
+            sha256,
+            ..
+        } = &request.operation
+        {
+            let stage = session
+                .portable_save
+                .as_ref()
+                .ok_or_else(NativeArchiveError::invalid_request)?;
+            stage.verify(archive_id, true)?;
+            if stage.vault_id != *vault_id
+                || stage.byte_length != *byte_length
+                || stage.sha256 != *sha256
+                || single_vault_id(&session.connection)?.as_deref() != Some(vault_id)
+            {
+                return Err(NativeArchiveError::invalid_request());
+            }
+        }
+        Ok(())
     }
 
     pub fn invoke_archive_with_selected_path(
@@ -441,6 +622,51 @@ impl NativeStorageService {
         self.validate_archive_request(&request)?;
         let request_id = request.request_id;
         let data = match (request.operation, selected_path) {
+            (
+                NativeArchiveOperation::PortableSaveBegin {
+                    session_id,
+                    vault_id,
+                    archive_id,
+                    byte_length,
+                    sha256,
+                },
+                None,
+            ) => {
+                self.begin_portable_save(&session_id, vault_id, archive_id, byte_length, sha256)?
+            }
+            (
+                NativeArchiveOperation::PortableSaveAppend {
+                    session_id,
+                    archive_id,
+                    offset,
+                    bytes,
+                },
+                None,
+            ) => self.append_portable_save(&session_id, archive_id, offset, bytes)?,
+            (
+                NativeArchiveOperation::PortableSaveAbort {
+                    session_id,
+                    archive_id,
+                },
+                None,
+            ) => self.abort_portable_save(&session_id, archive_id)?,
+            (
+                NativeArchiveOperation::PortableSaveFinish {
+                    session_id,
+                    vault_id,
+                    archive_id,
+                    byte_length,
+                    sha256,
+                },
+                path,
+            ) => self.finish_portable_save(
+                &session_id,
+                &vault_id,
+                &archive_id,
+                byte_length,
+                &sha256,
+                path.as_deref(),
+            )?,
             (NativeArchiveOperation::Export { .. }, None) => NativeArchiveResponseData::Cancelled {
                 operation: NativeArchiveOperationName::Export,
             },
@@ -557,6 +783,9 @@ impl NativeStorageService {
             }
             (
                 NativeArchiveOperation::PortableExport { .. }
+                | NativeArchiveOperation::PortableSaveBegin { .. }
+                | NativeArchiveOperation::PortableSaveAppend { .. }
+                | NativeArchiveOperation::PortableSaveAbort { .. }
                 | NativeArchiveOperation::PortableInspect { .. }
                 | NativeArchiveOperation::PortableTarget { .. }
                 | NativeArchiveOperation::AttachmentRead { .. }
@@ -569,6 +798,157 @@ impl NativeStorageService {
             protocol_version: NATIVE_ARCHIVE_PROTOCOL_VERSION,
             request_id,
             data,
+        })
+    }
+
+    fn begin_portable_save(
+        &self,
+        session_id: &str,
+        vault_id: String,
+        archive_id: String,
+        byte_length: u64,
+        sha256: String,
+    ) -> Result<NativeArchiveResponseData, NativeArchiveError> {
+        let mut state = self
+            .state
+            .lock()
+            .map_err(|_| NativeArchiveError::archive_io_failure())?;
+        for session in state.sessions.values_mut() {
+            if session
+                .portable_save
+                .as_ref()
+                .is_some_and(|stage| stage.started_at.elapsed() > PORTABLE_SAVE_LIFETIME)
+            {
+                session.portable_save = None;
+            }
+        }
+        if state
+            .sessions
+            .values()
+            .any(|session| session.portable_save.is_some())
+        {
+            return Err(NativeArchiveError::invalid_request());
+        }
+        let session = portable_save_session(&mut state, session_id)?;
+        if single_vault_id(&session.connection)?.as_deref() != Some(&vault_id) {
+            return Err(NativeArchiveError::invalid_request());
+        }
+        session.portable_save = Some(NativePortableSaveStage {
+            vault_id,
+            archive_id: archive_id.clone(),
+            byte_length,
+            sha256,
+            bytes: Vec::new(),
+            started_at: Instant::now(),
+        });
+        Ok(NativeArchiveResponseData::PortableSaveProgress {
+            archive_id,
+            received_bytes: 0,
+        })
+    }
+
+    fn append_portable_save(
+        &self,
+        session_id: &str,
+        archive_id: String,
+        offset: u64,
+        bytes: Vec<u8>,
+    ) -> Result<NativeArchiveResponseData, NativeArchiveError> {
+        let mut state = self
+            .state
+            .lock()
+            .map_err(|_| NativeArchiveError::archive_io_failure())?;
+        let session = portable_save_session(&mut state, session_id)?;
+        let stage = session
+            .portable_save
+            .as_mut()
+            .ok_or_else(NativeArchiveError::invalid_request)?;
+        stage.verify(&archive_id, false)?;
+        if offset != stage.bytes.len() as u64
+            || offset
+                .checked_add(bytes.len() as u64)
+                .is_none_or(|end| end > stage.byte_length)
+        {
+            return Err(NativeArchiveError::invalid_request());
+        }
+        stage
+            .bytes
+            .try_reserve_exact(bytes.len())
+            .map_err(|_| NativeArchiveError::archive_io_failure())?;
+        stage.bytes.extend_from_slice(&bytes);
+        Ok(NativeArchiveResponseData::PortableSaveProgress {
+            archive_id,
+            received_bytes: stage.bytes.len() as u64,
+        })
+    }
+
+    fn abort_portable_save(
+        &self,
+        session_id: &str,
+        archive_id: String,
+    ) -> Result<NativeArchiveResponseData, NativeArchiveError> {
+        let mut state = self
+            .state
+            .lock()
+            .map_err(|_| NativeArchiveError::archive_io_failure())?;
+        let session = portable_save_session(&mut state, session_id)?;
+        if session
+            .portable_save
+            .as_ref()
+            .is_some_and(|stage| stage.archive_id != archive_id)
+        {
+            return Err(NativeArchiveError::invalid_request());
+        }
+        session.portable_save = None;
+        Ok(NativeArchiveResponseData::PortableSaveAborted { archive_id })
+    }
+
+    fn finish_portable_save(
+        &self,
+        session_id: &str,
+        vault_id: &str,
+        archive_id: &str,
+        byte_length: u64,
+        sha256: &str,
+        path: Option<&Path>,
+    ) -> Result<NativeArchiveResponseData, NativeArchiveError> {
+        let mut state = self
+            .state
+            .lock()
+            .map_err(|_| NativeArchiveError::archive_io_failure())?;
+        let session = portable_save_session(&mut state, session_id)?;
+        let stage = session
+            .portable_save
+            .as_ref()
+            .ok_or_else(NativeArchiveError::invalid_request)?;
+        stage.verify(archive_id, true)?;
+        if stage.vault_id != vault_id
+            || stage.byte_length != byte_length
+            || stage.sha256 != sha256
+            || single_vault_id(&session.connection)?.as_deref() != Some(vault_id)
+        {
+            return Err(NativeArchiveError::invalid_request());
+        }
+        // Consume before any publication attempt: uncertain saves must never auto-replay.
+        let stage = session
+            .portable_save
+            .take()
+            .ok_or_else(NativeArchiveError::invalid_request)?;
+        let Some(path) = path else {
+            return Ok(NativeArchiveResponseData::PortableSaveCancelled {
+                archive_id: stage.archive_id,
+            });
+        };
+        let target = canonical_export_target(path)?;
+        if target.starts_with(self.layout.app_data_root()) {
+            return Err(NativeArchiveError::invalid_request());
+        }
+        publish_portable_save(&stage, &target, PortableSaveFault::None)?;
+        Ok(NativeArchiveResponseData::PortableSaved {
+            vault_id: stage.vault_id,
+            archive_id: stage.archive_id,
+            byte_length: stage.byte_length,
+            sha256: stage.sha256,
         })
     }
 
@@ -890,6 +1270,7 @@ impl NativeStorageService {
         match open_and_validate_database(&database_path, incoming_schema) {
             Ok(connection) => RestoreSessionResult::Restored(
                 NativeSession {
+                    portable_save: None,
                     connection,
                     database_path,
                     transaction_active: false,
@@ -905,6 +1286,7 @@ impl NativeStorageService {
                 match open_and_validate_database(&database_path, current_schema) {
                     Ok(connection) => RestoreSessionResult::Preserved(
                         NativeSession {
+                            portable_save: None,
                             connection,
                             database_path,
                             transaction_active: false,
@@ -1122,6 +1504,7 @@ impl NativeStorageService {
         match replacement {
             Ok(connection) => RestoreSessionResult::Restored(
                 NativeSession {
+                    portable_save: None,
                     connection,
                     database_path,
                     transaction_active: false,
@@ -1138,6 +1521,7 @@ impl NativeStorageService {
                 match open_and_validate_database(&database_path, expected_schema) {
                     Ok(connection) => RestoreSessionResult::Preserved(
                         NativeSession {
+                            portable_save: None,
                             connection,
                             database_path,
                             transaction_active: false,
@@ -1155,6 +1539,92 @@ enum RestoreSessionResult {
     Restored(NativeSession, NativeArchiveMetadata),
     Preserved(NativeSession, NativeArchiveError),
     Closed(NativeArchiveError),
+}
+
+fn portable_save_session<'a>(
+    state: &'a mut crate::native_storage::NativeStorageState,
+    session_id: &str,
+) -> Result<&'a mut NativeSession, NativeArchiveError> {
+    let session = state
+        .sessions
+        .get_mut(session_id)
+        .ok_or_else(NativeArchiveError::session_missing)?;
+    if session.transaction_active {
+        return Err(NativeArchiveError::transaction_state());
+    }
+    Ok(session)
+}
+
+#[derive(Clone, Copy)]
+enum PortableSaveFault {
+    None,
+    #[cfg(test)]
+    BeforePublish,
+    #[cfg(test)]
+    AfterPublish,
+}
+
+fn publish_portable_save(
+    stage: &NativePortableSaveStage,
+    target: &Path,
+    _fault: PortableSaveFault,
+) -> Result<(), NativeArchiveError> {
+    let parent = target
+        .parent()
+        .ok_or_else(NativeArchiveError::invalid_request)?;
+    let (temporary, mut output) = TemporaryPath::create(parent, "portable-export")?;
+    output
+        .write_all(&stage.bytes)
+        .and_then(|_| output.flush())
+        .and_then(|_| output.sync_all())
+        .map_err(|_| NativeArchiveError::archive_io_failure())?;
+    drop(output);
+    let expected = (stage.byte_length, stage.sha256.as_str());
+    let (length, digest) = digest_portable_save_file(temporary.path(), stage.byte_length)?;
+    if (length, digest_hex(&digest).as_str()) != expected {
+        return Err(NativeArchiveError::archive_io_failure());
+    }
+    #[cfg(test)]
+    if matches!(_fault, PortableSaveFault::BeforePublish) {
+        return Err(NativeArchiveError::archive_io_failure());
+    }
+    reject_link_or_directory(target)?;
+    atomic_replace_and_sync(temporary.path(), target)?;
+    #[cfg(test)]
+    if matches!(_fault, PortableSaveFault::AfterPublish) {
+        return Err(NativeArchiveError::archive_io_failure());
+    }
+    let (length, digest) = digest_portable_save_file(target, stage.byte_length)?;
+    if (length, digest_hex(&digest).as_str()) != expected {
+        return Err(NativeArchiveError::archive_io_failure());
+    }
+    Ok(())
+}
+
+fn digest_portable_save_file(
+    path: &Path,
+    expected_length: u64,
+) -> Result<(u64, [u8; SHA256_BYTES]), NativeArchiveError> {
+    reject_link_or_directory(path)?;
+    let file = File::open(path).map_err(|_| NativeArchiveError::archive_io_failure())?;
+    let mut reader = file.take(expected_length + 1);
+    let mut hasher = Sha256::new();
+    let mut buffer = vec![0_u8; COPY_BUFFER_BYTES];
+    let mut length = 0_u64;
+    loop {
+        let read = reader
+            .read(&mut buffer)
+            .map_err(|_| NativeArchiveError::archive_io_failure())?;
+        if read == 0 {
+            break;
+        }
+        length += read as u64;
+        if length > expected_length {
+            return Err(NativeArchiveError::archive_io_failure());
+        }
+        hasher.update(&buffer[..read]);
+    }
+    Ok((length, hasher.finalize().into()))
 }
 
 fn validate_request(request: &NativeArchiveRequest) -> Result<(), NativeArchiveError> {
@@ -1763,6 +2233,7 @@ fn recover_session_after_close(
     match open_and_validate_database(&database_path, expected_schema) {
         Ok(connection) => RestoreSessionResult::Preserved(
             NativeSession {
+                portable_save: None,
                 connection,
                 database_path,
                 transaction_active: false,
@@ -1990,7 +2461,14 @@ impl TemporaryPath {
                 ".coredrill-{label}-{}-{sequence}.tmp",
                 std::process::id()
             ));
-            match OpenOptions::new().write(true).create_new(true).open(&path) {
+            let mut options = OpenOptions::new();
+            options.write(true).create_new(true);
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::OpenOptionsExt;
+                options.mode(0o600);
+            }
+            match options.open(&path) {
                 Ok(file) => return Ok((Self(path), file)),
                 Err(error) if error.kind() == io::ErrorKind::AlreadyExists => continue,
                 Err(_) => return Err(NativeArchiveError::archive_io_failure()),
@@ -2125,6 +2603,459 @@ mod tests {
             request_id: request_id.to_owned(),
             operation,
         }
+    }
+
+    #[test]
+    fn portable_save_stages_exact_owned_bytes_and_releases_on_cancel() {
+        let root = TestRoot::new();
+        let service = NativeStorageService::new(root.path().join("managed")).unwrap();
+        let session_id = open_session(&service, "portable-save-open");
+        let vault_id = "0198e102-0000-7000-8000-000000000001";
+        let archive_id = "0198e102-0000-7000-8000-000000000002";
+        execute(
+            &service,
+            &session_id,
+            "portable-save-schema",
+            "CREATE TABLE vault (id TEXT PRIMARY KEY)",
+        );
+        execute(
+            &service,
+            &session_id,
+            "portable-save-vault",
+            &format!("INSERT INTO vault VALUES ('{vault_id}')"),
+        );
+        let bytes = b"PK\x03\x04synthetic opaque portable ZIP bytes";
+        let sha256 = super::digest_hex(&super::digest_bytes(bytes));
+        let invoke = |operation: serde_json::Value| {
+            let request: NativeArchiveRequest = serde_json::from_value(serde_json::json!({
+                "protocolVersion": super::NATIVE_ARCHIVE_PROTOCOL_VERSION,
+                "requestId": "portable-save-test",
+                "operation": operation
+            }))
+            .expect("portable save operation must be recognized");
+            service.invoke_archive_with_selected_path(request, None)
+        };
+        invoke(serde_json::json!({"type":"portable_save_begin","sessionId":session_id,"vaultId":vault_id,"archiveId":archive_id,"byteLength":bytes.len(),"sha256":sha256})).unwrap();
+        invoke(serde_json::json!({"type":"portable_save_append","sessionId":session_id,"archiveId":archive_id,"offset":0,"bytes":bytes.as_slice()})).unwrap();
+        let result = invoke(serde_json::json!({"type":"portable_save_finish","sessionId":session_id,"vaultId":vault_id,"archiveId":archive_id,"byteLength":bytes.len(),"sha256":sha256})).unwrap();
+        let response = serde_json::to_value(result).unwrap();
+        assert_eq!(response["data"]["type"], "portable_save_cancelled");
+        assert!(invoke(serde_json::json!({"type":"portable_save_finish","sessionId":session_id,"vaultId":vault_id,"archiveId":archive_id,"byteLength":bytes.len(),"sha256":sha256})).is_err());
+    }
+
+    #[test]
+    fn portable_save_checks_order_identity_limits_and_exact_external_publication() {
+        let root = TestRoot::new();
+        fs::create_dir_all(root.path()).unwrap();
+        let service = NativeStorageService::new(root.path().join("managed")).unwrap();
+        let session = open_session(&service, "save-owned-open");
+        let other = open_session(&service, "save-foreign-open");
+        let vault = "0198e102-0000-7000-8000-000000000001";
+        let archive = "0198e102-0000-7000-8000-000000000002";
+        execute(
+            &service,
+            &session,
+            "save-schema",
+            "CREATE TABLE vault (id TEXT PRIMARY KEY)",
+        );
+        execute(
+            &service,
+            &session,
+            "save-vault",
+            &format!("INSERT INTO vault VALUES ('{vault}')"),
+        );
+        let bytes = b"PK\x03\x04synthetic opaque portable ZIP bytes".as_slice();
+        let sha = super::digest_hex(&super::digest_bytes(bytes));
+        let begin = serde_json::json!({"type":"portable_save_begin","sessionId":session,"vaultId":vault,"archiveId":archive,"byteLength":bytes.len(),"sha256":sha});
+        let append = serde_json::json!({"type":"portable_save_append","sessionId":session,"archiveId":archive,"offset":0,"bytes":bytes});
+        let finish = serde_json::json!({"type":"portable_save_finish","sessionId":session,"vaultId":vault,"archiveId":archive,"byteLength":bytes.len(),"sha256":sha});
+        let invoke = |operation: serde_json::Value, selected: Option<PathBuf>| {
+            let request = serde_json::from_value::<NativeArchiveRequest>(serde_json::json!({"protocolVersion":super::NATIVE_ARCHIVE_PROTOCOL_VERSION,"requestId":"save-test","operation":operation})).unwrap();
+            service.invoke_archive_with_selected_path(request, selected)
+        };
+        let mut invalid = begin.clone();
+        invalid["vaultId"] = serde_json::json!(archive);
+        assert!(invoke(invalid, None).is_err());
+        let mut invalid = begin.clone();
+        invalid["byteLength"] = serde_json::json!(super::MAX_PORTABLE_SAVE_BYTES + 1);
+        assert!(invoke(invalid, None).is_err());
+        invoke(begin.clone(), None).unwrap();
+        assert!(invoke(begin.clone(), None).is_err());
+        let target = root.path().join("selected.coredrill.zip");
+        fs::write(&target, b"prior user file").unwrap();
+        assert!(invoke(finish.clone(), Some(target.clone())).is_err());
+        assert_eq!(fs::read(&target).unwrap(), b"prior user file");
+        let mut invalid = append.clone();
+        invalid["offset"] = serde_json::json!(1);
+        assert!(invoke(invalid, None).is_err());
+        let mut invalid = append.clone();
+        invalid["sessionId"] = serde_json::json!(other);
+        assert!(invoke(invalid, None).is_err());
+        invoke(append.clone(), None).unwrap();
+        assert!(invoke(append, None).is_err());
+        let mut invalid = finish.clone();
+        invalid["sha256"] = serde_json::json!("0".repeat(64));
+        assert!(invoke(invalid, Some(target.clone())).is_err());
+        execute(
+            &service,
+            &session,
+            "save-drift",
+            &format!("UPDATE vault SET id = '{archive}'"),
+        );
+        assert!(invoke(finish.clone(), Some(target.clone())).is_err());
+        execute(
+            &service,
+            &session,
+            "save-original",
+            &format!("UPDATE vault SET id = '{vault}'"),
+        );
+        let saved = invoke(finish.clone(), Some(target.clone())).unwrap();
+        let saved = serde_json::to_value(saved).unwrap();
+        assert_eq!(saved["data"]["type"], "portable_saved");
+        assert_eq!(saved["data"]["sha256"], sha);
+        assert_eq!(fs::read(&target).unwrap(), bytes);
+        assert!(!saved.to_string().contains("path"));
+        assert!(invoke(finish, Some(target)).is_err());
+        assert!(
+            service
+                .state
+                .lock()
+                .unwrap()
+                .sessions
+                .values()
+                .all(|session| session.portable_save.is_none())
+        );
+    }
+
+    #[test]
+    fn portable_save_rejects_corrupt_bytes_and_confined_or_unsafe_targets() {
+        let root = TestRoot::new();
+        fs::create_dir_all(root.path()).unwrap();
+        let managed = root.path().join("managed");
+        let service = NativeStorageService::new(managed.clone()).unwrap();
+        let session = open_session(&service, "save-confined");
+        let vault = "0198e102-0000-7000-8000-000000000001";
+        let archive = "0198e102-0000-7000-8000-000000000002";
+        execute(
+            &service,
+            &session,
+            "save-schema",
+            "CREATE TABLE vault (id TEXT PRIMARY KEY)",
+        );
+        execute(
+            &service,
+            &session,
+            "save-vault",
+            &format!("INSERT INTO vault VALUES ('{vault}')"),
+        );
+        let bytes = b"PK\x03\x04synthetic opaque portable ZIP bytes".to_vec();
+        let sha = super::digest_hex(&super::digest_bytes(&bytes));
+        let begin = || {
+            archive_request(
+                "save-begin",
+                NativeArchiveOperation::PortableSaveBegin {
+                    session_id: session.clone(),
+                    vault_id: vault.to_owned(),
+                    archive_id: archive.to_owned(),
+                    byte_length: bytes.len() as u64,
+                    sha256: sha.clone(),
+                },
+            )
+        };
+        let append = |payload| {
+            archive_request(
+                "save-append",
+                NativeArchiveOperation::PortableSaveAppend {
+                    session_id: session.clone(),
+                    archive_id: archive.to_owned(),
+                    offset: 0,
+                    bytes: payload,
+                },
+            )
+        };
+        let finish = || {
+            archive_request(
+                "save-finish",
+                NativeArchiveOperation::PortableSaveFinish {
+                    session_id: session.clone(),
+                    vault_id: vault.to_owned(),
+                    archive_id: archive.to_owned(),
+                    byte_length: bytes.len() as u64,
+                    sha256: sha.clone(),
+                },
+            )
+        };
+        let original = root.path().join("original.zip");
+        fs::write(&original, b"existing private bytes").unwrap();
+        service
+            .invoke_archive_with_selected_path(begin(), None)
+            .unwrap();
+        let mut corrupt = bytes.clone();
+        corrupt[10] ^= 1;
+        service
+            .invoke_archive_with_selected_path(append(corrupt), None)
+            .unwrap();
+        assert!(
+            service
+                .invoke_archive_with_selected_path(finish(), Some(original.clone()))
+                .is_err()
+        );
+        assert_eq!(fs::read(&original).unwrap(), b"existing private bytes");
+        service
+            .invoke_archive_with_selected_path(
+                archive_request(
+                    "save-abort",
+                    NativeArchiveOperation::PortableSaveAbort {
+                        session_id: session.clone(),
+                        archive_id: archive.to_owned(),
+                    },
+                ),
+                None,
+            )
+            .unwrap();
+        let directory = root.path().join("directory");
+        fs::create_dir(&directory).unwrap();
+        for target in [
+            managed.join("forbidden.zip"),
+            directory.clone(),
+            PathBuf::from("relative.zip"),
+        ] {
+            service
+                .invoke_archive_with_selected_path(begin(), None)
+                .unwrap();
+            service
+                .invoke_archive_with_selected_path(append(bytes.clone()), None)
+                .unwrap();
+            assert!(
+                service
+                    .invoke_archive_with_selected_path(finish(), Some(target))
+                    .is_err()
+            );
+            assert!(
+                service
+                    .state
+                    .lock()
+                    .unwrap()
+                    .sessions
+                    .get(&session)
+                    .unwrap()
+                    .portable_save
+                    .is_none()
+            );
+        }
+        assert!(!managed.join("forbidden.zip").exists());
+        assert_eq!(fs::read_dir(&directory).unwrap().count(), 0);
+        assert_eq!(fs::read(&original).unwrap(), b"existing private bytes");
+        #[cfg(unix)]
+        {
+            let link = root.path().join("symlink.zip");
+            std::os::unix::fs::symlink(&original, &link).unwrap();
+            service
+                .invoke_archive_with_selected_path(begin(), None)
+                .unwrap();
+            service
+                .invoke_archive_with_selected_path(append(bytes.clone()), None)
+                .unwrap();
+            assert!(
+                service
+                    .invoke_archive_with_selected_path(finish(), Some(link))
+                    .is_err()
+            );
+            assert_eq!(fs::read(&original).unwrap(), b"existing private bytes");
+        }
+    }
+
+    #[test]
+    fn portable_save_lifetime_and_session_close_release_the_global_staging_limit() {
+        let root = TestRoot::new();
+        let service = NativeStorageService::new(root.path().join("managed")).unwrap();
+        let first = open_session(&service, "save-first");
+        let second = open_session(&service, "save-second");
+        let vault = "0198e102-0000-7000-8000-000000000001";
+        let archive = "0198e102-0000-7000-8000-000000000002";
+        execute(
+            &service,
+            &first,
+            "save-schema",
+            "CREATE TABLE vault (id TEXT PRIMARY KEY)",
+        );
+        execute(
+            &service,
+            &first,
+            "save-vault",
+            &format!("INSERT INTO vault VALUES ('{vault}')"),
+        );
+        let begin = |session_id: &str| {
+            archive_request(
+                "save-begin",
+                NativeArchiveOperation::PortableSaveBegin {
+                    session_id: session_id.to_owned(),
+                    vault_id: vault.to_owned(),
+                    archive_id: archive.to_owned(),
+                    byte_length: 32,
+                    sha256: "0".repeat(64),
+                },
+            )
+        };
+        service
+            .invoke_archive_with_selected_path(begin(&first), None)
+            .unwrap();
+        assert!(
+            service
+                .invoke_archive_with_selected_path(begin(&second), None)
+                .is_err()
+        );
+        service
+            .invoke_archive_with_selected_path(
+                archive_request(
+                    "foreign-abort",
+                    NativeArchiveOperation::PortableSaveAbort {
+                        session_id: second.clone(),
+                        archive_id: archive.to_owned(),
+                    },
+                ),
+                None,
+            )
+            .unwrap();
+        assert!(
+            service
+                .invoke_archive_with_selected_path(begin(&second), None)
+                .is_err()
+        );
+        service
+            .invoke(storage_request(
+                "save-close",
+                NativeStorageOperation::Close {
+                    session_id: first.clone(),
+                },
+            ))
+            .unwrap();
+        service
+            .invoke_archive_with_selected_path(begin(&second), None)
+            .unwrap();
+        service
+            .state
+            .lock()
+            .unwrap()
+            .sessions
+            .get_mut(&second)
+            .unwrap()
+            .portable_save
+            .as_mut()
+            .unwrap()
+            .started_at = std::time::Instant::now()
+            - super::PORTABLE_SAVE_LIFETIME
+            - std::time::Duration::from_secs(1);
+        service
+            .invoke_archive_with_selected_path(begin(&second), None)
+            .unwrap();
+        service.retire_webview_sessions().unwrap();
+        assert!(service.state.lock().unwrap().sessions.is_empty());
+        let replacement = open_session(&service, "save-replacement");
+        service
+            .invoke_archive_with_selected_path(begin(&replacement), None)
+            .unwrap();
+        service
+            .invoke(storage_request(
+                "save-transaction",
+                NativeStorageOperation::Begin {
+                    session_id: replacement.clone(),
+                },
+            ))
+            .unwrap();
+        assert!(
+            service
+                .invoke_archive_with_selected_path(
+                    archive_request(
+                        "save-abort",
+                        NativeArchiveOperation::PortableSaveAbort {
+                            session_id: replacement.clone(),
+                            archive_id: archive.to_owned()
+                        }
+                    ),
+                    None
+                )
+                .is_err()
+        );
+        service
+            .invoke(storage_request(
+                "save-rollback",
+                NativeStorageOperation::Rollback {
+                    session_id: replacement.clone(),
+                },
+            ))
+            .unwrap();
+        service
+            .invoke_archive_with_selected_path(
+                archive_request(
+                    "save-abort",
+                    NativeArchiveOperation::PortableSaveAbort {
+                        session_id: replacement,
+                        archive_id: archive.to_owned(),
+                    },
+                ),
+                None,
+            )
+            .unwrap();
+    }
+
+    #[test]
+    fn portable_save_faults_preserve_prior_files_or_report_uncertain_publication() {
+        let root = TestRoot::new();
+        fs::create_dir_all(root.path()).unwrap();
+        let bytes = b"PK\x03\x04synthetic opaque portable ZIP bytes".to_vec();
+        let stage = super::NativePortableSaveStage {
+            vault_id: "0198e102-0000-7000-8000-000000000001".to_owned(),
+            archive_id: "0198e102-0000-7000-8000-000000000002".to_owned(),
+            byte_length: bytes.len() as u64,
+            sha256: super::digest_hex(&super::digest_bytes(&bytes)),
+            bytes: bytes.clone(),
+            started_at: std::time::Instant::now(),
+        };
+        let target = root.path().join("prior.zip");
+        fs::write(&target, b"prior bytes").unwrap();
+        assert!(
+            super::publish_portable_save(&stage, &target, super::PortableSaveFault::BeforePublish)
+                .is_err()
+        );
+        assert_eq!(fs::read(&target).unwrap(), b"prior bytes");
+        assert!(
+            super::publish_portable_save(&stage, &target, super::PortableSaveFault::AfterPublish)
+                .is_err()
+        );
+        assert_eq!(fs::read(&target).unwrap(), bytes);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            assert_eq!(
+                fs::metadata(&target).unwrap().permissions().mode() & 0o077,
+                0
+            );
+        }
+        assert_eq!(fs::read_dir(root.path()).unwrap().count(), 1);
+        fs::write(
+            &target,
+            [stage.bytes.as_slice(), b"unexpected growth"].concat(),
+        )
+        .unwrap();
+        assert!(super::digest_portable_save_file(&target, stage.byte_length).is_err());
+    }
+
+    #[test]
+    fn portable_save_chunk_deserialization_rejects_oversized_empty_and_unknown_fields() {
+        let operation = serde_json::json!({"type":"portable_save_append","sessionId":"native-session-1","archiveId":"0198e102-0000-7000-8000-000000000002","offset":0,"bytes":[1]});
+        for bytes in [
+            serde_json::json!([]),
+            serde_json::json!([256]),
+            serde_json::json!(vec![0_u8; super::MAX_PORTABLE_SAVE_CHUNK_BYTES + 1]),
+        ] {
+            let mut invalid = operation.clone();
+            invalid["bytes"] = bytes;
+            assert!(serde_json::from_value::<NativeArchiveOperation>(invalid).is_err());
+        }
+        let mut invalid = operation;
+        invalid["path"] = serde_json::json!("private-path");
+        assert!(serde_json::from_value::<NativeArchiveOperation>(invalid).is_err());
     }
 
     fn archive_request(

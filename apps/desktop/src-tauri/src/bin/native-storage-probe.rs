@@ -5,7 +5,7 @@ use std::{
 };
 
 use coredrill_desktop::native_archive::{
-    NativeArchiveError, NativeArchiveRequest, NativeArchiveResponse,
+    NativeArchiveError, NativeArchiveOperation, NativeArchiveRequest, NativeArchiveResponse,
 };
 use coredrill_desktop::native_storage::{
     NativeStorageError, NativeStorageRequest, NativeStorageResponse, NativeStorageService,
@@ -40,7 +40,12 @@ fn envelope<Response: Serialize, Error: Serialize>(
     }
 }
 
-fn invoke_line(service: &NativeStorageService, line: &str) -> ProbeEnvelope {
+fn invoke_line(
+    service: &NativeStorageService,
+    line: &str,
+    portable_save_target: Option<&PathBuf>,
+    cancel_next_save: &mut bool,
+) -> ProbeEnvelope {
     let value = match serde_json::from_str::<Value>(line) {
         Ok(value) => value,
         Err(_) => {
@@ -58,13 +63,34 @@ fn invoke_line(service: &NativeStorageService, line: &str) -> ProbeEnvelope {
                 .map(|()| serde_json::json!({ "retired": true })),
         );
     }
+    // Host test control only. The destination comes from process argv, never WebView IPC.
+    if value == serde_json::json!({ "proofOperation": "cancel_next_portable_save" }) {
+        *cancel_next_save = true;
+        return envelope::<_, NativeStorageError>(Ok(
+            serde_json::json!({ "cancelNextSave": true }),
+        ));
+    }
     if let Ok(request) = serde_json::from_value::<NativeStorageRequest>(value.clone()) {
         return envelope(service.invoke(request));
     }
     match serde_json::from_value::<NativeArchiveRequest>(value) {
-        Ok(request) => envelope::<NativeArchiveResponse, NativeArchiveError>(
-            service.invoke_archive_with_selected_path(request, None),
-        ),
+        Ok(request) => {
+            let selected = if matches!(
+                &request.operation,
+                NativeArchiveOperation::PortableSaveFinish { .. }
+            ) {
+                if std::mem::take(cancel_next_save) {
+                    None
+                } else {
+                    portable_save_target.cloned()
+                }
+            } else {
+                None
+            };
+            envelope::<NativeArchiveResponse, NativeArchiveError>(
+                service.invoke_archive_with_selected_path(request, selected),
+            )
+        }
         Err(_) => envelope::<NativeStorageResponse, NativeStorageError>(Err(
             NativeStorageError::invalid_request(),
         )),
@@ -85,14 +111,22 @@ fn main() {
         Ok(service) => service,
         Err(_) => std::process::exit(2),
     };
+    let portable_save_target = env::args_os().nth(2).map(PathBuf::from);
+    let mut cancel_next_save = false;
 
     let stdin = io::stdin();
     let mut stdout = io::stdout().lock();
     for line in stdin.lock().lines() {
         let result = match line {
-            Ok(line) if line.len() <= MAX_LINE_BYTES => {
-                write_envelope(&mut stdout, &invoke_line(&service, &line))
-            }
+            Ok(line) if line.len() <= MAX_LINE_BYTES => write_envelope(
+                &mut stdout,
+                &invoke_line(
+                    &service,
+                    &line,
+                    portable_save_target.as_ref(),
+                    &mut cancel_next_save,
+                ),
+            ),
             _ => write_envelope(
                 &mut stdout,
                 &envelope::<NativeStorageResponse, NativeStorageError>(Err(
