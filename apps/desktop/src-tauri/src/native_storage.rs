@@ -195,6 +195,7 @@ impl NativeStorageError {
 }
 
 pub(crate) struct NativeSession {
+    #[cfg(any(feature = "desktop-shell", feature = "native-storage-probe", test))]
     pub(crate) portable_save: Option<crate::native_archive::NativePortableSaveStage>,
     pub(crate) connection: Connection,
     pub(crate) database_path: PathBuf,
@@ -416,6 +417,7 @@ impl NativeStorageService {
         state.sessions.insert(
             session_id.clone(),
             NativeSession {
+                #[cfg(any(feature = "desktop-shell", feature = "native-storage-probe", test))]
                 portable_save: None,
                 connection,
                 database_path,

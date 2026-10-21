@@ -648,6 +648,7 @@ fn restore_session(
     state.sessions.insert(
         session_id.to_owned(),
         NativeSession {
+            #[cfg(any(feature = "desktop-shell", feature = "native-storage-probe", test))]
             portable_save: None,
             connection,
             database_path: database_path.to_path_buf(),

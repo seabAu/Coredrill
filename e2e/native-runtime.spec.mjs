@@ -77,10 +77,10 @@ const attachNativeHost = async (page, invoke) => {
   });
 };
 
-test("normal root uses real native SQLite for capture and documents without OPFS fallback", async ({
-  page,
-}, testInfo) => {
-  test.setTimeout(120_000);
+// Each journey owns a fresh process and creates its records through the normal UI.
+// Keep tracking/task/source regressions separate from document/archive work so
+// neither borrows another test's state or an ever-growing shared timeout budget.
+const exerciseNativeJourney = async (page, testInfo, journey) => {
   const temporaryRoot = await mkdtemp(path.join(tmpdir(), "coredrill-native-ui-"));
   const managedRoot = path.join(temporaryRoot, "managed");
   const selectedArchive = path.join(temporaryRoot, "selected.coredrill.zip");
@@ -187,269 +187,292 @@ test("normal root uses real native SQLite for capture and documents without OPFS
     await expect(page.locator('[data-preparation-status="missing"]')).toBeVisible();
     const jobDocumentsUrl = page.url();
     await page.getByRole("button", { name: /Close Job workspace|Back to Pipeline/u }).click();
-    await page.getByRole("button", { name: "Add", exact: true }).click();
-    await page.getByRole("menuitem", { name: /Add job/u }).click();
-    await capture.getByLabel(/Job title/u).fill("Synthetic native movable role");
-    await capture.getByLabel(/Company/u).fill("Synthetic Runtime Lab");
-    await capture.getByLabel(/Notes or listing details/u).fill("Native status and undo fixture.");
-    await capture.getByRole("button", { name: "Save to capture inbox" }).click();
-    await expect(capture.getByRole("status")).toContainText("Stored in the local capture inbox");
-    await capture.getByRole("button", { name: "Close capture dialog" }).click();
-    await page.locator('[data-pipeline-view-option="inbox"]').click();
-    await review.getByRole("button", { name: "Accept high-confidence fields" }).click();
-    await review.getByRole("button", { name: "Save as new job" }).click();
-    await expect(review.getByText("No durable captures yet")).toBeVisible();
-    await page.locator('[data-pipeline-view-option="board"]').click();
-    await page
-      .getByRole("combobox", { name: "Move Synthetic native movable role to stage" })
-      .selectOption({ label: "Native drafting" });
-    const statusActions = page.getByRole("region", {
-      name: /^Local status(?: and task)? changes$/u,
-    });
-    await expect(statusActions.getByRole("status")).toContainText(
-      "Saved Synthetic native movable role",
-    );
-    await page.locator('[data-pipeline-view-option="table"]').click();
-    await statusActions
-      .getByRole("button", {
-        name: "Undo status change for Synthetic native movable role",
-        exact: true,
-      })
-      .click();
-    await expect(statusActions.getByRole("status")).toContainText(
-      "Restored Synthetic native movable role",
-    );
-    await page.getByRole("button", { name: "Synthetic native movable role", exact: true }).click();
-    await page.getByRole("button", { name: "Change status", exact: true }).click();
-    const headerStatus = page.getByRole("form", { name: "Change local job status", exact: true });
-    await headerStatus
-      .getByLabel("New local stage", { exact: true })
-      .selectOption({ label: "Native drafting" });
-    await headerStatus.getByRole("button", { name: "Save local status", exact: true }).click();
-    await expect(headerStatus).toHaveCount(0);
-    await expect(page.locator(".cd-job-workspace-context")).toContainText("Native drafting");
-    await expect(statusActions).toHaveCount(1);
-    await statusActions
-      .getByRole("button", {
-        name: "Undo status change for Synthetic native movable role",
-        exact: true,
-      })
-      .click();
-    await expect(statusActions.getByRole("status")).toContainText(
-      "Restored Synthetic native movable role",
-    );
-    await expect(page.locator(".cd-job-workspace-context")).toContainText("Unassigned");
-    const nextActionRuntime = await exerciseNextActionRuntime(page, testInfo);
-    await testInfo.attach("native-next-action-runtime-proof.json", {
-      body: JSON.stringify({
-        ...nextActionRuntime,
-        actualRustSqlite: true,
-        simulatedTauriHost: true,
-      }),
-      contentType: "application/json",
-    });
-    const taskEntry = await exerciseNormalTaskEntry(page, testInfo);
-    await testInfo.attach("native-task-entry-proof.json", {
-      body: JSON.stringify({ ...taskEntry, actualRustSqlite: true, simulatedTauriHost: true }),
-      contentType: "application/json",
-    });
-    const storedOverview = page.getByRole("region", { name: "Stored job overview", exact: true });
-    await expect(storedOverview).toContainText("Synthetic native movable role");
-    await expect(storedOverview).toContainText("No unarchived application attempt recorded.");
-    await page.getByRole("button", { name: "Company", exact: true }).click();
-    await expect(
-      page.getByRole("region", { name: "Stored job company", exact: true }),
-    ).toContainText("Synthetic Runtime Lab");
-    await page.getByRole("button", { name: "Timeline", exact: true }).click();
-    const history = page.getByRole("region", { name: "Stored job timeline", exact: true });
-    await expect(history).toContainText("Native drafting");
-    await expect(history).toContainText("Reversed by a recorded undo");
-    // Board and header each append their own event; undo preserves both.
-    await expect(history.locator("[data-timeline-id]")).toHaveCount(2);
-    await expect(history.getByText(/Reversed by a recorded undo/u)).toHaveCount(2);
-    const sourceJobId = new URL(page.url()).pathname.split("/")[2];
-    const beforeSource = await page.evaluate(
-      (jobId) => globalThis.coredrillStorageSpike.pipeline.workspace({ jobId }),
-      sourceJobId,
-    );
-    await page.getByRole("button", { name: "Source", exact: true }).click();
-    const source = page.getByRole("region", { name: "Stored job Source", exact: true });
-    await expect(
-      source.getByRole("region", { name: "primary literal retained content", exact: true }),
-    ).toHaveText("Native status and undo fixture.");
-    const titleSource = source
-      .locator("[data-source-evidence]")
-      .filter({ has: page.getByText(/^Field candidate: title/u) });
-    await titleSource.locator("summary").click();
-    await titleSource
-      .getByRole("button", { name: "Inspect normalized value", exact: true })
-      .click();
-    await expect(
-      source.getByRole("region", { name: "primary full value literal part", exact: true }),
-    ).toHaveText(JSON.stringify("Synthetic native movable role"));
-    const afterSource = await page.evaluate(
-      (jobId) => globalThis.coredrillStorageSpike.pipeline.workspace({ jobId }),
-      sourceJobId,
-    );
-    expect(afterSource).toEqual(beforeSource);
-    const originalCapture = await page.evaluate(async (jobId) => {
-      const snapshots = await globalThis.coredrillStorageSpike.pipeline.sourceSnapshots({ jobId });
-      if (!snapshots.ok) throw new Error("Source snapshot unavailable");
-      return globalThis.coredrillStorageSpike.pipeline.sourceCapture({
-        jobId,
-        snapshotId: snapshots.value.items[0].id,
+    const journeyProof = {};
+    if (journey === "tracking") {
+      await page.getByRole("button", { name: "Add", exact: true }).click();
+      await page.getByRole("menuitem", { name: /Add job/u }).click();
+      await capture.getByLabel(/Job title/u).fill("Synthetic native movable role");
+      await capture.getByLabel(/Company/u).fill("Synthetic Runtime Lab");
+      await capture.getByLabel(/Notes or listing details/u).fill("Native status and undo fixture.");
+      await capture.getByRole("button", { name: "Save to capture inbox" }).click();
+      await expect(capture.getByRole("status")).toContainText("Stored in the local capture inbox");
+      await capture.getByRole("button", { name: "Close capture dialog" }).click();
+      await page.locator('[data-pipeline-view-option="inbox"]').click();
+      await review.getByRole("button", { name: "Accept high-confidence fields" }).click();
+      await review.getByRole("button", { name: "Save as new job" }).click();
+      await expect(review.getByText("No durable captures yet")).toBeVisible();
+      await page.locator('[data-pipeline-view-option="board"]').click();
+      await page
+        .getByRole("combobox", { name: "Move Synthetic native movable role to stage" })
+        .selectOption({ label: "Native drafting" });
+      const statusActions = page.getByRole("region", {
+        name: /^Local status(?: and task)? changes$/u,
       });
-    }, sourceJobId);
-    expect(originalCapture.ok).toBe(true);
-    expect(originalCapture.value.availability).toBe("retained");
-    expect(
-      originalCapture.value.capture.fieldCandidates.find(({ fieldName }) => fieldName === "title")
-        .value,
-    ).toBe("Synthetic native movable role");
-    await page.reload();
-    await expect(
-      source.getByRole("region", { name: "primary literal retained content", exact: true }),
-    ).toHaveText("Native status and undo fixture.");
-    await page.getByRole("button", { name: /Close Job workspace|Back to Pipeline/u }).click();
-    await page
-      .getByRole("button", { name: "Edit status for Synthetic native movable role", exact: true })
-      .click();
-    await page
-      .getByLabel("Status for Synthetic native movable role", { exact: true })
-      .selectOption({ label: "Native drafting" });
-    await page.getByRole("button", { name: "Save", exact: true }).click();
-    await expect(statusActions.getByRole("status")).toContainText(
-      "Saved Synthetic native movable role",
-    );
-    await primary.getByRole("link", { name: "Documents", exact: true }).click();
-    await page.getByRole("button", { name: "New document", exact: true }).click();
-    const form = page.getByRole("form", { name: "New reusable document" });
-    await form.getByLabel("Document title", { exact: true }).fill("Synthetic native resume");
-    await form
-      .getByLabel("Initial document text", { exact: true })
-      .fill("Synthetic native evidence");
-    await form.getByRole("button", { name: "Create document locally", exact: true }).click();
-    await expect(
-      page.getByRole("heading", { name: "Synthetic native resume", exact: true }),
-    ).toBeVisible();
-    const documentId = new URL(page.url()).pathname.split("/").at(-1);
-    await page.reload();
-    await expect(
-      page.getByRole("heading", { name: "Synthetic native resume", exact: true }),
-    ).toBeVisible();
-    const stored = await page.evaluate(
-      (id) => globalThis.coredrillStorageSpike.openDocumentEditor(id),
-      documentId,
-    );
-    expect(stored).toMatchObject({
-      ok: true,
-      value: { currentVersion: { plainText: "Synthetic native evidence", versionNumber: 1 } },
-    });
-    await page.goto(jobDocumentsUrl);
-    const derivative = page.getByRole("form", {
-      name: "Create a job-specific document",
-      exact: true,
-    });
-    await derivative
-      .getByLabel("Reusable source version", { exact: true })
-      .selectOption(stored.value.currentVersion.id);
-    await derivative
-      .getByLabel("Job-specific document title", { exact: true })
-      .fill("Synthetic native job resume");
-    await derivative.getByRole("button", { name: "Create job-specific copy", exact: true }).click();
-    await expect(derivative.getByRole("status")).toContainText("has not been selected");
-    const preparation = page.locator(".cd-job-document-preparation");
-    const version = await preparation
-      .getByLabel("Exact resume version *")
-      .locator("option")
-      .filter({ hasText: "Synthetic native job resume" })
-      .getAttribute("value");
-    await preparation.getByLabel("Exact resume version *").selectOption(version);
-    await preparation.getByRole("button", { name: "Save exact selections" }).click();
-    await expect(preparation).toContainText("Ready for export review");
-    await preparation
-      .getByRole("button", { name: "Review export for Synthetic native job resume version 1" })
-      .click();
-    const exportReview = preparation.getByRole("region", {
-      name: "Export review for Synthetic native job resume version 1",
-    });
-    const [download] = await Promise.all([
-      page.waitForEvent("download"),
-      exportReview.getByRole("button", { name: "Download DOCX" }).click(),
-    ]);
-    const bytes = await readFile(await download.path());
-    const hash = createHash("sha256").update(bytes).digest("hex");
-    await expect(exportReview.getByRole("status")).toContainText("retained for Mark Applied");
-    expect(
-      await readFile(
-        path.join(managedRoot, "attachments", "sha256", hash.slice(0, 2), hash.slice(2, 4), hash),
-      ),
-    ).toEqual(bytes);
-    await page.reload();
-    await expect(preparation).toContainText("Ready for export review");
-    const listingComparison = await exerciseStoredListingComparison(page, testInfo);
-    const localNote = await exerciseStoredJobNote(page, testInfo);
-    const vaultExportPreparation = await exerciseVaultExportPreparation(page, testInfo, 1);
-    const vaultExportPanel = await exerciseNormalVaultPreparation(page, "native");
-    await expect(vaultExportPanel).toContainText("Retained attachments");
-    await page.setViewportSize({ width: 320, height: 900 });
-    expect(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
-      ),
-    ).toBe(true);
-    expect(
-      (await new AxeBuilder({ page }).include(".cd-vault-export").analyze()).violations,
-    ).toEqual([]);
-    const beforeSaveHash = await page.evaluate(
-      async () => (await globalThis.coredrillStorageSpike.exportPortable()).sha256,
-    );
-    const nativeSaveButton = vaultExportPanel.getByRole("button", {
-      name: "Save prepared archive",
-      exact: true,
-    });
-    const cancelledSelection = queue.then(() =>
-      send({ proofOperation: "cancel_next_portable_save" }),
-    );
-    queue = cancelledSelection.then(() => undefined);
-    await cancelledSelection;
-    await nativeSaveButton.click();
-    await expect(vaultExportPanel.getByRole("status")).toContainText("Saving was cancelled", {
-      timeout: 30_000,
-    });
-    await expect(stat(selectedArchive)).rejects.toMatchObject({ code: "ENOENT" });
-    await writeFile(selectedArchive, "synthetic prior target bytes");
-    let fullArchiveDownloads = 0;
-    page.on("download", () => {
-      fullArchiveDownloads += 1;
-    });
-    await nativeSaveButton.click();
-    await expect(vaultExportPanel.getByRole("status")).toContainText(
-      "confirmed the exact archive bytes",
-      { timeout: 30_000 },
-    );
-    const savedBytes = new Uint8Array(await readFile(selectedArchive));
-    const savedSha256 = createHash("sha256").update(savedBytes).digest("hex");
-    await expect(vaultExportPanel).toContainText(savedSha256);
-    const savedArchive = await inspectPortableArchiveV1({
-      bytes: savedBytes,
-      expectedSchemaVersion: 160,
-      expectedArchiveSha256: savedSha256,
-    });
-    expect(savedArchive.dataFiles).toHaveLength(114);
-    expect(savedArchive.attachments.length).toBeGreaterThanOrEqual(1);
-    expect(fullArchiveDownloads).toBe(0);
-    await vaultExportPanel.screenshot({
-      path: testInfo.outputPath("native-portable-save-320.png"),
-    });
-    expect(
-      await page.evaluate(
+      await expect(statusActions.getByRole("status")).toContainText(
+        "Saved Synthetic native movable role",
+      );
+      await page.locator('[data-pipeline-view-option="table"]').click();
+      await statusActions
+        .getByRole("button", {
+          name: "Undo status change for Synthetic native movable role",
+          exact: true,
+        })
+        .click();
+      await expect(statusActions.getByRole("status")).toContainText(
+        "Restored Synthetic native movable role",
+      );
+      await page
+        .getByRole("button", { name: "Synthetic native movable role", exact: true })
+        .click();
+      await page.getByRole("button", { name: "Change status", exact: true }).click();
+      const headerStatus = page.getByRole("form", { name: "Change local job status", exact: true });
+      await headerStatus
+        .getByLabel("New local stage", { exact: true })
+        .selectOption({ label: "Native drafting" });
+      await headerStatus.getByRole("button", { name: "Save local status", exact: true }).click();
+      await expect(headerStatus).toHaveCount(0);
+      await expect(page.locator(".cd-job-workspace-context")).toContainText("Native drafting");
+      await expect(statusActions).toHaveCount(1);
+      await statusActions
+        .getByRole("button", {
+          name: "Undo status change for Synthetic native movable role",
+          exact: true,
+        })
+        .click();
+      await expect(statusActions.getByRole("status")).toContainText(
+        "Restored Synthetic native movable role",
+      );
+      await expect(page.locator(".cd-job-workspace-context")).toContainText("Unassigned");
+      const nextActionRuntime = await exerciseNextActionRuntime(page, testInfo);
+      await testInfo.attach("native-next-action-runtime-proof.json", {
+        body: JSON.stringify({
+          ...nextActionRuntime,
+          actualRustSqlite: true,
+          simulatedTauriHost: true,
+        }),
+        contentType: "application/json",
+      });
+      const taskEntry = await exerciseNormalTaskEntry(page, testInfo);
+      await testInfo.attach("native-task-entry-proof.json", {
+        body: JSON.stringify({ ...taskEntry, actualRustSqlite: true, simulatedTauriHost: true }),
+        contentType: "application/json",
+      });
+      const storedOverview = page.getByRole("region", { name: "Stored job overview", exact: true });
+      await expect(storedOverview).toContainText("Synthetic native movable role");
+      await expect(storedOverview).toContainText("No unarchived application attempt recorded.");
+      await page.getByRole("button", { name: "Company", exact: true }).click();
+      await expect(
+        page.getByRole("region", { name: "Stored job company", exact: true }),
+      ).toContainText("Synthetic Runtime Lab");
+      await page.getByRole("button", { name: "Timeline", exact: true }).click();
+      const history = page.getByRole("region", { name: "Stored job timeline", exact: true });
+      await expect(history).toContainText("Native drafting");
+      await expect(history).toContainText("Reversed by a recorded undo");
+      // Board and header each append their own event; undo preserves both.
+      await expect(history.locator("[data-timeline-id]")).toHaveCount(2);
+      await expect(history.getByText(/Reversed by a recorded undo/u)).toHaveCount(2);
+      const sourceJobId = new URL(page.url()).pathname.split("/")[2];
+      const beforeSource = await page.evaluate(
+        (jobId) => globalThis.coredrillStorageSpike.pipeline.workspace({ jobId }),
+        sourceJobId,
+      );
+      await page.getByRole("button", { name: "Source", exact: true }).click();
+      const source = page.getByRole("region", { name: "Stored job Source", exact: true });
+      await expect(
+        source.getByRole("region", { name: "primary literal retained content", exact: true }),
+      ).toHaveText("Native status and undo fixture.");
+      const titleSource = source
+        .locator("[data-source-evidence]")
+        .filter({ has: page.getByText(/^Field candidate: title/u) });
+      await titleSource.locator("summary").click();
+      await titleSource
+        .getByRole("button", { name: "Inspect normalized value", exact: true })
+        .click();
+      await expect(
+        source.getByRole("region", { name: "primary full value literal part", exact: true }),
+      ).toHaveText(JSON.stringify("Synthetic native movable role"));
+      const afterSource = await page.evaluate(
+        (jobId) => globalThis.coredrillStorageSpike.pipeline.workspace({ jobId }),
+        sourceJobId,
+      );
+      expect(afterSource).toEqual(beforeSource);
+      const originalCapture = await page.evaluate(async (jobId) => {
+        const snapshots = await globalThis.coredrillStorageSpike.pipeline.sourceSnapshots({
+          jobId,
+        });
+        if (!snapshots.ok) throw new Error("Source snapshot unavailable");
+        return globalThis.coredrillStorageSpike.pipeline.sourceCapture({
+          jobId,
+          snapshotId: snapshots.value.items[0].id,
+        });
+      }, sourceJobId);
+      expect(originalCapture.ok).toBe(true);
+      expect(originalCapture.value.availability).toBe("retained");
+      expect(
+        originalCapture.value.capture.fieldCandidates.find(({ fieldName }) => fieldName === "title")
+          .value,
+      ).toBe("Synthetic native movable role");
+      await page.reload();
+      await expect(
+        source.getByRole("region", { name: "primary literal retained content", exact: true }),
+      ).toHaveText("Native status and undo fixture.");
+      await page.getByRole("button", { name: /Close Job workspace|Back to Pipeline/u }).click();
+      await page
+        .getByRole("button", { name: "Edit status for Synthetic native movable role", exact: true })
+        .click();
+      await page
+        .getByLabel("Status for Synthetic native movable role", { exact: true })
+        .selectOption({ label: "Native drafting" });
+      await page.getByRole("button", { name: "Save", exact: true }).click();
+      await expect(statusActions.getByRole("status")).toContainText(
+        "Saved Synthetic native movable role",
+      );
+      const listingComparison = await exerciseStoredListingComparison(page, testInfo);
+      const localNote = await exerciseStoredJobNote(page, testInfo);
+      Object.assign(journeyProof, { listingComparison, localNote });
+    } else {
+      await primary.getByRole("link", { name: "Documents", exact: true }).click();
+      await page.getByRole("button", { name: "New document", exact: true }).click();
+      const form = page.getByRole("form", { name: "New reusable document" });
+      await form.getByLabel("Document title", { exact: true }).fill("Synthetic native resume");
+      await form
+        .getByLabel("Initial document text", { exact: true })
+        .fill("Synthetic native evidence");
+      await form.getByRole("button", { name: "Create document locally", exact: true }).click();
+      await expect(
+        page.getByRole("heading", { name: "Synthetic native resume", exact: true }),
+      ).toBeVisible();
+      const documentId = new URL(page.url()).pathname.split("/").at(-1);
+      await page.reload();
+      await expect(
+        page.getByRole("heading", { name: "Synthetic native resume", exact: true }),
+      ).toBeVisible();
+      const stored = await page.evaluate(
+        (id) => globalThis.coredrillStorageSpike.openDocumentEditor(id),
+        documentId,
+      );
+      expect(stored).toMatchObject({
+        ok: true,
+        value: { currentVersion: { plainText: "Synthetic native evidence", versionNumber: 1 } },
+      });
+      await page.goto(jobDocumentsUrl);
+      const derivative = page.getByRole("form", {
+        name: "Create a job-specific document",
+        exact: true,
+      });
+      await derivative
+        .getByLabel("Reusable source version", { exact: true })
+        .selectOption(stored.value.currentVersion.id);
+      await derivative
+        .getByLabel("Job-specific document title", { exact: true })
+        .fill("Synthetic native job resume");
+      await derivative
+        .getByRole("button", { name: "Create job-specific copy", exact: true })
+        .click();
+      await expect(derivative.getByRole("status")).toContainText("has not been selected");
+      const preparation = page.locator(".cd-job-document-preparation");
+      const version = await preparation
+        .getByLabel("Exact resume version *")
+        .locator("option")
+        .filter({ hasText: "Synthetic native job resume" })
+        .getAttribute("value");
+      await preparation.getByLabel("Exact resume version *").selectOption(version);
+      await preparation.getByRole("button", { name: "Save exact selections" }).click();
+      await expect(preparation).toContainText("Ready for export review");
+      await preparation
+        .getByRole("button", { name: "Review export for Synthetic native job resume version 1" })
+        .click();
+      const exportReview = preparation.getByRole("region", {
+        name: "Export review for Synthetic native job resume version 1",
+      });
+      const [download] = await Promise.all([
+        page.waitForEvent("download"),
+        exportReview.getByRole("button", { name: "Download DOCX" }).click(),
+      ]);
+      const bytes = await readFile(await download.path());
+      const hash = createHash("sha256").update(bytes).digest("hex");
+      await expect(exportReview.getByRole("status")).toContainText("retained for Mark Applied");
+      expect(
+        await readFile(
+          path.join(managedRoot, "attachments", "sha256", hash.slice(0, 2), hash.slice(2, 4), hash),
+        ),
+      ).toEqual(bytes);
+      await page.reload();
+      await expect(preparation).toContainText("Ready for export review");
+      const vaultExportPreparation = await exerciseVaultExportPreparation(page, testInfo, 1);
+      const vaultExportPanel = await exerciseNormalVaultPreparation(page, "native");
+      await expect(vaultExportPanel).toContainText("Retained attachments");
+      await page.setViewportSize({ width: 320, height: 900 });
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+        ),
+      ).toBe(true);
+      expect(
+        (await new AxeBuilder({ page }).include(".cd-vault-export").analyze()).violations,
+      ).toEqual([]);
+      const beforeSaveHash = await page.evaluate(
         async () => (await globalThis.coredrillStorageSpike.exportPortable()).sha256,
-      ),
-    ).toBe(beforeSaveHash);
-    await vaultExportPanel
-      .getByRole("button", { name: "Discard prepared archive", exact: true })
-      .click();
+      );
+      const nativeSaveButton = vaultExportPanel.getByRole("button", {
+        name: "Save prepared archive",
+        exact: true,
+      });
+      const cancelledSelection = queue.then(() =>
+        send({ proofOperation: "cancel_next_portable_save" }),
+      );
+      queue = cancelledSelection.then(() => undefined);
+      await cancelledSelection;
+      await nativeSaveButton.click();
+      await expect(vaultExportPanel.getByRole("status")).toContainText("Saving was cancelled", {
+        timeout: 30_000,
+      });
+      await expect(stat(selectedArchive)).rejects.toMatchObject({ code: "ENOENT" });
+      await writeFile(selectedArchive, "synthetic prior target bytes");
+      let fullArchiveDownloads = 0;
+      page.on("download", () => {
+        fullArchiveDownloads += 1;
+      });
+      await nativeSaveButton.click();
+      await expect(vaultExportPanel.getByRole("status")).toContainText(
+        "confirmed the exact archive bytes",
+        { timeout: 30_000 },
+      );
+      const savedBytes = new Uint8Array(await readFile(selectedArchive));
+      const savedSha256 = createHash("sha256").update(savedBytes).digest("hex");
+      await expect(vaultExportPanel).toContainText(savedSha256);
+      const savedArchive = await inspectPortableArchiveV1({
+        bytes: savedBytes,
+        expectedSchemaVersion: 160,
+        expectedArchiveSha256: savedSha256,
+      });
+      expect(savedArchive.dataFiles).toHaveLength(114);
+      expect(savedArchive.attachments.length).toBeGreaterThanOrEqual(1);
+      expect(fullArchiveDownloads).toBe(0);
+      await vaultExportPanel.screenshot({
+        path: testInfo.outputPath("native-portable-save-320.png"),
+      });
+      expect(
+        await page.evaluate(
+          async () => (await globalThis.coredrillStorageSpike.exportPortable()).sha256,
+        ),
+      ).toBe(beforeSaveHash);
+      await vaultExportPanel
+        .getByRole("button", { name: "Discard prepared archive", exact: true })
+        .click();
+      Object.assign(journeyProof, {
+        nativeRetainedDocxSha256: hash,
+        vaultExportPreparation,
+        normalSettingsPreparation: true,
+        normalNativeArchiveSaveProven: true,
+        nativePortableSavedSha256: savedSha256,
+        nativeSaveCancellationProven: true,
+        nativeSavePicker: "simulated host selection; real Rust file publication/readback",
+        nativeSaveUsedBrowserDownload: false,
+        nativeSaveNarrowReflow: true,
+        nativeSaveAutomatedAxeViolations: 0,
+      });
+    }
     const capabilities = await page.evaluate(() => ({
       calls: globalThis.coredrillBrowserCapabilityProbe,
       offline: globalThis.coredrillOfflineShell.getState(),
@@ -469,19 +492,9 @@ test("normal root uses real native SQLite for capture and documents without OPFS
           backend: "real Rust SQLite process",
           packagedWebviewProven: false,
           seededRecords: false,
+          journey,
           invocations,
-          nativeRetainedDocxSha256: hash,
-          listingComparison,
-          localNote,
-          vaultExportPreparation,
-          normalSettingsPreparation: true,
-          normalNativeArchiveSaveProven: true,
-          nativePortableSavedSha256: savedSha256,
-          nativeSaveCancellationProven: true,
-          nativeSavePicker: "simulated host selection; real Rust file publication/readback",
-          nativeSaveUsedBrowserDownload: false,
-          nativeSaveNarrowReflow: true,
-          nativeSaveAutomatedAxeViolations: 0,
+          ...journeyProof,
           heldBeginAcknowledgements: heldAcknowledgements,
           retiredDocuments: retiredDocuments.size,
           capabilities,
@@ -507,7 +520,19 @@ test("normal root uses real native SQLite for capture and documents without OPFS
       throw new Error("Unsafe native proof cleanup target");
     await rm(actual, { recursive: true });
   }
-});
+};
+
+for (const [journey, description] of [
+  ["tracking", "capture, tasks, status, source comparison and notes"],
+  ["documents", "documents and complete archive cancellation/save"],
+]) {
+  test(`normal root uses real native SQLite for ${description} without OPFS fallback`, async ({
+    page,
+  }, testInfo) => {
+    test.setTimeout(120_000);
+    await exerciseNativeJourney(page, testInfo, journey);
+  });
+}
 
 test("native IPC failure shows retry without browser storage fallback", async ({ page }) => {
   await attachNativeHost(page, () => {

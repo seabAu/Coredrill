@@ -69,7 +69,7 @@ describe("native complete portable archive save transport", () => {
   it("snapshots bytes and sends ordered bounded chunks with exact acknowledgements", async () => {
     const { database, requests } = await setup();
     const artifact = input(NATIVE_PORTABLE_SAVE_LIMITS.maxChunkBytes + 27);
-    const expected = artifact.bytes.slice();
+    const expectedSha256 = artifact.sha256;
     const pending = database.savePortableArchive(artifact);
     artifact.bytes.fill(9);
     expect(await pending).toMatchObject({
@@ -91,9 +91,11 @@ describe("native complete portable archive save transport", () => {
       [0, NATIVE_PORTABLE_SAVE_LIMITS.maxChunkBytes],
       [NATIVE_PORTABLE_SAVE_LIMITS.maxChunkBytes, 27],
     ]);
-    expect(Uint8Array.from(chunks.flatMap(({ bytes }) => [...bytes]))).toEqual(expected);
+    const transmitted = createHash("sha256");
+    for (const chunk of chunks) transmitted.update(Uint8Array.from(chunk.bytes));
+    expect(transmitted.digest("hex")).toBe(expectedSha256);
     expect(requests.every((request) => request.protocolVersion === 4)).toBe(true);
-    expect(JSON.stringify(requests)).not.toContain("path");
+    for (const request of requests) expect(Object.keys(request.operation)).not.toContain("path");
   });
   it("rejects invalid identity, lengths and content before archive IPC", async () => {
     const { database, archive } = await setup();

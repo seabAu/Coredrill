@@ -429,6 +429,20 @@ jobs:
           COREDRILL_BROWSER_EXECUTABLE_PATH: ${{ steps.chrome.outputs.chrome-path }}
         run: pnpm test:onboarding
 
+      - name: Upload failed Chrome production-journey diagnostics
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coredrill-failed-chrome-journeys-${{ matrix.chrome }}-${{ github.sha }}
+          path: |
+            test-results/resilience.json
+            test-results/resilience/**
+            test-results/onboarding.json
+            test-results/onboarding/**
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 0
+
       - name: Upload document editor, import, and export proof
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

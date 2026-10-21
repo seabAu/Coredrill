@@ -1,8 +1,9 @@
 # Native complete portable archive save verification
 
 Date: 2026-10-21. Scope: INT-006 native save prerequisite and normal Settings
-composition under ADR-0004. Status: full local, extension and final policy verification passed;
-exact committed hosted verification remains. INT-006 is not complete.
+composition under ADR-0004. Status: original full local, extension and final policy
+verification passed, but exact commit `6baab05` hosted verification failed. The
+isolated repair is in progress; its full and hosted proof remain. INT-006 is not complete.
 
 ## Required behavior
 
@@ -126,3 +127,80 @@ The 544 MiB ceiling is an enforced upper bound, not a demonstrated reference-dev
 peak-memory/performance guarantee. Shared ZIP inspection and owned-byte snapshots
 can retain multiple bounded buffers; representative large-vault memory/latency
 and interrupted-process drills remain part of the release reliability gates.
+
+## Exact hosted regressions and repair
+
+Run [`39567252550`](https://github.com/seabAu/Coredrill/actions/runs/39567252550)
+for exact `6baab05c85fc0a479db087f29f4326a91ab68f0e` is terminal-failed,
+not live or green. Both Firefox lanes, extension transfer and full-history secret
+scan pass; native package, aggregate and both exact Chrome jobs fail.
+
+- All native jobs reach a genuine no-feature `E0433` compile failure in
+  `lint:desktop`: the session field names an archive type whose module is gated.
+  The staging field and ordinary/deletion-recovery initializers now use the
+  module's existing desktop-shell/native-storage-probe/test condition. Archive
+  builds retain the staging field; no-feature library builds do not reference
+  an absent module. Regular lint now also exercises no-feature/all-targets,
+  rather than relying only on the probe and desktop-shell configurations.
+  `native-save-feature-gate-before.log` reproduces the original error;
+  `native-save-feature-gate-matrix.log` passes the exact two-leg desktop CI
+  feature matrix, and `native-save-feature-gate-regular-lint.log` passes the
+  strengthened ordinary lint gate.
+- Aggregate unit verification times out the full-size transport snapshot test
+  at five seconds. Replace the million-element deep comparison and complete
+  request JSON rendering with an independent streaming Node SHA-256 over every
+  transmitted chunk and per-request operation-key checks. Preserve the original
+  greater-than-one-MiB input, caller mutation, exact chunk sizes/offsets/count,
+  acknowledgement assertions and five-second test budget.
+  `native-save-feature-gate-transport.log` passes both focused files / 24 tests.
+- Both Chrome jobs reach the native runtime test's 120-second timeout after
+  35 other resilience cases pass. The previously growing single case now becomes
+  two isolated fresh-process cases: tracking/tasks/status/source/notes, and
+  documents/complete archive cancellation/save. Both still begin with actual
+  normal capture/review, create their own vault, and exercise abandoned-BEGIN
+  session retirement. Every original workflow/assertion is retained; the document
+  case retains real DOCX bytes, independent ZIP inspection, cancellation, exact
+  file readback, unchanged SQLite, 320-pixel/axe and no browser fallback. No shared
+  seeded vault, larger test timeout, removed assertion or retry substitutes for
+  the normal workflow. Scoped proof attachments identify which journey ran.
+  Chrome CI also retains failure-only resilience/onboarding diagnostics with the
+  existing pinned artifact action instead of skipping all uploads after failure.
+
+The in-progress persistent verification model is separately preserved in a
+recoverable scoped Git stash while the repair is validated. Neither that work nor
+the split-test intent constitutes final regression or hosted success evidence.
+
+`native-save-repair-runtime.log` passes all seven focused normal native,
+browser-export and deletion cases, terminal `NATIVE_SAVE_REPAIR_RUNTIME_EXIT=0`.
+The tracking case runs in 34.8 seconds and documents/archive in 28.9 seconds on
+the local Windows browser, each under its unchanged 120-second limit. Both own
+independent real Rust processes and UI-created vaults. These local timings are
+not exact Chrome CI or reference-hardware performance claims.
+
+`native-save-repair-full-verify.log` subsequently passes complete `pnpm verify`,
+terminal `NATIVE_SAVE_REPAIR_VERIFY_EXIT=0`: 171 files / 1,805 units and coverage,
+35 type/build tasks, strengthened lint, 76 shell / 37 resilience, onboarding,
+documents, all 11 browser-storage / 18 native-adapter cases, Rust core (20 pass /
+one separately exercised secret case ignored), secure-store/archive/schema,
+520 npm / 498 Cargo licenses, secrets, audits and Changesets. Native tracking and
+document/archive cases repeat in 35.1 / 28.5 seconds. npm has no known advisories;
+Cargo retains ten reviewed allowed warnings. No production changes follow this
+full run. Exact repaired-commit hosted verification still remains.
+
+The separately launched concurrent extension run
+`native-save-repair-extension.log` is terminal-failed: seven cases pass, the
+Chromium durable-transfer case reports local `route.fetch` ECONNRESET, and Firefox
+reports unavailable WebAssembly compilation during initialization. The failure
+is retained, not counted as success. The isolated repeat after the full gate
+stops passes all nine cases, terminal
+`NATIVE_SAVE_REPAIR_EXTENSION_ISOLATED_EXIT=0`, in
+`native-save-repair-extension-isolated.log`, without a source change. The two
+failures do not reproduce in isolation; concurrency as the specific cause is an
+inference, not independently proven. Preserve both outcomes and run these local
+suites serially in the shared checkout/build output.
+
+`native-save-repair-final-policy.log` passes final whole-workspace formatting
+and policy, terminal `NATIVE_SAVE_REPAIR_FINAL_POLICY_EXIT=0`: 19 boundaries,
+51 dependencies / three toolchains / 16 targets / ten accessibility cases,
+520 npm / 498 Cargo licenses and secrets. Diff whitespace is clean. Only result
+documentation follows these checks; commit and exact hosted proof remain.
