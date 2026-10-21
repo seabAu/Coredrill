@@ -1,21 +1,27 @@
 # Task terminal-state and reminder consistency
 
-Status: completion/dismissal command/storage/runtime and expanded normal UI hardening pass. Index-only migration160 and legacy/current browser/native recovery also pass. Full final-source verification passes; separate extension, final documentation policy and exact hosted proof remain. `INT-005` stays open.
+Status: `INT-005` is proven at commit `4af387a59577f38573d8e1e4c5dfeb7e4aea6a9b`: normal completion/dismissal, bounded history, reminder consistency, migration160 and legacy/current recovery pass full local, separate extension/policy and exact hosted verification. Scheduling (`INT-004`), notification delivery and independent manual/reference-device gates remain open.
 
 ## Behavior
 
 ### INT-005 completion audit
 
-| Requirement                                                   | Current evidence                                                                                                                              | Remaining gate                                    |
-| ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| Normal bounded stored-task reading                            | Prior task-query/index/UI proofs; expanded page traversal checks canonical identities/order, one 25-row page, no duplicate or missing records | Final current-source and hosted regression        |
-| Deliberate completion and dismissal                           | Distinct normal UI reviews, cancellation without writes, keyboard confirmation and retained canonical history                                 | Final current-source and hosted regression        |
-| Viewed identity/version, archive and replay protection        | Command/controller cases and shared actual browser/native contract; stale reviews never rebase                                                | Final current-source and hosted regression        |
-| Atomic retained history and coherent reminders/due projection | Exact before/after storage snapshots, fired/unrelated facts preserved, foreign-owner rejection and injected final-write rollback              | Final current-source and hosted regression        |
-| Offline/reload and browser/native behavior                    | Both-action normal journeys and independent lifetime/error/foreign/readback hardening on both adapters                                        | Final current-source and hosted regression        |
-| Indexed reminder lookup without compatibility loss            | Migration160 populated staged upgrade, production diagnostic, all 11 browser-storage / 16 native cases, original fixture pairs unchanged      | Full/extension/policy and exact hosted regression |
+| Requirement                                                   | Current evidence                                                                                                                              | Remaining gate      |
+| ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| Normal bounded stored-task reading                            | Prior task-query/index/UI proofs; expanded page traversal checks canonical identities/order, one 25-row page, no duplicate or missing records | Closed at `4af387a` |
+| Deliberate completion and dismissal                           | Distinct normal UI reviews, cancellation without writes, keyboard confirmation and retained canonical history                                 | Closed at `4af387a` |
+| Viewed identity/version, archive and replay protection        | Command/controller cases and shared actual browser/native contract; stale reviews never rebase                                                | Closed at `4af387a` |
+| Atomic retained history and coherent reminders/due projection | Exact before/after storage snapshots, fired/unrelated facts preserved, foreign-owner rejection and injected final-write rollback              | Closed at `4af387a` |
+| Offline/reload and browser/native behavior                    | Both-action normal journeys and independent lifetime/error/foreign/readback hardening on both adapters                                        | Closed at `4af387a` |
+| Indexed reminder lookup without compatibility loss            | Migration160 populated staged upgrade, production diagnostic, all 11 browser-storage / 16 native cases, original fixture pairs unchanged      | Closed at `4af387a` |
 
 This audit does not close scheduling (`INT-004`), notification delivery, reference-hardware performance or manual accessibility/usability gates. A green prerequisite commit is not evidence for the subsequent uncommitted source.
+
+## Exact hosted closure
+
+[Foundation CI run 39550125045](https://github.com/seabAu/Coredrill/actions/runs/39550125045) is terminal success for exact SHA `4af387a59577f38573d8e1e4c5dfeb7e4aea6a9b`. Every required job passes; only PR-only dependency review is skipped. The aggregate job `119057166943` log is retained at `test-results/task-terminal-reminder-hosted-aggregate-success.log` and inspected beyond the workflow badge: actual Rust normal runtime, expanded browser task workflow, all 34 resilience cases, both legacy browser restore/upgrades and current160 recovery pass. All three native archive versions pass too. Hosted unit/coverage each have 1,721 passing plus one platform skip (1,722 total); hosted native has 15 passing plus one Windows-only journey skip (16 total), versus all 1,722 / all 16 locally on Windows. Exact Chrome151/152, Firefox153/154, extension/secrets and Windows/macOS/Ubuntu native package/secure-store lanes pass. npm audit is clean; existing reviewed Cargo warnings remain.
+
+The old runtime proof's manually fixed `normalTaskLifecycleControlsProven: false` was a pre-closure marker, not a skipped test: the same runner already executes both normal actions and their independent hardening. After this requirement audit it is true, with the three actual browser/native cases passing again in `vault-export-browser-native-runtime.log`. The scheduled-form flag remains false and `INT-004` stays open. This hosted checkpoint does not verify the subsequent uncommitted archive-preparation implementation under `INT-006`.
 
 ## Full local verification
 

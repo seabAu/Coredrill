@@ -226,6 +226,7 @@ export {
 export {
   sqlStatement,
   type DatabasePort,
+  type DatabaseReadSnapshot,
   type DatabaseSession,
   type DatabaseTransaction,
   type ExecuteResult,
@@ -310,6 +311,11 @@ export {
   type PortableArchiveWriterErrorCode,
   type PortableArchiveWriterInputV1,
 } from "./portable-archive-writer.js";
+export {
+  PortableVaultArchiveError,
+  preparePortableVaultArchiveV1,
+  type PreparePortableVaultArchiveInputV1,
+} from "./portable-vault-archive.js";
 export {
   PORTABLE_ARCHIVE_RESTORE_LIMITS,
   PortableArchiveRestoreError,

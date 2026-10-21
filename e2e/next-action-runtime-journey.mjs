@@ -269,6 +269,6 @@ export const exerciseNextActionRuntime = async (page, testInfo) => {
     dismissalCrossJob,
     normalTaskDismissalControlsProven: true,
     normalTaskCompletionControlsProven: true,
-    normalTaskLifecycleControlsProven: false,
+    normalTaskLifecycleControlsProven: true,
   };
 };

@@ -30,6 +30,12 @@ export interface PortableDatabase {
   readonly bytes: Uint8Array;
 }
 
+/** Coordinator-owned read lease; no writes, nested transactions or adapter diagnostics. */
+export interface DatabaseReadSnapshot {
+  query<Row extends QueryRow = QueryRow>(statement: SqlStatement): Promise<readonly Row[]>;
+  exportPortable(): Promise<PortableDatabase>;
+}
+
 export type StorageHealth = "ready" | "degraded" | "unavailable";
 export type StoragePersistence = "durable" | "best-effort" | "memory";
 
@@ -43,6 +49,10 @@ export interface StorageDiagnostics {
 }
 
 export interface DatabasePort extends DatabaseSession {
+  /** Optional capability: excludes all other operations on this coordinator until work settles. */
+  withReadSnapshot?<Result>(
+    work: (snapshot: DatabaseReadSnapshot) => Promise<Result>,
+  ): Promise<Result>;
   /** Commits only when work fulfills; rejects after rolling back when work rejects. */
   transaction<Result>(work: (transaction: DatabaseTransaction) => Promise<Result>): Promise<Result>;
   exportPortable(): Promise<PortableDatabase>;

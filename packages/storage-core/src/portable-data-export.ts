@@ -9,7 +9,7 @@ import {
 import {
   sqlStatement,
   type DatabasePort,
-  type DatabaseTransaction,
+  type DatabaseReadSnapshot,
   type SqlValue,
 } from "./database-port.js";
 import type { PortableArchiveDataFileSourceV1 } from "./portable-archive-writer.js";
@@ -1168,7 +1168,7 @@ const checkedBytes = (bytes: Uint8Array): Uint8Array => {
 };
 
 const readSchemaVersion = async (
-  database: DatabaseTransaction,
+  database: Pick<DatabaseReadSnapshot, "query">,
 ): Promise<(typeof PORTABLE_DATA_EXPORT_SUPPORTED_SOURCE_SCHEMA_VERSIONS)[number]> => {
   const rows = await database.query(sqlStatement("PRAGMA user_version"));
   const value = rows[0]?.["user_version"];
@@ -1187,7 +1187,7 @@ const readSchemaVersion = async (
 };
 
 const createDataset = async (
-  database: DatabaseTransaction,
+  database: Pick<DatabaseReadSnapshot, "query">,
   spec: DatasetSpec,
   input: Pick<PortableDataExportWriterInputV1, "generatedAt" | "vaultId">,
   sourceSchemaVersion: (typeof PORTABLE_DATA_EXPORT_SUPPORTED_SOURCE_SCHEMA_VERSIONS)[number],
@@ -1253,8 +1253,11 @@ const createDataset = async (
   });
 };
 
-export const createPortableDataExportV1 = async (
-  input: PortableDataExportWriterInputV1,
+/** Internal composition seam: caller must own a transaction or coordinator read lease. */
+export const readPortableDataExportSnapshotV1 = async (
+  input: Omit<PortableDataExportWriterInputV1, "database"> & {
+    readonly database: Pick<DatabaseReadSnapshot, "query">;
+  },
 ): Promise<PortableDataExportBundleV1> => {
   if (
     !UUID_V7_PATTERN.test(input.vaultId) ||
@@ -1265,7 +1268,8 @@ export const createPortableDataExportV1 = async (
   }
 
   try {
-    return await input.database.transaction(async (database) => {
+    return await (async () => {
+      const database = input.database;
       const sourceSchemaVersion = await readSchemaVersion(database);
       const results = [];
       const availableDatasets = PORTABLE_DATA_EXPORT_DATASETS.filter(
@@ -1309,7 +1313,30 @@ export const createPortableDataExportV1 = async (
         datasets,
         dataFiles,
       });
-    });
+    })();
+  } catch (error) {
+    if (error instanceof PortableDataExportWriterError) throw error;
+    throw exportError("query_failed");
+  }
+};
+
+export const createPortableDataExportV1 = async (
+  input: PortableDataExportWriterInputV1,
+): Promise<PortableDataExportBundleV1> => {
+  if (
+    !UUID_V7_PATTERN.test(input.vaultId) ||
+    !INSTANT_PATTERN.test(input.generatedAt) ||
+    !Number.isFinite(Date.parse(input.generatedAt))
+  )
+    throw exportError("invalid_input");
+  try {
+    return await input.database.transaction((database) =>
+      readPortableDataExportSnapshotV1({
+        database,
+        generatedAt: input.generatedAt,
+        vaultId: input.vaultId,
+      }),
+    );
   } catch (error) {
     if (error instanceof PortableDataExportWriterError) throw error;
     throw exportError("query_failed");

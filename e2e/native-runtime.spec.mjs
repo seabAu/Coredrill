@@ -10,6 +10,7 @@ import { initializeDefaultWorkspace } from "./production-workspace.mjs";
 import { exerciseStoredListingComparison } from "./listing-comparison-journey.mjs";
 import { exerciseStoredJobNote } from "./job-note-journey.mjs";
 import { exerciseNextActionRuntime } from "./next-action-runtime-journey.mjs";
+import { exerciseVaultExportPreparation } from "./vault-export-runtime-journey.mjs";
 import { exerciseNormalTaskEntry } from "./task-entry-journey.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
@@ -380,6 +381,7 @@ test("normal root uses real native SQLite for capture and documents without OPFS
     await expect(preparation).toContainText("Ready for export review");
     const listingComparison = await exerciseStoredListingComparison(page, testInfo);
     const localNote = await exerciseStoredJobNote(page, testInfo);
+    const vaultExportPreparation = await exerciseVaultExportPreparation(page, testInfo, 1);
     const capabilities = await page.evaluate(() => ({
       calls: globalThis.coredrillBrowserCapabilityProbe,
       offline: globalThis.coredrillOfflineShell.getState(),
@@ -403,6 +405,7 @@ test("normal root uses real native SQLite for capture and documents without OPFS
           nativeRetainedDocxSha256: hash,
           listingComparison,
           localNote,
+          vaultExportPreparation,
           heldBeginAcknowledgements: heldAcknowledgements,
           retiredDocuments: retiredDocuments.size,
           capabilities,

@@ -23,11 +23,13 @@ import {
   PHASE_1_REPOSITORY_CONTRACT_CASE_NAMES,
   PHASE_1_REPOSITORY_CONTRACT_MANIFEST,
   inspectPortableArchiveV1,
+  preparePortableVaultArchiveV1,
   runDatabaseContractSuite,
   runPhase1CanonicalJourney,
   sqlStatement,
   type DatabaseContractAdapter,
   type DatabasePort,
+  type DatabaseReadSnapshot,
   type DatabaseSession,
   type QueryRow,
   type TransactionContractProbe,
@@ -319,6 +321,160 @@ describe("native SQLite repository and migration contracts", () => {
       expect(path.dirname(path.dirname(attachmentRoot))).toBe(canonicalRoot);
       expect((await stat(databaseRoot)).isDirectory()).toBe(true);
       expect((await stat(attachmentRoot)).isDirectory()).toBe(true);
+    } finally {
+      await database.delete();
+    }
+  });
+
+  it("rejects an exact logical ABA across two real native connections during archive capture", async () => {
+    const databaseName = nextDatabaseName();
+    const database = await openNativeSqliteDatabase({ databaseName, transport });
+    let other: NativeSqliteDatabase | undefined;
+    try {
+      await applySqlMigrations(database, migrations(), APPLIED_AT);
+      const vaultId = "0198e102-0000-7000-8000-000000000001";
+      await database.execute(
+        sqlStatement(
+          "INSERT INTO vault(id,name,schema_version,created_at,last_opened_at) VALUES(?,?,?,?,?)",
+          [vaultId, "Original native vault", 160, APPLIED_AT, APPLIED_AT],
+        ),
+      );
+      const writer = await openNativeSqliteDatabase({ databaseName, transport });
+      other = writer;
+      let changed = false;
+      let restored = false;
+      let finalSnapshots = 0;
+      const source: DatabasePort = {
+        query: database.query.bind(database),
+        execute: database.execute.bind(database),
+        transaction: database.transaction.bind(database),
+        diagnostics: database.diagnostics.bind(database),
+        exportPortable: () => {
+          finalSnapshots += 1;
+          return database.exportPortable();
+        },
+        withReadSnapshot: (work) =>
+          database.withReadSnapshot((lease) =>
+            work({
+              exportPortable: async () => {
+                const portable = await lease.exportPortable();
+                await writer.execute(
+                  sqlStatement("UPDATE vault SET name = ? WHERE id = ?", [
+                    "Intervening native vault",
+                    vaultId,
+                  ]),
+                );
+                changed = true;
+                return portable;
+              },
+              query: async <Row extends QueryRow = QueryRow>(
+                statement: import("@coredrill/storage-core").SqlStatement,
+              ) => {
+                const rows = await lease.query<Row>(statement);
+                if (changed && !restored && statement.sql.includes('FROM "vault"')) {
+                  await writer.execute(
+                    sqlStatement("UPDATE vault SET name = ? WHERE id = ?", [
+                      "Original native vault",
+                      vaultId,
+                    ]),
+                  );
+                  restored = true;
+                }
+                return rows;
+              },
+            }),
+          ),
+      };
+      await expect(
+        preparePortableVaultArchiveV1({
+          database: source,
+          vaultId,
+          archiveId: "0198e102-0000-7000-8000-000000000002",
+          createdAt: APPLIED_AT,
+          createdByVersion: "0.0.0",
+          readAttachment: async () => undefined,
+        }),
+      ).rejects.toMatchObject({ code: "source_changed" });
+      expect(changed).toBe(true);
+      expect(restored).toBe(true);
+      expect(finalSnapshots).toBe(0);
+      expect(await database.query(sqlStatement("SELECT name FROM vault"))).toEqual([
+        { name: "Original native vault" },
+      ]);
+    } finally {
+      await other?.close();
+      await database.delete();
+    }
+  });
+
+  it("holds a read/export lease against queued writes and expires it on success or failure", async () => {
+    const database = await openNativeSqliteDatabase({
+      databaseName: nextDatabaseName(),
+      transport,
+    });
+    try {
+      await applySqlMigrations(database, migrations(), APPLIED_AT);
+      await database.execute(
+        sqlStatement("CREATE TABLE read_lease_probe(value TEXT NOT NULL) STRICT"),
+      );
+      await database.execute(sqlStatement("INSERT INTO read_lease_probe VALUES (?)", ["original"]));
+      const holder = new Map<string, DatabaseReadSnapshot>();
+      let release!: () => void;
+      let entered!: () => void;
+      const held = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      const started = new Promise<void>((resolve) => {
+        entered = resolve;
+      });
+      const capture = database.withReadSnapshot(async (lease) => {
+        holder.set("lease", lease);
+        expect(Object.keys(lease).sort()).toEqual(["exportPortable", "query"]);
+        expect(await lease.query(sqlStatement("SELECT value FROM read_lease_probe"))).toEqual([
+          { value: "original" },
+        ]);
+        entered();
+        await held;
+        expect((await lease.exportPortable()).schemaVersion).toBe(160);
+        return lease.query(sqlStatement("SELECT value FROM read_lease_probe"));
+      });
+      await started;
+      let writeFinished = false;
+      const write = database
+        .execute(sqlStatement("UPDATE read_lease_probe SET value = ?", ["updated"]))
+        .then(() => {
+          writeFinished = true;
+        });
+      await Promise.resolve();
+      expect(writeFinished).toBe(false);
+      release();
+      expect(await capture).toEqual([{ value: "original" }]);
+      await write;
+      expect(await database.query(sqlStatement("SELECT value FROM read_lease_probe"))).toEqual([
+        { value: "updated" },
+      ]);
+      const escaped = holder.get("lease");
+      if (escaped === undefined) throw new Error("Missing native test lease.");
+      await expect(
+        escaped.query(sqlStatement("SELECT value FROM read_lease_probe")),
+      ).rejects.toThrow("lease has ended");
+      await expect(escaped.exportPortable()).rejects.toThrow("lease has ended");
+      await expect(
+        database.withReadSnapshot(async (lease) => {
+          holder.set("failed", lease);
+          await lease.query(sqlStatement("SELECT value FROM read_lease_probe"));
+          throw new Error("Synthetic snapshot failure");
+        }),
+      ).rejects.toThrow("Synthetic snapshot failure");
+      const failedLease = holder.get("failed");
+      if (failedLease === undefined) throw new Error("Missing failed native test lease.");
+      await expect(failedLease.exportPortable()).rejects.toThrow("lease has ended");
+      await database.execute(
+        sqlStatement("UPDATE read_lease_probe SET value = ?", ["after failure"]),
+      );
+      expect(await database.query(sqlStatement("SELECT value FROM read_lease_probe"))).toEqual([
+        { value: "after failure" },
+      ]);
     } finally {
       await database.delete();
     }

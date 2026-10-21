@@ -1,5 +1,6 @@
 import type {
   DatabasePort,
+  DatabaseReadSnapshot,
   DatabaseTransaction,
   ExecuteResult,
   PortableDatabase,
@@ -186,9 +187,38 @@ export class BrowserSqliteDatabase implements DatabasePort {
   }
 
   public exportPortable(): Promise<PortableDatabase> {
+    return this.queue.run(() => this.exportPortableDirect());
+  }
+
+  private async exportPortableDirect(): Promise<PortableDatabase> {
+    const portable = await this.request<PortableDatabase>("export");
+    return Object.freeze({ ...portable, bytes: portable.bytes.slice() });
+  }
+
+  public withReadSnapshot<Result>(
+    work: (snapshot: DatabaseReadSnapshot) => Promise<Result>,
+  ): Promise<Result> {
     return this.queue.run(async () => {
-      const portable = await this.request<PortableDatabase>("export");
-      return Object.freeze({ ...portable, bytes: portable.bytes.slice() });
+      let active = true;
+      const assertActive = () => {
+        if (!active) throw new Error("The snapshot read lease has ended.");
+      };
+      const snapshot: DatabaseReadSnapshot = Object.freeze({
+        query: async <Row extends QueryRow = QueryRow>(statement: SqlStatement) => {
+          assertActive();
+          const rows = await this.request<readonly Row[]>("query", { statement });
+          return Object.freeze(rows.map((row) => Object.freeze({ ...row }) as Row));
+        },
+        exportPortable: async () => {
+          assertActive();
+          return this.exportPortableDirect();
+        },
+      });
+      try {
+        return await work(snapshot);
+      } finally {
+        active = false;
+      }
     });
   }
 

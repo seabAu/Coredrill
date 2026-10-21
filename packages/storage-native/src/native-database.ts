@@ -1,5 +1,6 @@
 import type {
   DatabasePort,
+  DatabaseReadSnapshot,
   DatabaseTransaction,
   ExecuteResult,
   PortableDatabase,
@@ -54,6 +55,9 @@ export interface OpenNativeSqliteOptions {
 }
 
 export interface NativeSqliteDatabase extends DatabasePort {
+  withReadSnapshot<Result>(
+    work: (snapshot: DatabaseReadSnapshot) => Promise<Result>,
+  ): Promise<Result>;
   previewVaultDeletion(input: {
     readonly vaultId: string;
     readonly previewId: string;
@@ -260,14 +264,39 @@ class NativeSqliteDatabaseAdapter implements NativeSqliteDatabase {
   }
 
   public exportPortable(): Promise<PortableDatabase> {
+    return this.runExclusive(() => this.exportPortableDirect());
+  }
+
+  private async exportPortableDirect(): Promise<PortableDatabase> {
+    const data = await this.sendArchiveData({ type: "portable_export", sessionId: this.sessionId });
+    if (data.type !== "portable_database")
+      throw this.invalidArchiveResponse("portable_database", data.type);
+    return decodePortableDatabase(data.database);
+  }
+
+  public withReadSnapshot<Result>(
+    work: (snapshot: DatabaseReadSnapshot) => Promise<Result>,
+  ): Promise<Result> {
     return this.runExclusive(async () => {
-      const data = await this.sendArchiveData({
-        type: "portable_export",
-        sessionId: this.sessionId,
+      let active = true;
+      const assertActive = () => {
+        if (!active) throw new Error("The snapshot read lease has ended.");
+      };
+      const snapshot: DatabaseReadSnapshot = Object.freeze({
+        query: async <Row extends QueryRow = QueryRow>(statement: SqlStatement) => {
+          assertActive();
+          return this.queryDirect<Row>(statement);
+        },
+        exportPortable: async () => {
+          assertActive();
+          return this.exportPortableDirect();
+        },
       });
-      if (data.type !== "portable_database")
-        throw this.invalidArchiveResponse("portable_database", data.type);
-      return decodePortableDatabase(data.database);
+      try {
+        return await work(snapshot);
+      } finally {
+        active = false;
+      }
     });
   }
 

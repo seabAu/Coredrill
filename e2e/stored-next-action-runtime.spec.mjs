@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { initializeDefaultWorkspace } from "./production-workspace.mjs";
 import { exerciseNextActionRuntime } from "./next-action-runtime-journey.mjs";
+import { exerciseVaultExportPreparation } from "./vault-export-runtime-journey.mjs";
 
 test("normal runtime composes guarded scheduled/unscheduled tasks and undo offline", async ({
   page,
@@ -44,6 +45,7 @@ test("normal runtime composes guarded scheduled/unscheduled tasks and undo offli
   await page.locator('[data-pipeline-view-option="table"]').click();
   await page.getByRole("button", { name: "Synthetic task runtime role", exact: true }).click();
   const proof = await exerciseNextActionRuntime(page, testInfo);
+  await exerciseVaultExportPreparation(page, testInfo);
   expect(errors).toEqual([]);
   expect(external).toEqual([]);
   await testInfo.attach("next-action-runtime-proof.json", {
