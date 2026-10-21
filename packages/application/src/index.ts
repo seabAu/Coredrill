@@ -329,6 +329,18 @@ export {
   type ListCompanyDirectoryPortInputV1,
 } from "./company-directory.js";
 export {
+  ContactDirectoryError,
+  createContactDirectoryQuery,
+  parseContactDirectoryRequestV1,
+  compareContactDirectoryEntries,
+  type ContactDirectoryPort,
+  type ContactDirectorySummaryV1,
+  type ContactDirectoryCursorV1,
+  type ContactDirectoryPageV1,
+  type ListContactDirectoryInputV1,
+  type ListContactDirectoryPortInputV1,
+} from "./contact-directory.js";
+export {
   PIPELINE_QUERY_ERROR_CODES,
   PipelineQueryError,
   createPipelineQueryOperations,

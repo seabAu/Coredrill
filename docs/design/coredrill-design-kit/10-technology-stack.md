@@ -95,6 +95,8 @@ The Phase 0 proof harness uses Vite 8.2.2 and Playwright 1.61.1, both exact-revi
 
 Security maintenance on 2026-10-20 moves the existing Vite 8.2 line to patched 8.2.4 and standalone launch-editor to 2.14.2 after the advisory gate reports their editor-launch findings. The accepted React/Vite/WXT/PWA choices and runtime support floor are unchanged; reviewed versions are pinned in the lockfile and inventory. No audit exclusion is introduced. Fresh full regression/hosted evidence is tracked in [the maintenance proof](../../proof/dependency-security-maintenance-2026-10-20.md).
 
+Security maintenance on 2026-10-21 aligns the existing development-only Vitest/coverage4.1 line at4.1.12 after two @vitest/mocker advisories fail the audit gate. Official release/registry review confirms the backported fixes, MIT licenses, compatible Node24/Vite8 peers and unchanged release-age policy. Registry latest5.0.5 is not substituted. This changes no Accepted library/platform or product runtime decision and requires no ADR; lockfile/inventory/audit/regression/hosted evidence remains explicit in [the maintenance proof](../../proof/dependency-security-maintenance-2026-10-21.md).
+
 `BKP-005` adds no external package. It uses the existing StorageManager APIs,
 application policy package, generic SQLite `app_setting` repository, shared UI,
 and browser test harness. The versioned preference and UI contract are recorded

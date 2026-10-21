@@ -76,6 +76,10 @@ const PHASE_1_REPOSITORY_CONTRACT_COMPONENTS = Object.freeze({
     guardedNotes:
       "updates exact viewed-company notes with stale replay archive and rollback guards",
   }),
+  contactDirectory: component("stored-contact-directory", {
+    readScopedPages:
+      "reads bounded viewed-vault and company contact pages without private details or canonical writes",
+  }),
 });
 
 const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
@@ -85,8 +89,8 @@ const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
 );
 
 export const PHASE_1_REPOSITORY_CONTRACT_MANIFEST = Object.freeze({
-  schemaVersion: 12 as const,
-  suiteName: "phase-1-repository-contracts-v12",
+  schemaVersion: 13 as const,
+  suiteName: "phase-1-repository-contracts-v13",
   components: PHASE_1_REPOSITORY_CONTRACT_COMPONENTS,
   caseNames: PHASE_1_REPOSITORY_CONTRACT_CASES,
 });

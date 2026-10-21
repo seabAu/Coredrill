@@ -2,6 +2,8 @@
 
 ## Conventions
 
+The version-1 contact directory is a minimized read projection over existing contact rows, not a schema/origin migration. Its live keyset orders created_at descending then id ascending, binds viewed-vault/archive/optional-company scope and the anchor's row_version, and returns bounded pages without notes, contact methods or totals. A null company filter means all companies; nullable stored company/role remain null. Neither confidence, user confirmation nor absence of a provenance link establishes a public, licensed or user-entered basis. Selected provenance/relationship reads remain separate follow-through.
+
 - UUIDv7 IDs generated locally; never rely on server sequences.
 - UTC ISO timestamps plus explicit IANA timezone when a future local-time interpretation matters.
 - Soft/archive state for user records; append-only history for statuses, interactions, generation runs, and source snapshots.

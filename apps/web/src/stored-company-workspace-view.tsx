@@ -384,6 +384,18 @@ export const StoredCompanyDetails = ({
   liveOwner.current = owner;
   const container = useRef<HTMLElement>(null);
   const [retry, setRetry] = useState(0);
+  const readOwner = useMemo(() => ({ owner, revision, retry }), [owner, revision, retry]);
+  const liveReadOwner = useRef(readOwner);
+  liveReadOwner.current = readOwner;
+  const readFocusOrigin = useRef<{
+    owner: typeof owner;
+    retry: number;
+    origin: Element | null;
+  } | null>(null);
+  const [focusRequest, setFocusRequest] = useState<{
+    readOwner: typeof readOwner;
+    origin: Element | null;
+  } | null>(null);
   const [snapshot, setSnapshot] = useState<{
     owner: typeof owner;
     revision: number;
@@ -395,8 +407,13 @@ export const StoredCompanyDetails = ({
   useEffect(() => {
     let active = true;
     const isActive = () => active;
-    const origin = document.activeElement;
+    const retained = readFocusOrigin.current;
+    const origin =
+      retained?.owner === owner && retained.retry === retry
+        ? retained.origin
+        : document.activeElement;
     const restoreReadFocus = container.current?.contains(origin) === true;
+    readFocusOrigin.current = restoreReadFocus ? { owner, retry, origin } : null;
     setSnapshot((prior) => ({
       owner,
       revision,
@@ -429,24 +446,42 @@ export const StoredCompanyDetails = ({
               "The selected company could not be read in this vault. No missing details or relationships were invented. Retry reads only; it does not save again.",
           }));
       } finally {
-        if (isActive() && restoreReadFocus)
-          restoreFocusAfterChange(origin, () => {
-            if (!isActive() || liveOwner.current !== owner) return null;
-            return (
-              container.current?.querySelector<HTMLButtonElement>(
-                "[data-company-detail-refresh]",
-              ) ?? null
-            );
-          });
+        if (isActive()) {
+          if (restoreReadFocus) setFocusRequest({ readOwner, origin });
+          if (readFocusOrigin.current?.owner === owner && readFocusOrigin.current.retry === retry)
+            readFocusOrigin.current = null;
+        }
       }
     })();
     return () => {
       active = false;
     };
-  }, [owner, revision, retry]);
+  }, [owner, readOwner, revision, retry]);
   const visible = snapshot?.owner === owner ? snapshot : null;
   const busy = visible?.busy !== false || visible.retry !== retry;
   const value = visible?.value ?? null;
+  useLayoutEffect(() => {
+    if (focusRequest === null) return;
+    const request = focusRequest;
+    if (request.readOwner !== readOwner) {
+      setFocusRequest(null);
+      return;
+    }
+    if (busy) return;
+    restoreFocusAfterChange(request.origin, () => {
+      if (
+        liveReadOwner.current !== request.readOwner ||
+        liveOwner.current !== request.readOwner.owner
+      )
+        return null;
+      return (
+        container.current?.querySelector<HTMLButtonElement>(
+          "[data-company-detail-refresh]:not([disabled])",
+        ) ?? null
+      );
+    });
+    setFocusRequest(null);
+  }, [focusRequest, readOwner, busy]);
   return (
     <section ref={container} aria-label="Stored company details" className="cd-company-details">
       <h3>Selected company details</h3>
@@ -457,7 +492,9 @@ export const StoredCompanyDetails = ({
         data-company-detail-refresh="true"
         disabled={busy}
         onClick={() => {
-          setRetry((count) => count + 1);
+          const nextRetry = retry + 1;
+          readFocusOrigin.current = { owner, retry: nextRetry, origin: document.activeElement };
+          setRetry(nextRetry);
         }}
       >
         Refresh selected company

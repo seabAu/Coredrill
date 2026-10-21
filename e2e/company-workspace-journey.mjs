@@ -20,6 +20,7 @@ export const exerciseCompanyWorkspace = async (page, testInfo) => {
       notesMode: "success",
       readMode: "success",
       release: null,
+      readRelease: null,
       completed: 0,
       readCompleted: 0,
     };
@@ -60,6 +61,10 @@ export const exerciseCompanyWorkspace = async (page, testInfo) => {
         },
         read: async (input) => {
           if (probe.readMode === "failure") throw new Error("SYNTHETIC_PRIVATE_READ_PATH");
+          if (probe.readMode === "hold")
+            await new Promise((resolve) => {
+              probe.readRelease = resolve;
+            });
           const result = await original.read(input);
           probe.readCompleted += 1;
           return result;
@@ -233,8 +238,69 @@ export const exerciseCompanyWorkspace = async (page, testInfo) => {
     .poll(() => detail.locator("p.cd-company-literal").textContent())
     .toBe("Other company's unchanged local note");
   const refresh = detail.getByRole("button", { name: "Refresh selected company", exact: true });
+  await page.evaluate(() => {
+    const original = globalThis.requestAnimationFrame.bind(globalThis);
+    const probe = globalThis.coredrillCompanyWriteProbe;
+    probe.focusStage = "manual";
+    probe.focusFrames = [];
+    probe.restoreAnimationFrame = () => {
+      globalThis.requestAnimationFrame = original;
+    };
+    globalThis.requestAnimationFrame = (callback) => {
+      const target = globalThis.document.querySelector("[data-company-detail-refresh]");
+      const frame = {
+        stage: probe.focusStage,
+        enabledAtSchedule: target !== null && !target.disabled,
+        enabledAtCallback: null,
+      };
+      probe.focusFrames.push(frame);
+      return original((time) => {
+        const committed = globalThis.document.querySelector("[data-company-detail-refresh]");
+        frame.enabledAtCallback = committed !== null && !committed.disabled;
+        callback(time);
+      });
+    };
+    probe.readMode = "hold";
+    probe.readRelease = null;
+  });
+  const manualReadsBefore = await page.evaluate(
+    () => globalThis.coredrillCompanyWriteProbe.readCompleted,
+  );
   await refresh.click();
+  await page.waitForFunction(() => globalThis.coredrillCompanyWriteProbe.readRelease !== null);
+  await expect(refresh).toBeDisabled();
+  await page.evaluate(() => {
+    const probe = globalThis.coredrillCompanyWriteProbe;
+    probe.readMode = "success";
+    probe.readRelease();
+  });
+  await expect
+    .poll(() => page.evaluate(() => globalThis.coredrillCompanyWriteProbe.readCompleted))
+    .toBe(manualReadsBefore + 1);
+  await expect(refresh).toBeEnabled();
+  await testInfo.attach("company-detail-manual-focus-commit", {
+    body: JSON.stringify(
+      await page.evaluate(() => ({
+        frames: globalThis.coredrillCompanyWriteProbe.focusFrames,
+        refreshActive:
+          globalThis.document.activeElement?.matches("[data-company-detail-refresh]") ?? false,
+        documentHasFocus: globalThis.document.hasFocus(),
+      })),
+    ),
+    contentType: "application/json",
+  });
   await expect(refresh).toBeFocused();
+  expect(
+    await page.evaluate(() => {
+      const frames = globalThis.coredrillCompanyWriteProbe.focusFrames.filter(
+        (frame) => frame.stage === "manual",
+      );
+      return (
+        frames.length > 0 &&
+        frames.every((frame) => frame.enabledAtSchedule && frame.enabledAtCallback)
+      );
+    }),
+  ).toBe(true);
   const readsBefore = await page.evaluate(
     () => globalThis.coredrillCompanyWriteProbe.readCompleted,
   );
@@ -242,19 +308,79 @@ export const exerciseCompanyWorkspace = async (page, testInfo) => {
     () => globalThis.coredrillCompanyWriteProbe.completed,
   );
   await page.evaluate(() => {
-    globalThis.coredrillCompanyWriteProbe.release();
+    const probe = globalThis.coredrillCompanyWriteProbe;
+    probe.focusStage = "late";
+    probe.readMode = "hold";
+    probe.readRelease = null;
+    probe.release();
   });
   await expect
     .poll(() => page.evaluate(() => globalThis.coredrillCompanyWriteProbe.completed))
     .toBe(completedBefore + 1);
+  await page.waitForFunction(() => globalThis.coredrillCompanyWriteProbe.readRelease !== null);
+  await expect(refresh).toBeDisabled();
+  await page.evaluate(() => {
+    const probe = globalThis.coredrillCompanyWriteProbe;
+    probe.readMode = "success";
+    probe.readRelease();
+  });
   await expect
     .poll(() => page.evaluate(() => globalThis.coredrillCompanyWriteProbe.readCompleted))
     .toBeGreaterThan(readsBefore);
   await expect(refresh).toBeFocused();
+  expect(
+    await page.evaluate(() => {
+      const frames = globalThis.coredrillCompanyWriteProbe.focusFrames.filter(
+        (frame) => frame.stage === "late",
+      );
+      return (
+        frames.length > 0 &&
+        frames.every((frame) => frame.enabledAtSchedule && frame.enabledAtCallback)
+      );
+    }),
+  ).toBe(true);
   expect(await detail.locator("p.cd-company-literal").textContent()).toBe(
     "Other company's unchanged local note",
   );
   await expect(detail).not.toContainText(finalNotes);
+  await page.evaluate(() => {
+    const probe = globalThis.coredrillCompanyWriteProbe;
+    probe.focusStage = "deliberate";
+    probe.readMode = "hold";
+    probe.readRelease = null;
+  });
+  await refresh.click();
+  await page.waitForFunction(() => globalThis.coredrillCompanyWriteProbe.readRelease !== null);
+  await expect(refresh).toBeDisabled();
+  const deliberate = network.getByRole("button", { name: "Companies", exact: true });
+  await deliberate.focus();
+  await page.evaluate(() => {
+    const probe = globalThis.coredrillCompanyWriteProbe;
+    probe.readMode = "success";
+    probe.readRelease();
+  });
+  await expect(refresh).toBeEnabled();
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        globalThis.coredrillCompanyWriteProbe.focusFrames.some(
+          (frame) => frame.stage === "deliberate" && frame.enabledAtCallback !== null,
+        ),
+      ),
+    )
+    .toBe(true);
+  await expect(deliberate).toBeFocused();
+  await testInfo.attach("company-detail-complete-focus-commit", {
+    body: JSON.stringify(
+      await page.evaluate(() => ({
+        frames: globalThis.coredrillCompanyWriteProbe.focusFrames,
+        deliberateActive: globalThis.document.activeElement?.textContent === "Companies",
+        documentHasFocus: globalThis.document.hasFocus(),
+      })),
+    ),
+    contentType: "application/json",
+  });
+  await page.evaluate(() => globalThis.coredrillCompanyWriteProbe.restoreAnimationFrame());
   await network.getByRole("button", { name: "Return to company draft", exact: true }).click();
   await expect(notes).toContainText("Local save acknowledged");
   await expect.poll(() => detail.locator("p.cd-company-literal").textContent()).toBe(finalNotes);
@@ -327,6 +453,8 @@ export const exerciseCompanyWorkspace = async (page, testInfo) => {
     reflowAndAxe: true,
     noFixtureInstaller: true,
     lateOtherCompanyReadAndFocusPreserved: true,
+    heldReadFocusRestoredAfterEnabledCommit: true,
+    deliberateFocusDuringReadPreserved: true,
     cancelledReloadRetainsExactUnsavedDraft: true,
   };
 };

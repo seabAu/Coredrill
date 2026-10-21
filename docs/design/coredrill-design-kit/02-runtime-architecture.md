@@ -2,6 +2,8 @@
 
 ## Logical architecture
 
+The normal Network contact-directory prerequisite uses a versioned, read-only viewed-vault/archive/company-scoped application query over a bound SQLite projection. Pages contain only contact identity, nullable role/company and audit/archive facts, never private methods/notes, inferred public/license basis or totals. Cursors retain the original scope and anchor version; missing/ambiguous/replaced vaults and stale anchors fail explicitly. Browser/native adapters share the same repository contract. This prerequisite does not complete normal contact details, editing or interactions.
+
 ```text
 React UI / application services
           |

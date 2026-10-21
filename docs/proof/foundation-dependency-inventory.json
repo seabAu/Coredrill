@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "inventoryId": "JW-DI-001",
-  "version": "1.30.0",
-  "reviewedAt": "2026-10-21T13:57:28Z",
+  "version": "1.31.0",
+  "reviewedAt": "2026-10-21T22:36:14Z",
   "scope": {
     "included": [
       "Pinned Node.js, pnpm, and Rust foundation toolchains",
@@ -17,7 +17,7 @@
   },
   "lockfile": {
     "path": "pnpm-lock.yaml",
-    "sha256": "a098af460c682f046440ed6c7724f22b3b6149ac27d25987a347e453d6cf36fa"
+    "sha256": "67b1363c11e00f83dc4cd4c463dfb506d79ae9dab3c688831514661eb064c336"
   },
   "toolchains": [
     {
@@ -382,14 +382,15 @@
       "manifest": "package.json",
       "dependencyType": "devDependencies",
       "name": "@vitest/coverage-v8",
-      "version": "4.1.11",
-      "upstreamLatest": "4.1.11",
-      "selectionStatus": "current",
+      "version": "4.1.12",
+      "upstreamLatest": "5.0.5",
+      "selectionStatus": "latest-compatible",
       "license": "MIT",
       "maintainers": ["ariperkkio", "antfu", "hiogawa", "oreanno", "yyx990803"],
       "repository": "https://github.com/vitest-dev/vitest",
-      "metadataSource": "https://registry.npmjs.org/@vitest%2fcoverage-v8/4.1.11",
-      "knownAdvisories": []
+      "metadataSource": "https://registry.npmjs.org/@vitest%2fcoverage-v8/4.1.12",
+      "knownAdvisories": [],
+      "selectionNote": "Aligned existing-line security maintenance with Vitest 4.1.12, whose coverage peer is exact. Published October 15 and eligible under the unchanged 1440-minute minimum; MIT and compatible with pinned Node 24/Vite 8. Latest major 5.0.5 is recorded, not silently adopted. See dependency-security-maintenance-2026-10-21.md."
     },
     {
       "manifest": "package.json",
@@ -507,14 +508,15 @@
       "manifest": "package.json",
       "dependencyType": "devDependencies",
       "name": "vitest",
-      "version": "4.1.11",
-      "upstreamLatest": "4.1.11",
-      "selectionStatus": "current",
+      "version": "4.1.12",
+      "upstreamLatest": "5.0.5",
+      "selectionStatus": "latest-compatible",
       "license": "MIT",
       "maintainers": ["ariperkkio", "antfu", "hiogawa", "oreanno", "yyx990803"],
       "repository": "https://github.com/vitest-dev/vitest",
-      "metadataSource": "https://registry.npmjs.org/vitest/4.1.11",
-      "knownAdvisories": []
+      "metadataSource": "https://registry.npmjs.org/vitest/4.1.12",
+      "knownAdvisories": [],
+      "selectionNote": "Existing 4.1 maintenance line patched to 4.1.12 for GHSA-qxg6-89mg-rqv8 and GHSA-xp26-3454-mjgp. Official release/registry review confirms October 15 publication, MIT and Node 24/Vite 8 compatibility. Latest major 5.0.5 is not selected. Fresh audit of the reviewed graph is clean; complete patched regression/hosted proof remains required."
     },
     {
       "manifest": "packages/contracts/package.json",
@@ -1100,9 +1102,10 @@
   "advisoryReview": {
     "command": "pnpm audit --json",
     "source": "https://pnpm.io/cli/audit",
-    "reviewedAt": "2026-10-21T13:57:28Z",
-    "lockfileSha256": "a098af460c682f046440ed6c7724f22b3b6149ac27d25987a347e453d6cf36fa",
+    "reviewedAt": "2026-10-21T22:36:14Z",
+    "lockfileSha256": "67b1363c11e00f83dc4cd4c463dfb506d79ae9dab3c688831514661eb064c336",
     "resolvedDependencyCount": 937,
+    "vitestMaintenanceNote": "October 21's resumed gate fails two newly reported moderate mocker findings. Reviewed Vitest/coverage 4.1.12 aligns nine existing Vitest-family resolutions only; no unrelated pin, override, package count or audit policy changes. Scripts-disabled frozen install passes and fresh audit reports zero findings at every severity across 937 resolutions /108 optional. Prior maintenance notes below are historical; see dependency-security-maintenance-2026-10-21.md for official sources and remaining full/hosted proof.",
     "acceptedSchedulingNote": "ADR-0009/D-056 explicitly authorizes @js-temporal/polyfill 0.5.1 and scoped jsbi 4.3.2; only these two resolutions are added. Fresh pnpm audit reports zero findings across 937 resolutions. No existing package or Cargo pin changes; see accepted-civil-time-dependency-review.md.",
     "maintenanceNote": "The October 20 audit adds six findings for three launch-editor advisories affecting both standalone launch-editor 2.14.1 and Vite 8.2.2's bundled copy. Reviewed existing-line patches select Vite 8.2.4 and launch-editor 2.14.2 with no audit exclusions. Scripts-disabled frozen install and fresh audit report zero findings across 935 resolutions; license policy passes. Earlier October 19 overrides remain unchanged, as do Tiptap 3.30.5 and every accepted architecture/library choice. See dependency-security-maintenance-2026-10-20.md for official sources, integrity and pending/full verification evidence.",
     "optionalDependencyCount": 108,
@@ -1116,12 +1119,12 @@
   },
   "licenseReview": {
     "command": "pnpm check:licenses",
-    "reviewedAt": "2026-10-21T13:57:28Z",
-    "lockfileSha256": "a098af460c682f046440ed6c7724f22b3b6149ac27d25987a347e453d6cf36fa",
+    "reviewedAt": "2026-10-21T22:36:14Z",
+    "lockfileSha256": "67b1363c11e00f83dc4cd4c463dfb506d79ae9dab3c688831514661eb064c336",
     "resolvedPackageRecords": 831,
     "workspaceCoverageNote": "License policy now scans 23 manifest roots and deduplicates 831 installed npm records, rather than only 520 root-reachable records. Temporal is ISC and JSBI Apache-2.0. Existing JSZip selects its explicit MIT alternative; pako retains both MIT/Zlib obligations. Duck 0.1.12's ambiguous BSD metadata is classified BSD-2-Clause only when its reviewed LICENSE SHA-256 matches exactly. Unknown or changed notices still fail closed. See accepted-civil-time-dependency-review.md. Cargo remains 498 license records.",
     "result": "pass",
-    "note": "The patched graph retains 935 external resolutions and 520 npm license records; Cargo retains 498 license records. Vite 8.2.4 and launch-editor 2.14.2 are MIT and more than 24 hours old. Existing October 19 overrides, restricted Tiptap 3.30.5 editor, Mammoth importer, SQLite storage and offline Workbox boundary remain unchanged. No external direct dependency is added. Earlier selection history remains in proof records and Git history."
+    "note": "The current graph retains 937 external resolutions and 831 npm license records across 23 roots; Cargo retains 498 license records. Aligned Vitest/coverage 4.1.12 is MIT and more than 24 hours old. Existing October 19/20 overrides, accepted Temporal/jsbi, restricted Tiptap 3.30.5 editor, Mammoth importer, SQLite storage and offline Workbox boundary remain unchanged. No external direct dependency is added. Earlier selection history remains in proof records and Git history."
   },
   "maintenanceWatch": [
     {

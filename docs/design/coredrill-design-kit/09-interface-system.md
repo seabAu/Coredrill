@@ -737,6 +737,8 @@ A screen/journey is complete only when it has:
 
 ### Normal stored company forms and selected detail (2026-10-21)
 
+The hosted refresh-focus regression requires capturing action intent before disabling for a read and scheduling restoration only after the ready state commits. Superseded read-lifetime/selection callbacks cannot restore focus, and deliberate focus elsewhere is preserved. Held actual browser/native reads prove enabled targets at scheduling and callback without increasing focus/journey timeouts. This local correction still requires a new exact hosted run; it does not close manual assistive-technology acceptance.
+
 Normal Companies separates the bounded live directory from an owned scalar-detail read, explicit manual creation and local notes editing. There are no manufactured contacts, totals, source/license bases or verification claims. Names/notes retain the accepted full 512/200,000-character bounds; nullable facts and safe HTTP/HTTPS stay distinct from missing data. One session draft retains original vault/company/version and literal fields through tabs, routes and reflow, with pending locks, explicit discard, a cancellable unload warning and no automatic resubmission after uncertain acknowledgement. Readback failures retain stale facts with explicit read-only retry. Label/control associations remain explicit across responsive remounts. Read/action focus restoration waits for committed enabled controls, preserves deliberate focus and revokes retired owners. [Current UI evidence](../../proof/normal-company-workspace-ui-verification.md) distinguishes focused execution from still-required full/hosted/manual gates; full INT-007 is not complete.
 
 ### Production setup and observed health checkpoint (2026-10-19)
