@@ -506,3 +506,60 @@
   white-space: normal;
   max-width: 100%;
 }
+
+.cd-stored-companies {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.cd-stored-companies__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-block: 1rem;
+}
+
+.cd-stored-companies .cd-button {
+  max-width: 100%;
+  white-space: normal;
+}
+
+.cd-stored-companies [aria-current="page"] {
+  outline: 2px solid currentColor;
+  outline-offset: -4px;
+}
+
+.cd-stored-companies :where(button, input):focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
+.cd-stored-companies__archive {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  min-height: 2.75rem;
+}
+
+.cd-stored-companies__list {
+  display: grid;
+  gap: 1rem;
+  list-style: none;
+  padding: 0;
+}
+
+.cd-stored-companies__list li {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  min-width: 0;
+  padding: 1rem;
+}
+
+.cd-stored-companies__list h3,
+.cd-stored-companies__list dd {
+  white-space: pre-wrap;
+}
+
+.cd-stored-companies__list dd {
+  margin-inline-start: 0;
+}

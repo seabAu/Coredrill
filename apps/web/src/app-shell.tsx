@@ -153,6 +153,7 @@ import { useStoredStatusActions } from "./stored-status-actions.js";
 import { useStoredJobTimeline } from "./stored-job-timeline.js";
 import { useStoredJobNote, type StoredNoteAcknowledgement } from "./stored-job-note.js";
 import { useStoredJobDetails } from "./stored-job-details.js";
+import { StoredCompanyDirectoryView } from "./stored-company-directory-view.js";
 import { useStoredWorkspaceStatus } from "./stored-workspace-status.js";
 import { useStoredWorkspaceNextAction } from "./stored-workspace-next-action.js";
 import { useStoredJobTasks } from "./stored-job-tasks.js";
@@ -4976,13 +4977,13 @@ const AppShellCatalog = ({
             />
           )
         ) : activeDestination === "network" && !referenceCatalog ? (
-          <section aria-label="Stored Network view unavailable">
-            <h2>Company and contact navigation</h2>
-            <p>
-              Stored Network navigation is not connected yet. Reference companies and contacts are
-              not shown as your data.
-            </p>
-          </section>
+          <StoredCompanyDirectoryView
+            api={globalThis.coredrillStorageSpike.companyDirectory}
+            vaultId={vaultSession?.vault.id ?? null}
+            activeTab={networkTab}
+            onTabChange={changeNetworkTab}
+            selectedCompanyId={networkSelectedCompanyId}
+          />
         ) : activeDestination === "network" ? (
           <NetworkWorkspace
             activeTab={networkTab}

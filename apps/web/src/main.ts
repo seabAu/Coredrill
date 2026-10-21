@@ -222,6 +222,10 @@ import { createExtensionInbox, type ExtensionInboxApi } from "./extension-transf
 import { installDocumentsWorkspaceReferenceFixture } from "./documents-reference-fixture.js";
 import { createStoredJobComparisonApi, type StoredJobComparisonApi } from "./job-comparison.js";
 import { createStoredPipelineApi, type StoredPipelineApi } from "./stored-pipeline.js";
+import {
+  createStoredCompanyDirectoryApi,
+  type StoredCompanyDirectoryApi,
+} from "./stored-company-directory.js";
 import { createStoredJobNoteApi, type StoredJobNoteApi } from "./stored-job-notes.js";
 import { createStoredNextActionApi, type StoredNextActionApi } from "./stored-next-actions.js";
 import { createStoredVaultExportApi, type StoredVaultExportApi } from "./stored-vault-export.js";
@@ -503,6 +507,7 @@ export interface CoredrillStorageSpikeApi {
   ): Promise<ApplicationResult<StartedApplicationAttemptDto>>;
   readonly jobComparison: StoredJobComparisonApi;
   readonly pipeline: StoredPipelineApi;
+  readonly companyDirectory: StoredCompanyDirectoryApi;
   readonly pipelineMutations: StoredPipelineMutationApi;
   readonly jobNotes: StoredJobNoteApi;
   readonly nextActions: StoredNextActionApi;
@@ -3326,6 +3331,11 @@ const api: CoredrillStorageSpikeApi = {
     return result;
   },
   pipeline: createStoredPipelineApi(async () => {
+    const client = await getDatabase();
+    await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
+    return client;
+  }, careerProfileOperationContext),
+  companyDirectory: createStoredCompanyDirectoryApi(async () => {
     const client = await getDatabase();
     await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
     return client;

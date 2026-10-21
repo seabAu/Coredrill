@@ -18,6 +18,7 @@ import { inspectPortableArchiveV1 } from "../packages/storage-core/dist/index.js
 import { exerciseNormalTaskEntry } from "./task-entry-journey.mjs";
 import { exerciseScheduledTaskEntry } from "./scheduled-task-entry-journey.mjs";
 import { exerciseTaskEntryLifetime } from "./task-entry-lifetime.mjs";
+import { exerciseCompanyDirectory } from "./company-directory-journey.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
 const executable = path.join(
@@ -202,7 +203,11 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
     const jobDocumentsUrl = page.url();
     await page.getByRole("button", { name: /Close Job workspace|Back to Pipeline/u }).click();
     const journeyProof = {};
-    if (journey === "tracking") {
+    if (journey === "network") {
+      Object.assign(journeyProof, {
+        companyDirectory: await exerciseCompanyDirectory(page, testInfo, "Synthetic Runtime Lab"),
+      });
+    } else if (journey === "tracking") {
       await page.getByRole("button", { name: "Add", exact: true }).click();
       await page.getByRole("menuitem", { name: /Add job/u }).click();
       await capture.getByLabel(/Job title/u).fill("Synthetic native movable role");
@@ -792,6 +797,7 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
 };
 
 for (const [journey, description] of [
+  ["network", "stored company directory and owned read recovery"],
   ["tracking", "capture, tasks, status, source comparison and notes"],
   ["documents", "documents and complete archive cancellation/save"],
 ]) {
