@@ -1,8 +1,8 @@
 # Vault export verification observations — in-progress proof
 
 Date: 2026-10-21. Scope: INT-006 persistent verified-byte observations.
-Status: full local, separate extension and final policy verification pass for
-normal browser/native integration. Commit and exact hosted verification remain.
+Status: exact commit `b2bfeae` passes full local, separate extension, final policy
+and all required hosted jobs for normal browser/native history integration.
 INT-006 is unchecked; normal restore and
 deletion-warning handoff remain separate unfinished requirements.
 
@@ -131,7 +131,34 @@ verification.
 
 ## Still required
 
-Commit/push and exact committed hosted verification. No dependency/schema/permission or Accepted
-decision change occurs.
+Normal restore and deletion-warning export handoff still require independent
+proof before INT-006 closes. No dependency/schema/permission or Accepted decision
+change occurs in this history slice.
+
+## Pushed checkpoint
+
+Commit `b2bfeaee0a1d5785a3376772dfd97b182e808f26` is pushed to origin/main from a
+clean worktree. Exact [Foundation CI run 39578927520](https://github.com/seabAu/Coredrill/actions/runs/39578927520)
+is confirmed live. One retained watch writes
+`vault-export-verification-hosted-watch.log`; no hosted success is inferred.
+Normal restore and deletion-warning export handoff remain unfinished INT-006
+requirements and are not covered by this feature's local success.
+
+## Exact hosted history closure
+
+Exact `b2bfeaee0a1d5785a3376772dfd97b182e808f26` passes
+[Foundation CI run 39578927520](https://github.com/seabAu/Coredrill/actions/runs/39578927520).
+Every required aggregate/Chrome 151/152/Firefox 153/154/extension/Windows/macOS/
+diagnostic Ubuntu/secrets job succeeds; PR-only dependency review is skipped.
+The one retained watch ends `VAULT_EXPORT_VERIFICATION_HOSTED_EXIT=0`.
+Aggregate job `119151381507` output is retained in
+`vault-export-verification-hosted-aggregate-success.log`: 1,848 passing / one
+platform-skipped unit and coverage case (1,849 total), 40 resilience, all 11
+browser-storage, 17 native-adapter plus one Windows-only skip, 20 Rust core plus
+the separately exercised ignored secret case, secure-store/archive/audits and
+final Changesets. Local Windows covers every unit/native case. Real-native
+tracking and document/history cases run in 1.0 minute / 55.2 seconds, under the
+unchanged 120-second budgets. This source does not include the later handoff,
+warning-metadata or strict-decoder changes, which need their own proof.
 Normal restore and deletion-warning export handoff remain separate unfinished
 INT-006 requirements.

@@ -59,11 +59,13 @@ recovery path after a completed deletion. A recorded successful export instant
 means only that Coredrill completed an export at that time; it does not prove
 that the user still possesses the file.
 
-Browser mode currently has no app-managed attachment-byte store, automatic
-backup directory, or browser provider-secret implementation. Their preview
-counts are therefore zero, and deletion removes the target origin's SQLite
-vault only. A future browser attachment or BYOK-secret store must implement the
-same complete cleanup contract before it can ship.
+Browser mode now includes the content-addressed OPFS attachment store introduced
+by BKP-007. Preview counts canonical attachment manifests, and deletion removes
+the origin's SQLite vault and attachment bytes; incomplete attachment cleanup
+returns `cleanup_pending`. The current single-origin browser vault has no shared
+attachment, automatic-backup or provider-secret backend, so those counts remain
+zero. A future multi-vault, managed-backup or BYOK-secret store must implement
+the same complete cleanup contract before it can ship.
 
 ## Provider-secret ownership
 
@@ -132,8 +134,23 @@ The warning states:
 - other vaults, shared attachment bytes, and external archives are unaffected.
 
 The modal offers `Cancel`, `Export portable archive`, and the final `Delete
-local vault` action. Export leaves deletion pending and does not silently submit
-the form. The final action exposes busy progress, prevents double submission,
+local vault` action. Normal Export handoff closes the warning and retires its
+UI preview without submitting deletion, granting consent, preparing an archive or
+opening a save boundary. Ownership-aware post-render focus goes to the existing
+consent control or the already prepared snapshot; prepared bytes and identity
+remain in the root-owned export session. A later deletion requires fresh review
+and exact typed confirmation. A user's new focus or navigation cannot be stolen.
+Export and final deletion controls are blocked while another vault/export
+operation owns the session. Cancel remains available when deletion itself is
+not submitting. No backup is required merely to exercise the right to delete.
+
+Both runtime previews read the recorded portable-export instant through the
+strict original-vault verification query. Missing time is labeled unavailable;
+invalid/foreign settings fail closed, not as invented recovery evidence. The
+warning says recorded time may come from a restored vault or another device
+and does not prove freshness, possession or a tested restore.
+
+The final action exposes busy progress, prevents double submission,
 announces success or stable failure, and restores focus safely on cancel/error.
 After clean success the app clears target state and returns to accountless
 onboarding. A `cleanup_pending` result instead shows the remaining local-cleanup

@@ -12,6 +12,7 @@ import { Icon } from "./icon.js";
 
 export interface VaultDeletionSettingsProps {
   readonly preview: VaultDeletionPreviewDto;
+  readonly blocked?: boolean;
   readonly onDelete: (
     input: DeleteVaultInput,
   ) => Promise<ApplicationResult<VaultDeletionResultDto>>;
@@ -23,10 +24,10 @@ const itemCount = (count: number, singular: string, plural = `${singular}s`): st
   `${String(count)} ${count === 1 ? singular : plural}`;
 
 const formatExportInstant = (value: string | null): string => {
-  if (value === null) return "No successful portable export is recorded.";
+  if (value === null) return "No recorded portable export time is available in this preview.";
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) return "The recorded export time is unavailable.";
-  return `Coredrill recorded a successful portable export on ${new Intl.DateTimeFormat(undefined, {
+  return `Recorded portable export time: ${new Intl.DateTimeFormat(undefined, {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(date)}.`;
@@ -37,6 +38,7 @@ export const VaultDeletionSettings = ({
   onDelete,
   onDeleted,
   onExportPortableArchive,
+  blocked = false,
 }: VaultDeletionSettingsProps) => {
   const [confirmation, setConfirmation] = useState("");
   const [failure, setFailure] = useState<string | null>(null);
@@ -54,7 +56,7 @@ export const VaultDeletionSettings = ({
   };
 
   const submit = async (): Promise<void> => {
-    if (!exactConfirmation || submitting) return;
+    if (!exactConfirmation || submitting || blocked) return;
     setSubmitting(true);
     setFailure(null);
     try {
@@ -110,7 +112,7 @@ export const VaultDeletionSettings = ({
         open={open}
       >
         <Dialog.Trigger asChild>
-          <button className="cd-button cd-button-danger" type="button">
+          <button className="cd-button cd-button-danger" disabled={blocked} type="button">
             <Icon decorative name="trash" size={18} />
             Delete local vault
           </button>
@@ -156,6 +158,10 @@ export const VaultDeletionSettings = ({
                 <strong>Only an external portable archive can restore this vault.</strong>
                 <p>{formatExportInstant(preview.lastSuccessfulPortableExportAt)}</p>
                 <p>Coredrill cannot verify that an exported file still exists.</p>
+                <p>
+                  A recorded time may come from a restored vault or another device. It does not
+                  prove current-vault freshness or a successful restore.
+                </p>
               </div>
             </div>
 
@@ -208,7 +214,7 @@ export const VaultDeletionSettings = ({
             <div className="cd-vault-deletion-actions">
               <button
                 className="cd-button"
-                disabled={submitting}
+                disabled={submitting || blocked}
                 onClick={onExportPortableArchive}
                 type="button"
               >
@@ -221,7 +227,7 @@ export const VaultDeletionSettings = ({
               </Dialog.Close>
               <button
                 className="cd-button cd-button-danger"
-                disabled={!exactConfirmation || submitting || pendingCleanup}
+                disabled={!exactConfirmation || submitting || pendingCleanup || blocked}
                 onClick={() => void submit()}
                 type="button"
               >

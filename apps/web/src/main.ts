@@ -23,6 +23,7 @@ import {
   createResumeImportOperations,
   createResumeImportReviewOperations,
   createVaultDeletionOperations,
+  createReadVaultExportVerificationsQuery,
   createVaultBootstrapOperations,
   type VaultBootstrapStateDto,
   type VaultSessionDto,
@@ -113,6 +114,7 @@ import { expectsLocalVault, invalidateDeletedVaultViews } from "./vault-lifecycl
 import {
   applySqlMigrations,
   createDatabaseVaultBootstrapPort,
+  createSqliteVaultExportVerificationPort,
   commitPortableArchiveRestoreV1,
   createPortableArchiveContentHashV1,
   createPortableDataExportV1,
@@ -1992,6 +1994,20 @@ interface BrowserVaultDeletionSnapshot {
 
 const browserVaultDeletionSnapshots = new Map<string, BrowserVaultDeletionSnapshot>();
 
+const recordedPortableExportInstant = async (
+  database: DatabasePort,
+  input: PreviewVaultDeletionPortInput,
+) => {
+  const result = await createReadVaultExportVerificationsQuery(
+    createSqliteVaultExportVerificationPort(database),
+  ).execute({ vaultId: input.vaultId }, careerProfileOperationContext());
+  if (!result.ok) throw new VaultDeletionError("invalid_state");
+  const recorded = result.value.reminder.lastSuccessfulExportAtUnixMs;
+  if (recorded === null) return null;
+  if (recorded > Date.parse(input.previewedAt)) throw new VaultDeletionError("invalid_state");
+  return instant(new Date(recorded).toISOString());
+};
+
 const browserVaultDeletionPort: VaultDeletionPort = Object.freeze({
   preview: async (input: PreviewVaultDeletionPortInput) => {
     const client = await getBrowserDatabase();
@@ -2028,11 +2044,7 @@ const browserVaultDeletionPort: VaultDeletionPort = Object.freeze({
       if (oldest === undefined) break;
       browserVaultDeletionSnapshots.delete(oldest);
     }
-    const reminder = await readBrowserExportReminder(new Date(input.previewedAt).getTime());
-    const lastSuccessfulPortableExportAt =
-      reminder.preference.lastSuccessfulExportAtUnixMs === null
-        ? null
-        : instant(new Date(reminder.preference.lastSuccessfulExportAtUnixMs).toISOString());
+    const lastSuccessfulPortableExportAt = await recordedPortableExportInstant(client, input);
     return Object.freeze({
       vaultId: entityId("vault", vault.id),
       vaultName: vault.name,
@@ -2109,10 +2121,7 @@ const nativeVaultDeletionPort: VaultDeletionPort = Object.freeze({
       vaultName: preview.vaultName,
       storageMode: "desktop" as const,
       inventory: preview.inventory,
-      lastSuccessfulPortableExportAt:
-        preview.lastSuccessfulPortableExportAt === null
-          ? null
-          : instant(preview.lastSuccessfulPortableExportAt),
+      lastSuccessfulPortableExportAt: await recordedPortableExportInstant(client, input),
     };
   },
   delete: async (input: DeleteVaultPortInput) => {

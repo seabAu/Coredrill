@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { once } from "node:events";
 import { mkdtemp, readFile, realpath, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -93,6 +93,7 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
   let queue = Promise.resolve();
   let invocations = 0;
   let activeDocumentId;
+  let lastVaultPreview;
   const retiredDocuments = new Set();
   let holdNextBegin = false;
   let heldAcknowledgements = 0;
@@ -116,8 +117,12 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
   });
   try {
     await attachNativeHost(page, (command, args, documentId) => {
-      if (!["native_storage_invoke", "native_archive_invoke"].includes(command))
+      if (
+        !["native_storage_invoke", "native_archive_invoke", "native_vault_invoke"].includes(command)
+      )
         throw new Error("Unexpected native command");
+      if (command === "native_vault_invoke" && args.request.operation.type === "preview_deletion")
+        lastVaultPreview = args.request;
       const result = queue.then(async () => {
         if (retiredDocuments.has(documentId)) throw new Error("Retired proof document");
         if (activeDocumentId !== documentId) {
@@ -412,6 +417,43 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
       await expect(
         verificationHistory.getByRole("button", { name: "Turn on export reminders", exact: true }),
       ).toBeVisible();
+      const beforeWarningHandoff = await page.evaluate(
+        async () => (await globalThis.coredrillStorageSpike.exportPortable()).sha256,
+      );
+      await page.getByRole("button", { name: "Review vault deletion", exact: true }).click();
+      await page.getByRole("button", { name: "Delete local vault", exact: true }).click();
+      const deletionWarning = page.getByRole("dialog");
+      const confirmation = await deletionWarning.locator("code").innerText();
+      await deletionWarning
+        .getByRole("button", { name: "Export portable archive", exact: true })
+        .click();
+      await expect(deletionWarning).toHaveCount(0);
+      const consent = page
+        .getByRole("region", { name: "Portable vault export", exact: true })
+        .getByRole("checkbox");
+      await expect(consent).toBeFocused();
+      await expect(consent).not.toBeChecked();
+      if (lastVaultPreview === undefined) throw new Error("Missing real native deletion preview");
+      const forbiddenDelete = queue.then(() =>
+        send({
+          protocolVersion: lastVaultPreview.protocolVersion,
+          requestId: randomUUID(),
+          operation: {
+            ...lastVaultPreview.operation,
+            type: "delete",
+            deletionId: randomUUID(),
+            confirmation,
+          },
+        }),
+      );
+      queue = forbiddenDelete.catch(() => undefined);
+      await expect(forbiddenDelete).rejects.toMatchObject({ code: "invalid_request" });
+      expect(
+        await page.evaluate(
+          async () => (await globalThis.coredrillStorageSpike.exportPortable()).sha256,
+        ),
+      ).toBe(beforeWarningHandoff);
+      await expect(stat(selectedArchive)).rejects.toMatchObject({ code: "ENOENT" });
       const vaultExportPanel = await exerciseNormalVaultPreparation(page, "native");
       await expect(vaultExportPanel).toContainText("Retained attachments");
       await page.setViewportSize({ width: 320, height: 900 });
@@ -496,6 +538,22 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
         },
       });
       expect(observed.value.history.observations).toHaveLength(1);
+      const recordedWarning = await page.evaluate(async () =>
+        globalThis.coredrillStorageSpike.prepareVaultDeletion(),
+      );
+      expect(recordedWarning).toMatchObject({
+        ok: true,
+        value: {
+          lastSuccessfulPortableExportAt: observed.value.history.observations[0].verifiedAt,
+        },
+      });
+      await page.getByRole("button", { name: "Review vault deletion", exact: true }).click();
+      await page.getByRole("button", { name: "Delete local vault", exact: true }).click();
+      await expect(deletionWarning).toContainText("Recorded portable export time:");
+      await expect(deletionWarning).toContainText("does not prove current-vault freshness");
+      await deletionWarning
+        .getByRole("button", { name: "Close deletion warning", exact: true })
+        .click();
       await vaultExportPanel
         .getByRole("button", { name: "Discard prepared archive", exact: true })
         .click();
@@ -534,6 +592,9 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
         nativeSaveAutomatedAxeViolations: 0,
         nativeVerificationHistoryPersisted: true,
         nativeDisabledReminderPreserved: true,
+        nativeDeletionWarningExportHandoff: true,
+        diagnosticVaultDeleteDispatchDenied: true,
+        nativeWarningReadsCanonicalRecordedInstant: true,
       });
     }
     const capabilities = await page.evaluate(() => ({

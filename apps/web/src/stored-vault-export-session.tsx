@@ -112,6 +112,18 @@ export const useStoredVaultExportSession = (options: {
     busy: visible.busy,
     recordRevision: visible.recordRevision,
     mutate,
+    focusExport: (origin: Element | null) => {
+      const current = scoped();
+      if (current === null || current.current().busy) return;
+      restoreFocusAfterChange(origin, () => {
+        if (controller.current !== current || current.current().ownerId !== ownerId) return null;
+        return (
+          container.current?.querySelector<HTMLElement>(
+            '[data-vault-export-review], input[type="checkbox"]',
+          ) ?? null
+        );
+      });
+    },
     panel: (blocked: boolean) => (
       <div ref={container}>
         <VaultExportPanel

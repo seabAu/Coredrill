@@ -2,13 +2,18 @@ use std::{
     env,
     io::{self, BufRead, Write},
     path::PathBuf,
+    sync::Arc,
 };
 
 use coredrill_desktop::native_archive::{
     NativeArchiveError, NativeArchiveOperation, NativeArchiveRequest, NativeArchiveResponse,
 };
+use coredrill_desktop::native_secrets::NativeSecretService;
 use coredrill_desktop::native_storage::{
     NativeStorageError, NativeStorageRequest, NativeStorageResponse, NativeStorageService,
+};
+use coredrill_desktop::native_vault::{
+    NativeVaultError, NativeVaultRequest, NativeVaultResponse, NativeVaultService,
 };
 use serde::Serialize;
 use serde_json::Value;
@@ -42,6 +47,7 @@ fn envelope<Response: Serialize, Error: Serialize>(
 
 fn invoke_line(
     service: &NativeStorageService,
+    vault: &NativeVaultService,
     line: &str,
     portable_save_target: Option<&PathBuf>,
     cancel_next_save: &mut bool,
@@ -72,6 +78,21 @@ fn invoke_line(
     }
     if let Ok(request) = serde_json::from_value::<NativeStorageRequest>(value.clone()) {
         return envelope(service.invoke(request));
+    }
+    // Read-only diagnostic bridge to the shipped preview implementation. Never
+    // add a probe control that deletes a vault or accesses provider secret bytes.
+    if value
+        .get("operation")
+        .and_then(|operation| operation.get("type"))
+        .and_then(Value::as_str)
+        == Some("preview_deletion")
+    {
+        return match serde_json::from_value::<NativeVaultRequest>(value) {
+            Ok(request) => envelope(vault.invoke(request)),
+            Err(_) => envelope::<NativeVaultResponse, NativeVaultError>(Err(
+                NativeVaultError::invalid_request(),
+            )),
+        };
     }
     match serde_json::from_value::<NativeArchiveRequest>(value) {
         Ok(request) => {
@@ -107,10 +128,11 @@ fn main() {
     let Some(root) = env::args_os().nth(1).map(PathBuf::from) else {
         std::process::exit(2);
     };
-    let service = match NativeStorageService::new(root) {
+    let service = Arc::new(match NativeStorageService::new(root) {
         Ok(service) => service,
         Err(_) => std::process::exit(2),
-    };
+    });
+    let vault = NativeVaultService::new(Arc::clone(&service), Arc::new(NativeSecretService::new()));
     let portable_save_target = env::args_os().nth(2).map(PathBuf::from);
     let mut cancel_next_save = false;
 
@@ -122,6 +144,7 @@ fn main() {
                 &mut stdout,
                 &invoke_line(
                     &service,
+                    &vault,
                     &line,
                     portable_save_target.as_ref(),
                     &mut cancel_next_save,

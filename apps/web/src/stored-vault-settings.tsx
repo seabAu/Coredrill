@@ -147,6 +147,7 @@ export const StoredVaultSettings = ({
       {preview === null ? null : (
         <VaultDeletionSettings
           preview={preview}
+          blocked={busy || exportSession.busy}
           onDelete={(input) =>
             exportSession.mutate(input.vaultId, () => api.deleteCurrentVault(input))
           }
@@ -155,9 +156,13 @@ export const StoredVaultSettings = ({
             onDeleted(result);
           }}
           onExportPortableArchive={() => {
+            if (busy || exportSession.busy) return;
+            const origin = document.activeElement;
+            setPreview(null);
             setMessage(
-              "Close this warning and use Portable vault export above. This does not submit deletion; do not delete until you have verified a recoverable copy.",
+              "Deletion was not submitted. This handoff did not grant consent or start preparation or saving. Any later deletion needs a fresh review and exact confirmation.",
             );
+            exportSession.focusExport(origin);
           }}
         />
       )}

@@ -53,7 +53,8 @@ pub struct NativeStorageRequest {
 #[serde(
     tag = "type",
     rename_all = "snake_case",
-    rename_all_fields = "camelCase"
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
 )]
 pub enum NativeStorageOperation {
     Open {
@@ -95,9 +96,9 @@ pub struct NativeSqlStatement {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(tag = "type", rename_all = "snake_case")]
+#[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
 pub enum NativeSqlValue {
-    Null,
+    Null {},
     Integer { value: String },
     Real { value: f64 },
     Text { value: String },
@@ -900,7 +901,7 @@ fn decode_parameters(parameters: Vec<NativeSqlValue>) -> Result<Vec<Value>, Nati
     parameters
         .into_iter()
         .map(|value| match value {
-            NativeSqlValue::Null => Ok(Value::Null),
+            NativeSqlValue::Null {} => Ok(Value::Null),
             NativeSqlValue::Integer { value } => {
                 value.parse::<i64>().map(Value::Integer).map_err(|_| {
                     NativeStorageError::new(
@@ -924,7 +925,7 @@ fn decode_parameters(parameters: Vec<NativeSqlValue>) -> Result<Vec<Value>, Nati
 
 fn encode_result_value(value: ValueRef<'_>) -> Result<NativeSqlValue, NativeStorageError> {
     match value {
-        ValueRef::Null => Ok(NativeSqlValue::Null),
+        ValueRef::Null => Ok(NativeSqlValue::Null {}),
         ValueRef::Integer(value) => Ok(NativeSqlValue::Integer {
             value: value.to_string(),
         }),
@@ -959,7 +960,7 @@ fn encode_result_value(value: ValueRef<'_>) -> Result<NativeSqlValue, NativeStor
 
 fn native_value_size(value: &NativeSqlValue) -> usize {
     match value {
-        NativeSqlValue::Null => 0,
+        NativeSqlValue::Null {} => 0,
         NativeSqlValue::Integer { value } | NativeSqlValue::Text { value } => value.len(),
         NativeSqlValue::Real { .. } => std::mem::size_of::<f64>(),
         NativeSqlValue::Blob { bytes } => bytes.len(),
@@ -1175,6 +1176,37 @@ mod tests {
     impl Drop for TestRoot {
         fn drop(&mut self) {
             let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+
+    #[test]
+    fn unreviewed_operation_and_value_fields_are_rejected() {
+        let null = serde_json::json!({ "type": "null" });
+        let decoded_null = serde_json::from_value::<NativeSqlValue>(null.clone())
+            .expect("reviewed null value must decode");
+        assert_eq!(
+            serde_json::to_value(decoded_null).expect("null must encode"),
+            null
+        );
+        let request = |operation: serde_json::Value| {
+            serde_json::json!({
+                "protocolVersion": NATIVE_STORAGE_PROTOCOL_VERSION,
+                "requestId": "strict-1", "operation": operation,
+            })
+        };
+        assert!(
+            serde_json::from_value::<NativeStorageRequest>(request(serde_json::json!({
+                "type": "close", "sessionId": "session-1",
+            })))
+            .is_ok()
+        );
+        for (index, operation) in [
+            serde_json::json!({ "type": "open", "databaseName": "proof.sqlite3", "unreviewed": true }),
+            serde_json::json!({ "type": "delete", "sessionId": "session-1", "vaultId": "0198f120-0000-7000-8000-000000000002", "previewId": "0198f120-0000-7000-8000-000000000003", "deletionId": "0198f120-0000-7000-8000-000000000004", "confirmation": "DELETE Synthetic vault" }),
+            serde_json::json!({ "type": "execute", "sessionId": "session-1", "statement": { "sql": "SELECT ?", "parameters": [{ "type": "integer", "value": "1", "unreviewed": true }] } }),
+            serde_json::json!({ "type": "execute", "sessionId": "session-1", "statement": { "sql": "SELECT ?", "parameters": [{ "type": "null", "unreviewed": true }] } }),
+        ].into_iter().enumerate() {
+            assert!(serde_json::from_value::<NativeStorageRequest>(request(operation)).is_err(), "unreviewed operation/value case {index}");
         }
     }
 

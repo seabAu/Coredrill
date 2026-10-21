@@ -34,4 +34,13 @@ describe("vault deletion settings", () => {
     expect(markup).not.toContain("last chance");
     expect(onDelete).not.toHaveBeenCalled();
   });
+
+  it("disables the warning trigger while another vault/export operation owns the session", () => {
+    const onDelete = vi.fn<VaultDeletionSettingsProps["onDelete"]>();
+    const markup = renderToStaticMarkup(
+      createElement(VaultDeletionSettings, { preview, onDelete, blocked: true }),
+    );
+    expect(markup).toContain('disabled=""');
+    expect(onDelete).not.toHaveBeenCalled();
+  });
 });

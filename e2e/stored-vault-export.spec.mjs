@@ -137,6 +137,13 @@ test("normal offline Settings records exact byte verification and retains honest
   expect(stored.value.reminder.lastSuccessfulExportAtUnixMs).toBe(
     Date.parse(stored.value.history.observations[0].verifiedAt),
   );
+  const warning = await page.evaluate(async () =>
+    globalThis.coredrillStorageSpike.prepareVaultDeletion(),
+  );
+  expect(warning).toMatchObject({
+    ok: true,
+    value: { lastSuccessfulPortableExportAt: stored.value.history.observations[0].verifiedAt },
+  });
   await panel.getByRole("button", { name: "Discard prepared archive", exact: true }).click();
   await expect(panel.getByRole("checkbox")).not.toBeChecked();
   await expect(
@@ -235,6 +242,9 @@ test("held export remains single-flight across navigation and reports a private 
   });
   await page.getByRole("link", { name: "Settings", exact: true }).click();
   const panel = page.getByRole("region", { name: "Portable vault export", exact: true });
+  await page.getByRole("button", { name: "Review vault deletion", exact: true }).click();
+  const deletionTrigger = page.getByRole("button", { name: "Delete local vault", exact: true });
+  await expect(deletionTrigger).toBeEnabled();
   await panel.getByRole("checkbox").check();
   await panel.getByRole("button", { name: "Prepare portable archive", exact: true }).click();
   await expect(
@@ -243,6 +253,7 @@ test("held export remains single-flight across navigation and reports a private 
   await expect(
     page.getByRole("button", { name: "Review vault deletion", exact: true }),
   ).toBeDisabled();
+  await expect(deletionTrigger).toBeDisabled();
   await page
     .getByRole("navigation", { name: "Primary", exact: true })
     .getByRole("link", { name: "Pipeline", exact: true })
@@ -260,6 +271,8 @@ test("held export remains single-flight across navigation and reports a private 
   await expect(
     panel.getByRole("button", { name: "Prepare portable archive", exact: true }),
   ).toBeEnabled();
+  await page.getByRole("button", { name: "Review vault deletion", exact: true }).click();
+  await expect(deletionTrigger).toBeEnabled();
   expect(await page.evaluate(() => globalThis.coredrillExportPrepareCalls)).toBe(1);
 });
 

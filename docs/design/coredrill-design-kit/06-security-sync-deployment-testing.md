@@ -113,6 +113,17 @@ Any URL fetcher enforces scheme/port, DNS and redirect revalidation, private/lin
 
 ### Database/file loss
 
+Native storage operation and SQL-value decoders reject unreviewed fields before
+effects. This includes a full vault-delete payload sent to the database command,
+which must not silently degrade to its legacy session-only database operation.
+The null value uses a strict empty-struct representation internally while keeping
+the exact version-1 `{ "type": "null" }` wire JSON. A failing-then-passing Rust
+regression and real probe request prove this boundary. The diagnostic probe
+routes native deletion previews to the real vault service but grants no new
+vault-delete or secret operation. Valid existing storage requests, shipped
+capabilities and protocol versions are unchanged; this is not completion of the
+separate SEC-003 privileged-surface audit.
+
 The production workspace now selects native SQLite/attachments in Tauri and
 browser SQLite/OPFS only on web; a native failure never starts a browser vault.
 Browser-only diagnostics and persistence/service-worker requests reject or are
