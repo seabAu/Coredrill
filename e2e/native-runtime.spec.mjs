@@ -13,6 +13,7 @@ import { exerciseStoredJobNote } from "./job-note-journey.mjs";
 import { exerciseNextActionRuntime } from "./next-action-runtime-journey.mjs";
 import { exerciseVaultExportPreparation } from "./vault-export-runtime-journey.mjs";
 import { exerciseNormalVaultPreparation } from "./normal-vault-export-journey.mjs";
+import { expectRestoredPortableContent } from "./portable-archive-content-proof.mjs";
 import { inspectPortableArchiveV1 } from "../packages/storage-core/dist/index.js";
 import { exerciseNormalTaskEntry } from "./task-entry-journey.mjs";
 
@@ -84,12 +85,12 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
   const temporaryRoot = await mkdtemp(path.join(tmpdir(), "coredrill-native-ui-"));
   const managedRoot = path.join(temporaryRoot, "managed");
   const selectedArchive = path.join(temporaryRoot, "selected.coredrill.zip");
-  const child = spawn(executable, [managedRoot, selectedArchive], {
+  let child = spawn(executable, [managedRoot, selectedArchive, selectedArchive], {
     windowsHide: true,
     stdio: "pipe",
   });
-  const stopped = once(child, "exit");
-  const lines = createInterface({ input: child.stdout })[Symbol.asyncIterator]();
+  let stopped = once(child, "exit");
+  let lines = createInterface({ input: child.stdout })[Symbol.asyncIterator]();
   let queue = Promise.resolve();
   let invocations = 0;
   let activeDocumentId;
@@ -579,7 +580,135 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
       await verificationHistory.screenshot({
         path: testInfo.outputPath("native-export-verification-history-320.png"),
       });
+      const restore = page.getByRole("region", { name: "Portable vault restore", exact: true });
+      await expect(restore.locator('input[type="file"]')).toHaveCount(0);
+      await restore.getByRole("button", { name: "Choose archive to review", exact: true }).click();
+      await expect(
+        restore.getByRole("heading", { name: "Review exact restore changes", exact: true }),
+      ).toBeVisible();
+      await expect(restore).toContainText(savedSha256);
+      await expect(restore).toContainText("Later edits not in the archive will be lost");
+      expect(
+        (await new AxeBuilder({ page }).include('[aria-label="Portable vault restore"]').analyze())
+          .violations,
+      ).toEqual([]);
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+        ),
+      ).toBe(true);
+      const commitRestore = restore.getByRole("button", {
+        name: "Confirm and restore reviewed archive",
+        exact: true,
+      });
+      await expect(commitRestore).toBeDisabled();
+      await restore.getByRole("checkbox").check();
+      await commitRestore.click();
+      await expect(restore.getByRole("status")).toContainText(
+        "Restore committed and its acknowledgement validated",
+      );
+      const restoredOpenedAfter = Date.now();
+      await restore.getByRole("button", { name: "Reload local vault", exact: true }).click();
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await expect(page.getByRole("navigation", { name: "Primary", exact: true })).toBeVisible();
+      const readRestoredArchive = async () => {
+        const restoreReadback = await page.evaluate(async () => {
+          const identity = await globalThis.coredrillStorageSpike.vault.inspect();
+          if (!identity.ok || identity.value.vault === null)
+            throw new Error("Missing restored identity");
+          const result = await globalThis.coredrillStorageSpike.vaultExport.prepare({
+            vaultId: identity.value.vault.id,
+            acknowledgeUnencrypted: true,
+          });
+          if (!result.ok) throw new Error("Cannot inspect restored archive");
+          return Array.from(result.value.bytes);
+        });
+        return inspectPortableArchiveV1({
+          bytes: new Uint8Array(restoreReadback),
+          expectedSchemaVersion: 160,
+        });
+      };
+      const restoredArchive = await readRestoredArchive();
+      expectRestoredPortableContent(restoredArchive, savedArchive, [
+        restoredOpenedAfter,
+        Date.now(),
+      ]);
+      // Keep the diagnostic host's explicit no-vault-deletion policy. A second
+      // actual Rust process uses a new empty managed root; the source vault remains intact.
+      await page.route("**/__native_restore_host_switch__", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "text/html",
+          body: "<!doctype html><html lang='en'><title>Synthetic native host switch</title></html>",
+        }),
+      );
+      await page.goto("/__native_restore_host_switch__");
+      await queue;
+      child.stdin.end();
+      await stopped;
+      const sourceDatabasePath = path.join(managedRoot, "databases", "coredrill.sqlite3");
+      const preservedSourceDatabaseSha256 = createHash("sha256")
+        .update(await readFile(sourceDatabasePath))
+        .digest("hex");
+      const cleanManagedRoot = path.join(temporaryRoot, "clean-managed");
+      child = spawn(executable, [cleanManagedRoot, selectedArchive, selectedArchive], {
+        windowsHide: true,
+        stdio: "pipe",
+      });
+      stopped = once(child, "exit");
+      lines = createInterface({ input: child.stdout })[Symbol.asyncIterator]();
+      if (activeDocumentId !== undefined) retiredDocuments.add(activeDocumentId);
+      activeDocumentId = undefined;
+      expect(
+        createHash("sha256")
+          .update(await readFile(selectedArchive))
+          .digest("hex"),
+      ).toBe(savedSha256);
+      await page.goto("/");
+      await page
+        .getByRole("button", { name: "Restore an existing archive instead", exact: true })
+        .click();
+      await restore.getByRole("button", { name: "Choose archive to review", exact: true }).click();
+      await expect(
+        restore.getByRole("heading", { name: "Review exact restore changes", exact: true }),
+      ).toBeVisible();
+      await expect(restore).toContainText("Empty target (no vault identity)");
+      expect(
+        (await page.evaluate(async () => globalThis.coredrillStorageSpike.vault.inspect())).value
+          .vault,
+      ).toBeNull();
+      expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+      await expect(commitRestore).toBeDisabled();
+      await restore.getByRole("checkbox").check();
+      await commitRestore.click();
+      await expect(restore.getByRole("status")).toContainText(
+        "Restore committed and its acknowledgement validated",
+      );
+      expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+      const cleanOpenedAfter = Date.now();
+      await restore.getByRole("button", { name: "Reload local vault", exact: true }).click();
+      await expect(page.getByRole("navigation", { name: "Primary", exact: true })).toBeVisible();
+      expectRestoredPortableContent(await readRestoredArchive(), savedArchive, [
+        cleanOpenedAfter,
+        Date.now(),
+      ]);
+      expect(
+        (await stat(path.join(cleanManagedRoot, "databases", "coredrill.sqlite3"))).isFile(),
+      ).toBe(true);
+      expect(
+        createHash("sha256")
+          .update(await readFile(sourceDatabasePath))
+          .digest("hex"),
+      ).toBe(preservedSourceDatabaseSha256);
       Object.assign(journeyProof, {
+        normalNativeCleanArchiveRestoreProven: true,
+        nativeSourceVaultPreserved: true,
+        nativeCleanTarget: "fresh managed root in a second real Rust host; source vault preserved",
+        normalNativeArchiveRestoreProven: true,
+        nativeRestoreExactDataFiles: restoredArchive.dataFiles.length,
+        nativeRestoreExactAttachments: restoredArchive.attachments.length,
+        nativeRestorePicker:
+          "simulated host selection; actual Rust bounded read and atomic native commit",
         nativeRetainedDocxSha256: hash,
         vaultExportPreparation,
         normalSettingsPreparation: true,

@@ -7,6 +7,7 @@ import type {
 import { useEffect, useState } from "react";
 import type { CoredrillStorageSpikeApi } from "./main.js";
 import type { useStoredVaultExportSession } from "./stored-vault-export-session.js";
+import type { useStoredVaultRestoreSession } from "./stored-vault-restore-session.js";
 import { StoredVaultExportHistory } from "./stored-vault-export-history.js";
 
 /** Actual runtime facts and typed deletion, never the catalog's invented preview. */
@@ -16,12 +17,14 @@ export const StoredVaultSettings = ({
   session,
   onSessionObserved,
   exportSession,
+  restoreSession,
 }: {
   readonly api: CoredrillStorageSpikeApi;
   readonly onDeleted: (result: VaultDeletionResultDto) => void;
   readonly session?: VaultSessionDto | undefined;
   readonly onSessionObserved?: ((session: VaultSessionDto) => void) | undefined;
   readonly exportSession: ReturnType<typeof useStoredVaultExportSession>;
+  readonly restoreSession: ReturnType<typeof useStoredVaultRestoreSession>;
 }) => {
   const [observed, setObserved] = useState(session ?? null);
   useEffect(() => {
@@ -117,9 +120,7 @@ export const StoredVaultSettings = ({
           );
         }}
       />
-      <p>
-        Restore controls remain unfinished. Verification history is not a successful restore claim.
-      </p>
+      {restoreSession.panel(busy)}
       <button
         type="button"
         className="cd-button"

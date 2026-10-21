@@ -76,7 +76,8 @@ describe("native complete portable archive input", () => {
     expect(selected.status).toBe("selected");
     if (selected.status !== "selected") throw new Error("Expected selected bytes");
     expect(Buffer.from(selected.bytes).equals(Buffer.from(bytes))).toBe(true);
-    expect(selected.bytes).not.toBe(bytes);
+    // Keep identity checks boolean: negated object matchers may traverse equal-content arrays.
+    expect(selected.bytes === bytes).toBe(false);
     expect(selected.sha256).toBe(digest(bytes));
     expect(selected.byteLength).toBe(bytes.length);
     expect(requests.map(({ operation }) => operation.type)).toEqual([

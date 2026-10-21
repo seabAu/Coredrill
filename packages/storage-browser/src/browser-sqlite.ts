@@ -242,22 +242,54 @@ export class BrowserSqliteDatabase implements DatabasePort {
     options: {
       readonly expectedTargetSha256?: string;
       readonly expectedVaultId?: string;
+      readonly retireAfterRestore?: boolean;
     } = {},
   ): Promise<BrowserStorageRestoreResult> {
-    return this.queue.run(async () =>
-      Object.freeze(
-        await this.request<BrowserStorageRestoreResult>("restore", {
+    const retireAfterRestore = options.retireAfterRestore === true;
+    const snapshot = Object.freeze({ ...portable, bytes: portable.bytes.slice() });
+    const expectedTargetSha256 = options.expectedTargetSha256;
+    const expectedVaultId = options.expectedVaultId;
+    return this.queue.run(async () => {
+      try {
+        const response: unknown = await this.request<BrowserStorageRestoreResult>("restore", {
           databaseName: this.databaseName,
-          portable: { ...portable, bytes: portable.bytes.slice() },
-          ...(options.expectedTargetSha256 === undefined
-            ? {}
-            : { expectedTargetSha256: options.expectedTargetSha256 }),
-          ...(options.expectedVaultId === undefined
-            ? {}
-            : { expectedVaultId: options.expectedVaultId }),
-        }),
-      ),
-    );
+          portable: snapshot,
+          ...(expectedTargetSha256 === undefined ? {} : { expectedTargetSha256 }),
+          ...(expectedVaultId === undefined ? {} : { expectedVaultId }),
+        });
+        if (typeof response !== "object" || response === null || Array.isArray(response))
+          throw new Error("The browser restore acknowledgement is invalid.");
+        const raw = response as Readonly<Record<string, unknown>>;
+        const keys = [
+          "integrity",
+          "schemaVersion",
+          "byteLength",
+          "sha256",
+          ...(expectedVaultId === undefined ? [] : ["vaultId"]),
+        ];
+        if (
+          Object.keys(raw).length !== keys.length ||
+          Object.keys(raw).some((key) => !keys.includes(key)) ||
+          raw["integrity"] !== "ok" ||
+          raw["schemaVersion"] !== snapshot.schemaVersion ||
+          raw["byteLength"] !== snapshot.byteLength ||
+          raw["sha256"] !== snapshot.sha256 ||
+          (expectedVaultId !== undefined && raw["vaultId"] !== expectedVaultId)
+        )
+          throw new Error(
+            "The browser restore acknowledgement does not match the selected database.",
+          );
+        return Object.freeze({
+          integrity: "ok",
+          schemaVersion: snapshot.schemaVersion,
+          byteLength: snapshot.byteLength,
+          sha256: snapshot.sha256,
+        });
+      } finally {
+        // Retire inside the held queue slot: old-view writes must never follow replacement.
+        if (retireAfterRestore) this.shutdown();
+      }
+    });
   }
 
   public diagnostics(): Promise<StorageDiagnostics> {

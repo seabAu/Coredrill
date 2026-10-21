@@ -30,6 +30,7 @@ export * from "./pipeline-table.js";
 export * from "./vault-backup-settings.js";
 export * from "./vault-deletion.js";
 export * from "./vault-export.js";
+export * from "./vault-restore.js";
 export * from "./workspace-state.js";
 export * from "./stored-job-source.js";
 export * from "./stored-listing-changes.js";

@@ -90,7 +90,10 @@ export interface NativeSqliteDatabase extends DatabasePort {
   ): Promise<PortableArchiveDatabaseInspectionV1>;
   inspectPortableTarget(): Promise<PortableArchiveRestoreTargetSnapshotV1>;
   readPortableAttachment(contentId: string): Promise<Uint8Array | undefined>;
-  commitPortableRestore(payload: PortableArchiveRestoreCommitPayloadV1): Promise<void>;
+  commitPortableRestore(
+    payload: PortableArchiveRestoreCommitPayloadV1,
+    options?: { readonly retireAfterRestore?: boolean },
+  ): Promise<void>;
   close(): Promise<void>;
   delete(): Promise<boolean>;
 }
@@ -408,35 +411,50 @@ class NativeSqliteDatabaseAdapter implements NativeSqliteDatabase {
     });
   }
 
-  public commitPortableRestore(payload: PortableArchiveRestoreCommitPayloadV1): Promise<void> {
+  public commitPortableRestore(
+    payload: PortableArchiveRestoreCommitPayloadV1,
+    options: { readonly retireAfterRestore?: boolean } = {},
+  ): Promise<void> {
+    const retireAfterRestore = options.retireAfterRestore === true;
     return this.runExclusive(async () => {
-      const data = await this.sendArchiveData({
-        type: "portable_commit",
-        sessionId: this.sessionId,
-        expectedTargetFingerprint: payload.expectedTargetFingerprint,
-        vaultId: payload.vaultId,
-        database: encodePortableDatabase(payload.database),
-        attachments: Object.freeze(
-          payload.attachments.map((attachment) =>
-            Object.freeze({
-              contentId: attachment.contentId,
-              mediaType: attachment.mediaType,
-              ...(attachment.logicalName === undefined
-                ? {}
-                : { logicalName: attachment.logicalName }),
-              byteLength: attachment.byteLength,
-              sha256: attachment.sha256,
-              bytes: Object.freeze([...attachment.bytes]),
-            }),
+      try {
+        const data = await this.sendArchiveData({
+          type: "portable_commit",
+          sessionId: this.sessionId,
+          expectedTargetFingerprint: payload.expectedTargetFingerprint,
+          vaultId: payload.vaultId,
+          database: encodePortableDatabase(payload.database),
+          attachments: Object.freeze(
+            payload.attachments.map((attachment) =>
+              Object.freeze({
+                contentId: attachment.contentId,
+                mediaType: attachment.mediaType,
+                ...(attachment.logicalName === undefined
+                  ? {}
+                  : { logicalName: attachment.logicalName }),
+                byteLength: attachment.byteLength,
+                sha256: attachment.sha256,
+                bytes: Object.freeze([...attachment.bytes]),
+              }),
+            ),
           ),
-        ),
-      });
-      if (
-        data.type !== "portable_committed" ||
-        data.databaseSha256 !== payload.database.sha256 ||
-        data.attachmentCount !== payload.attachments.length
-      ) {
-        throw this.invalidArchiveResponse("portable_committed", data.type);
+        });
+        if (
+          data.type !== "portable_committed" ||
+          data.databaseSha256 !== payload.database.sha256 ||
+          data.attachmentCount !== payload.attachments.length
+        ) {
+          throw this.invalidArchiveResponse("portable_committed", data.type);
+        }
+      } finally {
+        if (retireAfterRestore) {
+          try {
+            if (!this.closed)
+              expectData(await this.send({ type: "close", sessionId: this.sessionId }), "closed");
+          } finally {
+            this.closed = true;
+          }
+        }
       }
     });
   }
@@ -911,6 +929,7 @@ export const openNativeSqliteDatabase = async (
 export const createNativePortableArchiveRestorePortV1 = (input: {
   readonly database: NativeSqliteDatabase;
   readonly expectedVaultId: string;
+  readonly retireAfterRestore?: boolean;
 }): PortableArchiveRestorePortV1 =>
   Object.freeze({
     inspectTarget: () => input.database.inspectPortableTarget(),
@@ -920,6 +939,8 @@ export const createNativePortableArchiveRestorePortV1 = (input: {
       if (payload.vaultId !== input.expectedVaultId) {
         return Promise.reject(new TypeError("The native restore payload changed vault identity."));
       }
-      return input.database.commitPortableRestore(payload);
+      return input.database.commitPortableRestore(payload, {
+        retireAfterRestore: input.retireAfterRestore === true,
+      });
     },
   });

@@ -106,7 +106,11 @@ import {
   type BrowserSqliteDatabase,
   type BrowserStorageHealthSnapshot,
 } from "@coredrill/storage-browser";
-import { openNativeSqliteDatabase, TauriNativeStorageTransport } from "@coredrill/storage-native";
+import {
+  createNativePortableArchiveRestorePortV1,
+  openNativeSqliteDatabase,
+  TauriNativeStorageTransport,
+} from "@coredrill/storage-native";
 import { nativeVaultOperation } from "./native-vault-errors.js";
 import { createRuntimeDatabase, RuntimeCapabilityError } from "./runtime-database.js";
 import { RUNTIME_KIND } from "./runtime-kind.js";
@@ -221,6 +225,7 @@ import { createStoredPipelineApi, type StoredPipelineApi } from "./stored-pipeli
 import { createStoredJobNoteApi, type StoredJobNoteApi } from "./stored-job-notes.js";
 import { createStoredNextActionApi, type StoredNextActionApi } from "./stored-next-actions.js";
 import { createStoredVaultExportApi, type StoredVaultExportApi } from "./stored-vault-export.js";
+import { createStoredVaultRestoreApi, type StoredVaultRestoreApi } from "./stored-vault-restore.js";
 import {
   createStoredPipelineMutationApi,
   type StoredPipelineMutationApi,
@@ -502,6 +507,7 @@ export interface CoredrillStorageSpikeApi {
   readonly jobNotes: StoredJobNoteApi;
   readonly nextActions: StoredNextActionApi;
   readonly vaultExport: StoredVaultExportApi;
+  readonly vaultRestore: StoredVaultRestoreApi;
   createReusableDocument(
     input: CreateReusableDocumentInput,
   ): Promise<ApplicationResult<CreatedReusableDocumentDto>>;
@@ -3342,6 +3348,30 @@ const api: CoredrillStorageSpikeApi = {
     careerProfileOperationContext,
     generateEntityId,
   ),
+  vaultRestore: createStoredVaultRestoreApi({
+    expectedSchemaVersion: async () => {
+      const version = (await migrations()).at(-1)?.version;
+      if (version === undefined) throw new Error("The supported restore schema is unavailable.");
+      return version;
+    },
+    context: careerProfileOperationContext,
+    port: async (expectedVaultId) =>
+      RUNTIME_KIND === "native"
+        ? createNativePortableArchiveRestorePortV1({
+            database: await runtimeDatabase.native(),
+            expectedVaultId,
+            retireAfterRestore: true,
+          })
+        : createBrowserPortableArchiveRestorePortV1({
+            database: await getBrowserDatabase(),
+            attachments: await getBrowserAttachmentStore(),
+            expectedVaultId,
+            retireAfterRestore: true,
+          }),
+    ...(RUNTIME_KIND === "native"
+      ? { selectNative: async () => (await runtimeDatabase.native()).selectPortableArchive() }
+      : {}),
+  }),
   vaultExport: createStoredVaultExportApi(
     async () => {
       const client = await getDatabase();

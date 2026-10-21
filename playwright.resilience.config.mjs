@@ -14,6 +14,7 @@ export default defineConfig({
     "native-runtime.spec.mjs",
     "stored-vault-deletion.spec.mjs",
     "stored-vault-export.spec.mjs",
+    "stored-vault-restore.spec.mjs",
     "stored-pipeline-navigation.spec.mjs",
     "stored-status-actions.spec.mjs",
     "stored-job-timeline.spec.mjs",

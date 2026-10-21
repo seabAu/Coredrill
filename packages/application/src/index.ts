@@ -626,3 +626,4 @@ export * from "./job-next-actions.js";
 export * from "./vault-export.js";
 export * from "./vault-export-save.js";
 export * from "./vault-export-verification.js";
+export * from "./vault-restore.js";

@@ -191,6 +191,7 @@ export const createBrowserPortableArchiveRestorePortV1 = (input: {
   readonly database: BrowserSqliteDatabase;
   readonly attachments: BrowserAttachmentStore;
   readonly expectedVaultId: string;
+  readonly retireAfterRestore?: boolean;
 }): PortableArchiveRestorePortV1 =>
   Object.freeze({
     inspectTarget: async () =>
@@ -215,6 +216,7 @@ export const createBrowserPortableArchiveRestorePortV1 = (input: {
       await input.database.restorePortable(payload.database, {
         expectedTargetSha256: current.portable.sha256,
         expectedVaultId: payload.vaultId,
+        ...(input.retireAfterRestore === true ? { retireAfterRestore: true } : {}),
       });
     },
   });

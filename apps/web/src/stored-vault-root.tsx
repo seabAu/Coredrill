@@ -1,6 +1,11 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { FirstRunExperience } from "@coredrill/ui";
-import type { VaultSessionDto } from "@coredrill/application";
+import {
+  applicationFailure,
+  type ApplicationResult,
+  type VaultSessionDto,
+} from "@coredrill/application";
+import { useStoredVaultRestoreSession } from "./stored-vault-restore-session.js";
 import { createFirstRunCommitter } from "./first-run-commit.js";
 import { prepareSuppliedCaptureDraft } from "./supplied-capture.js";
 import { expectsLocalVault, markLocalVaultInitialized } from "./vault-lifecycle.js";
@@ -20,6 +25,66 @@ export const StoredVaultRoot = ({
   );
   const [message, setMessage] = useState("");
   const [attempt, setAttempt] = useState(0);
+  const [restoreMode, setRestoreMode] = useState(false);
+  const [setupPending, setSetupPending] = useState(false);
+  const flow = useRef({ restore: false, setupPending: false });
+  const restoreSession = useStoredVaultRestoreSession({
+    api: globalThis.coredrillStorageSpike,
+    ownerId: session?.vault.id ?? saved?.vault.id ?? null,
+    enabled: phase !== "ready" && phase !== "loading",
+  });
+  const runSetup = async (work: () => Promise<ApplicationResult<unknown>>) => {
+    if (flow.current.restore || flow.current.setupPending || restoreSession.pending())
+      return applicationFailure({
+        code: "conflict",
+        retryable: false,
+        message: "Finish reviewing restore before saving setup.",
+      });
+    flow.current.setupPending = true;
+    setSetupPending(true);
+    try {
+      return await work();
+    } finally {
+      flow.current.setupPending = false;
+      setSetupPending(false);
+    }
+  };
+  const recoveryControls = (
+    <section aria-label="Restore an existing vault">
+      {!restoreMode ? (
+        <button
+          type="button"
+          className="cd-button"
+          disabled={setupPending}
+          onClick={() => {
+            if (flow.current.setupPending) return;
+            flow.current.restore = true;
+            setRestoreMode(true);
+          }}
+        >
+          Restore an existing archive instead
+        </button>
+      ) : null}
+      <div hidden={!restoreMode}>
+        <h1>Restore local vault</h1>
+        {restoreSession.panel(false, 2)}
+        <button
+          type="button"
+          className="cd-button"
+          disabled={restoreSession.busy || restoreSession.needsReopen}
+          onClick={() => {
+            void restoreSession.discard().then((discarded) => {
+              if (!discarded) return;
+              flow.current.restore = false;
+              setRestoreMode(false);
+            });
+          }}
+        >
+          Back without restoring
+        </button>
+      </div>
+    </section>
+  );
   const committer = useMemo(
     () =>
       createFirstRunCommitter({
@@ -98,12 +163,13 @@ export const StoredVaultRoot = ({
         </h1>
         <p role="alert">
           {phase === "recovery"
-            ? "This profile previously initialized a vault, but no vault identity was found. Check the same device, browser profile and origin before creating a replacement. Existing records, if present, have not been discarded. Restore controls are not connected to this view yet."
+            ? "This profile previously initialized a vault, but no vault identity was found. Check the same device, browser profile and origin before creating a replacement. Existing records, if present, have not been discarded. You can review a complete portable archive below."
             : message}
         </p>
         <button
           type="button"
           className="cd-button"
+          disabled={restoreMode}
           onClick={() => {
             setAttempt((value) => value + 1);
           }}
@@ -114,6 +180,7 @@ export const StoredVaultRoot = ({
           <button
             type="button"
             className="cd-button"
+            disabled={restoreMode}
             onClick={() => {
               setPhase("setup");
             }}
@@ -121,25 +188,29 @@ export const StoredVaultRoot = ({
             Review setup without discarding existing records
           </button>
         ) : null}
+        {recoveryControls}
       </main>
     );
   return (
     <main>
-      <FirstRunExperience
-        productionMode
-        initialRuntime={
-          globalThis.coredrillStorageSpike.runtimeKind === "native" ? "desktop" : "browser"
-        }
-        {...(saved === null ? {} : { savedVaultName: saved.vault.name })}
-        onCommit={committer.complete}
-        onCommitSkip={committer.skip}
-        onNavigate={() => {
-          if (saved === null) return;
-          history.replaceState(null, "", "/");
-          setSession(saved);
-          setPhase("ready");
-        }}
-      />
+      <div hidden={restoreMode}>
+        <FirstRunExperience
+          productionMode
+          initialRuntime={
+            globalThis.coredrillStorageSpike.runtimeKind === "native" ? "desktop" : "browser"
+          }
+          {...(saved === null ? {} : { savedVaultName: saved.vault.name })}
+          onCommit={(input) => runSetup(() => committer.complete(input))}
+          onCommitSkip={() => runSetup(committer.skip)}
+          onNavigate={() => {
+            if (saved === null || flow.current.restore) return;
+            history.replaceState(null, "", "/");
+            setSession(saved);
+            setPhase("ready");
+          }}
+        />
+      </div>
+      {recoveryControls}
     </main>
   );
 };

@@ -132,6 +132,7 @@ import "./main.js";
 import { RUNTIME_KIND } from "./runtime-kind.js";
 import { StoredVaultSettings } from "./stored-vault-settings.js";
 import { useStoredVaultExportSession } from "./stored-vault-export-session.js";
+import { useStoredVaultRestoreSession } from "./stored-vault-restore-session.js";
 import { StoredVaultRoot } from "./stored-vault-root.js";
 import { storedVaultHealth } from "./vault-presentation.js";
 import { installVaultViewInvalidation } from "./vault-lifecycle.js";
@@ -1832,6 +1833,22 @@ const AppShellCatalog = ({
     api: globalThis.coredrillStorageSpike,
     ownerId: vaultSession?.vault.id ?? null,
     enabled: !referenceCatalog && vaultDeletionStatus === null,
+  });
+  const vaultRestoreSession = useStoredVaultRestoreSession({
+    api: globalThis.coredrillStorageSpike,
+    ownerId: vaultSession?.vault.id ?? null,
+    enabled: !referenceCatalog && vaultDeletionStatus === null,
+    exclusive: (work) =>
+      vaultSession === undefined
+        ? Promise.resolve({
+            ok: false as const,
+            error: {
+              code: "conflict" as const,
+              retryable: false,
+              message: "Review the current vault before continuing.",
+            },
+          })
+        : vaultExportSession.mutate(vaultSession.vault.id, work),
   });
   const [networkInteractionDraftCount, setNetworkInteractionDraftCount] = useState(0);
   const [documents, setDocuments] = useState<readonly DocumentWorkspaceItemDto[]>([]);
@@ -4330,6 +4347,14 @@ const AppShellCatalog = ({
     );
   };
 
+  if (!referenceCatalog && vaultRestoreSession.needsReopen) {
+    return (
+      <main className="cd-shell-page-card">
+        <h1>Reopen local vault after restore</h1>
+        {vaultRestoreSession.panel(false, 2)}
+      </main>
+    );
+  }
   if (!referenceCatalog && vaultDeletionStatus !== null) {
     return (
       <main className="cd-shell-page-card" aria-labelledby="deleted-vault-heading">
@@ -4971,6 +4996,7 @@ const AppShellCatalog = ({
           <StoredVaultSettings
             api={globalThis.coredrillStorageSpike}
             exportSession={vaultExportSession}
+            restoreSession={vaultRestoreSession}
             session={vaultSession}
             onSessionObserved={onVaultObserved}
             onDeleted={(result) => {
