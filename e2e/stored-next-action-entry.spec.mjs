@@ -1,13 +1,14 @@
 import { expect, test } from "@playwright/test";
 import { initializeDefaultWorkspace } from "./production-workspace.mjs";
 import { exerciseNormalTaskEntry } from "./task-entry-journey.mjs";
+import { exerciseScheduledTaskEntry } from "./scheduled-task-entry-journey.mjs";
 import {
   exerciseTaskEntryCrossJob,
   exerciseTaskEntryLifetime,
   exerciseTaskEntryReadbackFailure,
 } from "./task-entry-lifetime.mjs";
 
-test("normal header creates and undoes an unscheduled task offline with owned draft and canonical readback", async ({
+test("normal header creates reviewed scheduled and unscheduled tasks offline with owned drafts and canonical readback", async ({
   page,
   context,
 }, testInfo) => {
@@ -47,7 +48,9 @@ test("normal header creates and undoes an unscheduled task offline with owned dr
   await page.locator('[data-pipeline-view-option="table"]').click();
   await page.getByRole("button", { name: "Synthetic task entry role", exact: true }).click();
   const proof = await exerciseNormalTaskEntry(page, testInfo);
+  const scheduling = await exerciseScheduledTaskEntry(page, testInfo);
   const lifetime = await exerciseTaskEntryLifetime(page);
+  const scheduledLifetime = await exerciseTaskEntryLifetime(page, { scheduled: true });
   const crossJob = await exerciseTaskEntryCrossJob(page);
   const readbackFailure = await exerciseTaskEntryReadbackFailure(page);
   expect(external).toEqual([]);
@@ -55,7 +58,9 @@ test("normal header creates and undoes an unscheduled task offline with owned dr
   await testInfo.attach("normal-task-entry-proof.json", {
     body: JSON.stringify({
       ...proof,
+      scheduling,
       lifetime,
+      scheduledLifetime,
       crossJob,
       readbackFailure,
       offline: true,

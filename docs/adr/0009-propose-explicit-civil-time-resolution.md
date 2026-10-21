@@ -65,3 +65,7 @@ No source connector, account, external fetch, telemetry, credential, privileged 
 ## Revisit trigger
 
 Revisit on an advisory, unacceptable measured production bundle/latency, failed supported-runtime/Intl behavior, material upstream API/maintenance change, or demonstrated native Temporal parity across every accepted runtime that permits removal of the dependency. Owner rejection keeps the current baseline and requires a separately proven alternative, not a silent substitution.
+
+## Implementation checkpoint — 2026-10-21
+
+The exact approved pins are installed with a scoped JSBI override and inventory 1.30. The bounded helper and explicit owned lazy form have focused Node/production browser/real-Rust native gap, overlap, exact readback, undo, reload and failure/lifetime proof. The actual production chunk measures 159,974 bytes / 45,699 bytes gzip, separately from the earlier candidate measurement. A real failed-module test exposes Chromium's document-level failed-import cache; recovery is a deliberately warned/cancellable reload or explicitly chosen unscheduled save, never a fictitious same-document refetch or automatic fallback. No decision, durable representation or permission changes. Full final-source, extension/policy and exact hosted runtime proof remain; see [current scheduling evidence](../proof/accepted-civil-time-scheduling-verification.md) and [dependency/license review](../proof/accepted-civil-time-dependency-review.md). INT-004 remains unchecked.

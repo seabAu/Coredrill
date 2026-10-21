@@ -1,38 +1,10 @@
 import path from "node:path";
+import { createHash } from "node:crypto";
+import { readFile } from "node:fs/promises";
 
 import { init as inspectLicenses } from "license-checker-rseidelsohn";
-
-const allowedLicenseTokens = new Set([
-  "0BSD",
-  "Apache-2.0",
-  "Artistic-2.0",
-  "BSD-2-Clause",
-  "BSD-3-Clause",
-  "BlueOak-1.0.0",
-  "CC-BY-3.0",
-  "CC-BY-4.0",
-  "CC0-1.0",
-  "ISC",
-  "MIT",
-  "MIT-0",
-  "MPL-2.0",
-  "Python-2.0",
-  "Unlicense",
-  "WTFPL",
-]);
-
-function isAllowedExpression(value) {
-  if (Array.isArray(value)) return value.length > 0 && value.every(isAllowedExpression);
-  if (typeof value !== "string" || value.trim() === "") return false;
-  if (/unknown|unlicensed|see license/i.test(value)) return false;
-
-  const tokens = value
-    .replace(/[()]/g, " ")
-    .split(/\s+(?:AND|OR|WITH)\s+|\s+/i)
-    .map((token) => token.trim())
-    .filter(Boolean);
-  return tokens.length > 0 && tokens.every((token) => allowedLicenseTokens.has(token));
-}
+import { isAllowedExpression, reviewedLegacyLicense } from "../licenses/license-policy.mjs";
+import { discoverLicenseManifestRoots } from "../licenses/workspace-roots.mjs";
 
 function inventoryLicenses(repositoryRoot) {
   return new Promise((resolve, reject) => {
@@ -53,7 +25,30 @@ function inventoryLicenses(repositoryRoot) {
 const repositoryRoot = path.resolve(process.argv[2] ?? process.cwd());
 
 try {
-  const inventory = await inventoryLicenses(repositoryRoot);
+  // pnpm's isolated links do not make every workspace dependency reachable from
+  // the root manifest. Scan every declared first-level workspace with a manifest.
+  const roots = await discoverLicenseManifestRoots(repositoryRoot);
+  const inventory = {};
+  for (const workspace of roots) {
+    const observed = await inventoryLicenses(workspace);
+    for (const [name, metadata] of Object.entries(observed)) {
+      let licenses = metadata.licenses;
+      if (name === "duck@0.1.12" && licenses === "UNKNOWN") {
+        const bytes = await readFile(path.join(metadata.path, "LICENSE"));
+        licenses = reviewedLegacyLicense(
+          name,
+          licenses,
+          createHash("sha256").update(bytes).digest("hex"),
+        );
+      }
+      if (
+        inventory[name] !== undefined &&
+        JSON.stringify(inventory[name].licenses) !== JSON.stringify(licenses)
+      )
+        throw new Error(`Conflicting license metadata for ${name}.`);
+      inventory[name] = { ...metadata, licenses };
+    }
+  }
   const rejected = Object.entries(inventory)
     .filter(([, metadata]) => !isAllowedExpression(metadata.licenses))
     .map(([name, metadata]) => `${name}: ${String(metadata.licenses)}`)
@@ -65,7 +60,9 @@ try {
     );
     process.exitCode = 1;
   } else {
-    console.log(`Dependency license policy passed for ${Object.keys(inventory).length} packages.`);
+    console.log(
+      `Dependency license policy passed for ${Object.keys(inventory).length} packages across ${roots.length} manifest roots.`,
+    );
   }
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));

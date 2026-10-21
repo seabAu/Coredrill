@@ -1,15 +1,24 @@
 import { expect } from "@playwright/test";
 
 /** Fault delivery is synthetic; acknowledged writes still use the real runtime. */
-export const exerciseTaskEntryLifetime = async (page) => {
+export const exerciseTaskEntryLifetime = async (page, { scheduled = false } = {}) => {
   const title = "  Retained é中🙂 <literal-task>  ";
   const open = page.getByRole("button", { name: "Set next action", exact: true });
   const form = page.getByRole("form", { name: "Add local next action", exact: true });
   const field = form.getByRole("textbox", { name: "Task title", exact: true });
   const save = form.getByRole("button", { name: "Save local next action", exact: true });
   const cancel = form.getByRole("button", { name: "Cancel task draft", exact: true });
+  const configureSchedule = async () => {
+    if (!scheduled) return;
+    await form.getByRole("checkbox", { name: "Add a due date/time", exact: true }).check();
+    await form.getByLabel("Local due date and time", { exact: true }).fill("2026-11-01T01:30");
+    await form.getByLabel("IANA time zone", { exact: true }).fill("America/New_York");
+    await form.getByRole("button", { name: "Review exact due time", exact: true }).click();
+    await form.getByRole("radio", { name: /Second occurrence/u }).check();
+  };
   await open.click();
   await field.fill(title);
+  await configureSchedule();
   const documentOrigin = await page.evaluate(() => performance.timeOrigin);
   let handled;
   let rejected;
@@ -31,7 +40,7 @@ export const exerciseTaskEntryLifetime = async (page) => {
   await expect(field).toHaveValue(title);
   await page.evaluate(() => {
     const api = globalThis.coredrillStorageSpike;
-    globalThis.taskFault = { api, calls: 0, release: null, mode: "fail" };
+    globalThis.taskFault = { api, calls: 0, release: null, mode: "fail", lastInput: null };
     globalThis.coredrillStorageSpike = {
       ...api,
       nextActions: {
@@ -39,6 +48,7 @@ export const exerciseTaskEntryLifetime = async (page) => {
         setNextAction: async (input) => {
           const fault = globalThis.taskFault;
           fault.calls += 1;
+          fault.lastInput = input;
           if (fault.mode === "fail") throw new Error("PRIVATE_TASK_FAILURE_DO_NOT_DISPLAY");
           await new Promise((resolve) => {
             fault.release = resolve;
@@ -53,6 +63,12 @@ export const exerciseTaskEntryLifetime = async (page) => {
   await expect(form.getByRole("alert")).toBeFocused();
   await expect(page.locator("body")).not.toContainText("PRIVATE_TASK_FAILURE_DO_NOT_DISPLAY");
   await expect(field).toHaveValue(title);
+  if (scheduled) {
+    await expect(form.getByRole("radio", { name: /Second occurrence/u })).toBeChecked();
+    await expect(form.getByLabel("Local due date and time", { exact: true })).toHaveValue(
+      "2026-11-01T01:30",
+    );
+  }
   await expect(save).toBeEnabled();
   await page.getByRole("button", { name: "Source", exact: true }).click();
   await page.getByRole("button", { name: "Overview", exact: true }).click();
@@ -64,6 +80,17 @@ export const exerciseTaskEntryLifetime = async (page) => {
   await page.waitForFunction(() => globalThis.taskFault.release !== null);
   await expect(field).toBeDisabled();
   await expect(cancel).toBeDisabled();
+  if (scheduled) {
+    await expect(form.getByLabel("Local due date and time", { exact: true })).toBeDisabled();
+    await expect(form.getByLabel("IANA time zone", { exact: true })).toBeDisabled();
+    await expect(form.getByRole("radio", { name: /Second occurrence/u })).toBeDisabled();
+    expect(
+      await page.evaluate(() => ({
+        dueAt: globalThis.taskFault.lastInput.dueAt,
+        timeZone: globalThis.taskFault.lastInput.timeZone,
+      })),
+    ).toEqual({ dueAt: "2026-11-01T06:30:00.000Z", timeZone: "America/New_York" });
+  }
   await expect(open).toBeDisabled();
   await expect(page.getByRole("button", { name: "Change status", exact: true })).toBeDisabled();
   await form.evaluate((node) => node.requestSubmit());
@@ -82,6 +109,7 @@ export const exerciseTaskEntryLifetime = async (page) => {
   await expect(feedback.getByRole("status")).toContainText("Undid next-action creation");
   await open.click();
   await field.fill(title);
+  await configureSchedule();
   await cancel.click();
   const confirm = page.getByRole("region", { name: "Confirm task draft discard", exact: true });
   await expect(confirm.getByRole("heading")).toBeFocused();
@@ -94,6 +122,7 @@ export const exerciseTaskEntryLifetime = async (page) => {
   await expect(open).toBeFocused();
   await open.click();
   await field.fill(title);
+  await configureSchedule();
   const peer = await page.evaluate(async () => {
     const jobId = new URL(location.href).pathname.split("/")[2];
     const api = globalThis.coredrillStorageSpike;
@@ -136,6 +165,7 @@ export const exerciseTaskEntryLifetime = async (page) => {
     explicitDiscard: true,
     staleWriteRejectedUnchanged: true,
     noSilentRebaseAfterRefresh: true,
+    scheduledExactIntent: scheduled,
   };
 };
 

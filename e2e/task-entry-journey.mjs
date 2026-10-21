@@ -16,8 +16,13 @@ export const exerciseNormalTaskEntry = async (page, testInfo) => {
   const form = page.getByRole("form", { name: "Add local next action", exact: true });
   const field = form.getByRole("textbox", { name: "Task title", exact: true });
   await expect(field).toBeFocused();
-  await expect(form.getByRole("checkbox")).toBeDisabled();
-  await expect(form).toContainText("Scheduled task entry is not yet connected");
+  await expect(
+    form.getByRole("checkbox", { name: "Add a due date/time", exact: true }),
+  ).toBeEnabled();
+  await expect(
+    form.getByRole("checkbox", { name: "Add a due date/time", exact: true }),
+  ).not.toBeChecked();
+  await expect(form).toContainText("No due instant or time zone will be stored");
   await field.fill(title);
   await page.getByRole("button", { name: "Source", exact: true }).click();
   await expect(field).toHaveValue(title);
@@ -88,7 +93,7 @@ export const exerciseNormalTaskEntry = async (page, testInfo) => {
     sharedTaskFeedback: true,
     taskUndo: true,
     reloadAfterUndo: true,
-    schedulingUnavailable: true,
+    schedulingAvailable: true,
     scheduledFormProven: false,
   };
 };

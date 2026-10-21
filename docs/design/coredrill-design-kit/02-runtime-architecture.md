@@ -456,9 +456,9 @@ The optional `ChangeStatus` viewed-state tuple is validated before the persisten
 
 ## Application use cases
 
-### Accepted civil-time resolver direction — implementation pending
+### Accepted civil-time resolver — integration verification in progress
 
-Owner acceptance of ADR-0009 / D-056 on 2026-10-21 authorizes one bounded TypeScript helper importing exact @js-temporal/polyfill 0.5.1 with reviewed jsbi 4.3.2. Load it only for explicit local scheduling, on both browser and native paths without global patches or a native/polyfill split. Reject nonexistent local times; ambiguous times require a deliberate occurrence. Public application/storage contracts retain validated UTC/IANA strings, not library objects. No native IPC, permission, schema or service is added. Helper installation, owned loading/failure/cancellation, production offline/CSP chunk and full runtime/UI proof remain INT-004 work; this acceptance record does not claim integration.
+Owner acceptance of ADR-0009 / D-056 on 2026-10-21 authorizes one bounded TypeScript helper importing exact @js-temporal/polyfill 0.5.1 with reviewed jsbi 4.3.2. The shared browser/native root now loads it only on explicit local scheduling, without global patches or a native/polyfill split. Nonexistent times reject; ambiguous times require a deliberate occurrence. Public application/storage contracts retain validated UTC/IANA strings, not library objects. Owned module loading survives reflow; disposal ignores late results. Failed imports retain task intent and explain explicit reload/unscheduled recovery rather than claiming same-document refetch. No native IPC, permission, schema or service is added. Installation and focused normal/runtime proof exist; complete final-source/exact hosted proof remains INT-004 work. See [current evidence and remaining gates](../../proof/accepted-civil-time-scheduling-verification.md).
 
 The stored Timeline prerequisite adds a separate `ListJobTimelineQuery` over a
 read-only `JobTimelinePort`. Shared SQLite composition reads status events and

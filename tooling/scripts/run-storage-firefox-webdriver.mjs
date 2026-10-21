@@ -2,6 +2,11 @@
 
 import { spawn } from "node:child_process";
 import { readdir } from "node:fs/promises";
+import scheduleFixture from "../../fixtures/scheduling/civil-time-v1.json" with { type: "json" };
+import {
+  inspectLocalScheduleRuntime,
+  assertLocalScheduleRuntime,
+} from "../browser-proofs/local-schedule-runtime.mjs";
 
 const firefoxPath = process.env["COREDRILL_FIREFOX_PATH"];
 const expectedVersion = process.env["COREDRILL_EXPECTED_BROWSER_VERSION"];
@@ -153,6 +158,32 @@ try {
     return result.value;
   };
 
+  // Exact Firefox engines execute the same imported helper through Vite's local
+  // compatibility server. Production cached-chunk/UI proof is separate Chromium/native evidence.
+  const scheduleEnvelope = await webdriver(`/session/${sessionId}/execute/async`, "POST", {
+    args: [
+      {
+        moduleUrl: "/src/local-schedule.ts",
+        cases: scheduleFixture.cases,
+        invalid: scheduleFixture.invalid,
+      },
+    ],
+    script: `const done = arguments[arguments.length - 1];
+      (${inspectLocalScheduleRuntime.toString()})(arguments[0]).then(
+        value => done({ ok: true, value }), () => done({ ok: false }));`,
+  });
+  if (scheduleEnvelope?.ok !== true) throw new Error("Firefox local schedule module proof failed.");
+  const localSchedule = assertLocalScheduleRuntime(scheduleEnvelope.value, scheduleFixture);
+  console.info(
+    "FIREFOX_LOCAL_SCHEDULE_PROOF",
+    JSON.stringify({
+      ...localSchedule,
+      browserVersion,
+      compatibilityModule: true,
+      productionBundle: false,
+    }),
+  );
+
   await executeHarness("delete");
   const opened = await executeHarness("openAndMigrate");
   const passiveStorageHealth = await executeHarness("storageHealth");
@@ -218,6 +249,7 @@ try {
   const careerRepositoryCases = careerRepositoryContracts.manifest.caseNames;
 
   const proof = {
+    localSchedule,
     appliedVersions: opened.appliedVersions,
     browserStoragePersistence: opened.diagnostics.persistence,
     browserStoragePersistenceBeforeRequest: passiveStorageHealth.persistence,

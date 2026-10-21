@@ -1,8 +1,8 @@
-# Normal portable restore composition — verification in progress
+# Normal portable restore composition — engineering verification
 
-Scope: INT-006 normal Settings and clean/startup recovery entry, validated application boundary, root-owned review lifetime, explicit confirmation and browser/native commit. INT-006 remains unchecked. This is not a beta/release, manual assistive-technology or installed OS-picker claim.
+Scope: INT-006 normal Settings and clean/startup recovery entry, validated application boundary, root-owned review lifetime, explicit confirmation and browser/native commit. INT-006 is closed by the [exact hosted follow-up and requirement audit](restore-terminal-status-verification.md#exact-hosted-closure-and-int-006-requirement-audit), not by any earlier failed run. This is not a beta/release, manual assistive-technology or installed OS-picker claim.
 
-Latest verified state: complete final-source local gate, serial nine-case extension suite and final formatting/policy pass. Commit/push and exact hosted verification remain pending. No production/test source changes follow final-source success; only result/status documentation.
+Latest verified state: exact `2099f2f40ad31a3ef085e33386bb6dacbc2242f5` passes hosted run `39610943989` after complete local, serial extension and final policy gates. Historical entries below preserve their then-pending or failed states; the final closure audit identifies what was actually proven. Independent subsequent scheduling work requires its own proof.
 
 ## Implemented boundaries
 

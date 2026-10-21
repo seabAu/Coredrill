@@ -6,8 +6,21 @@ import {
   createWorkspaceNextActionDraft,
   type WorkspaceNextActionDraft,
 } from "./stored-workspace-next-action-draft.js";
+import { createLocalScheduleLoader, type ScheduleLoaderState } from "./local-schedule-loader.js";
 
-/** Owns normal task intent across routes/reflow. Scheduled entry awaits an approved resolver. */
+const occurrenceOffset = (dueAt: string, zone: string): string => {
+  try {
+    return (
+      new Intl.DateTimeFormat("en-US", { timeZone: zone, timeZoneName: "longOffset" })
+        .formatToParts(new Date(dueAt))
+        .find(({ type }) => type === "timeZoneName")?.value ?? "Offset unavailable"
+    );
+  } catch {
+    return "Offset unavailable; the UTC instant remains exact";
+  }
+};
+
+/** Owns normal task intent and lazy civil-time resolution across routes/reflow. */
 export const useStoredWorkspaceNextAction = (options: {
   readonly enabled: boolean;
   readonly jobId: string | null;
@@ -19,6 +32,8 @@ export const useStoredWorkspaceNextAction = (options: {
   live.current = options;
   const [draft, setDraft] = useState<WorkspaceNextActionDraft | null>(null);
   const [discardRequested, setDiscardRequested] = useState(false);
+  const [scheduleLoad, setScheduleLoad] = useState<ScheduleLoaderState>("idle");
+  const scheduleLoader = useRef<ReturnType<typeof createLocalScheduleLoader> | null>(null);
   const owner = useRef<ReturnType<typeof createWorkspaceNextActionDraft> | null>(null);
   const container = useRef<HTMLDivElement>(null);
   const [focus, setFocus] = useState<{
@@ -29,10 +44,15 @@ export const useStoredWorkspaceNextAction = (options: {
   } | null>(null);
   useEffect(() => {
     if (!options.enabled) return;
+    const loader = createLocalScheduleLoader(setScheduleLoad);
+    scheduleLoader.current = loader;
+    setScheduleLoad("idle");
     const current = createWorkspaceNextActionDraft(
       (input) => live.current.save(input),
-      () => {
-        throw new Error("No schedule resolver is connected.");
+      (local, zone) => {
+        const resolver = loader.resolver();
+        if (resolver === null) throw new Error("The local schedule resolver is not ready.");
+        return resolver(local, zone);
       },
       setDraft,
     );
@@ -40,6 +60,8 @@ export const useStoredWorkspaceNextAction = (options: {
     setDraft(null);
     setDiscardRequested(false);
     return () => {
+      loader.dispose();
+      scheduleLoader.current = null;
       current.dispose();
       owner.current = null;
     };
@@ -92,6 +114,7 @@ export const useStoredWorkspaceNextAction = (options: {
       setFocus({ owner: current, jobId: job.id, origin: document.activeElement, target: "editor" });
   };
   const stale = draft !== null && job?.rowVersion !== draft.context.rowVersion;
+  const resolution = draft?.resolution ?? null;
   const requestDiscard = () => {
     const current = owner.current;
     if (current === null || draft === null || draft.busy || options.jobId === null) return;
@@ -146,7 +169,7 @@ export const useStoredWorkspaceNextAction = (options: {
                 options.busy ||
                 stale ||
                 draft.busy ||
-                draft.scheduled
+                (draft.scheduled && scheduleLoad !== "ready")
               )
                 return;
               const origin = document.activeElement;
@@ -160,8 +183,8 @@ export const useStoredWorkspaceNextAction = (options: {
           >
             <h3>Add a local next action</h3>
             <p>
-              This adds an unscheduled pending task. Existing tasks are retained; nothing is sent
-              and no notification is scheduled.
+              This adds a pending task, optionally with an exact due time. Existing tasks are
+              retained; nothing is sent and no notification is scheduled.
             </p>
             <p>Unsaved input stays in this session. Save before closing or reloading the app.</p>
             {stale ? (
@@ -193,17 +216,144 @@ export const useStoredWorkspaceNextAction = (options: {
               pending task first, then unscheduled tasks.
             </p>
             <label>
-              <input type="checkbox" disabled checked={false} readOnly />
-              Add a due date/time — not connected yet
+              <input
+                type="checkbox"
+                checked={draft.scheduled}
+                disabled={draft.busy || options.busy || stale}
+                onChange={(event) => {
+                  const scheduled = event.target.checked;
+                  if (owner.current?.setScheduled(draft.context.jobId, scheduled) && scheduled)
+                    void scheduleLoader.current?.request();
+                }}
+              />
+              Add a due date/time
             </label>
-            <p>
-              Scheduled task entry is not yet connected. Existing scheduled tasks retain their saved
-              times and time zones.
-            </p>
+            {draft.scheduled ? (
+              <fieldset disabled={draft.busy || options.busy || stale}>
+                <legend>Local due time</legend>
+                <label>
+                  Local due date and time
+                  <input
+                    type="datetime-local"
+                    aria-label="Local due date and time"
+                    step="0.001"
+                    value={draft.localDateTime}
+                    onChange={(event) => {
+                      owner.current?.editSchedule(
+                        draft.context.jobId,
+                        event.target.value,
+                        draft.timeZone,
+                      );
+                    }}
+                  />
+                </label>
+                <label>
+                  IANA time zone
+                  <input
+                    aria-label="IANA time zone"
+                    maxLength={128}
+                    value={draft.timeZone}
+                    placeholder="America/New_York or UTC"
+                    onChange={(event) => {
+                      owner.current?.editSchedule(
+                        draft.context.jobId,
+                        draft.localDateTime,
+                        event.target.value,
+                      );
+                    }}
+                  />
+                </label>
+                <p>
+                  Enter the intended local clock and zone explicitly. Skipped times are rejected;
+                  repeated times require your choice. Stored due times remain exact UTC instants.
+                </p>
+                {scheduleLoad === "loading" ? (
+                  <p role="status">Loading the bundled local-time helper… Nothing was saved.</p>
+                ) : null}
+                {scheduleLoad === "error" ? (
+                  <div>
+                    <p role="alert">
+                      The local-time helper could not load. Your input remains here; nothing was
+                      saved. Browsers may retain a failed module until reload. Copy your unsaved
+                      title, clock and zone before reloading, or turn off the due time to explicitly
+                      save an unscheduled task. Reloading discards this unsaved draft.
+                    </p>
+                    <button
+                      type="button"
+                      className="cd-button"
+                      onClick={() => {
+                        window.location.reload();
+                      }}
+                    >
+                      Reload workspace after preserving input
+                    </button>
+                  </div>
+                ) : null}
+                <button
+                  type="button"
+                  className="cd-button"
+                  disabled={scheduleLoad !== "ready"}
+                  onClick={() => {
+                    const current = owner.current;
+                    if (current === null || options.jobId !== draft.context.jobId) return;
+                    const origin = document.activeElement;
+                    if (!current.resolveSchedule(draft.context.jobId))
+                      setFocus({
+                        owner: current,
+                        jobId: draft.context.jobId,
+                        origin,
+                        target: "error",
+                      });
+                  }}
+                >
+                  Review exact due time
+                </button>
+                {resolution === null ? null : (
+                  <fieldset>
+                    <legend>Reviewed exact due time</legend>
+                    <p>
+                      {draft.localDateTime} in {resolution.timeZone}.
+                      {resolution.candidates.length > 1
+                        ? " This clock occurs twice. Choose one occurrence before saving."
+                        : " This clock has one exact occurrence."}
+                    </p>
+                    {resolution.candidates.map((dueAt, index) => (
+                      <label key={dueAt}>
+                        <input
+                          type="radio"
+                          name="local-next-action-occurrence"
+                          checked={draft.selectedDueAt === dueAt}
+                          onChange={() => {
+                            owner.current?.selectOccurrence(draft.context.jobId, dueAt);
+                          }}
+                        />
+                        {resolution.candidates.length > 1
+                          ? index === 0
+                            ? "First occurrence"
+                            : "Second occurrence"
+                          : "Only occurrence"}
+                        {" — "}
+                        {occurrenceOffset(dueAt, resolution.timeZone)}
+                        {" — "}
+                        {dueAt}
+                      </label>
+                    ))}
+                  </fieldset>
+                )}
+              </fieldset>
+            ) : (
+              <p>No due instant or time zone will be stored for this unscheduled task.</p>
+            )}
             <button
               type="submit"
               className="cd-button"
-              disabled={draft.busy || options.busy || stale || draft.title.trim().length === 0}
+              disabled={
+                draft.busy ||
+                options.busy ||
+                stale ||
+                draft.title.trim().length === 0 ||
+                (draft.scheduled && (scheduleLoad !== "ready" || draft.selectedDueAt === null))
+              }
             >
               {draft.busy ? "Saving next action locally…" : "Save local next action"}
             </button>

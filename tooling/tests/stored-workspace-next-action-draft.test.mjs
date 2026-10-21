@@ -151,6 +151,7 @@ describe("owned workspace next-action draft", () => {
     { kind: "resolved", timeZone: "UTC", candidates: [earlier] },
     { kind: "resolved", timeZone: zone, candidates: [] },
     { kind: "resolved", timeZone: zone, candidates: [earlier, earlier] },
+    { kind: "resolved", timeZone: zone, candidates: [earlier, later, "2026-11-01T07:30:00.000Z"] },
     { kind: "resolved", timeZone: zone, candidates: ["invalid"] },
     null,
   ])("fails closed on invalid resolver output %j", async (output) => {

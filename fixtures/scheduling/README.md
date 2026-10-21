@@ -1,0 +1,5 @@
+# Synthetic civil-time fixture version 1
+
+All values are synthetic; there are no job/applicant records or private data. Expected UTC values are frozen explicit clock/offset examples, not generated at test runtime. The vectors retain the seven accepted ADR-0009 candidate-review scenarios: ordinary New York time, one-hour gap/overlap, Lord Howe half-hour gap/overlap, Apia's skipped date and Kathmandu's quarter-hour offset. Invalid literals cover calendar, clock, precision, zone/offset suffix and annotation rejection.
+
+Node host-zone, production Chromium bundle and exact Firefox compatibility probes share this fixture. Tests do not claim exhaustive timezone database coverage or identical database versions across hosts. Changes to expected instants require an explained fixture review rather than silently accepting a library result. This is project-authored Apache-2.0 test data; [the candidate review](../../docs/proof/next-action-timezone-candidate-review.md) records its original diagnostic context.

@@ -119,7 +119,11 @@ export const createWorkspaceNextActionDraft = (
           });
           return false;
         }
-        if (timeZone(result.timeZone) !== zone || result.candidates.length === 0)
+        if (
+          timeZone(result.timeZone) !== zone ||
+          result.candidates.length === 0 ||
+          result.candidates.length > 2
+        )
           throw new TypeError("Invalid schedule resolution.");
         const candidates = result.candidates.map((candidate) => instant(candidate)).sort();
         if (new Set(candidates).size !== candidates.length)

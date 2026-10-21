@@ -13,6 +13,7 @@
     "lint": "eslint src vite.config.mjs --max-warnings 0"
   },
   "dependencies": {
+    "@js-temporal/polyfill": "0.5.1",
     "@coredrill/application": "workspace:*",
     "@coredrill/capture-core": "workspace:*",
     "@coredrill/documents": "workspace:*",

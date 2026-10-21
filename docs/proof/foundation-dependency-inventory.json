@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "inventoryId": "JW-DI-001",
-  "version": "1.29.0",
-  "reviewedAt": "2026-10-21T02:45:49Z",
+  "version": "1.30.0",
+  "reviewedAt": "2026-10-21T13:57:28Z",
   "scope": {
     "included": [
       "Pinned Node.js, pnpm, and Rust foundation toolchains",
@@ -17,7 +17,7 @@
   },
   "lockfile": {
     "path": "pnpm-lock.yaml",
-    "sha256": "5d0075b47fa68055a2fb09b27c3fa1df73ecd3545a7633e39b44727e82289269"
+    "sha256": "a098af460c682f046440ed6c7724f22b3b6149ac27d25987a347e453d6cf36fa"
   },
   "toolchains": [
     {
@@ -174,6 +174,29 @@
       "metadataSource": "https://registry.npmjs.org/wxt/0.21.4",
       "knownAdvisories": [],
       "selectionNote": "Current WXT, published at 2026-08-11T13:09:07.895Z. It is deliberately selected inside the 60-day review window because the older release-age candidate 0.20.27 retained an unused browser-runner subtree with critical/high advisories; 0.21.4 removes that subtree and the reviewed lockfile audit is clean."
+    },
+    {
+      "manifest": "apps/web/package.json",
+      "dependencyType": "dependencies",
+      "name": "@js-temporal/polyfill",
+      "version": "0.5.1",
+      "upstreamLatest": "0.5.1",
+      "selectionStatus": "current",
+      "license": "ISC",
+      "maintainers": ["jameswr", "justingrant", "ptomato"],
+      "repository": "https://github.com/js-temporal/temporal-polyfill",
+      "metadataSource": "https://registry.npmjs.org/@js-temporal%2fpolyfill/0.5.1",
+      "knownAdvisories": [],
+      "selectionNote": "Exact ADR-0009/D-056 choice explicitly owner-accepted 2026-10-21, after gap/overlap/host-zone candidate review. Imported only by the explicit scheduling chunk; no global Date/Intl/Temporal patch. Pre-1.0 upstream roadmap and future changes remain maintenance risks, not a claim of installed-WebView parity. Scoped override pins its only transitive dependency to reviewed jsbi 4.3.2. See accepted-civil-time-dependency-review.md; runtime/full proof remains separate.",
+      "reviewedTransitives": [
+        {
+          "name": "jsbi",
+          "version": "4.3.2",
+          "license": "Apache-2.0",
+          "metadataSource": "https://registry.npmjs.org/jsbi/4.3.2",
+          "integrity": "sha512-9fqMSQbhJykSeii05nxKl4m6Eqn2P6rOlYiS+C5Dr/HPIU/7yZxu5qzbs40tgaFORiw2Amd0mirjxatXYMkIew=="
+        }
+      ]
     },
     {
       "manifest": "apps/web/package.json",
@@ -1077,9 +1100,10 @@
   "advisoryReview": {
     "command": "pnpm audit --json",
     "source": "https://pnpm.io/cli/audit",
-    "reviewedAt": "2026-10-21T02:45:49Z",
-    "lockfileSha256": "5d0075b47fa68055a2fb09b27c3fa1df73ecd3545a7633e39b44727e82289269",
-    "resolvedDependencyCount": 935,
+    "reviewedAt": "2026-10-21T13:57:28Z",
+    "lockfileSha256": "a098af460c682f046440ed6c7724f22b3b6149ac27d25987a347e453d6cf36fa",
+    "resolvedDependencyCount": 937,
+    "acceptedSchedulingNote": "ADR-0009/D-056 explicitly authorizes @js-temporal/polyfill 0.5.1 and scoped jsbi 4.3.2; only these two resolutions are added. Fresh pnpm audit reports zero findings across 937 resolutions. No existing package or Cargo pin changes; see accepted-civil-time-dependency-review.md.",
     "maintenanceNote": "The October 20 audit adds six findings for three launch-editor advisories affecting both standalone launch-editor 2.14.1 and Vite 8.2.2's bundled copy. Reviewed existing-line patches select Vite 8.2.4 and launch-editor 2.14.2 with no audit exclusions. Scripts-disabled frozen install and fresh audit report zero findings across 935 resolutions; license policy passes. Earlier October 19 overrides remain unchanged, as do Tiptap 3.30.5 and every accepted architecture/library choice. See dependency-security-maintenance-2026-10-20.md for official sources, integrity and pending/full verification evidence.",
     "optionalDependencyCount": 108,
     "vulnerabilities": {
@@ -1092,9 +1116,10 @@
   },
   "licenseReview": {
     "command": "pnpm check:licenses",
-    "reviewedAt": "2026-10-21T02:45:49Z",
-    "lockfileSha256": "5d0075b47fa68055a2fb09b27c3fa1df73ecd3545a7633e39b44727e82289269",
-    "resolvedPackageRecords": 520,
+    "reviewedAt": "2026-10-21T13:57:28Z",
+    "lockfileSha256": "a098af460c682f046440ed6c7724f22b3b6149ac27d25987a347e453d6cf36fa",
+    "resolvedPackageRecords": 831,
+    "workspaceCoverageNote": "License policy now scans 23 manifest roots and deduplicates 831 installed npm records, rather than only 520 root-reachable records. Temporal is ISC and JSBI Apache-2.0. Existing JSZip selects its explicit MIT alternative; pako retains both MIT/Zlib obligations. Duck 0.1.12's ambiguous BSD metadata is classified BSD-2-Clause only when its reviewed LICENSE SHA-256 matches exactly. Unknown or changed notices still fail closed. See accepted-civil-time-dependency-review.md. Cargo remains 498 license records.",
     "result": "pass",
     "note": "The patched graph retains 935 external resolutions and 520 npm license records; Cargo retains 498 license records. Vite 8.2.4 and launch-editor 2.14.2 are MIT and more than 24 hours old. Existing October 19 overrides, restricted Tiptap 3.30.5 editor, Mammoth importer, SQLite storage and offline Workbox boundary remain unchanged. No external direct dependency is added. Earlier selection history remains in proof records and Git history."
   },

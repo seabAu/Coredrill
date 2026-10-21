@@ -21,6 +21,8 @@ export default defineConfig({
     "stored-job-notes.spec.mjs",
     "stored-next-action-runtime.spec.mjs",
     "stored-next-action-entry.spec.mjs",
+    "scheduled-task-loading.spec.mjs",
+    "local-schedule-runtime.spec.mjs",
     "stored-job-details.spec.mjs",
     "stored-job-source.spec.mjs",
     "stored-listing-comparison.spec.mjs",

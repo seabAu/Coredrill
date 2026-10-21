@@ -16,6 +16,8 @@ import { exerciseNormalVaultPreparation } from "./normal-vault-export-journey.mj
 import { expectRestoredPortableContent } from "./portable-archive-content-proof.mjs";
 import { inspectPortableArchiveV1 } from "../packages/storage-core/dist/index.js";
 import { exerciseNormalTaskEntry } from "./task-entry-journey.mjs";
+import { exerciseScheduledTaskEntry } from "./scheduled-task-entry-journey.mjs";
+import { exerciseTaskEntryLifetime } from "./task-entry-lifetime.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
 const executable = path.join(
@@ -265,8 +267,16 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
         contentType: "application/json",
       });
       const taskEntry = await exerciseNormalTaskEntry(page, testInfo);
+      const scheduling = await exerciseScheduledTaskEntry(page, testInfo);
+      const scheduledLifetime = await exerciseTaskEntryLifetime(page, { scheduled: true });
       await testInfo.attach("native-task-entry-proof.json", {
-        body: JSON.stringify({ ...taskEntry, actualRustSqlite: true, simulatedTauriHost: true }),
+        body: JSON.stringify({
+          ...taskEntry,
+          scheduling,
+          scheduledLifetime,
+          actualRustSqlite: true,
+          simulatedTauriHost: true,
+        }),
         contentType: "application/json",
       });
       const storedOverview = page.getByRole("region", { name: "Stored job overview", exact: true });

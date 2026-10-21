@@ -6,6 +6,7 @@ autoInstallPeers: false
 engineStrict: true
 minimumReleaseAge: 1440
 overrides:
+  "@js-temporal/polyfill@0.5.1>jsbi": "4.3.2"
   "vite@8.2.2": "8.2.4"
   "launch-editor@2.14.1": "2.14.2"
   "brace-expansion@2.1.4": "2.1.7"

@@ -7662,7 +7662,7 @@ textarea {
   min-width: 0;
 }
 
-.cd-workspace-task-editor input:not([type="checkbox"]) {
+.cd-workspace-task-editor input:not([type="checkbox"]):not([type="radio"]) {
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
@@ -7676,7 +7676,18 @@ textarea {
   font: inherit;
 }
 
-.cd-workspace-task-editor label:has(input[type="checkbox"]) {
+.cd-workspace-task-editor label:has(input[type="checkbox"], input[type="radio"]) {
   grid-template-columns: auto minmax(0, 1fr);
   align-items: start;
+}
+
+.cd-workspace-task-editor fieldset {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-strong);
 }
