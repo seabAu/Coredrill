@@ -21,6 +21,8 @@ import { exerciseScheduledTaskEntry } from "./scheduled-task-entry-journey.mjs";
 import { exerciseTaskEntryLifetime } from "./task-entry-lifetime.mjs";
 import { exerciseCompanyDirectory } from "./company-directory-journey.mjs";
 import { exerciseCompanyWorkspace } from "./company-workspace-journey.mjs";
+import { exerciseContactRuntime } from "./contact-runtime-journey.mjs";
+import { attachNativeHost } from "./native-proof-host.mjs";
 import {
   createNativeRestoreOperationRecorder,
   observeNativeRestoreReview,
@@ -55,45 +57,8 @@ test.beforeAll(async () => {
   expect((await once(build, "exit"))[0]).toBe(0);
 });
 
-/** Simulated host IPC only: every database operation runs in the actual Rust process. */
-const attachNativeHost = async (page, invoke) => {
-  // Playwright recursively serializes every array element in exposed-function
-  // results. Carry the actual Rust JSON as one string instead; the runtime still
-  // receives the same object and runs every production protocol validator.
-  await page.exposeFunction("coredrillNativeProofInvoke", async (...args) =>
-    JSON.stringify(await invoke(...args)),
-  );
-  await page.addInitScript(() => {
-    globalThis.isTauri = true;
-    const documentId = crypto.randomUUID();
-    globalThis.__TAURI_INTERNALS__ = {
-      invoke: async (command, args) =>
-        JSON.parse(await globalThis.coredrillNativeProofInvoke(command, args, documentId)),
-    };
-    const calls = { opfs: 0, persistent: 0, serviceWorker: 0, worker: 0 };
-    globalThis.coredrillBrowserCapabilityProbe = calls;
-    navigator.storage.getDirectory = async () => {
-      calls.opfs += 1;
-      throw new Error("OPFS forbidden in native proof");
-    };
-    navigator.storage.persist = async () => {
-      calls.persistent += 1;
-      throw new Error("Browser persistence forbidden");
-    };
-    navigator.serviceWorker.register = async () => {
-      calls.serviceWorker += 1;
-      throw new Error("Browser SW forbidden");
-    };
-    globalThis.Worker = class {
-      constructor() {
-        calls.worker += 1;
-        throw new Error("Browser worker forbidden");
-      }
-    };
-  });
-};
-
-// Each journey owns a fresh process and creates its records through the normal UI.
+// Each journey owns a fresh process. Initial tracking records use normal UI;
+// contact API and preserved legacy archive proof explicitly disclose their different paths.
 // Keep tracking/task/source regressions separate from document/archive work so
 // neither borrows another test's state or an ever-growing shared timeout budget.
 const exerciseNativeJourney = async (page, testInfo, journey) => {
@@ -219,6 +184,7 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
       Object.assign(journeyProof, {
         companyDirectory: await exerciseCompanyDirectory(page, testInfo, "Synthetic Runtime Lab"),
         companyWorkspace: await exerciseCompanyWorkspace(page, testInfo),
+        contactRuntime: await exerciseContactRuntime(page, testInfo),
       });
     } else if (journey === "tracking") {
       await page.getByRole("button", { name: "Add", exact: true }).click();
@@ -381,10 +347,20 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
       await writeFile(selectedArchive, bytes);
       await page.getByRole("link", { name: "Settings", exact: true }).click();
       const panel = page.getByRole("region", { name: "Portable vault restore", exact: true });
-      await panel.getByRole("button", { name: "Choose archive to review", exact: true }).click();
-      await expect(
-        panel.getByRole("heading", { name: "Review exact restore changes", exact: true }),
-      ).toBeVisible();
+      await observeNativeRestoreReview(
+        panel,
+        testInfo,
+        restoreOperations,
+        "legacy_source",
+        async () => {
+          await panel
+            .getByRole("button", { name: "Choose archive to review", exact: true })
+            .click();
+          await expect(
+            panel.getByRole("heading", { name: "Review exact restore changes", exact: true }),
+          ).toBeVisible();
+        },
+      );
       await expect(panel).toContainText(archive.archiveSha256);
       await expect(panel).toContainText("DIFFERENT vault");
       await expect(panel.getByRole("checkbox")).toHaveAccessibleName(
@@ -877,7 +853,7 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
 };
 
 for (const [journey, description] of [
-  ["network", "stored company directory, creation, notes and owned recovery"],
+  ["network", "stored company directory, creation, notes, contact APIs and owned recovery"],
   ["tracking", "capture, tasks, status, source comparison and notes"],
   ["documents", "documents and complete archive cancellation/save"],
   ["legacy", "reviewed schema160 archive restore and deliberate schema164 reopen"],

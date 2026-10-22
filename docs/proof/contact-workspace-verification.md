@@ -91,6 +91,145 @@ separate from automated engineering proof.
 
 ## Results
 
+### Corrected normal-runtime graph passes the whole local gate
+
+Newer normal-contact composition and lossless simulated-host transport pass
+complete61038, `NORMAL_CONTACT_RUNTIME_PROOF_WIRE_FULL_VERIFY_EXIT=0`:199 files /
+2383 unit and coverage cases, all58 resilience and every supported full-gate
+stage. Full-sequence legacy review is1026.1ms at the unchanged five-second
+assertion; production restore/core/IPC remain as74131a1. [Exact new-source proof](normal-contact-runtime-verification.md#complete-final-source-local-verification--2026-10-21).
+Serial extension9483 passes all9 cases/28.3s, consumed exit0; final policy/new
+exact commit/hosted execution remain. The old74131a1 run39701516359/watch76891 is
+consumed failure, not closure.
+Only result docs follow frozen source/tests/helpers; full INT-007 stays open.
+
+### Lossless proof-host correction — focused verification
+
+The single-inspection trial below is **not retained and is not the fix**. Its119
+focused cases,35 types/lint and five normal browser/native journeys pass, but
+legacy review remains3949.7ms versus3829.2ms before: no demonstrated timing gain.
+Retain `contact-workspace-single-preview-*` logs as abandoned-trial evidence.
+Remove only our trial's core/coordinator API/types/tests via scoped apply_patch;
+those five tracked files now match74131a1, and rebuild storage-core before new
+proof. No existing product validator, schema, protocol or fixture is changed.
+
+Inspection identifies the asymmetric simulated-host transport: responses already
+cross Playwright as JSON strings, but requests still cross as nested objects
+containing millions of individual byte-array elements. Extract that existing host
+setup into `e2e/native-proof-host.mjs`; a regression against its unchanged request
+path fails because the exposed function receives three recursive arguments,
+`CONTACT_WORKSPACE_PROOF_REQUEST_WIRE_BEFORE_EXIT=1` (five other cases pass).
+Serialize the complete JSON argument tuple as one string and decode to the exact
+original command/request/document identity **before** actual Rust dispatch. This
+does not change production Tauri IPC or remove any production protocol validator.
+Six VM wire/fallback tests plus original restore/contact/timing contracts pass116
+cases, `CONTACT_WORKSPACE_PROOF_REQUEST_WIRE_AFTER_EXIT=0`. Final lint-clean
+constructor/global qualification retains every forbidden fallback; the same116
+cases pass again, `CONTACT_WORKSPACE_FINAL_PROOF_WIRE_CONTRACTS_EXIT=0`, and direct
+strict new-file lint passes `NORMAL_CONTACT_RUNTIME_FINAL_DIRECT_LINT_EXIT=0`.
+No suppressions or policy changes are used.
+
+Actual serial51589 passes five targeted normal browser/native journeys in54.2s,
+`CONTACT_WORKSPACE_PROOF_WIRE_BROWSER_NATIVE_EXIT=0`: normal contact APIs, native
+current-archive same-vault/clean-target save/restore, preserved160 native review/
+commit/reopen and offline clean-browser160 restore. Original five-second review
+and120-second journey budgets remain. Measured review becomes638.1ms same-vault,
+703.1ms empty-target and1020.1ms legacy; legacy Rust inspection421.6ms/target30.1ms
+remains comparable, with unchanged source160/reopened164, explicit different-vault
+confirmation and no receipt backfill. Retained
+`contact-workspace-proof-wire-native-observation.log` records1117 legacy IPCs,
+1549 Network IPCs, zero OPFS/persistence/SW/Worker fallback and zero external
+requests. These are local synthetic diagnostics, not a reference-hardware or
+installed-WebView performance claim. Only new hosted execution can close the
+original Chrome regression.
+
+Freeze runtime source/tests/proof helpers after final review for a fresh complete
+gate; only result documents follow. Exact failed74131a1/watch76891 remains
+terminal failure. Full verification, serial extension/final policy/new exact
+commit/hosted proof and full INT-007/INT-008 remain open.
+
+### Exact hosted run terminal failure and measured correction plan
+
+Watch76891 is consumed **exit1**, `CONTACT_WORKSPACE_HOSTED_EXIT=1`; do not resume
+it. Exact74131a1 CI39701516359 is terminal failure only in Chrome151/152's native
+legacy restore review. Aggregate, all native package jobs, both Firefox jobs,
+extension and full-history secrets pass; PR-only review is skipped. This is not
+hosted prerequisite closure.
+
+Local diagnostic28672 is consumed exit0,
+`CONTACT_WORKSPACE_LEGACY_NATIVE_STAGE_OBSERVATION_EXIT=0`. The unchanged
+five-second assertion sees reading at33.1ms, inspecting at436.4ms and review at
+3829.2ms. Native inspection takes439.3ms, target30.4ms and selected read/release
+about190.8ms. This proves a small local margin and substantial work outside the
+Rust operations, not a precise hosted CPU attribution. The source visibly runs
+complete ZIP/path/manifest/checksum inspection in both the normal coordinator and
+core preview. A same-assertion real-digest regression fails against unchanged
+coordinator with two archive-sized digests instead of one,
+`CONTACT_WORKSPACE_DUPLICATE_PREVIEW_BEFORE_EXIT=1`.
+
+Before product correction, activate the bounded plan: let core preview accept an
+explicit reviewed older-source list and either its existing port or a lazy port
+factory. Validate/copy the full archive once **before** invoking that factory;
+give it only frozen validated source identity/schema/database hash. Bind the
+resolved port and exact actual source schema to the private preview capability.
+Normal composition can then build its original target-owner guard and DTO from
+that validated metadata without a separate complete inspection. Defaults remain
+exact-schema; all entry/path/size/checksum and SQLite integrity/schema/vault checks
+remain; commit still revalidates retained bytes, exact target and confirmation.
+Do not accept caller-fabricated inspected archives or introduce a cache/skip flag.
+Prove lazy ordering, malformed/tampered input rejection before port creation,
+source-list/byte/callback copies, source160 commit identity, exact one-pass digest,
+existing lifetime/target/rollback behavior and actual normal browser/native
+restores at unchanged budgets. No schema, permission, dependency or Accepted
+decision change. Fresh whole/serial extension/policy/new exact hosted proof is
+required after correction; failed74131a1 remains failed.
+
+### Hosted Chrome legacy-restore failure — investigation in progress
+
+Exact74131a1 run39701516359 remains live under watch76891. Chrome152 job
+119571599961 and Chrome151 job119571600091 are terminal **failure**: each passes
+56 resilience cases and fails only the new native schema160-to164 restore path,
+waiting five seconds for `Review exact restore changes`. Preceding storage/shared
+manifest, document, UI and shell stages pass. Native Windows/Linux/macOS package,
+Firefox153/154, extension and full-history secret jobs pass; aggregate remains
+running. Do not mistake those job results for overall success.
+
+Terminal job logs are retained as
+`contact-workspace-hosted-chrome152-terminal.log` /
+`contact-workspace-hosted-chrome151-terminal.log`. The152 synthetic diagnostics
+artifact12393916751, SHA-256
+`d54d81f9d375836ec2a0c351bb881e8f1ec6fa55130ff815cb69ea1971199073`, is downloaded
+under `contact-workspace-hosted-chrome152-failure`. Its exact UI snapshot shows
+the restore still **inspecting archive contents and the current target** at the
+assertion failure, not an invalid/unsupported response. Timing/resource cause is
+not yet established; no budget, checksum, compatibility or target guard is waived.
+
+The newer independent normal contact runtime composition separately passes its
+focused tests and actual normal browser/native API/reload journeys; it does not
+change this immutable failed Chrome source. Freeze that newer product source
+while extending existing allowlisted content-free native restore observation to
+the `legacy_source` path with the original click/assertion unchanged. Local probe
+28672 is live, requiring `CONTACT_WORKSPACE_LEGACY_NATIVE_STAGE_OBSERVATION_EXIT`.
+Observe the existing workflow/watch to terminal and retain every failure.
+
+### Exact pushed checkpoint — hosted verification in progress
+
+Commit `74131a1816498b36e6df33a9f5c391f9f8598294`
+(`feat: persist scoped contact workspaces and manual-entry evidence`) contains
+54 reviewed implementation/test/migration/fixture/Changeset/proof files. Normal
+push advances origin/main from ed5d733 to74131a1 without force; the working tree
+was clean after commit and recovery stash2697 remains intact. No unrelated files
+are included. Local full52897, extension82245 and final policy62932 are consumed
+successes; they must not be resumed.
+
+Exact [Foundation CI39701516359](https://github.com/seabAu/Coredrill/actions/runs/39701516359)
+verifies this SHA, not the predecessor. It is **in progress**, not success.
+Watch session76891 writes `contact-workspace-hosted-watch.log`; require
+`CONTACT_WORKSPACE_HOSTED_EXIT`. Observe that same handle without restarting for
+an observation timeout. No successor push may supersede this run. Only result
+documents follow the frozen source; full INT-007, INT-008 and release/external
+evidence gates remain open.
+
 ### Locally verified checkpoint ready for exact commit
 
 Final formatting and policy session62932 is consumed **exit0**,

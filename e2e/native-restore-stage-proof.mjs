@@ -62,7 +62,8 @@ export const createNativeRestoreOperationRecorder = (now = () => globalThis.perf
 
 /** Observe existing UI phases; delegate the original click/assertion unchanged. */
 export const observeNativeRestoreReview = async (panel, testInfo, recorder, label, work) => {
-  if (!["same_vault", "empty_target"].includes(label)) throw new Error("Invalid diagnostic label");
+  if (!["same_vault", "empty_target", "legacy_source"].includes(label))
+    throw new Error("Invalid diagnostic label");
   await panel.evaluate((element) => {
     const started = globalThis.performance.now();
     const phases = [];

@@ -109,28 +109,31 @@ describe("content-free native restore operation timing", () => {
     ).rejects.toBe(diagnostic);
   });
 
-  it("returns the original successful work result and attaches only the reviewed proof shape", async () => {
-    const evaluate = vi
-      .fn()
-      .mockResolvedValueOnce(undefined)
-      .mockResolvedValueOnce([{ phase: "review", elapsedMs: 1 }]);
-    const attach = vi.fn(async () => undefined);
-    expect(
-      await observeNativeRestoreReview(
-        { evaluate },
-        { attach },
-        createNativeRestoreOperationRecorder(),
-        "empty_target",
-        async () => 42,
-      ),
-    ).toBe(42);
-    const proof = JSON.parse(attach.mock.calls[0][1].body);
-    expect(proof).toMatchObject({
-      specVersion: 1,
-      label: "empty_target",
-      assertionPassed: true,
-      synthetic: true,
-      nativeOperations: [],
-    });
-  });
+  it.each(["same_vault", "empty_target", "legacy_source"])(
+    "returns original successful work and the reviewed proof shape for %s",
+    async (label) => {
+      const evaluate = vi
+        .fn()
+        .mockResolvedValueOnce(undefined)
+        .mockResolvedValueOnce([{ phase: "review", elapsedMs: 1 }]);
+      const attach = vi.fn(async () => undefined);
+      expect(
+        await observeNativeRestoreReview(
+          { evaluate },
+          { attach },
+          createNativeRestoreOperationRecorder(),
+          label,
+          async () => 42,
+        ),
+      ).toBe(42);
+      const proof = JSON.parse(attach.mock.calls[0][1].body);
+      expect(proof).toMatchObject({
+        specVersion: 1,
+        label,
+        assertionPassed: true,
+        synthetic: true,
+        nativeOperations: [],
+      });
+    },
+  );
 });

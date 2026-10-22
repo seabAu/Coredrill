@@ -232,6 +232,14 @@ import {
   createStoredCompanyWorkspaceApi,
   type StoredCompanyWorkspaceApi,
 } from "./stored-company-workspace.js";
+import {
+  createStoredContactDirectoryApi,
+  type StoredContactDirectoryApi,
+} from "./stored-contact-directory.js";
+import {
+  createStoredContactWorkspaceApi,
+  type StoredContactWorkspaceApi,
+} from "./stored-contact-workspace.js";
 import { createStoredJobNoteApi, type StoredJobNoteApi } from "./stored-job-notes.js";
 import { createStoredNextActionApi, type StoredNextActionApi } from "./stored-next-actions.js";
 import { createStoredVaultExportApi, type StoredVaultExportApi } from "./stored-vault-export.js";
@@ -515,6 +523,8 @@ export interface CoredrillStorageSpikeApi {
   readonly pipeline: StoredPipelineApi;
   readonly companyDirectory: StoredCompanyDirectoryApi;
   readonly companyWorkspace: StoredCompanyWorkspaceApi;
+  readonly contactDirectory: StoredContactDirectoryApi;
+  readonly contactWorkspace: StoredContactWorkspaceApi;
   readonly pipelineMutations: StoredPipelineMutationApi;
   readonly jobNotes: StoredJobNoteApi;
   readonly nextActions: StoredNextActionApi;
@@ -3355,6 +3365,21 @@ const api: CoredrillStorageSpikeApi = {
     },
     careerProfileOperationContext,
     () => generateEntityId("company"),
+  ),
+  contactDirectory: createStoredContactDirectoryApi(async () => {
+    const client = await getDatabase();
+    await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
+    return client;
+  }, careerProfileOperationContext),
+  contactWorkspace: createStoredContactWorkspaceApi(
+    async () => {
+      const client = await getDatabase();
+      await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
+      return client;
+    },
+    careerProfileOperationContext,
+    () => generateEntityId("contact"),
+    sha256Text,
   ),
   jobNotes: createStoredJobNoteApi(
     async () => {
