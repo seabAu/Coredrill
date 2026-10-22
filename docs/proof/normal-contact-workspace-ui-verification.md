@@ -88,6 +88,213 @@ WebView/release gates remain open. No owner choice is needed for this slice.
 
 ## Results
 
+### Corrected checkpoint ready for exact commit and hosted proof
+
+Serial extension76212 is consumed exit0, nine cases/28.5s,
+`NORMAL_CONTACT_UI_CORRECTED_EXTENSION_EXIT=0` in
+`normal-contact-ui-corrected-extension.log`; Firefox fallback durable schema164.
+Final root format2675 and policy33144 are consumed exit0:
+`NORMAL_CONTACT_UI_CORRECTED_FINAL_FORMAT_EXIT=0` and
+`NORMAL_CONTACT_UI_CORRECTED_FINAL_POLICY_EXIT=0` in corresponding corrected-final
+logs. Boundaries/foundation,831 npm/498 Cargo licenses and secrets pass; diff
+whitespace is clean. Full3626 remains a consumed success, including normal npm
+audit and unchanged reviewed Rust warnings. No source/test/helper changes follow
+that full result; only this result record and the ledger are updated.
+
+Reviewed pending scope is the three read-view focus corrections, contact owner/
+restore integration helper and browser/native cases, patch Changeset and two
+progress/proof documents. HEAD/remote remains5d81586 until the authorized normal
+commit/push; recovery stash2697 retained. New exact hosted proof is still required
+and older5d81586 failure cannot prove the successor. No Accepted decision,
+dependency/lockfile/schema/permission change or full INT-007/INT-008 closure.
+
+### Complete corrected-source local gate passes
+
+3626 is consumed **exit0**, `NORMAL_CONTACT_UI_CORRECTED_FULL_REFORMATTED_EXIT=0`
+in `normal-contact-ui-corrected-full-verify-reformatted.log`. This is the complete
+unchanged `pnpm verify` chain against the corrected frozen source, not a targeted
+test substituted for it. Format/boundaries/foundation,35 types,22 lint/build,
+201 files/2449 cases in both unit and coverage,7 UI foundations,76 shell,
+1 performance,63 resilience,7 onboarding,13 document-browser,12 browser storage,
+20 native SQLite and Rust24/1 intentional ignored all pass. OS secure-storage,
+native archive/automatic backup, contract schemas,831 npm/498 Cargo licenses,
+secrets and Changesets pass. The normal npm audit request now completes with
+no known vulnerabilities; same10 reviewed Cargo warnings remain unchanged.
+No security exception, mirror, TLS/signature bypass or persistent network change.
+Old local audit timeouts and old5d81586 hosted failure remain failures.
+
+Full native attachments are retained in
+`normal-contact-ui-corrected-full-native-observation.log`: Network2403 actual
+Rust IPCs/6 retired documents; legacy1125/2. All fallback/external counters zero,
+packaged-WebView proof explicitly false. Legacy review1050.6ms preserves its
+original five-second assertion; same/empty656.0/625.3ms. Actual contact ownership,
+foreign observed-vault privacy, deletion/restore and early-blur regressions pass
+within the full sequence, not only in isolation. Product/tests/helpers remain
+frozen for serial extension/final policy and new exact commit/hosted proof. No
+full INT-007/INT-008, release/external gate or goal completion claim.
+
+### Fresh corrected-source whole gate restart after formatting failure
+
+Fresh run3626 is live in `normal-contact-ui-corrected-full-verify-reformatted.log`;
+require `NORMAL_CONTACT_UI_CORRECTED_FULL_REFORMATTED_EXIT`. Observe the same
+handle without restarting for observation timeouts. Product source/tests/helpers
+are frozen; only result documents follow. Serial extension/final policy and a
+new exact normal commit/push/hosted run still follow a terminal result. HEAD and
+origin/main remain5d81586 (its old CI is consumed failure), stash2697 retained.
+
+26371 consumed exit1, `NORMAL_CONTACT_UI_CORRECTED_FULL_VERIFY_EXIT=1`, at
+formatting only: the newly extended restore test needs formatting. No later
+stage ran and no semantic failure is inferred. Format that file and immediately
+check it with the pinned formatter; direct check and diff whitespace now pass.
+Retain `normal-contact-ui-corrected-full-verify.log`. A fresh full run must start
+against the corrected final source; this restart follows an actual terminal
+failure, never an observation timeout. Source/tests then freeze; only result
+documents may change. No whole/audit success yet.
+
+### Corrected focus and owner/restore proof; fresh full gate next
+
+Exact5d81586 CI39712953183 is **terminal failure**; watch73063 consumed exit1,
+`NORMAL_CONTACT_UI_HOSTED_EXIT=1`. Extension, Windows package/storage, Firefox153,
+Chrome152 and history secrets pass; aggregate/macOS/Linux/Firefox154 stop during
+Corepack activation on official npm HTTP503. Chrome151 reaches resilience and
+fails only the two company late-focus assertions (58 others pass). This is not
+an npm-only workflow failure or hosted whole/audit success. Preserve the full log,
+immutable Chrome151 artifact and every prior local timeout failure.
+
+Controlled early-disabled-blur regressions fail unchanged contact detail52647
+and directory45093, respectively
+`NORMAL_CONTACT_UI_EARLY_DISABLED_FOCUS_BEFORE_EXIT=1` and
+`NORMAL_CONTACT_UI_DIRECTORY_DISABLED_FOCUS_BEFORE_EXIT=1`. Product correction
+separates stale revision from active read busy state in company/contact details
+and contact pages. Stale edits/company-linked creation/continuations remain
+disabled; First/Refresh stays enabled only until the read effect captures focus
+before its ordinary busy transition. Same-owner enabled origin is preferred on
+read completion; live-owner/read guards and deliberate-focus checks remain.
+Original five-second focus/restore assertions and test budgets are unchanged.
+
+42488 consumes exit0, six original/new browser/native cases35.6s,
+`NORMAL_CONTACT_UI_READ_FOCUS_OWNER_AFTER_EXIT=0`; focus types and strict lint
+also pass (`NORMAL_CONTACT_UI_FOCUS_TYPES_EXIT=0`,
+`NORMAL_CONTACT_UI_FOCUS_LINT_EXIT=0`). This includes both before-failing early-
+blur contact regressions, original company focus cases and normal contact paging.
+
+Initial restore-owner54844 consumes exit1 on two incorrect test assumptions,
+not new product failures: archive selection is explicitly read-only and remains
+available during a contact write; after successful restore, the root removes all
+workspace navigation/views until reopen (stronger than a disabled contact form).
+Keep those failures. Correct the tests to the existing contract, never relax the
+product guard: observe zero actual restore commits during a held contact update,
+require explicit fresh target review after that update, then perform actual
+same-vault restore from a freshly UI-downloaded archive. The old contact form,
+private fields and navigation must all be absent until explicit warned reopen;
+after reload, no draft remains and exact archived contact/manual basis read back.
+
+48329 consumes exit0, native Network10.0s/offline restore2.7s/offline owner+actual
+deletion2.6s (three cases26.0s),
+`NORMAL_CONTACT_UI_RESTORE_COMMIT_OWNER_CORRECTED_EXIT=0`. Final new-source/helper
+strict lint passes `NORMAL_CONTACT_UI_FOCUS_RESTORE_FINAL_LINT_EXIT=0`. The
+synthetic observed foreign owner and early-blur model are disclosed separately
+from actual UI-created contacts, SQLite writes/archive restore/deletion; this is
+not a multi-vault feature or installed-WebView/manual accessibility proof.
+
+Current product/test source is ready to freeze for a fresh complete local gate,
+then serial extension/policy and a new exact candidate/hosted run. No dependency,
+lockfile/schema/permission/Accepted decision change. No current whole/npm-clean
+or full UI-slice/INT-007/INT-008 completion claim. Source-backed contact provenance,
+relationships/interactions/Home and release/external evidence still follow.
+
+### Focus regression isolated; guarded correction plan
+
+New owner-lifetime run5099 consumed exit1: both cases wait for Settings under
+Primary navigation, but the captured DOM places Settings outside that nav.
+Correct only those three selectors; retain120-second test and five-second
+assertion budgets. Corrected82607 consumes exit0, native Network9.7s/browser
+owner+actual deletion2.6s (two cases/23.0s),
+`NORMAL_CONTACT_UI_OWNER_LIFETIMES_CORRECTED_SELECTOR_EXIT=0`. New helper/spec
+strict lint passes in `normal-contact-ui-owner-lifetimes-lint.log`. Browser owner
+case now runs from the cached offline shell and observes zero external requests.
+No product change was needed for these ownership/deletion cases.
+
+Hosted Chrome151119608328118 is terminal failure with58/60 resilience cases
+passing. Both failures are the original company late-acknowledgement focus
+assertion at `company-workspace-journey.mjs:330`, not the new contact screen or
+registry setup. Full log `normal-contact-ui-hosted-chrome151-job-log.log`; immutable
+failure artifact12397932047, SHA256
+`d18ca4d059fd864ee4495ceb2a0b4e0c8f7be3ac07641acad552005e939591c5`.
+Remaining Chrome152 is still live; watch73063 remains authoritative. Preserve
+original five-second focus assertions, original restore budgets and all evidence.
+
+Source inspection isolates a candidate-introduced change: company `busy` now
+includes revision mismatch, so a previously focused Refresh control can be
+disabled by the revision render before the read effect captures its origin.
+The same pattern exists in the new contact detail/page. Correct this without
+allowing stale edits: distinguish stale revision from active read busy state;
+keep notes/company-linked creation/continuation actions disabled when stale,
+while leaving the read-refresh control enabled only until the read effect can
+capture focus before its ordinary busy transition. Different-owner facts remain
+hidden synchronously. Add a deterministic early-disabled-blur contact regression
+and retain ready-commit/deliberate-focus guards; never force focus onto a new
+owner or remove a stale-value guard just to pass. This is same-slice correctness,
+not a new architecture/dependency/permission decision. Fresh final-source proof
+and exact successor hosted verification remain required; no completion claim.
+
+### Requirement audit follow-through and hosted setup failure
+
+CI39712953183 remains live/watch73063, but aggregate119608327972,
+macOS119608328017, Linux119608328294 and Firefox154119608328378 are terminal
+failures before product tests: Corepack receives HTTP503 from the official
+`https://registry.npmjs.org/pnpm/11.22.0` metadata endpoint while activating the
+unchanged pinned package manager. Direct completed-job API logs are retained as
+`normal-contact-ui-hosted-{aggregate,macos,linux,firefox154}-job-log.log`.
+The CLI `run view --log` probes only report that the whole run is still live;
+those are observation failures, not additional workflow failures. No substitution,
+mirror, signature/TLS bypass, dependency update or successful audit is inferred.
+Extension, Firefox153 and full-history secrets pass; remaining jobs still run.
+
+The current completion audit identifies stronger contact-specific integration
+proof still needed even if remaining candidate jobs pass:
+
+| Requirement                                                                       | Existing evidence                                                                                  | Remaining direct proof                                                                                                                                              |
+| --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Foreign-vault draft fields stay hidden and retained                               | Controller rejects foreign IDs; render-time hook owner guard                                       | Drive an explicitly synthetic changed observed vault through normal Settings refresh, inspect hidden fields, then restore original observed owner and exact draft   |
+| Late notes acknowledgement cannot replace another selected contact or steal focus | Captured controller intent and retired digest tests; company-specific late acknowledgement journey | Hold a contact notes write, select a different actually UI-created contact, release original write, retain new selection/focus, explicitly return to original draft |
+| Vault mutation/deletion retire or block contact owners                            | Shared mutation session tests and company-specific deletion journey                                | Pending contact save excludes actual vault deletion/export work; explicit actual browser deletion clears the retained private contact draft                         |
+
+This activates bounded contact-lifetime integration proof under the existing UI
+plan, including actual same-vault restore/reopen with an unsaved contact draft:
+prove commit submission exclusion during a held contact mutation, removal of
+stale workspace views after commit, then draft retirement after explicitly warned
+reload of a freshly UI-downloaded actual archive. It supersedes the result-
+documents-only freeze for independent local test work. At activation,5d81586
+source remains immutable in hosted CI; do not push over
+the live run or use its result to prove newer tests. Inspect/fix product code only
+if a new regression demonstrates a specific same-scope bug; no new feature,
+dependency/schema/permission/Accepted decision change is authorized by this audit.
+Record every failure and new final-source proof before a successor commit. No
+full UI-slice/INT-007/INT-008 completion claim; contact provenance follows this
+required proof, not ahead of it.
+
+### Exact candidate pushed; hosted whole/audit proof in progress
+
+Candidate `5d8158699678861ae22ace2bd2b562b279680be7`
+(`feat: connect owned offline contact screens`) contains25 reviewed files,
+3385 insertions/20 deletions and is on origin/main after a normal non-force push
+from a clean tree. Stash2697 remains intact. Final root format39404 consumed
+exit0, `NORMAL_CONTACT_UI_FINAL_FORMAT_EXIT=0`, and staged diff check passes.
+No dependency/lockfile/schema/permission/Accepted decision changed.
+
+Exact [Foundation CI39712953183](https://github.com/seabAu/Coredrill/actions/runs/39712953183)
+is **in progress**, not success. Watch73063 writes
+`normal-contact-ui-hosted-watch.log`; require `NORMAL_CONTACT_UI_HOSTED_EXIT`.
+Observe that same handle without restarting for observation timeouts. Do not
+supersede this run with another push; only result documents follow the frozen
+candidate. Its aggregate119608327972 runs unchanged full `pnpm verify`, including
+the npm audit which timed out locally; both Chrome lanes exercise the new contact
+journeys, and the matrix includes Firefox, extension and native packages/storage.
+Predecessor f5e6868 success cannot prove this candidate. Local90307/86829 remain
+retained timeout failures; no npm-clean/local-whole-success or slice-complete
+claim is made. Full INT-007/INT-008 and release/external evidence gates remain open.
+
 Activated before product edits. Directory reader/editor plus existing application
 contracts pass119 focused cases after correcting two test fixtures (empty phone
 must be null; equal-time cursor IDs order ascending). Initial failing runs remain

@@ -464,7 +464,10 @@ export const StoredCompanyDetails = ({
     };
   }, [owner, readOwner, revision, retry]);
   const visible = snapshot?.owner === owner ? snapshot : null;
-  const busy = visible?.busy !== false || visible.retry !== retry || visible.revision !== revision;
+  // A stale revision blocks edits immediately, but read busy starts after the effect captures
+  // focus. Disabling Refresh in the revision render can blur it before that capture.
+  const busy = visible?.busy !== false || visible.retry !== retry;
+  const stale = visible?.revision !== revision;
   const value = visible?.value ?? null;
   useLayoutEffect(() => {
     if (focusRequest === null) return;
@@ -480,6 +483,12 @@ export const StoredCompanyDetails = ({
         liveOwner.current !== request.readOwner.owner
       )
         return null;
+      if (
+        request.origin instanceof HTMLElement &&
+        container.current?.contains(request.origin) === true &&
+        !request.origin.matches(":disabled")
+      )
+        return request.origin;
       return (
         container.current?.querySelector<HTMLButtonElement>(
           "[data-company-detail-refresh]:not([disabled])",
@@ -506,7 +515,7 @@ export const StoredCompanyDetails = ({
         Refresh selected company
       </button>
       <p role="status" aria-live="polite">
-        {busy
+        {busy || stale
           ? "Reading selected company…"
           : value === null
             ? "No company detail is available."
@@ -547,7 +556,11 @@ export const StoredCompanyDetails = ({
             className="cd-button"
             data-company-start-notes="true"
             disabled={
-              disabled || busy || visible.error !== null || value.company.archivedAt !== null
+              disabled ||
+              busy ||
+              stale ||
+              visible.error !== null ||
+              value.company.archivedAt !== null
             }
             onClick={() => {
               onEdit(value);
@@ -563,6 +576,7 @@ export const StoredCompanyDetails = ({
                 disabled ||
                 contactDraftBlocked ||
                 busy ||
+                stale ||
                 visible.error !== null ||
                 value.company.archivedAt !== null
               }

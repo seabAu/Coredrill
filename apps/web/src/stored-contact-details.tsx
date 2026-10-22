@@ -152,8 +152,9 @@ export const StoredContactDetails = ({
   }, [owner, readOwner, revision, retry]);
   // Hide retired-owner facts synchronously, before effect cleanup or a replacement read.
   const visible = snapshot?.owner === owner ? snapshot : null;
-  const busy =
-    visible === null || visible.busy || visible.retry !== retry || visible.revision !== revision;
+  // Preserve a focused read control until the effect captures it; stale facts cannot be edited.
+  const busy = visible === null || visible.busy || visible.retry !== retry;
+  const stale = visible?.revision !== revision;
   const value = visible?.value ?? null;
   useLayoutEffect(() => {
     if (focusRequest === null) return;
@@ -169,6 +170,12 @@ export const StoredContactDetails = ({
         liveOwner.current !== request.readOwner.owner
       )
         return null;
+      if (
+        request.origin instanceof HTMLElement &&
+        container.current?.contains(request.origin) === true &&
+        !request.origin.matches(":disabled")
+      )
+        return request.origin;
       return (
         container.current?.querySelector<HTMLButtonElement>(
           "[data-contact-detail-refresh]:not([disabled])",
@@ -199,7 +206,7 @@ export const StoredContactDetails = ({
         Refresh selected contact
       </button>
       <p role="status" aria-live="polite">
-        {busy
+        {busy || stale
           ? "Reading selected contact and value basis…"
           : value === null
             ? "No contact detail is available."
@@ -208,7 +215,7 @@ export const StoredContactDetails = ({
       {visible?.error ? <p role="alert">{visible.error}</p> : null}
       {value !== null && facts !== null ? (
         <>
-          {busy || visible.error ? (
+          {busy || stale || visible.error ? (
             <p>
               Previously read contact details may be stale. Editing is unavailable until a
               successful read.
@@ -282,6 +289,7 @@ export const StoredContactDetails = ({
             disabled={
               disabled ||
               busy ||
+              stale ||
               visible.error !== null ||
               value.workspace.contact.archivedAt !== null
             }

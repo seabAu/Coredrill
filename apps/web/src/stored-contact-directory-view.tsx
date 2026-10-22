@@ -74,10 +74,12 @@ const ContactPage = ({
     };
   }, [lifetime, owner]);
   const visible = snapshot?.owner === owner ? snapshot.state : null;
-  const busy = visible === null || visible.busy || snapshot?.lifetime !== lifetime;
+  // Revision staleness blocks continuation, not the First control before read-focus capture.
+  const busy = visible === null || visible.busy;
+  const stale = snapshot?.lifetime !== lifetime;
   const page = visible?.page ?? null;
   useLayoutEffect(() => {
-    if (focusRequest === null || busy) return;
+    if (focusRequest === null || busy || stale) return;
     const request = focusRequest;
     restoreFocusAfterChange(request.origin, () => {
       if (reader.current !== request.current) return null;
@@ -99,10 +101,10 @@ const ContactPage = ({
       );
     });
     setFocusRequest(null);
-  }, [focusRequest, busy]);
+  }, [focusRequest, busy, stale]);
   const run = (mode: "first" | "next" | "retry") => {
     const current = reader.current;
-    if (current === null || visible === null) return;
+    if (current === null || visible === null || (stale && mode !== "first")) return;
     const origin = document.activeElement;
     void current[mode]().then((completed) => {
       if (completed && reader.current === current) setFocusRequest({ current, origin, mode });
@@ -143,6 +145,7 @@ const ContactPage = ({
           data-contact-read="next"
           disabled={
             busy ||
+            stale ||
             page?.nextCursor === undefined ||
             page.nextCursor === null ||
             visible.error !== null
@@ -158,7 +161,7 @@ const ContactPage = ({
             className="cd-button"
             type="button"
             data-contact-read="retry"
-            disabled={busy}
+            disabled={busy || stale}
             onClick={() => {
               run("retry");
             }}
@@ -168,17 +171,17 @@ const ContactPage = ({
         ) : null}
       </div>
       <p role="status" aria-live="polite">
-        {busy
+        {busy || stale
           ? "Reading local contacts…"
           : page === null
             ? "No contact page is available."
             : `${String(page.items.length)} ${page.items.length === 1 ? "contact" : "contacts"} on this page. ${page.hasMore ? "Another page is available." : "No later page was available when read."}`}
       </p>
       {visible?.error ? <p role="alert">{visible.error}</p> : null}
-      {page !== null && (busy || visible.error !== null) ? (
+      {page !== null && (busy || stale || visible.error !== null) ? (
         <p>Previously loaded contact identities are shown below and may be stale.</p>
       ) : null}
-      {page !== null && page.items.length === 0 && !busy && visible.error === null ? (
+      {page !== null && page.items.length === 0 && !busy && !stale && visible.error === null ? (
         <p>
           No contacts were found in this vault, archive and company scope when read. No sample
           people or contact methods are shown.
