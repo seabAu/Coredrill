@@ -167,6 +167,79 @@ const repack = (
 };
 
 describe("portable archive restore", () => {
+  it("keeps exact-schema inspection by default and retains explicitly reviewed source identity", async () => {
+    const { archive } = await createArchive();
+    await expect(
+      inspectPortableArchiveV1({ bytes: archive.bytes, expectedSchemaVersion: SCHEMA_VERSION + 1 }),
+    ).rejects.toMatchObject({ code: "schema_mismatch" });
+    await expect(
+      inspectPortableArchiveV1({
+        bytes: archive.bytes,
+        expectedSchemaVersion: SCHEMA_VERSION + 1,
+        compatibleSourceSchemaVersions: [SCHEMA_VERSION],
+      }),
+    ).resolves.toMatchObject({
+      database: { schemaVersion: SCHEMA_VERSION },
+      manifest: { vault: { schemaVersion: SCHEMA_VERSION } },
+    });
+  });
+  it.each([
+    null,
+    {},
+    "101",
+    [0],
+    [-1],
+    [101.5],
+    [NaN],
+    ["101"],
+    [true],
+    [102],
+    [103],
+    [101, 101],
+    Array.from({ length: 16 }, (_, index) => index + 1),
+  ])("rejects malformed or unbounded compatible schemas (%j)", async (compatible) => {
+    const { archive } = await createArchive();
+    await expect(
+      inspectPortableArchiveV1({
+        bytes: archive.bytes,
+        expectedSchemaVersion: SCHEMA_VERSION + 1,
+        compatibleSourceSchemaVersions: compatible as unknown as readonly number[],
+      }),
+    ).rejects.toMatchObject({ code: "invalid_input" });
+  });
+  it("copies reviewed versions before hashing and cannot be broadened mid-inspection", async () => {
+    const { archive } = await createArchive();
+    const versions = [SCHEMA_VERSION];
+    const accepted = inspectPortableArchiveV1({
+      bytes: archive.bytes,
+      expectedSchemaVersion: SCHEMA_VERSION + 1,
+      compatibleSourceSchemaVersions: versions,
+    });
+    versions[0] = 1;
+    await expect(accepted).resolves.toMatchObject({ database: { schemaVersion: SCHEMA_VERSION } });
+    const unrelated = [1];
+    const rejected = inspectPortableArchiveV1({
+      bytes: archive.bytes,
+      expectedSchemaVersion: SCHEMA_VERSION + 1,
+      compatibleSourceSchemaVersions: unrelated,
+    });
+    unrelated.push(SCHEMA_VERSION);
+    await expect(rejected).rejects.toMatchObject({ code: "schema_mismatch" });
+  });
+  it("never waives payload checksums for a reviewed older source", async () => {
+    const { archive } = await createArchive();
+    const entries = unzipSync(archive.bytes);
+    const database = entries["database.sqlite3"];
+    if (database === undefined) throw new Error("Missing fixture database.");
+    database[0] = (database[0] ?? 0) ^ 1;
+    await expect(
+      inspectPortableArchiveV1({
+        bytes: zipSync(entries, { level: 0 }),
+        expectedSchemaVersion: SCHEMA_VERSION + 1,
+        compatibleSourceSchemaVersions: [SCHEMA_VERSION],
+      }),
+    ).rejects.toMatchObject({ code: "checksum_mismatch" });
+  });
   it("captures standalone inspection expectations and archive bytes before asynchronous hashing", async () => {
     const { archive } = await createArchive();
     const request = {

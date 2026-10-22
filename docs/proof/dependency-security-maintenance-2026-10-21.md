@@ -1,6 +1,24 @@
 # Dependency security maintenance — 2026-10-21
 
-Status: complete patched local gate, serial extension and final policy; exact commit/hosted proof still required.
+Status: complete patched local gate, serial extension, final policy and exact ed5d733 hosted verification.
+
+## Exact hosted closure
+
+[Run39689728116](https://github.com/seabAu/Coredrill/actions/runs/39689728116)
+is terminal success at `ed5d73332ea397025ae63d53012579486877e575` with every
+required job successful; PR-only dependency review skips. Watch73420 is consumed
+exit0, `CONTACT_DIRECTORY_COMPANY_FOCUS_HOSTED_EXIT=0`. Inspected retained
+aggregate log proves the complete patched gate,2214 passing units plus one
+platform skip in both unit/coverage runs,55 resilience cases, actual browser/
+native contracts and a final audit with no known npm vulnerabilities. Reviewed
+Cargo warnings remain. Exact Chrome/Firefox and all three native lanes succeed.
+[Full scoped closure](contact-directory-verification.md#exact-hosted-prerequisite-closure--2026-10-21)
+does not prove later uncommitted contact-workspace sources. Earlier live/pending
+statements and original failed/interrupted attempts below are historical.
+
+## Exact pushed checkpoint
+
+The reviewed graph is pushed at `ed5d73332ea397025ae63d53012579486877e575`. [Foundation CI39689728116](https://github.com/seabAu/Coredrill/actions/runs/39689728116) is live under watch73420, requiring `CONTACT_DIRECTORY_COMPANY_FOCUS_HOSTED_EXIT` in `contact-directory-company-focus-hosted-watch.log`. No complete hosted pass is claimed; do not supersede its live run or treat the older failed30e51f1 run as patched proof. Only post-push result docs change during this checkpoint; all original failures/interruptions remain preserved.
 
 The resumed company-focus/contact-directory full gate passes functional, coverage, build, browser/native, archive/credential/schema/license and secret checks, then fails npm audit with two moderate findings in existing @vitest/mocker4.1.11. Session8945 is consumed exit1, `CONTACT_DIRECTORY_COMPANY_FOCUS_RESUMED_VERIFY_EXIT=1` in `contact-directory-company-focus-resumed-verify.log`. The preceding39792 attempt is interrupted, not passed. Keep both records; do not suppress or mislabel the findings.
 

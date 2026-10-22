@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
-import { readdirSync, readFileSync } from "node:fs";
-import { DatabaseSync } from "node:sqlite";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmdirSync, unlinkSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { backup, DatabaseSync } from "node:sqlite";
 import path from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -148,7 +149,21 @@ class NodeSqliteTestDatabase implements DatabasePort {
   }
 
   public async exportPortable(): Promise<PortableDatabase> {
-    throw new Error("Portable export is outside this in-memory repository contract adapter.");
+    const directory = mkdtempSync(path.join(tmpdir(), "coredrill-repository-contract-"));
+    const target = path.join(directory, "synthetic.sqlite");
+    try {
+      await backup(this.database, target);
+      const bytes = new Uint8Array(readFileSync(target));
+      return Object.freeze({
+        schemaVersion: (await this.diagnostics()).schemaVersion,
+        byteLength: bytes.byteLength,
+        sha256: createHash("sha256").update(bytes).digest("hex"),
+        bytes,
+      });
+    } finally {
+      if (existsSync(target)) unlinkSync(target);
+      rmdirSync(directory);
+    }
   }
 
   public async diagnostics(): Promise<StorageDiagnostics> {
@@ -527,7 +542,7 @@ describe("SQLite application port composition", () => {
         name: "Explicit local name",
         createdAt: instant(APPLIED_AT),
       });
-      expect(created.vault.schemaVersion).toBe(160);
+      expect(created.vault.schemaVersion).toBe(164);
       expect((await port.inspect()).vault).toEqual(created.vault);
       await expect(
         port.create({
@@ -565,13 +580,13 @@ describe("SQLite application port composition", () => {
         name: "Keep my name",
         createdAt: APPLIED_AT,
         lastOpenedAt: openedAt,
-        schemaVersion: 160,
+        schemaVersion: 164,
       });
       await expect(port.open({ vaultId: id, openedAt: instant(APPLIED_AT) })).rejects.toMatchObject(
         { code: "invalid_state" },
       );
       await database.execute(
-        sqlStatement("UPDATE vault SET schema_version = 161 WHERE id = ?", [id]),
+        sqlStatement("UPDATE vault SET schema_version = 165 WHERE id = ?", [id]),
       );
       const before = await database.query(sqlStatement("SELECT * FROM vault"));
       await expect(port.open({ vaultId: id, openedAt })).rejects.toMatchObject({

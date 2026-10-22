@@ -855,7 +855,7 @@ export const createPipelineRepositoryContractSuite = (
           "Task index upgrade rewrote prior migration identities/checksums.",
         );
         const beforeReminderIndex = await completionState();
-        await setup.migrate(database);
+        await setup.migrate(database, 160);
         assertContract(
           (await completionState()) === beforeReminderIndex,
           "Reminder index upgrade rewrote retained data/history.",

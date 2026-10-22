@@ -17,7 +17,7 @@ export const exerciseNormalVaultPreparation = async (page, runtime) => {
     panel.getByRole("heading", { name: "Prepared archive snapshot", exact: true }),
   ).toBeVisible({ timeout: 30_000 });
   await expect(panel.getByRole("status")).toContainText("not saved");
-  await expect(panel).toContainText("114");
+  await expect(panel).toContainText("116");
   if (runtime === "native") {
     await expect(
       panel.getByRole("button", { name: "Download prepared archive", exact: true }),

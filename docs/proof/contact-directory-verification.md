@@ -1,5 +1,40 @@
 # Viewed-vault contact directory prerequisite — INT-007 in progress
 
+## Exact hosted prerequisite closure — 2026-10-21
+
+[Run39689728116](https://github.com/seabAu/Coredrill/actions/runs/39689728116)
+is terminal success at exact `ed5d73332ea397025ae63d53012579486877e575`.
+Every required aggregate, Chrome151/152, Firefox153/154, Windows/macOS/Ubuntu,
+extension and full-history secret job succeeds; PR-only dependency review skips.
+Watch73420 is consumed exit0 with durable
+`CONTACT_DIRECTORY_COMPANY_FOCUS_HOSTED_EXIT=0`; do not resume or restart it.
+Earlier live-watch statements below are historical, not current processes.
+
+Retained `contact-directory-company-focus-hosted-{aggregate,chrome151,chrome152,firefox153,firefox154,windows}.log`
+records are inspected, not just job metadata. Aggregate unit and coverage each
+pass195 files /2214 cases with one platform skip (2215 total);55 resilience,
+76 shell,7 onboarding,13 document and11 browser-storage cases pass. Native Linux
+passes18 with one platform skip; Windows passes all19; Rust core passes24 with
+one intentional ignore. Both Chrome lanes pass all55 resilience cases, including
+the normal browser and actual-native company workspace journeys with unchanged
+focus assertions/budgets. Both Firefox final proof objects report the exact
+v13/30 repository inventory, schema160 and57 datasets /114 human-readable files.
+Concrete browser/native manifest tests pass. Final npm audit reports no known
+vulnerabilities; reviewed Cargo warnings remain, not warning-free proof.
+
+This closes the contact-directory prerequisite and corrected company-focus /
+compatible-development-security checkpoint only. Failed30e51f1 CI, interrupted
+39792 and audit-failed8945 stay preserved. Later uncommitted selected-contact
+workspace contracts are independent sources and need their own complete proof;
+see [the activated next slice](contact-workspace-verification.md). Full INT-007
+remains open for normal contacts, source provenance/relationships and history.
+
+## Exact pushed checkpoint — 2026-10-21
+
+Commit `ed5d73332ea397025ae63d53012579486877e575` is pushed normally to origin/main from a clean tree, preserving stash `2697ebcec53351a052d8c5c19e2b8e2a52056a70`. It contains the minimized contact-directory query/adapter/shared v13/30 inventory, ready-commit company focus correction, aligned Vitest/coverage4.1.12 security patch and proof records. Complete patched local gate84988, serial extension47635 and final policy70419 are consumed exit0; original failed/interrupted records remain preserved.
+
+[Exact hosted run39689728116](https://github.com/seabAu/Coredrill/actions/runs/39689728116) is live under existing watch73420 / `contact-directory-company-focus-hosted-watch.log`, requiring `CONTACT_DIRECTORY_COMPANY_FOCUS_HOSTED_EXIT`. Observe that handle; no duplicate or successor push while the run is live. No hosted success is claimed. These post-push result notes are not part of the immutable commit. Full INT-007 remains open for normal contact runtime/UI, selected provenance/relationships and interaction history; next bounded follow-through must use actual stored contracts without inferring public/license basis or seeding catalog data.
+
 ## Current patched verification
 
 Complete patched full gate84988 is consumed exit0, `CONTACT_DIRECTORY_COMPANY_FOCUS_PATCHED_VERIFY_EXIT=0` in `contact-directory-company-focus-patched-verify.log`. It proves the contact v13/30 prerequisite, company ready-commit correction and reviewed Vitest/coverage4.1.12 graph together:195 unit files /2215 cases in both unit/coverage runs; all35 types,22 lint/build tasks;7 UI foundations,76 app-shell,1 performance,55 resilience,7 onboarding,13 document-browser,11 browser-storage,19 native-storage;24 Rust-core passes /1 intentional ignore; credential/archive/backup/schema/license/secret/audit/Changesets pass. Npm reports no known vulnerabilities; Cargo retains10 reviewed allowed warnings, not zero warnings. License counts remain831 npm /498 Cargo; inventory1.31 and lock hash67b1363c11e00f83dc4cd4c463dfb506d79ae9dab3c688831514661eb064c336 bind the graph.

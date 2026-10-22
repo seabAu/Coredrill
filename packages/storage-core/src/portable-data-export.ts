@@ -14,7 +14,7 @@ import {
 } from "./database-port.js";
 import type { PortableArchiveDataFileSourceV1 } from "./portable-archive-writer.js";
 
-export const PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION = 160 as const;
+export const PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION = 164 as const;
 export const PORTABLE_DATA_EXPORT_SUPPORTED_SOURCE_SCHEMA_VERSIONS = Object.freeze([
   101,
   111,
@@ -29,6 +29,7 @@ export const PORTABLE_DATA_EXPORT_SUPPORTED_SOURCE_SCHEMA_VERSIONS = Object.free
   154,
   158,
   159,
+  160,
   PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION,
 ] as const);
 export const PORTABLE_DATA_EXPORT_WRITER_LIMITS = Object.freeze({
@@ -188,6 +189,22 @@ export const PORTABLE_DATA_EXPORT_DATASETS: readonly DatasetSpec[] = Object.free
     ],
     booleanColumns: ["user_confirmed"],
     orderBy: ["id"],
+  }),
+  dataset({
+    name: "contact_manual_creation",
+    table: "contact_manual_creation",
+    minimumSourceSchemaVersion: 164,
+    columns: [
+      "contact_id",
+      "operation_id",
+      "created_at",
+      "name_hash",
+      "role_hash",
+      "email_hash",
+      "phone_hash",
+      "public_profile_url_hash",
+    ],
+    orderBy: ["contact_id"],
   }),
   dataset({
     name: "job",

@@ -292,16 +292,16 @@ try {
     proof.typedVaultDeletionPreview !== true ||
     proof.typedVaultDeletionRejectedSafely !== true ||
     proof.typedVaultDeletionCleanProfile !== true ||
-    proof.repositoryContractCases !== 30 ||
+    proof.repositoryContractCases !== 32 ||
     proof.careerRepositoryContractCases !== 4 ||
-    proof.humanReadableDataFiles !== 114 ||
-    proof.humanReadableDatasets !== 57 ||
-    humanReadable.csvFiles !== 57 ||
-    humanReadable.jsonFiles !== 57 ||
+    proof.humanReadableDataFiles !== 116 ||
+    proof.humanReadableDatasets !== 58 ||
+    humanReadable.csvFiles !== 58 ||
+    humanReadable.jsonFiles !== 58 ||
     humanReadable.rowCount !== 2 ||
     humanReadable.sourceSchemaVersion !== expectedSchemaVersion ||
     archiveRestore.attachmentCount !== 0 ||
-    archiveRestore.dataFileCount !== 114 ||
+    archiveRestore.dataFileCount !== 116 ||
     archiveRestore.corruptionRejected !== true ||
     archiveRestore.corruptionPreservedTarget !== true ||
     archiveRestore.conflict !== "same_vault_replace" ||
@@ -317,7 +317,7 @@ try {
     typeof archiveRestore.archiveSha256 !== "string" ||
     !/^[a-f0-9]{64}$/u.test(archiveRestore.archiveSha256) ||
     proof.repositoryContractSuite !== repositoryContracts.manifest.suiteName ||
-    proof.repositoryContractVersion !== 13 ||
+    proof.repositoryContractVersion !== 14 ||
     proof.careerRepositoryContractVersion !== 3 ||
     proof.careerRepositoryContractSuite !== careerRepositoryContracts.manifest.suiteName ||
     !Array.isArray(careerRepositoryContracts.run.completedCases) ||

@@ -15,7 +15,7 @@ const deferred = () => {
   });
   return { promise, resolve };
 };
-const setup = async (viewed = null) => {
+const setup = async (viewed = null, options = {}) => {
   const bytes = new TextEncoder().encode("SQLite format 3\u0000synthetic restore fixture");
   const archive = await writePortableArchiveV1({
     archiveId,
@@ -72,6 +72,7 @@ const setup = async (viewed = null) => {
   let sequence = 0;
   const api = createStoredVaultRestoreApi({
     expectedSchemaVersion: async () => 160,
+    ...options,
     port: factory,
     context: () => ({
       operationId: `0198e102-0000-7000-8000-${(++sequence).toString(16).padStart(12, "0")}`,
@@ -97,6 +98,40 @@ const preview = async (fixture, viewedVaultId = null) => {
 };
 
 describe("normal selected-runtime restore capability", () => {
+  it("keeps the prior schema unsupported without an explicit reviewed compatibility choice", async () => {
+    const fixture = await setup(null, { expectedSchemaVersion: async () => 164 });
+    expect(
+      await fixture.api.preview({ viewedVaultId: null, bytes: fixture.archive.bytes }),
+    ).toMatchObject({
+      ok: false,
+      error: {
+        code: "unavailable",
+        message: "This archive needs a compatible Coredrill build. No restore was submitted.",
+        retryable: false,
+      },
+    });
+    expect(fixture.factory).not.toHaveBeenCalled();
+    expect(fixture.port.commit).not.toHaveBeenCalled();
+  });
+  it("previews and commits the reviewed source160 exactly rather than falsely labeling it164", async () => {
+    const versions = [160];
+    const fixture = await setup(null, {
+      expectedSchemaVersion: async () => 164,
+      compatibleSourceSchemaVersions: versions,
+    });
+    versions[0] = 159;
+    const value = await preview(fixture);
+    expect(value.archive.schemaVersion).toBe(160);
+    expect(fixture.port.commit).not.toHaveBeenCalled();
+    expect(await fixture.api.commit({ preview: value, confirmation: "commit" })).toMatchObject({
+      ok: true,
+      value: { schemaVersion: 160 },
+    });
+    expect(fixture.port.commit).toHaveBeenCalledTimes(1);
+    expect(fixture.port.commit.mock.calls[0]?.[0]).toMatchObject({
+      database: { schemaVersion: 160 },
+    });
+  });
   it("inspects a private owned archive without committing, then requires explicit exact confirmation", async () => {
     const fixture = await setup();
     const value = await preview(fixture);

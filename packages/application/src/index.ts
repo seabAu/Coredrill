@@ -298,6 +298,9 @@ export {
   CONTACT_PROVENANCE_FIELDS,
   CompanyContactError,
   createCompanyContactOperations,
+  contactFieldValues,
+  parseContactDto,
+  parseManualContactFields,
   type CompanyContactErrorCode,
   type CompanyContactOperationDependencies,
   type CompanyContactOperations,
@@ -670,3 +673,4 @@ export {
   type UpdateCompanyNotesInputV1,
   type UpdateCompanyNotesPortInputV1,
 } from "./company-workspace.js";
+export * from "./contact-workspace.js";

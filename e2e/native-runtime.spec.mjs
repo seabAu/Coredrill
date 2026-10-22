@@ -14,6 +14,7 @@ import { exerciseNextActionRuntime } from "./next-action-runtime-journey.mjs";
 import { exerciseVaultExportPreparation } from "./vault-export-runtime-journey.mjs";
 import { exerciseNormalVaultPreparation } from "./normal-vault-export-journey.mjs";
 import { expectRestoredPortableContent } from "./portable-archive-content-proof.mjs";
+import { expectSchema160RestoreUpgrade } from "./schema-160-restore-proof.mjs";
 import { inspectPortableArchiveV1 } from "../packages/storage-core/dist/index.js";
 import { exerciseNormalTaskEntry } from "./task-entry-journey.mjs";
 import { exerciseScheduledTaskEntry } from "./scheduled-task-entry-journey.mjs";
@@ -369,6 +370,53 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
       const listingComparison = await exerciseStoredListingComparison(page, testInfo);
       const localNote = await exerciseStoredJobNote(page, testInfo);
       Object.assign(journeyProof, { listingComparison, localNote });
+    } else if (journey === "legacy") {
+      const bytes = await readFile(
+        path.join(root, "fixtures/recovery/phase-1-vault-schema-160-v1.coredrill.zip"),
+      );
+      const archive = await inspectPortableArchiveV1({
+        bytes: new Uint8Array(bytes),
+        expectedSchemaVersion: 160,
+      });
+      await writeFile(selectedArchive, bytes);
+      await page.getByRole("link", { name: "Settings", exact: true }).click();
+      const panel = page.getByRole("region", { name: "Portable vault restore", exact: true });
+      await panel.getByRole("button", { name: "Choose archive to review", exact: true }).click();
+      await expect(
+        panel.getByRole("heading", { name: "Review exact restore changes", exact: true }),
+      ).toBeVisible();
+      await expect(panel).toContainText(archive.archiveSha256);
+      await expect(panel).toContainText("DIFFERENT vault");
+      await expect(panel.getByRole("checkbox")).toHaveAccessibleName(
+        /replacement of this different vault/u,
+      );
+      await panel.getByRole("checkbox").check();
+      await panel
+        .getByRole("button", { name: "Confirm and restore reviewed archive", exact: true })
+        .click();
+      await expect(panel.getByRole("status")).toContainText(
+        "Restore committed and its acknowledgement validated",
+      );
+      const openedAfter = Date.now();
+      await panel.getByRole("button", { name: "Reload local vault", exact: true }).click();
+      await expect(page.getByRole("navigation", { name: "Primary", exact: true })).toBeVisible();
+      await page.getByRole("link", { name: "Settings", exact: true }).click();
+      const exported = await exerciseNormalVaultPreparation(page, "native");
+      await exported.getByRole("button", { name: "Save prepared archive", exact: true }).click();
+      await expect(exported.getByRole("status")).toContainText("confirmed the exact archive bytes");
+      const actual = await inspectPortableArchiveV1({
+        bytes: new Uint8Array(await readFile(selectedArchive)),
+        expectedSchemaVersion: 164,
+      });
+      await expectSchema160RestoreUpgrade(actual, archive, [openedAfter, Date.now()]);
+      Object.assign(journeyProof, {
+        normalPriorSchemaRestore: true,
+        sourceSchemaVersion: 160,
+        reopenedSchemaVersion: 164,
+        explicitDifferentVaultConfirmation: true,
+        syntheticPreservedArchive: true,
+        noReceiptBackfill: true,
+      });
     } else {
       await primary.getByRole("link", { name: "Documents", exact: true }).click();
       await page.getByRole("button", { name: "New document", exact: true }).click();
@@ -539,10 +587,10 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
       await expect(verificationHistory).toContainText(savedSha256);
       const savedArchive = await inspectPortableArchiveV1({
         bytes: savedBytes,
-        expectedSchemaVersion: 160,
+        expectedSchemaVersion: 164,
         expectedArchiveSha256: savedSha256,
       });
-      expect(savedArchive.dataFiles).toHaveLength(114);
+      expect(savedArchive.dataFiles).toHaveLength(116);
       expect(savedArchive.attachments.length).toBeGreaterThanOrEqual(1);
       expect(fullArchiveDownloads).toBe(0);
       await vaultExportPanel.screenshot({
@@ -561,7 +609,7 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
               {
                 archiveId: savedArchive.manifest.archiveId,
                 archiveCreatedAt: savedArchive.manifest.createdAt,
-                schemaVersion: 160,
+                schemaVersion: 164,
                 byteLength: savedBytes.length,
                 sha256: savedSha256,
                 method: "native_readback",
@@ -668,7 +716,7 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
         });
         return inspectPortableArchiveV1({
           bytes: new Uint8Array(restoreReadback),
-          expectedSchemaVersion: 160,
+          expectedSchemaVersion: 164,
         });
       };
       const restoredArchive = await readRestoredArchive();
@@ -797,7 +845,7 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
           host: "simulated Tauri IPC",
           backend: "real Rust SQLite process",
           packagedWebviewProven: false,
-          seededRecords: false,
+          seededRecords: journey === "legacy",
           journey,
           invocations,
           ...journeyProof,
@@ -832,6 +880,7 @@ for (const [journey, description] of [
   ["network", "stored company directory, creation, notes and owned recovery"],
   ["tracking", "capture, tasks, status, source comparison and notes"],
   ["documents", "documents and complete archive cancellation/save"],
+  ["legacy", "reviewed schema160 archive restore and deliberate schema164 reopen"],
 ]) {
   test(`normal root uses real native SQLite for ${description} without OPFS fallback`, async ({
     page,

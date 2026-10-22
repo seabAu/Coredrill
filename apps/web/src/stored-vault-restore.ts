@@ -24,6 +24,7 @@ import {
 /** One private coordinator capability; no bytes, adapter or deterministic core identity in UI state. */
 export const createStoredVaultRestoreApi = (options: {
   readonly expectedSchemaVersion: () => Promise<number>;
+  readonly compatibleSourceSchemaVersions?: readonly number[];
   readonly port: (candidateVaultId: string) => Promise<PortableArchiveRestorePortV1>;
   readonly context: () => ApplicationOperationContext;
   readonly selectNative?: () => Promise<
@@ -36,6 +37,10 @@ export const createStoredVaultRestoreApi = (options: {
       }
   >;
 }) => {
+  const compatibleSourceSchemaVersions =
+    options.compatibleSourceSchemaVersions === undefined
+      ? undefined
+      : Object.freeze([...options.compatibleSourceSchemaVersions]);
   let active: {
     readonly core: PortableArchiveRestorePreviewV1;
     readonly dto: VaultRestorePreviewDto;
@@ -62,6 +67,9 @@ export const createStoredVaultRestoreApi = (options: {
         const inspected = await inspectPortableArchiveV1({
           bytes: input.bytes,
           expectedSchemaVersion,
+          ...(compatibleSourceSchemaVersions === undefined
+            ? {}
+            : { compatibleSourceSchemaVersions }),
         });
         const base = await options.port(inspected.manifest.vault.id);
         const guarded: PortableArchiveRestorePortV1 = {
@@ -80,7 +88,8 @@ export const createStoredVaultRestoreApi = (options: {
         };
         core = await createPortableArchiveRestorePreviewV1({
           archiveBytes: input.bytes,
-          expectedSchemaVersion,
+          // Keep the verified source identity through preview/commit; reopen applies migrations.
+          expectedSchemaVersion: inspected.manifest.vault.schemaVersion,
           expectedArchiveSha256: inspected.archiveSha256,
           port: guarded,
         });

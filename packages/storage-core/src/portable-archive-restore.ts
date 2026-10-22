@@ -266,6 +266,8 @@ const verifiedEntryBytes = async (
 export const inspectPortableArchiveV1 = async (input: {
   readonly bytes: Uint8Array;
   readonly expectedSchemaVersion: number;
+  /** Explicitly reviewed older source schemas only; default remains exact-schema inspection. */
+  readonly compatibleSourceSchemaVersions?: readonly number[];
   readonly expectedArchiveSha256?: string;
 }): Promise<InspectedPortableArchiveV1> => {
   const { expectedSchemaVersion, expectedArchiveSha256 } = input;
@@ -277,6 +279,25 @@ export const inspectPortableArchiveV1 = async (input: {
   ) {
     throw restoreError("invalid_input");
   }
+  const untrustedCompatible = input.compatibleSourceSchemaVersions as unknown;
+  let compatible: readonly number[] = [];
+  if (untrustedCompatible !== undefined) {
+    if (!Array.isArray(untrustedCompatible) || untrustedCompatible.length > 15)
+      throw restoreError("invalid_input");
+    compatible = untrustedCompatible.map((version: unknown) => {
+      if (
+        typeof version !== "number" ||
+        !Number.isSafeInteger(version) ||
+        version < 1 ||
+        version >= expectedSchemaVersion
+      )
+        throw restoreError("invalid_input");
+      return version;
+    });
+    if (new Set(compatible).size !== compatible.length) throw restoreError("invalid_input");
+  }
+  // Copy before the first asynchronous digest; no external mutation can broaden this read.
+  const reviewedSchemas = new Set([expectedSchemaVersion, ...compatible]);
   const archiveSha256 = await sha256(bytes);
   if (expectedArchiveSha256 !== undefined && archiveSha256 !== expectedArchiveSha256) {
     throw restoreError("checksum_mismatch");
@@ -333,7 +354,7 @@ export const inspectPortableArchiveV1 = async (input: {
     throw restoreError("manifest_invalid");
   }
   const manifest = readManifest(manifestBytes);
-  if (manifest.vault.schemaVersion !== expectedSchemaVersion) {
+  if (!reviewedSchemas.has(manifest.vault.schemaVersion)) {
     throw restoreError("schema_mismatch");
   }
   assertExpectedEntries(entries, manifest);

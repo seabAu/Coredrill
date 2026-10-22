@@ -65,8 +65,8 @@ test("imports the checksummed Firefox JSON fallback idempotently into durable SQ
   await callStorage(page, "delete");
   const opened = await callStorage(page, "openAndMigrate");
   expect(opened).toMatchObject({
-    appliedVersions: Array.from({ length: 160 }, (_, index) => index + 1),
-    diagnostics: { schemaVersion: 160 },
+    appliedVersions: Array.from({ length: 164 }, (_, index) => index + 1),
+    diagnostics: { schemaVersion: 164 },
   });
 
   const json = JSON.stringify(exported);

@@ -22,6 +22,7 @@ const humanReadableDatasetNames = Object.freeze([
   "location",
   "company",
   "contact",
+  "contact_manual_creation",
   "job",
   "job_source",
   "source_snapshot",
@@ -123,10 +124,10 @@ test("opens official SQLite in a Worker, persists transactions, and restores a c
 
   await callHarness(sourcePage, "delete");
   const opened = await callHarness(sourcePage, "openAndMigrate");
-  expect(opened.appliedVersions).toEqual(Array.from({ length: 160 }, (_, index) => index + 1));
+  expect(opened.appliedVersions).toEqual(Array.from({ length: 164 }, (_, index) => index + 1));
   expect(opened.diagnostics).toMatchObject({
     adapterName: "official-sqlite-wasm-opfs-sahpool",
-    schemaVersion: 160,
+    schemaVersion: 164,
   });
   expect(["ready", "degraded"]).toContain(opened.diagnostics.health);
   expect(["best-effort", "durable"]).toContain(opened.diagnostics.persistence);
@@ -163,15 +164,15 @@ test("opens official SQLite in a Worker, persists transactions, and restores a c
     vaultId: committedVault.id,
   });
   expect(humanReadable).toEqual({
-    dataFileCount: 114,
-    datasetCount: 57,
+    dataFileCount: 116,
+    datasetCount: 58,
     datasetNames: humanReadableDatasetNames,
-    jsonFiles: 57,
-    csvFiles: 57,
+    jsonFiles: 58,
+    csvFiles: 58,
     rowCount: 1,
-    sourceSchemaVersion: 160,
+    sourceSchemaVersion: 164,
   });
-  expect(portable.schemaVersion).toBe(160);
+  expect(portable.schemaVersion).toBe(164);
   expect(portable.byteLength).toBeGreaterThan(0);
   expect(portable.sha256).toMatch(/^[a-f0-9]{64}$/u);
   const archiveRestore = await callHarness(sourcePage, "runPortableArchiveRestoreProof", {
@@ -182,7 +183,7 @@ test("opens official SQLite in a Worker, persists transactions, and restores a c
     staleName: "Stale target",
   });
   expect(archiveRestore).toMatchObject({
-    dataFileCount: 114,
+    dataFileCount: 116,
     attachmentCount: 0,
     corruptionRejected: true,
     corruptionPreservedTarget: true,

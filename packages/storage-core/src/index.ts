@@ -437,3 +437,4 @@ export { createDatabaseNextActionDismissalPort } from "./next-action-dismissal-r
 export { createJobNextActionsRepository } from "./job-next-actions-repository.js";
 export { createSqliteVaultExportVerificationPort } from "./vault-export-verification.js";
 export { createCompanyWorkspaceRepository } from "./company-workspace-repository.js";
+export { createContactWorkspaceRepository } from "./contact-workspace-repository.js";

@@ -478,8 +478,9 @@ describe("portable human-readable data export", () => {
       vaultId: VAULT_ID,
     });
     expect(bundle.sourceSchemaVersion).toBe(158);
-    expect(bundle.datasetCount).toBe(PORTABLE_DATA_EXPORT_DATASETS.length);
+    expect(bundle.datasetCount).toBe(57);
     expect(bundle.dataFiles).toHaveLength(114);
+    expect(bundle.datasets.some((item) => item.dataset === "contact_manual_creation")).toBe(false);
     expect(
       bundle.datasets.find((item) => item.dataset === "document_derivation_origin")?.rows,
     ).toEqual([origin]);
@@ -524,6 +525,72 @@ describe("portable human-readable data export", () => {
       historical.datasets.find((item) => item.dataset === "document_derivation_origin"),
     ).toBeUndefined();
   });
+
+  it("exports exact manual-creation evidence only at the complete schema164 milestone", async () => {
+    const database = new FixtureDatabase();
+    database.schemaVersion = 164;
+    const evidence = {
+      contact_id: "0198e102-0000-7000-8000-000000000011",
+      operation_id: "0198e102-0000-7000-8000-000000000012",
+      created_at: GENERATED_AT,
+      name_hash: HASH,
+      role_hash: null,
+      email_hash: "b".repeat(64),
+      phone_hash: null,
+      public_profile_url_hash: null,
+    };
+    database.rows.set("contact_manual_creation", [evidence]);
+    const bundle = await createPortableDataExportV1({
+      database,
+      generatedAt: GENERATED_AT,
+      vaultId: VAULT_ID,
+    });
+    expect(bundle.sourceSchemaVersion).toBe(164);
+    expect(bundle.datasetCount).toBe(58);
+    expect(bundle.datasetCount).toBe(PORTABLE_DATA_EXPORT_DATASETS.length);
+    expect(bundle.dataFiles).toHaveLength(116);
+    expect(database.transactions).toBe(1);
+    expect(database.statements).toHaveLength(59);
+    expect(
+      bundle.datasets.find((item) => item.dataset === "contact_manual_creation")?.rows,
+    ).toEqual([evidence]);
+    const json = textFile(bundle, "data/contact_manual_creation.json");
+    expect(JSON.parse(json)).toMatchObject({
+      sourceSchemaVersion: 164,
+      columns: Object.keys(evidence),
+      rows: [evidence],
+    });
+    expect(textFile(bundle, "data/contact_manual_creation.csv")).toContain(
+      `"${evidence.contact_id}","${evidence.operation_id}","${GENERATED_AT}","${HASH}",,"${evidence.email_hash}",,`,
+    );
+    database.schemaVersion = 160;
+    database.statements.length = 0;
+    const legacy = await createPortableDataExportV1({
+      database,
+      generatedAt: GENERATED_AT,
+      vaultId: VAULT_ID,
+    });
+    expect(legacy.datasetCount).toBe(57);
+    expect(legacy.dataFiles).toHaveLength(114);
+    expect(legacy.datasets.some((item) => item.dataset === "contact_manual_creation")).toBe(false);
+    expect(
+      database.statements.some((statement) => statement.includes("contact_manual_creation")),
+    ).toBe(false);
+  });
+
+  it.each([161, 162, 163])(
+    "rejects incomplete manual-evidence schema %s instead of exporting partially guarded data",
+    async (schemaVersion) => {
+      const database = new FixtureDatabase();
+      database.schemaVersion = schemaVersion;
+      await expect(
+        createPortableDataExportV1({ database, generatedAt: GENERATED_AT, vaultId: VAULT_ID }),
+      ).rejects.toMatchObject({ code: "schema_mismatch" });
+      expect(
+        database.statements.some((statement) => statement.includes("contact_manual_creation")),
+      ).toBe(false);
+    },
+  );
 
   it("gates later evidence datasets when exporting supported historical schemas", async () => {
     const phase1 = new FixtureDatabase();

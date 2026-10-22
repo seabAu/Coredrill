@@ -80,6 +80,12 @@ const PHASE_1_REPOSITORY_CONTRACT_COMPONENTS = Object.freeze({
     readScopedPages:
       "reads bounded viewed-vault and company contact pages without private details or canonical writes",
   }),
+  contactWorkspace: component("stored-contact-workspace", {
+    manualCreation:
+      "creates exact scoped manual contacts with immutable value evidence and preserves legacy unknowns",
+    guardedNotes:
+      "guards contact notes methods evidence archive ownership rollback and whole-contact deletion",
+  }),
 });
 
 const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
@@ -89,8 +95,8 @@ const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
 );
 
 export const PHASE_1_REPOSITORY_CONTRACT_MANIFEST = Object.freeze({
-  schemaVersion: 13 as const,
-  suiteName: "phase-1-repository-contracts-v13",
+  schemaVersion: 14 as const,
+  suiteName: "phase-1-repository-contracts-v14",
   components: PHASE_1_REPOSITORY_CONTRACT_COMPONENTS,
   caseNames: PHASE_1_REPOSITORY_CONTRACT_CASES,
 });

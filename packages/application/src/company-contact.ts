@@ -425,7 +425,8 @@ const copyCompany = (value: unknown, expected: ExpectedCompany): CompanyDto => {
 
 type ExpectedContact = Omit<ContactRecordPortInput, "archivedAt" | "updatedAt">;
 
-const copyContact = (value: unknown, expected: ExpectedContact): ContactDto => {
+/** Copies scalar facts without inferring how any stored value was obtained. */
+export const parseContactDto = (value: unknown): ContactDto => {
   if (!isRecord(value)) throw new TypeError("Invalid contact result.");
   const resultConfidence =
     value["confidence"] === null ? null : confidence(value["confidence"] as number);
@@ -448,6 +449,12 @@ const copyContact = (value: unknown, expected: ExpectedContact): ContactDto => {
     updatedAt: instant(value["updatedAt"] as string),
     rowVersion: requireRowVersion(value["rowVersion"]),
   });
+  if (copied.updatedAt < copied.createdAt) throw new TypeError("Invalid contact audit order.");
+  return copied;
+};
+
+const copyContact = (value: unknown, expected: ExpectedContact): ContactDto => {
+  const copied = parseContactDto(value);
   if (
     copied.id !== expected.id ||
     copied.companyId !== expected.companyId ||
@@ -486,7 +493,27 @@ const parseContactFields = (input: Readonly<Record<string, unknown>>): ParsedCon
   publicProfileUrl: optionalWebUrl(input["publicProfileUrl"]),
 });
 
-const fieldValues = (
+/** Shared literal field rules; the enclosing versioned boundary checks exact keys. */
+export const parseManualContactFields = (
+  value: unknown,
+): Omit<ContactRecordPortInput, "id" | "createdAt" | "updatedAt"> => {
+  if (
+    !isRecord(value) ||
+    value["origin"] !== "user_entered" ||
+    value["confidence"] !== undefined ||
+    value["provenance"] !== undefined
+  )
+    throw new TypeError("Contact creation requires explicit manual facts, not source metadata.");
+  return Object.freeze({
+    ...parseContactFields(value),
+    confidence: null,
+    userConfirmed: true,
+    notes: notesText(value["notes"]),
+    archivedAt: null,
+  });
+};
+
+export const contactFieldValues = (
   fields: ParsedContactFields,
 ): Readonly<Record<ContactProvenanceFieldName, string | null>> => ({
   name: fields.name,
@@ -501,7 +528,7 @@ const parseProvenance = (
   fields: ParsedContactFields,
 ): ReadonlyMap<ContactProvenanceFieldName, EntityId<"provenance">> => {
   if (!Array.isArray(value)) throw new TypeError("Source-backed contact provenance is required.");
-  const populatedFields = fieldValues(fields);
+  const populatedFields = contactFieldValues(fields);
   const parsed = new Map<ContactProvenanceFieldName, EntityId<"provenance">>();
   for (const candidate of value as readonly unknown[]) {
     if (!isRecord(candidate)) throw new TypeError("Invalid contact provenance entry.");
@@ -635,7 +662,7 @@ export const createCompanyContactOperations = (
           createdAt,
           updatedAt: createdAt,
         });
-        const values = fieldValues(fields);
+        const values = contactFieldValues(fields);
         const provenanceLinks: ContactProvenanceLinkPortInput[] = [];
         for (const fieldName of CONTACT_PROVENANCE_FIELDS) {
           const provenanceId = provenance.get(fieldName);

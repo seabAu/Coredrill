@@ -7,6 +7,7 @@ import {
   applicationSuccess,
   createCareerProfileOperations,
   createCareerStoryOperations,
+  createContactWorkspaceOperations,
   createAnswerLibraryOperations,
   createDocumentEditorOperations,
   createReusableDocumentCommand,
@@ -118,6 +119,7 @@ import { expectsLocalVault, invalidateDeletedVaultViews } from "./vault-lifecycl
 import {
   applySqlMigrations,
   createDatabaseVaultBootstrapPort,
+  createContactWorkspaceRepository,
   createSqliteVaultExportVerificationPort,
   commitPortableArchiveRestoreV1,
   createPortableArchiveContentHashV1,
@@ -3373,6 +3375,7 @@ const api: CoredrillStorageSpikeApi = {
     generateEntityId,
   ),
   vaultRestore: createStoredVaultRestoreApi({
+    compatibleSourceSchemaVersions: [160],
     expectedSchemaVersion: async () => {
       const version = (await migrations()).at(-1)?.version;
       if (version === undefined) throw new Error("The supported restore schema is unavailable.");
@@ -3859,6 +3862,31 @@ const api: CoredrillStorageSpikeApi = {
   createPortableRecoveryFixture: async (input) => {
     const client = await getBrowserDatabase();
     const attachmentContentIds = await seedRepresentativePhase1Vault(client, input.vaultId);
+    // Synthetic verification fixture only; the normal application never seeds contacts.
+    const contact = await createContactWorkspaceOperations(
+      createContactWorkspaceRepository(client, sha256Text),
+      sha256Text,
+    ).create.execute(
+      {
+        specVersion: 1,
+        expectedVaultId: entityId("vault", input.vaultId),
+        contactId: entityId("contact", "0198d9d4-0000-7000-8000-000000000040"),
+        expectedCompanyRowVersion: 1,
+        contact: {
+          origin: "user_entered",
+          companyId: "0198d9d4-0000-7000-8000-000000000001",
+          name: "Synthetic manually entered contact",
+          email: "manual@synthetic.example",
+          publicProfileUrl: "https://synthetic.example/people/manual",
+          notes: "Synthetic manual contact recovery note.",
+        },
+      },
+      {
+        operationId: entityId("application-operation", "0198d9d5-0000-7000-8000-000000000041"),
+        initiatedAt: instant(input.generatedAt),
+      },
+    );
+    if (!contact.ok) throw new Error("The synthetic manual-contact recovery fixture failed.");
     const phase3Inventory = await readPhase3RecoveryInventory(client);
     const { archive, portable, dataBundle } = await createCurrentPortableArchive(input);
     const inspected = await inspectPortableArchiveV1({
@@ -3885,7 +3913,12 @@ const api: CoredrillStorageSpikeApi = {
     const archiveBytes = base64ToBytes(input.archiveBytesBase64);
     const currentSchemaVersion = (await client.diagnostics()).schemaVersion;
     const schemaVersion = input.sourceSchemaVersion ?? currentSchemaVersion;
-    if (schemaVersion !== 158 && schemaVersion !== 159 && schemaVersion !== currentSchemaVersion) {
+    if (
+      schemaVersion !== 158 &&
+      schemaVersion !== 159 &&
+      schemaVersion !== 160 &&
+      schemaVersion !== currentSchemaVersion
+    ) {
       throw new Error("The recovery fixture source schema is not reviewed.");
     }
     const inspected = await inspectPortableArchiveV1({

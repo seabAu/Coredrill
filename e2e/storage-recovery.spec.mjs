@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -11,8 +12,8 @@ import {
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const fixtureDirectory = path.join(repositoryRoot, "fixtures", "recovery");
-const archivePath = path.join(fixtureDirectory, "phase-1-vault-schema-160-v1.coredrill.zip");
-const manifestPath = path.join(fixtureDirectory, "phase-1-vault-schema-160-v1.json");
+const archivePath = path.join(fixtureDirectory, "phase-1-vault-schema-164-v1.coredrill.zip");
+const manifestPath = path.join(fixtureDirectory, "phase-1-vault-schema-164-v1.json");
 const updateFixture = process.env["COREDRILL_UPDATE_RECOVERY_FIXTURE"] === "1";
 
 const recoveryInput = Object.freeze({
@@ -74,9 +75,12 @@ const readCanonicalSnapshot = async (bytes, filename) => {
     return `"${value}"`;
   };
   try {
+    const schemaVersion = database.prepare("PRAGMA user_version").get().user_version;
     return {
-      schemaVersion: database.prepare("PRAGMA user_version").get().user_version,
-      datasets: PORTABLE_DATA_EXPORT_DATASETS.map((spec) => ({
+      schemaVersion,
+      datasets: PORTABLE_DATA_EXPORT_DATASETS.filter(
+        (spec) => (spec.minimumSourceSchemaVersion ?? 0) <= schemaVersion,
+      ).map((spec) => ({
         name: spec.name,
         rows: database
           .prepare(
@@ -99,8 +103,8 @@ const readCanonicalSnapshot = async (bytes, filename) => {
   }
 };
 
-for (const sourceSchemaVersion of [158, 159]) {
-  test(`restores the preserved schema-${sourceSchemaVersion} browser archive and upgrades to 160 without canonical changes`, async ({
+for (const sourceSchemaVersion of [158, 159, 160]) {
+  test(`restores the preserved schema-${sourceSchemaVersion} browser archive and upgrades to 164 without invented contact evidence`, async ({
     browser,
   }, testInfo) => {
     const manifest = JSON.parse(
@@ -109,7 +113,7 @@ for (const sourceSchemaVersion of [158, 159]) {
           fixtureDirectory,
           sourceSchemaVersion === 158
             ? "phase-1-vault-v1.json"
-            : "phase-1-vault-schema-159-v1.json",
+            : `phase-1-vault-schema-${sourceSchemaVersion}-v1.json`,
         ),
         "utf8",
       ),
@@ -132,7 +136,9 @@ for (const sourceSchemaVersion of [158, 159]) {
     expect(before.index).toEqual(
       sourceSchemaVersion === 158 ? [] : [{ name: "next_action_job_created_idx" }],
     );
-    expect(before.reminderIndex).toEqual([]);
+    expect(before.reminderIndex).toEqual(
+      sourceSchemaVersion === 160 ? [{ name: "reminder_next_action_job_state_idx" }] : [],
+    );
     const context = await browser.newContext();
     try {
       const page = await openHarness(context);
@@ -163,16 +169,28 @@ for (const sourceSchemaVersion of [158, 159]) {
       );
       expect(restoredSnapshot).toEqual(before);
       const upgraded = await callHarness(page, "openAndMigrate");
-      expect(upgraded.appliedVersions).toEqual(sourceSchemaVersion === 158 ? [159, 160] : [160]);
-      expect(upgraded.diagnostics.schemaVersion).toBe(160);
+      expect(upgraded.appliedVersions).toEqual(
+        Array.from(
+          { length: 164 - sourceSchemaVersion },
+          (_, index) => sourceSchemaVersion + index + 1,
+        ),
+      );
+      expect(upgraded.diagnostics.schemaVersion).toBe(164);
       const exported = await callHarness(page, "exportPortable");
       const after = await readCanonicalSnapshot(
         Buffer.from(exported.bytesBase64, "base64"),
-        testInfo.outputPath("upgraded-schema-160.sqlite"),
+        testInfo.outputPath("upgraded-schema-164.sqlite"),
       );
-      expect(after.schemaVersion).toBe(160);
-      expect(after.datasets).toEqual(before.datasets);
-      expect(after.ledger).toHaveLength(160);
+      expect(after.schemaVersion).toBe(164);
+      expect(after.datasets).toHaveLength(58);
+      expect(
+        after.datasets.filter((dataset) => dataset.name !== "contact_manual_creation"),
+      ).toEqual(before.datasets);
+      expect(after.datasets.find((dataset) => dataset.name === "contact_manual_creation")).toEqual({
+        name: "contact_manual_creation",
+        rows: [],
+      });
+      expect(after.ledger).toHaveLength(164);
       expect(after.ledger.slice(0, sourceSchemaVersion)).toEqual(before.ledger);
       expect(after.index).toEqual([{ name: "next_action_job_created_idx" }]);
       expect(after.reminderIndex).toEqual([{ name: "reminder_next_action_job_state_idx" }]);
@@ -185,12 +203,12 @@ for (const sourceSchemaVersion of [158, 159]) {
 
 test("restores complete evidence relationships and attachments into clean browser storage", async ({
   browser,
-}) => {
+}, testInfo) => {
   const sourceContext = await browser.newContext();
   const sourcePage = await openHarness(sourceContext);
   await callHarness(sourcePage, "delete");
   const opened = await callHarness(sourcePage, "openAndMigrate");
-  expect(opened.diagnostics.schemaVersion).toBe(160);
+  expect(opened.diagnostics.schemaVersion).toBe(164);
   await callHarness(sourcePage, "writeVault", {
     id: recoveryInput.vaultId,
     name: "BKP-007 representative vault",
@@ -199,7 +217,7 @@ test("restores complete evidence relationships and attachments into clean browse
   });
   const source = await callHarness(sourcePage, "createPortableRecoveryFixture", recoveryInput);
   expect(source).toMatchObject({
-    dataFileCount: 114,
+    dataFileCount: 116,
     attachmentCount: 2,
     phase3Inventory: expectedPhase3Inventory,
   });
@@ -275,6 +293,33 @@ test("restores complete evidence relationships and attachments into clean browse
   );
 
   const generatedArchive = Buffer.from(source.archiveBytesBase64, "base64");
+  const inspectedSource = await inspectPortableArchiveV1({
+    bytes: generatedArchive,
+    expectedSchemaVersion: 164,
+    expectedArchiveSha256: source.archiveSha256,
+  });
+  const sourceSnapshot = await readCanonicalSnapshot(
+    inspectedSource.database.bytes,
+    testInfo.outputPath("source-schema-164.sqlite"),
+  );
+  const digest = (value) => createHash("sha256").update(value).digest("hex");
+  expect(
+    sourceSnapshot.datasets.find((dataset) => dataset.name === "contact_manual_creation"),
+  ).toEqual({
+    name: "contact_manual_creation",
+    rows: [
+      {
+        contact_id: "0198d9d4-0000-7000-8000-000000000040",
+        operation_id: "0198d9d5-0000-7000-8000-000000000041",
+        created_at: recoveryInput.generatedAt,
+        name_hash: digest("Synthetic manually entered contact"),
+        role_hash: null,
+        email_hash: digest("manual@synthetic.example"),
+        phone_hash: null,
+        public_profile_url_hash: digest("https://synthetic.example/people/manual"),
+      },
+    ],
+  });
   const generatedManifest = {
     specVersion: 1,
     archiveFile: path.basename(archivePath),
@@ -327,6 +372,12 @@ test("restores complete evidence relationships and attachments into clean browse
     phase3Inventory: committedManifest.phase3Inventory,
     documentRoundTrip: committedManifest.documentRoundTrip,
   });
+  const restoredExport = await callHarness(restorePage, "exportPortable");
+  const restoredSnapshot = await readCanonicalSnapshot(
+    Buffer.from(restoredExport.bytesBase64, "base64"),
+    testInfo.outputPath("restored-schema-164.sqlite"),
+  );
+  expect(restoredSnapshot).toEqual(sourceSnapshot);
   const deletionPreview = await callHarness(restorePage, "previewVaultDeletion", {
     vaultId: committedManifest.vaultId,
     previewId: "0198d9d5-0000-7000-8000-000000000002",

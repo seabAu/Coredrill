@@ -1,5 +1,28 @@
 # Normal company details, creation and notes UI — INT-007 in progress
 
+## Corrected exact hosted closure — 2026-10-21
+
+Exact `ed5d73332ea397025ae63d53012579486877e575` passes
+[run39689728116](https://github.com/seabAu/Coredrill/actions/runs/39689728116),
+all required jobs terminal success. Watch73420 is consumed exit0,
+`CONTACT_DIRECTORY_COMPANY_FOCUS_HOSTED_EXIT=0`; do not resume/restart it.
+Retained inspected aggregate/Chrome151/Chrome152 logs each pass all55 resilience
+cases, including normal offline browser company creation/notes and the actual
+native company workspace with held-real-read focus checks. Original assertions
+and budgets remain. Native platform/package, both Firefox, extension and secret
+lanes also succeed. [Detailed exact proof](contact-directory-verification.md#exact-hosted-prerequisite-closure--2026-10-21)
+distinguishes platform skips and retained warnings.
+
+The original30e51f1 failure and stronger before/after evidence below remain
+historical failures, not relabeled success. Later uncommitted contact-workspace
+contracts require separate verification. Full INT-007 remains open; this closes
+only the implemented normal company creation/details/notes correction scope.
+All live/pending statements below are earlier checkpoints.
+
+## Corrected exact pushed checkpoint — 2026-10-21
+
+The ready-commit correction, stronger held-real-read regression and contact-query prerequisite are pushed at `ed5d73332ea397025ae63d53012579486877e575`, including reviewed Vitest/coverage4.1.12 security maintenance. Complete local patched verification84988, serial extension47635 and final policy70419 pass. [Exact run39689728116](https://github.com/seabAu/Coredrill/actions/runs/39689728116) is live under watch73420 / `contact-directory-company-focus-hosted-watch.log`; require `CONTACT_DIRECTORY_COMPANY_FOCUS_HOSTED_EXIT`. This is not hosted success or full INT-007 completion. Earlier30e51f1 failure and before/after focus observations remain below. These result notes follow the immutable pushed commit; no new product source/test edits are included.
+
 ## Exact hosted focus regression — 2026-10-21
 
 ### Held-read reproduction and ready-commit correction
