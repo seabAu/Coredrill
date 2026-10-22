@@ -75,6 +75,138 @@ runtime failure or authorize rewriting history in this read-only slice.
 
 ## Results
 
+### Exact hosted closure and read-history requirement disposition
+
+Read-history engineering closes at
+`d3950dcdeb31bfb86c044f8f897c78e6e6669b44`, exact
+[Foundation CI39732550313](https://github.com/seabAu/Coredrill/actions/runs/39732550313).
+Workflow, all ten required jobs and parent check suite107679410806 are inspected
+terminal success at that complete SHA. The eleventh, PR-only dependency review,
+is intentionally skipped on push. Watch79664 is consumed exit0 with
+`CONTACT_HISTORY_EXACT_HOSTED_WATCH_EXIT=0`; log collection70039 also finishes
+exit0. No live handle remains to resume. Final authoritative state is retained
+in `contact-history-exact-hosted-final.json` and
+`contact-history-exact-hosted-parent.json`.
+
+Complete job logs are retained as
+`contact-history-hosted-{aggregate,chrome151,chrome152,firefox153,firefox154,windows,macos,linux,extension}.log`.
+Inspection confirms:
+
+- Aggregate unit and coverage each pass2,585 cases with one pre-existing
+  platform skip,207 files. The full gate includes76 app-shell and70 resilience
+  cases. Aggregate job119670672693 finishes in28m42s, inside the unchanged30m
+  budget. npm has no known vulnerabilities; the same10 reviewed Cargo warnings
+  remain. No check, timeout or dependency selection is weakened.
+- Exact Chrome151.0.7922.138 and152.0.7977.54 each pass all76 app-shell and70
+  resilience cases, including new populated history, exact retry, late-page and
+  late-summary retirement, actual-Rust history and both160/164→165 normal
+  restore/reopen journeys. Both original selected-contact/company focus
+  regressions remain in the successful run.
+- Exact Firefox153/154 each explicitly return schema165, repository manifest
+  v15/34, career manifest v3/4,58 datasets/116 files, preserved restore guards
+  and unchanged global schedule behavior. Their runner retains exact case-list
+  equality and explicit reviewed version/count assertions.
+- Windows passes21 native cases; macOS/Linux each pass20 plus the existing
+  platform skip. All use the same new34-case repository inventory. Secure-store
+  lifecycles pass against Credential Manager, Keychain and FreeDesktop Secret
+  Service without secret exposure; native backup/package/launch proofs pass.
+  Extension transfer/source-package proof passes all nine cases.
+
+Requirement disposition for this bounded read-history slice:
+
+1. Strict versioned page/summary boundaries, own keys, copied scope, exact live
+   cursor and complete literal-byte invariants: covered by focused application/
+   reader/runtime cases and final unit/coverage gates.
+2. Actual contact links, current-job identity/labels, archive scope, no inferred
+   conversations/totals or private contact-field prefetch: covered by shared
+   Node/browser/native actual-SQL contracts and normal populated/empty journeys.
+3. Bounded previews plus scalar-safe complete BOM/NUL/Unicode text and distinct
+   empty/missing/error states: actual shared adapters and normal UI readback.
+4. Transactional bound reads and justified index165: actual migration/rollback/
+   older-runner tests, preserved recovery milestones, all canonical rows and
+   receipts, normal source160/164 reopen, unchanged eight older archives/files.
+5. Root-owned reader/view lifetimes, explicit first/next/refresh/retry, archive
+   inclusion, full-summary inspection and safe focus: repeated local15-case
+   runs and both exact hosted Chrome70-case resilience suites.
+6. Offline/local reload, same-owner Back/reflow,320px/keyboard/axe and real-Rust
+   execution: normal browser/native journeys, with synthetic populated archives
+   disclosed separately from unseeded contact creation and empty-history proof.
+7. Full final-source local gate, serial extension, final format/policy, ordinary
+   reviewed commit/push, exact required hosted jobs and parent suite: all above.
+
+This does not close full INT-007 or release acceptance. Recording interactions,
+source-backed field qualification/provenance and remaining company relationships
+remain required; INT-008 Home is separate. Installed WebView/manual AT/usability,
+public signing/update and reference-hardware gates remain open. In particular,
+the current Windows package diagnostic still reports `targetConformant:false`
+(startup p95=571.7ms, working-set p95=381,169,664 bytes), as the predecessor also
+did. NAT-007 requires an artifact and recorded measurements, not substitution
+for Windows11/HW-WIN-REF release acceptance. Do not infer that the release
+performance targets were met from a green package job.
+
+No Accepted decision, dependency, provider or permission changes. The next
+unblocked implementation preflight is scoped interaction entry. Read-only
+inspection finds an existing `RecordInteractionCommand` and generic SQLite port,
+but that generic port is not a viewed-vault/contact/job-version write boundary
+and its command allocates an identity per execution. Do not expose it directly
+or silently resubmit after uncertain acknowledgement. Read the governing
+documents before choosing the fixed-intent/retry/recording UI plan. Only closure
+documents change after d3950dc's verified implementation.
+
+Post-closure whole-workspace formatting66349 and policy59547 are consumed
+exit0: `CONTACT_HISTORY_CLOSURE_FORMAT_EXIT=0` in
+`contact-history-closure-format.log` and `CONTACT_HISTORY_CLOSURE_POLICY_EXIT=0`
+in `contact-history-closure-policy.log`. Boundaries, foundation records,831 npm/
+498 Cargo licenses and secret scanning pass. Diff whitespace is clean; only
+the seven inspected design/checklist/proof/runbook/recovery-README result
+documents are dirty, to carry forward without overwriting them. HEAD remains
+d3950dc and stash remains `2697ebcec53351a052d8c5c19e2b8e2a52056a70`.
+
+### Exact pushed source and hosted verification — live
+
+Historical in-flight checkpoints below are superseded by the terminal closure
+above. Do not resume consumed79664 or re-run CI based on their pending wording.
+
+The reviewed60-file change commits as
+`d3950dcdeb31bfb86c044f8f897c78e6e6669b44` (`feat: read scoped contact interaction history`)
+and pushes normally from160f031 to origin/main. The checkout is clean after
+push; stash2697 is unchanged. No force push, history rewrite or dependency/
+permission/source-provider change occurs.
+
+Exact Foundation CI [39732550313](https://github.com/seabAu/Coredrill/actions/runs/39732550313)
+is confirmed live at that complete SHA, not the predecessor. Watch79664 polls
+at30s and writes `contact-history-exact-hosted-watch.log` with final marker
+`CONTACT_HISTORY_EXACT_HOSTED_WATCH_EXIT`. It is still live; poll this exact
+handle and do not restart on observation timeout. Workflow, parent suite and
+every required job must be terminal success before read-history closure.
+PR-only dependency review is intentionally skipped on push. All remote exact
+browser/native/aggregate outcomes remain unclaimed until observed.
+
+The parent check suite is107679410806. The compact exact-source snapshot in
+`contact-history-exact-hosted-snapshot.json` identifies ten required jobs plus
+the intentional PR-only skip. Both exact Firefox153/154 storage jobs and the
+full-history secret scan are terminal success in that snapshot; the other seven
+required jobs and the workflow are still in progress. These early successes do
+not prove the complete run or its parent suite terminal conclusion.
+
+A later exact-source progress snapshot in
+`contact-history-exact-hosted-progress.json` confirms five of ten required jobs
+terminal success: Firefox153/154, full-history secret scan, macOS package and
+extension transfer. Chrome151/152, Windows/Linux packages and the aggregate
+foundation gate are still live; no required job has failed in that snapshot.
+Watch79664 remains live. This is partial hosted evidence, not closure.
+
+Subsequent watch output confirms Windows and Linux packages and both exact
+Chrome jobs terminal success as well: Chrome151 in18m2s and Chrome152 in19m0s,
+including their PWA/resilience and first-run steps. Nine of ten required jobs
+are now successful. Only aggregate119670672693 remains live; the workflow and
+parent suite are not yet closed. Keep following the same watch without changing
+timeouts, source or required checks.
+
+Only result documents may change while this source is frozen. Do not start
+the recording/source-qualification slice or attribute these newer facts to the
+old39717538422 run. Full INT-007/INT-008 and external release gates remain open.
+
 ### Complete local gate and serial extension pass — 2026-10-22
 
 Full final-source `pnpm verify`61518 is consumed exit0 in

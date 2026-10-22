@@ -108,6 +108,7 @@ export interface SetNextActionPortInput {
 
 export interface RecordInteractionPortInput {
   readonly id: EntityId<"interaction">;
+  readonly expected?: ViewedInteractionExpectationV1;
   readonly jobId: EntityId<"job">;
   readonly contactId: EntityId<"contact"> | null;
   readonly type: string;
@@ -195,12 +196,95 @@ export interface SetNextActionInput {
 
 export interface RecordInteractionInput {
   readonly jobId: string;
+  readonly expected?: ViewedInteractionExpectationV1;
   readonly contactId?: string | null;
   readonly type: string;
   readonly occurredAt?: string;
   readonly direction?: InteractionDirection;
   readonly summary?: string;
 }
+
+/** Mandatory for interactive recording; omitted only by trusted legacy runners. */
+export interface ViewedInteractionExpectationV1 {
+  readonly specVersion: 1;
+  readonly expectedVaultId: string;
+  readonly jobRowVersion: number;
+  readonly contactRowVersion: number | null;
+}
+
+export const copyViewedInteractionExpectationV1 = (
+  value: unknown,
+  contactId: string | null,
+): ViewedInteractionExpectationV1 => {
+  if (
+    !isRecord(value) ||
+    Reflect.ownKeys(value).length !== 4 ||
+    !["specVersion", "expectedVaultId", "jobRowVersion", "contactRowVersion"].every((key) =>
+      Object.hasOwn(value, key),
+    ) ||
+    value["specVersion"] !== 1
+  )
+    throw new TypeError("Invalid viewed interaction scope.");
+  if (contactId === null && value["contactRowVersion"] !== null)
+    throw new TypeError("Unexpected contact version.");
+  const contactRowVersion =
+    contactId === null ? null : requireRowVersion(value["contactRowVersion"]);
+  return Object.freeze({
+    specVersion: 1,
+    expectedVaultId: entityId("vault", value["expectedVaultId"] as string),
+    jobRowVersion: requireRowVersion(value["jobRowVersion"]),
+    contactRowVersion,
+  });
+};
+
+/** Adapter revalidation/copy before entering a transaction; no generated identities. */
+export const copyViewedInteractionPortInputV1 = (
+  value: unknown,
+): RecordInteractionPortInput & {
+  readonly expected: ViewedInteractionExpectationV1;
+} => {
+  const keys = [
+    "id",
+    "expected",
+    "jobId",
+    "contactId",
+    "type",
+    "occurredAt",
+    "direction",
+    "summary",
+    "nextActionAt",
+    "createdAt",
+    "updatedAt",
+  ];
+  if (
+    !isRecord(value) ||
+    Reflect.ownKeys(value).length !== keys.length ||
+    !keys.every((key) => Object.hasOwn(value, key))
+  )
+    throw new TypeError("Invalid interaction intent.");
+  const createdAt = instant(value["createdAt"] as string);
+  const occurredAt = instant(value["occurredAt"] as string);
+  if (
+    value["updatedAt"] !== createdAt ||
+    value["nextActionAt"] !== null ||
+    compareInstant(occurredAt, createdAt) > 0
+  )
+    throw new TypeError("Invalid interaction time.");
+  const contactId = nullableResultEntityId("contact", value["contactId"]);
+  return Object.freeze({
+    id: entityId("interaction", value["id"] as string),
+    jobId: entityId("job", value["jobId"] as string),
+    contactId,
+    expected: copyViewedInteractionExpectationV1(value["expected"], contactId),
+    type: requireInteractionType(value["type"]),
+    occurredAt,
+    direction: requireDirection(value["direction"]),
+    summary: text(value["summary"], 200_000),
+    nextActionAt: null,
+    createdAt,
+    updatedAt: createdAt,
+  });
+};
 
 export interface ScheduleInterviewInput {
   readonly applicationId: string;
@@ -723,6 +807,24 @@ export const createJobActivityOperations = (
 
       let parsed: Omit<RecordInteractionPortInput, "id" | "createdAt" | "updatedAt">;
       try {
+        const guarded = Object.hasOwn(untrustedInput, "expected");
+        if (
+          guarded &&
+          Reflect.ownKeys(untrustedInput).some(
+            (key) =>
+              typeof key !== "string" ||
+              ![
+                "jobId",
+                "contactId",
+                "type",
+                "occurredAt",
+                "direction",
+                "summary",
+                "expected",
+              ].includes(key),
+          )
+        )
+          throw new TypeError("Unknown interaction input.");
         const createdAt = instant(operationContext.initiatedAt);
         const occurredAt =
           untrustedInput["occurredAt"] === undefined
@@ -731,9 +833,15 @@ export const createJobActivityOperations = (
         if (compareInstant(occurredAt, createdAt) > 0) {
           throw new TypeError("Recorded interactions cannot occur in the future.");
         }
+        const contactId = optionalInputEntityId("contact", untrustedInput["contactId"]);
         parsed = {
           jobId: entityId("job", untrustedInput["jobId"] as string),
-          contactId: optionalInputEntityId("contact", untrustedInput["contactId"]),
+          contactId,
+          ...(guarded
+            ? {
+                expected: copyViewedInteractionExpectationV1(untrustedInput["expected"], contactId),
+              }
+            : {}),
           type: requireInteractionType(untrustedInput["type"]),
           occurredAt,
           direction: requireDirection(untrustedInput["direction"], "unknown"),

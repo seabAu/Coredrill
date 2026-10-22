@@ -751,7 +751,7 @@ focus waits for committed enabled controls and revokes both retired owners and
 superseded interactions. Repeated actual browser/native proof covers literal
 BOM/NUL/Unicode, inert markup-shaped text, paging, archive scope, offline/local
 reload,320px/keyboard/axe and late-page/summary owner isolation. See the
-[history proof and remaining full/hosted gates](../../proof/contact-interaction-history-verification.md).
+[exact read-history engineering closure and remaining release gates](../../proof/contact-interaction-history-verification.md#exact-hosted-closure-and-read-history-requirement-disposition).
 This read-only surface does not prove the recording composer, source-backed
 contact qualification or manual assistive-technology/release acceptance.
 

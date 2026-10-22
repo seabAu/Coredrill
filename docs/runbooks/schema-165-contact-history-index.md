@@ -63,7 +63,8 @@ also passes in the offline browser and real-native proof host, preserving every
 canonical field and source164 receipt. Two added history contracts pass through
 the same exact v15/34 manifest on Node/browser/native. Normal history UI passes
 15 serial populated browser/native/lifetime executions. Complete final-source
-local verification and serial extension pass; new exact hosted verification
-remains required. The
+local verification, serial extension and exact d3950dc hosted verification pass.
+This closes the index/read-history engineering checkpoint, not the remaining
+recording/source-qualification or manual/reference-hardware/release gates. The
 [history verification record](../proof/contact-interaction-history-verification.md)
 is authoritative for executed results; this runbook is not a completion claim.

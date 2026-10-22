@@ -467,6 +467,19 @@ The optional `ChangeStatus` viewed-state tuple is validated before the persisten
 
 ## Application use cases
 
+The in-progress INT-007 recording prerequisite adds a version-1 viewed expectation
+to RecordInteractionCommand and a mandatory-scope interactive SQLite port. The
+port copies/revalidates before awaiting the transaction, checks the sole vault
+and active job/explicit-contact versions before inserting, and validates exact
+readback before commit. An exact fixed-ID immutable tuple reconciles without a
+second insert even after later owner edits; a different tuple is a conflict.
+Trusted generic runners remain compatible, but normal recording must use the
+guarded seam and retain its original intent/context. Shared executable inventory
+v16/35 adds the same recording case for all adapters; actual Node/browser/native
+execution and the full local gate pass. No schema/permission/Accepted decision
+change. Runtime/composer and exact hosted proof remain in
+[recording verification](../../proof/viewed-interaction-recording-verification.md).
+
 The INT-007 recorded-contact-history slice now has strict viewed-vault/contact
 page and full-summary-part application queries plus transactional SQLite ports.
 Only actual contact links determine membership; current joined job labels are
@@ -485,8 +498,9 @@ passes. Root-owned disposable readers and populated history UI now pass repeated
 normal browser/real-native offline/local reload, paging, literal summary, archive,
 320px/keyboard/axe and late-owner/focus journeys. Existing selected-contact lookup
 confirms company and version before history starts, without another private-field
-prefetch. Complete final-source local verification and separate serial extension
-pass; new exact hosted verification remains in progress in
+prefetch. Complete final-source local verification, separate serial extension
+and exact d3950dc hosted verification pass. Recording, source qualification and
+remaining relationships remain separate work, with the precise read-only closure in
 [contact-history proof](../../proof/contact-interaction-history-verification.md).
 
 The in-progress INT-007 normal company directory composes the existing version-1 application query and shared SQLite repository through the selected runtime. Validation/copying precedes awaited storage opening. A disposable ephemeral coordinator retains one bounded current live page, immutable original vault/archive/limit scope, explicit first/next/retry and stale facts on failure; it never becomes canonical storage or invents a total. Render-time lifetime checks hide retired-owner facts before effect cleanup, and late reads/focus restoration cannot publish into a replacement owner. Normal contacts, selected relationship details, notes and interactions remain unfinished. See [normal directory proof and limits](../../proof/normal-company-directory-verification.md); no schema, dependency, permission or Accepted decision changes.

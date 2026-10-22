@@ -126,6 +126,62 @@ const operationsFor = (activity: JobActivityPort) =>
   });
 
 describe("job activity application operations", () => {
+  it("copies the explicit viewed interaction scope before storage", async () => {
+    const activity = activityPort();
+    const expected = {
+      specVersion: 1 as const,
+      expectedVaultId: "0198e203-0000-7000-8000-000000000010",
+      jobRowVersion: 3,
+      contactRowVersion: 4,
+    };
+    const result = await operationsFor(activity).recordInteractionCommand.execute(
+      {
+        jobId: JOB_ID,
+        contactId: CONTACT_ID,
+        type: "email_logged",
+        occurredAt: PAST,
+        direction: "outbound",
+        summary: interaction().summary,
+        expected,
+      },
+      context,
+    );
+    expect(result.ok).toBe(true);
+    const passed = vi.mocked(activity.recordInteraction).mock.calls[0]?.[0];
+    expect(passed?.expected).toEqual(expected);
+    expect(passed?.expected).not.toBe(expected);
+    expect(Object.isFrozen(passed?.expected)).toBe(true);
+    expected.jobRowVersion = 99;
+    expect(passed?.expected?.jobRowVersion).toBe(3);
+  });
+
+  it.each([
+    null,
+    {},
+    { specVersion: 2, expectedVaultId: JOB_ID, jobRowVersion: 1, contactRowVersion: 1 },
+    { specVersion: 1, expectedVaultId: "bad", jobRowVersion: 1, contactRowVersion: 1 },
+    { specVersion: 1, expectedVaultId: JOB_ID, jobRowVersion: 0, contactRowVersion: 1 },
+    { specVersion: 1, expectedVaultId: JOB_ID, jobRowVersion: 1, contactRowVersion: null },
+    {
+      specVersion: 1,
+      expectedVaultId: JOB_ID,
+      jobRowVersion: 1,
+      contactRowVersion: 1,
+      extra: true,
+    },
+  ])("rejects malformed viewed interaction scope without a port call: %j", async (expected) => {
+    const activity = activityPort();
+    const input = { jobId: JOB_ID, contactId: CONTACT_ID, type: "call", expected };
+    const result = await operationsFor(activity).recordInteractionCommand.execute(
+      input as unknown as Parameters<
+        ReturnType<typeof operationsFor>["recordInteractionCommand"]["execute"]
+      >[0],
+      context,
+    );
+    expect(result.ok).toBe(false);
+    expect(activity.recordInteraction).not.toHaveBeenCalled();
+  });
+
   it("copies and freezes the viewed job version before passing a next-action write to storage", async () => {
     const activity = activityPort();
     const expected = { jobRowVersion: 7 };

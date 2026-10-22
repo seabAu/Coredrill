@@ -94,8 +94,7 @@ Migration165 now adds the measured contact-history index with no row rewrite.
 The same history-specific v15/34 shared contracts pass on Node/browser/native,
 as do165 recovery and normal160/164→165 restore/reopen. Root-owned normal history
 UI now passes repeated browser/native paging/literal/owner/archival/reload journeys;
-complete local final-source and serial extension gates pass, with new exact
-hosted verification still required;
+complete local final-source, serial extension and exact d3950dc hosted gates pass;
 source-backed field-use qualification remains separate.
 
 `company(id, canonical_name, website_url, domain, location_id, notes, archived_at)`
@@ -211,6 +210,17 @@ Seed categories: `viewed`, `saved`, `preparing`, `applied`, `response`, `intervi
 `status_event(id, job_id, application_id, from_status_id, to_status_id, occurred_at, note)` — append-only; current status is a maintained projection.
 
 `interaction(id, job_id, contact_id, type, occurred_at, direction, summary, next_action_at)`
+
+The in-progress guarded recording port uses this unchanged append-only identity
+for exact acknowledgement-loss reconciliation, not an additional canonical cache
+or receipt table. New writes require the sole viewed vault, active viewed job and
+optional explicitly linked active contact versions in the same transaction.
+Existing exact immutable values return without another insert; changed values
+cannot replace that identity. Reconciliation does not certify that later owner
+versions still match the original view. Normal runtime must own a fixed original
+identity/context/tuple and must not automatically generate a new retry. Actual
+Node/browser/native and full local proof pass; hosted and normal composer proof remain open in
+[recording verification](../../proof/viewed-interaction-recording-verification.md).
 
 `next_action(id, job_id, application_id, interaction_id, title, due_at, timezone, state, completed_at)`
 

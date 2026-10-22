@@ -27,8 +27,9 @@ Browser proof compares every canonical dataset and prior ledger entry, all CSV
 bytes/attachments and all JSON fields except the intentional source-version
 metadata advance. Generation and an unchanged no-update replay pass; real native
 restore also covers all five milestones and retains the164/165 manual receipts.
-Normal app restore/reopen and full new-source/hosted verification remain separate
-requirements in [the history proof](../../docs/proof/contact-interaction-history-verification.md).
+Normal app160/164→165 restore/reopen and complete new-source local/hosted
+verification pass at d3950dc; [the history proof](../../docs/proof/contact-interaction-history-verification.md#exact-hosted-closure-and-read-history-requirement-disposition)
+records the exact scope and still-open manual/reference-hardware/release gates.
 
 The schema-158 revision adds a separate exact reusable-version copy and immutable `document_derivation_origin` row. The older tailored submitted derivative retains unknown exact source-version origin; it is not backfilled. Browser and native restore compare the retained origin dataset and count as well as the existing submitted/current/draft document identities.
 

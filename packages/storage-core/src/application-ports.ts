@@ -4,6 +4,7 @@ import {
   MutationUndoError,
   JobRequirementError,
   VaultLifecycleError,
+  copyViewedInteractionPortInputV1,
   type JobActivityPort,
   type JobPipelinePort,
   type MutationUndoPort,
@@ -308,6 +309,8 @@ export const createDatabaseJobActivityPort = (database: DatabasePort): JobActivi
       }
     },
     recordInteraction: async (input: Parameters<JobActivityPort["recordInteraction"]>[0]) => {
+      if (Object.hasOwn(input, "expected"))
+        return createDatabaseViewedInteractionPort(database).recordInteraction(input);
       try {
         return await withinTransaction(database, async (transaction) => {
           const interactions = createPipelineRepositories(transaction).interactions;
@@ -345,5 +348,63 @@ export const createDatabaseJobActivityPort = (database: DatabasePort): JobActivi
       } catch (error) {
         return activityFailure(error);
       }
+    },
+  });
+
+/** Interactive-only seam: never downgrades an omitted or malformed viewed scope. */
+export const createDatabaseViewedInteractionPort = (
+  database: DatabasePort,
+): Pick<JobActivityPort, "recordInteraction"> =>
+  Object.freeze({
+    recordInteraction: async (untrusted: Parameters<JobActivityPort["recordInteraction"]>[0]) => {
+      let input: ReturnType<typeof copyViewedInteractionPortInputV1>;
+      try {
+        input = copyViewedInteractionPortInputV1(untrusted);
+      } catch {
+        throw new JobActivityError("invalid_state");
+      }
+      return database.transaction(async (session) => {
+        const roots = await session.query(sqlStatement("SELECT id FROM vault LIMIT 2"));
+        if (roots.length !== 1 || roots[0]?.["id"] !== input.expected.expectedVaultId)
+          throw new JobActivityError("linkage_conflict");
+        const interactions = createPipelineRepositories(session).interactions;
+        const exact = (stored: Awaited<ReturnType<typeof interactions.findById>>) => {
+          if (
+            stored?.rowVersion !== 1 ||
+            Object.entries(input).some(
+              ([key, value]) => key !== "expected" && stored[key as keyof typeof stored] !== value,
+            )
+          )
+            throw new JobActivityError("linkage_conflict");
+          return Object.freeze({ ...stored });
+        };
+        // Reconciliation reads the immutable original tuple; it authorizes no new write.
+        const existing = await interactions.findById(input.id);
+        if (existing !== undefined) return exact(existing);
+        const job = await createTrackerRepositories(session).jobs.findById(input.jobId);
+        if (job?.archivedAt !== null) throw new JobActivityError("not_found");
+        if (job.rowVersion !== input.expected.jobRowVersion || job.updatedAt > input.createdAt)
+          throw new JobActivityError("linkage_conflict");
+        if (input.contactId !== null) {
+          const rows = await session.query(
+            sqlStatement(
+              "SELECT row_version, archived_at, updated_at FROM contact WHERE id = ? LIMIT 2",
+              [input.contactId],
+            ),
+          );
+          if (rows.length !== 1 || rows[0]?.["archived_at"] !== null)
+            throw new JobActivityError("not_found");
+          const contact = rows[0];
+          if (
+            contact["row_version"] !== input.expected.contactRowVersion ||
+            typeof contact["updated_at"] !== "string" ||
+            contact["updated_at"] > input.createdAt
+          )
+            throw new JobActivityError("linkage_conflict");
+        }
+        await interactions.append(input);
+        // Exact acknowledgement is checked before COMMIT, not only by the caller afterward.
+        return exact(await interactions.findById(input.id));
+      });
     },
   });

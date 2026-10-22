@@ -12,6 +12,7 @@ import { createMutationUndoOperations } from "@coredrill/application";
 import {
   applySqlMigrations,
   createDatabaseJobActivityPort,
+  createDatabaseViewedInteractionPort,
   createDatabaseJobNotePort,
   createDatabaseJobPipelinePort,
   createDatabaseMutationUndoPort,
@@ -419,6 +420,215 @@ describe("Phase 1 tracker repository contracts", () => {
 });
 
 describe("SQLite application port composition", () => {
+  it("copies guarded input before a delayed transaction and rejects omitted scope before effects", async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    class HeldDatabase extends NodeSqliteTestDatabase {
+      hold = false;
+      calls = 0;
+      override async transaction<Result>(
+        work: (session: DatabaseTransaction) => Promise<Result>,
+      ): Promise<Result> {
+        this.calls++;
+        if (this.hold) await gate;
+        return super.transaction(work);
+      }
+    }
+    const database = new HeldDatabase();
+    const at = instant("2026-10-22T06:00:00.000Z");
+    const vaultId = entityId("vault", "0199b365-0000-7000-8000-000000000021");
+    const jobId = entityId("job", "0199b365-0000-7000-8000-000000000022");
+    try {
+      await applySqlMigrations(database, migrations, APPLIED_AT);
+      await database.execute(
+        sqlStatement("INSERT INTO vault VALUES (?, ?, 165, ?, ?)", [vaultId, "Synthetic", at, at]),
+      );
+      await database.execute(
+        sqlStatement("INSERT INTO job(id, title, created_at, updated_at) VALUES (?, ?, ?, ?)", [
+          jobId,
+          "Synthetic role",
+          at,
+          at,
+        ]),
+      );
+      const port = createDatabaseViewedInteractionPort(database);
+      const original = {
+        id: entityId("interaction", "0199b365-0000-7000-8000-000000000023"),
+        jobId,
+        contactId: null,
+        type: "note",
+        occurredAt: at,
+        direction: "unknown" as const,
+        summary: "original",
+        nextActionAt: null,
+        createdAt: at,
+        updatedAt: at,
+      };
+      const calls = database.calls;
+      await expect(port.recordInteraction(original)).rejects.toMatchObject({
+        code: "invalid_state",
+      });
+      expect(database.calls).toBe(calls);
+      database.hold = true;
+      const expected = {
+        specVersion: 1 as const,
+        expectedVaultId: vaultId,
+        jobRowVersion: 1,
+        contactRowVersion: null,
+      };
+      const input = { ...original, expected };
+      const pending = port.recordInteraction(input);
+      input.summary = "mutated after dispatch";
+      expected.jobRowVersion = 2;
+      release();
+      await expect(pending).resolves.toMatchObject({ summary: "original", jobId, contactId: null });
+      expect(await database.query(sqlStatement("SELECT summary FROM interaction"))).toEqual([
+        { summary: "original" },
+      ]);
+    } finally {
+      release();
+      database.close();
+    }
+  });
+  it.each([
+    "active",
+    "no-contact",
+    "wrong-vault",
+    "multiple-vaults",
+    "missing-vault",
+    "stale-job",
+    "archived-job",
+    "missing-job",
+    "stale-contact",
+    "archived-contact",
+    "missing-contact",
+    "retry",
+    "collision",
+    "readback-failure",
+  ] as const)("guards the original viewed interaction and exact retry (%s)", async (state) => {
+    class ReadbackDatabase extends NodeSqliteTestDatabase {
+      override async query<Row extends QueryRow = QueryRow>(
+        statement: SqlStatement,
+      ): Promise<readonly Row[]> {
+        const rows = await super.query<Row>(statement);
+        if (
+          state === "readback-failure" &&
+          statement.sql.includes("FROM interaction WHERE id =") &&
+          rows.length > 0
+        )
+          return rows.map((row) => ({ ...row, summary: "wrong acknowledgement" })) as Row[];
+        return rows;
+      }
+    }
+    const database = new ReadbackDatabase();
+    const at = instant("2026-10-22T06:00:00.000Z");
+    const vaultId = entityId("vault", "0199b365-0000-7000-8000-000000000011");
+    const jobId = entityId("job", "0199b365-0000-7000-8000-000000000012");
+    const contactId = entityId("contact", "0199b365-0000-7000-8000-000000000013");
+    try {
+      await applySqlMigrations(database, migrations, APPLIED_AT);
+      if (state !== "missing-vault")
+        await database.execute(
+          sqlStatement("INSERT INTO vault VALUES (?, ?, 165, ?, ?)", [
+            vaultId,
+            "Synthetic recording",
+            at,
+            at,
+          ]),
+        );
+      if (state === "multiple-vaults")
+        await database.execute(
+          sqlStatement("INSERT INTO vault VALUES (?, ?, 165, ?, ?)", [
+            jobId,
+            "Second synthetic root",
+            at,
+            at,
+          ]),
+        );
+      if (state !== "missing-job")
+        await database.execute(
+          sqlStatement(
+            "INSERT INTO job(id, title, created_at, updated_at, row_version, archived_at) VALUES (?, ?, ?, ?, ?, ?)",
+            [
+              jobId,
+              "Synthetic role",
+              at,
+              at,
+              state === "stale-job" ? 2 : 1,
+              state === "archived-job" ? at : null,
+            ],
+          ),
+        );
+      if (state !== "missing-contact")
+        await database.execute(
+          sqlStatement(
+            "INSERT INTO contact(id, name, created_at, updated_at, row_version, archived_at) VALUES (?, ?, ?, ?, ?, ?)",
+            [
+              contactId,
+              "Synthetic contact",
+              at,
+              at,
+              state === "stale-contact" ? 2 : 1,
+              state === "archived-contact" ? at : null,
+            ],
+          ),
+        );
+      const input = {
+        id: entityId("interaction", "0199b365-0000-7000-8000-000000000014"),
+        jobId,
+        contactId: state === "no-contact" ? null : contactId,
+        type: "email_logged",
+        occurredAt: at,
+        direction: "outbound" as const,
+        summary: "  é中🙂 <script>inert()</script>\nExact original.  ",
+        nextActionAt: null,
+        createdAt: at,
+        updatedAt: at,
+        expected: {
+          specVersion: 1 as const,
+          expectedVaultId: state === "wrong-vault" ? jobId : vaultId,
+          jobRowVersion: 1,
+          contactRowVersion: state === "no-contact" ? null : 1,
+        },
+      };
+      const beforeJobs = await database.query(sqlStatement("SELECT * FROM job"));
+      const beforeContacts = await database.query(sqlStatement("SELECT * FROM contact"));
+      const port = createDatabaseViewedInteractionPort(database);
+      if (["active", "no-contact", "retry", "collision"].includes(state)) {
+        const stored = await port.recordInteraction(input);
+        expect(stored).toEqual({
+          ...Object.fromEntries(Object.entries(input).filter(([key]) => key !== "expected")),
+          rowVersion: 1,
+        });
+        if (state === "retry") {
+          await database.execute(
+            sqlStatement("UPDATE job SET row_version = 2, archived_at = ? WHERE id = ?", [
+              at,
+              jobId,
+            ]),
+          );
+          await expect(port.recordInteraction(input)).resolves.toEqual(stored);
+        }
+        if (state === "collision")
+          await expect(
+            port.recordInteraction({ ...input, summary: "different" }),
+          ).rejects.toMatchObject({ code: "linkage_conflict" });
+        expect(await database.query(sqlStatement("SELECT summary FROM interaction"))).toEqual([
+          { summary: input.summary },
+        ]);
+      } else {
+        await expect(port.recordInteraction(input)).rejects.toBeDefined();
+        expect(await database.query(sqlStatement("SELECT * FROM interaction"))).toEqual([]);
+      }
+      if (state !== "retry")
+        expect(await database.query(sqlStatement("SELECT * FROM job"))).toEqual(beforeJobs);
+      expect(await database.query(sqlStatement("SELECT * FROM contact"))).toEqual(beforeContacts);
+    } finally {
+      database.close();
+    }
+  });
   it.each(["active", "archived", "missing", "wrong-kind"] as const)(
     "records an interactive note only for its active job (%s)",
     async (state) => {
