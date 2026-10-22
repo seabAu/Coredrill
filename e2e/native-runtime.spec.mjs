@@ -22,6 +22,7 @@ import { exerciseTaskEntryLifetime } from "./task-entry-lifetime.mjs";
 import { exerciseCompanyDirectory } from "./company-directory-journey.mjs";
 import { exerciseCompanyWorkspace } from "./company-workspace-journey.mjs";
 import { exerciseContactRuntime } from "./contact-runtime-journey.mjs";
+import { exerciseContactWorkspace } from "./contact-workspace-journey.mjs";
 import { attachNativeHost } from "./native-proof-host.mjs";
 import {
   createNativeRestoreOperationRecorder,
@@ -185,6 +186,7 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
         companyDirectory: await exerciseCompanyDirectory(page, testInfo, "Synthetic Runtime Lab"),
         companyWorkspace: await exerciseCompanyWorkspace(page, testInfo),
         contactRuntime: await exerciseContactRuntime(page, testInfo),
+        contactWorkspace: await exerciseContactWorkspace(page, testInfo),
       });
     } else if (journey === "tracking") {
       await page.getByRole("button", { name: "Add", exact: true }).click();

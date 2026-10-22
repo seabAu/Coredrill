@@ -91,6 +91,17 @@ separate from automated engineering proof.
 
 ## Results
 
+### Corrected successor pushed — exact hosted proof passed
+
+Normal contact runtime plus lossless simulated-host correction is now pushed as
+`f5e6868e2ba4b1593c74d77d9a5787a73404b7cb`, with complete local61038, serial
+extension9483 and final policy54501 consumed success. Exact new CI39706346305 is
+terminal success; watch76581 consumed exit0 with `NORMAL_CONTACT_RUNTIME_PROOF_WIRE_HOSTED_EXIT=0`.
+[Exact successor scope and run](normal-contact-runtime-verification.md#exact-pushed-checkpoint--hosted-verification-in-progress).
+This closes hosted proof only for f5e6868;74131a1/39701516359 remains failed and all discarded-trial
+evidence is retained. No original assertion or production IPC/restore validator
+was weakened. Full INT-007/INT-008 remain open.
+
 ### Corrected normal-runtime graph passes the whole local gate
 
 Newer normal-contact composition and lossless simulated-host transport pass

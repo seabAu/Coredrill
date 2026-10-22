@@ -155,6 +155,8 @@ import { useStoredJobNote, type StoredNoteAcknowledgement } from "./stored-job-n
 import { useStoredJobDetails } from "./stored-job-details.js";
 import { StoredCompanyDirectoryView } from "./stored-company-directory-view.js";
 import { useStoredCompanyEditor } from "./stored-company-workspace-view.js";
+import { StoredContactDirectoryView } from "./stored-contact-directory-view.js";
+import { useStoredContactEditor } from "./stored-contact-editor-view.js";
 import { useStoredWorkspaceStatus } from "./stored-workspace-status.js";
 import { useStoredWorkspaceNextAction } from "./stored-workspace-next-action.js";
 import { useStoredJobTasks } from "./stored-job-tasks.js";
@@ -317,6 +319,7 @@ type InitialLocation =
   | { readonly kind: "home" }
   | {
       readonly kind: "network";
+      readonly companyScope: string | null;
       readonly recordId: string | null;
       readonly tab: NetworkTabId;
     }
@@ -356,8 +359,15 @@ const readInitialLocation = (): InitialLocation => {
   const networkMatch = NETWORK_ROUTE.exec(window.location.pathname);
   const networkTab = networkMatch?.groups?.["tab"];
   if (networkTab === "companies" || networkTab === "contacts" || networkTab === "interactions") {
+    const companies = new URLSearchParams(window.location.search).getAll("company");
     return {
       kind: "network",
+      companyScope:
+        networkTab !== "contacts" || companies.length === 0
+          ? null
+          : companies.length === 1
+            ? (companies[0] ?? "")
+            : "invalid-company-scope",
       recordId: networkTab === "interactions" ? null : (networkMatch?.groups?.["recordId"] ?? null),
       tab: networkTab,
     };
@@ -518,8 +528,16 @@ const pipelineUrl = (view: PipelineViewId, savedViewId: string): string => {
 
 const jobUrl = (jobId: string, tab: JobWorkspaceTabId): string => `/jobs/${jobId}/${tab}`;
 
-const networkUrl = (tab: NetworkTabId, recordId: string | null = null): string =>
-  `/network/${tab}${recordId === null ? "" : `/${recordId}`}`;
+const networkUrl = (
+  tab: NetworkTabId,
+  recordId: string | null = null,
+  companyScope: string | null = null,
+): string =>
+  `/network/${tab}${recordId === null ? "" : `/${recordId}`}${
+    tab === "contacts" && companyScope !== null
+      ? `?${new URLSearchParams({ company: companyScope }).toString()}`
+      : ""
+  }`;
 
 const DESTINATION_URLS: Readonly<Record<ShellDestinationId, string>> = Object.freeze({
   documents: "/documents",
@@ -1909,11 +1927,16 @@ const AppShellCatalog = ({
   const [networkSelectedContactId, setNetworkSelectedContactId] = useState<string | null>(
     initialLocation.kind === "network" &&
       initialLocation.tab === "contacts" &&
-      NETWORK_MODEL.contacts.some(({ id }) => id === initialLocation.recordId)
+      (!referenceCatalog ||
+        NETWORK_MODEL.contacts.some(({ id }) => id === initialLocation.recordId))
       ? initialLocation.recordId
       : null,
   );
   const [companyRevision, setCompanyRevision] = useState(0);
+  const [contactRevision, setContactRevision] = useState(0);
+  const [networkContactCompanyScope, setNetworkContactCompanyScope] = useState<string | null>(
+    initialLocation.kind === "network" ? initialLocation.companyScope : null,
+  );
   const [pipelineFilters, setPipelineFilters] = useState<readonly PipelineFilterChip[]>(
     initialPipelineSnapshot?.filters ?? (referenceCatalog ? INITIAL_PIPELINE_FILTERS : []),
   );
@@ -2121,6 +2144,36 @@ const AppShellCatalog = ({
     setNetworkTab("companies");
     setActiveDestination("network");
   };
+  const selectStoredContact = (id: string | null, companyScope?: string | null) => {
+    const scope = companyScope === undefined ? networkContactCompanyScope : companyScope;
+    if (
+      networkSelectedContactId === id &&
+      networkContactCompanyScope === scope &&
+      networkTab === "contacts" &&
+      activeDestination === "network"
+    )
+      return;
+    navigationHistory.pushState(null, "", networkUrl("contacts", id, scope));
+    setNetworkSelectedContactId(id);
+    setNetworkContactCompanyScope(scope);
+    setNetworkTab("contacts");
+    setActiveDestination("network");
+  };
+  const contactEditor = useStoredContactEditor({
+    api: globalThis.coredrillStorageSpike.contactWorkspace,
+    vaultId: vaultSession?.vault.id ?? null,
+    selectedContactId: networkSelectedContactId,
+    companyScope: networkContactCompanyScope,
+    enabled: !referenceCatalog && vaultDeletionStatus === null,
+    visible: activeDestination === "network" && networkTab === "contacts",
+    mutationBlocked: vaultExportSession.busy,
+    needsReopen: vaultRestoreSession.needsReopen,
+    exclusive: (vaultId, work) => vaultExportSession.mutate(vaultId, work),
+    onSelect: selectStoredContact,
+    onSaved: () => {
+      setContactRevision((value) => value + 1);
+    },
+  });
   const companyEditor = useStoredCompanyEditor({
     api: globalThis.coredrillStorageSpike.companyWorkspace,
     vaultId: vaultSession?.vault.id ?? null,
@@ -3883,7 +3936,10 @@ const AppShellCatalog = ({
         tab,
         !referenceCatalog && tab === "companies"
           ? (networkSelectedCompanyId ?? undefined)
-          : undefined,
+          : !referenceCatalog && tab === "contacts"
+            ? (networkSelectedContactId ?? undefined)
+            : undefined,
+        !referenceCatalog && tab === "contacts" ? networkContactCompanyScope : null,
       ),
     );
     setNetworkTab(tab);
@@ -4002,6 +4058,7 @@ const AppShellCatalog = ({
     } else if (destination === "network") {
       setNetworkSelectedCompanyId(null);
       setNetworkSelectedContactId(null);
+      setNetworkContactCompanyScope(null);
       setNetworkTab("companies");
       navigationHistory.pushState(null, "", networkUrl("companies"));
     } else {
@@ -4045,11 +4102,13 @@ const AppShellCatalog = ({
           );
           setNetworkSelectedContactId(
             location.tab === "contacts" &&
-              NETWORK_MODEL.contacts.some(({ id }) => id === location.recordId)
+              (!referenceCatalog ||
+                NETWORK_MODEL.contacts.some(({ id }) => id === location.recordId))
               ? location.recordId
               : null,
           );
           setNetworkTab(location.tab);
+          setNetworkContactCompanyScope(location.companyScope);
           setLastActivity(`Restored local Network history at ${location.tab}.`);
         } else if (location.kind === "pipeline") {
           setActiveDestination("pipeline");
@@ -5027,6 +5086,31 @@ const AppShellCatalog = ({
             activeTab={networkTab}
             onTabChange={changeNetworkTab}
             selectedCompanyId={networkSelectedCompanyId}
+            contactDraftBlocked={contactEditor.hasDraft || vaultRestoreSession.needsReopen}
+            onCreateContact={(value) => {
+              if (!contactEditor.startCreate(value))
+                setLastActivity(
+                  "A contact draft could not be opened. Return to Contacts to review any existing draft.",
+                );
+            }}
+            onViewContacts={(value) => {
+              selectStoredContact(null, value.company.id);
+            }}
+            contactView={
+              <StoredContactDirectoryView
+                api={globalThis.coredrillStorageSpike.contactDirectory}
+                workspaceApi={globalThis.coredrillStorageSpike.contactWorkspace}
+                vaultId={vaultSession?.vault.id ?? null}
+                companyScope={networkContactCompanyScope}
+                selectedContactId={networkSelectedContactId}
+                editor={contactEditor}
+                revision={contactRevision}
+                mutationBlocked={vaultExportSession.busy}
+                needsReopen={vaultRestoreSession.needsReopen}
+                onSelectContact={selectStoredContact}
+                onViewCompany={selectStoredCompany}
+              />
+            }
           />
         ) : activeDestination === "network" ? (
           <NetworkWorkspace

@@ -200,7 +200,12 @@ const summary = (
     throw new TypeError();
   return copied;
 };
-const page = (value: unknown, input: ListContactDirectoryPortInputV1): ContactDirectoryPageV1 => {
+/** Reusable strict identity-only result decoder; validation/copying precede UI publication. */
+export const parseContactDirectoryPageV1 = (
+  value: unknown,
+  scope: ListContactDirectoryInputV1,
+): ContactDirectoryPageV1 => {
+  const input = parseContactDirectoryRequestV1(scope);
   const raw = record(value, [
     "specVersion",
     "vaultId",
@@ -297,7 +302,7 @@ export const createContactDirectoryQuery = (port: ContactDirectoryPort) =>
           retryable: false,
         });
       try {
-        return applicationSuccess(page(result, input));
+        return applicationSuccess(parseContactDirectoryPageV1(result, input));
       } catch {
         return applicationFailure({
           code: "internal",

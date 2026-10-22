@@ -122,7 +122,7 @@ export const exerciseCompanyWorkspace = async (page, testInfo) => {
   });
   await expect(create.getByLabel("Company notes", { exact: true })).toHaveValue(initialNotes);
   await network.getByRole("button", { name: "Contacts", exact: true }).click();
-  await expect(network).toContainText("Stored contacts navigation is not connected yet");
+  await expect(network.getByRole("heading", { name: "Local contacts", exact: true })).toBeVisible();
   await network.getByRole("button", { name: "Companies", exact: true }).click();
   await expect(create.getByLabel("Company name", { exact: true })).toHaveValue(name);
   await page.evaluate(() => {

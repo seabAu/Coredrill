@@ -1,4 +1,5 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import type { CompanyWorkspaceV1 } from "@coredrill/application";
 import { restoreFocusAfterChange, type NetworkTabId } from "@coredrill/ui";
 import {
   createStoredCompanyDirectoryReader,
@@ -226,8 +227,16 @@ export const StoredCompanyDirectoryView = ({
   revision,
   mutationBlocked,
   onSelectCompany,
+  contactView,
+  contactDraftBlocked,
+  onCreateContact,
+  onViewContacts,
 }: {
   readonly api: StoredCompanyDirectoryApi | undefined;
+  readonly contactView: ReactNode;
+  readonly contactDraftBlocked: boolean;
+  readonly onCreateContact: (company: CompanyWorkspaceV1) => void;
+  readonly onViewContacts: (company: CompanyWorkspaceV1) => void;
   readonly vaultId: string | null;
   readonly activeTab: NetworkTabId;
   readonly onTabChange: (tab: NetworkTabId) => void;
@@ -261,7 +270,9 @@ export const StoredCompanyDirectoryView = ({
         </button>
       ))}
     </nav>
-    {activeTab !== "companies" ? (
+    {activeTab === "contacts" ? (
+      contactView
+    ) : activeTab !== "companies" ? (
       <p>
         Stored {activeTab} navigation is not connected yet. No records or relationship totals have
         been loaded for this view.
@@ -301,6 +312,9 @@ export const StoredCompanyDirectoryView = ({
             revision={revision}
             disabled={editor.hasDraft || mutationBlocked}
             onEdit={editor.startNotes}
+            contactDraftBlocked={contactDraftBlocked}
+            onCreateContact={onCreateContact}
+            onViewContacts={onViewContacts}
           />
         ) : null}
         <CompanyPage

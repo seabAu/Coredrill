@@ -84,7 +84,9 @@ export const exerciseCompanyDirectory = async (page, testInfo, companyName) => {
   ).toBeChecked();
   await expect(network.getByRole("button", { name: "Contacts", exact: true })).toBeFocused();
   await page.keyboard.press("Enter");
-  await expect(network).toContainText("No records or relationship totals have been loaded");
+  await expect(network).toContainText(
+    "No contacts were found in this vault, archive and company scope when read.",
+  );
   await expect(list).toHaveCount(0);
   await page.goBack();
   await expect(list).toContainText(companyName);

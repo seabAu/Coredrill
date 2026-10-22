@@ -49,6 +49,27 @@ installed-runtime, reference-hardware and release gates stay open.
 
 ## Results
 
+### Exact pushed checkpoint — hosted verification in progress
+
+Commit `f5e6868e2ba4b1593c74d77d9a5787a73404b7cb`
+(`feat: compose contact runtime APIs and fix proof-host transport`) contains17
+reviewed files and is pushed to origin/main from a clean tree. Normal push
+advances74131a1 without force/history rewrite; recovery stash2697 is retained.
+No unrelated files, product restore/core/IPC change or abandoned single-inspection
+trial is included. Complete61038, extension9483 and final policy54501 are consumed
+successes; never resume them.
+
+Exact [Foundation CI39706346305](https://github.com/seabAu/Coredrill/actions/runs/39706346305)
+is **terminal success**. Watch76581 is consumed exit0 with
+`NORMAL_CONTACT_RUNTIME_PROOF_WIRE_HOSTED_EXIT=0` in
+`normal-contact-runtime-proof-wire-hosted-watch.log`. Aggregate, both Chrome151/152
+lanes (including the corrected legacy review path), both Firefox lanes, extension,
+Windows/macOS/Linux package/storage and full-history secrets pass; PR-only review
+is intentionally skipped on push. This proves exactly f5e6868, not newer UI source.
+The old failed74131a1 workflow and its diagnostics remain retained. Full INT-007/
+INT-008, contact screens/owned drafts/provenance/relationships/interactions and
+release/external-evidence gates remain open.
+
 ### Final locally verified checkpoint ready for exact commit
 
 Final policy54501 is consumed **exit0**,

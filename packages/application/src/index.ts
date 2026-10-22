@@ -335,6 +335,7 @@ export {
   ContactDirectoryError,
   createContactDirectoryQuery,
   parseContactDirectoryRequestV1,
+  parseContactDirectoryPageV1,
   compareContactDirectoryEntries,
   type ContactDirectoryPort,
   type ContactDirectorySummaryV1,

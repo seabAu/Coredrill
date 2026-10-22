@@ -371,6 +371,9 @@ export const StoredCompanyDetails = ({
   revision,
   disabled,
   onEdit,
+  contactDraftBlocked,
+  onCreateContact,
+  onViewContacts,
 }: {
   readonly api: StoredCompanyWorkspaceApi;
   readonly vaultId: string;
@@ -378,6 +381,9 @@ export const StoredCompanyDetails = ({
   readonly revision: number;
   readonly disabled: boolean;
   readonly onEdit: (value: CompanyWorkspaceV1) => void;
+  readonly contactDraftBlocked: boolean;
+  readonly onCreateContact: (value: CompanyWorkspaceV1) => void;
+  readonly onViewContacts: (value: CompanyWorkspaceV1) => void;
 }) => {
   const owner = useMemo(() => ({ api, vaultId, companyId }), [api, vaultId, companyId]);
   const liveOwner = useRef(owner);
@@ -458,7 +464,7 @@ export const StoredCompanyDetails = ({
     };
   }, [owner, readOwner, revision, retry]);
   const visible = snapshot?.owner === owner ? snapshot : null;
-  const busy = visible?.busy !== false || visible.retry !== retry;
+  const busy = visible?.busy !== false || visible.retry !== retry || visible.revision !== revision;
   const value = visible?.value ?? null;
   useLayoutEffect(() => {
     if (focusRequest === null) return;
@@ -549,6 +555,34 @@ export const StoredCompanyDetails = ({
           >
             Edit company notes
           </button>
+          <div className="cd-stored-companies__actions">
+            <button
+              type="button"
+              className="cd-button"
+              disabled={
+                disabled ||
+                contactDraftBlocked ||
+                busy ||
+                visible.error !== null ||
+                value.company.archivedAt !== null
+              }
+              onClick={() => {
+                onCreateContact(value);
+              }}
+            >
+              Create local contact for this company
+            </button>
+            <button
+              type="button"
+              className="cd-button"
+              disabled={busy || visible.error !== null}
+              onClick={() => {
+                onViewContacts(value);
+              }}
+            >
+              View linked contacts
+            </button>
+          </div>
         </>
       ) : null}
       <p>
