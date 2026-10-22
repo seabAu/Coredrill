@@ -2,6 +2,13 @@
 
 ## Conventions
 
+Current schema165 adds only `interaction_contact_history_idx(contact_id,
+occurred_at DESC, id ASC)`. It preserves all schema164 canonical data, receipts,
+dataset minimum versions and58-dataset/116-file export mapping. Actual Node
+164→165 row/export/rollback/older-client proof passes; new165 browser/native
+recovery and normal reopen remain in progress. Historical milestone counts
+below retain their implementation-time scope.
+
 The selected-contact prerequisite adds `contact_manual_creation(contact_id, operation_id, created_at, name_hash, role_hash, email_hash, phone_hash, public_profile_url_hash)` at schema161, with complete insertion/update/deletion guards through164. This immutable receipt records only exact initial explicitly entered values; nullable initial methods have nullable hashes. It duplicates no raw contact data and is not a public/license/verification or outreach authorization record. Current manual basis requires matching that field's hash; later changed values and legacy contacts remain unknown. The adapter independently hashes values before effects and commits contact plus receipt only after exact acknowledged readback. Notes edits retain all other contact facts and receipt. Whole-contact deletion cascades evidence, while detached deletion/replacement fails. Schema164 exports58 datasets /116 files, preserving all prior supported milestones, including160. Local shared v14/32 proof passes; concrete browser/native, migration/recovery and full final-source evidence remain pending in [contact-workspace verification](../../proof/contact-workspace-verification.md).
 
 The version-1 contact directory is a minimized read projection over existing contact rows, not a schema/origin migration. Its live keyset orders created_at descending then id ascending, binds viewed-vault/archive/optional-company scope and the anchor's row_version, and returns bounded pages without notes, contact methods or totals. A null company filter means all companies; nullable stored company/role remain null. Neither confidence, user confirmation nor absence of a provenance link establishes a public, licensed or user-entered basis. Selected provenance/relationship reads remain separate follow-through.
@@ -72,6 +79,24 @@ Verification state: `imported`, `user_confirmed`, `source_backed`, `stale`, `dis
 `EVD-002` makes that state executable in `@coredrill/career-evidence`: source-backed evidence requires a validated durable source reference; explicit transitions preserve the source and privacy controls; only untagged `user_confirmed` or `source_backed` evidence is eligible for later external-context selection. Privacy tags are bounded lowercase content-free identifiers. Their presence fails closed for external AI context, while provider selection and any explicit override remain later prompt/privacy work. Career-story privacy tags persist as a bounded JSON array; ordinary story topic tags remain separate.
 
 ### Companies and contacts
+
+The in-progress contact-history read model adds no durable table. It joins
+`interaction.contact_id` to the explicitly selected contact and retains the
+mandatory job identity with clearly current job title/archive/version metadata.
+A shared company is never treated as an interaction. Vault/contact/archive and
+record/job versions bind live keyset continuation; there is no inferred total
+or immutable-snapshot claim. Pages hold at most1,024 UTF-8 bytes per summary,
+with separate bounded literal full-summary reads using BLOB length/slices so
+NUL cannot turn retained text into a false complete preview. Focused actual
+Node SQLite proof and a synthetic candidate index measurement are recorded in
+[contact-history verification](../../proof/contact-interaction-history-verification.md).
+Migration165 now adds the measured contact-history index with no row rewrite.
+The same history-specific v15/34 shared contracts pass on Node/browser/native,
+as do165 recovery and normal160/164→165 restore/reopen. Root-owned normal history
+UI now passes repeated browser/native paging/literal/owner/archival/reload journeys;
+complete local final-source and serial extension gates pass, with new exact
+hosted verification still required;
+source-backed field-use qualification remains separate.
 
 `company(id, canonical_name, website_url, domain, location_id, notes, archived_at)`
 

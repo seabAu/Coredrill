@@ -563,6 +563,21 @@ describe("portable human-readable data export", () => {
     expect(textFile(bundle, "data/contact_manual_creation.csv")).toContain(
       `"${evidence.contact_id}","${evidence.operation_id}","${GENERATED_AT}","${HASH}",,"${evidence.email_hash}",,`,
     );
+    database.schemaVersion = 165;
+    const indexed = await createPortableDataExportV1({
+      database,
+      generatedAt: GENERATED_AT,
+      vaultId: VAULT_ID,
+    });
+    expect(indexed.sourceSchemaVersion).toBe(165);
+    expect(indexed.datasetCount).toBe(58);
+    expect(indexed.dataFiles).toHaveLength(116);
+    expect(indexed.datasets).toEqual(
+      bundle.datasets.map((dataset) => ({ ...dataset, sourceSchemaVersion: 165 })),
+    );
+    expect(textFile(indexed, "data/contact_manual_creation.csv")).toBe(
+      textFile(bundle, "data/contact_manual_creation.csv"),
+    );
     database.schemaVersion = 160;
     database.statements.length = 0;
     const legacy = await createPortableDataExportV1({

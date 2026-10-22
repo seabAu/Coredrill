@@ -675,3 +675,5 @@ export {
   type UpdateCompanyNotesPortInputV1,
 } from "./company-workspace.js";
 export * from "./contact-workspace.js";
+export * from "./contact-interaction-history.js";
+export * from "./contact-interaction-summary.js";

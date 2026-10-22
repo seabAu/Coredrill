@@ -1,5 +1,5 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { parseContactDirectoryRequestV1 } from "@coredrill/application";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { parseContactDirectoryRequestV1, type ContactWorkspaceV1 } from "@coredrill/application";
 import { restoreFocusAfterChange } from "@coredrill/ui";
 import {
   createStoredContactDirectoryReader,
@@ -231,6 +231,8 @@ export const StoredContactDirectoryView = ({
   needsReopen,
   onSelectContact,
   onViewCompany,
+  historyView,
+  onContactObserved,
 }: {
   readonly api: StoredContactDirectoryApi | undefined;
   readonly workspaceApi: StoredContactWorkspaceApi | undefined;
@@ -243,6 +245,8 @@ export const StoredContactDirectoryView = ({
   readonly needsReopen: boolean;
   readonly onSelectContact: (id: string | null, companyScope?: string | null) => void;
   readonly onViewCompany: (id: string) => void;
+  readonly historyView: ReactNode;
+  readonly onContactObserved: (value: ContactWorkspaceV1 | null) => void;
 }) => {
   let validScope = false;
   if (vaultId !== null) {
@@ -329,16 +333,20 @@ export const StoredContactDirectoryView = ({
       ) : (
         <>
           {selectedContactId !== null && workspaceApi !== undefined ? (
-            <StoredContactDetails
-              api={workspaceApi}
-              vaultId={vaultId}
-              contactId={selectedContactId}
-              companyScope={companyScope}
-              revision={revision}
-              disabled={editor.hasDraft || mutationBlocked || needsReopen}
-              onEdit={editor.startNotes}
-              onViewCompany={onViewCompany}
-            />
+            <>
+              <StoredContactDetails
+                api={workspaceApi}
+                vaultId={vaultId}
+                contactId={selectedContactId}
+                companyScope={companyScope}
+                revision={revision}
+                disabled={editor.hasDraft || mutationBlocked || needsReopen}
+                onEdit={editor.startNotes}
+                onViewCompany={onViewCompany}
+                onObserved={onContactObserved}
+              />
+              {historyView}
+            </>
           ) : null}
           <ContactPage
             api={api}

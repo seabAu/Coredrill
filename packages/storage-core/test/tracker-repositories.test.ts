@@ -542,7 +542,7 @@ describe("SQLite application port composition", () => {
         name: "Explicit local name",
         createdAt: instant(APPLIED_AT),
       });
-      expect(created.vault.schemaVersion).toBe(164);
+      expect(created.vault.schemaVersion).toBe(165);
       expect((await port.inspect()).vault).toEqual(created.vault);
       await expect(
         port.create({
@@ -580,13 +580,13 @@ describe("SQLite application port composition", () => {
         name: "Keep my name",
         createdAt: APPLIED_AT,
         lastOpenedAt: openedAt,
-        schemaVersion: 164,
+        schemaVersion: 165,
       });
       await expect(port.open({ vaultId: id, openedAt: instant(APPLIED_AT) })).rejects.toMatchObject(
         { code: "invalid_state" },
       );
       await database.execute(
-        sqlStatement("UPDATE vault SET schema_version = 165 WHERE id = ?", [id]),
+        sqlStatement("UPDATE vault SET schema_version = 166 WHERE id = ?", [id]),
       );
       const before = await database.query(sqlStatement("SELECT * FROM vault"));
       await expect(port.open({ vaultId: id, openedAt })).rejects.toMatchObject({

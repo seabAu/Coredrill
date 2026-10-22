@@ -735,6 +735,26 @@ A screen/journey is complete only when it has:
 - updated screenshots or story states in the design/dev catalog;
 - linked checklist proof.
 
+### Recorded contact history (2026-10-22)
+
+The selected-contact lookup confirms vault, company scope and current contact
+version before history starts. Root-owned disposable readers retain bounded
+live pages and explicit literal-summary inspection across reflow and Back to
+the same selection. Top-level Network intentionally opens a fresh directory;
+it retires the previous contact rather than retaining its facts. Explicit
+first/refresh, next, retry and archive inclusion remain separate from writes.
+Only actual contact links determine membership; current linked-job labels are
+not historical employer evidence or relationship totals. Previews are visibly
+distinguished from complete text, with byte progress and bounded continuation.
+Empty, missing, loading, unavailable and stale results stay distinct. Read
+focus waits for committed enabled controls and revokes both retired owners and
+superseded interactions. Repeated actual browser/native proof covers literal
+BOM/NUL/Unicode, inert markup-shaped text, paging, archive scope, offline/local
+reload,320px/keyboard/axe and late-page/summary owner isolation. See the
+[history proof and remaining full/hosted gates](../../proof/contact-interaction-history-verification.md).
+This read-only surface does not prove the recording composer, source-backed
+contact qualification or manual assistive-technology/release acceptance.
+
 ### Normal stored company forms and selected detail (2026-10-21)
 
 The hosted refresh-focus regression requires capturing action intent before disabling for a read and scheduling restoration only after the ready state commits. Superseded read-lifetime/selection callbacks cannot restore focus, and deliberate focus elsewhere is preserved. Held actual browser/native reads prove enabled targets at scheduling and callback without increasing focus/journey timeouts. This local correction still requires a new exact hosted run; it does not close manual assistive-technology acceptance.

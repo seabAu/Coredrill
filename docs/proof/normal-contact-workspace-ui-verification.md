@@ -88,6 +88,148 @@ WebView/release gates remain open. No owner choice is needed for this slice.
 
 ## Results
 
+### Exact hosted closure and manual-contact slice audit — 2026-10-22
+
+Exact commit `160f031e2cfd070e016b6ae78370b08f35223ebb` passes
+[Foundation CI39717538422](https://github.com/seabAu/Coredrill/actions/runs/39717538422).
+Original watch46181 is consumed exit0 with
+`NORMAL_CONTACT_UI_CORRECTED_HOSTED_EXIT=0`; never resume or restart it.
+Workflow, all ten required jobs and parent check suite107639151524 independently
+report completed success at that same commit. Pull-request-only dependency
+review is intentionally skipped for the push. Aggregate119623154082 finishes
+in28m10s without changing its30-minute budget.
+
+The retained `normal-contact-ui-corrected-hosted-aggregate.log` proves the
+unchanged complete `pnpm verify` chain reaches successful Changesets status:
+2448 unit cases pass with one intentional platform skip (2449 total), and the
+same disposition passes coverage. All63 resilience cases pass, including the
+company-focus regression, four contact workspace cases and four real-Rust
+normal-runtime journeys. npm audit reports **No known vulnerabilities found**.
+Cargo audit retains exactly the same ten reviewed warnings (nine unmaintained
+and the glib unsoundness finding), with no new exception. License checks pass
+831 npm records across23 roots and498 Cargo crates; secret scanning passes.
+The pinned-browser/platform logs below supply independent exact-version proof.
+Earlier local audit timeouts, selector/fixture failures and the failed5d81586
+hosted run remain retained failures, not reclassified successes.
+
+The eight requirements in this manual-contact slice now have engineering proof:
+
+| Requirement                        | Evidence and disposition                                                                                                                                                                                       |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Bounded owned directory            | Scoped application/repository contracts and normal26-record paging, retry and route journeys pass; no methods/notes/totals are preloaded.                                                                      |
+| Selected manual-basis details      | Workspace/hash-validation tests and actual normal browser/native reads pass; unknown populated fields remain withheld rather than invented as absent/public/licensed.                                          |
+| Root-owned literal drafts          | Controller and normal creation/notes journeys retain original vault/contact/company/version intent through reflow, navigation and failure.                                                                     |
+| Acknowledgement and recovery       | Exact receipt/notes recovery and held-write journeys prove explicit read-only checking, no automatic repeat write and independent canonical readback.                                                          |
+| Privacy, focus and retirement      | New early-disabled-blur, cross-selection late acknowledgement, foreign-owner hiding, actual browser deletion and restore/reopen tests pass under unchanged assertions.                                         |
+| Actual local navigation            | Normal company/contact creation, company filter, deep links, Back/Forward and reload journeys pass without catalog contact identities.                                                                         |
+| Browser/native and accessibility   | Full local and both exact Chrome runs pass normal offline,320px,forced-colors/reduced-motion,keyboard/axe and real-Rust-process journeys; simulated-host and manual acceptance limits remain explicit.         |
+| Complete final-source verification | Local3626, extension76212, format2675, policy33144 and this exact terminal hosted run pass. Result-only follow-up policy29013 also passes with `NORMAL_CONTACT_UI_CORRECTED_HOSTED_OBSERVATION_POLICY_EXIT=0`. |
+
+This closes the manual-contact UI/focus/lifetime engineering checkpoint only.
+Full INT-007 still requires source-backed field-use/provenance evidence,
+remaining relationship projections and recorded interaction history; INT-008
+Home integration is separate and unfinished. Installed native-WebView, manual
+assistive-technology/usability, reference-hardware and release gates remain open.
+No dependency, schema, permission or Accepted decision changed in this closure.
+The immutable checkpoint needs no further source correction; a subsequent slice
+must have its own pre-edit plan and new-source proof. Preserve stash2697 and the
+two result documents for that next coherent change instead of pushing a
+documentation-only successor over this proof.
+
+### Exact pinned browser and platform proof; aggregate still pending
+
+The same CI39717538422 at exact160f031 now has nine required jobs completed
+successfully: both Chrome151/152 and Firefox153/154 lanes, extension transfer,
+Windows/macOS/Linux package/storage lanes and full-history secrets. The
+pull-request-only dependency review is intentionally skipped on this push.
+Aggregate119623154082 still reports `Run foundation gate` in progress; watch46181
+remains live. No whole-gate or hosted dependency-audit success is claimed.
+
+Completed-job logs are retained as
+`normal-contact-ui-corrected-hosted-{chrome151,chrome152,firefox153,firefox154,windows,macos,linux,extension}.log`.
+Both Chrome logs explicitly pass all63 resilience cases, including the original
+company creation/notes focus journey, all four contact workspace cases, and all
+four real-Rust-process normal runtime journeys. Chrome151 passes resilience in
+9.2 minutes and its complete lane in17m27s; Chrome152 passes resilience in
+7.7 minutes and its lane in14m9s. Neither budget nor assertion was increased.
+Both Firefox `STG_FIREFOX_PROOF` records show schema164, identical v14/32
+repository contracts, career v3/4,58 datasets/116 files and explicit successful
+restore/corruption/stale/deletion checks. Windows passes20 native cases; macOS
+and Linux each pass19 with the one intentional platform skip. All three retain
+Rust24 passes/one intentional ignored case. Extension transfer passes9 cases
+in30.9s. These logs do not turn simulated UI-host evidence or package startup
+diagnostics into installed-WebView/manual assistive-technology acceptance.
+
+Additional read-only relationship inspection finds
+`migrations/0019_interaction.sql` requires a job and allows a nullable contact
+reference; `0063_interaction_timeline_index.sql` indexes job chronology. Contact
+history must follow explicit `contact_id`, not infer an interaction from a
+shared company. Any company/job relationship projection must identify joined
+facts as current stored relationships rather than historical employer evidence.
+This inspection activates no new feature, schema or mutation.
+
+### Read-only provenance follow-through audit while exact CI runs
+
+Inspection of `migrations/0012_contact_point_provenance.sql`,
+`migrations/0010_provenance.sql`, `ContactRepository.linkProvenance` and
+`ProvenanceRepository` in `packages/storage-core/src/tracker-repositories.ts`
+finds an existing contact/field/value-hash/provenance relationship and retained
+snapshot, method, pointer, excerpt, confidence, capture time and nullable
+free-text license note. These facts support source tracing; they do not encode
+an explicit public-contact or licensed-use eligibility decision. A nonempty
+license note, public-looking URL, extraction method, confidence or confirmation
+bit cannot supply that missing basis. The manual-creation receipt remains a
+separate exact-value basis, not a source-policy authorization.
+
+The next provenance slice must cover both bounded source inspection and an
+explicit legitimate field-use basis before source-backed methods become
+displayable. It must preserve unknown legacy classification, exact current-value
+hash binding, nullable values and independent confidence/confirmation labels.
+Any new durable evidence needs the normal migration, export, recovery and
+cross-adapter proof; a read-only projection alone cannot close that requirement.
+No new connector, extraction, licensed provider or network acquisition is
+authorized by this audit. In particular, the existing USAJOBS adapter's deliberate
+exclusion of contact fields remains unchanged.
+
+This is read-only follow-through evidence, not an activated implementation plan,
+new Accepted decision, schema change or completion claim. Exact CI39717538422
+remains live under watch46181; the existing source/tests/helpers freeze and
+result-documents-only boundary remain in force until its terminal result.
+
+### Corrected successor pushed; hosted proof in progress
+
+Commit `160f031e2cfd070e016b6ae78370b08f35223ebb`
+(`fix: preserve contact read focus and owner lifetimes`) contains9 reviewed files,
+746 insertions/17 deletions and is pushed normally to origin/main from a clean
+tree. No force/history rewrite; stash2697 is retained. A final secret scan after
+the result-only documentation update also passes. Complete local3626, serial
+extension76212, format2675 and policy33144 are consumed successes; never resume
+them. No dependency/lockfile/schema/permission/Accepted decision changed.
+
+Exact [Foundation CI39717538422](https://github.com/seabAu/Coredrill/actions/runs/39717538422)
+is **in progress**, not success. Watch46181 writes
+`normal-contact-ui-corrected-hosted-watch.log`; require
+`NORMAL_CONTACT_UI_CORRECTED_HOSTED_EXIT`. Observe the same handle without
+restarting for observation timeout or superseding the run with a newer push.
+Only result documents follow frozen source/tests/helpers. Aggregate119623154082
+runs the unchanged full gate; both exact Chrome lanes must prove the corrected
+focus/owner/restore paths. Initial pinned pnpm activation now succeeds in the
+observed aggregate/macOS/Firefox lanes; this is not yet whole/audit success.
+Old5d81586 failure and all earlier local failures remain retained, not reclassified.
+Full INT-007/INT-008 and source-backed provenance/relationships/interactions/Home,
+release/external-evidence gates and the overall goal remain open.
+
+Subsequent observation of the same live watch and exact job metadata confirms
+terminal success for Firefox154/153, extension transfer, full-history secrets,
+macOS7m12s, Windows9m39s and Linux9m30s. Aggregate and both Chrome jobs remain
+live; no whole-gate, audit or corrected-Chrome success is inferred. The
+read-only provenance audit above changes only result records. Their Prettier
+check and diff-whitespace check pass. Secret scanning initially cannot spawn
+Git under the sandbox (`spawnSync git.exe EPERM`); the scoped-permission retry
+passes without changing the scanner. Source/tests/helpers remain frozen,
+HEAD/origin/main160f031 and stash2697 remain unchanged, and watch46181 must be
+observed to terminal before a successor push.
+
 ### Corrected checkpoint ready for exact commit and hosted proof
 
 Serial extension76212 is consumed exit0, nine cases/28.5s,

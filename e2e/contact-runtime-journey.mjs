@@ -64,6 +64,29 @@ export const exerciseContactRuntime = async (page, testInfo) => {
       ...readInput,
       contactId: retiredCompanyDraft.contactId,
     });
+    const beforeHistoryHash = (await api.exportPortable()).sha256;
+    const history = await api.contactHistory.page(readInput);
+    const foreignHistory = await api.contactHistory.page({
+      ...readInput,
+      expectedVaultId: "0199b363-0000-7000-8000-000000000099",
+    });
+    const missingSummary = await api.contactHistory.summaryPart({
+      specVersion: 1,
+      reference: {
+        specVersion: 1,
+        vaultId,
+        contactId: draft.contactId,
+        includeArchived: false,
+        contactRowVersion: 2,
+        occurredAt: "2026-10-22T04:00:00.000Z",
+        id: "0199b363-0000-7000-8000-000000000098",
+        rowVersion: 1,
+        jobId: "0199b363-0000-7000-8000-000000000097",
+        jobRowVersion: 1,
+      },
+      summaryByteLength: 0,
+    });
+    const afterHistoryHash = (await api.exportPortable()).sha256;
     return {
       vaultId,
       contactId: draft.contactId,
@@ -82,6 +105,11 @@ export const exerciseContactRuntime = async (page, testInfo) => {
       changedCompany,
       rejectedCompany,
       absentRejectedContact,
+      history,
+      foreignHistory,
+      missingSummary,
+      beforeHistoryHash,
+      afterHistoryHash,
     };
   });
   expect(first.before).toMatchObject({ ok: true, value: { items: [] } });
@@ -129,6 +157,22 @@ export const exerciseContactRuntime = async (page, testInfo) => {
     value: { companyId: first.companyId, hasMore: false, nextCursor: null },
   });
   expect(first.directory.value.items).toHaveLength(1);
+  expect(first.history).toEqual({
+    ok: true,
+    value: {
+      specVersion: 1,
+      vaultId: first.vaultId,
+      contactId: first.contactId,
+      contactRowVersion: 2,
+      includeArchived: false,
+      items: [],
+      hasMore: false,
+      nextCursor: null,
+    },
+  });
+  expect(first.foreignHistory).toMatchObject({ ok: false, error: { code: "not_found" } });
+  expect(first.missingSummary).toMatchObject({ ok: false, error: { code: "not_found" } });
+  expect(first.afterHistoryHash).toBe(first.beforeHistoryHash);
   expect(Object.keys(first.directory.value.items[0]).sort()).toEqual([
     "archivedAt",
     "companyId",
@@ -152,6 +196,11 @@ export const exerciseContactRuntime = async (page, testInfo) => {
     if (!selected.ok) throw new Error("Reopened contact unavailable.");
     return {
       selected,
+      history: await api.contactHistory.page({
+        specVersion: 1,
+        expectedVaultId: vaultId,
+        contactId,
+      }),
       basis: await api.contactWorkspace.resolveManualFields(selected.value),
       directory: await api.contactDirectory.page({
         specVersion: 1,
@@ -161,6 +210,7 @@ export const exerciseContactRuntime = async (page, testInfo) => {
     };
   }, first);
   expect(reopened.selected).toEqual(first.updated);
+  expect(reopened.history).toEqual(first.history);
   expect(reopened.basis).toEqual(first.basis);
   expect(reopened.directory.value.items).toHaveLength(1);
   expect(reopened.directory.value.items[0].rowVersion).toBe(2);
@@ -176,6 +226,10 @@ export const exerciseContactRuntime = async (page, testInfo) => {
     directoryExcludesPrivateMethodsNotesAndHashes: true,
     reloadReadback: true,
     noEnrichmentOrSending: true,
+    honestEmptyContactHistoryAndMissingSummary: true,
+    historyForeignVaultRejected: true,
+    historyReadsLeaveExactDatabaseUnchanged: true,
+    populatedHistoryScreenProven: false,
   };
   await testInfo.attach("normal-contact-runtime.json", {
     body: JSON.stringify(proof),

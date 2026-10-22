@@ -31,6 +31,7 @@ export const StoredContactDetails = ({
   disabled,
   onEdit,
   onViewCompany,
+  onObserved,
 }: {
   readonly api: StoredContactWorkspaceApi;
   readonly vaultId: string;
@@ -40,6 +41,7 @@ export const StoredContactDetails = ({
   readonly disabled: boolean;
   readonly onEdit: (value: ContactWorkspaceV1) => void;
   readonly onViewCompany: (id: string) => void;
+  readonly onObserved: (value: ContactWorkspaceV1 | null) => void;
 }) => {
   const owner = useMemo(
     () => ({ api, vaultId, contactId, companyScope }),
@@ -52,6 +54,8 @@ export const StoredContactDetails = ({
   const readOwner = useMemo(() => ({ owner, revision, retry }), [owner, revision, retry]);
   const liveReadOwner = useRef(readOwner);
   liveReadOwner.current = readOwner;
+  const observed = useRef(onObserved);
+  observed.current = onObserved;
   const readFocusOrigin = useRef<{
     owner: typeof owner;
     retry: number;
@@ -127,7 +131,9 @@ export const StoredContactDetails = ({
           busy: false,
           error: null,
         });
+        if (liveReadOwner.current === readOwner) observed.current(workspace);
       } catch {
+        if (isActive() && liveReadOwner.current === readOwner) observed.current(null);
         if (isActive())
           setSnapshot((prior) => ({
             owner,
@@ -317,8 +323,9 @@ export const StoredContactDetails = ({
         </>
       ) : null}
       <p>
-        This view does not load source histories, interaction history, relationship totals or remote
-        profiles. It sends no messages and performs no enrichment.
+        Contact values above do not preload source histories, relationship totals or remote
+        profiles. Recorded interactions are read separately below. Nothing sends messages or
+        performs enrichment.
       </p>
     </section>
   );

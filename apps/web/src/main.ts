@@ -240,6 +240,10 @@ import {
   createStoredContactWorkspaceApi,
   type StoredContactWorkspaceApi,
 } from "./stored-contact-workspace.js";
+import {
+  createStoredContactHistoryApi,
+  type StoredContactHistoryApi,
+} from "./stored-contact-history.js";
 import { createStoredJobNoteApi, type StoredJobNoteApi } from "./stored-job-notes.js";
 import { createStoredNextActionApi, type StoredNextActionApi } from "./stored-next-actions.js";
 import { createStoredVaultExportApi, type StoredVaultExportApi } from "./stored-vault-export.js";
@@ -525,6 +529,7 @@ export interface CoredrillStorageSpikeApi {
   readonly companyWorkspace: StoredCompanyWorkspaceApi;
   readonly contactDirectory: StoredContactDirectoryApi;
   readonly contactWorkspace: StoredContactWorkspaceApi;
+  readonly contactHistory: StoredContactHistoryApi;
   readonly pipelineMutations: StoredPipelineMutationApi;
   readonly jobNotes: StoredJobNoteApi;
   readonly nextActions: StoredNextActionApi;
@@ -3381,6 +3386,11 @@ const api: CoredrillStorageSpikeApi = {
     () => generateEntityId("contact"),
     sha256Text,
   ),
+  contactHistory: createStoredContactHistoryApi(async () => {
+    const client = await getDatabase();
+    await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
+    return client;
+  }, careerProfileOperationContext),
   jobNotes: createStoredJobNoteApi(
     async () => {
       const client = await getDatabase();
@@ -3400,7 +3410,7 @@ const api: CoredrillStorageSpikeApi = {
     generateEntityId,
   ),
   vaultRestore: createStoredVaultRestoreApi({
-    compatibleSourceSchemaVersions: [160],
+    compatibleSourceSchemaVersions: [160, 164],
     expectedSchemaVersion: async () => {
       const version = (await migrations()).at(-1)?.version;
       if (version === undefined) throw new Error("The supported restore schema is unavailable.");
@@ -3942,6 +3952,7 @@ const api: CoredrillStorageSpikeApi = {
       schemaVersion !== 158 &&
       schemaVersion !== 159 &&
       schemaVersion !== 160 &&
+      schemaVersion !== 164 &&
       schemaVersion !== currentSchemaVersion
     ) {
       throw new Error("The recovery fixture source schema is not reviewed.");

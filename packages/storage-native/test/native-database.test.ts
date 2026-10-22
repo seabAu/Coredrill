@@ -518,7 +518,7 @@ describe("native SQLite repository and migration contracts", () => {
         ]);
         entered();
         await held;
-        expect((await lease.exportPortable()).schemaVersion).toBe(164);
+        expect((await lease.exportPortable()).schemaVersion).toBe(165);
         return lease.query(sqlStatement("SELECT value FROM read_lease_probe"));
       });
       await started;
@@ -579,11 +579,11 @@ describe("native SQLite repository and migration contracts", () => {
         name: "applies the shared migration and reopens its ledger",
         run: async (database) => {
           await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
-            schemaVersion: 164,
-            appliedVersions: Array.from({ length: 164 }, (_, index) => index + 1),
+            schemaVersion: 165,
+            appliedVersions: Array.from({ length: 165 }, (_, index) => index + 1),
           });
           await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
-            schemaVersion: 164,
+            schemaVersion: 165,
             appliedVersions: [],
           });
         },
@@ -633,8 +633,8 @@ describe("native SQLite repository and migration contracts", () => {
         await applySqlMigrations(database, migrations().slice(0, throughVersion), APPLIED_AT);
       },
     });
-    expect(PHASE_1_REPOSITORY_CONTRACT_MANIFEST.schemaVersion).toBe(14);
-    expect(PHASE_1_REPOSITORY_CONTRACT_CASE_NAMES).toHaveLength(32);
+    expect(PHASE_1_REPOSITORY_CONTRACT_MANIFEST.schemaVersion).toBe(15);
+    expect(PHASE_1_REPOSITORY_CONTRACT_CASE_NAMES).toHaveLength(34);
     await expect(runDatabaseContractSuite(nativeAdapter, suite)).resolves.toEqual({
       adapterName: "native-rusqlite-candidate",
       suiteName: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.suiteName,
@@ -690,7 +690,7 @@ describe("native SQLite repository and migration contracts", () => {
       adapterName: "native-rusqlite-candidate",
       health: "ready",
       persistence: "durable",
-      schemaVersion: 164,
+      schemaVersion: 165,
     });
     await expect(reopened.delete()).resolves.toBe(true);
   });
@@ -732,7 +732,7 @@ describe("native SQLite repository and migration contracts", () => {
       await step("migrations", () => applySqlMigrations(database, migrations(), APPLIED_AT));
       await step("portable-export", () =>
         expect(database.exportPortable()).resolves.toMatchObject({
-          schemaVersion: 164,
+          schemaVersion: 165,
           byteLength: expect.any(Number),
           sha256: expect.stringMatching(/^[a-f0-9]{64}$/u),
         }),
@@ -748,7 +748,7 @@ describe("native SQLite repository and migration contracts", () => {
           retentionCount: 7,
           knownGoodBackups: 1,
           cleanupPending: false,
-          archive: { schemaVersion: 164, sha256: expect.stringMatching(/^[a-f0-9]{64}$/u) },
+          archive: { schemaVersion: 165, sha256: expect.stringMatching(/^[a-f0-9]{64}$/u) },
         }),
       );
     } finally {
@@ -857,6 +857,7 @@ describe("native SQLite repository and migration contracts", () => {
     "phase-1-vault-schema-159-v1",
     "phase-1-vault-schema-160-v1",
     "phase-1-vault-schema-164-v1",
+    "phase-1-vault-schema-165-v1",
   ])(
     "restores complete evidence relationships and attachments through the native boundary: %s",
     async (fixtureName) => {
@@ -1021,7 +1022,7 @@ describe("native SQLite repository and migration contracts", () => {
             "SELECT version, name, sha256 FROM coredrill_schema_migration ORDER BY version",
           ),
         );
-        expect([158, 159, 160, 164]).toContain(manifest.schemaVersion);
+        expect([158, 159, 160, 164, 165]).toContain(manifest.schemaVersion);
         expect(originalLedger).toHaveLength(manifest.schemaVersion);
         await expect(
           database.query<QueryRow>(
@@ -1041,10 +1042,19 @@ describe("native SQLite repository and migration contracts", () => {
         ).resolves.toEqual(
           manifest.schemaVersion >= 160 ? [{ name: "reminder_next_action_job_state_idx" }] : [],
         );
+        await expect(
+          database.query(
+            sqlStatement("SELECT name FROM sqlite_schema WHERE type='index' AND name=?", [
+              "interaction_contact_history_idx",
+            ]),
+          ),
+        ).resolves.toEqual(
+          manifest.schemaVersion === 165 ? [{ name: "interaction_contact_history_idx" }] : [],
+        );
         await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
-          schemaVersion: 164,
+          schemaVersion: 165,
           appliedVersions: Array.from(
-            { length: 164 - manifest.schemaVersion },
+            { length: 165 - manifest.schemaVersion },
             (_, index) => manifest.schemaVersion + index + 1,
           ),
         });
@@ -1053,7 +1063,7 @@ describe("native SQLite repository and migration contracts", () => {
             "SELECT version, name, sha256 FROM coredrill_schema_migration ORDER BY version",
           ),
         );
-        expect(upgradedLedger).toHaveLength(164);
+        expect(upgradedLedger).toHaveLength(165);
         expect(upgradedLedger.slice(0, manifest.schemaVersion)).toEqual(originalLedger);
         await expect(
           database.query<QueryRow>(
@@ -1069,6 +1079,13 @@ describe("native SQLite repository and migration contracts", () => {
             ]),
           ),
         ).resolves.toEqual([{ name: "reminder_next_action_job_state_idx" }]);
+        await expect(
+          database.query(
+            sqlStatement("SELECT name FROM sqlite_schema WHERE type='index' AND name=?", [
+              "interaction_contact_history_idx",
+            ]),
+          ),
+        ).resolves.toEqual([{ name: "interaction_contact_history_idx" }]);
         const upgradedData = await createPortableDataExportV1({
           database,
           generatedAt: manifest.generatedAt,
@@ -1079,8 +1096,10 @@ describe("native SQLite repository and migration contracts", () => {
         const manualEvidence = upgradedData.datasets.find(
           (dataset) => dataset.dataset === "contact_manual_creation",
         );
-        if (manifest.schemaVersion === 164) {
-          expect(upgradedData.datasets).toEqual(restoredData.datasets);
+        if (manifest.schemaVersion === 164 || manifest.schemaVersion === 165) {
+          expect(upgradedData.datasets).toEqual(
+            restoredData.datasets.map((dataset) => ({ ...dataset, sourceSchemaVersion: 165 })),
+          );
           const archivedEvidence = inspected.dataFiles.find(
             (file) => file.path === "data/contact_manual_creation.json",
           );
@@ -1121,7 +1140,7 @@ describe("native SQLite repository and migration contracts", () => {
               (dataset) => dataset.dataset !== "contact_manual_creation",
             ),
           ).toEqual(
-            restoredData.datasets.map((dataset) => ({ ...dataset, sourceSchemaVersion: 164 })),
+            restoredData.datasets.map((dataset) => ({ ...dataset, sourceSchemaVersion: 165 })),
           );
           expect(manualEvidence).toMatchObject({ rowCount: 0, rows: [] });
         }
@@ -1257,7 +1276,7 @@ describe("native SQLite repository and migration contracts", () => {
           version: 1,
           runtime: "windows-native",
           adapterName: "native-rusqlite-candidate",
-          schemaVersion: 164,
+          schemaVersion: 165,
           vaultName: "Canonical local job search",
           jobTitle: "Research Operations Lead",
           finalStage: "Interviewing",

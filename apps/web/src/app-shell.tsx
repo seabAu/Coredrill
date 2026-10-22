@@ -157,6 +157,10 @@ import { StoredCompanyDirectoryView } from "./stored-company-directory-view.js";
 import { useStoredCompanyEditor } from "./stored-company-workspace-view.js";
 import { StoredContactDirectoryView } from "./stored-contact-directory-view.js";
 import { useStoredContactEditor } from "./stored-contact-editor-view.js";
+import {
+  StoredContactHistoryView,
+  useStoredContactHistory,
+} from "./stored-contact-history-view.js";
 import { useStoredWorkspaceStatus } from "./stored-workspace-status.js";
 import { useStoredWorkspaceNextAction } from "./stored-workspace-next-action.js";
 import { useStoredJobTasks } from "./stored-job-tasks.js";
@@ -2173,6 +2177,14 @@ const AppShellCatalog = ({
     onSaved: () => {
       setContactRevision((value) => value + 1);
     },
+  });
+  const contactHistory = useStoredContactHistory({
+    api: globalThis.coredrillStorageSpike.contactHistory,
+    vaultId: vaultSession?.vault.id ?? null,
+    contactId: networkSelectedContactId,
+    companyScope: networkContactCompanyScope,
+    revision: contactRevision,
+    enabled: !referenceCatalog && vaultDeletionStatus === null && !vaultRestoreSession.needsReopen,
   });
   const companyEditor = useStoredCompanyEditor({
     api: globalThis.coredrillStorageSpike.companyWorkspace,
@@ -5109,6 +5121,8 @@ const AppShellCatalog = ({
                 needsReopen={vaultRestoreSession.needsReopen}
                 onSelectContact={selectStoredContact}
                 onViewCompany={selectStoredCompany}
+                onContactObserved={contactHistory.observeWorkspace}
+                historyView={<StoredContactHistoryView model={contactHistory} />}
               />
             }
           />

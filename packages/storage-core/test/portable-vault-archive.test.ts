@@ -106,7 +106,7 @@ class TestDatabase implements DatabasePort {
       bytes,
       byteLength: bytes.length,
       sha256: this.exports === this.corruptSnapshot ? "0".repeat(64) : hash(bytes),
-      schemaVersion: 164,
+      schemaVersion: 165,
     };
   }
   async restoreExact(bytes: Uint8Array) {
@@ -131,7 +131,7 @@ class TestDatabase implements DatabasePort {
       health: "ready" as const,
       persistence: "durable" as const,
       readOnly: false,
-      schemaVersion: 164,
+      schemaVersion: 165,
       details: [],
     };
   }
@@ -209,7 +209,7 @@ describe("complete stable portable vault archive preparation", () => {
     if (!("archive" in outcome)) throw new Error("Expected archive result.");
     const inspected = await inspectPortableArchiveV1({
       bytes: outcome.archive.bytes,
-      expectedSchemaVersion: 164,
+      expectedSchemaVersion: 165,
     });
     const vaultData = inspected.dataFiles.find(({ path }) => path === "data/vault.json");
     if (vaultData === undefined) throw new Error("Missing vault projection.");
@@ -239,13 +239,13 @@ describe("complete stable portable vault archive preparation", () => {
       archiveId,
       createdAt,
       encryption: { mode: "none" },
-      vault: { id: vaultId, schemaVersion: 164 },
+      vault: { id: vaultId, schemaVersion: 165 },
     });
     expect(archive.manifest.dataFiles).toHaveLength(116);
-    expect(archive.manifest.vault.migrationHistory).toHaveLength(164);
+    expect(archive.manifest.vault.migrationHistory).toHaveLength(165);
     const inspected = await inspectPortableArchiveV1({
       bytes: archive.bytes,
-      expectedSchemaVersion: 164,
+      expectedSchemaVersion: 165,
       expectedArchiveSha256: archive.sha256,
     });
     expect(inspected.attachments).toHaveLength(1);

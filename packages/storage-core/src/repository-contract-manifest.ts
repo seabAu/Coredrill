@@ -86,6 +86,12 @@ const PHASE_1_REPOSITORY_CONTRACT_COMPONENTS = Object.freeze({
     guardedNotes:
       "guards contact notes methods evidence archive ownership rollback and whole-contact deletion",
   }),
+  contactHistory: component("stored-contact-interaction-history", {
+    readScopedPages:
+      "reads bounded explicit-contact history with live job metadata scoped cursors and no inferred conversations",
+    readLiteralSummary:
+      "reads bounded complete literal summary bytes with fixed contact job and record ownership",
+  }),
 });
 
 const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
@@ -95,8 +101,8 @@ const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
 );
 
 export const PHASE_1_REPOSITORY_CONTRACT_MANIFEST = Object.freeze({
-  schemaVersion: 14 as const,
-  suiteName: "phase-1-repository-contracts-v14",
+  schemaVersion: 15 as const,
+  suiteName: "phase-1-repository-contracts-v15",
   components: PHASE_1_REPOSITORY_CONTRACT_COMPONENTS,
   caseNames: PHASE_1_REPOSITORY_CONTRACT_CASES,
 });

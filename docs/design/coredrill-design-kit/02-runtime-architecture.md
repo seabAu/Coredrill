@@ -2,6 +2,13 @@
 
 ## Logical architecture
 
+Current schema165 follow-through adds only the contact-history index and keeps
+the schema164 receipts/exports as a reviewed historical milestone. Normal
+restore configuration retains160 and164 alongside current165; actual165
+browser/native recovery and normal160/164→165 reopen proof pass. The
+schema164 descriptions below retain their earlier checkpoint scope; they do
+not prove the newer index or history integration.
+
 Selected-contact workspace implementation is in progress separately from the directory: strict version-1 viewed-vault read/manual-create/notes operations compose a transactional SQLite port. Explicit creation binds the caller-owned identity, original operation context and optional selected-company version; both application and adapter validate exact value hashes. One immutable creation receipt is read only for an explicitly selected contact, never preloaded into pages. Notes cannot change methods, confirmation, company or receipt. Schema161–164 adds durable manual-creation evidence and complete schema164 export mapping, with no legacy classification or new connector/permission. Focused v14/32 fast/browser/native, preserved legacy upgrades and nonempty164 receipt recovery pass. Normal restore explicitly accepts reviewed160 alongside current164, preserves source identity through commit and runs ordinary migrations only on deliberate reopen; exact defaults and every integrity/target guard remain. Normal offline browser and actual-native prior-schema restore/reopen proof passes. Full final-source/hosted proof and normal contact UI composition remain pending. See [current prerequisite evidence](../../proof/contact-workspace-verification.md).
 
 The normal Network contact-directory prerequisite uses a versioned, read-only viewed-vault/archive/company-scoped application query over a bound SQLite projection. Pages contain only contact identity, nullable role/company and audit/archive facts, never private methods/notes, inferred public/license basis or totals. Cursors retain the original scope and anchor version; missing/ambiguous/replaced vaults and stale anchors fail explicitly. Browser/native adapters share the same repository contract. This prerequisite does not complete normal contact details, editing or interactions.
@@ -459,6 +466,28 @@ The subsequent normal runtime composition exposes `pipelineMutations` using its 
 The optional `ChangeStatus` viewed-state tuple is validated before the persistence port and checked in the existing projection/event/undo transaction. This closes the gap between transaction-local concurrency checks and a stale user view, including a newly created or ambiguous active attempt. Returned event source status must match the supplied view. `createDatabaseMutationUndoPort` now composes the existing repository consumption action through stable application missing/replay/stale-target errors; returned DTO validation still belongs to the application command. Browser and native share these boundaries. This prerequisite neither enables normal Board/Table mutation controls nor changes the explicit Mark Applied review or submitted snapshots; those remain subsequent runtime/UI integration. See [proof](../../proof/stored-status-preconditions-verification.md).
 
 ## Application use cases
+
+The INT-007 recorded-contact-history slice now has strict viewed-vault/contact
+page and full-summary-part application queries plus transactional SQLite ports.
+Only actual contact links determine membership; current joined job labels are
+not historical employer evidence. Byte-bounded literal previews and separate
+scalar-safe full parts preserve NUL/BOM/Unicode, while original owner/record/job
+versions bind continuation. Focused Node SQLite and application proof passes;
+the measured index is now migration165, with actual Node rollback/export-row
+proof. No permission, source, Rust operation or canonical cache is introduced.
+The additive v15/34 shared repository manifest now proves the same contact
+history pages and literal summary parts on Node/browser/native. Schema165
+browser/native recovery and normal160/164→165 restore/reopen also pass.
+The normal root also composes lazy selected-runtime history page/summary APIs:
+validation/copying precedes storage opening, and API construction opens nothing.
+Normal browser/native empty/missing/foreign/reload and unchanged-database proof
+passes. Root-owned disposable readers and populated history UI now pass repeated
+normal browser/real-native offline/local reload, paging, literal summary, archive,
+320px/keyboard/axe and late-owner/focus journeys. Existing selected-contact lookup
+confirms company and version before history starts, without another private-field
+prefetch. Complete final-source local verification and separate serial extension
+pass; new exact hosted verification remains in progress in
+[contact-history proof](../../proof/contact-interaction-history-verification.md).
 
 The in-progress INT-007 normal company directory composes the existing version-1 application query and shared SQLite repository through the selected runtime. Validation/copying precedes awaited storage opening. A disposable ephemeral coordinator retains one bounded current live page, immutable original vault/archive/limit scope, explicit first/next/retry and stale facts on failure; it never becomes canonical storage or invents a total. Render-time lifetime checks hide retired-owner facts before effect cleanup, and late reads/focus restoration cannot publish into a replacement owner. Normal contacts, selected relationship details, notes and interactions remain unfinished. See [normal directory proof and limits](../../proof/normal-company-directory-verification.md); no schema, dependency, permission or Accepted decision changes.
 

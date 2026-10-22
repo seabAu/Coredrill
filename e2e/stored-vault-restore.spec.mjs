@@ -6,7 +6,10 @@ import { inspectPortableArchiveV1 } from "../packages/storage-core/dist/index.js
 import { initializeDefaultWorkspace } from "./production-workspace.mjs";
 import { exerciseNormalVaultPreparation } from "./normal-vault-export-journey.mjs";
 import { expectRestoredPortableContent } from "./portable-archive-content-proof.mjs";
-import { expectSchema160RestoreUpgrade } from "./schema-160-restore-proof.mjs";
+import {
+  expectSchema160RestoreUpgrade,
+  expectSchema164RestoreUpgrade,
+} from "./schema-160-restore-proof.mjs";
 
 const offlineReady = async (page, context) => {
   await page.evaluate(async () => navigator.serviceWorker.ready);
@@ -23,7 +26,7 @@ const downloadArchive = async (page) => {
   const buffer = await readFile(await download.path());
   const archive = await inspectPortableArchiveV1({
     bytes: new Uint8Array(buffer),
-    expectedSchemaVersion: 164,
+    expectedSchemaVersion: 165,
   });
   await panel.getByRole("button", { name: "Discard prepared archive", exact: true }).click();
   return { buffer, archive };
@@ -144,45 +147,46 @@ const confirm = async (panel) => {
   );
 };
 
-test("normal clean offline restore preserves a schema160 backup and deliberately reopens at164 without invented contact evidence", async ({
-  page,
-  context,
-}) => {
-  const bytes = await readFile(
-    path.resolve("fixtures/recovery/phase-1-vault-schema-160-v1.coredrill.zip"),
-  );
-  const archive = await inspectPortableArchiveV1({
-    bytes: new Uint8Array(bytes),
-    expectedSchemaVersion: 160,
+for (const sourceVersion of [160, 164]) {
+  test(`normal clean offline restore preserves a schema${sourceVersion} backup and deliberately reopens at165 without invented contact evidence`, async ({
+    page,
+    context,
+  }) => {
+    const bytes = await readFile(
+      path.resolve(`fixtures/recovery/phase-1-vault-schema-${sourceVersion}-v1.coredrill.zip`),
+    );
+    const archive = await inspectPortableArchiveV1({
+      bytes: new Uint8Array(bytes),
+      expectedSchemaVersion: sourceVersion,
+    });
+    await page.goto("/");
+    await offlineReady(page, context);
+    await page.getByRole("button", { name: /Quick start/u }).click();
+    await page
+      .getByRole("button", { name: "Restore an existing archive instead", exact: true })
+      .click();
+    const panel = restorePanel(page);
+    await select(panel, bytes);
+    await expect(
+      panel.getByRole("heading", { name: "Review exact restore changes", exact: true }),
+    ).toBeVisible();
+    await expect(panel).toContainText(archive.archiveSha256);
+    await expect(panel).toContainText("Empty target (no vault identity)");
+    expect(
+      (await page.evaluate(() => globalThis.coredrillStorageSpike.vault.inspect())).value.vault,
+    ).toBeNull();
+    await confirm(panel);
+    const openedAfter = Date.now();
+    await panel.getByRole("button", { name: "Reload local vault", exact: true }).click();
+    await expect(page.getByRole("navigation", { name: "Primary", exact: true })).toBeVisible();
+    const identity = await page.evaluate(() => globalThis.coredrillStorageSpike.vault.inspect());
+    expect(identity.value.vault.id).toBe(archive.manifest.vault.id);
+    expect(identity.value.vault.schemaVersion).toBe(165);
+    const expectUpgrade =
+      sourceVersion === 160 ? expectSchema160RestoreUpgrade : expectSchema164RestoreUpgrade;
+    await expectUpgrade((await downloadArchive(page)).archive, archive, [openedAfter, Date.now()]);
   });
-  await page.goto("/");
-  await offlineReady(page, context);
-  await page.getByRole("button", { name: /Quick start/u }).click();
-  await page
-    .getByRole("button", { name: "Restore an existing archive instead", exact: true })
-    .click();
-  const panel = restorePanel(page);
-  await select(panel, bytes);
-  await expect(
-    panel.getByRole("heading", { name: "Review exact restore changes", exact: true }),
-  ).toBeVisible();
-  await expect(panel).toContainText(archive.archiveSha256);
-  await expect(panel).toContainText("Empty target (no vault identity)");
-  expect(
-    (await page.evaluate(() => globalThis.coredrillStorageSpike.vault.inspect())).value.vault,
-  ).toBeNull();
-  await confirm(panel);
-  const openedAfter = Date.now();
-  await panel.getByRole("button", { name: "Reload local vault", exact: true }).click();
-  await expect(page.getByRole("navigation", { name: "Primary", exact: true })).toBeVisible();
-  const identity = await page.evaluate(() => globalThis.coredrillStorageSpike.vault.inspect());
-  expect(identity.value.vault.id).toBe(archive.manifest.vault.id);
-  expect(identity.value.vault.schemaVersion).toBe(164);
-  await expectSchema160RestoreUpgrade((await downloadArchive(page)).archive, archive, [
-    openedAfter,
-    Date.now(),
-  ]);
-});
+}
 
 test("normal offline Settings restores exact prior content after explicit same-vault review across navigation and reflow", async ({
   page,

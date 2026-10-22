@@ -5,16 +5,19 @@ import { TextDecoder } from "node:util";
 import { expect } from "@playwright/test";
 
 /** Exact preceding-schema normal reopen proof; never normalize away arbitrary record changes. */
-export const expectSchema160RestoreUpgrade = async (actual, original, openedBetween) => {
-  expect(original.manifest.vault.schemaVersion).toBe(160);
-  expect(original.manifest.vault.migrationHistory).toHaveLength(160);
+const expectPriorSchemaRestoreUpgrade = async (actual, original, openedBetween, sourceVersion) => {
+  expect([160, 164]).toContain(sourceVersion);
+  expect(original.manifest.vault.schemaVersion).toBe(sourceVersion);
+  expect(original.manifest.vault.migrationHistory).toHaveLength(sourceVersion);
   const added = [];
   for (const [version, name] of [
     [161, "contact_manual_creation"],
     [162, "contact_manual_creation_insert_guard"],
     [163, "contact_manual_creation_update_guard"],
     [164, "contact_manual_creation_delete_guard"],
+    [165, "interaction_contact_history_index"],
   ]) {
+    if (version <= sourceVersion) continue;
     const bytes = await readFile(
       path.resolve("migrations", `${String(version).padStart(4, "0")}_${name}.sql`),
     );
@@ -28,7 +31,7 @@ export const expectSchema160RestoreUpgrade = async (actual, original, openedBetw
   }
   expect(actual.manifest.vault).toEqual({
     ...original.manifest.vault,
-    schemaVersion: 164,
+    schemaVersion: 165,
     migrationHistory: [...original.manifest.vault.migrationHistory, ...added],
   });
   const text = (file) => new TextDecoder().decode(file.bytes);
@@ -38,7 +41,7 @@ export const expectSchema160RestoreUpgrade = async (actual, original, openedBetw
   const openedVault = data(actual, "vault").rows[0];
   // This preserved fixture predates operational root-stamp refresh on normal open.
   expect(oldVault.schema_version).toBe(1);
-  expect(openedVault.schema_version).toBe(164);
+  expect(openedVault.schema_version).toBe(165);
   expect(Date.parse(openedVault.last_opened_at)).toBeGreaterThanOrEqual(openedBetween[0]);
   expect(Date.parse(openedVault.last_opened_at)).toBeLessThanOrEqual(openedBetween[1]);
   expect(Date.parse(openedVault.last_opened_at)).toBeGreaterThanOrEqual(
@@ -47,7 +50,9 @@ export const expectSchema160RestoreUpgrade = async (actual, original, openedBetw
   expect(actual.dataFiles).toHaveLength(116);
   expect(
     actual.dataFiles
-      .filter((file) => !file.path.startsWith("data/contact_manual_creation."))
+      .filter(
+        (file) => sourceVersion === 164 || !file.path.startsWith("data/contact_manual_creation."),
+      )
       .map((file) => file.path),
   ).toEqual(original.dataFiles.map((file) => file.path));
   for (const file of original.dataFiles) {
@@ -57,8 +62,13 @@ export const expectSchema160RestoreUpgrade = async (actual, original, openedBetw
       const oldData = JSON.parse(text(file));
       const newData = JSON.parse(text(restored));
       expect(newData.generatedAt).toBe(actual.manifest.createdAt);
-      expect(newData.sourceSchemaVersion).toBe(164);
-      const compared = { ...newData, generatedAt: oldData.generatedAt, sourceSchemaVersion: 160 };
+      expect(newData.sourceSchemaVersion).toBe(165);
+      expect(oldData.sourceSchemaVersion).toBe(sourceVersion);
+      const compared = {
+        ...newData,
+        generatedAt: oldData.generatedAt,
+        sourceSchemaVersion: sourceVersion,
+      };
       if (file.path === "data/vault.json")
         compared.rows = newData.rows.map((row) => ({
           ...row,
@@ -73,7 +83,7 @@ export const expectSchema160RestoreUpgrade = async (actual, original, openedBetw
       expect(oldCsv.split(oldVault.last_opened_at)).toHaveLength(2);
       expect(text(restored)).toBe(
         oldCsv
-          .replace(schemaCell, ",164,")
+          .replace(schemaCell, ",165,")
           .replace(oldVault.last_opened_at, openedVault.last_opened_at),
       );
     } else
@@ -89,27 +99,33 @@ export const expectSchema160RestoreUpgrade = async (actual, original, openedBetw
     "phone_hash",
     "public_profile_url_hash",
   ];
-  expect(data(actual, "contact_manual_creation")).toEqual({
-    specVersion: 1,
-    dataset: "contact_manual_creation",
-    generatedAt: actual.manifest.createdAt,
-    vaultId: original.manifest.vault.id,
-    sourceSchemaVersion: 164,
-    columns,
-    rowCount: 0,
-    rows: [],
-    csv: {
-      path: "data/contact_manual_creation.csv",
-      dialect: "rfc4180",
-      charset: "utf-8",
-      header: "present",
-      formulaEscaping: "apostrophe-prefix",
-      nullEncoding: "empty-unquoted",
-    },
-  });
-  expect(
-    text(actual.dataFiles.find((file) => file.path === "data/contact_manual_creation.csv")),
-  ).toBe(`${columns.join(",")}\r\n`);
+  if (sourceVersion === 160) {
+    expect(data(actual, "contact_manual_creation")).toEqual({
+      specVersion: 1,
+      dataset: "contact_manual_creation",
+      generatedAt: actual.manifest.createdAt,
+      vaultId: original.manifest.vault.id,
+      sourceSchemaVersion: 165,
+      columns,
+      rowCount: 0,
+      rows: [],
+      csv: {
+        path: "data/contact_manual_creation.csv",
+        dialect: "rfc4180",
+        charset: "utf-8",
+        header: "present",
+        formulaEscaping: "apostrophe-prefix",
+        nullEncoding: "empty-unquoted",
+      },
+    });
+    expect(
+      text(actual.dataFiles.find((file) => file.path === "data/contact_manual_creation.csv")),
+    ).toBe(`${columns.join(",")}\r\n`);
+  } else {
+    // Every retained receipt field/hash was compared above, not inferred from a contact.
+    expect(data(original, "contact_manual_creation").rowCount).toBe(1);
+    expect(data(actual, "contact_manual_creation").rowCount).toBe(1);
+  }
   expect(actual.attachments.map((item) => item.contentId)).toEqual(
     original.attachments.map((item) => item.contentId),
   );
@@ -121,3 +137,9 @@ export const expectSchema160RestoreUpgrade = async (actual, original, openedBetw
       file.contentId,
     ).toBe(true);
 };
+
+export const expectSchema160RestoreUpgrade = (actual, original, openedBetween) =>
+  expectPriorSchemaRestoreUpgrade(actual, original, openedBetween, 160);
+
+export const expectSchema164RestoreUpgrade = (actual, original, openedBetween) =>
+  expectPriorSchemaRestoreUpgrade(actual, original, openedBetween, 164);

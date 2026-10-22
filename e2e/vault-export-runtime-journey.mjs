@@ -28,7 +28,7 @@ export const exerciseVaultExportPreparation = async (page, testInfo, minimumAtta
     ok: true,
     value: {
       state: "prepared_not_saved",
-      schemaVersion: 164,
+      schemaVersion: 165,
       encryptionMode: "none",
       dataFileCount: 116,
     },
@@ -37,7 +37,7 @@ export const exerciseVaultExportPreparation = async (page, testInfo, minimumAtta
   const prepared = result.prepared.value;
   const archive = await inspectPortableArchiveV1({
     bytes: new Uint8Array(prepared.bytes),
-    expectedSchemaVersion: 164,
+    expectedSchemaVersion: 165,
     expectedArchiveSha256: prepared.sha256,
   });
   expect(archive.manifest.vault.id).toBe(prepared.vaultId);
@@ -52,7 +52,7 @@ export const exerciseVaultExportPreparation = async (page, testInfo, minimumAtta
     runtimePreparation: true,
     explicitUnencryptedConsent: true,
     archiveSha256: prepared.sha256,
-    schemaVersion: 164,
+    schemaVersion: 165,
     dataFileCount: archive.dataFiles.length,
     attachmentCount: archive.attachments.length,
     exactSourceUnchanged: true,

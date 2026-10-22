@@ -27,6 +27,7 @@ export default defineConfig({
     "stored-company-directory.spec.mjs",
     "stored-company-workspace.spec.mjs",
     "stored-contact-runtime.spec.mjs",
+    "stored-contact-history.spec.mjs",
     "stored-contact-workspace.spec.mjs",
     "stored-contact-directory.spec.mjs",
     "stored-job-source.spec.mjs",
