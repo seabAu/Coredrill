@@ -124,10 +124,10 @@ test("opens official SQLite in a Worker, persists transactions, and restores a c
 
   await callHarness(sourcePage, "delete");
   const opened = await callHarness(sourcePage, "openAndMigrate");
-  expect(opened.appliedVersions).toEqual(Array.from({ length: 165 }, (_, index) => index + 1));
+  expect(opened.appliedVersions).toEqual(Array.from({ length: 167 }, (_, index) => index + 1));
   expect(opened.diagnostics).toMatchObject({
     adapterName: "official-sqlite-wasm-opfs-sahpool",
-    schemaVersion: 165,
+    schemaVersion: 167,
   });
   expect(["ready", "degraded"]).toContain(opened.diagnostics.health);
   expect(["best-effort", "durable"]).toContain(opened.diagnostics.persistence);
@@ -170,9 +170,9 @@ test("opens official SQLite in a Worker, persists transactions, and restores a c
     jsonFiles: 58,
     csvFiles: 58,
     rowCount: 1,
-    sourceSchemaVersion: 165,
+    sourceSchemaVersion: 167,
   });
-  expect(portable.schemaVersion).toBe(165);
+  expect(portable.schemaVersion).toBe(167);
   expect(portable.byteLength).toBeGreaterThan(0);
   expect(portable.sha256).toMatch(/^[a-f0-9]{64}$/u);
   const archiveRestore = await callHarness(sourcePage, "runPortableArchiveRestoreProof", {

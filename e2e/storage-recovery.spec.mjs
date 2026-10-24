@@ -14,9 +14,22 @@ import {
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const fixtureDirectory = path.join(repositoryRoot, "fixtures", "recovery");
-const archivePath = path.join(fixtureDirectory, "phase-1-vault-schema-165-v1.coredrill.zip");
-const manifestPath = path.join(fixtureDirectory, "phase-1-vault-schema-165-v1.json");
+const archivePath = path.join(fixtureDirectory, "phase-1-vault-schema-167-v1.coredrill.zip");
+const manifestPath = path.join(fixtureDirectory, "phase-1-vault-schema-167-v1.json");
 const updateFixture = process.env["COREDRILL_UPDATE_RECOVERY_FIXTURE"] === "1";
+if (
+  path.basename(archivePath) !== "phase-1-vault-schema-167-v1.coredrill.zip" ||
+  path.basename(manifestPath) !== "phase-1-vault-schema-167-v1.json"
+)
+  throw new Error("Current fixture generation must not target a preserved older archive.");
+const guardSource = await readFile(
+  path.join(repositoryRoot, "migrations", "0167_interaction_contact_detachment_guard.sql"),
+  "utf8",
+);
+const expectedGuardSql = guardSource
+  .slice(guardSource.indexOf("CREATE TRIGGER"))
+  .trim()
+  .replace(/;$/u, "");
 
 const recoveryInput = Object.freeze({
   archiveId: "0198d9d5-0000-7000-8000-000000000001",
@@ -102,14 +115,17 @@ const readCanonicalSnapshot = async (bytes, filename) => {
       contactHistoryIndex: database
         .prepare("SELECT name FROM sqlite_schema WHERE type = 'index' AND name = ?")
         .all("interaction_contact_history_idx"),
+      interactionGuard: database
+        .prepare("SELECT name,sql FROM sqlite_schema WHERE type='trigger' AND name=?")
+        .all("interaction_immutable_update_guard"),
     };
   } finally {
     database.close();
   }
 };
 
-for (const sourceSchemaVersion of [158, 159, 160, 164]) {
-  test(`restores the preserved schema-${sourceSchemaVersion} browser archive and upgrades to 165 without changing retained contact evidence`, async ({
+for (const sourceSchemaVersion of [158, 159, 160, 164, 165]) {
+  test(`restores the preserved schema-${sourceSchemaVersion} browser archive and upgrades to 167 without changing retained contact evidence`, async ({
     browser,
   }, testInfo) => {
     const manifest = JSON.parse(
@@ -136,7 +152,7 @@ for (const sourceSchemaVersion of [158, 159, 160, 164]) {
     );
     expect(inspected.database.sha256).toBe(manifest.databaseSha256);
     expect(before.schemaVersion).toBe(sourceSchemaVersion);
-    expect(before.datasets).toHaveLength(sourceSchemaVersion === 164 ? 58 : 57);
+    expect(before.datasets).toHaveLength(sourceSchemaVersion >= 164 ? 58 : 57);
     expect(before.ledger).toHaveLength(sourceSchemaVersion);
     expect(before.index).toEqual(
       sourceSchemaVersion === 158 ? [] : [{ name: "next_action_job_created_idx" }],
@@ -144,11 +160,13 @@ for (const sourceSchemaVersion of [158, 159, 160, 164]) {
     expect(before.reminderIndex).toEqual(
       sourceSchemaVersion >= 160 ? [{ name: "reminder_next_action_job_state_idx" }] : [],
     );
-    expect(before.contactHistoryIndex).toEqual([]);
+    expect(before.contactHistoryIndex).toEqual(
+      sourceSchemaVersion >= 165 ? [{ name: "interaction_contact_history_idx" }] : [],
+    );
     const retainedReceipt = before.datasets.find(
       (dataset) => dataset.name === "contact_manual_creation",
     );
-    if (sourceSchemaVersion === 164) {
+    if (sourceSchemaVersion >= 164) {
       expect(retainedReceipt?.rows).toHaveLength(1);
       expect(retainedReceipt?.rows[0]?.contact_id).toBe("0198d9d4-0000-7000-8000-000000000040");
     } else expect(retainedReceipt).toBeUndefined();
@@ -184,19 +202,19 @@ for (const sourceSchemaVersion of [158, 159, 160, 164]) {
       const upgraded = await callHarness(page, "openAndMigrate");
       expect(upgraded.appliedVersions).toEqual(
         Array.from(
-          { length: 165 - sourceSchemaVersion },
+          { length: 167 - sourceSchemaVersion },
           (_, index) => sourceSchemaVersion + index + 1,
         ),
       );
-      expect(upgraded.diagnostics.schemaVersion).toBe(165);
+      expect(upgraded.diagnostics.schemaVersion).toBe(167);
       const exported = await callHarness(page, "exportPortable");
       const after = await readCanonicalSnapshot(
         Buffer.from(exported.bytesBase64, "base64"),
-        testInfo.outputPath("upgraded-schema-165.sqlite"),
+        testInfo.outputPath("upgraded-schema-167.sqlite"),
       );
-      expect(after.schemaVersion).toBe(165);
+      expect(after.schemaVersion).toBe(167);
       expect(after.datasets).toHaveLength(58);
-      if (sourceSchemaVersion === 164) expect(after.datasets).toEqual(before.datasets);
+      if (sourceSchemaVersion >= 164) expect(after.datasets).toEqual(before.datasets);
       else {
         expect(
           after.datasets.filter((dataset) => dataset.name !== "contact_manual_creation"),
@@ -208,11 +226,14 @@ for (const sourceSchemaVersion of [158, 159, 160, 164]) {
           rows: [],
         });
       }
-      expect(after.ledger).toHaveLength(165);
+      expect(after.ledger).toHaveLength(167);
       expect(after.ledger.slice(0, sourceSchemaVersion)).toEqual(before.ledger);
       expect(after.index).toEqual([{ name: "next_action_job_created_idx" }]);
       expect(after.reminderIndex).toEqual([{ name: "reminder_next_action_job_state_idx" }]);
       expect(after.contactHistoryIndex).toEqual([{ name: "interaction_contact_history_idx" }]);
+      expect(after.interactionGuard).toEqual([
+        { name: "interaction_immutable_update_guard", sql: expectedGuardSql },
+      ]);
       await callHarness(page, "close");
     } finally {
       await context.close();
@@ -227,7 +248,7 @@ test("restores complete evidence relationships and attachments into clean browse
   const sourcePage = await openHarness(sourceContext);
   await callHarness(sourcePage, "delete");
   const opened = await callHarness(sourcePage, "openAndMigrate");
-  expect(opened.diagnostics.schemaVersion).toBe(165);
+  expect(opened.diagnostics.schemaVersion).toBe(167);
   await callHarness(sourcePage, "writeVault", {
     id: recoveryInput.vaultId,
     name: "BKP-007 representative vault",
@@ -314,29 +335,32 @@ test("restores complete evidence relationships and attachments into clean browse
   const generatedArchive = Buffer.from(source.archiveBytesBase64, "base64");
   const inspectedSource = await inspectPortableArchiveV1({
     bytes: generatedArchive,
-    expectedSchemaVersion: 165,
+    expectedSchemaVersion: 167,
     expectedArchiveSha256: source.archiveSha256,
   });
   const sourceSnapshot = await readCanonicalSnapshot(
     inspectedSource.database.bytes,
-    testInfo.outputPath("source-schema-165.sqlite"),
+    testInfo.outputPath("source-schema-167.sqlite"),
   );
   expect(sourceSnapshot.contactHistoryIndex).toEqual([{ name: "interaction_contact_history_idx" }]);
   const previousManifest = JSON.parse(
-    await readFile(path.join(fixtureDirectory, "phase-1-vault-schema-164-v1.json"), "utf8"),
+    await readFile(path.join(fixtureDirectory, "phase-1-vault-schema-165-v1.json"), "utf8"),
   );
   const previousArchive = await inspectPortableArchiveV1({
     bytes: await readFile(path.join(fixtureDirectory, previousManifest.archiveFile)),
-    expectedSchemaVersion: 164,
+    expectedSchemaVersion: 165,
     expectedArchiveSha256: previousManifest.archiveSha256,
   });
   const previousSnapshot = await readCanonicalSnapshot(
     previousArchive.database.bytes,
-    testInfo.outputPath("previous-schema-164-source.sqlite"),
+    testInfo.outputPath("previous-schema-165-source.sqlite"),
   );
   expect(sourceSnapshot.datasets).toEqual(previousSnapshot.datasets);
-  expect(sourceSnapshot.ledger).toHaveLength(165);
-  expect(sourceSnapshot.ledger.slice(0, 164)).toEqual(previousSnapshot.ledger);
+  expect(sourceSnapshot.ledger).toHaveLength(167);
+  expect(sourceSnapshot.ledger.slice(0, 165)).toEqual(previousSnapshot.ledger);
+  expect(sourceSnapshot.interactionGuard).toEqual([
+    { name: "interaction_immutable_update_guard", sql: expectedGuardSql },
+  ]);
   expect(inspectedSource.attachments).toEqual(previousArchive.attachments);
   expect(inspectedSource.dataFiles.map((file) => file.path)).toEqual(
     previousArchive.dataFiles.map((file) => file.path),
@@ -348,7 +372,7 @@ test("restores complete evidence relationships and attachments into clean browse
       const previousData = JSON.parse(new TextDecoder().decode(previousFile.bytes));
       expect(JSON.parse(new TextDecoder().decode(currentFile.bytes))).toEqual({
         ...previousData,
-        sourceSchemaVersion: 165,
+        sourceSchemaVersion: 167,
       });
     } else
       expect(Buffer.from(currentFile.bytes).equals(Buffer.from(previousFile.bytes))).toBe(true);
@@ -356,7 +380,7 @@ test("restores complete evidence relationships and attachments into clean browse
   // Hash v1 deliberately covers schema and complete JSON metadata. It is not a cross-schema row hash.
   expect(source.contentSha256).not.toBe(previousManifest.contentSha256);
   expect(await createPortableArchiveContentHashV1(inspectedSource)).toMatchObject({
-    schemaVersion: 165,
+    schemaVersion: 167,
     sha256: source.contentSha256,
     jsonDataFileCount: 58,
     attachmentCount: 2,
@@ -434,7 +458,7 @@ test("restores complete evidence relationships and attachments into clean browse
   const restoredExport = await callHarness(restorePage, "exportPortable");
   const restoredSnapshot = await readCanonicalSnapshot(
     Buffer.from(restoredExport.bytesBase64, "base64"),
-    testInfo.outputPath("restored-schema-165.sqlite"),
+    testInfo.outputPath("restored-schema-167.sqlite"),
   );
   expect(restoredSnapshot).toEqual(sourceSnapshot);
   const deletionPreview = await callHarness(restorePage, "previewVaultDeletion", {

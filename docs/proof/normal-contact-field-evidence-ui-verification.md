@@ -160,3 +160,161 @@ priora77be24 closure receipts; locks/recovery fixtures/stash2697 and starting
 main identity are preserved. No product/test/helper change follows full70708.
 Stage only this scope for ordinary commit/push and exact new hosted verification.
 No full item/goal, source-use qualification or public-release acceptance is claimed.
+
+## Exact checkpoint pushed; hosted verification live
+
+Ordinary commit `d648d1784700887c3309e542da6811846f8c9741` is pushed to
+origin/main:13 reviewed files/1,432 insertions/eight deletions, including both
+priora77be24 closure receipts. The tree is clean immediately after commit;
+stash2697 remains preserved. No product/test/helper/lock change follows full
+verification. Schema165/seven published schemas/permissions/Accepted choices stay
+unchanged.
+
+[Exact Foundation CI40124958082](https://github.com/seabAu/Coredrill/actions/runs/40124958082)
+and parent108758586335 are live. Original watcher69411 writes
+`test-results/normal-contact-evidence-hosted-watch.log`; require terminal
+`NORMAL_CONTACT_EVIDENCE_HOSTED_EXIT=0`, all ten required jobs/parent success
+and retained actual job evidence. Do not restart an observation timeout,
+supersede the source or treat queued/partial status as hosted proof. All local
+focused/full/extension/final-policy handles are terminal, not resume targets.
+
+Only this proof and the checklist carry fresh post-push receipts locally; the
+previous pending closure records are committed. No documentation-only push/CI
+loop. After exact closure, continue durable exact-value public/licensed field-use
+qualification, purpose/review/expiry/deletion and explicit qualification controls;
+this read-only inspector is not that decision. Company relationships, Home,
+full INT-007/INT-008/product goal and Unix/manual/installed-WebView/reference-
+hardware/release gates remain open. No new acquisition or provider authority is
+implied by this source inspection.
+
+Post-push policy97979 consumes exit0 with
+`NORMAL_CONTACT_EVIDENCE_POST_PUSH_POLICY_EXIT=0`; both receipt documents pass
+formatting. Initial exact-SHA status shows Firefox153/154, extension and
+full-history secrets successful, PR-only review intentionally skipped and the
+other six required jobs running. This snapshot is partial status, not inspected
+completed-job log evidence or hosted closure. Original69411 remains the sole
+live hosted observer. Local70708/12435/97979 and prior focused handles are
+terminal, not another wait target. Only these two fresh result records differ
+from pushedd648d17; source/tests/helpers/locks remain frozen.
+
+## Actual completed hosted witnesses; remaining jobs live
+
+Continuation confirms original69411 live and HEAD exactlyd648d17, with only the
+two expected result documents modified. Actual completed logs are retained in
+`test-results/normal-contact-evidence-40124958082-{firefox154,firefox153,extension,secrets}.log`;
+all downloads and inspection consume exit0.
+
+Firefox154/153 actual proof reports schema165, shared v18/37, dedicated Worker/
+SAH-pool, corrupt/stale restore rejection and seven scheduling scenarios/13
+invalid literals with unchanged globals. The unchanged runner compares ordered
+actual completed cases with the manifest, not just a count. The extension job
+passes9 cases/33.0s with actual Chromium durable-before-ack/restart/dedup/identity/
+replay checks and Firefox checksum rejection/idempotent fallback at165.
+Full-history Gitleaks scans354 commits and finds no leaks.
+
+These four required completed-job witnesses do not close the ten-job/parent gate.
+Aggregate, Chrome151/152 and all three native/package jobs remain live at this
+evidence point. Source/tests/helpers/locks/permissions/Accepted decisions remain
+frozen; no workflow, watcher, helper or timeout is restarted or superseded.
+Full INT-007/INT-008/goal and field-use qualification/release gates remain open.
+
+macOS120964294765 and Ubuntu120964294805 subsequently complete success. Logs
+`test-results/normal-contact-evidence-40124958082-{macos,ubuntu}.log` download and
+inspect exit0. Each actual native suite passes20 plus the Windows-only journey
+skip, including ordered v18/37 and complete preserved archive restores; Rust
+passes24 plus the intentionally ignored direct OS-secret case. Separate prepared
+macOS Keychain/FreeDesktop Secret Service harnesses actually store, retrieve
+inside Rust and delete, with secretExposed false. Full boundary lint and package
+inspection/launch pass. The ad-hoc-signed macOS app is19,851,262 bytes; diagnostic
+Linux AppImage87,063,032 bytes. Both exclude the native contract probe, survive
+five-second launch and keep targetConformant false. No signing/notarization,
+installed-WebView/manual/reference-hardware or public Unix acceptance is inferred.
+Six required actual witnesses now complete; aggregate, both Chrome lanes and
+Windows remain running at this point. No source/helper/lock/policy/timeout changes.
+
+Windows120964294617 and Chrome152120964294762 subsequently complete success.
+Actual logs `test-results/normal-contact-evidence-40124958082-{windows,chrome152}.log`
+download and inspect exit0. Windows passes native21, Rust24 plus the separate
+prepared Credential Manager lifecycle (stored/retrieved-inside-Rust/deleted true,
+secretExposed false), boundary/archive/backup and six package-sampler race cases.
+Its unsigned current-user NSIS installer is4,328,400 bytes, SHA-256
+`e1048f4d995073f9d2c7263bd045331c00b64d5fd79ad39a2f994475ad1645f2`;
+20 diagnostic launches report startup P95 777.5ms and working-set P95 373,071,872
+bytes. Uninstall preserves app data; targetConformant remains false.
+
+Exact Chrome152.0.7977.54 runs ordered shared v18/37 (25.4s), shell76 (3.8m),
+resilience81 (9.7m), onboarding7, UI foundations7, documents13, storage lifecycle
+and career parity. The actual source inspector Rust-backed journey passes11.8s,
+offline browser5.3s; all eight retry/contact/field/archive/close/restore/reflow/
+foreign cases execute and pass. These are normal restored-synthetic UI assertions,
+not a catalog or mocked-storage substitute and not source acquisition/rights
+qualification. Eight required actual witnesses are now retained. Chrome151 and
+aggregate/parent completion remain open, with original69411 still live.
+
+Exact Chrome151.0.7922.138 job120964294830 then completes success. Its actual
+log `test-results/normal-contact-evidence-40124958082-chrome151.log` downloads and
+inspects exit0: ordered shared v18/37 in31.8s, shell76 in4.8m, resilience81 in11.4m,
+plus lifecycle/career parity/documents13/UI7/onboarding7. The normal source
+inspector actual Rust-backed journey passes14.1s and browser6.2s; all eight
+failure/lifetime cases execute and pass. Nine required actual completed-job
+witnesses are retained. Only aggregate job120964294736 and parent complete
+gate remain open; original69411 is still live. No source/helper/timeout or
+Accepted decision changes follow.
+
+## Exact hosted closure and normal-inspector requirement disposition
+
+Exact source `d648d1784700887c3309e542da6811846f8c9741` passes
+[CI40124958082](https://github.com/seabAu/Coredrill/actions/runs/40124958082):
+all ten required jobs and parent check suite108758586335 complete success.
+The PR-only dependency review is expected skipped. Original watcher69411 is
+consumed exit0 with `NORMAL_CONTACT_EVIDENCE_HOSTED_EXIT=0`; complete log
+collection84119 is consumed exit0. The retained complete log is
+`test-results/normal-contact-evidence-40124958082-complete.log`, alongside the
+nine separately inspected job logs above. Every local, hosted and log-collection
+handle is terminal; none is restarted or superseded.
+
+Aggregate job120964294736 completes in28m40s, within the unchanged30-minute
+limit (foundation step25m15s). This is a close budget margin, not a timeout
+waiver. Actual logs show35 typecheck tasks,22 lint/build tasks,215 unit files/
+2,774 passes plus one Windows-only platform skip repeated under coverage;
+UI7, shell76, performance1, resilience81, onboarding7, documents13, storage13
+and native20 plus the Windows-only skip pass. The normal inspector real-Rust
+journey passes13.0s and offline browser5.8s, with all eight failure/lifetime cases
+executed. All seven generated schemas match; foundation records and workspace
+secret checks pass. License review covers831 npm packages/23 roots and498 Cargo
+packages. npm reports no known vulnerabilities; Cargo retains the same11 INFO
+warnings (nine unmaintained, glib and Tokio Unix AsyncFd). No new waiver applies.
+
+The unprepared aggregate Linux secret check explicitly skips for lack of a
+prepared Secret Service session; that is not execution proof. The three separate
+prepared OS jobs actually execute Credential Manager, Keychain and Secret
+Service store/retrieve-inside-Rust/delete lifecycles, as recorded above.
+
+| Requirement                                                                                                                                 | Exact checkpoint disposition                                                                                                     |
+| ------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Explicit normal owned one-field source inspection, bounded live pages, literal retained/current-hash/historical and null/empty distinctions | Proven by actual offline browser and real-Rust normal restored-synthetic UI, including read-only database hashes.                |
+| Retry, owner/field/archive/close/restore/reflow lifetimes, foreign rejection, keyboard/focus,320px wrapping and automated accessibility     | Proven within the scoped automated journeys and retained inspected captures; no manual assistive-technology acceptance inferred. |
+| Contact-method use basis                                                                                                                    | Not broadened. Independent manual basis remains separate; unqualified current source-backed values remain withheld.              |
+| Durable exact-value public/licensed qualification, purpose/review/expiry/deletion and explicit qualification review controls                | Not implemented by this read-only inspector; literal provenance is not permission or acquisition authority.                      |
+| Company relationship projections, normal Home, full INT-007/INT-008 and overall goal                                                        | Still required; no item or goal closure.                                                                                         |
+| Unix advisory acceptance, installed-WebView/manual/reference-hardware and public release gates                                              | Still open; diagnostic package results remain targetConformant:false.                                                            |
+
+Both previousa77be24 closure receipts are committed ind648d17. Only this proof
+and the living checklist carry fresh post-push closure receipts locally for the
+next verified implementation checkpoint; no docs-only commit/push/CI loop.
+Source/tests/helpers, schema165, seven schemas, locks, permissions, providers,
+acquisition authority and Accepted decisions are unchanged after verification.
+Next is a fresh governing/current-code preflight for durable field-use
+qualification and explicit review controls, then company relationships/Home;
+permanently unknown eligibility is not a substitute for those requirements.
+
+## Closure records checked
+
+Closure policy handle63400 is consumed exit0 with
+`NORMAL_CONTACT_EVIDENCE_CLOSURE_POLICY_EXIT=0`; retained log:
+`test-results/normal-contact-evidence-closure-policy.log`. Import boundaries,
+foundation records,831 npm/498 Cargo license reviews and workspace secret scan
+pass. Both fresh result documents pass final formatting and whitespace checks;
+status confirms only these two records differ from exact hosted-green
+d648d17; source, helpers and locks stay frozen. Preserve these receipts for the
+next verified implementation checkpoint rather than starting a docs-only CI loop.

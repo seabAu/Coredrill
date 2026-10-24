@@ -102,6 +102,10 @@ const PHASE_1_REPOSITORY_CONTRACT_COMPONENTS = Object.freeze({
     readValueBoundEvidence:
       "reads bounded selected-contact field provenance with exact current-value matching and no invented public license basis",
   }),
+  contactDeletion: component("deleted-contact-history", {
+    preserveHistory:
+      "upgrades contact deletion guards and detaches only removed contacts with literal history and rollback preserved",
+  }),
 });
 
 const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
@@ -111,8 +115,8 @@ const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
 );
 
 export const PHASE_1_REPOSITORY_CONTRACT_MANIFEST = Object.freeze({
-  schemaVersion: 18 as const,
-  suiteName: "phase-1-repository-contracts-v18",
+  schemaVersion: 19 as const,
+  suiteName: "phase-1-repository-contracts-v19",
   components: PHASE_1_REPOSITORY_CONTRACT_COMPONENTS,
   caseNames: PHASE_1_REPOSITORY_CONTRACT_CASES,
 });

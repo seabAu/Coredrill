@@ -3438,7 +3438,7 @@ const api: CoredrillStorageSpikeApi = {
     generateEntityId,
   ),
   vaultRestore: createStoredVaultRestoreApi({
-    compatibleSourceSchemaVersions: [160, 164],
+    compatibleSourceSchemaVersions: [160, 164, 165],
     expectedSchemaVersion: async () => {
       const version = (await migrations()).at(-1)?.version;
       if (version === undefined) throw new Error("The supported restore schema is unavailable.");
@@ -3981,6 +3981,7 @@ const api: CoredrillStorageSpikeApi = {
       schemaVersion !== 159 &&
       schemaVersion !== 160 &&
       schemaVersion !== 164 &&
+      schemaVersion !== 165 &&
       schemaVersion !== currentSchemaVersion
     ) {
       throw new Error("The recovery fixture source schema is not reviewed.");

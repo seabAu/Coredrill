@@ -41,3 +41,22 @@ describe.each(targets)("reviewed repository execution inventory: $name", (target
     expect(Number(match?.[1])).toBe(PHASE_1_REPOSITORY_CONTRACT_MANIFEST.caseNames.length);
   });
 });
+
+describe("explicit Chromium repository manifest assertions", () => {
+  const source = readFileSync(
+    new URL("../../e2e/storage-tracker-repositories.spec.mjs", import.meta.url),
+    "utf8",
+  );
+  it("retains the reviewed suite name as well as the numeric version", () => {
+    const match = /expect\(proof\.manifest\.suiteName\)\.toBe\("([^"]+)"\)/u.exec(source);
+    expect(match?.[1]).toBe(PHASE_1_REPOSITORY_CONTRACT_MANIFEST.suiteName);
+  });
+  it("retains the complete ordered component list as well as the case count", () => {
+    const match =
+      /expect\(Object\.keys\(proof\.manifest\.components\)\)\.toEqual\(\[([\s\S]*?)\]\)/u.exec(
+        source,
+      );
+    const components = Array.from((match?.[1] ?? "").matchAll(/"([^"]+)"/gu), (item) => item[1]);
+    expect(components).toEqual(Object.keys(PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components));
+  });
+});

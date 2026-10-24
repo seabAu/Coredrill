@@ -2,7 +2,18 @@
 
 ## Logical architecture
 
-Current schema165 follow-through adds only the contact-history index and keeps
+Current schema167 follows the declared contact foreign-key deletion semantics
+without permitting ordinary interaction edits. The ordinary migration runner
+executes one statement per migration, so166 drops and167 replaces the guard
+within one transaction; failure at either publication point restores the prior
+guard/ledger/version. No adapter or native privilege changes. Shared v19/38
+executes exact linked deletion, literal history, shared evidence and late failure
+rollback on Node/browser/native. Normal restore configuration retains160/164/165
+beside167. New167 generation/no-update replay, native22 recovery and eight normal
+old/current restore/reopen cases pass; full checkpoint proof remains separate.
+See [lifecycle evidence](../../proof/contact-field-use-lifecycle-preflight.md).
+
+Historical schema165 follow-through adds only the contact-history index and keeps
 the schema164 receipts/exports as a reviewed historical milestone. Normal
 restore configuration retains160 and164 alongside current165; actual165
 browser/native recovery and normal160/164→165 reopen proof pass. The

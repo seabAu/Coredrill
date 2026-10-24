@@ -186,7 +186,7 @@ export const createContactWorkspaceContractSuite = (setup: Phase1RepositoryContr
             ),
           );
           assert(
-            currentLedger.length === 165 &&
+            currentLedger.length === 167 &&
               JSON.stringify(currentLedger.slice(0, 160)) === JSON.stringify(legacyLedger),
             "Contact migrations changed reviewed prior migration identities/checksums.",
           );
@@ -459,7 +459,7 @@ export const createContactWorkspaceContractSuite = (setup: Phase1RepositoryContr
             (item) => item.dataset === "contact_manual_creation",
           );
           assert(
-            exported.sourceSchemaVersion === 165 &&
+            exported.sourceSchemaVersion === 167 &&
               exported.datasetCount === 58 &&
               exported.dataFiles.length === 116 &&
               evidence?.rowCount === 1,
@@ -482,7 +482,7 @@ export const createContactWorkspaceContractSuite = (setup: Phase1RepositoryContr
             );
           const portable = await database.exportPortable();
           assert(
-            portable.schemaVersion === 165 && portable.byteLength > 0,
+            portable.schemaVersion === 167 && portable.byteLength > 0,
             "SQLite backup omitted the current schema.",
           );
           await database.execute(

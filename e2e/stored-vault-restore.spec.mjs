@@ -6,10 +6,7 @@ import { inspectPortableArchiveV1 } from "../packages/storage-core/dist/index.js
 import { initializeDefaultWorkspace } from "./production-workspace.mjs";
 import { exerciseNormalVaultPreparation } from "./normal-vault-export-journey.mjs";
 import { expectRestoredPortableContent } from "./portable-archive-content-proof.mjs";
-import {
-  expectSchema160RestoreUpgrade,
-  expectSchema164RestoreUpgrade,
-} from "./schema-160-restore-proof.mjs";
+import { expectReviewedSchemaRestoreUpgrade } from "./schema-160-restore-proof.mjs";
 
 const offlineReady = async (page, context) => {
   await page.evaluate(async () => navigator.serviceWorker.ready);
@@ -26,7 +23,7 @@ const downloadArchive = async (page) => {
   const buffer = await readFile(await download.path());
   const archive = await inspectPortableArchiveV1({
     bytes: new Uint8Array(buffer),
-    expectedSchemaVersion: 165,
+    expectedSchemaVersion: 167,
   });
   await panel.getByRole("button", { name: "Discard prepared archive", exact: true }).click();
   return { buffer, archive };
@@ -147,8 +144,8 @@ const confirm = async (panel) => {
   );
 };
 
-for (const sourceVersion of [160, 164]) {
-  test(`normal clean offline restore preserves a schema${sourceVersion} backup and deliberately reopens at165 without invented contact evidence`, async ({
+for (const sourceVersion of [160, 164, 165, 167]) {
+  test(`normal clean offline restore preserves a schema${sourceVersion} backup and deliberately reopens at167 without invented contact evidence`, async ({
     page,
     context,
   }) => {
@@ -181,10 +178,13 @@ for (const sourceVersion of [160, 164]) {
     await expect(page.getByRole("navigation", { name: "Primary", exact: true })).toBeVisible();
     const identity = await page.evaluate(() => globalThis.coredrillStorageSpike.vault.inspect());
     expect(identity.value.vault.id).toBe(archive.manifest.vault.id);
-    expect(identity.value.vault.schemaVersion).toBe(165);
-    const expectUpgrade =
-      sourceVersion === 160 ? expectSchema160RestoreUpgrade : expectSchema164RestoreUpgrade;
-    await expectUpgrade((await downloadArchive(page)).archive, archive, [openedAfter, Date.now()]);
+    expect(identity.value.vault.schemaVersion).toBe(167);
+    await expectReviewedSchemaRestoreUpgrade(
+      (await downloadArchive(page)).archive,
+      archive,
+      [openedAfter, Date.now()],
+      sourceVersion,
+    );
   });
 }
 

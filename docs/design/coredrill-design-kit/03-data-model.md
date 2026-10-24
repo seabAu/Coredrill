@@ -2,7 +2,18 @@
 
 ## Conventions
 
-Current schema165 adds only `interaction_contact_history_idx(contact_id,
+Current schema167 replaces the interaction update guard through paired166/167
+migrations in one transaction. Only non-null-to-null contact detachment after
+that parent is absent is allowed, with all other interaction columns unchanged.
+The migration itself rewrites no canonical row. Ordinary history edits/relinks
+still reject. Intermediate166 is not an export/restore milestone; reviewed165
+exports remain supported with the same58 datasets/116 files. Actual Node upgrade/
+rollback/refusal and shared v19/38 Node/browser/native contracts pass. New167
+generation/no-update replay, native22 recovery and eight normal restore/reopens
+pass; full-source/hosted proof remains separate. This does
+not implement normal deletion, erase free-text mentions or qualify field use.
+
+Historical schema165 adds only `interaction_contact_history_idx(contact_id,
 occurred_at DESC, id ASC)`. It preserves all schema164 canonical data, receipts,
 dataset minimum versions and58-dataset/116-file export mapping. Actual Node
 164→165 row/export/rollback/older-client proof passes; new165 browser/native

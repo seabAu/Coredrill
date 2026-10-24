@@ -113,6 +113,18 @@ Any URL fetcher enforces scheme/port, DNS and redirect revalidation, private/lin
 
 ### Database/file loss
 
+Schema167 restores the existing deleted-contact SET NULL relationship through
+paired transactional166/167 migrations. The replacement guard permits only the
+deleted-parent contact detachment with every other interaction column unchanged;
+ordinary unlink/relink and content/audit/version edits still fail. This is not
+permission to erase shared source evidence or a claim that deleting a contact
+removes free-text mentions/external archives. Expiry must withhold use eligibility,
+not silently delete data. The shared contract checks exact literal history and
+rollback through real adapters without broadening the native pragma allowlist;
+dedicated Node migration tests also inspect complete foreign-key state. New167
+recovery generation/replay, native22 and eight normal old/current restore/reopens
+pass. Normal deletion/full-source/hosted proof remains separate and pending.
+
 Native storage operation and SQL-value decoders reject unreviewed fields before
 effects. This includes a full vault-delete payload sent to the database command,
 which must not silently degrade to its legacy session-only database operation.

@@ -14,10 +14,7 @@ import { exerciseNextActionRuntime } from "./next-action-runtime-journey.mjs";
 import { exerciseVaultExportPreparation } from "./vault-export-runtime-journey.mjs";
 import { exerciseNormalVaultPreparation } from "./normal-vault-export-journey.mjs";
 import { expectRestoredPortableContent } from "./portable-archive-content-proof.mjs";
-import {
-  expectSchema160RestoreUpgrade,
-  expectSchema164RestoreUpgrade,
-} from "./schema-160-restore-proof.mjs";
+import { expectReviewedSchemaRestoreUpgrade } from "./schema-160-restore-proof.mjs";
 import { inspectPortableArchiveV1 } from "../packages/storage-core/dist/index.js";
 import { exerciseNormalTaskEntry } from "./task-entry-journey.mjs";
 import { exerciseScheduledTaskEntry } from "./scheduled-task-entry-journey.mjs";
@@ -425,8 +422,10 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
               contactEvidence: await exerciseContactEvidence(page, testInfo, fixture, "native"),
             },
       );
-    } else if (journey === "legacy" || journey === "legacy164") {
-      const sourceVersion = journey === "legacy" ? 160 : 164;
+    } else if (["legacy", "legacy164", "legacy165", "legacy167"].includes(journey)) {
+      const sourceVersion = { legacy: 160, legacy164: 164, legacy165: 165, legacy167: 167 }[
+        journey
+      ];
       const bytes = await readFile(
         path.join(root, `fixtures/recovery/phase-1-vault-schema-${sourceVersion}-v1.coredrill.zip`),
       );
@@ -472,19 +471,22 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
       await expect(exported.getByRole("status")).toContainText("confirmed the exact archive bytes");
       const actual = await inspectPortableArchiveV1({
         bytes: new Uint8Array(await readFile(selectedArchive)),
-        expectedSchemaVersion: 165,
+        expectedSchemaVersion: 167,
       });
-      const expectUpgrade =
-        sourceVersion === 160 ? expectSchema160RestoreUpgrade : expectSchema164RestoreUpgrade;
-      await expectUpgrade(actual, archive, [openedAfter, Date.now()]);
+      await expectReviewedSchemaRestoreUpgrade(
+        actual,
+        archive,
+        [openedAfter, Date.now()],
+        sourceVersion,
+      );
       Object.assign(journeyProof, {
         normalPriorSchemaRestore: true,
         sourceSchemaVersion: sourceVersion,
-        reopenedSchemaVersion: 165,
+        reopenedSchemaVersion: 167,
         explicitDifferentVaultConfirmation: true,
         syntheticPreservedArchive: true,
         noReceiptBackfill: true,
-        existingReceiptPreserved: sourceVersion === 164,
+        existingReceiptPreserved: sourceVersion >= 164,
       });
     } else {
       await primary.getByRole("link", { name: "Documents", exact: true }).click();
@@ -656,7 +658,7 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
       await expect(verificationHistory).toContainText(savedSha256);
       const savedArchive = await inspectPortableArchiveV1({
         bytes: savedBytes,
-        expectedSchemaVersion: 165,
+        expectedSchemaVersion: 167,
         expectedArchiveSha256: savedSha256,
       });
       expect(savedArchive.dataFiles).toHaveLength(116);
@@ -678,7 +680,7 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
               {
                 archiveId: savedArchive.manifest.archiveId,
                 archiveCreatedAt: savedArchive.manifest.createdAt,
-                schemaVersion: 165,
+                schemaVersion: 167,
                 byteLength: savedBytes.length,
                 sha256: savedSha256,
                 method: "native_readback",
@@ -785,7 +787,7 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
         });
         return inspectPortableArchiveV1({
           bytes: new Uint8Array(restoreReadback),
-          expectedSchemaVersion: 165,
+          expectedSchemaVersion: 167,
         });
       };
       const restoredArchive = await readRestoredArchive();
@@ -914,7 +916,14 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
           host: "simulated Tauri IPC",
           backend: "real Rust SQLite process",
           packagedWebviewProven: false,
-          seededRecords: ["legacy", "legacy164", "history"].includes(journey),
+          seededRecords: [
+            "legacy",
+            "legacy164",
+            "legacy165",
+            "legacy167",
+            "history",
+            "evidence",
+          ].includes(journey),
           journey,
           invocations,
           ...journeyProof,
@@ -949,8 +958,10 @@ for (const [journey, description] of [
   ["network", "stored company directory, creation, notes, contact APIs and owned recovery"],
   ["tracking", "capture, tasks, status, source comparison and notes"],
   ["documents", "documents and complete archive cancellation/save"],
-  ["legacy", "reviewed schema160 archive restore and deliberate schema165 reopen"],
-  ["legacy164", "reviewed schema164 archive restore and deliberate schema165 reopen"],
+  ["legacy", "reviewed schema160 archive restore and deliberate schema167 reopen"],
+  ["legacy164", "reviewed schema164 archive restore and deliberate schema167 reopen"],
+  ["legacy165", "reviewed schema165 archive restore and deliberate schema167 reopen"],
+  ["legacy167", "reviewed schema167 archive restore and deliberate schema167 reopen"],
   ["history", "recorded contact history from a disclosed synthetic archive"],
   ["evidence", "contact field source evidence from a disclosed synthetic archive"],
 ]) {

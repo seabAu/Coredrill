@@ -2,7 +2,7 @@
 
 `phase-1-vault-v1.coredrill.zip` is the deterministic synthetic recovery fixture first introduced for `BKP-007`; its stable filename is retained for compatibility. `EVD-008` expands it through schema 126 with canonical Career Profile evidence, all eight story-evidence link kinds, resume-import proposal/resolution links, an application-sourced Answer Library entry/version, and two attachment relationships. Its adjacent JSON record pins the source archive, raw SQLite, canonical content, attachment hashes, and Phase 3 row inventory used by both the production browser adapter and native desktop boundary tests.
 
-The schema-158, schema-159, schema-160 and schema-164 files are preserved unchanged as legacy recovery/upgrade evidence. The current fixture is separately named `phase-1-vault-schema-165-v1.coredrill.zip`, with adjacent JSON metadata. Regenerate only this current fixture after an intentional archive, schema, or representative-data change:
+The schema-158, schema-159, schema-160, schema-164 and schema-165 files are preserved unchanged as legacy recovery/upgrade evidence. The current fixture is separately named `phase-1-vault-schema-167-v1.coredrill.zip`, with adjacent JSON metadata. Regenerate only this current fixture after an intentional archive, schema, or representative-data change:
 
 ```powershell
 $env:COREDRILL_UPDATE_RECOVERY_FIXTURE = "1"
@@ -15,6 +15,19 @@ The fixture contains only invented company, job, workflow, career-evidence, docu
 After generation, unset the update flag and rerun the same tests to require
 byte-for-byte deterministic comparison. Never repoint the writer at a preserved
 older fixture merely because a schema update changes current archive bytes.
+
+Schema167 replaces the interaction update guard through paired single-statement
+migrations166/167, without rewriting canonical rows. Its archive is1,859,392
+bytes, SHA-256`7e979c94e22e90190da6537d66954118e3d64e1e67086d2d8433a7ca79006cc6`;
+SQLite SHA-256`7fed0649b27704c135d728ba753f7034fd89715c58778274511722b1697cc5a5`;
+content SHA-256`23d34240eaf9baee204a23ef5725a8537c85ec402b71d6ab2059e48d10999714`.
+The inventory remains58 datasets/116 files and two unchanged attachments.
+Generation and a no-update browser replay each pass all six recovery cases;
+complete native recovery passes22 tests. Both compare the installed guard SQL,
+canonical rows and original migration identities, not only archive hashes.
+The [lifecycle proof](../../docs/proof/contact-field-use-lifecycle-preflight.md)
+records normal restore/reopen and final-source verification separately. This
+fixture does not prove normal contact deletion or field-use qualification.
 
 Schema165 adds only `interaction_contact_history_idx`; its archive is1,858,934
 bytes, SHA-256`5b91a75978356e52bbc1b118de9f918d082277d6037470727c71094dccdd0260`.
