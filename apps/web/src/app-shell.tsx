@@ -163,6 +163,10 @@ import {
   StoredContactHistoryView,
   useStoredContactHistory,
 } from "./stored-contact-history-view.js";
+import {
+  StoredContactFieldEvidenceView,
+  useStoredContactFieldEvidence,
+} from "./stored-contact-field-evidence-view.js";
 import { useStoredWorkspaceStatus } from "./stored-workspace-status.js";
 import { useStoredWorkspaceNextAction } from "./stored-workspace-next-action.js";
 import { useStoredJobTasks } from "./stored-job-tasks.js";
@@ -2182,6 +2186,14 @@ const AppShellCatalog = ({
   });
   const contactHistory = useStoredContactHistory({
     api: globalThis.coredrillStorageSpike.contactHistory,
+    vaultId: vaultSession?.vault.id ?? null,
+    contactId: networkSelectedContactId,
+    companyScope: networkContactCompanyScope,
+    revision: contactRevision,
+    enabled: !referenceCatalog && vaultDeletionStatus === null && !vaultRestoreSession.needsReopen,
+  });
+  const contactFieldEvidence = useStoredContactFieldEvidence({
+    api: globalThis.coredrillStorageSpike.contactFieldEvidence,
     vaultId: vaultSession?.vault.id ?? null,
     contactId: networkSelectedContactId,
     companyScope: networkContactCompanyScope,
@@ -5163,6 +5175,7 @@ const AppShellCatalog = ({
                 onViewCompany={selectStoredCompany}
                 onContactObserved={(value) => {
                   contactHistory.observeWorkspace(value);
+                  contactFieldEvidence.observeWorkspace(value);
                   setInteractionContact((prior) =>
                     value === null
                       ? null
@@ -5179,6 +5192,7 @@ const AppShellCatalog = ({
                 }}
                 historyView={
                   <>
+                    <StoredContactFieldEvidenceView model={contactFieldEvidence} />
                     {interactionEntry}
                     <StoredContactHistoryView model={contactHistory} />
                   </>

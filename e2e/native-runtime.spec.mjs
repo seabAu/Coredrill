@@ -32,6 +32,8 @@ import { exerciseContactWorkspace } from "./contact-workspace-journey.mjs";
 import { exerciseContactOwnerLifetimes } from "./contact-owner-lifetime-journey.mjs";
 import { createContactHistoryFixture } from "./contact-history-fixture.mjs";
 import { exerciseContactHistory } from "./contact-history-journey.mjs";
+import { createContactEvidenceFixture } from "./contact-evidence-fixture.mjs";
+import { exerciseContactEvidence } from "./contact-evidence-journey.mjs";
 import { attachNativeHost } from "./native-proof-host.mjs";
 import {
   createNativeRestoreOperationRecorder,
@@ -392,8 +394,11 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
       const listingComparison = await exerciseStoredListingComparison(page, testInfo);
       const localNote = await exerciseStoredJobNote(page, testInfo);
       Object.assign(journeyProof, { listingComparison, localNote });
-    } else if (journey === "history") {
-      const fixture = await createContactHistoryFixture(testInfo);
+    } else if (journey === "history" || journey === "evidence") {
+      const fixture =
+        journey === "history"
+          ? await createContactHistoryFixture(testInfo)
+          : await createContactEvidenceFixture(testInfo);
       await writeFile(selectedArchive, fixture.bytes);
       await page.getByRole("link", { name: "Settings", exact: true }).click();
       const restore = page.getByRole("region", { name: "Portable vault restore", exact: true });
@@ -410,9 +415,16 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
         "Restore committed and its acknowledgement validated",
       );
       await restore.getByRole("button", { name: "Reload local vault", exact: true }).click();
-      Object.assign(journeyProof, {
-        contactHistory: await exerciseContactHistory(page, testInfo, fixture, "native"),
-      });
+      Object.assign(
+        journeyProof,
+        journey === "history"
+          ? {
+              contactHistory: await exerciseContactHistory(page, testInfo, fixture, "native"),
+            }
+          : {
+              contactEvidence: await exerciseContactEvidence(page, testInfo, fixture, "native"),
+            },
+      );
     } else if (journey === "legacy" || journey === "legacy164") {
       const sourceVersion = journey === "legacy" ? 160 : 164;
       const bytes = await readFile(
@@ -940,6 +952,7 @@ for (const [journey, description] of [
   ["legacy", "reviewed schema160 archive restore and deliberate schema165 reopen"],
   ["legacy164", "reviewed schema164 archive restore and deliberate schema165 reopen"],
   ["history", "recorded contact history from a disclosed synthetic archive"],
+  ["evidence", "contact field source evidence from a disclosed synthetic archive"],
 ]) {
   test(`normal root uses real native SQLite for ${description} without OPFS fallback`, async ({
     page,

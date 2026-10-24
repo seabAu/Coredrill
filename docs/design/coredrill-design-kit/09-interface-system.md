@@ -485,6 +485,18 @@ the underlying document or accessible option names.
 
 ### Network
 
+The in-progress normal selected-contact source inspector requires explicit field
+selection after vault/company/contact/version confirmation. One five-record live
+page provides first/next/exact retry, contact-only archive visibility and close.
+Historical source excerpts/pointers/notes render literally, separately from the
+current-value display; exact current-hash matching is not verification or a rights
+decision. Current URL/connector metadata is not capture-time permission. Non-manual
+current values remain withheld unless independently supported. Source links remain
+available after job archival. Root-owned reads survive navigation/reflow while
+owner/field/archive/close replacement retires old publication and focus. This does
+not implement durable public/licensed field-use review. See [current evidence and
+remaining requirements](../../proof/normal-contact-field-evidence-ui-verification.md).
+
 Tabs: Companies, Contacts, Interactions.
 
 The in-progress normal Companies view now reads one actual stored page (up to 25 rows) through a validated viewed-vault query. First/Next/Retry and explicit archive scope remain separate from any vault total or immutable-snapshot claim. Loading is not empty; failed reads retain explicitly stale facts and changed continuation requires First. Literal names and nullable website/domain facts render as inert text, with no remote assets or enrichment. Contacts/Interactions and selected-company detail routes explicitly disclose unconnected data rather than showing catalog records or invented counts. Reflow preserves owned reads, archive/owner replacement hides old facts immediately, and keyboard/focus/offline/reload/browser/real-Rust proof is separate from full verification and installed-WebView acceptance. [Current evidence and remaining INT-007 work](../../proof/normal-company-directory-verification.md).

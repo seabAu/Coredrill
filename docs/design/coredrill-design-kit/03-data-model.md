@@ -118,6 +118,11 @@ still require a job source; independent company/contact acquisition and durable
 exact-value rights/review/expiry evidence remain later work, not hidden synthetic
 jobs. See [prerequisite audit/proof](../../proof/contact-source-eligibility-prerequisite-audit.md).
 
+For field evidence, `includeArchived` controls the selected contact's visibility,
+not joined job membership. Retained source links survive job archival; this is
+distinct from the contact-interaction history filter. The normal inspector must
+label that scope accurately without changing or requalifying historical evidence.
+
 A contact field is nullable and never guessed. Store public data only when source policy permits and the user has a legitimate job-search purpose; support deletion and expiry review.
 
 ### Jobs and requirements
