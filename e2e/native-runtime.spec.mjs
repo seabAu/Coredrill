@@ -26,6 +26,8 @@ import { exerciseCompanyDirectory } from "./company-directory-journey.mjs";
 import { exerciseCompanyWorkspace } from "./company-workspace-journey.mjs";
 import { exerciseContactRuntime } from "./contact-runtime-journey.mjs";
 import { exerciseInteractionRecordingRuntime } from "./interaction-recording-runtime-journey.mjs";
+import { exerciseNormalInteractionEntry } from "./normal-interaction-entry-journey.mjs";
+import { exerciseInteractionEntryFaults } from "./interaction-entry-faults.mjs";
 import { exerciseContactWorkspace } from "./contact-workspace-journey.mjs";
 import { exerciseContactOwnerLifetimes } from "./contact-owner-lifetime-journey.mjs";
 import { createContactHistoryFixture } from "./contact-history-fixture.mjs";
@@ -90,6 +92,7 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
   let loseInteractionId = null;
   let loseInteractionSession = null;
   let lostInteractionCommits = 0;
+  let failInteractionId = null;
   const restoreOperations = createNativeRestoreOperationRecorder();
   const send = async (request) => {
     const finishObservation = restoreOperations.measure(request.operation?.type);
@@ -117,6 +120,9 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
     await page.exposeFunction("coredrillArmInteractionAckLoss", (id) => {
       loseInteractionId = id;
     });
+    await page.exposeFunction("coredrillArmInteractionWriteFailure", (id) => {
+      failInteractionId = id;
+    });
     await attachNativeHost(page, (command, args, documentId) => {
       if (
         !["native_storage_invoke", "native_archive_invoke", "native_vault_invoke"].includes(command)
@@ -124,6 +130,15 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
         throw new Error("Unexpected native command");
       if (command === "native_vault_invoke" && args.request.operation.type === "preview_deletion")
         lastVaultPreview = args.request;
+      if (
+        command === "native_storage_invoke" &&
+        args.request.operation.type === "execute" &&
+        args.request.operation.statement.sql.includes("INSERT INTO interaction(") &&
+        args.request.operation.statement.parameters[0]?.value === failInteractionId
+      ) {
+        failInteractionId = null;
+        throw new Error("Synthetic refusal before interaction insert");
+      }
       const result = queue.then(async () => {
         if (retiredDocuments.has(documentId)) throw new Error("Retired proof document");
         if (activeDocumentId !== documentId) {
@@ -223,8 +238,10 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
         contactWorkspace: await exerciseContactWorkspace(page, testInfo),
         contactOwnerLifetimes: await exerciseContactOwnerLifetimes(page, testInfo),
         interactionRecording: await exerciseInteractionRecordingRuntime(page, testInfo),
+        interactionEntry: await exerciseNormalInteractionEntry(page, testInfo),
+        interactionEntryFaults: await exerciseInteractionEntryFaults(page, testInfo),
       });
-      expect(lostInteractionCommits).toBe(1);
+      expect(lostInteractionCommits).toBe(2);
     } else if (journey === "tracking") {
       await page.getByRole("button", { name: "Add", exact: true }).click();
       await page.getByRole("menuitem", { name: /Add job/u }).click();

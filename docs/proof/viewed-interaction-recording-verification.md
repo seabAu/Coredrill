@@ -393,3 +393,34 @@ prove the normal interaction composer, global mutation exclusion/publication/foc
 composition, installed WebView or release acceptance. Final result-doc format/
 policy, ordinary commit/push and new exact hosted proof remain. Full INT-007/
 INT-008 and the overall goal stay open; every older failed run remains a failure.
+
+## Exact runtime/security checkpoint pushed; hosted proof live
+
+Reviewed41-file source commits/pushes normally as
+`6e167f121f6355528f46c5d492b516e963cede0f`, clean immediately afterward and matching
+origin/main. [Exact CI40082538495](https://github.com/seabAu/Coredrill/actions/runs/40082538495)
+is in_progress; original watch50074 requires
+`INTERACTION_RUNTIME_SECURITY_HOSTED_EXIT` in `interaction-runtime-security-hosted-watch.log`.
+[Dispatch/source/failure scope](dependency-security-maintenance-2026-10-24.md#exact-pushed-source-and-hosted-verification-live)
+keeps earlier failures and Tokio Unix follow-up explicit. Do not infer hosted
+closure from local passes or restart/supersede the live run. Only result records
+follow this push; normal composer and full INT-007/INT-008/goal remain open.
+
+## Exact runtime prerequisite hosted closure (2026-10-24)
+
+[Exact hosted witnesses and remaining scope](dependency-security-maintenance-2026-10-24.md#exact-hosted-checkpoint-closed-2026-10-24):
+CI40082538495/all10 required jobs and parent108644371177 succeed for6e167f1.
+Original watch50074 consumes exit0, terminal
+`INTERACTION_RUNTIME_SECURITY_HOSTED_EXIT=0`; complete logs are retained.
+Aggregate27m03s stays within unchanged30m budget. Hosted unit/coverage each
+report2,656 pass/one Windows-only skip; local Windows executes all2,657.
+Both exact Chrome lanes pass71 resilience/76 shell cases; prepared dedicated
+native lanes prove actual OS-secret lifecycles rather than counting aggregate
+Linux's explicit unprepared-session skip as execution.
+
+The runtime prerequisite is engineering-verified, not normal interaction-entry
+UI completion. Shared vault mutation exclusion, publication/focus and normal
+recording controls remain next; full INT-007/INT-008/goal and release/manual gates
+stay open. Cargo's11 informational warnings and required Tokio Unix review are
+unchanged. Product/test/lock/inventory source remains the exact pushed checkpoint;
+only three local result records follow it. No Accepted decision changes.

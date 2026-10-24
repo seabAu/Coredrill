@@ -191,6 +191,18 @@ Each generated sentence is either linked to evidence, labeled non-factual/style-
 
 ### Network: Companies & Contacts
 
+The normal local interaction form is composed on Job Timeline without a contact,
+or selected Network contact history with an explicitly chosen stored job. It
+supports note, call, email logged, meeting, referral and follow-up with literal
+summary, direction and optional exact past UTC occurrence (blank uses the first
+valid save's operation time). It sends and schedules nothing. Original viewed
+vault/job/contact versions and identity remain fixed across tabs/reflow. Failed
+acknowledgements lock dispatched input until an explicit read-only check finds
+the original record or confirms absence for an explicit identical retry. Normal
+read refresh cannot resubmit a saved interaction. See [current implementation
+and verification scope](../../proof/normal-interaction-entry-verification.md);
+full INT-007 and independent release/manual gates remain open.
+
 - Company overview, official domains, saved jobs, interactions, outcomes, notes, sources.
 - Contacts with name, role, public source URL, confidence, user notes, and contact method only when explicitly public/user-entered/licensed.
 - Never guess an email address and present it as fact.

@@ -467,6 +467,17 @@ The optional `ChangeStatus` viewed-state tuple is validated before the persisten
 
 ## Application use cases
 
+Normal interaction entry composes the verified fixed-intent capability with one
+root-owned ephemeral draft, selected-runtime writes/read-only checks and the
+existing captured-vault mutation exclusion. Validated selected-contact reads
+supply contact scope; the complete loaded Pipeline supplies explicit job choices.
+The original capability owns identity/context/immutable fields, while UI owns
+single flight, owner/version visibility, unload/discard and post-render focus.
+Canonical acknowledgement refreshes Timeline/contact reads separately; failure
+cannot turn that refresh into resubmission. Normal browser/real-Rust and complete
+final-source/hosted evidence remain scoped in [the entry verification record](../../proof/normal-interaction-entry-verification.md).
+No storage, schema, contract, native privilege or dependency changes.
+
 The in-progress INT-007 recording prerequisite adds a version-1 viewed expectation
 to RecordInteractionCommand and a mandatory-scope interactive SQLite port. The
 port copies/revalidates before awaiting the transaction, checks the sole vault

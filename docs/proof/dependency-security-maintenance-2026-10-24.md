@@ -1,6 +1,6 @@
 # Dependency security maintenance — 2026-10-24
 
-Status: complete final-source local/serial extension and result-policy checks pass; inspected commit/new exact hosted proof remains.
+Status: complete local/serial extension/policy checks pass; exact6e167f1 is pushed and its new hosted proof is live.
 
 ## Failed gate and bounded scope
 
@@ -239,3 +239,81 @@ All41 reviewed paths belong to this carried runtime/result/UI/security slice;
 no ADR, migration, published JSON Schema, Cargo pin/source or permission changes.
 No source/test/lock change follows complete verification. Ordinary commit/non-force
 push and new exact hosted proof remain under standing owner authorization.
+
+## Exact pushed source and hosted verification live
+
+The41 inspected paths commit normally as
+`6e167f121f6355528f46c5d492b516e963cede0f` (`feat: compose fixed-intent interaction
+recovery and security fixes`) and push00ff32a..6e167f1 to origin/main without
+force/history rewriting. Immediate worktree is clean; both refs match the full SHA.
+Final staged format/secrets recheck passes7308. Its preceding redundant sandboxed
+secret invocation cannot spawn Git (EPERM); the unchanged properly permitted
+recheck passes, not a code or policy exception.
+
+[Foundation CI40082538495](https://github.com/seabAu/Coredrill/actions/runs/40082538495)
+is in_progress for that exact SHA. Retain original watch50074 in
+`test-results/interaction-runtime-security-hosted-watch.log`; require terminal
+`INTERACTION_RUNTIME_SECURITY_HOSTED_EXIT` plus every required job/parent-suite
+and actual log witnesses before closure. Do not restart on observation timeout,
+supersede the live run or cite prior00ff32a success for this source. Only post-push
+result records change now; product/tests/lock/inventory remain frozen.
+Normal composer/full INT-007/INT-008/goal and independent release gates stay open.
+
+## Exact lane witnesses inspected; aggregate remains pending
+
+Nine required lanes report terminal success at exact6e167f1; aggregate120838865100
+and original watch50074 remain live. Both retained Firefox153/154 witnesses report
+repository v17/36, schema165,58 datasets/116 files and actual worker/VFS execution.
+Native logs pass Windows21 and macOS/Linux20 plus one platform skip, actual redacted
+OS-secret lifecycles and package launch proofs. All three package diagnostics
+retain targetConformant:false; Windows20-run startup/working-set observations are
+CI diagnostics, not accepted reference hardware. Extension log passes9 cases22.1s.
+These partial results are not complete hosted/whole-gate closure.
+
+Read-only locked/offline Tokio inverse-tree inspection finds Tauri/Reqwest with
+Hyper/Hyper-util/Tokio-util/Tower/Tower-http paths. Owned Rust and those seven
+direct locked consumer source directories contain no AsyncFd text occurrence;
+Tokio's exported API is gated through cfg_net_unix. This bounded negative source
+search is not a complete transitive/cfg/runtime safety proof. The recorded Unix
+caller/compatible patch review remains required before public Unix acceptance;
+no dependency, warning policy or permission changes follow this inspection.
+
+## Exact hosted checkpoint closed (2026-10-24)
+
+[Foundation CI40082538495](https://github.com/seabAu/Coredrill/actions/runs/40082538495)
+and GitHub Actions parent check-suite108644371177 complete successfully for exact
+`6e167f121f6355528f46c5d492b516e963cede0f`. All10 required jobs succeed; the
+pull-request-only dependency review is intentionally skipped on this push.
+Original watch50074 is consumed exit0 with
+`INTERACTION_RUNTIME_SECURITY_HOSTED_EXIT=0`; do not resume/restart it.
+Complete workflow logs are retained in
+`test-results/interaction-runtime-security-40082538495-complete.log` alongside the
+individual inspected browser/native/extension logs and original watch log.
+
+Aggregate120838865100 runs09:35:13–10:02:16 UTC (27m03s), inside the unchanged30m
+job budget. Unit and coverage each report211 files,2,656 pass plus one Windows-only
+native sampler skip (2,657 total); all2,657 execute locally on Windows. Hosted
+UI7/shell76/performance1/resilience71/onboarding7/documents13/browser-storage13
+pass. Native aggregate Linux20 plus one platform skip passes; its unprepared
+Secret Service proof explicitly skips, while dedicated prepared Windows/macOS/
+Linux jobs actually prove the redacted OS-secret lifecycle. No skip is relabeled
+as execution. Schema, license, secrets, npm audit and Changesets gates pass;
+Cargo audit retains exactly11 allowed informational warnings including Tokio
+RUSTSEC-2026-0386, not an advisory-free Rust graph.
+
+Both exact Chrome151/152 lanes pass76 shell and71 resilience cases, including
+actual normal-root recording/offline reload, real-process native acknowledgement
+recovery, details focus and strengthened narrow-layout proof. Firefox153/154
+retain v17/36 and schema165/58 datasets/116 files. Extension9 cases and the three
+native package diagnostics pass with the previously recorded limits:
+targetConformant:false is not public/reference-hardware acceptance.
+
+This closes only the fixed-intent runtime/read-only acknowledgement prerequisite
+and compatible JS security maintenance, not full INT-007, INT-008 or the goal.
+No Accepted decision, published JSON Schema, durable schema, Cargo pin or
+permission changes. Normal recording controls with shared vault mutation
+exclusion/publication/focus are the next smallest UI slice; source-backed field
+eligibility/provenance, relationships, Home and independent release/manual gates
+remain. Tokio Unix caller/patch review remains required before public Unix
+acceptance. Three post-push result documents carry this closure locally; they
+do not alter the verified product source or create a second CI claim.

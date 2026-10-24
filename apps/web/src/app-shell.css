@@ -620,3 +620,38 @@
 .cd-contact-details dd {
   margin-inline-start: 0;
 }
+
+.cd-interaction-entry {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--color-border);
+  padding: 1rem;
+}
+
+.cd-interaction-entry fieldset,
+.cd-interaction-entry form {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.cd-interaction-entry input,
+.cd-interaction-entry select,
+.cd-interaction-entry textarea {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 0.25rem;
+  box-sizing: border-box;
+  font: inherit;
+  width: 100%;
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: 0.5rem;
+}
+
+.cd-interaction-entry .cd-button {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}

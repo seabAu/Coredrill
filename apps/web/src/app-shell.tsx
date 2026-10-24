@@ -157,6 +157,8 @@ import { StoredCompanyDirectoryView } from "./stored-company-directory-view.js";
 import { useStoredCompanyEditor } from "./stored-company-workspace-view.js";
 import { StoredContactDirectoryView } from "./stored-contact-directory-view.js";
 import { useStoredContactEditor } from "./stored-contact-editor-view.js";
+import { useStoredInteractionEntry } from "./stored-interaction-entry.js";
+import type { ContactWorkspaceV1 } from "@coredrill/application";
 import {
   StoredContactHistoryView,
   useStoredContactHistory,
@@ -2185,6 +2187,43 @@ const AppShellCatalog = ({
     companyScope: networkContactCompanyScope,
     revision: contactRevision,
     enabled: !referenceCatalog && vaultDeletionStatus === null && !vaultRestoreSession.needsReopen,
+  });
+  const [interactionContact, setInteractionContact] = useState<{
+    value: ContactWorkspaceV1;
+    companyScope: string | null;
+    revision: number;
+  } | null>(null);
+  const interactionEntry = useStoredInteractionEntry({
+    api: globalThis.coredrillStorageSpike.interactionRecording,
+    vaultId: vaultSession?.vault.id ?? null,
+    enabled: !referenceCatalog && vaultDeletionStatus === null,
+    mutationBlocked: vaultExportSession.busy,
+    needsReopen: vaultRestoreSession.needsReopen,
+    mode:
+      activeDestination === "network" &&
+      networkTab === "contacts" &&
+      networkSelectedContactId !== null
+        ? "contact"
+        : activeDestination === "pipeline" && workspaceRoute?.tab === "timeline"
+          ? "job"
+          : "hidden",
+    jobId: workspaceRoute?.jobId ?? null,
+    contactId: networkSelectedContactId,
+    companyScope: networkContactCompanyScope,
+    jobs: storedPipelineState === "ready" ? (storedPipeline?.jobs ?? null) : null,
+    contact:
+      interactionContact?.revision === contactRevision &&
+      interactionContact.companyScope === networkContactCompanyScope &&
+      interactionContact.value.contact.id === networkSelectedContactId &&
+      interactionContact.value.vaultId === vaultSession?.vault.id
+        ? interactionContact.value
+        : null,
+    exclusive: (vaultId, work) => vaultExportSession.mutate(vaultId, work),
+    onSaved: (value) => {
+      setStoredNoteSaved({ jobId: value.jobId, id: value.id });
+      setStoredPipelineRefresh((revision) => revision + 1);
+      if (value.contactId !== null) setContactRevision((revision) => revision + 1);
+    },
   });
   const companyEditor = useStoredCompanyEditor({
     api: globalThis.coredrillStorageSpike.companyWorkspace,
@@ -4432,6 +4471,7 @@ const AppShellCatalog = ({
       return (
         <>
           {storedNoteContent}
+          {interactionEntry}
           {storedTimelineContent}
         </>
       );
@@ -5121,8 +5161,28 @@ const AppShellCatalog = ({
                 needsReopen={vaultRestoreSession.needsReopen}
                 onSelectContact={selectStoredContact}
                 onViewCompany={selectStoredCompany}
-                onContactObserved={contactHistory.observeWorkspace}
-                historyView={<StoredContactHistoryView model={contactHistory} />}
+                onContactObserved={(value) => {
+                  contactHistory.observeWorkspace(value);
+                  setInteractionContact((prior) =>
+                    value === null
+                      ? null
+                      : prior?.value === value &&
+                          prior.revision === contactRevision &&
+                          prior.companyScope === networkContactCompanyScope
+                        ? prior
+                        : {
+                            value,
+                            revision: contactRevision,
+                            companyScope: networkContactCompanyScope,
+                          },
+                  );
+                }}
+                historyView={
+                  <>
+                    {interactionEntry}
+                    <StoredContactHistoryView model={contactHistory} />
+                  </>
+                }
               />
             }
           />

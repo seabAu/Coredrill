@@ -737,6 +737,19 @@ A screen/journey is complete only when it has:
 
 ### Recorded contact history (2026-10-22)
 
+Normal interaction entry now uses one root-owned session draft across Timeline
+and selected-contact history. Explicit job/contact selection never infers a
+conversation from a company. Read-only acknowledged/uncertain/confirmed-absent
+states are distinct; locked original fields remain keyboard-readable after
+dispatch. A failed history read cannot repeat a write. Pending work blocks
+duplicate/discard and shares vault-operation exclusion with export/restore/
+deletion. Another selection hides private literals; explicit Keep/Discard and
+unload warnings describe session-only durability. Focus waits for the current
+enabled replacement's committed render and preserves deliberate focus. See
+[current normal form proof and limits](../../proof/normal-interaction-entry-verification.md).
+This does not close source-backed contact qualification, relationships or
+manual assistive-technology/release gates.
+
 The selected-contact lookup confirms vault, company scope and current contact
 version before history starts. Root-owned disposable readers retain bounded
 live pages and explicit literal-summary inspection across reflow and Back to

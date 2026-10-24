@@ -1,6 +1,11 @@
 import { expect, test } from "@playwright/test";
 import { initializeDefaultWorkspace } from "./production-workspace.mjs";
 import { exerciseInteractionRecordingRuntime } from "./interaction-recording-runtime-journey.mjs";
+import { exerciseNormalInteractionEntry } from "./normal-interaction-entry-journey.mjs";
+import {
+  installInteractionCommitProbe,
+  exerciseInteractionEntryFaults,
+} from "./interaction-entry-faults.mjs";
 
 test("normal interaction runtime records exact original activity and reloads complete summaries offline", async ({
   page,
@@ -8,6 +13,7 @@ test("normal interaction runtime records exact original activity and reloads com
 }, testInfo) => {
   const external = [],
     errors = [];
+  await installInteractionCommitProbe(page);
   page.on("pageerror", (error) => errors.push(error.message));
   await page.route("**/*", (route) => {
     if (route.request().url().startsWith("http://127.0.0.1:4181/")) return route.continue();
@@ -40,6 +46,8 @@ test("normal interaction runtime records exact original activity and reloads com
   await review.getByRole("button", { name: "Save as new job" }).click();
   await expect(review.getByText("No durable captures yet")).toBeVisible();
   await exerciseInteractionRecordingRuntime(page, testInfo);
+  await exerciseNormalInteractionEntry(page, testInfo);
+  await exerciseInteractionEntryFaults(page, testInfo);
   expect(external).toEqual([]);
   expect(errors).toEqual([]);
 });
