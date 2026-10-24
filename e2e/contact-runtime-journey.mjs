@@ -65,6 +65,28 @@ export const exerciseContactRuntime = async (page, testInfo) => {
       contactId: retiredCompanyDraft.contactId,
     });
     const beforeHistoryHash = (await api.exportPortable()).sha256;
+    const evidenceInput = {
+      ...readInput,
+      expectedContactRowVersion: 2,
+      fieldName: "email",
+    };
+    const fieldEvidence = await api.contactFieldEvidence.page(evidenceInput);
+    const nullFieldEvidence = await api.contactFieldEvidence.page({
+      ...evidenceInput,
+      fieldName: "phone",
+    });
+    const staleFieldEvidence = await api.contactFieldEvidence.page({
+      ...evidenceInput,
+      expectedContactRowVersion: 1,
+    });
+    const foreignFieldEvidence = await api.contactFieldEvidence.page({
+      ...evidenceInput,
+      expectedVaultId: "0199b363-0000-7000-8000-000000000099",
+    });
+    const invalidFieldEvidence = await api.contactFieldEvidence.page({
+      ...evidenceInput,
+      fieldName: "notes",
+    });
     const history = await api.contactHistory.page(readInput);
     const foreignHistory = await api.contactHistory.page({
       ...readInput,
@@ -110,6 +132,11 @@ export const exerciseContactRuntime = async (page, testInfo) => {
       missingSummary,
       beforeHistoryHash,
       afterHistoryHash,
+      fieldEvidence,
+      nullFieldEvidence,
+      staleFieldEvidence,
+      foreignFieldEvidence,
+      invalidFieldEvidence,
     };
   });
   expect(first.before).toMatchObject({ ok: true, value: { items: [] } });
@@ -173,6 +200,29 @@ export const exerciseContactRuntime = async (page, testInfo) => {
   expect(first.foreignHistory).toMatchObject({ ok: false, error: { code: "not_found" } });
   expect(first.missingSummary).toMatchObject({ ok: false, error: { code: "not_found" } });
   expect(first.afterHistoryHash).toBe(first.beforeHistoryHash);
+  expect(first.fieldEvidence).toEqual({
+    ok: true,
+    value: {
+      specVersion: 1,
+      vaultId: first.vaultId,
+      contactId: first.contactId,
+      contactRowVersion: 2,
+      fieldName: "email",
+      includeArchived: false,
+      currentValueHash: first.created.value.manualCreation.valueHashes.email,
+      publicOrLicensedEligibility: "not_established",
+      items: [],
+      hasMore: false,
+      nextCursor: null,
+    },
+  });
+  expect(first.nullFieldEvidence).toEqual({
+    ok: true,
+    value: { ...first.fieldEvidence.value, fieldName: "phone", currentValueHash: null },
+  });
+  expect(first.staleFieldEvidence).toMatchObject({ ok: false, error: { code: "conflict" } });
+  expect(first.foreignFieldEvidence).toMatchObject({ ok: false, error: { code: "not_found" } });
+  expect(first.invalidFieldEvidence).toMatchObject({ ok: false, error: { code: "validation" } });
   expect(Object.keys(first.directory.value.items[0]).sort()).toEqual([
     "archivedAt",
     "companyId",
@@ -196,6 +246,13 @@ export const exerciseContactRuntime = async (page, testInfo) => {
     if (!selected.ok) throw new Error("Reopened contact unavailable.");
     return {
       selected,
+      fieldEvidence: await api.contactFieldEvidence.page({
+        specVersion: 1,
+        expectedVaultId: vaultId,
+        contactId,
+        expectedContactRowVersion: selected.value.contact.rowVersion,
+        fieldName: "email",
+      }),
       history: await api.contactHistory.page({
         specVersion: 1,
         expectedVaultId: vaultId,
@@ -210,6 +267,7 @@ export const exerciseContactRuntime = async (page, testInfo) => {
     };
   }, first);
   expect(reopened.selected).toEqual(first.updated);
+  expect(reopened.fieldEvidence).toEqual(first.fieldEvidence);
   expect(reopened.history).toEqual(first.history);
   expect(reopened.basis).toEqual(first.basis);
   expect(reopened.directory.value.items).toHaveLength(1);
@@ -230,6 +288,11 @@ export const exerciseContactRuntime = async (page, testInfo) => {
     historyForeignVaultRejected: true,
     historyReadsLeaveExactDatabaseUnchanged: true,
     populatedHistoryScreenProven: false,
+    fieldEvidenceEmptyHashNullDistinguished: true,
+    fieldEvidenceStaleForeignInvalidRejected: true,
+    fieldEvidenceReadOnlyAndReload: true,
+    fieldEvidenceEligibilityNotEstablished: true,
+    fieldEvidenceScreenProven: false,
   };
   await testInfo.attach("normal-contact-runtime.json", {
     body: JSON.stringify(proof),

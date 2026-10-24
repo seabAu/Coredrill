@@ -192,6 +192,17 @@ the existing independent manual receipt. Raw snapshot bodies, network work,
 canonical writes and normal UI are excluded from this prerequisite. See
 [current verification and remaining scope](../../proof/contact-source-eligibility-prerequisite-audit.md).
 
+The follow-through composes a separate lazy normal-runtime field-evidence API
+using the selected browser/native DatabasePort and existing local SHA-256 helper.
+Composition opens nothing; application validation/copying precedes storage work,
+and context/open failures remain content-free without a fallback database. Its
+disposable page reader retains one immutable vault/contact/version/field/archive
+owner and one bounded live page. Continuation revalidates scope, ordering and
+current-value hash; failed reads retain visibly stale facts with explicit retry
+or refresh, and retirement suppresses late publication. This reader is ephemeral,
+not a canonical cache or rights evaluator. Normal evidence screens and durable
+public/licensed qualification remain required. See [runtime proof](../../proof/contact-field-evidence-runtime-verification.md).
+
 `APP-005` adds adapter-neutral Pipeline counts, ordered board groups, one stable keyset paginator shared by table and board, and the detailed job-workspace DTO. Every query is bound to an application-owned snapshot instant and validates returned order, cursor, uniqueness, aggregate counts, archive/filter scope, and cross-entity relationships before exposing copied immutable data. The port is read-only and has no mutation or network capability. Concrete browser/native query composition remains outside this application slice. See [Pipeline query application verification](../../proof/phase-1-pipeline-query-application-verification.md).
 
 Stored-Pipeline integration supplies `createPipelineQueryRepository` over the

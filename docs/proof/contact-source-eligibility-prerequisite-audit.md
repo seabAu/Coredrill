@@ -282,3 +282,138 @@ staging, including both prior post-push receipt documents. No product or test
 change follows the complete gate. Ordinary commit/push and exact new hosted
 verification remain; neither scoped hosted closure nor full INT-007 completion
 is claimed yet.
+
+## Exact checkpoint pushed; hosted verification live
+
+The18 reviewed files commit normally as
+`6c792748982900a7bcc1ae0bce3e49e38b4b1b29`
+(`feat: read value-bound selected contact evidence`). They include both pending
+normal-entry CI receipt/checklist updates. The non-force push advances
+origin/main16486f6..6c79274; immediate worktree is clean, refs match and the stash
+remains2697ebcec53351a052d8c5c19e2b8e2a52056a70.
+
+[Foundation CI40112761847](https://github.com/seabAu/Coredrill/actions/runs/40112761847)
+is live for this exact SHA. Parent GitHub Actions suite108725876299 is
+in_progress. Original watch85978 follows the run every30s in
+`test-results/contact-field-evidence-hosted-watch.log`; require terminal
+`CONTACT_FIELD_EVIDENCE_HOSTED_EXIT=0`, all ten required jobs, parent suite and
+actual retained log witnesses before scoped hosted closure. The initial
+full-history secret job120927741440 succeeds; PR-only dependency review is
+intentionally skipped. These are partial evidence, not a green workflow claim.
+
+Aggregate job120927741468, Chrome151/152 jobs120927741442/120927741450,
+Firefox153/154 jobs120927741474/120927741421, Windows120927741377,
+Ubuntu120927741519, macOS120927741558 and extension120927741438 remain required.
+Inspect actual v18/37/schema165, expanded shared field-evidence, OS-secret,
+package and audit witnesses. Do not restart the watch on observation timeout or
+supersede the live run with another push. Product/query/port/tests/shared
+inventory/helpers/locks stay frozen; only these two post-push result records
+follow. Full INT-007/INT-008/goal/public-license qualification/UI and independent
+Tokio Unix/manual/reference-hardware/release gates remain open.
+
+## Seven hosted successes inspected; three required jobs still live
+
+At the inspected 2026-10-24 16:59 UTC snapshot, exact6c79274 has seven required
+terminal successes. The same85978 watch and40112761847 workflow remain live;
+Chrome151, extension and aggregate120927741468 are not yet closed. No failure,
+restart, timeout-budget change, source edit or superseding push is inferred.
+
+Retained completed job logs use
+`test-results/contact-field-evidence-40112761847-{firefox153,firefox154,macos,ubuntu,windows,chrome152}.log`.
+The workflow-level log command refuses while the run is live; the completed
+job-log API endpoints succeed without restarting anything. Inspected witnesses:
+
+- Firefox153.0 and154.0 report repository v18/37 and durable schema165. The
+  current script validates the exact ordered completed-case list, not only its
+  length. The shared case includes literal source fields, historical/current
+  value binding, scoped cursors, read-only snapshots and malformed-owner/chain
+  failures. The reader does not establish public/licensed eligibility.
+- Windows21 native cases pass; macOS/Linux20 plus the explicitly Windows-only
+  canonical-journey skip pass. Actual Windows Credential Manager, macOS Keychain
+  and FreeDesktop Secret Service scripts each store/retrieve-inside-Rust/delete
+  with secretExposed:false, independently of the ignored ordinary Rust secret
+  unit case. All native package guards exclude the contract probe.
+- Windows current-user NSIS is4,325,316 bytes, SHA-256
+  `f9c0194b405312b478b669f2ae36cbe702128031fca3c85568918d21e47891fd`;
+  its20 diagnostic launches yield startup p95=745.1ms and working-set
+  p95=372,781,056 bytes, and uninstall preserves app data. macOS app19,834,846
+  bytes and Linux AppImage87,058,936 bytes pass five-second launch witnesses.
+  All three retain targetConformant:false: no manual/reference-hardware,
+  installed-WebView, signing, public-release or Unix dependency acceptance.
+- Exact Chrome152 passes the shared browser manifest17.1s,76 shell3.3m and71
+  resilience7.9m, including actual native-backed normal Network24.0s. Existing
+  budgets and assertions remain unchanged. Full-history secrets also pass.
+
+These inspected lanes are partial evidence only. Require the remaining three
+jobs, terminal watch marker0, full workflow/parent success and actual final
+aggregate/audit/extension/Chrome151 witnesses before prerequisite closure. Full
+INT-007/INT-008/goal and source qualification/normal UI remain unfinished.
+
+## Exact hosted closure and field-evidence requirement disposition
+
+Exact source `6c792748982900a7bcc1ae0bce3e49e38b4b1b29` passes
+[Foundation CI40112761847](https://github.com/seabAu/Coredrill/actions/runs/40112761847).
+All ten required jobs and parent GitHub Actions suite108725876299 are terminal
+success for that SHA. PR-only dependency review is intentionally skipped.
+Original watch85978 consumes exit0 with `CONTACT_FIELD_EVIDENCE_HOSTED_EXIT=0`.
+Complete workflow log collection also consumes exit0 and retains
+`test-results/contact-field-evidence-40112761847-complete.log`, in addition to
+the completed individual lane logs above. No watcher restart, source change,
+timeout/threshold/assertion change or superseding push occurs.
+
+Aggregate120927741468 succeeds in18m03s within its unchanged30-minute budget.
+Its213 unit files report2,712 passed plus one Windows-only skip, repeated under
+coverage; local Windows executes all2,713. UI7, shell76, diagnostic performance1,
+resilience71, onboarding7, documents13 and browser storage13 pass. Aggregate
+native20 plus the Windows-only skip is separate from actual Windows21 proof.
+The aggregate's unprepared Linux secure-store skip is not counted as execution;
+all three prepared platform jobs run the actual redacted OS-secret lifecycle.
+Seven generated schemas, source/extraction, recovery/archive, type/build/lint,
+license/secret/audit and Changesets gates pass. npm reports no known
+vulnerabilities; Cargo retains11 informational warnings and the independent
+Tokio Unix caller/patch review requirement before public Unix acceptance.
+The full-history secret scan reports no leaks.
+
+Chrome151 completes the new shared browser manifest24.0s,76 shell4.8m and71
+resilience10.4m, including actual native-backed normal Network30.4s. Chrome152
+and both Firefox witnesses above independently pass the expanded shared v18/37
+contracts on schema165. The extension job completes19m44s within its unchanged
+20-minute budget, including9 actual cases33.1s, acknowledged/replay-safe
+Chromium transfer and Firefox checksummed manual fallback165. No production
+origin, extension permission, publisher or release acceptance is inferred.
+
+| Prerequisite requirement                                 | Authoritative evidence and disposition                                                                                                                                                                                                        |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Strict bounded original viewed scope and read capability | Application46 cases plus full unit/coverage/type/lint gates; immutable copied vault/contact/current version/field/archive/continuation and bound port capability. Proven for this query, not a normal UI owner.                               |
+| Actual field evidence and exact current-value binding    | Shared v18/37 case executes in Node, both exact Chrome/Firefox generations and all three native platforms; matching/historical/null-current evidence, unrelated contact/field exclusion and exact recorded source facts pass.                 |
+| Safe live continuation and failed ownership/chain reads  | Shared tied paging, changed anchor/contact versions, explicit archive visibility, corrupted look-ahead/final owner and post-hash scope-mutation cases; strict application ordering/cursor/failure tests. No immutable-history or total claim. |
+| Literal preservation and read-only effects               | Complete BLOB length/UTF-8 decoding preserves BOM, NUL, markup and empty versus absent fields in actual adapters; selected-query DML is disabled and canonical snapshots are unchanged. No full source-body fetch is added.                   |
+| No manufactured public/license/manual basis              | Untrusted license text and all extraction methods remain evidence; public/licensed eligibility is explicitly unestablished. Manual receipt, contact methods, source policies and canonical values are not rewritten.                          |
+| Schema/dependency/permission/decision invariants         | Schema165, seven published schemas, both lock hashes, recovery fixtures, stash and Accepted choices are unchanged; Changeset covers the two package APIs and the shared test inventory alone advances to18/37.                                |
+| Normal contact evidence/eligibility experience           | Not achieved by this prerequisite. Runtime/UI composition, durable explicit public/license qualification and its normal offline/reload/lifetime/accessibility proof remain required.                                                          |
+
+This closes the selected field-evidence query/SQLite engineering prerequisite
+only. It does not close full INT-007, INT-008 Home, the overall product goal,
+independent source acquisition, provider licensing, installed-WebView/manual/
+reference-hardware/signing/public-release or Unix dependency gates. All package
+diagnostics retain targetConformant:false. The next unblocked work is the
+governing-document/implementation preflight for explicit contact field-use
+qualification and normal owned evidence UI; remaining company relationships and
+Home are still required, not substituted away.
+
+Both previously pending normal-entry result documents are committed in6c79274.
+Only these two fresh post-push result documents carry locally into the next
+verified implementation checkpoint, following the existing receipt convention;
+no documentation-only push/CI loop is started. All local/hosted/log handles for
+this prerequisite are terminal, not another wait or restart target.
+
+## Closure records checked
+
+Closure policy56907 consumes exit0 with terminal
+`CONTACT_FIELD_EVIDENCE_CLOSURE_POLICY_EXIT=0` in
+`test-results/contact-field-evidence-closure-policy.log`. Both updated result
+documents pass formatting; whitespace is clean. Only the checklist and this
+post-push receipt differ from verified6c79274. Both lock hashes, all ten recovery
+Git objects and stash2697 remain unchanged. These records carry into the next
+verified implementation checkpoint; there is no remaining verification process
+to restart for this prerequisite and no full product/INT-007 completion claim.
