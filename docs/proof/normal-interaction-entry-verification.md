@@ -149,3 +149,79 @@ All18 staged files are this reviewed source/test/design/result slice, including
 the three pending prior proof/checklist updates. Staged whitespace is clean,
 origin/main remains6e167f1 and the preserved stash/fixtures/locks are unchanged.
 Ordinary commit/push and new exact hosted proof remain; no full INT-007 closure.
+
+## Exact checkpoint committed and pushed; hosted proof live
+
+The18-file reviewed slice commits normally as
+`16486f6020cad119034a65fb43fa9bb3b9a10e19` (`feat: add owned normal local
+interaction entry`), including all three prior pending proof/checklist records.
+The non-force push advances origin/main6e167f1..16486f6. Immediate worktree is
+clean and local/remote refs match. The preserved stash is unchanged.
+
+[Foundation CI40088786772](https://github.com/seabAu/Coredrill/actions/runs/40088786772)
+is in_progress for this exact source. Original watch52700 writes
+`test-results/normal-interaction-entry-hosted-watch.log`; require terminal
+`NORMAL_INTERACTION_ENTRY_HOSTED_EXIT`, every required job/parent suite and
+actual retained log witnesses before hosted closure. Do not restart on an
+observation timeout or supersede the live run with another push. Both completed
+Firefox153/154 logs report v17/36/schema165; extension9 cases31.5s and full-history
+secrets pass. These partial lanes do not prove the whole run. Product/tests/
+helpers/locks remain frozen; only post-push result records follow. Full
+INT-007/INT-008/goal and independent Tokio Unix/manual/release gates stay open.
+
+## Nine hosted lanes inspected; aggregate still pending
+
+At exact16486f6, both Chrome151/152 logs pass76 shell and71 resilience cases,
+including the expanded actual native interaction-entry/fault journey at30.4s/
+31.5s and offline browser journey at11.5s/13.1s under unchanged limits. Both
+Firefox153/154 logs retain v17/36/schema165. Extension9 cases31.5s and the
+full-history secret scan succeed. Windows21 and macOS/Linux20 plus one
+platform skip pass; all three prepared native lanes emit actual redacted
+OS-secret store/retrieve-inside-Rust/delete witnesses with secretExposed:false.
+Each package excludes the probe and launches. Windows20-run startup p95=771ms,
+working-set p95=372,133,888 bytes and current-user installer4,321,681 bytes are
+CI diagnostics; all three package witnesses retain targetConformant:false.
+
+These9 terminal required successes do not close aggregate120857015751,
+workflow40088786772, its parent suite or watch52700. Keep the same watch/source
+and require the complete final gate/audit/log result before scoped closure.
+No new source/test/helper/lock changes or full INT-007 completion claim.
+
+## Exact hosted closure and normal-entry requirement disposition
+
+Exact source `16486f6020cad119034a65fb43fa9bb3b9a10e19` closes successfully in
+[CI40088786772](https://github.com/seabAu/Coredrill/actions/runs/40088786772).
+All ten required jobs and parent GitHub Actions suite108661189291 are terminal
+success; PR-only dependency review is intentionally skipped on this push.
+Original watch52700 consumes exit0 with `NORMAL_INTERACTION_ENTRY_HOSTED_EXIT=0`.
+Complete log collection9736 consumes exit0 and retains
+`test-results/normal-interaction-entry-40088786772-complete.log` alongside the
+individual inspected lane logs. No watcher restart, timeout or assertion change.
+
+Aggregate120857015751 succeeds in28m17s within the unchanged30-minute budget.
+Its212 unit files report2,666 passed plus one Windows-only skip, repeated under
+coverage; local Windows executes all2,667. Aggregate UI7, shell76, diagnostic
+performance1, resilience71, onboarding7, documents13 and browser storage13 pass.
+Aggregate native20 plus one platform skip is not counted as execution of the
+OS-secret test: actual redacted secret lifecycles run in the three prepared
+native lanes described above. Seven generated schemas match, npm reports no
+known vulnerabilities, Cargo retains11 informational warnings, and license,
+secret, archive/recovery, build/type/lint and Changesets gates pass. Dedicated
+extension9, exact Chrome151/152 and Firefox153/154 witnesses also succeed.
+
+This closes only normal local interaction entry from Job Timeline and selected
+contact history: six kinds, explicit linkage, literal summaries, optional past
+UTC occurrence, offline/reload, original-owner draft lifetime, stale guards,
+read-only acknowledgement recovery and explicit identical retry without duplicate
+records. It introduces no sending, enrichment, schema/dependency/permission or
+Accepted decision change. Full INT-007 remains unchecked for source-backed field
+eligibility/provenance and remaining company relationship projections; INT-008
+Home remains unfinished. Independent manual/installed-WebView/reference-hardware,
+Tokio Unix caller/patch review and release gates remain open. Package diagnostics
+retain targetConformant:false and do not close those gates.
+
+The user-requested pending proof/checklist records are included in16486f6.
+Only these two post-push result documents remain local for the next checkpoint,
+following the existing receipt-carry-forward convention; no product/test/helper
+or lock changes follow the verified source and no documentation-only CI loop is
+started.

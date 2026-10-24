@@ -105,6 +105,19 @@ source-backed field-use qualification remains separate.
 
 `contact_point_provenance(id, contact_id, field_name, value_hash, provenance_id)`
 
+The selected field-evidence query adds no table or migration. It pages only the
+chosen supported field's existing links, retaining historical mismatched links
+instead of relabeling them as current. Current SQL NULL, a present value without
+evidence and historical evidence for an absent method are distinct states. The
+contact version and link/provenance/snapshot/current-source anchor identities and
+versions bind live continuation. BLOB byte-length checks and complete UTF-8
+decoding preserve empty versus absent excerpts/notes, BOM, NUL and inert markup;
+oversized or broken chains fail instead of becoming empty pages. Public/licensed
+eligibility remains unestablished by this read projection. Existing snapshots
+still require a job source; independent company/contact acquisition and durable
+exact-value rights/review/expiry evidence remain later work, not hidden synthetic
+jobs. See [prerequisite audit/proof](../../proof/contact-source-eligibility-prerequisite-audit.md).
+
 A contact field is nullable and never guessed. Store public data only when source policy permits and the user has a legitimate job-search purpose; support deletion and expiry review.
 
 ### Jobs and requirements

@@ -425,6 +425,16 @@ Permitted inputs:
 
 The feature finds possible relevant public roles/people; it does not promise personal contact data. Never synthesize an email naming pattern and label it verified. Never auto-send outreach.
 
+Normal source-backed contact follow-through must separate stored provenance from
+field-use eligibility. A matching value hash, confirmation flag, confidence,
+official-looking URL or free-text license note does not by itself establish
+explicitly public/licensed use. The current Greenhouse/Lever/USAJOBS job policies
+do not authorize contact acquisition merely because contact evidence can link to
+a job snapshot. The selected-field read prerequisite preserves local historical
+evidence without fetching, classifying rights or importing a contact; durable
+exact-value source qualification, purpose/review/expiry and normal review UI
+remain required. See [executed audit and implementation scope](../../proof/contact-source-eligibility-prerequisite-audit.md).
+
 ### Explicitly excluded foundations
 
 - LinkedIn states that crawlers, browser plug-ins, and extensions may not scrape or automate its site: [prohibited software and extensions](https://www.linkedin.com/help/linkedin/answer/a1341387/prohibited-software-and-extensions).

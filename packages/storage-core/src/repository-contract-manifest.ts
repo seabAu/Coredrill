@@ -98,6 +98,10 @@ const PHASE_1_REPOSITORY_CONTRACT_COMPONENTS = Object.freeze({
     checkRecorded:
       "checks exact original interaction acknowledgement read-only without replaying a write",
   }),
+  contactFieldEvidence: component("selected-contact-field-evidence", {
+    readValueBoundEvidence:
+      "reads bounded selected-contact field provenance with exact current-value matching and no invented public license basis",
+  }),
 });
 
 const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
@@ -107,8 +111,8 @@ const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
 );
 
 export const PHASE_1_REPOSITORY_CONTRACT_MANIFEST = Object.freeze({
-  schemaVersion: 17 as const,
-  suiteName: "phase-1-repository-contracts-v17",
+  schemaVersion: 18 as const,
+  suiteName: "phase-1-repository-contracts-v18",
   components: PHASE_1_REPOSITORY_CONTRACT_COMPONENTS,
   caseNames: PHASE_1_REPOSITORY_CONTRACT_CASES,
 });

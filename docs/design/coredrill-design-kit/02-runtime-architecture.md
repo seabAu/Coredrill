@@ -179,6 +179,19 @@ submission, outreach, or external-receipt capability is added.
 
 `APP-004` adds adapter-neutral `CreateCompany` and `CreateContact` operations. Manual company origin is explicit so source-backed company fields cannot bypass the capture/evidence boundary. Manual contacts are user-confirmed without invented confidence; source-backed contacts remain unconfirmed and require one provenance reference for every populated imported field. The local port atomically receives the contact plus value-bound provenance links and exposes no enrichment, guessing, messaging, outreach, or network capability. See [company/contact application verification](../../proof/phase-1-company-contact-application-verification.md).
 
+The INT-007 selected contact field-evidence prerequisite introduces a separate
+version-1 read query/SQLite port, not source-backed creation or permission to use
+a contact method. Its explicit viewed vault/contact/version/field/archive scope
+owns bounded live keyset continuation. Historical value hashes are compared with
+the exact current value using an injected local hasher inside the read
+transaction. Original-source IDs, method, pointer/excerpt, extractor/version,
+capture instant, confidence and free-text license note remain evidence; current
+job-source URL/connector metadata is not capture-time authorization. The result
+explicitly leaves public/licensed eligibility unestablished and does not replace
+the existing independent manual receipt. Raw snapshot bodies, network work,
+canonical writes and normal UI are excluded from this prerequisite. See
+[current verification and remaining scope](../../proof/contact-source-eligibility-prerequisite-audit.md).
+
 `APP-005` adds adapter-neutral Pipeline counts, ordered board groups, one stable keyset paginator shared by table and board, and the detailed job-workspace DTO. Every query is bound to an application-owned snapshot instant and validates returned order, cursor, uniqueness, aggregate counts, archive/filter scope, and cross-entity relationships before exposing copied immutable data. The port is read-only and has no mutation or network capability. Concrete browser/native query composition remains outside this application slice. See [Pipeline query application verification](../../proof/phase-1-pipeline-query-application-verification.md).
 
 Stored-Pipeline integration supplies `createPipelineQueryRepository` over the
