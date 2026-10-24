@@ -233,6 +233,7 @@ export const StoredContactDirectoryView = ({
   onViewCompany,
   historyView,
   onContactObserved,
+  deletion,
 }: {
   readonly api: StoredContactDirectoryApi | undefined;
   readonly workspaceApi: StoredContactWorkspaceApi | undefined;
@@ -247,6 +248,12 @@ export const StoredContactDirectoryView = ({
   readonly onViewCompany: (id: string) => void;
   readonly historyView: ReactNode;
   readonly onContactObserved: (value: ContactWorkspaceV1 | null) => void;
+  readonly deletion: {
+    readonly view: ReactNode;
+    readonly hasReview: boolean;
+    readonly canStart: boolean;
+    readonly start: (value: ContactWorkspaceV1) => boolean;
+  };
 }) => {
   let validScope = false;
   if (vaultId !== null) {
@@ -278,6 +285,7 @@ export const StoredContactDirectoryView = ({
             workspaceApi === undefined ||
             vaultId === null ||
             editor.hasDraft ||
+            deletion.hasReview ||
             mutationBlocked ||
             needsReopen
           }
@@ -322,6 +330,7 @@ export const StoredContactDirectoryView = ({
         ) : null}
       </div>
       {editor.form}
+      {deletion.view}
       {needsReopen ? <p>Reload the restored vault before editing contacts.</p> : null}
       {api === undefined || vaultId === null ? (
         <p>The viewed vault's contact directory is unavailable. No contacts have been loaded.</p>
@@ -340,8 +349,10 @@ export const StoredContactDirectoryView = ({
                 contactId={selectedContactId}
                 companyScope={companyScope}
                 revision={revision}
-                disabled={editor.hasDraft || mutationBlocked || needsReopen}
+                disabled={editor.hasDraft || deletion.hasReview || mutationBlocked || needsReopen}
                 onEdit={editor.startNotes}
+                onDelete={deletion.start}
+                deletionDisabled={!deletion.canStart}
                 onViewCompany={onViewCompany}
                 onObserved={onContactObserved}
               />

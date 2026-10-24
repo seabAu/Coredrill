@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { initializeDefaultWorkspace } from "./production-workspace.mjs";
 import { exerciseInteractionRecordingRuntime } from "./interaction-recording-runtime-journey.mjs";
 import { exerciseNormalInteractionEntry } from "./normal-interaction-entry-journey.mjs";
+import { exerciseNormalContactDeletion } from "./normal-contact-deletion-journey.mjs";
 import {
   installInteractionCommitProbe,
   exerciseInteractionEntryFaults,
@@ -48,6 +49,7 @@ test("normal interaction runtime records exact original activity and reloads com
   await exerciseInteractionRecordingRuntime(page, testInfo);
   await exerciseNormalInteractionEntry(page, testInfo);
   await exerciseInteractionEntryFaults(page, testInfo);
+  await exerciseNormalContactDeletion(page, testInfo);
   expect(external).toEqual([]);
   expect(errors).toEqual([]);
 });

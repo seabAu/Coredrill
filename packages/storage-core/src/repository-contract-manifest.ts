@@ -106,6 +106,10 @@ const PHASE_1_REPOSITORY_CONTRACT_COMPONENTS = Object.freeze({
     preserveHistory:
       "upgrades contact deletion guards and detaches only removed contacts with literal history and rollback preserved",
   }),
+  viewedContactDeletion: component("viewed-contact-deletion", {
+    deleteAndObserve:
+      "deletes only original viewed contacts and owned histories with complete observational reconciliation and rollback",
+  }),
 });
 
 const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
@@ -115,8 +119,8 @@ const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
 );
 
 export const PHASE_1_REPOSITORY_CONTRACT_MANIFEST = Object.freeze({
-  schemaVersion: 19 as const,
-  suiteName: "phase-1-repository-contracts-v19",
+  schemaVersion: 20 as const,
+  suiteName: "phase-1-repository-contracts-v20",
   components: PHASE_1_REPOSITORY_CONTRACT_COMPONENTS,
   caseNames: PHASE_1_REPOSITORY_CONTRACT_CASES,
 });

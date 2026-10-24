@@ -441,3 +441,4 @@ export { createSqliteVaultExportVerificationPort } from "./vault-export-verifica
 export { createCompanyWorkspaceRepository } from "./company-workspace-repository.js";
 export { createContactWorkspaceRepository } from "./contact-workspace-repository.js";
 export { createContactFieldEvidenceRepository } from "./contact-field-evidence-repository.js";
+export { createContactDeletionRepository } from "./contact-deletion-repository.js";

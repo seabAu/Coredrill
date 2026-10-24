@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import type {
   ApplicationResult,
   ContactWorkspaceV1,
@@ -225,14 +225,15 @@ export const useStoredInteractionEntry = (options: {
       setFocus(request);
     });
   };
-  if (!options.enabled || options.mode === "hidden") return null;
+  const result = (view: ReactNode) => ({ view, hasDraft: options.enabled && model !== null });
+  if (!options.enabled || options.mode === "hidden") return result(null);
   if (options.needsReopen)
-    return (
+    return result(
       <p>
         Reload the restored vault before recording interactions. The retired draft is not shown.
-      </p>
+      </p>,
     );
-  return (
+  return result(
     <section ref={container} className="cd-interaction-entry" aria-label="Record local interaction">
       <h3>Record local interaction</h3>
       <p>
@@ -511,6 +512,6 @@ export const useStoredInteractionEntry = (options: {
           )}
         </>
       )}
-    </section>
+    </section>,
   );
 };

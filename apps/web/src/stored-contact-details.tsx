@@ -30,6 +30,8 @@ export const StoredContactDetails = ({
   revision,
   disabled,
   onEdit,
+  onDelete,
+  deletionDisabled,
   onViewCompany,
   onObserved,
 }: {
@@ -40,6 +42,8 @@ export const StoredContactDetails = ({
   readonly revision: number;
   readonly disabled: boolean;
   readonly onEdit: (value: ContactWorkspaceV1) => void;
+  readonly onDelete: (value: ContactWorkspaceV1) => void;
+  readonly deletionDisabled: boolean;
   readonly onViewCompany: (id: string) => void;
   readonly onObserved: (value: ContactWorkspaceV1 | null) => void;
 }) => {
@@ -304,6 +308,16 @@ export const StoredContactDetails = ({
             }}
           >
             Edit contact notes
+          </button>
+          <button
+            className="cd-button"
+            type="button"
+            disabled={disabled || deletionDisabled || busy || stale || visible.error !== null}
+            onClick={() => {
+              onDelete(value.workspace);
+            }}
+          >
+            Review contact deletion
           </button>
           {value.workspace.contact.companyId !== null ? (
             <button

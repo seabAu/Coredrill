@@ -683,3 +683,4 @@ export * from "./contact-workspace.js";
 export * from "./contact-interaction-history.js";
 export * from "./contact-interaction-summary.js";
 export * from "./contact-field-evidence.js";
+export * from "./contact-deletion.js";

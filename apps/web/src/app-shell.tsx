@@ -156,6 +156,7 @@ import { useStoredJobDetails } from "./stored-job-details.js";
 import { StoredCompanyDirectoryView } from "./stored-company-directory-view.js";
 import { useStoredCompanyEditor } from "./stored-company-workspace-view.js";
 import { StoredContactDirectoryView } from "./stored-contact-directory-view.js";
+import { useStoredContactDeletion } from "./stored-contact-deletion-view.js";
 import { useStoredContactEditor } from "./stored-contact-editor-view.js";
 import { useStoredInteractionEntry } from "./stored-interaction-entry.js";
 import type { ContactWorkspaceV1 } from "@coredrill/application";
@@ -2169,6 +2170,7 @@ const AppShellCatalog = ({
     setNetworkTab("contacts");
     setActiveDestination("network");
   };
+  const [contactDeletionActive, setContactDeletionActive] = useState(false);
   const contactEditor = useStoredContactEditor({
     api: globalThis.coredrillStorageSpike.contactWorkspace,
     vaultId: vaultSession?.vault.id ?? null,
@@ -2176,7 +2178,7 @@ const AppShellCatalog = ({
     companyScope: networkContactCompanyScope,
     enabled: !referenceCatalog && vaultDeletionStatus === null,
     visible: activeDestination === "network" && networkTab === "contacts",
-    mutationBlocked: vaultExportSession.busy,
+    mutationBlocked: vaultExportSession.busy || contactDeletionActive,
     needsReopen: vaultRestoreSession.needsReopen,
     exclusive: (vaultId, work) => vaultExportSession.mutate(vaultId, work),
     onSelect: selectStoredContact,
@@ -2209,7 +2211,7 @@ const AppShellCatalog = ({
     api: globalThis.coredrillStorageSpike.interactionRecording,
     vaultId: vaultSession?.vault.id ?? null,
     enabled: !referenceCatalog && vaultDeletionStatus === null,
-    mutationBlocked: vaultExportSession.busy,
+    mutationBlocked: vaultExportSession.busy || contactDeletionActive,
     needsReopen: vaultRestoreSession.needsReopen,
     mode:
       activeDestination === "network" &&
@@ -2235,6 +2237,36 @@ const AppShellCatalog = ({
       setStoredNoteSaved({ jobId: value.jobId, id: value.id });
       setStoredPipelineRefresh((revision) => revision + 1);
       if (value.contactId !== null) setContactRevision((revision) => revision + 1);
+    },
+  });
+  const contactDeletion = useStoredContactDeletion({
+    api: globalThis.coredrillStorageSpike.contactDeletion,
+    vaultId: vaultSession?.vault.id ?? null,
+    contactId: networkSelectedContactId,
+    companyScope: networkContactCompanyScope,
+    enabled: !referenceCatalog && vaultDeletionStatus === null,
+    visible: activeDestination === "network" && networkTab === "contacts",
+    needsReopen: vaultRestoreSession.needsReopen,
+    mutationBlocked: vaultExportSession.busy,
+    draftsBlocked: contactEditor.hasDraft || interactionEntry.hasDraft,
+    exclusive: (vaultId, work) => vaultExportSession.mutate(vaultId, work),
+    onActive: setContactDeletionActive,
+    onSelect: selectStoredContact,
+    onRemoved: (review) => {
+      if (vaultSession?.vault.id !== review.target.expectedVaultId) return;
+      setContactRevision((value) => value + 1);
+      setStoredPipelineRefresh((value) => value + 1);
+      if (
+        networkSelectedContactId === review.target.contactId &&
+        networkContactCompanyScope === review.companyScope &&
+        activeDestination === "network" &&
+        networkTab === "contacts"
+      ) {
+        setInteractionContact(null);
+        contactHistory.observeWorkspace(null);
+        contactFieldEvidence.observeWorkspace(null);
+        selectStoredContact(null, review.companyScope);
+      }
     },
   });
   const companyEditor = useStoredCompanyEditor({
@@ -4483,7 +4515,7 @@ const AppShellCatalog = ({
       return (
         <>
           {storedNoteContent}
-          {interactionEntry}
+          {interactionEntry.view}
           {storedTimelineContent}
         </>
       );
@@ -5168,6 +5200,7 @@ const AppShellCatalog = ({
                 companyScope={networkContactCompanyScope}
                 selectedContactId={networkSelectedContactId}
                 editor={contactEditor}
+                deletion={contactDeletion}
                 revision={contactRevision}
                 mutationBlocked={vaultExportSession.busy}
                 needsReopen={vaultRestoreSession.needsReopen}
@@ -5193,7 +5226,7 @@ const AppShellCatalog = ({
                 historyView={
                   <>
                     <StoredContactFieldEvidenceView model={contactFieldEvidence} />
-                    {interactionEntry}
+                    {interactionEntry.view}
                     <StoredContactHistoryView model={contactHistory} />
                   </>
                 }

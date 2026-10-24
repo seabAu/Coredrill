@@ -245,6 +245,10 @@ import {
   type StoredContactHistoryApi,
 } from "./stored-contact-history.js";
 import {
+  createStoredContactDeletionApi,
+  type StoredContactDeletionApi,
+} from "./stored-contact-deletion.js";
+import {
   createStoredContactFieldEvidenceApi,
   type StoredContactFieldEvidenceApi,
 } from "./stored-contact-field-evidence.js";
@@ -537,6 +541,7 @@ export interface CoredrillStorageSpikeApi {
   readonly companyWorkspace: StoredCompanyWorkspaceApi;
   readonly contactDirectory: StoredContactDirectoryApi;
   readonly contactWorkspace: StoredContactWorkspaceApi;
+  readonly contactDeletion: StoredContactDeletionApi;
   readonly contactHistory: StoredContactHistoryApi;
   readonly contactFieldEvidence: StoredContactFieldEvidenceApi;
   readonly interactionRecording: StoredInteractionRecordingApi;
@@ -3396,6 +3401,11 @@ const api: CoredrillStorageSpikeApi = {
     () => generateEntityId("contact"),
     sha256Text,
   ),
+  contactDeletion: createStoredContactDeletionApi(async () => {
+    const client = await getDatabase();
+    await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
+    return client;
+  }, careerProfileOperationContext),
   contactHistory: createStoredContactHistoryApi(async () => {
     const client = await getDatabase();
     await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);

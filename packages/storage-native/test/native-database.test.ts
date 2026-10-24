@@ -633,8 +633,8 @@ describe("native SQLite repository and migration contracts", () => {
         await applySqlMigrations(database, migrations().slice(0, throughVersion), APPLIED_AT);
       },
     });
-    expect(PHASE_1_REPOSITORY_CONTRACT_MANIFEST.schemaVersion).toBe(19);
-    expect(PHASE_1_REPOSITORY_CONTRACT_CASE_NAMES).toHaveLength(38);
+    expect(PHASE_1_REPOSITORY_CONTRACT_MANIFEST.schemaVersion).toBe(20);
+    expect(PHASE_1_REPOSITORY_CONTRACT_CASE_NAMES).toHaveLength(39);
     await expect(runDatabaseContractSuite(nativeAdapter, suite)).resolves.toEqual({
       adapterName: "native-rusqlite-candidate",
       suiteName: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.suiteName,

@@ -24,6 +24,7 @@ import { exerciseCompanyWorkspace } from "./company-workspace-journey.mjs";
 import { exerciseContactRuntime } from "./contact-runtime-journey.mjs";
 import { exerciseInteractionRecordingRuntime } from "./interaction-recording-runtime-journey.mjs";
 import { exerciseNormalInteractionEntry } from "./normal-interaction-entry-journey.mjs";
+import { exerciseNormalContactDeletion } from "./normal-contact-deletion-journey.mjs";
 import { exerciseInteractionEntryFaults } from "./interaction-entry-faults.mjs";
 import { exerciseContactWorkspace } from "./contact-workspace-journey.mjs";
 import { exerciseContactOwnerLifetimes } from "./contact-owner-lifetime-journey.mjs";
@@ -239,6 +240,7 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
         interactionRecording: await exerciseInteractionRecordingRuntime(page, testInfo),
         interactionEntry: await exerciseNormalInteractionEntry(page, testInfo),
         interactionEntryFaults: await exerciseInteractionEntryFaults(page, testInfo),
+        contactDeletion: await exerciseNormalContactDeletion(page, testInfo),
       });
       expect(lostInteractionCommits).toBe(2);
     } else if (journey === "tracking") {
