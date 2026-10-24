@@ -95,6 +95,8 @@ const PHASE_1_REPOSITORY_CONTRACT_COMPONENTS = Object.freeze({
   interactionRecording: component("viewed-interaction-recording", {
     recordViewed:
       "records exact viewed-vault job and explicit-contact activity with immutable retry and owner guards",
+    checkRecorded:
+      "checks exact original interaction acknowledgement read-only without replaying a write",
   }),
 });
 
@@ -105,8 +107,8 @@ const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
 );
 
 export const PHASE_1_REPOSITORY_CONTRACT_MANIFEST = Object.freeze({
-  schemaVersion: 16 as const,
-  suiteName: "phase-1-repository-contracts-v16",
+  schemaVersion: 17 as const,
+  suiteName: "phase-1-repository-contracts-v17",
   components: PHASE_1_REPOSITORY_CONTRACT_COMPONENTS,
   caseNames: PHASE_1_REPOSITORY_CONTRACT_CASES,
 });

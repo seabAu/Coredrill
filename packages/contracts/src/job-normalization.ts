@@ -1,7 +1,12 @@
 import * as z from "zod";
 
 import { fieldCandidateV1Schema } from "./field-evidence.js";
-import { instantSchema, safeHttpUrlSchema, safeIdentifierSchema } from "./primitives.js";
+import {
+  instantSchema,
+  safeHttpUrlSchema,
+  safeIdentifierSchema,
+  preserveJsonValueSchemaReference,
+} from "./primitives.js";
 
 export const JOB_NORMALIZATION_SPEC_VERSION = 1 as const;
 export const JOB_NORMALIZATION_V1_SCHEMA_ID =
@@ -427,6 +432,7 @@ export const jobNormalizationV1Schema = z
 
 const generatedJobNormalizationV1JsonSchema = z.toJSONSchema(jobNormalizationV1Schema, {
   target: "draft-2020-12",
+  override: preserveJsonValueSchemaReference,
 });
 const { $schema: jobNormalizationDialect, ...jobNormalizationSchemaBody } =
   generatedJobNormalizationV1JsonSchema;

@@ -507,6 +507,9 @@ describe("SQLite application port composition", () => {
     "retry",
     "collision",
     "readback-failure",
+    "leading-bom",
+    "empty-summary",
+    "malformed-summary",
   ] as const)("guards the original viewed interaction and exact retry (%s)", async (state) => {
     class ReadbackDatabase extends NodeSqliteTestDatabase {
       override async query<Row extends QueryRow = QueryRow>(
@@ -514,11 +517,17 @@ describe("SQLite application port composition", () => {
       ): Promise<readonly Row[]> {
         const rows = await super.query<Row>(statement);
         if (
-          state === "readback-failure" &&
+          ["readback-failure", "malformed-summary"].includes(state) &&
           statement.sql.includes("FROM interaction WHERE id =") &&
           rows.length > 0
         )
-          return rows.map((row) => ({ ...row, summary: "wrong acknowledgement" })) as Row[];
+          return rows.map((row) => {
+            const bytes =
+              state === "malformed-summary"
+                ? new Uint8Array([0xff])
+                : new TextEncoder().encode("wrong acknowledgement");
+            return { ...row, summary_bytes: bytes, summary_byte_length: bytes.byteLength };
+          }) as Row[];
         return rows;
       }
     }
@@ -582,7 +591,10 @@ describe("SQLite application port composition", () => {
         type: "email_logged",
         occurredAt: at,
         direction: "outbound" as const,
-        summary: "  é中🙂 <script>inert()</script>\nExact original.  ",
+        summary:
+          state === "empty-summary"
+            ? ""
+            : `${state === "leading-bom" ? "\uFEFF" : "  "}é中🙂 <script>inert()</script>\nExact original.  `,
         nextActionAt: null,
         createdAt: at,
         updatedAt: at,
@@ -596,7 +608,11 @@ describe("SQLite application port composition", () => {
       const beforeJobs = await database.query(sqlStatement("SELECT * FROM job"));
       const beforeContacts = await database.query(sqlStatement("SELECT * FROM contact"));
       const port = createDatabaseViewedInteractionPort(database);
-      if (["active", "no-contact", "retry", "collision"].includes(state)) {
+      if (
+        ["active", "no-contact", "retry", "collision", "leading-bom", "empty-summary"].includes(
+          state,
+        )
+      ) {
         const stored = await port.recordInteraction(input);
         expect(stored).toEqual({
           ...Object.fromEntries(Object.entries(input).filter(([key]) => key !== "expected")),

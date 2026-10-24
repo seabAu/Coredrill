@@ -260,6 +260,7 @@ export {
   createJobActivityOperations,
   copyViewedInteractionExpectationV1,
   copyViewedInteractionPortInputV1,
+  copyRecordedInteractionDto,
   type ViewedInteractionExpectationV1,
   type InteractionDirection,
   type InteractionDto,
@@ -283,6 +284,7 @@ export {
   type SetNextActionPortInput,
   type UndoableNextActionDto,
 } from "./job-activity.js";
+export * from "./recorded-interaction.js";
 export {
   MUTATION_UNDO_ERROR_CODES,
   MutationUndoError,

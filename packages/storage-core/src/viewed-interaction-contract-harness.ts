@@ -1,4 +1,5 @@
 import { entityId, instant } from "@coredrill/domain";
+import { createRecordedInteractionQuery } from "@coredrill/application";
 import { createDatabaseViewedInteractionPort } from "./application-ports.js";
 import { DatabaseContractViolation, defineDatabaseContractSuite } from "./contract-harness.js";
 import { sqlStatement, type DatabasePort } from "./database-port.js";
@@ -166,6 +167,156 @@ export const createViewedInteractionContractSuite = (setup: Phase1RepositoryCont
           assert(withoutContact.contactId === null, "Job-only recording invented a contact.");
           const rows = await database.query(sqlStatement("SELECT id FROM interaction ORDER BY id"));
           assert(rows.length === 2, "Interaction retry duplicated or lost a record.");
+        },
+      },
+      {
+        name: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components.interactionRecording.cases
+          .checkRecorded,
+        run: async (database) => {
+          await setup.migrate(database);
+          const vaultId = id("vault", 21),
+            jobId = id("job", 22),
+            contactId = id("contact", 23);
+          await database.execute(
+            sqlStatement("INSERT INTO vault VALUES (?, ?, ?, ?, ?)", [
+              vaultId,
+              "Synthetic acknowledgement",
+              (await database.diagnostics()).schemaVersion,
+              at,
+              at,
+            ]),
+          );
+          await database.execute(
+            sqlStatement("INSERT INTO job(id,title,created_at,updated_at) VALUES(?,?,?,?)", [
+              jobId,
+              "Synthetic role",
+              at,
+              at,
+            ]),
+          );
+          await database.execute(
+            sqlStatement("INSERT INTO contact(id,name,created_at,updated_at) VALUES(?,?,?,?)", [
+              contactId,
+              "Synthetic contact",
+              at,
+              at,
+            ]),
+          );
+          const intent = {
+            id: id("interaction", 24),
+            jobId,
+            contactId,
+            type: "meeting",
+            occurredAt: at,
+            direction: "mutual" as const,
+            summary: "\uFEFFexact 🧭 <script>literal</script>  ",
+            nextActionAt: null,
+            createdAt: at,
+            updatedAt: at,
+            expected: {
+              specVersion: 1 as const,
+              expectedVaultId: vaultId,
+              jobRowVersion: 1,
+              contactRowVersion: 1,
+            },
+          };
+          const forbid = (): Promise<never> =>
+            Promise.reject(
+              new DatabaseContractViolation("Acknowledgement check attempted a write."),
+            );
+          const readOnly: DatabasePort = {
+            query: database.query.bind(database),
+            execute: forbid,
+            diagnostics: database.diagnostics.bind(database),
+            exportPortable: database.exportPortable.bind(database),
+            transaction: (work) =>
+              database.transaction((session) =>
+                work({ query: session.query.bind(session), execute: forbid }),
+              ),
+          };
+          const query = createRecordedInteractionQuery(
+            createDatabaseViewedInteractionPort(readOnly),
+          );
+          const context = { operationId: id("application-operation", 25), initiatedAt: at };
+          const request = { specVersion: 1 as const, intent };
+          const beforeAbsent = await snapshot(database);
+          const absent = await query.execute(request, context);
+          assert(
+            absent.ok && absent.value.state === "not_recorded",
+            "Absent interaction was not distinguished.",
+          );
+          assert(
+            (await snapshot(database)) === beforeAbsent,
+            "Absence check changed canonical state.",
+          );
+          const encodingProbe = await database.query(
+            sqlStatement("SELECT ? AS text_value, CAST(? AS BLOB) AS bytes_value", [
+              intent.summary,
+              intent.summary,
+            ]),
+          );
+          const probeBytes = encodingProbe[0]?.["bytes_value"];
+          const blobExact =
+            probeBytes instanceof Uint8Array &&
+            new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(probeBytes) ===
+              intent.summary;
+          let stored;
+          try {
+            stored = await createDatabaseViewedInteractionPort(database).recordInteraction(intent);
+          } catch {
+            throw new DatabaseContractViolation(
+              `Leading-BOM interaction acknowledgement rejected; driverTextExact=${String(encodingProbe[0]?.["text_value"] === intent.summary)}; blobExact=${String(blobExact)}.`,
+            );
+          }
+          for (const table of ["job", "contact"])
+            await database.execute(
+              sqlStatement(`UPDATE ${table} SET archived_at = ?, row_version = 2 WHERE id = ?`, [
+                at,
+                table === "job" ? jobId : contactId,
+              ]),
+            );
+          const before = await snapshot(database);
+          const found = await query.execute(request, context);
+          assert(
+            found.ok &&
+              found.value.state === "recorded" &&
+              JSON.stringify(found.value.interaction) === JSON.stringify(stored),
+            "Historical acknowledgement changed after owner edits/archive.",
+          );
+          const collision = await query.execute(
+            { ...request, intent: { ...intent, summary: "other" } },
+            context,
+          );
+          assert(
+            !collision.ok && collision.error.code === "conflict",
+            "Collision became absence or leaked a different record.",
+          );
+          const foreign = await query.execute(
+            {
+              ...request,
+              intent: {
+                ...intent,
+                expected: { ...intent.expected, expectedVaultId: id("vault", 99) },
+              },
+            },
+            context,
+          );
+          assert(
+            !foreign.ok && foreign.error.code === "conflict",
+            "Foreign vault check was acknowledged.",
+          );
+          const missing = await query.execute(
+            { ...request, intent: { ...intent, id: id("interaction", 26) } },
+            context,
+          );
+          assert(
+            missing.ok && missing.value.state === "not_recorded",
+            "Missing ID was silently recorded.",
+          );
+          assert(
+            (await snapshot(database)) === before,
+            "Read-only acknowledgement checks changed canonical state.",
+          );
         },
       },
     ],

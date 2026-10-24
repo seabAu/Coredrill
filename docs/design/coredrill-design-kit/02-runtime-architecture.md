@@ -475,9 +475,18 @@ readback before commit. An exact fixed-ID immutable tuple reconciles without a
 second insert even after later owner edits; a different tuple is a conflict.
 Trusted generic runners remain compatible, but normal recording must use the
 guarded seam and retain its original intent/context. Shared executable inventory
-v16/35 adds the same recording case for all adapters; actual Node/browser/native
-execution and the full local gate pass. No schema/permission/Accepted decision
-change. Runtime/composer and exact hosted proof remain in
+v16/35 adds the same recording case for all adapters; its exact00ff32a local and
+hosted checks pass. The follow-through adds a strict read-only original-tuple
+acknowledgement query and lazy normal-runtime fixed-ID/context/fields capability.
+An uncertain write requires an explicit read-only check before explicit identical
+retry; disposal prevents not-yet-entered writes without claiming transaction
+cancellation. Repository acknowledgement decodes literal UTF-8 BLOB bytes so an
+initial BOM is not consumed by browser TEXT decoding. Shared inventory advances
+to v17/36 without a durable schema change. Actual offline browser and real native
+API/reload journeys pass, including a native commit whose acknowledgement is
+deliberately lost and recovered by a read, not another insert. No normal composer
+is exposed: UI publication/focus and global vault mutation exclusion remain required.
+New-source full/extension/exact hosted proof remains in
 [recording verification](../../proof/viewed-interaction-recording-verification.md).
 
 The INT-007 recorded-contact-history slice now has strict viewed-vault/contact

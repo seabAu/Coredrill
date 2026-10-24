@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { StoredJobDetails, restoreFocusAfterChange } from "@coredrill/ui";
 import {
   createStoredJobDetailsReader,
@@ -21,6 +21,14 @@ export const useStoredJobDetails = ({
   const [state, setState] = useState<StoredJobDetailsState | null>(null);
   const reader = useRef<ReturnType<typeof createStoredJobDetailsReader> | null>(null);
   const container = useRef<HTMLDivElement>(null);
+  const view = useRef({ jobId, tab });
+  view.current = { jobId, tab };
+  const [focus, setFocus] = useState<{
+    readonly owner: ReturnType<typeof createStoredJobDetailsReader>;
+    readonly origin: Element | null;
+    readonly jobId: string;
+    readonly tab: "overview" | "company";
+  } | null>(null);
   useEffect(() => {
     if (jobId === null || api === null) {
       setState(null);
@@ -34,6 +42,26 @@ export const useStoredJobDetails = ({
       reader.current = null;
     };
   }, [jobId, api, rowVersion]);
+  useLayoutEffect(() => {
+    if (focus === null || state?.busy) return;
+    const request = focus;
+    // The read promise can settle before React re-enables the refresh button.
+    // Restore only after the completed render, and never into a replacement view.
+    restoreFocusAfterChange(request.origin, () => {
+      if (
+        reader.current !== request.owner ||
+        view.current.jobId !== request.jobId ||
+        view.current.tab !== request.tab
+      )
+        return null;
+      return (
+        container.current?.querySelector<HTMLButtonElement>(
+          "[data-details-refresh]:not([disabled])",
+        ) ?? null
+      );
+    });
+    setFocus(null);
+  }, [focus, state]);
   if (jobId === null || api === null) return null;
   const visible = state?.jobId === jobId ? state : { value: null, busy: true, error: null };
   return (
@@ -47,12 +75,7 @@ export const useStoredJobDetails = ({
           const origin = document.activeElement;
           void current.refresh().then((completed) => {
             if (!completed) return;
-            restoreFocusAfterChange(
-              origin,
-              () =>
-                container.current?.querySelector<HTMLButtonElement>("[data-details-refresh]") ??
-                null,
-            );
+            setFocus({ owner: current, origin, jobId, tab });
           });
         }}
       />

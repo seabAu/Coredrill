@@ -5,6 +5,8 @@ import {
   JobRequirementError,
   VaultLifecycleError,
   copyViewedInteractionPortInputV1,
+  copyRecordedInteractionDto,
+  type RecordedInteractionCheckPortV1,
   type JobActivityPort,
   type JobPipelinePort,
   type MutationUndoPort,
@@ -354,8 +356,28 @@ export const createDatabaseJobActivityPort = (database: DatabasePort): JobActivi
 /** Interactive-only seam: never downgrades an omitted or malformed viewed scope. */
 export const createDatabaseViewedInteractionPort = (
   database: DatabasePort,
-): Pick<JobActivityPort, "recordInteraction"> =>
+): Pick<JobActivityPort, "recordInteraction"> & RecordedInteractionCheckPortV1 =>
   Object.freeze({
+    check: async (untrusted: Parameters<RecordedInteractionCheckPortV1["check"]>[0]) => {
+      let input: ReturnType<typeof copyViewedInteractionPortInputV1>;
+      try {
+        input = copyViewedInteractionPortInputV1(untrusted);
+      } catch {
+        throw new JobActivityError("invalid_state");
+      }
+      return database.transaction(async (session) => {
+        const roots = await session.query(sqlStatement("SELECT id FROM vault LIMIT 2"));
+        if (roots.length !== 1 || roots[0]?.["id"] !== input.expected.expectedVaultId)
+          throw new JobActivityError("linkage_conflict");
+        const stored = await createPipelineRepositories(session).interactions.findById(input.id);
+        if (stored === undefined) return undefined;
+        try {
+          return copyRecordedInteractionDto(stored, input);
+        } catch {
+          throw new JobActivityError("linkage_conflict");
+        }
+      });
+    },
     recordInteraction: async (untrusted: Parameters<JobActivityPort["recordInteraction"]>[0]) => {
       let input: ReturnType<typeof copyViewedInteractionPortInputV1>;
       try {

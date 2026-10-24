@@ -585,7 +585,10 @@ interface ExpectedInteraction {
   readonly createdAt: Instant;
 }
 
-const copyInteraction = (value: unknown, expected: ExpectedInteraction): InteractionDto => {
+export const copyRecordedInteractionDto = (
+  value: unknown,
+  expected: ExpectedInteraction,
+): InteractionDto => {
   if (!isRecord(value)) throw new TypeError("Invalid interaction result.");
   const copied: InteractionDto = Object.freeze({
     id: entityId("interaction", value["id"] as string),
@@ -856,7 +859,7 @@ export const createJobActivityOperations = (
         const id = entityId("interaction", dependencies.createInteractionId());
         const createdAt = instant(operationContext.initiatedAt);
         return applicationSuccess(
-          copyInteraction(
+          copyRecordedInteractionDto(
             await dependencies.activity.recordInteraction({
               id,
               ...parsed,

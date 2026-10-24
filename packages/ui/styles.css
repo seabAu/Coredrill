@@ -3933,6 +3933,23 @@ textarea {
   margin-inline: auto;
 }
 
+/* Reflow must not wait for the responsive React mode notification. */
+@media (width < 80rem) {
+  .cd-pipeline-workspace-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cd-job-workspace[data-workspace-mode="contextual"] {
+    position: static;
+    width: 100%;
+    max-height: none;
+  }
+
+  .cd-job-workspace[data-workspace-mode="contextual"] .cd-job-workspace-width {
+    display: none;
+  }
+}
+
 .cd-job-workspace-header {
   display: grid;
   gap: var(--space-4);

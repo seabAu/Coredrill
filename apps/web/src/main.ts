@@ -244,6 +244,10 @@ import {
   createStoredContactHistoryApi,
   type StoredContactHistoryApi,
 } from "./stored-contact-history.js";
+import {
+  createStoredInteractionRecordingApi,
+  type StoredInteractionRecordingApi,
+} from "./stored-interaction-recording.js";
 import { createStoredJobNoteApi, type StoredJobNoteApi } from "./stored-job-notes.js";
 import { createStoredNextActionApi, type StoredNextActionApi } from "./stored-next-actions.js";
 import { createStoredVaultExportApi, type StoredVaultExportApi } from "./stored-vault-export.js";
@@ -530,6 +534,7 @@ export interface CoredrillStorageSpikeApi {
   readonly contactDirectory: StoredContactDirectoryApi;
   readonly contactWorkspace: StoredContactWorkspaceApi;
   readonly contactHistory: StoredContactHistoryApi;
+  readonly interactionRecording: StoredInteractionRecordingApi;
   readonly pipelineMutations: StoredPipelineMutationApi;
   readonly jobNotes: StoredJobNoteApi;
   readonly nextActions: StoredNextActionApi;
@@ -3391,6 +3396,15 @@ const api: CoredrillStorageSpikeApi = {
     await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
     return client;
   }, careerProfileOperationContext),
+  interactionRecording: createStoredInteractionRecordingApi(
+    async () => {
+      const client = await getDatabase();
+      await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
+      return client;
+    },
+    careerProfileOperationContext,
+    () => generateEntityId("interaction"),
+  ),
   jobNotes: createStoredJobNoteApi(
     async () => {
       const client = await getDatabase();

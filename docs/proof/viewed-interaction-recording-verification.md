@@ -152,3 +152,244 @@ it contains no lockfile, migration, Rust, permission or Accepted ADR changes.
 
 Normal non-force commit/push remains authorized, with new exact hosted evidence
 required. Do not attribute earlier CI to these sources or close INT-007/INT-008.
+
+## Exact pushed prerequisite — hosted verification live
+
+The reviewed21-file change commits normally as
+`00ff32aa0aa46b47421a0c0baac854e4d69e8d86` (`feat: guard viewed interaction
+recording`) and pushes from d3950dc to origin/main without force or history
+rewrite. Immediate post-push worktree is clean and both refs match the full SHA.
+
+[Foundation CI39742333566](https://github.com/seabAu/Coredrill/actions/runs/39742333566)
+is authoritatively in_progress for that exact SHA. Retain watch20227 in
+`test-results/viewed-interaction-boundary-hosted-watch.log`; require terminal
+`VIEWED_INTERACTION_BOUNDARY_HOSTED_EXIT` and inspect every required job/parent
+suite before hosted closure. An observation timeout does not justify restarting
+or superseding the run. Do not attribute prior d3950dc success to this commit.
+Only post-push result records differ now; no successor implementation or push
+is claimed. Subsequent runtime/composer work needs its own scoped activation
+and proof. Full INT-007/INT-008 and the overall goal remain active/open.
+
+## Fixed-intent runtime and read-only acknowledgement follow-through activated
+
+This explicitly supersedes the result-documents-only freeze for independent local
+follow-through. Exact00ff32a CI39742333566/watch20227 remains live and must not be
+superseded or cited as proof of newer sources. Only the two inspected post-push
+result documents are dirty at activation; prior governing INT-007 requirements
+and Accepted decisions remain unchanged.
+
+Add a strict version-1 read-only acknowledgement query carrying the owned original
+interaction tuple. The SQLite transaction must check the sole original vault,
+return absence distinctly, reject an identity collision without exposing other
+content, and validate exact immutable facts before acknowledging a retained row.
+It must expose no insert/update capability; later owner edits/archive do not erase
+a historical acknowledgement. Extend executable shared browser/native parity.
+
+Then compose a lazy normal-runtime capability with fixed identity and copied
+first valid dispatch context/fields. Construction/invalid requests open no storage;
+one operation may run at a time. A failed/uncertain write requires an explicit
+read-only check before another explicit same-intent write; changed fields cannot
+silently reuse that intent. A confirmed saved record is never submitted again.
+Disposal prevents work that has not entered storage and cannot promise cancellation
+of an already executing transaction. The UI must still own publication/focus and
+the existing cross-feature vault mutation exclusion when the composer is wired.
+
+Prove strict keys/version/tuple/absence/collision, before-await copying, no-write
+checks, single flight, failed acknowledgement then check/retry, fixed identity/time,
+and late disposal. Normal API/actual browser/native/reload proof and complete
+final-source/extension/policy/new exact hosted verification are required. Global
+Add/Network/job-context composer and all original INT-007 requirements remain
+follow-through, not removed or replaced by this runtime prerequisite.
+
+## Runtime checkpoint and retained leading-BOM failure (2026-10-24)
+
+The new read-only query and fixed-intent runtime are composed at the normal root,
+but no normal recording composer is exposed. Focused query/runtime/shared SQLite
+checks pass 130 cases, workspace types pass, and corrected strict lint passes.
+These are partial results, not final-source verification or INT-007 completion.
+
+The first actual browser API journey fails at exact acknowledgement. Its retained
+diagnostic isolates the leading-BOM meeting summary: saved=false, conflict,
+phase=uncertain; native execution has not run. The smaller shared browser probe
+also fails before repair, independently of the 200,000-character case:
+`driverTextExact=false; blobExact=true`. Log
+`test-results/recorded-interaction-leading-bom-browser-before.log` ends
+`RECORDED_INTERACTION_LEADING_BOM_BEFORE_EXIT=1`. Thus stored UTF-8 bytes preserve
+the mark while browser TEXT decoding does not. Preserve both failures and the
+unchanged exact-text assertions. Repair the repository acknowledgement read using
+literal BLOB decoding, then require browser/native/reload and complete verification.
+No migration, dependency, permission, or Accepted decision change is needed.
+
+## Exact prerequisite hosted closure (2026-10-24)
+
+CI39742333566 is completed/success at exact
+`00ff32aa0aa46b47421a0c0baac854e4d69e8d86`. All ten required jobs and parent
+GitHub Actions check suite107705996767 are terminal success; PR-only dependency
+review is intentionally skipped. The original watch log ends
+`VIEWED_INTERACTION_BOUNDARY_HOSTED_EXIT=0`; its old process handle is gone and
+must not be restarted. Complete logs are retained in
+`test-results/viewed-interaction-boundary-hosted-complete.log` (collection exit0).
+
+Both exact Chrome151/152 jobs pass76 shell/70 resilience cases. Both Firefox153/154
+witnesses explicitly report v16/35, schema165 and58 datasets/116 files. Windows
+native passes21; macOS/Linux pass20 with one platform skip. Aggregate units/coverage,
+all remaining verification, nine extension cases and full-history secrets pass;
+npm audit reports no known vulnerabilities. Native package diagnostics still
+report targetConformant:false, not release/reference-hardware acceptance.
+This closes only the pushed prerequisite; it does not cover newer local runtime
+sources, full INT-007/INT-008 or the overall goal.
+
+## Literal-summary correction and actual runtime journeys pass (2026-10-24)
+
+The repository now reads summary BLOB bytes with fatal UTF-8 decoding and
+ignoreBOM:true, checks the returned byte length, and handles the adapter's empty
+BLOB null representation only for length0. No input normalization, limit increase,
+schema change or exact-acknowledgement assertion is relaxed. Added Node SQLite
+regressions cover leading BOM, empty text, malformed UTF-8 rollback and the
+existing deliberately wrong readback. Query/runtime/SQLite focused63 pass in
+`recorded-interaction-bom-focused-after.log`, terminal
+`RECORDED_INTERACTION_BOM_FOCUSED_EXIT=0`.
+
+Serial process25236 is consumed exit0, with all three unchanged actual journeys
+passing and terminal markers in their respective logs:
+
+- `recorded-interaction-leading-bom-browser-after.log`: shared v17/36,28.4s;
+  `RECORDED_INTERACTION_LEADING_BOM_AFTER_EXIT=0`.
+- `recorded-interaction-normal-browser-after.log`: offline selected-runtime API,
+  six types, fixed identity, invalid/missing-owner rejection, read-only absence,
+  duplicate prevention, reload and complete200,000-character BOM summary,17.7s;
+  `RECORDED_INTERACTION_NORMAL_BROWSER_AFTER_EXIT=0`.
+- `recorded-interaction-normal-native-after.log`: actual Rust SQLite root journey,
+  including a targeted lost commit acknowledgement, explicit read-only recovery
+  with unchanged export hash, no second insert and reload,32.8s;
+  `RECORDED_INTERACTION_NORMAL_NATIVE_AFTER_EXIT=0`.
+
+These are normal runtime API journeys, not composer UI or installed WebView proof.
+The lost-ack injection exists only in the simulated native test host. No shipped
+native command, permission or fallback is added. Strict production/helper lint
+passes in `recorded-interaction-bom-lint-correct-scope.log`; the preceding direct
+lint invocation included a TS test outside the configured project service and
+fails for that invocation error, not a suppressed rule. Complete final-source
+verify, serial extension, policy and new exact hosted proof remain required before
+committing this follow-through. Normal composer, publication/focus/global vault
+exclusion and all remaining INT-007/INT-008 requirements stay open.
+
+## Final-source verification activated (2026-10-24)
+
+Formatting of the reviewed source/test/change records completes before full
+verification starts. Process52305 runs `pnpm verify` serially in
+`test-results/recorded-interaction-runtime-full-verify.log`; require terminal
+`RECORDED_INTERACTION_RUNTIME_FULL_VERIFY_EXIT`. Follow the same handle, not a
+replacement run after an observation timeout. Source/tests/helpers are frozen;
+only result records may change. A preceding formatter invocation failed to find
+Node before formatting; the explicit reviewed runtime path succeeds. No test is
+weakened, no stale success is attributed to newer code, and no commit/push or full
+INT-007 completion is claimed. Serial extension and final policy follow a passing
+whole gate, then reviewed ordinary commit/push and exact hosted verification.
+
+## Whole-gate environment failure retained (2026-10-24)
+
+Process52305 is consumed exit1, terminal
+`RECORDED_INTERACTION_RUNTIME_FULL_VERIFY_EXIT=1`. Formatting, boundaries,
+foundation records,35 type tasks and22 lint tasks pass. Units pass2,641 and fail
+one unchanged native-packaging process-race case because `spawnSync pwsh ENOENT`:
+the reconstructed explicit PATH omitted the bundled native PowerShell directory.
+This is a real failed gate, not a product success. Restore the reviewed runtime
+directory to PATH; do not change the test, timeout, assertions or product source.
+Rerun that exact case and then a fresh complete gate with a separate retained log.
+
+The unchanged native-packaging file passes all6 cases with the corrected PATH;
+process99640 consumed exit0, `recorded-interaction-runtime-path-corrected.log`.
+Fresh whole/serial-extension verification runs as process93577 with separate logs
+`recorded-interaction-runtime-full-verify-path-corrected.log` and
+`recorded-interaction-runtime-extension.log`; require terminal
+`RECORDED_INTERACTION_RUNTIME_FULL_PATH_CORRECTED_EXIT=0` and
+`RECORDED_INTERACTION_RUNTIME_EXTENSION_EXIT=0` independently. Source/test freeze
+remains in force. A process handle being live or an earlier focused success is
+not a substitute for either terminal result.
+
+## Whole-gate UI failures and scoped correction plan (2026-10-24)
+
+Process93577 is consumed exit1, terminal
+`RECORDED_INTERACTION_RUNTIME_FULL_PATH_CORRECTED_EXIT=1`. All2,642 units and
+coverage, builds, UI7, shell76 and performance checks pass. Resilience passes69
+and fails two unchanged checks: job-details retry loses focus and narrow forced-
+colors Timeline reports horizontal overflow. The new interaction runtime journey
+passes. Extension does not start after whole-gate failure. Preserve original
+resilience artifacts at `test-results/recorded-interaction-runtime-full-ui-failures`.
+
+The source freeze is lifted only for diagnosing/correcting these gate failures:
+capture content-free layout/focus evidence, retain the original assertions, and
+bind details focus restoration to the completed React render and still-current
+owner. Inspect the actual overflowing element before choosing a CSS correction.
+Require focused before/after and repeated browser proof, then a fresh complete
+gate. Do not classify the failures as harmless flakes or weaken timing/reflow
+requirements; no commit/push or checklist closure is permitted from this result.
+
+The isolated diagnostic9733 passes2, but repeated61467 fails the original
+details-focus assertion once (9 pass). Post-render, reader/job/tab-bound focus
+restoration then passes all20 repeated checks in46032 /
+`recorded-interaction-ui-focus-after.log`, terminal
+`RECORDED_INTERACTION_UI_FOCUS_AFTER_EXIT=0`. The unchanged full-gate failure
+and repeated pre-fix failure remain failures.
+
+For reflow, a test-only held JS breakpoint observation leaves actual viewport/CSS
+at320px while the root still renders contextual mode. Process62122 deterministically
+fails the same no-overflow condition, documentWidth956; the contextual640px
+workspace starts at316px in the retained layout witness. No arbitrary sleep or
+assertion budget change is used. CSS now independently stacks the contextual
+layout below80rem, bounds workspace width and hides the desktop-only width control
+while the existing JS mode transition catches up. Repeated corrected checks run
+as22642 in `recorded-interaction-ui-reflow-focus-after.log`; require terminal
+`RECORDED_INTERACTION_UI_REFLOW_FOCUS_AFTER_EXIT`. Complete final-source/extension/
+policy/new exact hosted verification remains mandatory. Strict production/helper
+lint passes after using explicit globalThis for browser globals in the touched
+test; no lint suppression or config change is introduced.
+
+Process22642 is consumed exit0: all10 corrected serial checks pass55.3s, terminal
+`RECORDED_INTERACTION_UI_REFLOW_FOCUS_AFTER_EXIT=0`. The 320px forced-colors
+Timeline image is inspected for bounded literal text/control wrapping. A fresh
+complete gate and then serial extension run use new logs
+`recorded-interaction-runtime-full-verify-ui-corrected.log` and
+`recorded-interaction-runtime-extension-ui-corrected.log`; require terminal
+`RECORDED_INTERACTION_RUNTIME_FULL_UI_CORRECTED_EXIT` and
+`RECORDED_INTERACTION_RUNTIME_EXTENSION_UI_CORRECTED_EXIT`. Source/tests/helpers
+are frozen again; only result records may change until the same process finishes.
+No original failure is reclassified and no full INT-007/INT-008 completion is claimed.
+
+## Final-source functional proof passes; advisory gate fails (2026-10-24)
+
+Process72131 is consumed exit1, terminal
+`RECORDED_INTERACTION_RUNTIME_FULL_UI_CORRECTED_EXIT=1`. All2,642 unit/coverage
+cases,35 type tasks,22 lint/build tasks, UI7/shell76/resilience71/onboarding7/
+documents13/browser-storage13/native21, Rust24 and separately executed secure
+store/archive/backup/schema/license/secret checks pass. Shared Node/browser/native
+inventory is v17/36, durable schema165 unchanged. Local browser156.0.4314.42 is
+diagnostic, not exact hosted-floor proof. npm audit reports9 findings across five
+existing packages; Cargo audit/Changesets and serial extension do not execute.
+This is not a complete passing gate or permission to commit/push.
+
+The [reviewed bounded security maintenance plan](dependency-security-maintenance-2026-10-24.md)
+now supersedes the source freeze for compatible security updates only, preserving
+all interaction/UI fixes and retained failures. It changes no Accepted technology
+decision, native/extension permission, schema or source policy. A fresh complete
+gate/serial extension/final policy/new exact hosted run remains mandatory before
+closing this runtime prerequisite. Normal composer and full INT-007/INT-008 remain open.
+
+## Complete patched local checkpoint (2026-10-24)
+
+[Exact patched graph, failure lineage and remaining risk](dependency-security-maintenance-2026-10-24.md#complete-final-source-gate-and-serial-extension-pass):32515 consumes exit0
+for complete final-source verification and all9 serial extension cases.211 unit
+files/2,657 cases plus coverage,35 types/22 lint/build,76 shell/71 resilience,
+all browser/native/recovery/schema/license/secrets/audit/Changesets checks pass.
+npm is clean; Cargo retains11 informational warnings, including the newly recorded
+Tokio Unix AsyncFd review requirement, without any exclusion or pin change.
+All10 recovery files match HEAD; source/tests/lock remain unchanged after success.
+
+This proves the runtime API/read-only acknowledgement prerequisite, literal BLOB
+readback, render-owned details focus and breakpoint-independent reflow, including
+the accepted compatible security fixes and explicit JSON ownership. It does not
+prove the normal interaction composer, global mutation exclusion/publication/focus
+composition, installed WebView or release acceptance. Final result-doc format/
+policy, ordinary commit/push and new exact hosted proof remain. Full INT-007/
+INT-008 and the overall goal stay open; every older failed run remains a failure.

@@ -25,6 +25,7 @@ import { exerciseTaskEntryLifetime } from "./task-entry-lifetime.mjs";
 import { exerciseCompanyDirectory } from "./company-directory-journey.mjs";
 import { exerciseCompanyWorkspace } from "./company-workspace-journey.mjs";
 import { exerciseContactRuntime } from "./contact-runtime-journey.mjs";
+import { exerciseInteractionRecordingRuntime } from "./interaction-recording-runtime-journey.mjs";
 import { exerciseContactWorkspace } from "./contact-workspace-journey.mjs";
 import { exerciseContactOwnerLifetimes } from "./contact-owner-lifetime-journey.mjs";
 import { createContactHistoryFixture } from "./contact-history-fixture.mjs";
@@ -86,6 +87,9 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
   let holdNextBegin = false;
   let heldAcknowledgements = 0;
   let releaseHeldBegin = () => undefined;
+  let loseInteractionId = null;
+  let loseInteractionSession = null;
+  let lostInteractionCommits = 0;
   const restoreOperations = createNativeRestoreOperationRecorder();
   const send = async (request) => {
     const finishObservation = restoreOperations.measure(request.operation?.type);
@@ -110,6 +114,9 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
     return route.abort("blockedbyclient");
   });
   try {
+    await page.exposeFunction("coredrillArmInteractionAckLoss", (id) => {
+      loseInteractionId = id;
+    });
     await attachNativeHost(page, (command, args, documentId) => {
       if (
         !["native_storage_invoke", "native_archive_invoke", "native_vault_invoke"].includes(command)
@@ -127,6 +134,27 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
         return send(args.request);
       });
       queue = result.catch(() => {});
+      const operation = args.request.operation;
+      if (
+        command === "native_storage_invoke" &&
+        operation.type === "execute" &&
+        operation.statement.sql.includes("INSERT INTO interaction(") &&
+        operation.statement.parameters[0]?.value === loseInteractionId
+      )
+        loseInteractionSession = operation.sessionId;
+      if (
+        command === "native_storage_invoke" &&
+        operation.type === "commit" &&
+        operation.sessionId === loseInteractionSession
+      ) {
+        loseInteractionId = null;
+        loseInteractionSession = null;
+        return result.then((response) => {
+          expect(response.data).toEqual({ type: "transaction_state", active: false });
+          lostInteractionCommits++;
+          throw new Error("Synthetic lost interaction commit acknowledgement");
+        });
+      }
       if (holdNextBegin && args.request.operation.type === "begin") {
         holdNextBegin = false;
         return result.then((response) => {
@@ -194,7 +222,9 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
         contactRuntime: await exerciseContactRuntime(page, testInfo),
         contactWorkspace: await exerciseContactWorkspace(page, testInfo),
         contactOwnerLifetimes: await exerciseContactOwnerLifetimes(page, testInfo),
+        interactionRecording: await exerciseInteractionRecordingRuntime(page, testInfo),
       });
+      expect(lostInteractionCommits).toBe(1);
     } else if (journey === "tracking") {
       await page.getByRole("button", { name: "Add", exact: true }).click();
       await page.getByRole("menuitem", { name: /Add job/u }).click();

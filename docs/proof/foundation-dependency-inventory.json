@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "inventoryId": "JW-DI-001",
-  "version": "1.31.0",
-  "reviewedAt": "2026-10-21T22:36:14Z",
+  "version": "1.32.0",
+  "reviewedAt": "2026-10-24T09:29:05Z",
   "scope": {
     "included": [
       "Pinned Node.js, pnpm, and Rust foundation toolchains",
@@ -17,7 +17,7 @@
   },
   "lockfile": {
     "path": "pnpm-lock.yaml",
-    "sha256": "67b1363c11e00f83dc4cd4c463dfb506d79ae9dab3c688831514661eb064c336"
+    "sha256": "fc115519a541e3fa6b9dbc9f56bc31579413c080ab6591b7e8010cfe58d2142d"
   },
   "toolchains": [
     {
@@ -522,15 +522,15 @@
       "manifest": "packages/contracts/package.json",
       "dependencyType": "dependencies",
       "name": "zod",
-      "version": "4.4.3",
-      "upstreamLatest": "4.4.3",
-      "selectionStatus": "current",
+      "version": "4.6.6",
+      "upstreamLatest": "4.6.7",
+      "selectionStatus": "release-age-approved",
       "license": "MIT",
       "maintainers": ["colinhacks"],
       "repository": "https://github.com/colinhacks/zod",
-      "metadataSource": "https://registry.npmjs.org/zod/4.4.3",
+      "metadataSource": "https://registry.npmjs.org/zod/4.6.6",
       "knownAdvisories": [],
-      "selectionNote": "The contracts package uses Zod's stable validation and toJSONSchema APIs. It does not rely on the experimental fromJSONSchema API."
+      "selectionNote": "Smallest fixed 4.x release for GHSA-mrhx-c7xc-m3w5; bounded collection cardinality is checked before elements. October 11 publication exceeds unchanged 1440-minute minimum age. MIT, no runtime dependencies. Stable validation/toJSONSchema only, not experimental fromJSONSchema. Official release discloses prior Git credential compromise; npm publication and documented clean commits have matching Git trees. See dependency-security-maintenance-2026-10-24.md for provenance limits and required full proof."
     },
     {
       "manifest": "packages/documents/package.json",
@@ -647,15 +647,15 @@
       "manifest": "packages/documents/package.json",
       "dependencyType": "dependencies",
       "name": "zod",
-      "version": "4.4.3",
-      "upstreamLatest": "4.4.3",
-      "selectionStatus": "current",
+      "version": "4.6.6",
+      "upstreamLatest": "4.6.7",
+      "selectionStatus": "release-age-approved",
       "license": "MIT",
       "maintainers": ["colinhacks"],
       "repository": "https://github.com/colinhacks/zod",
-      "metadataSource": "https://registry.npmjs.org/zod/4.4.3",
+      "metadataSource": "https://registry.npmjs.org/zod/4.6.6",
       "knownAdvisories": [],
-      "selectionNote": "The documents package uses the same exact Zod version as contracts for strict IR, source-map, import-proposal, and JSON Schema validation."
+      "selectionNote": "Aligned with contracts at reviewed fixed Zod 4.6.6 for strict IR, source-map, import-proposal and JSON Schema validation. Existing schema constraints and published JSON Schemas must remain unchanged; no contract version or stored migration. See dependency-security-maintenance-2026-10-24.md for official security/provenance review."
     },
     {
       "manifest": "packages/extractors/package.json",
@@ -1071,12 +1071,12 @@
       "command": "cargo audit --file apps/desktop/src-tauri/Cargo.lock",
       "toolVersion": "0.22.2",
       "source": "https://rustsec.org/",
-      "reviewedAt": "2026-10-19T08:16:56Z",
+      "reviewedAt": "2026-10-24T09:29:05Z",
       "lockfileSha256": "8426c712842427fc31455183cb7afa902431220bca4276a52af66cb369d9d41a",
       "dependencyCount": 499,
       "vulnerabilities": 0,
       "unmaintainedWarnings": 9,
-      "unsoundWarnings": 1,
+      "unsoundWarnings": 2,
       "warningAdvisories": [
         "RUSTSEC-2024-0370",
         "RUSTSEC-2024-0429",
@@ -1087,9 +1087,10 @@
         "RUSTSEC-2025-0100",
         "RUSTSEC-2026-0370",
         "RUSTSEC-2026-0371",
-        "RUSTSEC-2026-0372"
+        "RUSTSEC-2026-0372",
+        "RUSTSEC-2026-0386"
       ],
-      "reviewNote": "The 2026-10-19 audit reports no vulnerability and ten informational warnings: nine unmaintained plus the existing glib unsoundness. Three newly reported maintenance advisories cover zvariant, zbus_names, and zvariant_derive, which were merged into upstream zbus 6. The locked chain is Linux-only zbus-secret-service-keyring-store 1.0.1 -> secret-service 5.1.0 / zbus 5.19.0; Windows/macOS use their existing distinct providers. No crate or warning policy changed. Linux native remains diagnostic under ADR-0004; a future reviewed backend migration and cross-platform secure-store proof are required before expanding support. See dependency-security-maintenance-2026-10-19.md."
+      "reviewNote": "October 24 audit consumes exit0 with zero vulnerabilities and eleven informational warnings: nine unmaintained plus glib and newly reported Tokio unsoundness. RUSTSEC-2026-0386 targets Unix AsyncFd constructors in Tokio1.53.1; upstream marks1.53.3 fixed via deprecation/new unsafe APIs requiring caller ownership guarantees. No direct AsyncFd/AsRawFd/BorrowedFd/tokio call appears in owned native source, but transitive Unix safety is not established. Require targeted Unix caller/compatible update review before public Unix acceptance; do not infer safety from the advisory's INFO category. No Cargo pin or warning policy/exclusion changes. Existing zbus/glib maintenance and Linux diagnostic/release restrictions remain. See dependency-security-maintenance-2026-10-24.md and the prior October19 record."
     },
     "licenseReview": {
       "command": "pnpm check:licenses",
@@ -1102,9 +1103,10 @@
   "advisoryReview": {
     "command": "pnpm audit --json",
     "source": "https://pnpm.io/cli/audit",
-    "reviewedAt": "2026-10-21T22:36:14Z",
-    "lockfileSha256": "67b1363c11e00f83dc4cd4c463dfb506d79ae9dab3c688831514661eb064c336",
+    "reviewedAt": "2026-10-24T08:54:19Z",
+    "lockfileSha256": "fc115519a541e3fa6b9dbc9f56bc31579413c080ab6591b7e8010cfe58d2142d",
     "resolvedDependencyCount": 937,
+    "validationSecurityMaintenanceNote": "October 24 audit fails nine findings across Zod, Undici, ip-address, fast-uri and serialize-javascript. Reviewed five-identity update selects Zod 4.6.6, Undici 6.29.1, ip-address 10.7.4, fast-uri 3.1.9 and parent-scoped serialize-javascript 7.1.3. No unrelated lock resolution, new graph identity, release-age exception or audit exclusion. Scripts-disabled frozen install and fresh all-severity audit pass across937 resolutions/108 optional; full regression and exact hosted proof remain. Source/provenance caveats and schema representation review are explicit in dependency-security-maintenance-2026-10-24.md. Earlier notes are historical.",
     "vitestMaintenanceNote": "October 21's resumed gate fails two newly reported moderate mocker findings. Reviewed Vitest/coverage 4.1.12 aligns nine existing Vitest-family resolutions only; no unrelated pin, override, package count or audit policy changes. Scripts-disabled frozen install passes and fresh audit reports zero findings at every severity across 937 resolutions /108 optional. Prior maintenance notes below are historical; see dependency-security-maintenance-2026-10-21.md for official sources and remaining full/hosted proof.",
     "acceptedSchedulingNote": "ADR-0009/D-056 explicitly authorizes @js-temporal/polyfill 0.5.1 and scoped jsbi 4.3.2; only these two resolutions are added. Fresh pnpm audit reports zero findings across 937 resolutions. No existing package or Cargo pin changes; see accepted-civil-time-dependency-review.md.",
     "maintenanceNote": "The October 20 audit adds six findings for three launch-editor advisories affecting both standalone launch-editor 2.14.1 and Vite 8.2.2's bundled copy. Reviewed existing-line patches select Vite 8.2.4 and launch-editor 2.14.2 with no audit exclusions. Scripts-disabled frozen install and fresh audit report zero findings across 935 resolutions; license policy passes. Earlier October 19 overrides remain unchanged, as do Tiptap 3.30.5 and every accepted architecture/library choice. See dependency-security-maintenance-2026-10-20.md for official sources, integrity and pending/full verification evidence.",
@@ -1119,12 +1121,12 @@
   },
   "licenseReview": {
     "command": "pnpm check:licenses",
-    "reviewedAt": "2026-10-21T22:36:14Z",
-    "lockfileSha256": "67b1363c11e00f83dc4cd4c463dfb506d79ae9dab3c688831514661eb064c336",
+    "reviewedAt": "2026-10-24T08:54:19Z",
+    "lockfileSha256": "fc115519a541e3fa6b9dbc9f56bc31579413c080ab6591b7e8010cfe58d2142d",
     "resolvedPackageRecords": 831,
     "workspaceCoverageNote": "License policy now scans 23 manifest roots and deduplicates 831 installed npm records, rather than only 520 root-reachable records. Temporal is ISC and JSBI Apache-2.0. Existing JSZip selects its explicit MIT alternative; pako retains both MIT/Zlib obligations. Duck 0.1.12's ambiguous BSD metadata is classified BSD-2-Clause only when its reviewed LICENSE SHA-256 matches exactly. Unknown or changed notices still fail closed. See accepted-civil-time-dependency-review.md. Cargo remains 498 license records.",
     "result": "pass",
-    "note": "The current graph retains 937 external resolutions and 831 npm license records across 23 roots; Cargo retains 498 license records. Aligned Vitest/coverage 4.1.12 is MIT and more than 24 hours old. Existing October 19/20 overrides, accepted Temporal/jsbi, restricted Tiptap 3.30.5 editor, Mammoth importer, SQLite storage and offline Workbox boundary remain unchanged. No external direct dependency is added. Earlier selection history remains in proof records and Git history."
+    "note": "The current graph retains937 external resolutions and831 npm license records across23 roots; Cargo retains498 records. Reviewed Zod4.6.6, Undici6.29.1 and ip-address10.7.4 are MIT; fast-uri3.1.9 and serialize-javascript7.1.3 are BSD-3-Clause. Every selected release exceeds24 hours. Tiptap3.30.5, accepted Temporal/jsbi, Vitest4.1.12 and other existing choices remain unchanged. No external direct dependency or permission is added. See dependency-security-maintenance-2026-10-24.md."
   },
   "maintenanceWatch": [
     {
@@ -1144,8 +1146,8 @@
     },
     {
       "dependency": "Tauri/Wry cross-platform Cargo graph",
-      "reason": "RustSec reports no vulnerability but records 14 unmaintained transitive warnings and glib 0.18.5 unsoundness in the Linux GTK3 path. The Phase 0 Linux AppImage is diagnostic only; public Linux desktop support remains blocked until the graph is replaced, remediated upstream, or accepted through an explicit risk decision.",
-      "nextReviewOn": "2026-08-31"
+      "reason": "Current RustSec result is zero vulnerabilities with nine unmaintained warnings plus glib and Tokio Unix AsyncFd unsoundness. Review the compatible Tokio patch and transitive Unix FD ownership before public Unix acceptance; the owned native source has no direct affected call, not a proof of transitive safety. Existing public Linux/native release blockers and warning policy remain unchanged; no exception is granted.",
+      "nextReviewOn": "2026-10-25"
     },
     {
       "dependency": "typescript",

@@ -219,7 +219,14 @@ Existing exact immutable values return without another insert; changed values
 cannot replace that identity. Reconciliation does not certify that later owner
 versions still match the original view. Normal runtime must own a fixed original
 identity/context/tuple and must not automatically generate a new retry. Actual
-Node/browser/native and full local proof pass; hosted and normal composer proof remain open in
+Node/browser/native and full local plus exact00ff32a hosted proof pass. The newer
+read-only check uses that same original tuple and sole vault, distinguishes
+absence from invalid/colliding state, and never inserts. Later owner edits/archive
+do not erase historical acknowledgement. Literal BLOB decoding retains leading
+BOM text exactly; no canonical receipt/cache, schema or archive change is added.
+Normal runtime fixes identity/context/fields on first valid dispatch and blocks
+blind write retries. Browser/native API proof passes; newer full-source and normal
+composer proof remain open in
 [recording verification](../../proof/viewed-interaction-recording-verification.md).
 
 `next_action(id, job_id, application_id, interaction_id, title, due_at, timezone, state, completed_at)`

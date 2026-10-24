@@ -97,6 +97,8 @@ Security maintenance on 2026-10-20 moves the existing Vite 8.2 line to patched 8
 
 Security maintenance on 2026-10-21 aligns the existing development-only Vitest/coverage4.1 line at4.1.12 after two @vitest/mocker advisories fail the audit gate. Official release/registry review confirms the backported fixes, MIT licenses, compatible Node24/Vite8 peers and unchanged release-age policy. Registry latest5.0.5 is not substituted. This changes no Accepted library/platform or product runtime decision and requires no ADR; lockfile/inventory/audit/regression/hosted evidence remains explicit in [the maintenance proof](../../proof/dependency-security-maintenance-2026-10-21.md).
 
+Security maintenance on 2026-10-24 reviews nine audit findings across five existing packages. Contracts/documents align Zod at the smallest fixed4.x release4.6.6; existing transitive paths select Undici6.29.1, ip-address10.7.4, fast-uri3.1.9 and parent-scoped serialize-javascript7.1.3. No new direct dependency, Accepted technology change, release-age exception, audit exclusion, permission or stored schema is introduced. All seven published JSON Schemas remain unchanged using a supported explicit standalone metadata registry. Zod's disclosed past Git-credential incident, matching clean/publication Git trees and provenance-review limits are recorded, not waived or hidden. Fresh complete local/extension/exact hosted proof remains required in [the reviewed maintenance record](../../proof/dependency-security-maintenance-2026-10-24.md).
+
 `BKP-005` adds no external package. It uses the existing StorageManager APIs,
 application policy package, generic SQLite `app_setting` repository, shared UI,
 and browser test harness. The versioned preference and UI contract are recorded

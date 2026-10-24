@@ -4,6 +4,7 @@ import { fieldCandidateV1Schema } from "./field-evidence.js";
 import {
   instantSchema,
   jsonValueSchema,
+  preserveJsonValueSchemaReference,
   safeHttpUrlSchema,
   safeIdentifierSchema,
   semanticVersionSchema,
@@ -130,6 +131,7 @@ export const captureEnvelopeV1Schema = z
 
 const generatedCaptureEnvelopeV1JsonSchema = z.toJSONSchema(captureEnvelopeV1Schema, {
   target: "draft-2020-12",
+  override: preserveJsonValueSchemaReference,
 });
 const { $schema: captureEnvelopeDialect, ...captureEnvelopeSchemaBody } =
   generatedCaptureEnvelopeV1JsonSchema;

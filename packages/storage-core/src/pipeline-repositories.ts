@@ -122,7 +122,8 @@ interface InteractionRow extends QueryRow {
   readonly type: string;
   readonly occurred_at: string;
   readonly direction: string;
-  readonly summary: string;
+  readonly summary_bytes: Uint8Array | null;
+  readonly summary_byte_length: number;
   readonly next_action_at: string | null;
   readonly created_at: string;
   readonly updated_at: string;
@@ -336,6 +337,16 @@ const mapInteraction = (row: InteractionRow): InteractionRecord => {
   const direction = row.direction as InteractionDirection;
   if (!INTERACTION_DIRECTIONS.has(direction))
     throw new Error("Stored interaction direction is invalid.");
+  // SQLite WASM TEXT decoding can consume an initial BOM. Acknowledgement must
+  // compare the literal stored text, just like the full contact-history reader.
+  const bytes =
+    row.summary_byte_length === 0 && row.summary_bytes === null
+      ? new Uint8Array()
+      : row.summary_bytes;
+  if (!(bytes instanceof Uint8Array) || bytes.byteLength !== row.summary_byte_length) {
+    throw new Error("Stored interaction summary bytes are invalid.");
+  }
+  const summary = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
   return Object.freeze({
     id: entityId("interaction", row.id),
     jobId: entityId("job", row.job_id),
@@ -343,7 +354,7 @@ const mapInteraction = (row: InteractionRow): InteractionRecord => {
     type: safeIdentifier(row.type, "Stored interaction type"),
     occurredAt: instant(row.occurred_at),
     direction,
-    summary: row.summary,
+    summary,
     nextActionAt: optionalInstant(row.next_action_at),
     createdAt: instant(row.created_at),
     updatedAt: instant(row.updated_at),
@@ -624,7 +635,9 @@ export class InteractionRepository {
   public async findById(id: EntityId<"interaction">): Promise<InteractionRecord | undefined> {
     const rows = await this.session.query<InteractionRow>(
       sqlStatement(
-        `SELECT id, job_id, contact_id, type, occurred_at, direction, summary, next_action_at,
+        `SELECT id, job_id, contact_id, type, occurred_at, direction,
+                CAST(summary AS BLOB) AS summary_bytes,
+                length(CAST(summary AS BLOB)) AS summary_byte_length, next_action_at,
                 created_at, updated_at, row_version
          FROM interaction WHERE id = ?`,
         [entityId("interaction", id)],

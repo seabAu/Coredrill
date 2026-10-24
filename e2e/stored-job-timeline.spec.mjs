@@ -31,12 +31,33 @@ test("normal Timeline pages real offline history, retains failures and ignores a
   page.on("request", (request) => {
     if (!request.url().startsWith("http://127.0.0.1:4181/")) external.push(request.url());
   });
+  // Hold only JS's responsive-mode observation; real viewport/CSS still reflow.
+  // This makes the pre-render breakpoint interval deterministic, not a delay.
+  await page.addInitScript(() => {
+    const original = globalThis.matchMedia.bind(globalThis);
+    const readMatches = Object.getOwnPropertyDescriptor(
+      globalThis.MediaQueryList.prototype,
+      "matches",
+    ).get;
+    const probe = { holdWide: false, queries: [] };
+    globalThis.coredrillTimelineBreakpoint = probe;
+    globalThis.matchMedia = (query) => {
+      const media = original(query);
+      if (query === "(min-width: 80rem)") {
+        Object.defineProperty(media, "matches", {
+          get: () => probe.holdWide || readMatches.call(media),
+        });
+        probe.queries.push(media);
+      }
+      return media;
+    };
+  });
   await page.goto("/");
   await initializeDefaultWorkspace(page);
   await page.waitForFunction(
     () => globalThis.coredrillOfflineShell?.getState().registered === true,
   );
-  await page.evaluate(() => navigator.serviceWorker.ready);
+  await page.evaluate(() => globalThis.navigator.serviceWorker.ready);
   await context.setOffline(true);
   await page
     .getByRole("navigation", { name: "Primary", exact: true })
@@ -160,10 +181,45 @@ test("normal Timeline pages real offline history, retains failures and ignores a
   await history.getByRole("button", { name: "Load older history", exact: true }).press("Enter");
   await expect(history.locator("[data-timeline-id]")).toHaveCount(2);
   await expect(history).toBeFocused();
+  await page.evaluate(() => {
+    globalThis.coredrillTimelineBreakpoint.holdWide = true;
+  });
   await page.setViewportSize({ width: 320, height: 900 });
   await page.emulateMedia({ forcedColors: "active" });
   await expect(history.locator("[data-timeline-id]")).toHaveCount(2);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  const reflowLayout = await page.evaluate(() => ({
+    viewport: globalThis.innerWidth,
+    documentWidth: globalThis.document.documentElement.scrollWidth,
+    overflowing: [...globalThis.document.querySelectorAll("body *")]
+      .map((element) => {
+        const rect = element.getBoundingClientRect();
+        return {
+          tag: element.tagName,
+          className: element.getAttribute("class"),
+          left: rect.left,
+          right: rect.right,
+          width: rect.width,
+          scrollWidth: element.scrollWidth,
+          clientWidth: element.clientWidth,
+        };
+      })
+      .filter((item) => item.right > globalThis.innerWidth + 1 || item.left < -1)
+      .slice(0, 80),
+  }));
+  await testInfo.attach("timeline-reflow-layout.json", {
+    body: JSON.stringify(reflowLayout, null, 2),
+    contentType: "application/json",
+  });
+  expect(reflowLayout.documentWidth <= reflowLayout.viewport).toBe(true);
+  await page.evaluate(() => {
+    const probe = globalThis.coredrillTimelineBreakpoint;
+    probe.holdWide = false;
+    for (const media of probe.queries) media.dispatchEvent(new globalThis.Event("change"));
+  });
+  await expect(page.locator("[data-job-workspace]")).toHaveAttribute(
+    "data-workspace-mode",
+    "full-page",
+  );
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await history.scrollIntoViewIfNeeded();
   const offlineNotice = page.getByRole("button", { name: "Dismiss", exact: true });
@@ -208,7 +264,7 @@ test("normal Timeline pages real offline history, retains failures and ignores a
       .locator("[data-timeline-id]")
       .evaluateAll((nodes) => nodes.map((node) => node.dataset.timelineId)),
   ).toEqual(original.value.items.map((item) => item.id));
-  expect(await page.evaluate(() => navigator.onLine)).toBe(false);
+  expect(await page.evaluate(() => globalThis.navigator.onLine)).toBe(false);
   expect(errors).toEqual([]);
   expect(external).toEqual([]);
 });

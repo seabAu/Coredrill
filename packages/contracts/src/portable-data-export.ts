@@ -3,6 +3,7 @@ import * as z from "zod";
 import {
   instantSchema,
   jsonValueSchema,
+  preserveJsonValueSchemaReference,
   safeIdentifierSchema,
   uuidV7Schema,
 } from "./primitives.js";
@@ -17,6 +18,10 @@ export const PORTABLE_DATA_EXPORT_LIMITS = Object.freeze({
 });
 
 const portableDataRowV1Schema = z.record(safeIdentifierSchema, jsonValueSchema);
+const portableDataExportMetadata = {
+  title: "Coredrill PortableDataExportV1",
+  description: "One versioned human-readable Coredrill dataset with an exact paired CSV mapping.",
+};
 
 export const portableDataExportV1Schema = z
   .strictObject({
@@ -73,8 +78,7 @@ export const portableDataExportV1Schema = z
   })
   .meta({
     id: PORTABLE_DATA_EXPORT_V1_SCHEMA_ID,
-    title: "Coredrill PortableDataExportV1",
-    description: "One versioned human-readable Coredrill dataset with an exact paired CSV mapping.",
+    ...portableDataExportMetadata,
   });
 
 export type PortableDataExportV1 = z.infer<typeof portableDataExportV1Schema>;
@@ -82,6 +86,12 @@ export type PortableDataRowV1 = z.infer<typeof portableDataRowV1Schema>;
 
 const generatedPortableDataExportV1JsonSchema = z.toJSONSchema(portableDataExportV1Schema, {
   target: "draft-2020-12",
+  override: preserveJsonValueSchemaReference,
+  // Keep the published standalone root stable: an ID in the global registry
+  // would cause Zod to extract this root into a named $def instead.
+  metadata: z
+    .registry<{ title: string; description: string }>()
+    .add(portableDataExportV1Schema, portableDataExportMetadata),
 });
 
 export const portableDataExportV1JsonSchema = Object.freeze({
