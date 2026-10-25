@@ -14,6 +14,10 @@ import { StoredCompanyJobsView } from "./stored-company-jobs-view.js";
 import type { StoredCompanyJobsApi } from "./stored-company-jobs.js";
 import type { StoredCompanyInteractionsApi } from "./stored-company-interactions.js";
 import { StoredCompanyInteractionsView } from "./stored-company-interactions-view.js";
+import { StoredCompanySourcesView } from "./stored-company-sources-view.js";
+import type { StoredCompanySourcesApi } from "./stored-company-sources.js";
+import type { CompanySourceReturn } from "./company-source-navigation.js";
+import type { CompanySourceV1, ListCompanySourcesRequestV1 } from "@coredrill/application";
 import type { CompanyJobReturn } from "./company-job-navigation.js";
 
 export const useStoredCompanyEditor = (options: {
@@ -375,6 +379,9 @@ export const StoredCompanyDetails = ({
   api,
   jobsApi,
   interactionsApi,
+  sourcesApi,
+  sourceReturn,
+  onInspectSourceJob,
   jobReturn,
   onOpenJob,
   vaultId,
@@ -389,6 +396,12 @@ export const StoredCompanyDetails = ({
   readonly api: StoredCompanyWorkspaceApi;
   readonly jobsApi: StoredCompanyJobsApi | undefined;
   readonly interactionsApi: StoredCompanyInteractionsApi | undefined;
+  readonly sourcesApi: StoredCompanySourcesApi | undefined;
+  readonly sourceReturn: CompanySourceReturn | null;
+  readonly onInspectSourceJob: (
+    source: CompanySourceV1,
+    request: ListCompanySourcesRequestV1,
+  ) => void;
   readonly jobReturn: CompanyJobReturn | null;
   readonly onOpenJob: (job: CompanyJobSummaryV1, request: ListCompanyJobsRequestV1) => void;
   readonly vaultId: string;
@@ -625,11 +638,20 @@ export const StoredCompanyDetails = ({
             workspace={value}
             ready={!busy && !stale && visible.error === null}
           />
+          <StoredCompanySourcesView
+            api={sourcesApi}
+            workspace={value}
+            ready={!busy && !stale && visible.error === null}
+            blocked={disabled}
+            restore={sourceReturn}
+            onInspectJob={onInspectSourceJob}
+          />
         </>
       ) : null}
       <p>
         These are local stored facts, not a verified employer profile. Relationship totals,
-        provenance sources, salary observations and application outcomes are not loaded here.
+        employer-specific public facts, salary observations and application outcomes are not loaded
+        here.
       </p>
     </section>
   );

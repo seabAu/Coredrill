@@ -171,3 +171,42 @@ foundation records,831 npm/498 Rust license policies and secret scan pass. White
 checks are clean. All36 implementation/test/design/Changeset/proof files belong
 to this checkpoint; stash2697 remains unchanged. Only result documentation follows
 frozen source/tests before the authorized normal commit/push and fresh exact CI.
+
+## Exact published checkpoint
+
+`60f456c7a1c8e283578ef8229c0ee7947a918386` is committed and pushed normally to
+origin/main:36 files,3509 insertions/81 deletions, including pending role-checkpoint
+receipts and the retained failures/verification repairs. The tree is clean directly
+after push; stash `2697ebcec53351a052d8c5c19e2b8e2a52056a70` is unchanged.
+
+[Exact Foundation CI40186513941](https://github.com/seabAu/Coredrill/actions/runs/40186513941)
+is running for that SHA. One original quiet watcher94470 writes
+`test-results/company-interactions-hosted-watch.log` and terminal
+`COMPANY_INTERACTIONS_HOSTED_EXIT`; follow it rather than restarting on an
+observation timeout. This is not yet hosted success. Previous6fada7e/run40182470910
+remains terminal failure with closed98859; older successful runs cannot verify
+this source. Only post-push receipts follow, carried with the next coherent
+implementation checkpoint rather than a receipt-only push. Company source/salary/
+outcome projections, Home and independent acceptance/release gates remain open.
+
+## Exact hosted closure and subsequent probe repair
+
+Run40186513941 is now terminal failure: original94470 consumes exit1 with
+COMPANY_INTERACTIONS_HOSTED_EXIT=1; complete-log retrieval8450 consumes exit0.
+Retained complete log: test-results/company-interactions-hosted-complete.log.
+Seven required jobs pass; Chrome151, Chrome152 and aggregate fail the same
+note-lifetime Refresh click waiting for a disabled control at job-note-lifetime.mjs.
+Both Chrome resilience runs pass105/106 cases. Every new company-history case
+passes, and the explicit complete repository-component partition resolves the
+previous collection timeout. This checkpoint is not hosted green.
+
+The earlier Overview/Timeline setup adjustment was insufficient. The next
+implementation binds the hold to the actual enabled Refresh click in capture
+phase and chooses whether to hold at request entry, before awaiting the actual
+read. Thus automatic/in-flight reads during actionability cannot consume the
+intended hold. It asserts exactly one captured click and held request; all
+lifetime assertions and budgets remain. Local87927 passes both normal note
+cases24.2s (COMPANY_SOURCES_NOTE_PROBE_REPAIR_EXIT=0), including every lifetime
+stage. This is local repair evidence, not retrospective proof of hosted timing
+or fresh hosted success. Carry it with the listing-source checkpoint and require
+a fresh exact hosted run; no receipt-only push.

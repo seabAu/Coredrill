@@ -240,6 +240,10 @@ import {
 } from "./stored-company-workspace.js";
 import { createStoredCompanyJobsApi, type StoredCompanyJobsApi } from "./stored-company-jobs.js";
 import {
+  createStoredCompanySourcesApi,
+  type StoredCompanySourcesApi,
+} from "./stored-company-sources.js";
+import {
   createStoredCompanyInteractionsApi,
   type StoredCompanyInteractionsApi,
 } from "./stored-company-interactions.js";
@@ -552,6 +556,7 @@ export interface CoredrillStorageSpikeApi {
   readonly companyDirectory: StoredCompanyDirectoryApi;
   readonly companyWorkspace: StoredCompanyWorkspaceApi;
   readonly companyJobs: StoredCompanyJobsApi;
+  readonly companySources: StoredCompanySourcesApi;
   readonly companyInteractions: StoredCompanyInteractionsApi;
   readonly contactDirectory: StoredContactDirectoryApi;
   readonly contactWorkspace: StoredContactWorkspaceApi;
@@ -3410,6 +3415,11 @@ const api: CoredrillStorageSpikeApi = {
     return client;
   }, careerProfileOperationContext),
   companyInteractions: createStoredCompanyInteractionsApi(async () => {
+    const client = await getDatabase();
+    await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
+    return client;
+  }, careerProfileOperationContext),
+  companySources: createStoredCompanySourcesApi(async () => {
     const client = await getDatabase();
     await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
     return client;

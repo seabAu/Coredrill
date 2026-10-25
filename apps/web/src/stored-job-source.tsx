@@ -3,7 +3,7 @@ import { StoredJobSource, restoreFocusAfterChange, type StoredJobSourceModel } f
 import { createStoredJobSourceReader, emptyStoredSource } from "./stored-job-source-reader.js";
 
 /** Own the reader above responsive frame replacement; SQLite stays canonical. */
-export const useStoredJobSource = (jobId: string | null) => {
+export const useStoredJobSource = (jobId: string | null, includeArchived = false) => {
   const [state, setState] = useState<StoredJobSourceModel | null>(null);
   const reader = useRef<ReturnType<typeof createStoredJobSourceReader> | null>(null);
   const container = useRef<HTMLDivElement>(null);
@@ -34,6 +34,7 @@ export const useStoredJobSource = (jobId: string | null) => {
       jobId,
       () => globalThis.coredrillStorageSpike.pipeline,
       setState,
+      includeArchived,
     );
     reader.current = current;
     void current.reload();
@@ -41,7 +42,7 @@ export const useStoredJobSource = (jobId: string | null) => {
       current.dispose();
       reader.current = null;
     };
-  }, [jobId]);
+  }, [jobId, includeArchived]);
   if (jobId === null) return null;
   const act = (
     action: (current: ReturnType<typeof createStoredJobSourceReader>) => Promise<boolean>,

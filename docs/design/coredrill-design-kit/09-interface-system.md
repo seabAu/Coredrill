@@ -816,6 +816,19 @@ Reload starts a freshly validated live page. [Focused normal UI and actual
 browser/native proof](../../proof/company-interaction-history-progress.md) do not
 close source/salary/outcome relationships, full INT-007 or release acceptance.
 
+### Normal company listing sources (2026-10-25)
+
+The source panel distinguishes current job membership, literal source metadata
+and optional latest retained capture metadata. Source-only absence stays explicit.
+First/next/archive/exact retry retain stale data with inspection and navigation
+disabled until confirmation. URL text is preserved while hrefs are independently
+validated; viewing performs no fetch. Explicit job-level Source inspection may
+show another retained capture and is labeled accordingly. Back/Forward and reload
+restore only a matching company revision/scope/page and selected source focus;
+obsolete returns require a deliberate first read. Archived job inspection carries
+the canonical selected job's explicit archive scope. [Actual proof and limits](../../proof/company-listing-sources-progress.md)
+leave employer facts, salary, outcomes, full INT-007 and release gates open.
+
 ### Production setup and observed health checkpoint (2026-10-19)
 
 Production setup makes pending saves inert, announces progress, focuses a failure alert, retains editable input and warns before unloading unsaved entries. Completion is not shown before acknowledgement. A saved vault name cannot be silently renamed on a capture retry. The shell badge uses the actual identity and observed storage diagnostics: only ready, durable, writable storage without warnings is healthy. Best-effort/unavailable/read-only storage remains a risk; schema mismatch is a migration warning unless unavailable/read-only takes precedence. Settings shows the browser origin where relevant and offers passive health refresh without requesting persistence permission. Observations are snapshots, not continuous monitoring. The separate onboarding/reference catalog remains explicitly labeled and is not persistence evidence. See [verification](../../proof/production-first-run-verification.md).

@@ -45,7 +45,7 @@ const value = (part = "normalized", nextCursor = null) => ({
   hasMore: nextCursor !== null,
   rowVersion: 1,
 });
-const setup = () => {
+const setup = (includeArchived = false) => {
   const api = {
     sourceComparison: vi.fn().mockResolvedValue(success(comparison())),
     sourceSnapshots: vi.fn().mockResolvedValue(success(history())),
@@ -54,7 +54,7 @@ const setup = () => {
     sourceValue: vi.fn((input) => Promise.resolve(success(value(input.part)))),
   };
   const changed = vi.fn();
-  const reader = createStoredJobSourceReader(jobId, () => api, changed);
+  const reader = createStoredJobSourceReader(jobId, () => api, changed, includeArchived);
   return { api, reader, changed };
 };
 
@@ -113,6 +113,7 @@ describe("normal Source structured comparison lifetime and bounded inspector", (
     await reader.compare();
     expect(api.sourceComparison).toHaveBeenCalledExactlyOnceWith({
       jobId,
+      includeArchived: false,
       baselineSnapshotId: b,
       currentSnapshotId: a,
     });
@@ -274,12 +275,38 @@ describe("normal Source structured comparison lifetime and bounded inspector", (
 });
 
 describe("root-owned bounded normal Source coordination", () => {
+  it("keeps explicitly selected archived-job scope on all source operations, continuation and retry", async () => {
+    const { api, reader } = setup(true);
+    api.sourceSnapshots.mockResolvedValueOnce(
+      success(history([snapshot(a), snapshot(b)], { jobId, id: b })),
+    );
+    await reader.reload();
+    await reader.historyMore();
+    await reader.select("comparison", b);
+    await reader.compare();
+    await reader.content("primary", "structured", false);
+    await reader.evidencePage("primary", false);
+    await reader.value("primary", item, "raw", false);
+    api.sourceContent.mockRejectedValueOnce(Error("PRIVATE transient body read"));
+    await reader.content("primary", "text", false);
+    await reader.retry();
+    for (const operation of Object.values(api)) {
+      expect(operation).toHaveBeenCalled();
+      for (const [request] of operation.mock.calls)
+        expect(request).toMatchObject({ jobId, includeArchived: true });
+    }
+  });
   it("does not read until requested, then inspects one newest snapshot without choosing a comparison", async () => {
     const { api, reader } = setup();
     expect(api.sourceSnapshots).not.toHaveBeenCalled();
     await reader.reload();
-    expect(api.sourceSnapshots).toHaveBeenCalledWith({ jobId, limit: 10 });
-    expect(api.sourceContent).toHaveBeenCalledWith({ jobId, snapshotId: a, kind: "text" });
+    expect(api.sourceSnapshots).toHaveBeenCalledWith({ jobId, limit: 10, includeArchived: false });
+    expect(api.sourceContent).toHaveBeenCalledWith({
+      jobId,
+      snapshotId: a,
+      kind: "text",
+      includeArchived: false,
+    });
     expect(reader.current()).toMatchObject({
       jobId,
       primary: { snapshot: snapshot(a) },
@@ -370,7 +397,12 @@ describe("root-owned bounded normal Source coordination", () => {
     await reader.reload();
     const original = reader.current().primary;
     await reader.historyMore();
-    expect(api.sourceSnapshots).toHaveBeenLastCalledWith({ jobId, limit: 10, after: next });
+    expect(api.sourceSnapshots).toHaveBeenLastCalledWith({
+      jobId,
+      limit: 10,
+      after: next,
+      includeArchived: false,
+    });
     expect(reader.current().history.items).toEqual([snapshot(b)]);
     expect(reader.current().primary).toBe(original);
     await reader.select("comparison", b);
@@ -387,6 +419,7 @@ describe("root-owned bounded normal Source coordination", () => {
     await reader.content("primary", "text", true);
     expect(api.sourceContent).toHaveBeenLastCalledWith({
       jobId,
+      includeArchived: false,
       snapshotId: a,
       kind: "text",
       after: next,
@@ -396,6 +429,7 @@ describe("root-owned bounded normal Source coordination", () => {
     await reader.content("primary", "structured", false);
     expect(api.sourceContent).toHaveBeenLastCalledWith({
       jobId,
+      includeArchived: false,
       snapshotId: a,
       kind: "structured",
       after: null,
@@ -414,6 +448,7 @@ describe("root-owned bounded normal Source coordination", () => {
     expect(reader.current().primary.evidence.items).toEqual([]);
     expect(api.sourceEvidence).toHaveBeenLastCalledWith({
       jobId,
+      includeArchived: false,
       snapshotId: a,
       limit: 10,
       after: next,
@@ -421,6 +456,7 @@ describe("root-owned bounded normal Source coordination", () => {
     await reader.evidencePage("primary", false);
     expect(api.sourceEvidence).toHaveBeenLastCalledWith({
       jobId,
+      includeArchived: false,
       snapshotId: a,
       limit: 10,
       after: null,
@@ -447,6 +483,7 @@ describe("root-owned bounded normal Source coordination", () => {
     await reader.value("primary", item, "raw", true);
     expect(api.sourceValue).toHaveBeenLastCalledWith({
       jobId,
+      includeArchived: false,
       snapshotId: a,
       evidenceKind: "field-value",
       evidenceId: id,

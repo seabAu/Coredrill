@@ -20,6 +20,8 @@ export const useStoredJobDetails = ({
 }) => {
   const [state, setState] = useState<StoredJobDetailsState | null>(null);
   const reader = useRef<ReturnType<typeof createStoredJobDetailsReader> | null>(null);
+  // Unrelated API methods do not change the owner of this workspace read.
+  const readWorkspace = api?.workspace ?? null;
   const container = useRef<HTMLDivElement>(null);
   const view = useRef({ jobId, tab });
   view.current = { jobId, tab };
@@ -30,18 +32,18 @@ export const useStoredJobDetails = ({
     readonly tab: "overview" | "company";
   } | null>(null);
   useEffect(() => {
-    if (jobId === null || api === null) {
+    if (jobId === null || readWorkspace === null) {
       setState(null);
       return;
     }
-    const current = createStoredJobDetailsReader(jobId, api.workspace, setState);
+    const current = createStoredJobDetailsReader(jobId, readWorkspace, setState);
     reader.current = current;
     void current.refresh();
     return () => {
       current.dispose();
       reader.current = null;
     };
-  }, [jobId, api, rowVersion]);
+  }, [jobId, readWorkspace, rowVersion]);
   useLayoutEffect(() => {
     if (focus === null || state?.busy) return;
     const request = focus;

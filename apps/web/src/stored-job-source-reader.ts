@@ -48,6 +48,7 @@ export const createStoredJobSourceReader = (
   jobId: string,
   api: () => StoredSourceApi,
   changed: (state: StoredJobSourceModel) => void,
+  includeArchived = false,
 ) => {
   const lifetime = { disposed: false };
   const isDisposed = () => lifetime.disposed;
@@ -86,8 +87,8 @@ export const createStoredJobSourceReader = (
     if (isDisposed()) throw new Error("source_disposed");
     if (snapshot.jobId !== jobId) throw new Error("source_scope");
     const [bodyResult, pageResult] = await Promise.allSettled([
-      api().sourceContent({ jobId, snapshotId: snapshot.id, kind: "text" }),
-      api().sourceEvidence({ jobId, snapshotId: snapshot.id, limit: 10 }),
+      api().sourceContent({ jobId, snapshotId: snapshot.id, kind: "text", includeArchived }),
+      api().sourceEvidence({ jobId, snapshotId: snapshot.id, limit: 10, includeArchived }),
     ]);
     if (bodyResult.status !== "fulfilled" || pageResult.status !== "fulfilled")
       throw new Error("source_unavailable");
@@ -106,7 +107,7 @@ export const createStoredJobSourceReader = (
   const reload = () =>
     run(async () => {
       const history = unwrap(
-        await api().sourceSnapshots({ jobId, limit: 10 }),
+        await api().sourceSnapshots({ jobId, limit: 10, includeArchived }),
         (value) => value.jobId === jobId && value.items.every((item) => item.jobId === jobId),
       );
       const first = history.items[0];
@@ -156,6 +157,7 @@ export const createStoredJobSourceReader = (
       const result = unwrap(
         await api().sourceComparison({
           jobId,
+          includeArchived,
           baselineSnapshotId: baseline.id,
           currentSnapshotId: current.id,
         }),
@@ -239,7 +241,13 @@ export const createStoredJobSourceReader = (
     return run(
       async () => {
         const result = unwrap(
-          await api().sourceContent({ jobId, snapshotId: pane.snapshot.id, kind, after }),
+          await api().sourceContent({
+            jobId,
+            snapshotId: pane.snapshot.id,
+            kind,
+            after,
+            includeArchived,
+          }),
           (value) =>
             value.jobId === jobId && value.snapshotId === pane.snapshot.id && value.kind === kind,
         );
@@ -276,6 +284,7 @@ export const createStoredJobSourceReader = (
         const result = unwrap(
           await api().sourceValue({
             jobId,
+            includeArchived,
             snapshotId: pane.snapshot.id,
             evidenceKind: item.kind,
             evidenceId: item.id,
@@ -317,7 +326,7 @@ export const createStoredJobSourceReader = (
       return run(async () => ({
         ...state,
         history: unwrap(
-          await api().sourceSnapshots({ jobId, limit: 10, after }),
+          await api().sourceSnapshots({ jobId, limit: 10, after, includeArchived }),
           (page) => page.jobId === jobId && page.items.every((item) => item.jobId === jobId),
         ),
       }));
@@ -334,6 +343,7 @@ export const createStoredJobSourceReader = (
           evidence: unwrap(
             await api().sourceEvidence({
               jobId,
+              includeArchived,
               snapshotId: pane.snapshot.id,
               limit: 10,
               after: more ? pane.evidence.nextCursor : null,

@@ -9,7 +9,10 @@ import {
 } from "../packages/storage-core/dist/index.js";
 
 /** Disclosed synthetic archive prerequisite, restored through normal UI; originals stay unchanged. */
-export const createCompanyJobsFixture = async (testInfo, { withInteractions = false } = {}) => {
+export const createCompanyJobsFixture = async (
+  testInfo,
+  { withInteractions = false, withSources = false } = {},
+) => {
   const originalPath = path.resolve("fixtures/recovery/phase-1-vault-schema-165-v1.coredrill.zip");
   const originalBytes = await readFile(originalPath);
   const original = await inspectPortableArchiveV1({
@@ -109,6 +112,63 @@ export const createCompanyJobsFixture = async (testInfo, { withInteractions = fa
           at,
         );
     }
+    const sourceUrl = "https://EXAMPLE.test:443/%7eRole?q=%2f";
+    if (withSources) {
+      db.prepare(
+        "INSERT INTO company(id,canonical_name,notes,created_at,updated_at) VALUES(?,?,?,?,?)",
+      ).run(
+        id(9006),
+        "Synthetic current-linked source company",
+        "PRIVATE source company notes",
+        at,
+        at,
+      );
+      for (const n of [500, 501])
+        db.prepare(
+          "INSERT INTO job(id,company_id,title,description_text,archived_at,created_at,updated_at) VALUES(?,?,?,?,?,?,?)",
+        ).run(
+          id(n),
+          id(9006),
+          `Synthetic source job ${n}`,
+          "PRIVATE source job body",
+          n === 501 ? at : null,
+          at,
+          at,
+        );
+      for (const n of [...Array.from({ length: 27 }, (_, index) => index + 20000), 21000, 22000])
+        db.prepare(
+          "INSERT INTO job_source(id,job_id,connector_id,external_id,canonical_url,first_seen_at,last_seen_at,content_hash,is_primary,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+        ).run(
+          id(n),
+          n === 21000 ? id(501) : n === 22000 ? id(200) : id(500),
+          "synthetic.source",
+          `Synthetic listing source ${n} <script>literal</script> 😀`,
+          n === 20000 ? sourceUrl : null,
+          at,
+          at,
+          n === 20000 ? "a".repeat(64) : null,
+          n === 20000 ? 1 : 0,
+          at,
+          at,
+        );
+      for (const [n, source, captured, hash] of [
+        [25000, 20000, "2026-10-24T12:00:00.000Z", "a"],
+        [25001, 20000, at, "b"],
+        [25002, 20000, at, "c"],
+        [25015, 20015, at, "d"],
+        [26000, 21000, at, "e"],
+      ])
+        db.prepare(
+          "INSERT INTO source_snapshot(id,job_source_id,captured_at,extractor_id,extractor_version,raw_text,content_hash,retention_class,created_at) VALUES(?,?,?,'synthetic.extractor','1.0.0',?,?,'synthetic',?)",
+        ).run(
+          id(n),
+          id(source),
+          captured,
+          `PRIVATE synthetic listing capture ${n} <script>inert()</script>`,
+          hash.repeat(64),
+          at,
+        );
+    }
     const session = {
       query: async (statement) => db.prepare(statement.sql).all(...statement.parameters),
     };
@@ -171,6 +231,22 @@ export const createCompanyJobsFixture = async (testInfo, { withInteractions = fa
       firstIds: Array.from({ length: 10 }, (_, index) => id(index + 100)),
       secondIds: Array.from({ length: 10 }, (_, index) => id(index + 110)),
       originalRecoveryFixtureUnchanged: true,
+      ...(withSources
+        ? {
+            sourceCompanyId: id(9006),
+            sourceCompanyName: "Synthetic current-linked source company",
+            sourceFirstIds: Array.from({ length: 10 }, (_, index) => id(index + 20000)),
+            sourceSecondIds: Array.from({ length: 10 }, (_, index) => id(index + 20010)),
+            selectedSourceId: id(20015),
+            sourceArchivedId: id(21000),
+            sourceOnlyId: id(20001),
+            sourceUrl,
+            sourceActiveJobId: id(500),
+            sourceArchivedJobId: id(501),
+            selectedCaptureId: id(25015),
+            archivedCaptureId: id(26000),
+          }
+        : {}),
       ...(withInteractions
         ? {
             historyCompanyId: id(9005),

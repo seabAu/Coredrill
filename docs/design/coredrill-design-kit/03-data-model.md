@@ -45,6 +45,15 @@ employer claims are projected. Actual shared adapters and normal browser/native
 UI focused checks pass; complete checkpoint gates remain pending. See [company
 interaction proof](../../proof/company-interaction-history-progress.md).
 
+Company listing-source reads advance only the shared test manifest to24/44,
+retaining SQL/export182. Current job membership, source update-time/ID keysets,
+source and job versions bind each read. Source-only rows remain visible; an
+optional latest snapshot uses capture-time descending/ID ascending, independently
+of source page order. Literal URL text is separate from its validated navigation
+target. Bounded fatal UTF-8 BLOB decoding rejects corrupt/oversized metadata;
+no retained bodies, notes, methods, totals or inferred employer facts are read.
+New captures can change the live projection. See [actual query and UI proof](../../proof/company-listing-sources-progress.md).
+
 Normal contact details now consume metadata-only canonical reviewed-use reads
 independently of initial manual-entry evidence. Only a current active reviewed
 basis may display the exact value; stale/failed/foreign/expired/archived reviewed

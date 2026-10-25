@@ -403,7 +403,7 @@ Labor/API proxies are not introduced just to hide free API keys unless a source'
 
 ### Repository/storage contracts
 
-The growing current v23/43 repository inventory is executed by every adapter.
+The growing current v24/44 repository inventory is executed by every adapter.
 Chromium now partitions the explicit complete component list into separate tests
 under the unchanged30-second per-test timeout and unchanged per-case isolated
 database lifecycle. Each result names its component and exact completed cases;
@@ -412,6 +412,11 @@ No case is sampled or omitted. Firefox WebDriver and Node/native retain the full
 aggregate entry point. This scopes functional-contract test execution rather than
 claiming a reference-hardware performance improvement or relaxing product budgets.
 See [retained prior timeout and follow-up verification](../../proof/company-relationship-progress.md#observed-exact-hosted-chrome-failures).
+Company listing-source contracts add source-only/latest-capture, literal URL,
+corrupt bounded metadata and canonical cursor ownership proof across the same
+adapters. Normal company navigation separately proves read-only metadata,
+active/archived job Source inspection and exact return scope. See [current
+source proof and remaining gates](../../proof/company-listing-sources-progress.md).
 
 Run the identical suite against in-memory/reference, browser SQLite worker/OPFS, and native SQLite:
 

@@ -226,7 +226,13 @@ summary inspection keep failures and partial reads visible. Long summaries stay
 keyboard-scrollable within a bounded region. Reload begins a newly validated live
 page; no totals, messages or inferred outcomes are created. See [actual company
 history proof and remaining gates](../../proof/company-interaction-history-progress.md).
-Company source/salary/outcome projections remain separate work.
+Company detail also reads bounded stored listing-source metadata for currently
+linked jobs, including records without snapshots. Literal URLs, current source
+hashes and latest retained capture metadata are distinguished; viewing fetches
+no URL or body. Explicit inspection opens the job-level Source workspace,
+including archived jobs, then returns to the exact validated company page and
+focus. See [source implementation and proof](../../proof/company-listing-sources-progress.md).
+Employer facts, salary and outcome projections remain separate work.
 
 ### Salary intelligence
 

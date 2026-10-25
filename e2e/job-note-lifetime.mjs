@@ -20,6 +20,9 @@ export const exerciseStoredJobNoteLifetime = async (page, testInfo) => {
       completed: false,
       failHistory: false,
       holdHistory: false,
+      holdOnRefreshClick: false,
+      refreshClicks: 0,
+      heldHistoryCalls: 0,
       releaseHistory: null,
     };
     globalThis.coredrillStorageSpike = {
@@ -43,13 +46,17 @@ export const exerciseStoredJobNoteLifetime = async (page, testInfo) => {
         ...original.pipeline,
         timeline: async (input) => {
           const probe = globalThis.coredrillNoteProbe;
+          const hold = probe.holdHistory;
+          if (hold) {
+            probe.holdHistory = false;
+            probe.heldHistoryCalls++;
+          }
           if (probe.failHistory) {
             probe.failHistory = false;
             throw new Error("SYNTHETIC_PRIVATE_HISTORY_PATH");
           }
           const result = await original.pipeline.timeline(input);
-          if (probe.holdHistory) {
-            probe.holdHistory = false;
+          if (hold) {
             await new Promise((resolve) => {
               probe.releaseHistory = resolve;
             });
@@ -58,6 +65,17 @@ export const exerciseStoredJobNoteLifetime = async (page, testInfo) => {
         },
       },
     };
+    const armOnRefresh = (event) => {
+      const target =
+        event.target instanceof Element ? event.target.closest("[data-history-refresh]") : null;
+      const probe = globalThis.coredrillNoteProbe;
+      if (target === null || target.matches(":disabled") || !probe.holdOnRefreshClick) return;
+      probe.holdOnRefreshClick = false;
+      probe.holdHistory = true;
+      probe.refreshClicks++;
+      document.removeEventListener("click", armOnRefresh, true);
+    };
+    document.addEventListener("click", armOnRefresh, true);
   });
   // Commit the new probe API owner before arming a held read. Otherwise a late
   // root render can consume the hold in its automatic owner-change read and
@@ -66,11 +84,19 @@ export const exerciseStoredJobNoteLifetime = async (page, testInfo) => {
   await page.getByRole("button", { name: "Timeline", exact: true }).click();
   await expect(history.getByRole("button", { name: "Refresh history", exact: true })).toBeEnabled();
   await page.evaluate(() => {
-    globalThis.coredrillNoteProbe.holdHistory = true;
+    // Arm only when the actual enabled Refresh click is dispatched. Automatic
+    // reads during Playwright scrolling/actionability checks must settle normally.
+    globalThis.coredrillNoteProbe.holdOnRefreshClick = true;
     globalThis.coredrillNoteProbe.mode = "success";
   });
   await history.getByRole("button", { name: "Refresh history", exact: true }).click();
   await page.waitForFunction(() => globalThis.coredrillNoteProbe.releaseHistory !== null);
+  expect(
+    await page.evaluate(() => ({
+      clicks: globalThis.coredrillNoteProbe.refreshClicks,
+      held: globalThis.coredrillNoteProbe.heldHistoryCalls,
+    })),
+  ).toEqual({ clicks: 1, held: 1 });
   await field.fill("QUEUED_HISTORY_NOTE");
   await save.click();
   await expect(composer.getByRole("status")).toContainText("Saved locally as note");
