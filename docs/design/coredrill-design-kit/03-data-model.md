@@ -2,6 +2,31 @@
 
 ## Conventions
 
+The in-progress schema182 candidate adds independent `contact_source_snapshot`,
+explicit local `contact_source_use_policy` review and exact-value
+`contact_field_use_review` records. Each has replacement-safe identities; source
+facts are immutable, policy update is one-way disable and field-review update is
+one-way revocation. Exact retained byte spans bind permission and field evidence.
+Per-contact/field revision orders reviews without relying on clocks or UUID
+ordering. Owned field reviews cascade only with whole-contact deletion; shared
+source/permission evidence remains. The new writer supports61 datasets/122
+JSON/CSV files while retaining167 and earlier milestones. No legacy origin is
+backfilled, no canonical contact value changes and expiry never deletes a
+contact. These are local user-review records, not legal verification or network
+connector approval. Strict commands and actual shared adapter contracts,
+nonempty182 generation/no-update replay, complete native recovery and normal
+old/current browser/native restore/reopen now pass. Normal owned review controls
+and full final-source/hosted gates remain open: see [persistence proof](../../proof/contact-field-use-persistence.md)
+and [migration procedure](../../runbooks/schema-182-contact-field-use-evidence.md).
+
+Normal contact details now consume metadata-only canonical reviewed-use reads
+independently of initial manual-entry evidence. Only a current active reviewed
+basis may display the exact value; stale/failed/foreign/expired/archived reviewed
+projections are withheld without rewriting values or removing manual basis.
+Historical job-bound provenance describes that read's scope, not canonical
+reviewed-use eligibility. Normal write controls and explicit literal source/
+permission inspection remain in progress, separately from the proven read UI.
+
 The additive version-1 contact field-use application contract separates an
 independent user-supplied source snapshot from exact-value review evidence and a
 runtime-resolved reviewed policy. Source metadata is not a hidden job. The
@@ -11,12 +36,12 @@ revocation; an elapsed bound withholds basis, never deletes a contact. Its
 public/licensed result describes reviewed use basis, not verified identity,
 deliverability, legal certainty or sending authorization. No production contact
 policy or source acquisition is approved. This is a pure infrastructure contract,
-not durable state or normal UI: SQLite schema remains167, historical manual
+not itself durable state or normal UI: its cf3c6b0 checkpoint retains167, historical manual
 receipts and the source inspector are unchanged. Durable reviewed records,
 transactional guards, export/recovery and explicit normal review controls remain
 required under INT-007. See [scope and proof](../../proof/contact-field-use-qualification-contract.md).
 
-Current schema167 replaces the interaction update guard through paired166/167
+Historical schema167 replaces the interaction update guard through paired166/167
 migrations in one transaction. Only non-null-to-null contact detachment after
 that parent is absent is allowed, with all other interaction columns unchanged.
 The migration itself rewrites no canonical row. Ordinary history edits/relinks

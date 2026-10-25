@@ -3,16 +3,21 @@ import {
   CONTACT_PROVENANCE_FIELDS,
   contactFieldValues,
   parseContactWorkspaceV1,
+  parseContactFieldUseStateV1,
+  type ContactFieldUseStateV1,
   type ContactProvenanceFieldName,
   type ContactWorkspaceV1,
 } from "@coredrill/application";
-import { entityId } from "@coredrill/domain";
+import { entityId, instant } from "@coredrill/domain";
 import { restoreFocusAfterChange } from "@coredrill/ui";
 import type { StoredContactWorkspaceApi } from "./stored-contact-workspace.js";
+import type { StoredContactFieldUseApi } from "./stored-contact-field-use.js";
 
 interface ContactDetailValue {
   readonly workspace: ContactWorkspaceV1;
   readonly manual: readonly ContactProvenanceFieldName[];
+  readonly reviewed: Readonly<Partial<Record<ContactProvenanceFieldName, ContactFieldUseStateV1>>>;
+  readonly reviewedUnavailable: boolean;
 }
 const labels = {
   name: "Name",
@@ -24,6 +29,7 @@ const labels = {
 
 export const StoredContactDetails = ({
   api,
+  fieldUseApi,
   vaultId,
   contactId,
   companyScope,
@@ -36,6 +42,7 @@ export const StoredContactDetails = ({
   onObserved,
 }: {
   readonly api: StoredContactWorkspaceApi;
+  readonly fieldUseApi?: StoredContactFieldUseApi | undefined;
   readonly vaultId: string;
   readonly contactId: string;
   readonly companyScope: string | null;
@@ -48,8 +55,8 @@ export const StoredContactDetails = ({
   readonly onObserved: (value: ContactWorkspaceV1 | null) => void;
 }) => {
   const owner = useMemo(
-    () => ({ api, vaultId, contactId, companyScope }),
-    [api, vaultId, contactId, companyScope],
+    () => ({ api, fieldUseApi, vaultId, contactId, companyScope }),
+    [api, fieldUseApi, vaultId, contactId, companyScope],
   );
   const liveOwner = useRef(owner);
   liveOwner.current = owner;
@@ -127,11 +134,43 @@ export const StoredContactDetails = ({
           }),
         );
         if (new Set(manual).size !== manual.length) throw new Error("Duplicate contact basis.");
+        const reviewed: Partial<Record<ContactProvenanceFieldName, ContactFieldUseStateV1>> = {};
+        let reviewedUnavailable = false;
+        if (owner.fieldUseApi !== undefined) {
+          for (const fieldName of CONTACT_PROVENANCE_FIELDS) {
+            if (values[fieldName] === null) continue;
+            const request = {
+              specVersion: 1 as const,
+              expectedVaultId: workspace.vaultId,
+              contactId: workspace.contact.id,
+              expectedContactRowVersion: workspace.contact.rowVersion,
+              fieldName,
+              includeArchived: true,
+            };
+            try {
+              const result = await owner.fieldUseApi.readField(request);
+              if (!isActive()) return;
+              if (!result.ok) throw new Error("Current reviewed basis unavailable.");
+              // The view clock may withhold a now-expired basis; it never grants or writes one.
+              reviewed[fieldName] = parseContactFieldUseStateV1(result.value, {
+                ...request,
+                observedAt: instant(new Date().toISOString()),
+              });
+            } catch {
+              reviewedUnavailable = true;
+            }
+          }
+        }
         setSnapshot({
           owner,
           revision,
           retry,
-          value: Object.freeze({ workspace, manual }),
+          value: Object.freeze({
+            workspace,
+            manual,
+            reviewed: Object.freeze(reviewedUnavailable ? {} : reviewed),
+            reviewedUnavailable,
+          }),
           busy: false,
           error: null,
         });
@@ -195,6 +234,46 @@ export const StoredContactDetails = ({
     setFocusRequest(null);
   }, [focusRequest, readOwner, busy]);
   const facts = value === null ? null : contactFieldValues(value.workspace.contact);
+  const [viewClockTick, refreshViewClock] = useState(0);
+  useEffect(() => {
+    if (value === null) return;
+    const deadlines = Object.values(value.reviewed).flatMap((state) =>
+      state.assessment?.eligible ? [Date.parse(state.assessment.validUntil)] : [],
+    );
+    if (deadlines.length === 0) return;
+    const remaining = Math.min(...deadlines) - Date.now();
+    const update = () => {
+      refreshViewClock((tick) => tick + 1);
+    };
+    const timer = remaining > 0 ? window.setTimeout(update, Math.min(remaining, 2147483647)) : null;
+    document.addEventListener("visibilitychange", update);
+    return () => {
+      if (timer !== null) window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", update);
+    };
+  }, [value, viewClockTick]);
+  const currentBasis = (field: ContactProvenanceFieldName) => {
+    const state = value?.reviewed[field];
+    if (state === undefined) return null;
+    if (state.contactArchivedAt !== null) return null;
+    const assessment = state.assessment;
+    if (
+      busy ||
+      stale ||
+      visible.error !== null ||
+      assessment === null ||
+      !assessment.eligible ||
+      state.latestReview === null ||
+      state.policy === null
+    )
+      return null;
+    const now = Date.now();
+    return now >=
+      Math.max(Date.parse(state.latestReview.reviewedAt), Date.parse(state.policy.reviewedAt)) &&
+      now < Date.parse(assessment.validUntil)
+      ? assessment
+      : null;
+  };
   return (
     <section ref={container} aria-label="Stored contact details" className="cd-contact-details">
       <h3>Selected contact details</h3>
@@ -232,23 +311,34 @@ export const StoredContactDetails = ({
             </p>
           ) : null}
           <h4 className="cd-contact-literal">
-            {value.manual.includes("name")
+            {value.manual.includes("name") || currentBasis("name") !== null
               ? value.workspace.contact.name
               : "Stored contact identity"}
           </h4>
           <p>
-            Only exact initial manual-entry evidence currently establishes display basis here.
-            Unknown populated values are withheld, not labeled missing, public, licensed or
-            verified. Source-backed provenance remains separate work.
+            Exact initial manual-entry evidence and a separately recorded current source-use review
+            can establish a display basis. Unknown populated values are withheld, not labeled
+            missing, public, licensed or verified. User review is not legal or identity
+            verification, permission to send, or a network-source approval.
           </p>
           <dl aria-label="Contact values and basis">
+            {value.reviewedUnavailable ? (
+              <div>
+                <dt>Reviewed source-use read</dt>
+                <dd role="alert">
+                  Current reviewed source-use basis could not be confirmed. Those values remain
+                  withheld; independent manual-entry evidence is unchanged. Refresh reads only,
+                  never saves again.
+                </dd>
+              </div>
+            ) : null}
             {CONTACT_PROVENANCE_FIELDS.map((field) => (
               <div key={field}>
                 <dt>{labels[field]}</dt>
                 <dd data-contact-field={field} className="cd-contact-literal">
                   {facts[field] === null
                     ? "Not recorded"
-                    : value.manual.includes(field)
+                    : value.manual.includes(field) || currentBasis(field) !== null
                       ? facts[field]
                       : "Value withheld — basis not established."}
                 </dd>
@@ -256,7 +346,9 @@ export const StoredContactDetails = ({
                   <dd>
                     {value.manual.includes(field)
                       ? `User-entered at ${value.workspace.manualCreation?.createdAt ?? "the initial creation"}; this exact value still matches the creation evidence.`
-                      : "Stored value exists, but no supported display basis has been established here."}
+                      : currentBasis(field) !== null
+                        ? `User-reviewed ${currentBasis(field)?.rightsBasis ?? "source"} basis current until ${currentBasis(field)?.validUntil ?? "its recorded deadline"}; not verified identity or permission to send.`
+                        : "Stored value exists, but no current supported display basis has been established here."}
                   </dd>
                 ) : null}
               </div>

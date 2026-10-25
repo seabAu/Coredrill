@@ -1,0 +1,1 @@
+CREATE INDEX contact_policy_terms_idx ON contact_source_use_policy(terms_snapshot_id);

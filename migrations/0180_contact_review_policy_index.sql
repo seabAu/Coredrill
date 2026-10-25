@@ -1,0 +1,1 @@
+CREATE INDEX contact_review_policy_idx ON contact_field_use_review(policy_id);

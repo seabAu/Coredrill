@@ -23,7 +23,7 @@ const downloadArchive = async (page) => {
   const buffer = await readFile(await download.path());
   const archive = await inspectPortableArchiveV1({
     bytes: new Uint8Array(buffer),
-    expectedSchemaVersion: 167,
+    expectedSchemaVersion: 182,
   });
   await panel.getByRole("button", { name: "Discard prepared archive", exact: true }).click();
   return { buffer, archive };
@@ -144,8 +144,8 @@ const confirm = async (panel) => {
   );
 };
 
-for (const sourceVersion of [160, 164, 165, 167]) {
-  test(`normal clean offline restore preserves a schema${sourceVersion} backup and deliberately reopens at167 without invented contact evidence`, async ({
+for (const sourceVersion of [160, 164, 165, 167, 182]) {
+  test(`normal clean offline restore preserves a schema${sourceVersion} backup and deliberately reopens at182 without invented contact evidence`, async ({
     page,
     context,
   }) => {
@@ -178,7 +178,7 @@ for (const sourceVersion of [160, 164, 165, 167]) {
     await expect(page.getByRole("navigation", { name: "Primary", exact: true })).toBeVisible();
     const identity = await page.evaluate(() => globalThis.coredrillStorageSpike.vault.inspect());
     expect(identity.value.vault.id).toBe(archive.manifest.vault.id);
-    expect(identity.value.vault.schemaVersion).toBe(167);
+    expect(identity.value.vault.schemaVersion).toBe(182);
     await expectReviewedSchemaRestoreUpgrade(
       (await downloadArchive(page)).archive,
       archive,

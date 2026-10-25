@@ -547,7 +547,11 @@ describe("portable human-readable data export", () => {
     });
     expect(bundle.sourceSchemaVersion).toBe(164);
     expect(bundle.datasetCount).toBe(58);
-    expect(bundle.datasetCount).toBe(PORTABLE_DATA_EXPORT_DATASETS.length);
+    expect(bundle.datasetCount).toBe(
+      PORTABLE_DATA_EXPORT_DATASETS.filter(
+        (dataset) => (dataset.minimumSourceSchemaVersion ?? 1) <= 164,
+      ).length,
+    );
     expect(bundle.dataFiles).toHaveLength(116);
     expect(database.transactions).toBe(1);
     expect(database.statements).toHaveLength(59);

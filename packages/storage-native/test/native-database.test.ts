@@ -15,6 +15,7 @@ import {
   createPortableArchiveRestorePreviewV1,
   discardPortableArchiveRestorePreviewV1,
   createPortableDataExportV1,
+  createContactFieldUseRepository,
   createPortableVaultContentHashV1,
   createCareerRepositoryContractSuite,
   createPhase1RepositoryContractSuite,
@@ -518,7 +519,7 @@ describe("native SQLite repository and migration contracts", () => {
         ]);
         entered();
         await held;
-        expect((await lease.exportPortable()).schemaVersion).toBe(167);
+        expect((await lease.exportPortable()).schemaVersion).toBe(182);
         return lease.query(sqlStatement("SELECT value FROM read_lease_probe"));
       });
       await started;
@@ -579,11 +580,11 @@ describe("native SQLite repository and migration contracts", () => {
         name: "applies the shared migration and reopens its ledger",
         run: async (database) => {
           await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
-            schemaVersion: 167,
-            appliedVersions: Array.from({ length: 167 }, (_, index) => index + 1),
+            schemaVersion: 182,
+            appliedVersions: Array.from({ length: 182 }, (_, index) => index + 1),
           });
           await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
-            schemaVersion: 167,
+            schemaVersion: 182,
             appliedVersions: [],
           });
         },
@@ -633,8 +634,8 @@ describe("native SQLite repository and migration contracts", () => {
         await applySqlMigrations(database, migrations().slice(0, throughVersion), APPLIED_AT);
       },
     });
-    expect(PHASE_1_REPOSITORY_CONTRACT_MANIFEST.schemaVersion).toBe(20);
-    expect(PHASE_1_REPOSITORY_CONTRACT_CASE_NAMES).toHaveLength(39);
+    expect(PHASE_1_REPOSITORY_CONTRACT_MANIFEST.schemaVersion).toBe(21);
+    expect(PHASE_1_REPOSITORY_CONTRACT_CASE_NAMES).toHaveLength(41);
     await expect(runDatabaseContractSuite(nativeAdapter, suite)).resolves.toEqual({
       adapterName: "native-rusqlite-candidate",
       suiteName: PHASE_1_REPOSITORY_CONTRACT_MANIFEST.suiteName,
@@ -690,7 +691,7 @@ describe("native SQLite repository and migration contracts", () => {
       adapterName: "native-rusqlite-candidate",
       health: "ready",
       persistence: "durable",
-      schemaVersion: 167,
+      schemaVersion: 182,
     });
     await expect(reopened.delete()).resolves.toBe(true);
   });
@@ -732,7 +733,7 @@ describe("native SQLite repository and migration contracts", () => {
       await step("migrations", () => applySqlMigrations(database, migrations(), APPLIED_AT));
       await step("portable-export", () =>
         expect(database.exportPortable()).resolves.toMatchObject({
-          schemaVersion: 167,
+          schemaVersion: 182,
           byteLength: expect.any(Number),
           sha256: expect.stringMatching(/^[a-f0-9]{64}$/u),
         }),
@@ -748,7 +749,7 @@ describe("native SQLite repository and migration contracts", () => {
           retentionCount: 7,
           knownGoodBackups: 1,
           cleanupPending: false,
-          archive: { schemaVersion: 167, sha256: expect.stringMatching(/^[a-f0-9]{64}$/u) },
+          archive: { schemaVersion: 182, sha256: expect.stringMatching(/^[a-f0-9]{64}$/u) },
         }),
       );
     } finally {
@@ -859,6 +860,7 @@ describe("native SQLite repository and migration contracts", () => {
     "phase-1-vault-schema-164-v1",
     "phase-1-vault-schema-165-v1",
     "phase-1-vault-schema-167-v1",
+    "phase-1-vault-schema-182-v1",
   ])(
     "restores complete evidence relationships and attachments through the native boundary: %s",
     async (fixtureName) => {
@@ -877,6 +879,14 @@ describe("native SQLite repository and migration contracts", () => {
         readonly attachmentCount: number;
         readonly attachmentContentIds: readonly string[];
         readonly phase3Inventory: Readonly<Record<string, number>>;
+        readonly qualificationRoundTrip?: {
+          readonly specVersion: 1;
+          readonly datasets: readonly {
+            readonly dataset: string;
+            readonly rowCount: number;
+            readonly rows: readonly Readonly<Record<string, unknown>>[];
+          }[];
+        };
         readonly documentRoundTrip: {
           readonly specVersion: 1;
           readonly datasets: readonly {
@@ -900,10 +910,8 @@ describe("native SQLite repository and migration contracts", () => {
         sha256: manifest.contentSha256,
       });
 
-      const database = await openNativeSqliteDatabase({
-        databaseName: nextDatabaseName(),
-        transport,
-      });
+      const databaseName = nextDatabaseName();
+      let database = await openNativeSqliteDatabase({ databaseName, transport });
       try {
         const port = createNativePortableArchiveRestorePortV1({
           database,
@@ -1023,7 +1031,7 @@ describe("native SQLite repository and migration contracts", () => {
             "SELECT version, name, sha256 FROM coredrill_schema_migration ORDER BY version",
           ),
         );
-        expect([158, 159, 160, 164, 165, 167]).toContain(manifest.schemaVersion);
+        expect([158, 159, 160, 164, 165, 167, 182]).toContain(manifest.schemaVersion);
         expect(originalLedger).toHaveLength(manifest.schemaVersion);
         const guardMigration = migrations().find(
           (item) => item.version === (manifest.schemaVersion >= 167 ? 167 : 44),
@@ -1069,9 +1077,9 @@ describe("native SQLite repository and migration contracts", () => {
           manifest.schemaVersion >= 165 ? [{ name: "interaction_contact_history_idx" }] : [],
         );
         await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
-          schemaVersion: 167,
+          schemaVersion: 182,
           appliedVersions: Array.from(
-            { length: 167 - manifest.schemaVersion },
+            { length: 182 - manifest.schemaVersion },
             (_, index) => manifest.schemaVersion + index + 1,
           ),
         });
@@ -1080,7 +1088,7 @@ describe("native SQLite repository and migration contracts", () => {
             "SELECT version, name, sha256 FROM coredrill_schema_migration ORDER BY version",
           ),
         );
-        expect(upgradedLedger).toHaveLength(167);
+        expect(upgradedLedger).toHaveLength(182);
         expect(upgradedLedger.slice(0, manifest.schemaVersion)).toEqual(originalLedger);
         await expect(
           database.query<QueryRow>(
@@ -1108,15 +1116,52 @@ describe("native SQLite repository and migration contracts", () => {
           generatedAt: manifest.generatedAt,
           vaultId: manifest.vaultId,
         });
-        expect(upgradedData.datasetCount).toBe(58);
-        expect(upgradedData.dataFiles).toHaveLength(116);
+        expect(upgradedData.datasetCount).toBe(61);
+        expect(upgradedData.dataFiles).toHaveLength(122);
+        const priorNames = new Set(restoredData.datasets.map((dataset) => dataset.dataset));
+        expect(upgradedData.datasets.filter((dataset) => priorNames.has(dataset.dataset))).toEqual(
+          restoredData.datasets.map((dataset) => ({ ...dataset, sourceSchemaVersion: 182 })),
+        );
+        const qualificationNames = [
+          "contact_source_snapshot",
+          "contact_source_use_policy",
+          "contact_field_use_review",
+        ];
+        const qualification = upgradedData.datasets.filter((dataset) =>
+          qualificationNames.includes(dataset.dataset),
+        );
+        expect(qualification).toHaveLength(3);
+        if (manifest.schemaVersion === 182) {
+          expect(manifest.qualificationRoundTrip).toBeDefined();
+          expect({
+            specVersion: 1,
+            datasets: qualification.map((dataset) => ({
+              dataset: dataset.dataset,
+              rowCount: dataset.rowCount,
+              rows: dataset.rows,
+            })),
+          }).toEqual(manifest.qualificationRoundTrip);
+        } else
+          for (const dataset of qualification)
+            expect(dataset).toMatchObject({ rowCount: 0, rows: [] });
+        for (const version of [169, 170, 172, 173, 175, 176, 177]) {
+          const migration = migrations().find((item) => item.version === version);
+          if (!migration) throw new Error("Missing reviewed qualification guard source.");
+          const sql = migration.sql.trim().replace(/;$/u, "");
+          const name = /^CREATE TRIGGER ([a-z_]+)/u.exec(sql)?.[1];
+          if (!name) throw new Error("Missing qualification guard name.");
+          await expect(
+            database.query(
+              sqlStatement("SELECT name,sql FROM sqlite_schema WHERE type='trigger' AND name=?", [
+                name,
+              ]),
+            ),
+          ).resolves.toEqual([{ name, sql }]);
+        }
         const manualEvidence = upgradedData.datasets.find(
           (dataset) => dataset.dataset === "contact_manual_creation",
         );
-        if ([164, 165, 167].includes(manifest.schemaVersion)) {
-          expect(upgradedData.datasets).toEqual(
-            restoredData.datasets.map((dataset) => ({ ...dataset, sourceSchemaVersion: 167 })),
-          );
+        if ([164, 165, 167, 182].includes(manifest.schemaVersion)) {
           const archivedEvidence = inspected.dataFiles.find(
             (file) => file.path === "data/contact_manual_creation.json",
           );
@@ -1152,13 +1197,6 @@ describe("native SQLite repository and migration contracts", () => {
             },
           ]);
         } else {
-          expect(
-            upgradedData.datasets.filter(
-              (dataset) => dataset.dataset !== "contact_manual_creation",
-            ),
-          ).toEqual(
-            restoredData.datasets.map((dataset) => ({ ...dataset, sourceSchemaVersion: 167 })),
-          );
           expect(manualEvidence).toMatchObject({ rowCount: 0, rows: [] });
         }
         for (const contentId of manifest.attachmentContentIds) {
@@ -1167,6 +1205,47 @@ describe("native SQLite repository and migration contracts", () => {
             throw new Error("The schema upgrade lost a restored attachment.");
           }
           expect(createHash("sha256").update(attachment).digest("hex")).toBe(contentId);
+        }
+        await database.close();
+        database = await openNativeSqliteDatabase({ databaseName, transport });
+        await expect(applySqlMigrations(database, migrations(), APPLIED_AT)).resolves.toEqual({
+          schemaVersion: 182,
+          appliedVersions: [],
+        });
+        expect(
+          (
+            await createPortableDataExportV1({
+              database,
+              generatedAt: manifest.generatedAt,
+              vaultId: manifest.vaultId,
+            })
+          ).datasets,
+        ).toEqual(upgradedData.datasets);
+        if (manifest.schemaVersion === 182) {
+          const digest = async (text: string) => createHash("sha256").update(text).digest("hex");
+          const fieldUse = createContactFieldUseRepository(database, digest);
+          for (const [fieldName, eligible] of [
+            ["email", false],
+            ["name", false],
+            ["public_profile_url", true],
+          ] as const) {
+            const state = await fieldUse.readField({
+              specVersion: 1,
+              expectedVaultId: manifest.vaultId,
+              contactId: "0198d9d4-0000-7000-8000-000000000040",
+              expectedContactRowVersion: 1,
+              fieldName,
+              includeArchived: false,
+              observedAt: manifest.generatedAt,
+            });
+            expect(state).toMatchObject({
+              fieldName,
+              assessment: { eligible },
+            });
+            if (eligible) expect(state).toMatchObject({ assessment: { rightsBasis: "licensed" } });
+            expect(JSON.stringify(state)).not.toContain("manual@synthetic.example");
+            expect(JSON.stringify(state)).not.toContain("purpose_note");
+          }
         }
         console.info(
           `BKP007_NATIVE_PROOF ${JSON.stringify({
@@ -1293,7 +1372,7 @@ describe("native SQLite repository and migration contracts", () => {
           version: 1,
           runtime: "windows-native",
           adapterName: "native-rusqlite-candidate",
-          schemaVersion: 167,
+          schemaVersion: 182,
           vaultName: "Canonical local job search",
           jobTitle: "Research Operations Lead",
           finalStage: "Interviewing",

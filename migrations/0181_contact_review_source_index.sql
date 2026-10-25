@@ -1,0 +1,1 @@
+CREATE INDEX contact_review_source_idx ON contact_field_use_review(source_snapshot_id);

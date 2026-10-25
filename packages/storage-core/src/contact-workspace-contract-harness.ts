@@ -37,9 +37,9 @@ const scope = { specVersion: 1 as const, expectedVaultId: vaultId };
 const read = { ...scope, contactId };
 const fields = {
   origin: "user_entered" as const,
-  name: "  Synthetic <contact> & literal  ",
-  role: " Engineer ",
-  email: "Synthetic@synthetic.example",
+  name: "\uFEFF  Synthetic <contact> & literal  ",
+  role: "\uFEFF Engineer ",
+  email: "\uFEFFSynthetic@synthetic.example",
   phone: null,
   publicProfileUrl: null,
   notes: "  Synthetic note\n<b>inert</b> 🧭  ",
@@ -186,7 +186,7 @@ export const createContactWorkspaceContractSuite = (setup: Phase1RepositoryContr
             ),
           );
           assert(
-            currentLedger.length === 167 &&
+            currentLedger.length === 182 &&
               JSON.stringify(currentLedger.slice(0, 160)) === JSON.stringify(legacyLedger),
             "Contact migrations changed reviewed prior migration identities/checksums.",
           );
@@ -360,6 +360,8 @@ export const createContactWorkspaceContractSuite = (setup: Phase1RepositoryContr
           assert(
             created.ok &&
               created.value.contact.companyId === companyId &&
+              created.value.contact.name === fields.name &&
+              created.value.contact.role === fields.role &&
               created.value.contact.email === fields.email &&
               created.value.contact.phone === null &&
               created.value.contact.notes === fields.notes,
@@ -459,9 +461,9 @@ export const createContactWorkspaceContractSuite = (setup: Phase1RepositoryContr
             (item) => item.dataset === "contact_manual_creation",
           );
           assert(
-            exported.sourceSchemaVersion === 167 &&
-              exported.datasetCount === 58 &&
-              exported.dataFiles.length === 116 &&
+            exported.sourceSchemaVersion === 182 &&
+              exported.datasetCount === 61 &&
+              exported.dataFiles.length === 122 &&
               evidence?.rowCount === 1,
             "Current export omitted or miscounted contact evidence.",
           );
@@ -482,7 +484,7 @@ export const createContactWorkspaceContractSuite = (setup: Phase1RepositoryContr
             );
           const portable = await database.exportPortable();
           assert(
-            portable.schemaVersion === 167 && portable.byteLength > 0,
+            portable.schemaVersion === 182 && portable.byteLength > 0,
             "SQLite backup omitted the current schema.",
           );
           await database.execute(

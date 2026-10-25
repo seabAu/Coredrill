@@ -3,6 +3,12 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { TextDecoder } from "node:util";
 import { expect } from "@playwright/test";
+import { PORTABLE_DATA_EXPORT_DATASETS } from "../packages/storage-core/dist/index.js";
+const qualificationNames = [
+  "contact_source_snapshot",
+  "contact_source_use_policy",
+  "contact_field_use_review",
+];
 
 /** Exact preceding-schema normal reopen proof; never normalize away arbitrary record changes. */
 export const expectReviewedSchemaRestoreUpgrade = async (
@@ -11,7 +17,7 @@ export const expectReviewedSchemaRestoreUpgrade = async (
   openedBetween,
   sourceVersion,
 ) => {
-  expect([160, 164, 165, 167]).toContain(sourceVersion);
+  expect([160, 164, 165, 167, 182]).toContain(sourceVersion);
   expect(original.manifest.vault.schemaVersion).toBe(sourceVersion);
   expect(original.manifest.vault.migrationHistory).toHaveLength(sourceVersion);
   const added = [];
@@ -23,6 +29,21 @@ export const expectReviewedSchemaRestoreUpgrade = async (
     [165, "interaction_contact_history_index"],
     [166, "interaction_contact_delete_guard"],
     [167, "interaction_contact_detachment_guard"],
+    [168, "contact_source_snapshot"],
+    [169, "contact_source_snapshot_insert_guard"],
+    [170, "contact_source_snapshot_update_guard"],
+    [171, "contact_source_use_policy"],
+    [172, "contact_source_use_policy_insert_guard"],
+    [173, "contact_source_use_policy_update_guard"],
+    [174, "contact_field_use_review"],
+    [175, "contact_field_use_review_insert_guard"],
+    [176, "contact_field_use_review_update_guard"],
+    [177, "contact_field_use_review_delete_guard"],
+    [178, "contact_policy_source_index"],
+    [179, "contact_policy_terms_index"],
+    [180, "contact_review_policy_index"],
+    [181, "contact_review_source_index"],
+    [182, "contact_source_vault_index"],
   ]) {
     if (version <= sourceVersion) continue;
     const bytes = await readFile(
@@ -38,7 +59,7 @@ export const expectReviewedSchemaRestoreUpgrade = async (
   }
   expect(actual.manifest.vault).toEqual({
     ...original.manifest.vault,
-    schemaVersion: 167,
+    schemaVersion: 182,
     migrationHistory: [...original.manifest.vault.migrationHistory, ...added],
   });
   const text = (file) => new TextDecoder().decode(file.bytes);
@@ -48,17 +69,20 @@ export const expectReviewedSchemaRestoreUpgrade = async (
   const openedVault = data(actual, "vault").rows[0];
   // This preserved fixture predates operational root-stamp refresh on normal open.
   expect(oldVault.schema_version).toBe(1);
-  expect(openedVault.schema_version).toBe(167);
+  expect(openedVault.schema_version).toBe(182);
   expect(Date.parse(openedVault.last_opened_at)).toBeGreaterThanOrEqual(openedBetween[0]);
   expect(Date.parse(openedVault.last_opened_at)).toBeLessThanOrEqual(openedBetween[1]);
   expect(Date.parse(openedVault.last_opened_at)).toBeGreaterThanOrEqual(
     Date.parse(oldVault.last_opened_at),
   );
-  expect(actual.dataFiles).toHaveLength(116);
+  expect(actual.dataFiles).toHaveLength(122);
   expect(
     actual.dataFiles
       .filter(
-        (file) => sourceVersion >= 164 || !file.path.startsWith("data/contact_manual_creation."),
+        (file) =>
+          (sourceVersion >= 164 || !file.path.startsWith("data/contact_manual_creation.")) &&
+          (sourceVersion >= 182 ||
+            !qualificationNames.some((name) => file.path.startsWith(`data/${name}.`))),
       )
       .map((file) => file.path),
   ).toEqual(original.dataFiles.map((file) => file.path));
@@ -69,7 +93,7 @@ export const expectReviewedSchemaRestoreUpgrade = async (
       const oldData = JSON.parse(text(file));
       const newData = JSON.parse(text(restored));
       expect(newData.generatedAt).toBe(actual.manifest.createdAt);
-      expect(newData.sourceSchemaVersion).toBe(167);
+      expect(newData.sourceSchemaVersion).toBe(182);
       expect(oldData.sourceSchemaVersion).toBe(sourceVersion);
       const compared = {
         ...newData,
@@ -90,7 +114,7 @@ export const expectReviewedSchemaRestoreUpgrade = async (
       expect(oldCsv.split(oldVault.last_opened_at)).toHaveLength(2);
       expect(text(restored)).toBe(
         oldCsv
-          .replace(schemaCell, ",167,")
+          .replace(schemaCell, ",182,")
           .replace(oldVault.last_opened_at, openedVault.last_opened_at),
       );
     } else
@@ -112,7 +136,7 @@ export const expectReviewedSchemaRestoreUpgrade = async (
       dataset: "contact_manual_creation",
       generatedAt: actual.manifest.createdAt,
       vaultId: original.manifest.vault.id,
-      sourceSchemaVersion: 167,
+      sourceSchemaVersion: 182,
       columns,
       rowCount: 0,
       rows: [],
@@ -133,6 +157,32 @@ export const expectReviewedSchemaRestoreUpgrade = async (
     expect(data(original, "contact_manual_creation").rowCount).toBe(1);
     expect(data(actual, "contact_manual_creation").rowCount).toBe(1);
   }
+  if (sourceVersion < 182)
+    for (const name of qualificationNames) {
+      const spec = PORTABLE_DATA_EXPORT_DATASETS.find((spec) => spec.name === name);
+      expect(spec).toBeDefined();
+      expect(data(actual, name)).toEqual({
+        specVersion: 1,
+        dataset: name,
+        generatedAt: actual.manifest.createdAt,
+        vaultId: original.manifest.vault.id,
+        sourceSchemaVersion: 182,
+        columns: spec.columns,
+        rowCount: 0,
+        rows: [],
+        csv: {
+          path: `data/${name}.csv`,
+          dialect: "rfc4180",
+          charset: "utf-8",
+          header: "present",
+          formulaEscaping: "apostrophe-prefix",
+          nullEncoding: "empty-unquoted",
+        },
+      });
+      expect(text(actual.dataFiles.find((file) => file.path === `data/${name}.csv`))).toBe(
+        `${spec.columns.join(",")}\r\n`,
+      );
+    }
   expect(actual.attachments.map((item) => item.contentId)).toEqual(
     original.attachments.map((item) => item.contentId),
   );

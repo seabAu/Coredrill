@@ -86,6 +86,11 @@ import {
   type VaultDeletionPreviewDto,
   type VaultDeletionResultDto,
 } from "@coredrill/application";
+import { seedContactFieldUseRecoveryFixture } from "./contact-field-use-recovery-fixture.js";
+import {
+  createStoredContactFieldUseApi,
+  type StoredContactFieldUseApi,
+} from "./stored-contact-field-use.js";
 import {
   COVER_LETTER_TEMPLATE_ID,
   documentIrToPlainText,
@@ -544,6 +549,7 @@ export interface CoredrillStorageSpikeApi {
   readonly contactDeletion: StoredContactDeletionApi;
   readonly contactHistory: StoredContactHistoryApi;
   readonly contactFieldEvidence: StoredContactFieldEvidenceApi;
+  readonly contactFieldUse: StoredContactFieldUseApi;
   readonly interactionRecording: StoredInteractionRecordingApi;
   readonly pipelineMutations: StoredPipelineMutationApi;
   readonly jobNotes: StoredJobNoteApi;
@@ -637,6 +643,9 @@ export interface CoredrillStorageSpikeApi {
     input: PortableArchiveRestoreProofInput,
   ): Promise<PortableArchiveRestoreProof>;
   createPortableRecoveryFixture(
+    input: PortableRecoveryFixtureInput,
+  ): Promise<PortableRecoveryFixture>;
+  createContactFieldUseRecoveryFixture(
     input: PortableRecoveryFixtureInput,
   ): Promise<PortableRecoveryFixture>;
   restorePortableRecoveryFixture(
@@ -3411,6 +3420,16 @@ const api: CoredrillStorageSpikeApi = {
     await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
     return client;
   }, careerProfileOperationContext),
+  contactFieldUse: createStoredContactFieldUseApi(
+    async () => {
+      const client = await getDatabase();
+      await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
+      return client;
+    },
+    careerProfileOperationContext,
+    () => generateEntityId("contact-use-record"),
+    sha256Text,
+  ),
   contactFieldEvidence: createStoredContactFieldEvidenceApi(
     async () => {
       const client = await getDatabase();
@@ -3448,7 +3467,7 @@ const api: CoredrillStorageSpikeApi = {
     generateEntityId,
   ),
   vaultRestore: createStoredVaultRestoreApi({
-    compatibleSourceSchemaVersions: [160, 164, 165],
+    compatibleSourceSchemaVersions: [160, 164, 165, 167],
     expectedSchemaVersion: async () => {
       const version = (await migrations()).at(-1)?.version;
       if (version === undefined) throw new Error("The supported restore schema is unavailable.");
@@ -3981,6 +4000,29 @@ const api: CoredrillStorageSpikeApi = {
       documentRoundTrip: createPhase3DocumentRoundTripWitness(dataBundle),
     });
   },
+  createContactFieldUseRecoveryFixture: async (input) => {
+    const client = await getBrowserDatabase();
+    await seedContactFieldUseRecoveryFixture(client, input.vaultId);
+    const { archive, portable, dataBundle } = await createCurrentPortableArchive(input);
+    const inspected = await inspectPortableArchiveV1({
+      bytes: archive.bytes,
+      expectedSchemaVersion: portable.schemaVersion,
+      expectedArchiveSha256: archive.sha256,
+    });
+    const content = await createPortableArchiveContentHashV1(inspected);
+    return Object.freeze({
+      archiveByteLength: archive.byteLength,
+      archiveSha256: archive.sha256,
+      archiveBytesBase64: bytesToBase64(archive.bytes),
+      databaseSha256: portable.sha256,
+      contentSha256: content.sha256,
+      attachmentContentIds: Object.freeze(inspected.attachments.map((item) => item.contentId)),
+      dataFileCount: archive.manifest.dataFiles.length,
+      attachmentCount: archive.manifest.attachments.length,
+      phase3Inventory: await readPhase3RecoveryInventory(client),
+      documentRoundTrip: createPhase3DocumentRoundTripWitness(dataBundle),
+    });
+  },
   restorePortableRecoveryFixture: async (input) => {
     const client = await getBrowserDatabase();
     const archiveBytes = base64ToBytes(input.archiveBytesBase64);
@@ -3992,6 +4034,7 @@ const api: CoredrillStorageSpikeApi = {
       schemaVersion !== 160 &&
       schemaVersion !== 164 &&
       schemaVersion !== 165 &&
+      schemaVersion !== 167 &&
       schemaVersion !== currentSchemaVersion
     ) {
       throw new Error("The recovery fixture source schema is not reviewed.");

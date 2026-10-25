@@ -2,11 +2,11 @@
 
 `phase-1-vault-v1.coredrill.zip` is the deterministic synthetic recovery fixture first introduced for `BKP-007`; its stable filename is retained for compatibility. `EVD-008` expands it through schema 126 with canonical Career Profile evidence, all eight story-evidence link kinds, resume-import proposal/resolution links, an application-sourced Answer Library entry/version, and two attachment relationships. Its adjacent JSON record pins the source archive, raw SQLite, canonical content, attachment hashes, and Phase 3 row inventory used by both the production browser adapter and native desktop boundary tests.
 
-The schema-158, schema-159, schema-160, schema-164 and schema-165 files are preserved unchanged as legacy recovery/upgrade evidence. The current fixture is separately named `phase-1-vault-schema-167-v1.coredrill.zip`, with adjacent JSON metadata. Regenerate only this current fixture after an intentional archive, schema, or representative-data change:
+The schema-158, schema-159, schema-160, schema-164, schema-165 and schema-167 pairs are preserved unchanged as legacy recovery/upgrade evidence. The current fixture is separately named `phase-1-vault-schema-182-v1.coredrill.zip`, with adjacent JSON metadata. Regenerate only this current fixture after an intentional archive, schema, or representative-data change:
 
 ```powershell
 $env:COREDRILL_UPDATE_RECOVERY_FIXTURE = "1"
-pnpm exec playwright test --config=playwright.storage.config.mjs e2e/storage-recovery.spec.mjs
+pnpm exec playwright test --config=playwright.storage.config.mjs e2e/storage-recovery-182.spec.mjs e2e/storage-recovery.spec.mjs
 Remove-Item Env:COREDRILL_UPDATE_RECOVERY_FIXTURE
 ```
 
@@ -15,6 +15,36 @@ The fixture contains only invented company, job, workflow, career-evidence, docu
 After generation, unset the update flag and rerun the same tests to require
 byte-for-byte deterministic comparison. Never repoint the writer at a preserved
 older fixture merely because a schema update changes current archive bytes.
+
+Schema182 restores the preserved167 vault, migrates forward and adds only
+synthetic independent contact evidence through actual application commands.
+It contains6 source snapshots (including separately retained permission text),
+3 explicit permission reviews and4 exact-field reviews. One policy is disabled;
+the newest email review is revoked while an older eligible review is retained;
+the licensed profile-field review remains current. All source/terms/value
+hashes, byte spans, purpose, acknowledgements and lifecycle facts survive
+complete export/restore. These invented permissions are test evidence, not
+approval to acquire or use real-world contacts. Old manual receipts and every
+other canonical dataset remain unchanged; both old attachments are identical.
+
+The182 archive is2,011,433 bytes,
+SHA-256`1f94ee83c44c9dacba62bcaae298ed0c517fc5342e7dd1cd400ff5c77d4e13db`;
+SQLite SHA-256`dafa76d777edaf08043a2233cb80236a6989c3d17fe26cfba11bc510918f8ab9`;
+content SHA-256`bf3d797ea80588deafbde25bf223fc5e3a82eb2855207c3f5b07300120517459`.
+It has61 datasets/122 files and2 attachments. Generation and explicit no-update
+replay each pass7 browser cases, including all six preserved upgrades. Complete
+native storage passes23 tests plus24 Rust unit tests (one secure-store lifecycle
+test is explicitly ignored here and requires its prepared harness). Browser and
+native proof compare exact prior rows/ledger and installed guards; native also
+closes/reopens and resolves actual revoked/disabled/licensed field state. Normal
+application restore/reopen and complete final-source/UI gates are tracked
+separately in the [qualification proof](../../docs/proof/contact-field-use-persistence.md).
+
+The initial actual browser comparison exposed BOM loss through SQLite TEXT
+getters. Only the new literal evidence export columns now use fatal UTF-8 BLOB
+decoding with BOM retention. Node regression and actual browser/native recovery
+prove the correction; no older fixture is regenerated. The older167 paragraphs
+below describe that historical checkpoint, not the current writer target.
 
 Schema167 replaces the interaction update guard through paired single-statement
 migrations166/167, without rewriting canonical rows. Its archive is1,859,392

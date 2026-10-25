@@ -4,6 +4,21 @@ Numbered forward SQL migrations in this directory are the reviewed source shared
 
 ## Applied migration contract
 
+The schema182 candidate is in progress: migrations168–182 add independent
+contact sources, separate explicit local source-use reviews and exact-value
+field-use reviews. Only the complete182 is a new export milestone (61 datasets/
+122 files);168–181 are intermediate states. Schema167 and every earlier
+reviewed export milestone remain supported without row rewrites or rights
+backfill. Source evidence is immutable; policies permit only one-way disable,
+field reviews only one-way revocation, and owned reviews cascade only with
+whole-contact deletion. Strict commands and identical adapter contracts now
+pass, along with separately named182 generation/no-update replay, full native
+and old/current browser recovery, and normal source160/164/165/167/182 reopen.
+Normal owned review UI and complete final-source/hosted gates remain required
+before completion. No prior migration or recovery archive is rewritten. See the
+[migration procedure](../docs/runbooks/schema-182-contact-field-use-evidence.md)
+and [persistence proof](../docs/proof/contact-field-use-persistence.md).
+
 - Filenames begin with one contiguous positive version and a stable descriptive token.
 - Every migration is recorded transactionally in the strict `coredrill_schema_migration` ledger with its version, stable name, SHA-256 checksum, and application time.
 - An already-applied version whose name or checksum differs from the reviewed source fails closed.
@@ -178,6 +193,24 @@ Numbered forward SQL migrations in this directory are the reviewed source shared
 | 162     | `0162_contact_manual_creation_insert_guard.sql`        | Initial manual facts, nullable fields and duplicate receipt guard | `102b4d81955beb649425e43be2de567c93c256263977e6761bd00e1d8122b29f` |
 | 163     | `0163_contact_manual_creation_update_guard.sql`        | Immutable manual creation evidence                                | `2a6fe9a66b380965650352bd014ee9fbce0f0deb0fead1cbb7913e71ef1702d0` |
 | 164     | `0164_contact_manual_creation_delete_guard.sql`        | Prevent detached receipts while allowing whole-contact deletion   | `f32277b7fe6a45ea44fb99fa7a61a00f3762352721f81c71730aa85c44a6d941` |
+| 165     | `0165_interaction_contact_history_index.sql`           | Contact-scoped interaction history index                          | `876b563fdb5abde9362364cf5c707edba7639d31287065ba6831a6ad121806d5` |
+| 166     | `0166_interaction_contact_delete_guard.sql`            | Paired interaction guard replacement begins                       | `cb8a65d20391807271605c0f99378de6582290949764c1b624871ae75ae43e30` |
+| 167     | `0167_interaction_contact_detachment_guard.sql`        | Deleted-contact detachment guard completes                        | `f45e3997183ff7af7e0af5d5b3b6c4efbba71977544b95fa62f64ba010c9d576` |
+| 168     | `0168_contact_source_snapshot.sql`                     | Independent immutable manually supplied contact source            | `20a25621a77712e8e1271dc7469ff17e3b37f1a88d22e1d2eb668ce061f76694` |
+| 169     | `0169_contact_source_snapshot_insert_guard.sql`        | Reject source identity and operation replacement                  | `5a7053f8f537f1037607d045eef67cbe7e7f9d47e98491c08c5816adbc483492` |
+| 170     | `0170_contact_source_snapshot_update_guard.sql`        | Immutable retained source facts                                   | `14112f08ca75e0f66f8e8aa09cd92fe82bf24a66afb0b2499189235f641ce0c1` |
+| 171     | `0171_contact_source_use_policy.sql`                   | Separate explicit local source-use permission review              | `39e7cf2ac51d7f5f44eca7f749ec24d462277c45a1ac49243ed1d325585f4ae3` |
+| 172     | `0172_contact_source_use_policy_insert_guard.sql`      | Bind policy to retained source and permission spans               | `bf422f69f52723db5da1d564b98794926f55377a1c8dcb7c284e77252d9a25e4` |
+| 173     | `0173_contact_source_use_policy_update_guard.sql`      | One-way policy disable without evidence rewrite                   | `555947398e1bf1551feeaa098e355c3b72615f883f87b5676a7db93763c5a684` |
+| 174     | `0174_contact_field_use_review.sql`                    | Exact-value field-use purpose and review lifecycle                | `d9dee189bc82c06692a25d674952e46aecdca984af133bfc8d798c1a81a1161e` |
+| 175     | `0175_contact_field_use_review_insert_guard.sql`       | Current field, source, policy and ordered revision guards         | `6b0cfee7cd6ffd6608b7b148931123093fee4724f292aa29b2e533a403b71b39` |
+| 176     | `0176_contact_field_use_review_update_guard.sql`       | One-way revocation without review rewrite                         | `5630de0acaff7c3d846c0e318ad2a858ba7469e4fd9bc8a85d7872595b2c7181` |
+| 177     | `0177_contact_field_use_review_delete_guard.sql`       | Prevent detached review deletion; allow contact cascade           | `d979ed3af016fd01ff44702c1a521533473ac3354cb9256e4e054df2f14d89e5` |
+| 178     | `0178_contact_policy_source_index.sql`                 | Source-policy reference index                                     | `6b885c930b64c3a215a5c46b04a2c1bf4062450a16bf3de819c99f590bc7c2ae` |
+| 179     | `0179_contact_policy_terms_index.sql`                  | Permission-source reference index                                 | `1218b8c329b1ce6438b5e4ac16ae45de268ee6f75ebb2431eeaed4a7e74c1fc8` |
+| 180     | `0180_contact_review_policy_index.sql`                 | Field-review policy reference index                               | `adec4d2d1bd91550eaebced291193e72219202f4b03fc013fbefdf10b42ccb7a` |
+| 181     | `0181_contact_review_source_index.sql`                 | Field-review source reference index                               | `023e9ee8761b81c742cac6f704df76b5c7892c845812c44b27772a1d34c8ffbf` |
+| 182     | `0182_contact_source_vault_index.sql`                  | Bounded viewed-vault source ordering index                        | `85a2ea79822b9d0a3707a7838e2637d19902ac20e0b83d49a7b6ea95e0443807` |
 
 The Phase 0 tables remain compatible and continue to store the durable capture envelope before acknowledgement. Versions 3–92 implement the reviewed tracker, pipeline, saved-view, document-manifest, local-device, audit, integrity, query-index, lexical-search, durable mutation-undo, and bounded privacy-safe diagnostic persistence. Versions 93–101 add durable capture-review lifecycle state, receipt backfill and insertion, a deterministic queue index, guarded transitions, atomic resolution links, and single-use discard undo. Versions 102–111 add the explicit Career Profile repository family without adding import, editor, AI, or network behavior. Version 112 adds bounded story privacy tags while keeping ordinary topic tags separate. Versions 113–115 store local resume import metadata and field-level pending proposals with source pointers, excerpts, confidence, and a deterministic queue index; they do not write Career Profile evidence or confer verification. Versions 116–119 add imported-skill provenance and verification state plus an append-only accept, merge, or reject ledger that retains exact proposal membership. Version 120 adds strict story-to-evidence links whose concrete foreign keys keep every relationship attached to one existing canonical Career Profile record. Versions 121–126 add Answer Library provenance and last-used state, bind every answer to the existing immutable document-version lineage, classify each version as standard, sensitive, or restricted, and guard those relationships and version metadata. Versions 127–129 add immutable requirement source facts plus explicit reviewed recategorization. Versions 130–132 add typed skill/evidence relations, deliberate requirement/evidence selections, and the normal career-evidence search view; the optional FTS5 table remains an adapter-owned rebuildable artifact. Save and merge promotion remains an explicit transaction and never silently overwrites a user-confirmed Career Profile entry. Diagnostic events retain only the versioned allowlisted operational envelope and at most 1,000 newest records. FTS5 artifacts remain capability-conditioned and rebuildable. Binary attachment I/O remains owned by a later checklist slice.
 

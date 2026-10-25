@@ -5196,6 +5196,7 @@ const AppShellCatalog = ({
               <StoredContactDirectoryView
                 api={globalThis.coredrillStorageSpike.contactDirectory}
                 workspaceApi={globalThis.coredrillStorageSpike.contactWorkspace}
+                fieldUseApi={globalThis.coredrillStorageSpike.contactFieldUse}
                 vaultId={vaultSession?.vault.id ?? null}
                 companyScope={networkContactCompanyScope}
                 selectedContactId={networkSelectedContactId}

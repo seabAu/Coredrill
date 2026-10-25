@@ -28,21 +28,21 @@ export const exerciseVaultExportPreparation = async (page, testInfo, minimumAtta
     ok: true,
     value: {
       state: "prepared_not_saved",
-      schemaVersion: 167,
+      schemaVersion: 182,
       encryptionMode: "none",
-      dataFileCount: 116,
+      dataFileCount: 122,
     },
   });
   if (!result.prepared.ok) throw new Error("Actual runtime archive was not prepared.");
   const prepared = result.prepared.value;
   const archive = await inspectPortableArchiveV1({
     bytes: new Uint8Array(prepared.bytes),
-    expectedSchemaVersion: 167,
+    expectedSchemaVersion: 182,
     expectedArchiveSha256: prepared.sha256,
   });
   expect(archive.manifest.vault.id).toBe(prepared.vaultId);
   expect(archive.manifest.archiveId).toBe(prepared.archiveId);
-  expect(archive.dataFiles).toHaveLength(116);
+  expect(archive.dataFiles).toHaveLength(122);
   expect(archive.attachments.length).toBeGreaterThanOrEqual(minimumAttachments);
   const jobs = archive.dataFiles.find(({ path }) => path === "data/job.json");
   expect(jobs).toBeDefined();
@@ -52,7 +52,7 @@ export const exerciseVaultExportPreparation = async (page, testInfo, minimumAtta
     runtimePreparation: true,
     explicitUnencryptedConsent: true,
     archiveSha256: prepared.sha256,
-    schemaVersion: 167,
+    schemaVersion: 182,
     dataFileCount: archive.dataFiles.length,
     attachmentCount: archive.attachments.length,
     exactSourceUnchanged: true,

@@ -10,6 +10,7 @@ import { createViewedInteractionContractSuite } from "./viewed-interaction-contr
 import { createContactFieldEvidenceContractSuite } from "./contact-field-evidence-contract-harness.js";
 import { createContactDeletionContractSuite } from "./contact-deletion-contract-harness.js";
 import { createViewedContactDeletionContractSuite } from "./viewed-contact-deletion-contract-harness.js";
+import { createContactFieldUseContractSuite } from "./contact-field-use-contract-harness.js";
 import { createDocumentRepositoryContractSuite } from "./document-contract-harness.js";
 import { createJobSearchContractSuite } from "./job-search-contract-harness.js";
 import { createRequirementEvidenceContractSuite } from "./requirement-evidence-contract-harness.js";
@@ -64,6 +65,7 @@ export const createPhase1RepositoryContractSuite = (
     [createContactFieldEvidenceContractSuite(setup), components.contactFieldEvidence],
     [createContactDeletionContractSuite(setup), components.contactDeletion],
     [createViewedContactDeletionContractSuite(setup), components.viewedContactDeletion],
+    [createContactFieldUseContractSuite(setup), components.contactFieldUse],
   ] as const;
 
   for (const [suite, manifestComponent] of suites) {

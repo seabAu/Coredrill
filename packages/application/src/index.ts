@@ -685,3 +685,4 @@ export * from "./contact-interaction-summary.js";
 export * from "./contact-field-evidence.js";
 export * from "./contact-deletion.js";
 export * from "./contact-field-use.js";
+export * from "./contact-field-use-operations.js";

@@ -86,10 +86,10 @@ test("normal offline Settings records exact byte verification and retains honest
   await expect(panel).toContainText(sha256);
   const archive = await inspectPortableArchiveV1({
     bytes,
-    expectedSchemaVersion: 167,
+    expectedSchemaVersion: 182,
     expectedArchiveSha256: sha256,
   });
-  expect(archive.dataFiles).toHaveLength(116);
+  expect(archive.dataFiles).toHaveLength(122);
   expect(download.suggestedFilename()).toMatch(/^coredrill-\d{8}-.+\.coredrill\.zip$/);
   const verify = panel.getByLabel("Verify a saved local copy", { exact: true });
   await verify.setInputFiles({
@@ -123,7 +123,7 @@ test("normal offline Settings records exact byte verification and retains honest
           {
             archiveId: archive.manifest.archiveId,
             archiveCreatedAt: archive.manifest.createdAt,
-            schemaVersion: 167,
+            schemaVersion: 182,
             byteLength: bytes.length,
             sha256,
             method: "selected_local_copy",
@@ -161,7 +161,7 @@ test("normal offline Settings records exact byte verification and retains honest
   const nextBytes = new Uint8Array(await readFile(await nextDownload.path()));
   const nextArchive = await inspectPortableArchiveV1({
     bytes: nextBytes,
-    expectedSchemaVersion: 167,
+    expectedSchemaVersion: 182,
   });
   const settingsFile = nextArchive.dataFiles.find(({ path }) => path === "data/app_setting.json");
   expect(settingsFile).toBeDefined();

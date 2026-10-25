@@ -130,7 +130,9 @@ export const createContactDeletionContractSuite = (setup: Phase1RepositoryContra
             JSON.stringify(await snapshot(database)) === baseline,
             "Baseline failed deletion changed data.",
           );
-          await setup.migrate(database);
+          // This case proves the historical paired guard publication, not the latest schema.
+          // Current field-review ownership is covered by the separate qualification contract.
+          await setup.migrate(database, 167);
           assert(
             (await database.diagnostics()).schemaVersion === 167,
             "Deletion guard milestone is not installed.",

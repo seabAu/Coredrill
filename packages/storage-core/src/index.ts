@@ -442,3 +442,4 @@ export { createCompanyWorkspaceRepository } from "./company-workspace-repository
 export { createContactWorkspaceRepository } from "./contact-workspace-repository.js";
 export { createContactFieldEvidenceRepository } from "./contact-field-evidence-repository.js";
 export { createContactDeletionRepository } from "./contact-deletion-repository.js";
+export { createContactFieldUseRepository } from "./contact-field-use-repository.js";

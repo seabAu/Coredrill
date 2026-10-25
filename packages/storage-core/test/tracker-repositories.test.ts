@@ -21,6 +21,7 @@ import {
   createPhase1RepositoryContractSuite,
   createPipelineRepositories,
   createTrackerRepositories,
+  createContactWorkspaceRepository,
   defineSqlMigrations,
   normalizeJobSearchTokens,
   openJobSearchRepository,
@@ -196,6 +197,35 @@ const adapter: DatabaseContractAdapter = {
 };
 
 describe("Phase 1 tracker repository contracts", () => {
+  it("rejects malformed canonical contact UTF-8 instead of joining a replacement value to review metadata", async () => {
+    const database = new NodeSqliteTestDatabase();
+    const vaultId = entityId("vault", "0198e122-0000-7000-8000-000000000001");
+    const contactId = entityId("contact", "0198e122-0000-7000-8000-000000000002");
+    try {
+      await applySqlMigrations(database, migrations, APPLIED_AT);
+      await database.execute(
+        sqlStatement(
+          "INSERT INTO vault(id,name,schema_version,created_at,last_opened_at) VALUES(?,?,?,?,?)",
+          [vaultId, "Synthetic UTF-8 test", migrations.length, APPLIED_AT, APPLIED_AT],
+        ),
+      );
+      await database.execute(
+        sqlStatement(
+          "INSERT INTO contact(id,name,email,created_at,updated_at) VALUES(?,?,CAST(X'FF' AS TEXT),?,?)",
+          [contactId, "Synthetic contact", APPLIED_AT, APPLIED_AT],
+        ),
+      );
+      const port = createContactWorkspaceRepository(database, async (text) =>
+        createHash("sha256").update(text).digest("hex"),
+      );
+      await expect(
+        port.read({ specVersion: 1, expectedVaultId: vaultId, contactId, includeArchived: false }),
+      ).rejects.toMatchObject({ code: "invalid_state" });
+    } finally {
+      database.close();
+    }
+  });
+
   it("normalizes bounded lexical tokens without admitting FTS query syntax", () => {
     expect(normalizeJobSearchTokens("  Ｐｌａｔｆｏｒｍ platform OR notes:* --  ")).toEqual([
       "platform",
@@ -768,7 +798,7 @@ describe("SQLite application port composition", () => {
         name: "Explicit local name",
         createdAt: instant(APPLIED_AT),
       });
-      expect(created.vault.schemaVersion).toBe(167);
+      expect(created.vault.schemaVersion).toBe(182);
       expect((await port.inspect()).vault).toEqual(created.vault);
       await expect(
         port.create({
@@ -806,13 +836,13 @@ describe("SQLite application port composition", () => {
         name: "Keep my name",
         createdAt: APPLIED_AT,
         lastOpenedAt: openedAt,
-        schemaVersion: 167,
+        schemaVersion: 182,
       });
       await expect(port.open({ vaultId: id, openedAt: instant(APPLIED_AT) })).rejects.toMatchObject(
         { code: "invalid_state" },
       );
       await database.execute(
-        sqlStatement("UPDATE vault SET schema_version = 168 WHERE id = ?", [id]),
+        sqlStatement("UPDATE vault SET schema_version = 183 WHERE id = ?", [id]),
       );
       const before = await database.query(sqlStatement("SELECT * FROM vault"));
       await expect(port.open({ vaultId: id, openedAt })).rejects.toMatchObject({

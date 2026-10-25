@@ -30,6 +30,7 @@ export default defineConfig({
     "stored-interaction-recording.spec.mjs",
     "stored-contact-history.spec.mjs",
     "stored-contact-evidence.spec.mjs",
+    "stored-contact-reviewed-use.spec.mjs",
     "stored-contact-workspace.spec.mjs",
     "stored-contact-directory.spec.mjs",
     "stored-job-source.spec.mjs",

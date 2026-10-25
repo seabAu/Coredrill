@@ -110,6 +110,12 @@ const PHASE_1_REPOSITORY_CONTRACT_COMPONENTS = Object.freeze({
     deleteAndObserve:
       "deletes only original viewed contacts and owned histories with complete observational reconciliation and rollback",
   }),
+  contactFieldUse: component("reviewed-contact-field-use", {
+    persistAndResolve:
+      "upgrades independent contact evidence and resolves exact reviewed public or licensed field use without hidden jobs",
+    rejectAndReconcile:
+      "guards contact qualification intent rollback privacy observations lifecycle and owned deletion through actual ports",
+  }),
 });
 
 const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
@@ -119,8 +125,8 @@ const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
 );
 
 export const PHASE_1_REPOSITORY_CONTRACT_MANIFEST = Object.freeze({
-  schemaVersion: 20 as const,
-  suiteName: "phase-1-repository-contracts-v20",
+  schemaVersion: 21 as const,
+  suiteName: "phase-1-repository-contracts-v21",
   components: PHASE_1_REPOSITORY_CONTRACT_COMPONENTS,
   caseNames: PHASE_1_REPOSITORY_CONTRACT_CASES,
 });

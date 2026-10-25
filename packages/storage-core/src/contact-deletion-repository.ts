@@ -54,9 +54,10 @@ const hasResiduals = async (
       EXISTS(SELECT 1 FROM contact_manual_creation WHERE contact_id=?) OR
       EXISTS(SELECT 1 FROM contact_point_provenance WHERE contact_id=?) OR
       EXISTS(SELECT 1 FROM field_value WHERE entity_type='contact' AND entity_id=?) OR
-      EXISTS(SELECT 1 FROM interaction WHERE contact_id=?)
+      EXISTS(SELECT 1 FROM interaction WHERE contact_id=?) OR
+      EXISTS(SELECT 1 FROM contact_field_use_review WHERE contact_id=?)
     ) AS residual`,
-      Array.from({ length: 5 }, () => target.contactId),
+      Array.from({ length: 6 }, () => target.contactId),
     ),
   );
   const value = rows[0]?.["residual"];

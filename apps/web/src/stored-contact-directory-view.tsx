@@ -9,6 +9,7 @@ import type { StoredContactDirectoryApi } from "./stored-contact-directory.js";
 import { StoredContactDetails } from "./stored-contact-details.js";
 import type { useStoredContactEditor } from "./stored-contact-editor-view.js";
 import type { StoredContactWorkspaceApi } from "./stored-contact-workspace.js";
+import type { StoredContactFieldUseApi } from "./stored-contact-field-use.js";
 
 const ContactPage = ({
   api,
@@ -222,6 +223,7 @@ const ContactPage = ({
 export const StoredContactDirectoryView = ({
   api,
   workspaceApi,
+  fieldUseApi,
   vaultId,
   companyScope,
   selectedContactId,
@@ -237,6 +239,7 @@ export const StoredContactDirectoryView = ({
 }: {
   readonly api: StoredContactDirectoryApi | undefined;
   readonly workspaceApi: StoredContactWorkspaceApi | undefined;
+  readonly fieldUseApi?: StoredContactFieldUseApi | undefined;
   readonly vaultId: string | null;
   readonly companyScope: string | null;
   readonly selectedContactId: string | null;
@@ -345,6 +348,7 @@ export const StoredContactDirectoryView = ({
             <>
               <StoredContactDetails
                 api={workspaceApi}
+                fieldUseApi={fieldUseApi}
                 vaultId={vaultId}
                 contactId={selectedContactId}
                 companyScope={companyScope}

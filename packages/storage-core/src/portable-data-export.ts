@@ -14,7 +14,7 @@ import {
 } from "./database-port.js";
 import type { PortableArchiveDataFileSourceV1 } from "./portable-archive-writer.js";
 
-export const PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION = 167 as const;
+export const PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION = 182 as const;
 export const PORTABLE_DATA_EXPORT_SUPPORTED_SOURCE_SCHEMA_VERSIONS = Object.freeze([
   101,
   111,
@@ -32,6 +32,7 @@ export const PORTABLE_DATA_EXPORT_SUPPORTED_SOURCE_SCHEMA_VERSIONS = Object.free
   160,
   164,
   165,
+  167,
   PORTABLE_DATA_EXPORT_SOURCE_SCHEMA_VERSION,
 ] as const);
 export const PORTABLE_DATA_EXPORT_WRITER_LIMITS = Object.freeze({
@@ -74,6 +75,8 @@ interface DatasetSpec {
   readonly orderBy: readonly string[];
   readonly booleanColumns?: readonly string[];
   readonly jsonColumns?: readonly string[];
+  /** Read literal evidence as bytes; SQLite TEXT bridges may consume its leading BOM. */
+  readonly literalTextColumns?: readonly string[];
   readonly minimumSourceSchemaVersion?: number;
   readonly columnMinimumSourceSchemaVersions?: Readonly<Record<string, number>>;
 }
@@ -207,6 +210,91 @@ export const PORTABLE_DATA_EXPORT_DATASETS: readonly DatasetSpec[] = Object.free
       "public_profile_url_hash",
     ],
     orderBy: ["contact_id"],
+  }),
+  dataset({
+    name: "contact_source_snapshot",
+    table: "contact_source_snapshot",
+    literalTextColumns: ["raw_text"],
+    minimumSourceSchemaVersion: 182,
+    columns: [
+      "id",
+      "vault_id",
+      "operation_id",
+      "acquisition",
+      "source_class",
+      "source_url",
+      "captured_at",
+      "raw_text",
+      "content_hash",
+      "created_at",
+      "row_version",
+    ],
+    orderBy: ["id"],
+  }),
+  dataset({
+    name: "contact_source_use_policy",
+    table: "contact_source_use_policy",
+    literalTextColumns: ["terms_excerpt"],
+    minimumSourceSchemaVersion: 182,
+    columns: [
+      "id",
+      "vault_id",
+      "operation_id",
+      "revision",
+      "status",
+      "source_snapshot_id",
+      "source_snapshot_hash",
+      "source_url",
+      "source_class",
+      "field_name",
+      "rights_basis",
+      "purpose",
+      "usage",
+      "terms_snapshot_id",
+      "terms_snapshot_hash",
+      "terms_start_byte",
+      "terms_end_byte",
+      "terms_excerpt",
+      "permission_kind",
+      "acknowledgement",
+      "reviewed_at",
+      "review_due_at",
+      "disabled_at",
+      "row_version",
+    ],
+    orderBy: ["id"],
+  }),
+  dataset({
+    name: "contact_field_use_review",
+    table: "contact_field_use_review",
+    literalTextColumns: ["source_excerpt", "purpose_note"],
+    minimumSourceSchemaVersion: 182,
+    columns: [
+      "id",
+      "vault_id",
+      "contact_id",
+      "operation_id",
+      "field_name",
+      "field_revision",
+      "contact_row_version",
+      "value_hash",
+      "source_snapshot_id",
+      "source_snapshot_hash",
+      "source_start_byte",
+      "source_end_byte",
+      "source_excerpt",
+      "policy_id",
+      "policy_revision",
+      "purpose",
+      "purpose_note",
+      "acknowledgement",
+      "reviewed_at",
+      "review_due_at",
+      "expires_at",
+      "revoked_at",
+      "row_version",
+    ],
+    orderBy: ["contact_id", "field_name", "field_revision"],
   }),
   dataset({
     name: "job",
@@ -1099,6 +1187,16 @@ const normalizeInteger = (value: number | bigint): number => {
 
 const normalizeValue = (spec: DatasetSpec, column: string, value: SqlValue): JsonValue => {
   if (value === null) return null;
+  if (spec.literalTextColumns?.includes(column)) {
+    if (!(value instanceof Uint8Array)) throw exportError("invalid_database_value");
+    if (value.byteLength > PORTABLE_DATA_EXPORT_WRITER_LIMITS.maxCellBytes)
+      throw exportError("payload_too_large");
+    try {
+      return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(value);
+    } catch {
+      throw exportError("invalid_database_value");
+    }
+  }
   if (value instanceof Uint8Array) throw exportError("invalid_database_value");
   if (
     typeof value === "string" &&
@@ -1149,7 +1247,7 @@ const quoteIdentifier = (value: string): string => `"${value.replaceAll('"', '""
 
 const datasetStatement = (spec: DatasetSpec) =>
   sqlStatement(
-    `SELECT ${spec.columns.map(quoteIdentifier).join(", ")} FROM ${quoteIdentifier(spec.table)} ORDER BY ${spec.orderBy.map(quoteIdentifier).join(", ")}`,
+    `SELECT ${spec.columns.map((column) => (spec.literalTextColumns?.includes(column) ? `CAST(${quoteIdentifier(column)} AS BLOB) AS ${quoteIdentifier(column)}` : quoteIdentifier(column))).join(", ")} FROM ${quoteIdentifier(spec.table)} ORDER BY ${spec.orderBy.map(quoteIdentifier).join(", ")}`,
   );
 
 const safeCsvString = (value: string): string => {

@@ -28,6 +28,27 @@ const selected = async (
 ): Promise<ContactWorkspaceV1 | undefined> => {
   const contact = await new ContactRepository(session).findById(contactId);
   if (contact === undefined || (!includeArchived && contact.archivedAt !== null)) return undefined;
+  // Qualification hashes canonical UTF-8 bytes. A TEXT bridge may consume a BOM
+  // or truncate at NUL, so never join that projection to an exact-value basis.
+  const literalColumns = ["name", "role", "email", "phone", "public_profile_url", "notes"] as const;
+  const literalRows = await session.query(
+    sqlStatement(
+      `SELECT ${literalColumns.map((column) => `CAST(${column} AS BLOB) AS ${column}`).join(",")}
+       FROM contact WHERE id = ? LIMIT 2`,
+      [contactId],
+    ),
+  );
+  if (literalRows.length !== 1) throw new ContactWorkspaceError("invalid_state");
+  const literal = (column: (typeof literalColumns)[number]): string | null => {
+    const bytes = literalRows[0]?.[column];
+    if (bytes === null && column !== "name" && column !== "notes") return null;
+    if (!(bytes instanceof Uint8Array)) throw new ContactWorkspaceError("invalid_state");
+    try {
+      return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
+    } catch {
+      throw new ContactWorkspaceError("invalid_state");
+    }
+  };
   const receipts = await session.query(
     sqlStatement(
       `SELECT operation_id, created_at, name_hash, role_hash, email_hash, phone_hash, public_profile_url_hash
@@ -41,7 +62,15 @@ const selected = async (
     {
       specVersion: 1,
       vaultId: expectedVaultId,
-      contact,
+      contact: {
+        ...contact,
+        name: literal("name"),
+        role: literal("role"),
+        email: literal("email"),
+        phone: literal("phone"),
+        publicProfileUrl: literal("public_profile_url"),
+        notes: literal("notes"),
+      },
       manualCreation:
         row === undefined
           ? null
