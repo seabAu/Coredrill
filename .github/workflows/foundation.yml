@@ -20,9 +20,9 @@ jobs:
   quality-and-policy:
     name: Build, static checks, tests, and policy
     runs-on: ubuntu-latest
-    # Full-value checkpoint reached final Changesets at 20m and was cancelled.
-    # Infrastructure headroom only: retain every test and its existing timeout.
-    timeout-minutes: 30
+    # All functional suites passed, but final license checks reached the 30m job limit.
+    # Infrastructure headroom only: retain every check and individual test timeout.
+    timeout-minutes: 35
     steps:
       - name: Check out full repository history
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
