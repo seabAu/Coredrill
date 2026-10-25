@@ -1,8 +1,9 @@
 # Contact review checkpoint: exact hosted evidence and infrastructure headroom
 
-Date: 2026-10-25. Status: nine required hosted witnesses passed; aggregate timed
-out. The follow-up changes only its whole-job allowance, not product sources or
-individual test/performance budgets. Complete hosted closure is not yet proven.
+Date: 2026-10-25. Status: exact601a687 follow-up is hosted-green; the original
+ef35114 timeout remains retained below. The follow-up changes only the whole-job
+allowance and this proof, not product sources or individual test/performance
+budgets. New normal-form work remains a separate uncommitted change.
 
 ## Exact published source and local evidence
 
@@ -35,7 +36,8 @@ The authoritative check-run annotation states:
 The aggregate starts at05:10:20Z; pinned Rust/RustSec installation takes3m05s,
 and `pnpm verify` starts at05:13:42Z. Its log shows successful functional suites
 through all15 browser storage/recovery cases,24 Rust core cases (one separate
-secure-store lifecycle case explicitly ignored) and23 native storage cases.
+secure-store lifecycle case explicitly ignored) and the23-case native storage
+suite (22 passes and the Windows-only canonical journey skipped on Linux).
 The prepared Unix Secret Service lifecycle is explicitly skipped in this
 unprepared aggregate; the separate prepared Ubuntu job succeeds. Archive/backup
 and schema checks then pass. At05:40:14Z it starts the final license checks;
@@ -68,3 +70,43 @@ and this proof successfully; complete policy75581 consumes exit0 and
 commit are identical to the fully locally verified ef35114 checkpoint. The
 unfinished research/runtime/controller work is deliberately excluded from this
 operational commit and has separate in-progress verification.
+
+## Exact follow-up hosted closure
+
+Follow-up `601a68704e98ba85a2d8e2b146be340b829fd964` is the published source
+of [CI40166818736](https://github.com/seabAu/Coredrill/actions/runs/40166818736).
+All ten required jobs succeed; only the pull-request-only dependency review is
+skipped. Original quiet watcher19752 consumes terminal exit0 and
+`CHECKPOINT_CI_HEADROOM_HOSTED_EXIT=0`. Complete-log79364 consumes exit0 and
+`CHECKPOINT_CI_HEADROOM_COMPLETE_LOG_EXIT=0`. Both handles are terminal and must
+not be restarted. Full logs are retained in
+`test-results/contact-checkpoint-ci-headroom-{watch,complete}.log`.
+
+The aggregate runs20m56s under the35m whole-job allowance. The duration difference
+from the original timeout is runner/run variability, not a claimed performance
+improvement caused by changing a deadline. Its complete log proves225 files,
+3103 unit passes plus1 skip repeated under coverage,84.09% statements/77.68%
+branches/85.32% functions/86.68% lines,35 type and22 lint tasks plus tooling,
+build/artifact/schema checks,7 UI/76 shell/1 diagnostic performance/88 resilience/
+7 onboarding/13 document/15 browser storage cases and22 native passes plus the
+Windows-only canonical-journey skip. The unprepared aggregate explicitly skips
+the Unix secure-store lifecycle; the prepared OS jobs prove it independently.
+Final license/secret checks, dependency audits and Changesets now execute and
+pass. Eleven allowed Rust audit warnings remain.
+
+Exact Chrome151 finishes15m29s and Chrome152 finishes19m41s; both execute the
+normal stored-data/offline UI suites and identical v21/41 repository contracts.
+Firefox153 finishes1m35s and154 finishes1m26s. Extension transfer/fallback passes
+all9 cases in31.4s (job4m29s). Windows finishes12m46s with all23 native storage
+cases plus package/race/startup diagnostics. macOS finishes5m24s and Ubuntu11m43s,
+each with22 common native passes and the Windows-only skip. Actual Credential
+Manager, Keychain and prepared Secret Service receipts all show store/read/delete
+with no secret exposed. Full-history secrets completes14s. Existing manual,
+Unix canonical/reference-hardware/package-release and signing gates are not
+closed by these diagnostic witnesses.
+
+This closes the published durable storage/runtime/read-display checkpoint,
+including its original aggregate-timeout correction. It does not cover the newer
+uncommitted research/controller/form implementation, company relationships,
+INT-008 Home, full INT-007 or the product goal. Carry this receipt with the next
+verified implementation change, not a receipt-only push.

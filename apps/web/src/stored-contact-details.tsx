@@ -40,6 +40,7 @@ export const StoredContactDetails = ({
   deletionDisabled,
   onViewCompany,
   onObserved,
+  onReviewField,
 }: {
   readonly api: StoredContactWorkspaceApi;
   readonly fieldUseApi?: StoredContactFieldUseApi | undefined;
@@ -53,6 +54,8 @@ export const StoredContactDetails = ({
   readonly deletionDisabled: boolean;
   readonly onViewCompany: (id: string) => void;
   readonly onObserved: (value: ContactWorkspaceV1 | null) => void;
+  readonly onReviewField?:
+    ((value: ContactWorkspaceV1, field: ContactProvenanceFieldName) => void) | undefined;
 }) => {
   const owner = useMemo(
     () => ({ api, fieldUseApi, vaultId, contactId, companyScope }),
@@ -349,6 +352,21 @@ export const StoredContactDetails = ({
                       : currentBasis(field) !== null
                         ? `User-reviewed ${currentBasis(field)?.rightsBasis ?? "source"} basis current until ${currentBasis(field)?.validUntil ?? "its recorded deadline"}; not verified identity or permission to send.`
                         : "Stored value exists, but no current supported display basis has been established here."}
+                  </dd>
+                ) : null}
+                {facts[field] !== null && onReviewField !== undefined ? (
+                  <dd>
+                    <button
+                      className="cd-button"
+                      type="button"
+                      data-contact-review-field={field}
+                      disabled={disabled || busy || stale || visible.error !== null}
+                      onClick={() => {
+                        onReviewField(value.workspace, field);
+                      }}
+                    >
+                      Review {labels[field]} source use
+                    </button>
                   </dd>
                 ) : null}
               </div>

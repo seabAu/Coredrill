@@ -6,8 +6,8 @@ test("normal contact display uses current reviewed metadata, withholds expiry an
   page,
   context,
 }, testInfo) => {
-  // The write controls are a subsequent slice: this test uses the normal runtime
-  // command API as a disclosed prerequisite, then exercises actual read/display UI.
+  // This read/display regression uses disclosed runtime-command prerequisites.
+  // The separate normal-form journey proves writes through actual UI controls.
   const fixture = await createContactEvidenceFixture(testInfo),
     external = [],
     errors = [];

@@ -1,5 +1,9 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { parseContactDirectoryRequestV1, type ContactWorkspaceV1 } from "@coredrill/application";
+import {
+  parseContactDirectoryRequestV1,
+  type ContactWorkspaceV1,
+  type ContactProvenanceFieldName,
+} from "@coredrill/application";
 import { restoreFocusAfterChange } from "@coredrill/ui";
 import {
   createStoredContactDirectoryReader,
@@ -236,6 +240,8 @@ export const StoredContactDirectoryView = ({
   historyView,
   onContactObserved,
   deletion,
+  onReviewField,
+  sourceUseView,
 }: {
   readonly api: StoredContactDirectoryApi | undefined;
   readonly workspaceApi: StoredContactWorkspaceApi | undefined;
@@ -251,6 +257,9 @@ export const StoredContactDirectoryView = ({
   readonly onViewCompany: (id: string) => void;
   readonly historyView: ReactNode;
   readonly onContactObserved: (value: ContactWorkspaceV1 | null) => void;
+  readonly onReviewField?:
+    ((value: ContactWorkspaceV1, field: ContactProvenanceFieldName) => void) | undefined;
+  readonly sourceUseView?: ReactNode;
   readonly deletion: {
     readonly view: ReactNode;
     readonly hasReview: boolean;
@@ -334,6 +343,7 @@ export const StoredContactDirectoryView = ({
       </div>
       {editor.form}
       {deletion.view}
+      {sourceUseView}
       {needsReopen ? <p>Reload the restored vault before editing contacts.</p> : null}
       {api === undefined || vaultId === null ? (
         <p>The viewed vault's contact directory is unavailable. No contacts have been loaded.</p>
@@ -359,6 +369,7 @@ export const StoredContactDirectoryView = ({
                 deletionDisabled={!deletion.canStart}
                 onViewCompany={onViewCompany}
                 onObserved={onContactObserved}
+                onReviewField={onReviewField}
               />
               {historyView}
             </>

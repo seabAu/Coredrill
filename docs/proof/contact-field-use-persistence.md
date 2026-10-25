@@ -1,6 +1,6 @@
 # Durable contact field-use qualification
 
-Date: 2026-10-25. Status: durable storage/runtime/read-display checkpoint passes full local verification; exact new hosted proof is pending. Normal qualification write UI remains in progress.
+Date: 2026-10-25. Status: durable storage/runtime/read-display checkpoint is hosted-green at601a687. Normal qualification forms now pass complete final-source verification and serial extension proof; their exact new hosted checkpoint is pending.
 
 ## Pre-edit outcome, authority and scope
 
@@ -661,3 +661,173 @@ Changeset updates. All local execution handles are terminal. The implementation
 commit includes these results and the pending previous hosted receipts; exact
 new hosted status must be recorded separately after publication. No feature,
 INT-007, supported release-matrix or goal completion is claimed.
+
+## Normal qualification controls and canonical research
+
+Exact checkpoint ef351149db9f61d1d78b1d25d4dbac6d7cdfeaf9 is committed and
+pushed, including the pending receipts; reinspection confirms a clean tree.
+Its automatic [CI40164548638](https://github.com/seabAu/Coredrill/actions/runs/40164548638)
+is live through original watcher79771. The first exact hosted witnesses are
+Firefox154 and full-history secrets; that is not complete hosted closure.
+
+The next implementation is the actual normal qualification workflow. Add strict
+bounded source/permission metadata pages and deliberate canonical evidence
+reads first: forms must choose and resume existing SQLite records without
+treating typed IDs, retained input or local state as canonical authority.
+Metadata pages exclude source/terms/contact bodies and excerpts, use deterministic
+scoped continuation and no totals. Deliberate detail reads independently validate
+retained source/terms hashes, byte spans, original records, current lifecycle and
+selected field scope. Latest-review inspection also binds the viewed contact
+version and explicit latest revision. These are observation only and do not
+grant a basis or renew/revoke anything.
+
+Then compose real source retention, separate permission and exact-value review,
+canonical source/terms/purpose inspection, one-way disable/revoke and owned
+pending/uncertain/late/foreign lifecycle in normal UI. Preserve copied input,
+original IDs/context and read-only reconciliation; use the exclusive vault
+mutation boundary and retire across restore/session changes. Prove actual
+offline/reload and browser/native/a11y/reflow journeys. No new source acquisition,
+dependency, schema, permission or Accepted decision is needed. Preparatory read
+contracts do not stand in for the required write UI or INT-007 completion.
+
+### Canonical research/runtime and owned action preparation
+
+`contact-use-research.ts` adds strict copied/frozen versioned inputs and views for
+bounded source and field/source-scoped permission pages, deliberate source/terms
+inspection and current latest-review inspection. Continuations bind the vault,
+read kind, source/hash/field and exact descending timestamp/ID anchor. Pages
+exclude bodies/excerpts/notes and totals, reject duplicate/out-of-order/foreign
+or skipped continuations and cap at20 records. Canonical detail replies retain
+literal BOM/NUL/Unicode and independently rehash source/terms/excerpt values in
+the application layer. Disabled and revoked history can be inspected without
+granting eligibility, and there is no implicit observation clock renewal.
+
+The actual SQLite repository exposes these reads through a separate `research`
+port, reusing the existing canonical source/policy/review hash/span/lifecycle
+validators. Metadata selects do not load raw text, terms excerpts or purpose
+notes; deterministic keyset paging uses a single bounded lookahead. The actual
+read-snapshot capability is used when available, with the existing transaction
+fallback otherwise. Latest-review inspection checks the viewed current contact
+version, field, latest ID and lifecycle version. Normal `readResearch` composes
+this port without construction-time IO and redacts database failures.
+
+`stored-contact-use-controller.ts` binds one original record/control action to
+its copied vault/contact/version/company/field owner. It is single-flight,
+rechecks ownership after waiting for the vault mutation boundary, validates
+acknowledgements against the original payload/first context, preserves uncertain
+outcomes and offers observation before explicit identical retry. Navigation does
+not rebind the action; disposal ignores late publication without pretending to
+cancel storage. Unresolved discard is explicit. This controller is not yet a
+root-owned form, inspector UI or evidence-selection workflow.
+
+Actual focused results:33 strict application research cases,47 actual SQLite
+repository cases and25 selected-runtime cases pass105 total on76277 after
+correcting one unnecessary optional chain. The new controller passes12 cases;
+initial controller lint rejects optional-chain/closure-flow conditions, then
+88572 consumes exit0 with all22 lint tasks plus tooling and117 focused cases
+across four files. Closure-entry observation is read through a function after
+the await; no ownership or uncertainty guard is removed. Complete64386 consumes
+exit0 and `CONTACT_RESEARCH_CONTROLLER_TYPES_UNIT_EXIT=0`:35 type tasks and
+227 files/3167 unit cases pass. Logs are `test-results/contact-research-types.log`,
+`contact-research-lint{,-final}.log`, `contact-use-controller-lint{,-final}.log`
+and `contact-research-controller-final-{types,unit}.log`.
+
+All source changes above remain uncommitted for actual normal form integration.
+No new schema/dependency/permission/Accepted change or real-vault mutation. The
+new reads/controller still need identical adapter and actual normal UI proof,
+root lifetime/restore/deletion coordination, explicit time/span/purpose inputs,
+source/terms selection and resumption, complete verification and a fresh hosted
+checkpoint. Do not substitute passing preparatory tests for these requirements.
+
+### Published checkpoint timeout and isolated CI correction
+
+The original exact ef35114 run40164548638 finishes with nine required successes
+but its aggregate121082800801 exceeds the30m wrapper during final license checks.
+Original watcher79771 consumes terminal exit1/HOSTED marker1. The authoritative
+annotation explicitly identifies the30m job limit; no assertion failure or
+manual cancellation is claimed. Complete diagnosis and preserved scopes are in
+[the dedicated hosted proof](checkpoint-ef35114-hosted-verification.md).
+
+Isolated CI-only commit `601a68704e98ba85a2d8e2b146be340b829fd964` is pushed.
+It changes only the aggregate whole-job allowance30→35m plus that dedicated
+proof; all product sources remain identical to ef35114 and every check,
+individual test/performance budget, pin and permission remains unchanged.
+Prettier/workflow parsing and complete policy75581 pass. The pending normal
+research/controller changes are excluded from that commit. Its automatic
+[run40166818736](https://github.com/seabAu/Coredrill/actions/runs/40166818736)
+is confirmed live; exact full hosted closure remains pending.
+
+Next normal UI composition must keep the full draft and selected canonical
+source/terms/policy views in the AppShell-owned workflow across contact navigation
+and reflow. A foreign selection shows only a return-to-original action, not its
+private bodies. Coordinate with existing editor/interaction drafts, contact
+deletion, the exclusive vault mutation boundary and restore/reopen retirement;
+inspect the established hooks' exact restoration behavior before substituting
+new disposal semantics. Each populated field gets a deliberate review entry;
+archived contacts retain inspection/revocation but cannot receive new reviews.
+Use canonical field metadata to capture the latest ID/version and research reads
+for source/permission selection; never promote input-memory bodies to stored
+evidence after acknowledgement. Explicit source/permission/field action reviews
+remain separate, with retained original IDs/context and observational recovery.
+Use the accepted lazy local-schedule resolver for capture/review/expiry clocks,
+reject gaps and require an occurrence for overlaps. Derive literal UTF-8 spans
+from deliberate whole-character text selection without trimming/normalization.
+Pending/failed reads must retain the exact request, withhold unconfirmed changes
+and suppress late/foreign publication. These obligations still require real
+browser/native/UI proof; preparatory tests are not their completion evidence.
+
+Final74840 consumes exit0 and
+`CONTACT_RESEARCH_CONTROLLER_FINAL_FORMAT_POLICY_EXIT=0`: whole formatting,
+19 boundaries/foundation records,831 npm/498 Rust license policy and secrets
+pass after the focused/types/lint/3167-unit results above. All local test and
+hygiene handles are terminal. Replacement exact CI40166818736 is confirmed live
+through its single original quiet watcher19752; its log is retained in
+`test-results/contact-checkpoint-ci-headroom-watch.log` and terminal marker will
+be `CHECKPOINT_CI_HEADROOM_HOSTED_EXIT`. Do not restart the cancelled old run or
+infer full hosted success from a live watcher. The form workflow remains the
+next implementation; no owner decision is needed and INT-007 stays unchecked.
+
+## Normal form composition and prior hosted closure
+
+The published checkpoint now has exact601a687 / CI40166818736 full hosted
+closure: original19752 and complete-log79364 consume exit0 and their terminal
+markers. All ten required jobs pass with the PR-only dependency review skipped;
+the aggregate completes20m56s under35m. The original ef35114 aggregate timeout
+is retained, not relabeled success. Complete counts, platform skips, OS secure
+storage receipts and remaining release limits are recorded in the
+[dedicated hosted proof](checkpoint-ef35114-hosted-verification.md#exact-follow-up-hosted-closure).
+Do not reopen either terminal watcher or attribute these logs to newer sources.
+
+The subsequent uncommitted normal workflow now exists in
+`stored-contact-use-workflow.tsx`, wired to populated selected-contact fields,
+root draft/deletion/interaction guards and the exclusive vault mutation boundary.
+It adds actual source/permission/exact-field forms, canonical metadata pickers,
+literal inspectors, strict local clocks/spans, one-way controls and original-
+action recovery. Six actual offline browser cases and the identical real-Rust
+normal UI lifecycle pass; full types/lint/3173 units pass after retained lint/
+test-locator failures. The latest metadata-page invalidation change and every
+full-source regression still require the full gate. See the
+[normal workflow implementation, focused evidence and limits](normal-contact-source-use-workflow.md).
+No schema/dependency/permission/source-acquisition/Accepted change. Keep all
+pending proof/checklist receipts with the next verified implementation commit;
+INT-007, company relationships, Home and the product goal remain open.
+
+## Complete normal-form local checkpoint
+
+Final normal-form source now passes the entire required gate on74510, terminal
+exit0/CONTACT_USE_NORMAL_FORMS_FULL_VERIFY_FINAL_EXIT=0, plus serial extension29959,
+terminal exit0/CONTACT_USE_NORMAL_FORMS_EXTENSION_EXIT=0. This supersedes the
+pending full-gate status above. The final audit fixes stored profile-URL
+normalization so qualification and display refer to the same literal value;
+explicit manual-entry normalization remains unchanged. All35types,22lint plus
+tooling,227files/3175units repeated under coverage, complete builds/artifacts,
+7 UI/76 shell/1 diagnostic performance/96 resilience/7 onboarding/13 documents/
+15 browser storage/23 native adapter and9 serial extension cases pass, together
+with secure storage/archive/schema/license/secret/audit/Changesets gates.
+The96-case suite includes all7 normal form cases and the identical real-Rust
+normal form journey. Retained initial regression-build/type failures, coverage,
+actual case counts and limits are in the
+[final-source proof](normal-contact-source-use-workflow.md#final-source-verification).
+Commit the implementation and all pending proof/checklist receipts as one
+checkpoint. Exact new hosted results remain required; the independent601a687
+closure must not be attributed to these newer sources.

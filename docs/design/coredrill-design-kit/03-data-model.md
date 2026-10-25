@@ -2,7 +2,7 @@
 
 ## Conventions
 
-The in-progress schema182 candidate adds independent `contact_source_snapshot`,
+Published schema182 adds independent `contact_source_snapshot`,
 explicit local `contact_source_use_policy` review and exact-value
 `contact_field_use_review` records. Each has replacement-safe identities; source
 facts are immutable, policy update is one-way disable and field-review update is
@@ -15,8 +15,10 @@ backfilled, no canonical contact value changes and expiry never deletes a
 contact. These are local user-review records, not legal verification or network
 connector approval. Strict commands and actual shared adapter contracts,
 nonempty182 generation/no-update replay, complete native recovery and normal
-old/current browser/native restore/reopen now pass. Normal owned review controls
-and full final-source/hosted gates remain open: see [persistence proof](../../proof/contact-field-use-persistence.md)
+old/current browser/native restore/reopen now pass, with exact601a687 full hosted
+closure for storage/runtime/read-display. The newer normal owned review controls
+pass full final-source verification and serial extension proof; their exact new
+hosted checkpoint remains open: see [persistence proof](../../proof/contact-field-use-persistence.md)
 and [migration procedure](../../runbooks/schema-182-contact-field-use-evidence.md).
 
 Normal contact details now consume metadata-only canonical reviewed-use reads
@@ -24,8 +26,17 @@ independently of initial manual-entry evidence. Only a current active reviewed
 basis may display the exact value; stale/failed/foreign/expired/archived reviewed
 projections are withheld without rewriting values or removing manual basis.
 Historical job-bound provenance describes that read's scope, not canonical
-reviewed-use eligibility. Normal write controls and explicit literal source/
-permission inspection remain in progress, separately from the proven read UI.
+reviewed-use eligibility. Normal fields now open an AppShell-owned review
+workspace with separate source retention, canonical source/terms/permission
+selection, exact literal spans, purpose/deadline/expiry review and one-way
+controls. Bounded metadata pages contain no bodies or totals; deliberate
+inspection revalidates canonical source/terms hashes, spans and current
+lifecycle. First action context and input never automatically rebase, and
+uncertainty is inspected without replay. Stored profile URLs validate without
+normalizing their hash-covered literal; explicit manual creation still normalizes.
+Normal offline browser/native journeys and complete local checkpoint gates pass;
+exact new hosted verification remains pending. See the
+[normal workflow proof and limits](../../proof/normal-contact-source-use-workflow.md).
 
 The additive version-1 contact field-use application contract separates an
 independent user-supplied source snapshot from exact-value review evidence and a
@@ -35,11 +46,12 @@ scope, explicit job-search purpose, policy applicability, review/expiry and
 revocation; an elapsed bound withholds basis, never deletes a contact. Its
 public/licensed result describes reviewed use basis, not verified identity,
 deliverability, legal certainty or sending authorization. No production contact
-policy or source acquisition is approved. This is a pure infrastructure contract,
-not itself durable state or normal UI: its cf3c6b0 checkpoint retains167, historical manual
-receipts and the source inspector are unchanged. Durable reviewed records,
-transactional guards, export/recovery and explicit normal review controls remain
-required under INT-007. See [scope and proof](../../proof/contact-field-use-qualification-contract.md).
+network policy, preset permission grant or source acquisition is approved. At
+cf3c6b0 this was a pure infrastructure contract retaining167, with historical
+manual receipts and the source inspector unchanged. The subsequent durable
+reviewed records and normal workflow above implement separate local user review;
+full INT-007 still requires remaining relationship projections and complete
+checkpoint proof. See [original contract scope](../../proof/contact-field-use-qualification-contract.md).
 
 Historical schema167 replaces the interaction update guard through paired166/167
 migrations in one transaction. Only non-null-to-null contact detachment after

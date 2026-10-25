@@ -8,9 +8,14 @@ import {
   createContactFieldUseOperations,
   parseContactUseRecordRequestV1,
   parseContactUseControlRequestV1,
+  createContactUseResearchQuery,
+  hashViewedContactFieldV1,
+  parseContactWorkspaceV1,
+  type ContactUseResearchInputV1,
 } from "@coredrill/application";
 import { createContactFieldUseRepository } from "../src/contact-field-use-repository.js";
 import { createContactDeletionRepository } from "../src/contact-deletion-repository.js";
+import { createContactWorkspaceRepository } from "../src/contact-workspace-repository.js";
 import { applySqlMigrations } from "../src/migrations.js";
 import type {
   DatabasePort,
@@ -218,6 +223,69 @@ describe("actual contact field-use command and SQLite port", () => {
     db.queries.length = 0;
   });
   afterEach(() => db.connection.close());
+
+  it("qualifies the exact stored profile URL that the selected workspace displays", async () => {
+    const literal = "HTTPS://SYNTHETIC.EXAMPLE:443/Profile?q=%7e#Tail";
+    const profileBody = `${literal}\n${permission}`;
+    db.connection
+      .prepare("UPDATE contact SET public_profile_url=?,row_version=2,updated_at=? WHERE id=?")
+      .run(literal, at, id(2));
+    const operations = ops();
+    expect(
+      (await operations.record.execute({ ...source(), literalText: profileBody }, context(30))).ok,
+    ).toBe(true);
+    expect(
+      (
+        await operations.record.execute(
+          {
+            ...policy(),
+            fieldName: "public_profile_url",
+            expectedSourceHash: sha(profileBody),
+            expectedTermsHash: sha(profileBody),
+            termsStartByte: Buffer.byteLength(literal + "\n"),
+            termsEndByte: Buffer.byteLength(profileBody),
+          },
+          context(31),
+        )
+      ).ok,
+    ).toBe(true);
+    expect(
+      (
+        await operations.record.execute(
+          {
+            ...review(),
+            fieldName: "public_profile_url",
+            expectedContactRowVersion: 2,
+            expectedValueHash: sha(literal),
+            expectedSourceHash: sha(profileBody),
+            sourceStartByte: 0,
+            sourceEndByte: Buffer.byteLength(literal),
+            sourceExcerpt: literal,
+          },
+          context(32),
+        )
+      ).ok,
+    ).toBe(true);
+    const selectedRequest = {
+      specVersion: 1 as const,
+      expectedVaultId: entityId("vault", id(1)),
+      contactId: entityId("contact", id(2)),
+      includeArchived: false,
+    };
+    const workspace = parseContactWorkspaceV1(
+      await createContactWorkspaceRepository(db, async (value) => sha(value)).read(selectedRequest),
+      selectedRequest,
+    );
+    expect(workspace.contact.publicProfileUrl).toBe(literal);
+    expect(
+      await hashViewedContactFieldV1(workspace, "public_profile_url", async (value) => sha(value)),
+    ).toBe(sha(literal));
+    const basis = await operations.readField.execute(
+      { ...read(), fieldName: "public_profile_url", expectedContactRowVersion: 2 },
+      context(40),
+    );
+    expect(basis).toMatchObject({ ok: true, value: { assessment: { eligible: true } } });
+  });
 
   it("reads honest missing-review metadata without preloading method values or writing", async () => {
     const result = await ops().readField.execute(read(), context(40));
@@ -695,6 +763,289 @@ describe("actual contact field-use command and SQLite port", () => {
     expect(await createContactDeletionRepository(db).inspect(target)).toMatchObject({
       state: "unresolved",
     });
+    expect(db.writes).toEqual([]);
+  });
+
+  it("pages tied source timestamps exactly without reading literal evidence or writing", async () => {
+    const operations = ops();
+    for (let n = 10; n < 36; n++)
+      expect(
+        (
+          await operations.record.execute(
+            { ...source(), sourceSnapshotId: id(n) },
+            context(100 + n),
+          )
+        ).ok,
+      ).toBe(true);
+    db.queries.length = 0;
+    db.writes.length = 0;
+    digest.mockClear();
+    const query = createContactUseResearchQuery(port().research, async (text) => sha(text));
+    const ids: string[] = [];
+    let cursor: Extract<ContactUseResearchInputV1, { kind: "sources" }>["cursor"] = null;
+    do {
+      const result = await query.execute(
+        { specVersion: 1, kind: "sources", expectedVaultId: id(1), pageSize: 5, cursor },
+        context(90),
+      );
+      if (!result.ok || result.value.kind !== "sources") throw Error("Missing exact source page");
+      expect(JSON.stringify(result)).not.toContain(body);
+      ids.push(...result.value.items.map((item) => item.id));
+      cursor = result.value.nextCursor;
+    } while (cursor !== null);
+    expect(ids).toEqual(Array.from({ length: 26 }, (_, n) => id(35 - n)));
+    expect(db.queries.map((q) => q.sql).join("\n")).not.toMatch(
+      /raw_text|terms_excerpt|purpose_note/u,
+    );
+    expect(db.writes).toEqual([]);
+    expect(digest).not.toHaveBeenCalled();
+  });
+
+  it("resumes scoped permission pages including disabled history without loading bodies", async () => {
+    const operations = await recordAll();
+    for (let n = 10; n < 14; n++)
+      expect(
+        (await operations.record.execute({ ...policy(), policyId: id(n) }, context(100 + n))).ok,
+      ).toBe(true);
+    expect(
+      (
+        await operations.control.execute(
+          {
+            specVersion: 1,
+            kind: "disable_policy",
+            expectedVaultId: id(1),
+            recordId: id(13),
+            expectedRowVersion: 1,
+            sourceSnapshotId: id(3),
+            expectedSourceHash: sha(body),
+          },
+          context(150, later),
+        )
+      ).ok,
+    ).toBe(true);
+    const query = createContactUseResearchQuery(port().research, async (text) => sha(text));
+    db.queries.length = 0;
+    db.writes.length = 0;
+    digest.mockClear();
+    const request = {
+      specVersion: 1,
+      kind: "policies",
+      expectedVaultId: id(1),
+      sourceSnapshotId: id(3),
+      expectedSourceHash: sha(body),
+      fieldName: "email",
+      pageSize: 2,
+      cursor: null,
+    };
+    const first = await query.execute(request, context(151, later));
+    expect(first).toMatchObject({
+      ok: true,
+      value: {
+        items: [
+          { id: id(13), rowVersion: 2, disabledAt: later },
+          { id: id(12), rowVersion: 1 },
+        ],
+      },
+    });
+    if (!first.ok || first.value.kind !== "policies") throw Error("Missing permission page");
+    const next = await query.execute(
+      { ...request, cursor: first.value.nextCursor },
+      context(152, later),
+    );
+    expect(next).toMatchObject({ ok: true, value: { items: [{ id: id(11) }, { id: id(10) }] } });
+    const bad = await query.execute(
+      { ...request, fieldName: "phone", cursor: first.value.nextCursor },
+      context(153, later),
+    );
+    expect(bad).toMatchObject({ ok: false, error: { code: "validation" } });
+    expect(db.queries.map((q) => q.sql).join("\n")).not.toMatch(
+      /raw_text|terms_excerpt|purpose_note/u,
+    );
+    expect(db.writes).toEqual([]);
+    expect(digest).not.toHaveBeenCalled();
+  });
+
+  it("deliberately inspects exact canonical source, terms and current latest review without writes", async () => {
+    await recordAll();
+    db.writes.length = 0;
+    const query = createContactUseResearchQuery(port().research, async (text) => sha(text));
+    const evidence = await query.execute(
+      {
+        specVersion: 1,
+        kind: "evidence",
+        expectedVaultId: id(1),
+        sourceSnapshotId: id(3),
+        expectedSourceHash: sha(body),
+        fieldName: "email",
+        policyId: id(5),
+        expectedPolicyRowVersion: 1,
+      },
+      context(90),
+    );
+    expect(evidence).toMatchObject({
+      ok: true,
+      value: {
+        source: { literalText: body },
+        terms: { literalText: body },
+        policy: { termsExcerpt: permission },
+        policyRowVersion: 1,
+      },
+    });
+    const latest = await query.execute(
+      {
+        specVersion: 1,
+        kind: "review",
+        expectedVaultId: id(1),
+        contactId: id(2),
+        expectedContactRowVersion: 1,
+        fieldName: "email",
+        reviewId: id(4),
+        expectedReviewRowVersion: 1,
+      },
+      context(91),
+    );
+    expect(latest).toMatchObject({
+      ok: true,
+      value: {
+        fieldRevision: 1,
+        review: { sourceExcerpt: email, purposeNote: review().purposeNote },
+        evidence: { source: { literalText: body } },
+      },
+    });
+    expect(db.writes).toEqual([]);
+  });
+
+  it("uses the read-snapshot capability without a writable transaction when available", async () => {
+    await recordAll();
+    const readOnly: DatabasePort = {
+      query: db.query.bind(db),
+      execute: async () => {
+        throw Error("Write forbidden");
+      },
+      transaction: async () => {
+        throw Error("Writable transaction forbidden");
+      },
+      exportPortable: db.exportPortable.bind(db),
+      diagnostics: db.diagnostics.bind(db),
+      withReadSnapshot: async (work) =>
+        work({ query: db.query.bind(db), exportPortable: db.exportPortable.bind(db) }),
+    };
+    const result = await createContactUseResearchQuery(
+      createContactFieldUseRepository(readOnly, async (text) => sha(text)).research,
+      async (text) => sha(text),
+    ).execute(
+      { specVersion: 1, kind: "sources", expectedVaultId: id(1), pageSize: 5, cursor: null },
+      context(90),
+    );
+    expect(result.ok).toBe(true);
+  });
+
+  it("withholds stale lifecycle and latest-review selections after revoke/renewal", async () => {
+    const operations = await recordAll();
+    const query = createContactUseResearchQuery(port().research, async (text) => sha(text));
+    const request = {
+      specVersion: 1,
+      kind: "review",
+      expectedVaultId: id(1),
+      contactId: id(2),
+      expectedContactRowVersion: 1,
+      fieldName: "email",
+      reviewId: id(4),
+      expectedReviewRowVersion: 1,
+    };
+    expect(
+      (
+        await operations.control.execute(
+          {
+            specVersion: 1,
+            kind: "revoke_review",
+            expectedVaultId: id(1),
+            recordId: id(4),
+            expectedRowVersion: 1,
+            contactId: id(2),
+            expectedContactRowVersion: 1,
+            fieldName: "email",
+          },
+          context(90, later),
+        )
+      ).ok,
+    ).toBe(true);
+    expect(await query.execute(request, context(91, later))).toMatchObject({
+      ok: false,
+      error: { code: "conflict" },
+    });
+    expect(
+      await query.execute({ ...request, expectedReviewRowVersion: 2 }, context(92, later)),
+    ).toMatchObject({ ok: true, value: { revokedAt: later, rowVersion: 2 } });
+    expect(
+      (
+        await operations.record.execute(
+          { ...review(), reviewId: id(9), expectedLatestReviewId: id(4) },
+          context(93, later),
+        )
+      ).ok,
+    ).toBe(true);
+    expect(
+      await query.execute({ ...request, expectedReviewRowVersion: 2 }, context(94, later)),
+    ).toMatchObject({ ok: false, error: { code: "conflict" } });
+  });
+
+  it.each([
+    { expectedVaultId: id(99) },
+    { expectedContactRowVersion: 2 },
+    { contactId: id(99) },
+    { fieldName: "phone" },
+    { reviewId: id(99) },
+  ])("rejects foreign/stale latest review selection %j", async (patch) => {
+    await recordAll();
+    db.writes.length = 0;
+    const result = await createContactUseResearchQuery(port().research, async (text) =>
+      sha(text),
+    ).execute(
+      {
+        specVersion: 1,
+        kind: "review",
+        expectedVaultId: id(1),
+        contactId: id(2),
+        expectedContactRowVersion: 1,
+        fieldName: "email",
+        reviewId: id(4),
+        expectedReviewRowVersion: 1,
+        ...patch,
+      },
+      context(90),
+    );
+    expect(result.ok).toBe(false);
+    expect(JSON.stringify(result)).not.toContain(body);
+    expect(db.writes).toEqual([]);
+  });
+
+  it.each([
+    { expectedSourceHash: "f".repeat(64) },
+    { fieldName: "phone" },
+    { expectedPolicyRowVersion: 2 },
+    { policyId: id(99) },
+  ])("rejects stale canonical evidence selection %j", async (patch) => {
+    await recordAll();
+    db.writes.length = 0;
+    const result = await createContactUseResearchQuery(port().research, async (text) =>
+      sha(text),
+    ).execute(
+      {
+        specVersion: 1,
+        kind: "evidence",
+        expectedVaultId: id(1),
+        sourceSnapshotId: id(3),
+        expectedSourceHash: sha(body),
+        fieldName: "email",
+        policyId: id(5),
+        expectedPolicyRowVersion: 1,
+        ...patch,
+      },
+      context(90),
+    );
+    expect(result.ok).toBe(false);
+    expect(JSON.stringify(result)).not.toContain(body);
     expect(db.writes).toEqual([]);
   });
 

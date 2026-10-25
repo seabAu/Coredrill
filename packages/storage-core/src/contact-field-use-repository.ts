@@ -9,6 +9,14 @@ import {
   parseContactFieldUseStateV1,
   parseContactUseInspectionV1,
   contactUseRecordIdV1,
+  parseContactUseResearchInputV1,
+  parseContactUseResearchViewV1,
+  parseContactResearchSourceV1,
+  parseContactResearchPolicyV1,
+  contactResearchCursorV1,
+  type ContactUseResearchPortV1,
+  type ContactUseResearchInputV1,
+  type ContactResearchEvidenceV1,
   type ContactFieldUsePortV1,
   type ContactUseRecordRequestV1,
 } from "@coredrill/application";
@@ -259,7 +267,7 @@ const current = async (
 export const createContactFieldUseRepository = (
   database: DatabasePort,
   hashValue: (text: string) => Promise<string>,
-): ContactFieldUsePortV1 => {
+): ContactFieldUsePortV1 & { readonly research: ContactUseResearchPortV1 } => {
   const digest = async (value: string) => {
     const hash = await hashValue(value);
     if (!/^[a-f0-9]{64}$/u.test(hash)) return invalid();
@@ -340,7 +348,7 @@ export const createContactFieldUseRepository = (
       !exactSpan(terms.literalText, r.termsStartByte, r.termsEndByte, r.termsExcerpt)
     )
       return invalid();
-    return { r, row, source, changed };
+    return { r, row, source, terms, changed };
   };
   const reviewAt = async (s: Reader, id: string, vaultId: string) => {
     const row = await rowAt(s, tables.review, id);
@@ -425,7 +433,189 @@ export const createContactFieldUseRepository = (
     database.withReadSnapshot === undefined
       ? database.transaction(read)
       : database.withReadSnapshot(read);
-  return Object.freeze<ContactFieldUsePortV1>({
+  const sourceHeader = (row: QueryRow, expectedVaultId: string) => {
+    if (row["vault_id"] !== expectedVaultId || row["row_version"] !== 1) return invalid();
+    return parseContactResearchSourceV1({
+      id: row["id"],
+      sourceHash: row["content_hash"],
+      sourceClass: row["source_class"],
+      sourceUrl: row["source_url"],
+      capturedAt: row["captured_at"],
+      createdAt: row["created_at"],
+    });
+  };
+  const sourceMetadata =
+    "id,vault_id,content_hash,source_class,source_url,captured_at,created_at,row_version";
+  const evidence = async (
+    s: Reader,
+    r: Extract<ContactUseResearchInputV1, { kind: "evidence" }>,
+  ): Promise<ContactResearchEvidenceV1> => {
+    const source = await sourceAt(s, r.sourceSnapshotId, r.expectedVaultId);
+    if (source.sourceHash !== r.expectedSourceHash) return stale();
+    const policy = r.policyId === null ? null : await policyAt(s, r.policyId, r.expectedVaultId);
+    if (
+      policy !== null &&
+      (policy.row["row_version"] !== r.expectedPolicyRowVersion ||
+        policy.r.sourceSnapshotId !== source.sourceSnapshotId ||
+        policy.r.expectedSourceHash !== source.sourceHash ||
+        policy.r.fieldName !== r.fieldName)
+    )
+      return stale();
+    const result = parseContactUseResearchViewV1(
+      {
+        specVersion: 1,
+        kind: "evidence",
+        vaultId: r.expectedVaultId,
+        fieldName: r.fieldName,
+        source,
+        policy: policy?.r ?? null,
+        terms: policy?.terms ?? null,
+        policyDisabledAt: policy?.changed ?? null,
+        policyRowVersion: policy?.row["row_version"] ?? null,
+      },
+      r,
+    );
+    if (result.kind !== "evidence") return invalid();
+    return result;
+  };
+  const research: ContactUseResearchPortV1 = Object.freeze({
+    read: async (input: ContactUseResearchInputV1) => {
+      const r = parseContactUseResearchInputV1(input);
+      return readSnapshot(async (s) => {
+        await vault(s, r.expectedVaultId);
+        if (r.kind === "evidence") return evidence(s, r);
+        if (r.kind === "review") {
+          await current(s, r.contactId, r.expectedContactRowVersion, true);
+          if ((await latest(s, r.contactId, r.fieldName))?.["id"] !== r.reviewId) return stale();
+          const found = await reviewAt(s, r.reviewId, r.expectedVaultId);
+          if (
+            found.row["row_version"] !== r.expectedReviewRowVersion ||
+            found.r.contactId !== r.contactId ||
+            found.r.fieldName !== r.fieldName
+          )
+            return stale();
+          return parseContactUseResearchViewV1(
+            {
+              specVersion: 1,
+              kind: "review",
+              vaultId: r.expectedVaultId,
+              contactId: r.contactId,
+              contactRowVersion: r.expectedContactRowVersion,
+              fieldName: r.fieldName,
+              fieldRevision: found.revision,
+              review: found.r,
+              revokedAt: found.changed,
+              rowVersion: found.row["row_version"],
+              evidence: await evidence(s, {
+                specVersion: 1,
+                kind: "evidence",
+                expectedVaultId: r.expectedVaultId,
+                fieldName: r.fieldName,
+                sourceSnapshotId: found.r.sourceSnapshotId,
+                expectedSourceHash: found.r.expectedSourceHash,
+                policyId: found.r.policyId,
+                expectedPolicyRowVersion: found.policy.changed === null ? 1 : 2,
+              }),
+            },
+            r,
+          );
+        }
+        if (r.kind === "policies") {
+          const roots = await s.query(
+            sqlStatement(
+              `SELECT ${sourceMetadata} FROM contact_source_snapshot WHERE id=? LIMIT 2`,
+              [r.sourceSnapshotId],
+            ),
+          );
+          if (roots.length !== 1) return missing();
+          const selectedSource = sourceHeader(roots[0] ?? {}, r.expectedVaultId);
+          if (
+            selectedSource.id !== r.sourceSnapshotId ||
+            selectedSource.sourceHash !== r.expectedSourceHash
+          )
+            return stale();
+        }
+        const column = r.kind === "sources" ? "created_at" : "reviewed_at";
+        const parameters: SqlValue[] = [r.expectedVaultId];
+        let scope = "vault_id=?";
+        if (r.kind === "policies") {
+          scope += " AND source_snapshot_id=? AND source_snapshot_hash=? AND field_name=?";
+          parameters.push(r.sourceSnapshotId, r.expectedSourceHash, r.fieldName);
+        }
+        if (r.cursor !== null) {
+          scope += ` AND (${column}<? OR (${column}=? AND id<?))`;
+          parameters.push(r.cursor.at, r.cursor.at, r.cursor.id);
+        }
+        parameters.push(r.pageSize + 1);
+        const rows = await s.query(
+          sqlStatement(
+            r.kind === "sources"
+              ? `SELECT ${sourceMetadata} FROM contact_source_snapshot WHERE ${scope} ORDER BY created_at DESC,id DESC LIMIT ?`
+              : `SELECT id,vault_id,source_snapshot_id,source_snapshot_hash,field_name,permission_kind,reviewed_at,review_due_at,disabled_at,row_version
+           FROM contact_source_use_policy WHERE ${scope} ORDER BY reviewed_at DESC,id DESC LIMIT ?`,
+            parameters,
+          ),
+        );
+        if (rows.length > r.pageSize + 1) return invalid();
+        const values = rows.map((row) => {
+          if (r.kind === "sources") return sourceHeader(row, r.expectedVaultId);
+          if (row["vault_id"] !== r.expectedVaultId) return invalid();
+          const item = parseContactResearchPolicyV1({
+            id: row["id"],
+            sourceSnapshotId: row["source_snapshot_id"],
+            sourceHash: row["source_snapshot_hash"],
+            fieldName: row["field_name"],
+            permissionKind: row["permission_kind"],
+            reviewedAt: row["reviewed_at"],
+            reviewDueAt: row["review_due_at"],
+            disabledAt: row["disabled_at"],
+            rowVersion: row["row_version"],
+          });
+          if (
+            item.sourceSnapshotId !== r.sourceSnapshotId ||
+            item.sourceHash !== r.expectedSourceHash ||
+            item.fieldName !== r.fieldName
+          )
+            return invalid();
+          return item;
+        });
+        let previous = r.cursor;
+        const seen = new Set<string>();
+        for (const item of values) {
+          const at = "createdAt" in item ? item.createdAt : item.reviewedAt;
+          if (
+            seen.has(item.id) ||
+            (previous !== null &&
+              (at > previous.at || (at === previous.at && item.id >= previous.id)))
+          )
+            return invalid();
+          seen.add(item.id);
+          previous = contactResearchCursorV1(r, at, item.id);
+        }
+        const items = values.slice(0, r.pageSize),
+          last = items.at(-1);
+        return parseContactUseResearchViewV1(
+          {
+            specVersion: 1,
+            kind: r.kind,
+            vaultId: r.expectedVaultId,
+            items,
+            nextCursor:
+              values.length > r.pageSize && last !== undefined
+                ? contactResearchCursorV1(
+                    r,
+                    "createdAt" in last ? last.createdAt : last.reviewedAt,
+                    last.id,
+                  )
+                : null,
+          },
+          r,
+        );
+      });
+    },
+  });
+  return Object.freeze<ContactFieldUsePortV1 & { readonly research: ContactUseResearchPortV1 }>({
+    research,
     record: async (input) => {
       const r = parseContactUseRecordRequestV1(input);
       return database.transaction(async (s) => {

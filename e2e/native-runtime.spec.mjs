@@ -32,6 +32,7 @@ import { createContactHistoryFixture } from "./contact-history-fixture.mjs";
 import { exerciseContactHistory } from "./contact-history-journey.mjs";
 import { createContactEvidenceFixture } from "./contact-evidence-fixture.mjs";
 import { exerciseContactEvidence } from "./contact-evidence-journey.mjs";
+import { exerciseContactUseForms } from "./contact-use-forms-journey.mjs";
 import { attachNativeHost } from "./native-proof-host.mjs";
 import {
   createNativeRestoreOperationRecorder,
@@ -393,7 +394,7 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
       const listingComparison = await exerciseStoredListingComparison(page, testInfo);
       const localNote = await exerciseStoredJobNote(page, testInfo);
       Object.assign(journeyProof, { listingComparison, localNote });
-    } else if (journey === "history" || journey === "evidence") {
+    } else if (journey === "history" || journey === "evidence" || journey === "use-forms") {
       const fixture =
         journey === "history"
           ? await createContactHistoryFixture(testInfo)
@@ -420,9 +421,13 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
           ? {
               contactHistory: await exerciseContactHistory(page, testInfo, fixture, "native"),
             }
-          : {
-              contactEvidence: await exerciseContactEvidence(page, testInfo, fixture, "native"),
-            },
+          : journey === "use-forms"
+            ? {
+                contactUseForms: await exerciseContactUseForms(page, fixture),
+              }
+            : {
+                contactEvidence: await exerciseContactEvidence(page, testInfo, fixture, "native"),
+              },
       );
     } else if (["legacy", "legacy164", "legacy165", "legacy167", "current182"].includes(journey)) {
       const sourceVersion = {
@@ -930,6 +935,7 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
             "current182",
             "history",
             "evidence",
+            "use-forms",
           ].includes(journey),
           journey,
           invocations,
@@ -972,11 +978,14 @@ for (const [journey, description] of [
   ["current182", "reviewed schema182 archive restore and deliberate schema182 reopen"],
   ["history", "recorded contact history from a disclosed synthetic archive"],
   ["evidence", "contact field source evidence from a disclosed synthetic archive"],
+  ["use-forms", "normal source-use review forms and retained evidence"],
 ]) {
   test(`normal root uses real native SQLite for ${description} without OPFS fallback`, async ({
     page,
   }, testInfo) => {
     test.setTimeout(120_000);
+    if (journey === "use-forms")
+      await page.clock.setFixedTime(new Date("2026-10-25T16:00:00.000Z"));
     await exerciseNativeJourney(page, testInfo, journey);
   });
 }

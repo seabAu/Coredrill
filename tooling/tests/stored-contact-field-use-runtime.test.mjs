@@ -7,12 +7,13 @@ const ports = vi.hoisted(() => ({
   readField: vi.fn(),
   inspect: vi.fn(),
   factory: vi.fn(),
+  researchRead: vi.fn(),
 }));
 vi.mock("../../packages/storage-core/dist/index.js", async (original) => ({
   ...(await original()),
   createContactFieldUseRepository: (...args) => {
     ports.factory(...args);
-    return ports;
+    return { ...ports, research: { read: ports.researchRead } };
   },
 }));
 import { createStoredContactFieldUseApi } from "../../apps/web/src/stored-contact-field-use.ts";
@@ -59,6 +60,13 @@ const setup = () => {
 };
 beforeEach(() => {
   vi.clearAllMocks();
+  ports.researchRead.mockImplementation(async (r) => ({
+    specVersion: 1,
+    kind: r.kind,
+    vaultId: r.expectedVaultId,
+    items: [],
+    nextCursor: null,
+  }));
   ports.record.mockImplementation(async (r) => ({
     specVersion: 1,
     kind: r.kind,
@@ -93,6 +101,86 @@ beforeEach(() => {
   }));
 });
 describe("normal selected-runtime contact field use", () => {
+  it("reads bounded canonical research metadata through the selected port without hashing or allocating IDs", async () => {
+    const local = setup();
+    const input = {
+      specVersion: 1,
+      kind: "sources",
+      expectedVaultId: id(1),
+      pageSize: 5,
+      cursor: null,
+    };
+    const result = await local.api.readResearch(input);
+    expect(result).toMatchObject({
+      ok: true,
+      value: { kind: "sources", items: [], nextCursor: null },
+    });
+    expect(local.open).toHaveBeenCalledTimes(1);
+    expect(ports.researchRead).toHaveBeenCalledWith(input);
+    expect(local.hash).not.toHaveBeenCalled();
+    expect(local.createId).not.toHaveBeenCalled();
+  });
+  it("rejects invalid research before opening the selected database", async () => {
+    const local = setup();
+    expect(
+      await local.api.readResearch({
+        specVersion: 1,
+        kind: "sources",
+        expectedVaultId: id(1),
+        pageSize: 21,
+        cursor: null,
+      }),
+    ).toMatchObject({ ok: false, error: { code: "validation" } });
+    expect(local.open).not.toHaveBeenCalled();
+    expect(ports.researchRead).not.toHaveBeenCalled();
+  });
+  it("copies research scope before a delayed database open and rejects foreign replies", async () => {
+    const local = setup();
+    let release;
+    local.open.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          release = resolve;
+        }),
+    );
+    const input = {
+      specVersion: 1,
+      kind: "sources",
+      expectedVaultId: id(1),
+      pageSize: 5,
+      cursor: null,
+    };
+    const pending = local.api.readResearch(input);
+    input.expectedVaultId = id(99);
+    release(local.selected);
+    expect((await pending).ok).toBe(true);
+    expect(ports.researchRead.mock.calls[0][0].expectedVaultId).toBe(id(1));
+    ports.researchRead.mockResolvedValue({
+      specVersion: 1,
+      kind: "sources",
+      vaultId: id(99),
+      items: [],
+      nextCursor: null,
+    });
+    local.open.mockResolvedValue(local.selected);
+    expect((await local.api.readResearch({ ...input, expectedVaultId: id(1) })).ok).toBe(false);
+  });
+  it("redacts a research database opening failure and never dispatches a write", async () => {
+    const local = setup();
+    local.open.mockRejectedValue(new Error("PRIVATE database path/source text"));
+    const result = await local.api.readResearch({
+      specVersion: 1,
+      kind: "sources",
+      expectedVaultId: id(1),
+      pageSize: 5,
+      cursor: null,
+    });
+    expect(result).toMatchObject({ ok: false, error: { code: "unavailable" } });
+    expect(JSON.stringify(result)).not.toContain("PRIVATE");
+    expect(ports.researchRead).not.toHaveBeenCalled();
+    expect(ports.record).not.toHaveBeenCalled();
+    expect(ports.control).not.toHaveBeenCalled();
+  });
   it("constructs and binds copied actions without opening, hashing, reading context or allocating IDs", () => {
     const local = setup(),
       input = source(),

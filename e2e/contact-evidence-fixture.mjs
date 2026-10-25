@@ -9,7 +9,7 @@ import {
 } from "../packages/storage-core/dist/index.js";
 
 /** Synthetic test-output archive only; no installer/API shortcut or acquisition/rights claim. */
-export const createContactEvidenceFixture = async (testInfo) => {
+export const createContactEvidenceFixture = async (testInfo, { profileUrl = null } = {}) => {
   const originalPath = path.resolve("fixtures/recovery/phase-1-vault-schema-165-v1.coredrill.zip");
   const originalBytes = await readFile(originalPath);
   const original = await inspectPortableArchiveV1({
@@ -41,9 +41,9 @@ export const createContactEvidenceFixture = async (testInfo) => {
     ])
       connection
         .prepare(
-          "INSERT INTO contact(id,company_id,name,email,created_at,updated_at) VALUES(?,?,?,?,?,?)",
+          "INSERT INTO contact(id,company_id,name,email,public_profile_url,created_at,updated_at) VALUES(?,?,?,?,?,?,?)",
         )
-        .run(id(n), job.company_id, name, value, at, at);
+        .run(id(n), job.company_id, name, value, n === 2 ? profileUrl : null, at, at);
     connection
       .prepare(
         "INSERT INTO contact(id,company_id,name,email,archived_at,created_at,updated_at) VALUES(?,?,?,?,?,?,?)",

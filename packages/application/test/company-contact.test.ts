@@ -5,6 +5,8 @@ import { confidence, entityId, instant, webUrl } from "@coredrill/domain";
 import {
   CompanyContactError,
   createCompanyContactOperations,
+  parseContactDto,
+  parseManualContactFields,
   type ApplicationOperationContext,
   type ApplicationResult,
   type CompanyContactPort,
@@ -82,6 +84,20 @@ const operationsFor = (companyContacts: CompanyContactPort) => {
 };
 
 describe("company and contact application operations", () => {
+  it("preserves a validated stored profile literal while manual creation normalizes URLs", () => {
+    const literal = "HTTPS://SYNTHETIC.EXAMPLE:443/Profile?q=%7e#Tail";
+    expect(
+      parseContactDto({ ...manualContact(), publicProfileUrl: literal }).publicProfileUrl,
+    ).toBe(literal);
+    const manual = parseManualContactFields({
+      origin: "user_entered",
+      name: "Synthetic contact",
+      publicProfileUrl: literal,
+    });
+    expect(manual.publicProfileUrl).toBe(webUrl(literal));
+    expect(manual.publicProfileUrl).not.toBe(literal);
+  });
+
   it("creates a local company with normalized relationship fields", async () => {
     const companyContacts = companyContactPort();
     const { createCompanyCommand } = operationsFor(companyContacts);

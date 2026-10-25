@@ -157,6 +157,7 @@ import { StoredCompanyDirectoryView } from "./stored-company-directory-view.js";
 import { useStoredCompanyEditor } from "./stored-company-workspace-view.js";
 import { StoredContactDirectoryView } from "./stored-contact-directory-view.js";
 import { useStoredContactDeletion } from "./stored-contact-deletion-view.js";
+import { useStoredContactUseWorkflow } from "./stored-contact-use-workflow.js";
 import { useStoredContactEditor } from "./stored-contact-editor-view.js";
 import { useStoredInteractionEntry } from "./stored-interaction-entry.js";
 import type { ContactWorkspaceV1 } from "@coredrill/application";
@@ -2171,6 +2172,7 @@ const AppShellCatalog = ({
     setActiveDestination("network");
   };
   const [contactDeletionActive, setContactDeletionActive] = useState(false);
+  const [contactUseActive, setContactUseActive] = useState(false);
   const contactEditor = useStoredContactEditor({
     api: globalThis.coredrillStorageSpike.contactWorkspace,
     vaultId: vaultSession?.vault.id ?? null,
@@ -2178,7 +2180,7 @@ const AppShellCatalog = ({
     companyScope: networkContactCompanyScope,
     enabled: !referenceCatalog && vaultDeletionStatus === null,
     visible: activeDestination === "network" && networkTab === "contacts",
-    mutationBlocked: vaultExportSession.busy || contactDeletionActive,
+    mutationBlocked: vaultExportSession.busy || contactDeletionActive || contactUseActive,
     needsReopen: vaultRestoreSession.needsReopen,
     exclusive: (vaultId, work) => vaultExportSession.mutate(vaultId, work),
     onSelect: selectStoredContact,
@@ -2211,7 +2213,7 @@ const AppShellCatalog = ({
     api: globalThis.coredrillStorageSpike.interactionRecording,
     vaultId: vaultSession?.vault.id ?? null,
     enabled: !referenceCatalog && vaultDeletionStatus === null,
-    mutationBlocked: vaultExportSession.busy || contactDeletionActive,
+    mutationBlocked: vaultExportSession.busy || contactDeletionActive || contactUseActive,
     needsReopen: vaultRestoreSession.needsReopen,
     mode:
       activeDestination === "network" &&
@@ -2248,7 +2250,7 @@ const AppShellCatalog = ({
     visible: activeDestination === "network" && networkTab === "contacts",
     needsReopen: vaultRestoreSession.needsReopen,
     mutationBlocked: vaultExportSession.busy,
-    draftsBlocked: contactEditor.hasDraft || interactionEntry.hasDraft,
+    draftsBlocked: contactEditor.hasDraft || interactionEntry.hasDraft || contactUseActive,
     exclusive: (vaultId, work) => vaultExportSession.mutate(vaultId, work),
     onActive: setContactDeletionActive,
     onSelect: selectStoredContact,
@@ -2268,6 +2270,30 @@ const AppShellCatalog = ({
         selectStoredContact(null, review.companyScope);
       }
     },
+  });
+  const contactUse = useStoredContactUseWorkflow({
+    api: globalThis.coredrillStorageSpike.contactFieldUse,
+    vaultId: vaultSession?.vault.id ?? null,
+    contactId: networkSelectedContactId,
+    companyScope: networkContactCompanyScope,
+    observed:
+      interactionContact?.revision === contactRevision &&
+      interactionContact.companyScope === networkContactCompanyScope &&
+      interactionContact.value.contact.id === networkSelectedContactId &&
+      interactionContact.value.vaultId === vaultSession?.vault.id
+        ? interactionContact.value
+        : null,
+    enabled: !referenceCatalog && vaultDeletionStatus === null,
+    visible: activeDestination === "network" && networkTab === "contacts",
+    mutationBlocked: vaultExportSession.busy,
+    draftsBlocked: contactEditor.hasDraft || interactionEntry.hasDraft || contactDeletionActive,
+    needsReopen: vaultRestoreSession.needsReopen,
+    exclusive: (vaultId, work) => vaultExportSession.mutate(vaultId, work),
+    onActive: setContactUseActive,
+    onSaved: () => {
+      setContactRevision((value) => value + 1);
+    },
+    onSelect: selectStoredContact,
   });
   const companyEditor = useStoredCompanyEditor({
     api: globalThis.coredrillStorageSpike.companyWorkspace,
@@ -5182,7 +5208,9 @@ const AppShellCatalog = ({
             activeTab={networkTab}
             onTabChange={changeNetworkTab}
             selectedCompanyId={networkSelectedCompanyId}
-            contactDraftBlocked={contactEditor.hasDraft || vaultRestoreSession.needsReopen}
+            contactDraftBlocked={
+              contactEditor.hasDraft || contactUseActive || vaultRestoreSession.needsReopen
+            }
             onCreateContact={(value) => {
               if (!contactEditor.startCreate(value))
                 setLastActivity(
@@ -5203,7 +5231,7 @@ const AppShellCatalog = ({
                 editor={contactEditor}
                 deletion={contactDeletion}
                 revision={contactRevision}
-                mutationBlocked={vaultExportSession.busy}
+                mutationBlocked={vaultExportSession.busy || contactUseActive}
                 needsReopen={vaultRestoreSession.needsReopen}
                 onSelectContact={selectStoredContact}
                 onViewCompany={selectStoredCompany}
@@ -5223,6 +5251,13 @@ const AppShellCatalog = ({
                             companyScope: networkContactCompanyScope,
                           },
                   );
+                }}
+                sourceUseView={contactUse.view}
+                onReviewField={(value, field) => {
+                  if (!contactUse.open(value, networkContactCompanyScope, field))
+                    setLastActivity(
+                      "Source-use review could not be opened. Finish another draft or refresh this contact's current details first.",
+                    );
                 }}
                 historyView={
                   <>

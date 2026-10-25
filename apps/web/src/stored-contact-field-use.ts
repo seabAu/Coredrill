@@ -2,6 +2,10 @@ import {
   applicationFailure,
   ContactFieldUseStorageError,
   createContactFieldUseOperations,
+  createContactUseResearchQuery,
+  hashViewedContactFieldV1,
+  type ContactWorkspaceV1,
+  type ContactProvenanceFieldName,
   parseContactUseRecordInputV1,
   parseContactUseRecordRequestV1,
   parseContactUseControlInputV1,
@@ -11,6 +15,7 @@ import {
   type ContactUseControlRequestV1,
   type ContactFieldUsePortV1,
   type ReadContactFieldUseInputV1,
+  type ContactUseResearchInputV1,
 } from "@coredrill/application";
 import { entityId, instant } from "@coredrill/domain";
 import { createContactFieldUseRepository, type DatabasePort } from "@coredrill/storage-core";
@@ -97,6 +102,12 @@ export const createStoredContactFieldUseApi = (
     return createContactFieldUseOperations(port, hashValue);
   };
   const query = operations();
+  const research = createContactUseResearchQuery(
+    {
+      read: async (input) => (await selected()).research.read(input),
+    },
+    hashValue,
+  );
   const bind = (input: unknown, kind: "record" | "control") => {
     const payload =
       kind === "record"
@@ -148,8 +159,17 @@ export const createStoredContactFieldUseApi = (
   };
   return Object.freeze({
     newRecordId: () => entityId("contact-use-record", createRecordId()),
+    reviewedValueHash: (workspace: ContactWorkspaceV1, fieldName: ContactProvenanceFieldName) =>
+      hashViewedContactFieldV1(workspace, fieldName, hashValue),
     beginRecord: (input: unknown) => bind(input, "record"),
     beginControl: (input: unknown) => bind(input, "control"),
+    readResearch: async (input: ContactUseResearchInputV1) => {
+      try {
+        return await research.execute(input, copyContext(context()));
+      } catch {
+        return unavailable();
+      }
+    },
     readField: async (input: ReadContactFieldUseInputV1) => {
       try {
         return await query.readField.execute(input, copyContext(context()));

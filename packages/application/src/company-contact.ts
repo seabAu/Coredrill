@@ -433,6 +433,13 @@ export const parseContactDto = (value: unknown): ContactDto => {
   if (typeof value["userConfirmed"] !== "boolean") {
     throw new TypeError("Invalid contact confirmation state.");
   }
+  const profileUrl = value["publicProfileUrl"];
+  if (profileUrl !== null) {
+    if (typeof profileUrl !== "string") throw new TypeError("Invalid stored contact URL.");
+    // Validate stored evidence, preserving the literal covered by its exact-value
+    // hash. Explicit creation still normalizes through parseContactFields.
+    webUrl(profileUrl);
+  }
   const copied: ContactDto = Object.freeze({
     id: entityId("contact", value["id"] as string),
     companyId: nullableEntityId("company", value["companyId"]),
@@ -440,8 +447,7 @@ export const parseContactDto = (value: unknown): ContactDto => {
     role: nullableResultText(value["role"], 512),
     email: nullableResultEmail(value["email"]),
     phone: nullableResultText(value["phone"], 128),
-    publicProfileUrl:
-      value["publicProfileUrl"] === null ? null : webUrl(value["publicProfileUrl"] as string),
+    publicProfileUrl: profileUrl as WebUrl | null,
     confidence: resultConfidence,
     userConfirmed: value["userConfirmed"],
     notes: resultNotesText(value["notes"]),
