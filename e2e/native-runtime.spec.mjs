@@ -37,6 +37,7 @@ import { createCompanyJobsFixture } from "./company-jobs-fixture.mjs";
 import { exerciseCompanyJobs } from "./company-jobs-journey.mjs";
 import { exerciseCompanyInteractions } from "./company-interactions-journey.mjs";
 import { exerciseCompanySources } from "./company-sources-journey.mjs";
+import { exerciseCompanyOutcomes } from "./company-outcomes-journey.mjs";
 import { attachNativeHost } from "./native-proof-host.mjs";
 import {
   createNativeRestoreOperationRecorder,
@@ -404,15 +405,18 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
       journey === "use-forms" ||
       journey === "company-jobs" ||
       journey === "company-interactions" ||
-      journey === "company-sources"
+      journey === "company-sources" ||
+      journey === "company-outcomes"
     ) {
       const fixture =
         journey === "company-jobs" ||
         journey === "company-interactions" ||
-        journey === "company-sources"
+        journey === "company-sources" ||
+        journey === "company-outcomes"
           ? await createCompanyJobsFixture(testInfo, {
               withInteractions: journey === "company-interactions",
               withSources: journey === "company-sources",
+              withOutcomes: journey === "company-outcomes",
             })
           : journey === "history"
             ? await createContactHistoryFixture(testInfo)
@@ -435,28 +439,35 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
       await restore.getByRole("button", { name: "Reload local vault", exact: true }).click();
       Object.assign(
         journeyProof,
-        journey === "company-sources"
-          ? { companySources: await exerciseCompanySources(page, fixture, testInfo) }
-          : journey === "company-interactions"
-            ? { companyInteractions: await exerciseCompanyInteractions(page, fixture, testInfo) }
-            : journey === "company-jobs"
-              ? { companyJobs: await exerciseCompanyJobs(page, fixture) }
-              : journey === "history"
-                ? {
-                    contactHistory: await exerciseContactHistory(page, testInfo, fixture, "native"),
-                  }
-                : journey === "use-forms"
+        journey === "company-outcomes"
+          ? { companyOutcomes: await exerciseCompanyOutcomes(page, fixture, testInfo) }
+          : journey === "company-sources"
+            ? { companySources: await exerciseCompanySources(page, fixture, testInfo) }
+            : journey === "company-interactions"
+              ? { companyInteractions: await exerciseCompanyInteractions(page, fixture, testInfo) }
+              : journey === "company-jobs"
+                ? { companyJobs: await exerciseCompanyJobs(page, fixture) }
+                : journey === "history"
                   ? {
-                      contactUseForms: await exerciseContactUseForms(page, fixture),
-                    }
-                  : {
-                      contactEvidence: await exerciseContactEvidence(
+                      contactHistory: await exerciseContactHistory(
                         page,
                         testInfo,
                         fixture,
                         "native",
                       ),
-                    },
+                    }
+                  : journey === "use-forms"
+                    ? {
+                        contactUseForms: await exerciseContactUseForms(page, fixture),
+                      }
+                    : {
+                        contactEvidence: await exerciseContactEvidence(
+                          page,
+                          testInfo,
+                          fixture,
+                          "native",
+                        ),
+                      },
       );
     } else if (["legacy", "legacy164", "legacy165", "legacy167", "current182"].includes(journey)) {
       const sourceVersion = {
@@ -968,6 +979,7 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
             "company-jobs",
             "company-interactions",
             "company-sources",
+            "company-outcomes",
           ].includes(journey),
           journey,
           invocations,
@@ -1014,6 +1026,7 @@ for (const [journey, description] of [
   ["company-jobs", "normal company-linked role pages and exact return navigation"],
   ["company-interactions", "normal company interaction pages and bounded literal summaries"],
   ["company-sources", "normal company listing sources and active/archived Source returns"],
+  ["company-outcomes", "normal company recorded stage and outcome history"],
 ]) {
   test(`normal root uses real native SQLite for ${description} without OPFS fallback`, async ({
     page,
@@ -1023,7 +1036,8 @@ for (const [journey, description] of [
       journey === "use-forms" ||
       journey === "company-jobs" ||
       journey === "company-interactions" ||
-      journey === "company-sources"
+      journey === "company-sources" ||
+      journey === "company-outcomes"
     )
       await page.clock.setFixedTime(new Date("2026-10-25T16:00:00.000Z"));
     await exerciseNativeJourney(page, testInfo, journey);

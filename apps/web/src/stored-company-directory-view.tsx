@@ -7,6 +7,7 @@ import type {
 import type { StoredCompanyJobsApi } from "./stored-company-jobs.js";
 import type { StoredCompanyInteractionsApi } from "./stored-company-interactions.js";
 import type { StoredCompanySourcesApi } from "./stored-company-sources.js";
+import type { StoredCompanyOutcomesApi } from "./stored-company-outcomes.js";
 import type { CompanySourceReturn } from "./company-source-navigation.js";
 import type { CompanySourceV1, ListCompanySourcesRequestV1 } from "@coredrill/application";
 import type { CompanyJobReturn } from "./company-job-navigation.js";
@@ -236,6 +237,7 @@ export const StoredCompanyDirectoryView = ({
   jobsApi,
   interactionsApi,
   sourcesApi,
+  outcomesApi,
   sourceReturn,
   onInspectSourceJob,
   jobReturn,
@@ -262,6 +264,7 @@ export const StoredCompanyDirectoryView = ({
   readonly jobsApi: StoredCompanyJobsApi | undefined;
   readonly interactionsApi: StoredCompanyInteractionsApi | undefined;
   readonly sourcesApi: StoredCompanySourcesApi | undefined;
+  readonly outcomesApi: StoredCompanyOutcomesApi | undefined;
   readonly sourceReturn: CompanySourceReturn | null;
   readonly onInspectSourceJob: (
     source: CompanySourceV1,
@@ -337,6 +340,7 @@ export const StoredCompanyDirectoryView = ({
             jobsApi={jobsApi}
             interactionsApi={interactionsApi}
             sourcesApi={sourcesApi}
+            outcomesApi={outcomesApi}
             sourceReturn={sourceReturn}
             onInspectSourceJob={onInspectSourceJob}
             jobReturn={jobReturn}

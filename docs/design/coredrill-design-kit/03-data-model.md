@@ -54,6 +54,15 @@ target. Bounded fatal UTF-8 BLOB decoding rejects corrupt/oversized metadata;
 no retained bodies, notes, methods, totals or inferred employer facts are read.
 New captures can change the live projection. See [actual query and UI proof](../../proof/company-listing-sources-progress.md).
 
+Recorded company stage/outcome history advances only the shared test manifest
+to25/45. Existing append-only status events remain truth; current stage names,
+categories and terminal flags are mutable joined metadata. All transitions are
+included, with nullable application identity, retained archived applications and
+exact recorded undo metadata. A cursor binds original company scope and canonical
+event/job/application/stage/undo versions; stale anchors reject. Bounded BLOB
+metadata excludes notes, bodies, methods, totals and inferred employer outcomes.
+SQL/export182 is unchanged. See [query/adapter/normal UI proof](../../proof/company-outcome-history-progress.md).
+
 Normal contact details now consume metadata-only canonical reviewed-use reads
 independently of initial manual-entry evidence. Only a current active reviewed
 basis may display the exact value; stale/failed/foreign/expired/archived reviewed

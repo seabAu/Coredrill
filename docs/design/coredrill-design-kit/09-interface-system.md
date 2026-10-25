@@ -829,6 +829,18 @@ obsolete returns require a deliberate first read. Archived job inspection carrie
 the canonical selected job's explicit archive scope. [Actual proof and limits](../../proof/company-listing-sources-progress.md)
 leave employer facts, salary, outcomes, full INT-007 and release gates open.
 
+### Normal company recorded stage and outcome history (2026-10-25)
+
+Normal company detail also owns recorded stage/outcome history. It includes all
+local transitions, retains nullable and archived application references and names
+recorded undo without claiming an undo action remains available. Current stage
+definitions and current job/company links are explicitly distinct from event-time
+meaning and employer evidence. First/next/archive/exact retry preserve stale,
+unread, confirmed-empty and error states; foreign/retired owners cannot publish.
+Reload starts a newly validated first page. Literal metadata reflows at320px with
+no notes or inferred totals/outcome rates. [Actual normal proof and remaining gates](../../proof/company-outcome-history-progress.md)
+remain separate from public facts, salary and release acceptance.
+
 ### Production setup and observed health checkpoint (2026-10-19)
 
 Production setup makes pending saves inert, announces progress, focuses a failure alert, retains editable input and warns before unloading unsaved entries. Completion is not shown before acknowledgement. A saved vault name cannot be silently renamed on a capture retry. The shell badge uses the actual identity and observed storage diagnostics: only ready, durable, writable storage without warnings is healthy. Best-effort/unavailable/read-only storage remains a risk; schema mismatch is a migration warning unless unavailable/read-only takes precedence. Settings shows the browser origin where relevant and offers passive health refresh without requesting persistence permission. Observations are snapshots, not continuous monitoring. The separate onboarding/reference catalog remains explicitly labeled and is not persistence evidence. See [verification](../../proof/production-first-run-verification.md).

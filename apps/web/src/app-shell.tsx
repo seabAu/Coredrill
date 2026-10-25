@@ -5389,6 +5389,7 @@ const AppShellCatalog = ({
             jobsApi={globalThis.coredrillStorageSpike.companyJobs}
             interactionsApi={globalThis.coredrillStorageSpike.companyInteractions}
             sourcesApi={globalThis.coredrillStorageSpike.companySources}
+            outcomesApi={globalThis.coredrillStorageSpike.companyOutcomes}
             sourceReturn={companySourceReturn}
             onInspectSourceJob={openCompanySourceJob}
             jobReturn={companyJobReturn}

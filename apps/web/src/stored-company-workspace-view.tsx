@@ -16,6 +16,8 @@ import type { StoredCompanyInteractionsApi } from "./stored-company-interactions
 import { StoredCompanyInteractionsView } from "./stored-company-interactions-view.js";
 import { StoredCompanySourcesView } from "./stored-company-sources-view.js";
 import type { StoredCompanySourcesApi } from "./stored-company-sources.js";
+import type { StoredCompanyOutcomesApi } from "./stored-company-outcomes.js";
+import { StoredCompanyOutcomesView } from "./stored-company-outcomes-view.js";
 import type { CompanySourceReturn } from "./company-source-navigation.js";
 import type { CompanySourceV1, ListCompanySourcesRequestV1 } from "@coredrill/application";
 import type { CompanyJobReturn } from "./company-job-navigation.js";
@@ -380,6 +382,7 @@ export const StoredCompanyDetails = ({
   jobsApi,
   interactionsApi,
   sourcesApi,
+  outcomesApi,
   sourceReturn,
   onInspectSourceJob,
   jobReturn,
@@ -397,6 +400,7 @@ export const StoredCompanyDetails = ({
   readonly jobsApi: StoredCompanyJobsApi | undefined;
   readonly interactionsApi: StoredCompanyInteractionsApi | undefined;
   readonly sourcesApi: StoredCompanySourcesApi | undefined;
+  readonly outcomesApi: StoredCompanyOutcomesApi | undefined;
   readonly sourceReturn: CompanySourceReturn | null;
   readonly onInspectSourceJob: (
     source: CompanySourceV1,
@@ -646,12 +650,16 @@ export const StoredCompanyDetails = ({
             restore={sourceReturn}
             onInspectJob={onInspectSourceJob}
           />
+          <StoredCompanyOutcomesView
+            api={outcomesApi}
+            workspace={value}
+            ready={!busy && !stale && visible.error === null}
+          />
         </>
       ) : null}
       <p>
         These are local stored facts, not a verified employer profile. Relationship totals,
-        employer-specific public facts, salary observations and application outcomes are not loaded
-        here.
+        employer-specific public facts and salary observations are not loaded here.
       </p>
     </section>
   );

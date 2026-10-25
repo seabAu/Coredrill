@@ -169,3 +169,55 @@ secret scan pass. Whitespace checks are clean. The39 known implementation/test/
 design/Changeset/proof files form this coherent checkpoint; stash2697 is unchanged.
 Only result records follow frozen source/tests before normal authorized commit
 and push. Fresh exact hosted proof remains required.
+
+## Exact published checkpoint
+
+ccc342d27b8b7b88b9564720f1e9ac6ff9477810 is committed and pushed normally to
+origin/main:39 files,3278 insertions/55 deletions, including pending company-history
+hosted receipts, listing-source implementation and both verification repairs.
+HEAD and origin/main match; the tree is clean directly after push and stash
+2697ebcec53351a052d8c5c19e2b8e2a52056a70 is unchanged.
+
+[Exact Foundation CI40209913081](https://github.com/seabAu/Coredrill/actions/runs/40209913081)
+is running for this SHA. One quiet watcher writes
+test-results/company-sources-hosted-watch.log, saved .exit receipt and terminal
+COMPANY_SOURCES_HOSTED_EXIT. Follow the original handle; an observation timeout
+is not terminal. This is not yet hosted success. Earlier60f456c/40186513941 stays
+terminal failure, not reused as proof. These post-push receipts carry with the
+next coherent implementation checkpoint rather than another receipt-only push.
+Company outcomes, salary prerequisites, Home and independent release gates remain.
+
+## Exact hosted closure
+
+Publishedccc342d27b8b7b88b9564720f1e9ac6ff9477810 closes successfully in
+[CI40209913081](https://github.com/seabAu/Coredrill/actions/runs/40209913081).
+All10 required jobs are terminal success; PR-only dependency review is skipped.
+Original11165 consumes exit0/COMPANY_SOURCES_HOSTED_EXIT=0 and its saved exit
+receipt is0. Complete-log retrieval20477 closes exit0/
+COMPANY_SOURCES_HOSTED_COMPLETE_EXIT=0. Both handles are closed, not restarted.
+Retained logs: test-results/company-sources-hosted-{watch,complete}.log.
+
+Aggregate121218732289 succeeds34m1s total, with full foundation gate within its
+unchanged35m wrapper:236 unit files/3374 passes plus one Windows-only skip,
+repeated under coverage84.48/78.03/85.69/87.12;
+35types/22lint plus tooling/build/artifacts/schema/license/secret/audit/Changesets;
+7UI/76shell/1 diagnostic performance/111resilience/7onboarding/13documents/
+34browser-storage and22 native passes plus the Windows-only canonical-journey
+skip. Local Windows and prepared native lanes retain their own complete proof;
+no skipped case is counted as executed. No known npm vulnerabilities;
+the same11 reviewed allowed Cargo warnings remain. Prepared Windows/macOS/Ubuntu
+jobs independently pass actual native storage, secure-store and package diagnostics.
+
+Chrome151121218732336 succeeds15m53s and Chrome152121218732326 succeeds24m54s;
+both include all normal source/history/interaction and repaired note-lifetime
+cases. Complete20-component v24/44 contracts pass on Chrome151/152 and
+Firefox153/154, with original budgets and no omitted cases. Dedicated extension
+transfer/Firefox fallback also succeeds. The previous60f456c/40186513941 failure
+remains historical failure; the click-bound/request-entry hold now has fresh
+exact hosted execution proof, not a retrospective claim about its earlier timing.
+
+This closes the listing-source engineering checkpoint and its verification repairs,
+not the newer uncommitted outcome-history implementation. SQL/export182, old
+archives/locks/permissions and Accepted decisions remain unchanged. INT-007/Home,
+later salary/public-fact features and independent release/manual gates remain open.
+Carry this post-push receipt with the next coherent verified implementation.

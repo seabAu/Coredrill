@@ -11,7 +11,7 @@ import {
 /** Disclosed synthetic archive prerequisite, restored through normal UI; originals stay unchanged. */
 export const createCompanyJobsFixture = async (
   testInfo,
-  { withInteractions = false, withSources = false } = {},
+  { withInteractions = false, withSources = false, withOutcomes = false } = {},
 ) => {
   const originalPath = path.resolve("fixtures/recovery/phase-1-vault-schema-165-v1.coredrill.zip");
   const originalBytes = await readFile(originalPath);
@@ -169,6 +169,57 @@ export const createCompanyJobsFixture = async (
           at,
         );
     }
+    if (withOutcomes) {
+      db.prepare(
+        "INSERT INTO company(id,canonical_name,notes,created_at,updated_at) VALUES(?,?,?,?,?)",
+      ).run(
+        id(9007),
+        "Synthetic current-linked outcome company",
+        "PRIVATE outcome company notes",
+        at,
+        at,
+      );
+      for (const n of [600, 601])
+        db.prepare(
+          "INSERT INTO job(id,company_id,title,description_text,current_status_id,archived_at,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)",
+        ).run(
+          id(n),
+          id(9007),
+          `Synthetic outcome job ${n} <script>literal</script> 😀`,
+          "PRIVATE outcome job body",
+          id(8000),
+          n === 601 ? at : null,
+          at,
+          at,
+        );
+      for (const [n, name, category, terminal] of [
+        [51000, "Synthetic current active <script> 😀", "saved", 0],
+        [51001, "Synthetic current rejection", "rejected", 1],
+        [51002, "Synthetic current reopening", "preparing", 0],
+      ])
+        db.prepare(
+          "INSERT INTO status_definition(id,name,category,sort_order,terminal,created_at,updated_at) VALUES(?,?,?,?,?,?,?)",
+        ).run(id(n), name, category, n, terminal, at, at);
+      db.prepare(
+        "INSERT INTO application(id,job_id,current_status_id,notes,archived_at,created_at,updated_at) VALUES(?,?,?,?,?,?,?)",
+      ).run(id(52000), id(600), id(51001), "PRIVATE outcome application notes", at, at, at);
+      for (const n of [...Array.from({ length: 27 }, (_, index) => 30000 + index), 31000, 32000])
+        db.prepare(
+          "INSERT INTO status_event(id,job_id,application_id,from_status_id,to_status_id,occurred_at,note,created_at) VALUES(?,?,?,?,?,?,?,?)",
+        ).run(
+          id(n),
+          n === 31000 ? id(601) : n === 32000 ? id(200) : id(600),
+          n === 30000 ? id(52000) : null,
+          n === 30002 ? null : n === 30001 ? id(51001) : id(51000),
+          n === 30001 ? id(51002) : id(51001),
+          at,
+          "PRIVATE outcome event notes",
+          at,
+        );
+      db.prepare(
+        "INSERT INTO mutation_undo_token(id,kind,job_id,status_event_id,previous_status_id,expected_status_id,expected_job_row_version,created_at,consumed_at,row_version) VALUES(?,'status_change',?,?,?,?,?,?,?,2)",
+      ).run(id(53000), id(600), id(30003), id(51000), id(51001), 1, at, at);
+    }
     const session = {
       query: async (statement) => db.prepare(statement.sql).all(...statement.parameters),
     };
@@ -231,6 +282,17 @@ export const createCompanyJobsFixture = async (
       firstIds: Array.from({ length: 10 }, (_, index) => id(index + 100)),
       secondIds: Array.from({ length: 10 }, (_, index) => id(index + 110)),
       originalRecoveryFixtureUnchanged: true,
+      ...(withOutcomes
+        ? {
+            outcomeCompanyId: id(9007),
+            outcomeCompanyName: "Synthetic current-linked outcome company",
+            outcomeFirstIds: Array.from({ length: 10 }, (_, n) => id(n + 30000)),
+            outcomeSecondIds: Array.from({ length: 10 }, (_, n) => id(n + 30010)),
+            outcomeArchivedId: id(31000),
+            outcomeReversedId: id(30003),
+            outcomeApplicationId: id(52000),
+          }
+        : {}),
       ...(withSources
         ? {
             sourceCompanyId: id(9006),

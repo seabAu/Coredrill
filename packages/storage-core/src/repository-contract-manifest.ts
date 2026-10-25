@@ -128,6 +128,10 @@ const PHASE_1_REPOSITORY_CONTRACT_COMPONENTS = Object.freeze({
     readScopedSources:
       "reads current-linked listing sources and retained capture metadata with literal URL and owned cursor guards without bodies",
   }),
+  companyOutcomes: component("stored-company-recorded-outcomes", {
+    readRecordedHistory:
+      "reads recorded company-linked stage and outcome history with current definitions nullable applications reversal and original owner guards without private notes",
+  }),
 });
 
 const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
@@ -137,8 +141,8 @@ const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
 );
 
 export const PHASE_1_REPOSITORY_CONTRACT_MANIFEST = Object.freeze({
-  schemaVersion: 24 as const,
-  suiteName: "phase-1-repository-contracts-v24",
+  schemaVersion: 25 as const,
+  suiteName: "phase-1-repository-contracts-v25",
   components: PHASE_1_REPOSITORY_CONTRACT_COMPONENTS,
   caseNames: PHASE_1_REPOSITORY_CONTRACT_CASES,
 });

@@ -1,5 +1,6 @@
 /** Use-case orchestration and query DTOs over domain ports. */
 export * from "./company-sources.js";
+export * from "./company-outcomes.js";
 export * from "./company-interactions.js";
 export * from "./company-jobs.js";
 export {

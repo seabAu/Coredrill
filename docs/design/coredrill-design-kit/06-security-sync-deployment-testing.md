@@ -403,7 +403,7 @@ Labor/API proxies are not introduced just to hide free API keys unless a source'
 
 ### Repository/storage contracts
 
-The growing current v24/44 repository inventory is executed by every adapter.
+The growing current v25/45 repository inventory is executed by every adapter.
 Chromium now partitions the explicit complete component list into separate tests
 under the unchanged30-second per-test timeout and unchanged per-case isolated
 database lifecycle. Each result names its component and exact completed cases;
@@ -417,6 +417,13 @@ corrupt bounded metadata and canonical cursor ownership proof across the same
 adapters. Normal company navigation separately proves read-only metadata,
 active/archived job Source inspection and exact return scope. See [current
 source proof and remaining gates](../../proof/company-listing-sources-progress.md).
+Recorded company stage-history contracts additionally prove nullable/archived
+applications, current stage definitions, recorded reversals, current membership,
+canonical multi-record cursor invalidation and absence of private notes. The
+normal UI separately proves offline manual preparation, exact retry, archive
+scope, held reflow/axe and late-company exclusion against browser and actual Rust
+SQLite. [Current outcome proof](../../proof/company-outcome-history-progress.md)
+does not substitute for complete final-source or fresh exact hosted gates.
 
 Run the identical suite against in-memory/reference, browser SQLite worker/OPFS, and native SQLite:
 

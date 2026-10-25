@@ -232,7 +232,14 @@ hashes and latest retained capture metadata are distinguished; viewing fetches
 no URL or body. Explicit inspection opens the job-level Source workspace,
 including archived jobs, then returns to the exact validated company page and
 focus. See [source implementation and proof](../../proof/company-listing-sources-progress.md).
-Employer facts, salary and outcome projections remain separate work.
+Company detail now also reads recorded local stage/outcome history for currently
+linked jobs. All transitions remain visible, including reopenings, job-level
+events without applications, archived application references and recorded undo.
+Names/categories/terminal markers describe current stage definitions, not their
+meaning at event time; the history does not verify employer decisions or receipt.
+Bounded first/next/archive/exact retry and fresh first-page reload preserve honest
+state. See [outcome-history implementation and proof](../../proof/company-outcome-history-progress.md).
+Employer-specific public facts and salary observations remain separate work.
 
 ### Salary intelligence
 
