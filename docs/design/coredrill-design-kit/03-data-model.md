@@ -2,6 +2,20 @@
 
 ## Conventions
 
+The additive version-1 contact field-use application contract separates an
+independent user-supplied source snapshot from exact-value review evidence and a
+runtime-resolved reviewed policy. Source metadata is not a hidden job. The
+deterministic assessor checks vault/contact/field/value/source/hash/revision
+scope, explicit job-search purpose, policy applicability, review/expiry and
+revocation; an elapsed bound withholds basis, never deletes a contact. Its
+public/licensed result describes reviewed use basis, not verified identity,
+deliverability, legal certainty or sending authorization. No production contact
+policy or source acquisition is approved. This is a pure infrastructure contract,
+not durable state or normal UI: SQLite schema remains167, historical manual
+receipts and the source inspector are unchanged. Durable reviewed records,
+transactional guards, export/recovery and explicit normal review controls remain
+required under INT-007. See [scope and proof](../../proof/contact-field-use-qualification-contract.md).
+
 Current schema167 replaces the interaction update guard through paired166/167
 migrations in one transaction. Only non-null-to-null contact detachment after
 that parent is absent is allowed, with all other interaction columns unchanged.

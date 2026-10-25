@@ -1,8 +1,8 @@
 # Normal selected-contact deletion preflight
 
-Status: normal deletion UI implemented; full local verification, serial
-extension transfer and final formatting/policy pass. Authorized checkpoint and
-exact hosted closure pending. INT-007 remains unchecked.
+Status: normal deletion boundary and owned standard UI verified at exact
+9025d46/run40142763056; all ten required hosted jobs pass and the original watch
+consumes terminal exit0. Full INT-007 remains unchecked.
 
 ## Authority and bounded scope
 
@@ -410,3 +410,284 @@ changes or historical SQL/archive/lock edits are present. Stash2697 is unchanged
 `main` and remotely inspected `origin/main` still point to2a438d9. Stage checks
 will refresh formatting/policy over these terminal receipt additions before
 the authorized ordinary commit/push. No new exact hosted success is claimed.
+
+## Checkpoint committed and exact hosted run active
+
+Stage refresh46739 consumes exit0 with
+`NORMAL_CONTACT_DELETION_STAGE_POLICY_EXIT=0`; the two receipt documents pass
+formatting again and all boundaries/foundation/license/secret checks pass.
+Log:`test-results/normal-contact-deletion-stage-policy.log`.
+
+The authorized ordinary30-file commit is
+`9025d46d61bf6e0300556529063f15a3630f41cc`,
+`feat: add owned local contact deletion review` (3,277 insertions/22 deletions).
+It includes both previously pending schema167 guard/hosted proof/checklist
+receipts, application/repository/runtime/owned UI, identical manifestv20/39
+proof, synthetic audit/tests and Changeset. Staged whitespace passes; working
+tree is clean immediately after commit/push. Ordinary push advances main from
+2a438d9 to9025d46; independent `ls-remote` confirms the exact full SHA at
+origin/main. No force, reset, stash modification or unrelated work is involved.
+
+The automatically triggered exact-SHA [Foundation CI run40142763056](https://github.com/seabAu/Coredrill/actions/runs/40142763056)
+is in progress. Original watch40967 remains live,30-second interval,
+`test-results/normal-contact-deletion-hosted-watch.log`; it must be consumed
+through the terminal `NORMAL_CONTACT_DELETION_HOSTED_EXIT` marker. No duplicate
+dispatch or workflow change is made. Required job identities:
+
+- Windows native/package121017760463; macOS121017760539;
+  Ubuntu121017760656.
+- Firefox153121017760578; Firefox154121017760590;
+  Chrome152121017760599; Chrome151121017760695.
+- Extension121017760624; full aggregate121017760627;
+  full-history secrets121017760691.
+
+Initial compact exact-SHA receipt has only the full-history secret scan
+successful; the other nine required jobs remain running. PR-only dependency
+review121017761265 is intentionally skipped on push, not a required success.
+Ten required jobs include the full aggregate. Retain all actual terminal logs,
+exact supported-browser witnesses, prepared three-OS security/package results
+and aggregate budget result before claiming hosted closure. Keep the unchanged
+30-minute limit and previous41-second headroom risk; no optimistic inference
+from local or partial hosted success.
+
+These two fresh post-push proof/checklist receipt edits are deliberately carried
+to the next verified implementation checkpoint, not a source change to9025d46.
+No full INT-007/INT-008/goal, source-use qualification/review, company
+relationships, Home, installed-WebView/manual/reference-hardware/Unix/public
+release gate is closed. After exact hosted closure, the next bounded work is
+the remaining durable exact-value field-use qualification/review requirements,
+not another deletion baseline audit.
+
+## Exact Firefox witnesses retained; hosted gate remains live
+
+Original40967 is confirmed live on continuation. Exact9025d46/run40142763056
+now has Firefox153121017760578 and Firefox154121017760590 successful (1m32s
+and1m40s). Both completed job logs are retrieved directly and retained with
+exit0/FIREFOX153_LOG and FIREFOX154_LOG markers0:
+`test-results/normal-contact-deletion-hosted-firefox153.log` and
+`test-results/normal-contact-deletion-hosted-firefox154.log`.
+
+Their actual `STG_FIREFOX_PROOF` records identify153.0/154.0, official SQLite
+3.53.0 Worker/VFS, all167 applied versions,58 datasets/116 data files,
+schema167, exact phase-1 repository manifestv20/39 and career manifestv3/four
+cases. Both show explicit persistence grant, reminder persistence, checksummed
+same-vault restore and corruption/stale rejection, typed vault-deletion
+preview/rejection/clean profile, seven local-time scenarios/13 invalid literals
+with globals unchanged. Compatibility scheduling-module proof is not the
+production scheduling bundle or installed WebView. These are actual new-SHA
+manifest/lifecycle witnesses, not an inference from the local browser version.
+
+Together with full-history secrets, three required jobs are successful in the
+observed watch. Seven required jobs, including aggregate121017760627, remain
+running; original40967 and its terminal HOSTED marker must still be consumed.
+No duplicate run, source/helper/timeout change, full hosted/INT-007/INT-008/goal
+or independent release closure. Only the same two fresh receipt documents
+differ from the committed checkpoint.
+
+## macOS native and package witness retained
+
+Exact9025d46/run40142763056/macOS121017760539 succeeds5m29s. Direct completed
+log retrieval consumes exit0/`NORMAL_CONTACT_DELETION_HOSTED_MACOS_LOG_EXIT=0`;
+retained log:`test-results/normal-contact-deletion-hosted-macos.log`.
+
+Actual evidence includes Rust24 passes/one deliberate direct-secret ignore,
+native21 passes/one Windows-only canonical-journey skip (source guard remains
+`it.runIf(process.platform === "win32")`),17.78s native total, and a passing
+versioned shared manifest test. All six recovery archives retain expected
+content hashes and attachments, including current167 content
+`23d34240eaf9baee204a23ef5725a8537c85ec402b71d6ab2059e48d10999714`.
+Physical database-byte equality is explicitly false on this platform; semantic
+content/relationship/attachment restore is proven, not byte-identical SQLite
+files across OSes.
+
+The separately prepared macOS Keychain lifecycle stores/retrieves/deletes
+without exposing secret material. Native archive checksum/cancellation/atomic
+replacement/recovery, verified managed backup retention, and complete Tauri
+lint pass. The19,867,678-byte diagnostic macOS app excludes the probe and stays
+alive for the five-second launch check. `targetConformant:false`, skipped
+notarization, installed interactive WebView/manual/reference-hardware/public
+release acceptance and ADR-0004's Unix risk disposition remain unchanged.
+
+Original40967 remains live after this new witness. Four of ten required jobs
+are observed successful (both Firefox versions, macOS and secrets); Windows,
+Ubuntu, both Chrome versions, extension and aggregate remain running. The
+same exact hosted terminal-marker/full-log/budget requirements apply. This is
+not full hosted/INT-007/INT-008/goal or release closure, and no committed source,
+helper, dependency, permission or Accepted decision is changed.
+
+## Hosted extension witness retained
+
+Exact9025d46/run40142763056/extension121017760624 succeeds7m2s. Direct
+completed log retrieval consumes exit0 and
+`NORMAL_CONTACT_DELETION_HOSTED_EXTENSION_LOG_EXIT=0`; retained log:
+`test-results/normal-contact-deletion-hosted-extension.log`.
+
+Both production MV3 packages pass manifest/CSP/file/secret/remote-code inspection
+with unchanged least-privilege permissions and zero host permissions. Chromium
+keeps the single reviewed external app origin; Firefox retains manual JSON
+fallback and no external origin. The57-file/187,990-byte source-review ZIP
+passes its secret scan and frozen-lockfile **offline** rebuild, with production
+directory and rebuilt store ZIP byte equality true. Source ZIP SHA:
+`89c353badf9094e2e1f0902d1ee8087e2d51fc4163cd5a8f07afa3f11d972e32`.
+The log includes a WXT source-stat ENOENT warning; the separate complete
+source-review/rebuild/byte-comparison checks still pass. No warning suppression,
+helper/source change or weaker assertion is introduced.
+
+Nine transfer/security cases pass29.2s:actual Chromium149.0.7827.55 and
+Firefox151 manual fallback into schema167. Exact identity/capability agreement,
+durable-before-ack and restart recovery, attempt-two idempotency, rejected
+origin/oversize/identity/replay, retained outbox on storage failure, inert hostile
+prompt content/redirect/iframe/SPA/expiry bounds, original evidence/confirmed
+field correction, exact source diff/reload and zero exfiltration/unapproved
+requests are covered. Held forwarded responses drain before page/context
+teardown without ignoring genuine fetch errors. The immutable uploaded
+artifact digest is
+`e260b7d098ae72f9855bbb1c510bb4034d27ba0f67748cef3b45eda896652732`.
+
+Original40967 is confirmed live. Five of ten required jobs are observed
+successful; Windows, Ubuntu, both Chrome lanes and aggregate121017760627 remain
+running. Exact supported browser/native package/aggregate logs and terminal
+HOSTED marker are still required. No full hosted/INT-007/INT-008/goal/public
+release acceptance, duplicate dispatch, source/helper/permission/Accepted
+change or weakening of the30-minute gate. Only two fresh receipt docs differ
+from9025d46; the implementation remains frozen.
+
+## Windows and Ubuntu native/package witnesses retained
+
+Exact9025d46/run40142763056 adds successful Windows121017760463/12m3s and
+Ubuntu121017760656/12m25s. Both direct completed-log downloads consume exit0
+with WINDOWS_LOG and UBUNTU_LOG markers0. Logs:
+`test-results/normal-contact-deletion-hosted-windows.log` and
+`test-results/normal-contact-deletion-hosted-ubuntu.log`.
+
+Windows passes native22 tests/42.69s total, Rust24/one deliberate direct-secret
+ignore, separately prepared app-data resolution, Credential Manager lifecycle,
+archive recovery/backup and complete Tauri lint. The actual six-case sampler/
+cleanup process-race suite passes10.70s without suppressing unrelated failures.
+Current-user NSIS install/20-run startup/uninstall preserves app data. Installer
+bytes4,333,054 and SHA
+`51ffb8e089cba93d1972016f422e4756ff6afdbc103b2935a9c5a71d08b5b46a`
+are retained; diagnostic startup p95 is823.8ms and working-set p95
+377,888,768 bytes. `targetConformant:false`:these measurements are not a
+reference-hardware performance pass or installed interactive UI acceptance.
+
+Ubuntu passes native21 tests/one Windows-only skip,28.78s total; Rust24/one
+deliberate direct-secret ignore; prepared FreeDesktop Secret Service
+store/retrieve/delete with no secret exposed; native archive/checksum/atomic
+recovery, verified backup retention and complete boundary lint. Its87,067,128-
+byte AppImage excludes the native probe and survives the five-second launch.
+`targetConformant:false` and ADR-0004 Unix/manual/reference-hardware/signing/
+public-release gates remain open.
+
+Both native suites cover all six retained archives/current167 exact semantic
+content and attachments. Their current archive/content hashes match the
+reviewed7e979c94/23d34240 witness; physical database equality is false and is
+not claimed. Source, lockfiles, archive bytes, helper/assertions and Accepted
+decisions remain frozen. Together with macOS, prepared actual secure-storage
+lifecycles now pass all three OSes for this SHA; this does not erase the
+deliberate direct-secret test ignore or imply distribution acceptance.
+
+Original40967 remains live; seven required jobs are observed successful.
+Chrome151/152 and aggregate121017760627 are still running under the unchanged
+30-minute aggregate limit. Complete exact hosted logs and original terminal
+HOSTED marker remain mandatory; no full hosted/INT-007/INT-008/goal/release
+closure. Only the same two fresh receipt documents are modified locally.
+
+## Exact Chrome witnesses retained; aggregate remains live
+
+Exact9025d46/run40142763056 adds successful Chrome152121017760599/19m30s and
+Chrome151121017760695/20m27s. Both direct completed-log downloads consume exit0
+with CHROME152_LOG and CHROME151_LOG markers0. Logs:
+`test-results/normal-contact-deletion-hosted-chrome152.log` and
+`test-results/normal-contact-deletion-hosted-chrome151.log`.
+
+Actual setup/version and `STG_PROOF` records identify Chrome for Testing
+152.0.7977.54 and151.0.7922.138, official SQLite3.53.0/opfs-sahpool/dedicated
+Worker, schema167,58 datasets/116 data files, durable transaction rollback,
+clean-profile and same-vault checksummed restore, corruption/stale rejection
+and typed deletion preserving external archives. Each exact lane passes the
+shared phase-1 manifestv20/39 and Career Profile parity,13 document cases,
+seven UI-foundation cases,76 shell cases,85 resilience cases and seven
+onboarding cases. Resilience durations are11.6m/12.0m respectively.
+
+The successful resilience logs explicitly include the normal interaction/
+contact-deletion browser journey and actual Rust-SQLite Network journey,
+complete original summaries, historical160/164/165/current167 restore/reopen,
+owned evidence/history privacy/lifetime cases and production offline strict
+local-time scheduling. Both source-pinned normal deletion helper calls exercise
+typed consent, pending navigation, held post-commit acknowledgement, explicit
+observational absence without causal attribution, preserved timeline, ordinary
+acknowledged deletion, typed unsaved notes/interaction draft protection,
+deliberate focus, offline reload and320px/forced-colors/axe. This is not a claim
+that every UI fault variant or installed WebView has been independently tested.
+
+Original40967 remains live. Nine required jobs are now observed successful;
+aggregate121017760627 remains in progress under the unchanged30-minute gate.
+Its terminal result, original HOSTED marker and complete actual log are still
+required before exact hosted closure. No duplicate run, source/helper/lock/
+permission/Accepted change or full INT-007/INT-008/goal/release closure. Only
+the same two fresh receipt documents differ from9025d46.
+
+## Exact hosted closure and normal deletion requirement disposition
+
+Exact commit`9025d46d61bf6e0300556529063f15a3630f41cc` has completed-success
+[Foundation CI40142763056](https://github.com/seabAu/Coredrill/actions/runs/40142763056).
+The final exact-SHA API receipt confirms every one of the ten required jobs
+completed successfully. PR-only dependency review is intentionally skipped on
+push. Aggregate121017760627 succeeds23m30s under the unchanged30-minute limit,
+with6m30s current headroom. The prior41-second witness remains historical risk
+evidence; this faster run is not a guaranteed runtime or a benchmark waiver.
+
+Original40967 is consumed terminal exit0 with
+`NORMAL_CONTACT_DELETION_HOSTED_EXIT=0`; do not restart or poll that completed
+handle. Aggregate log download consumes exit0/AGGREGATE_LOG marker0; complete
+workflow-log handle54649 consumes exit0/COMPLETE_LOG marker0. Retained outputs:
+`test-results/normal-contact-deletion-hosted-watch.log`,
+`test-results/normal-contact-deletion-hosted-aggregate.log` and
+`test-results/normal-contact-deletion-hosted-complete.log`.
+
+The actual unshortened aggregate`pnpm verify` proves35 type tasks,22 strict lint
+tasks plus tooling,220 files/2,862 passing units plus one Windows-only packaging
+skip, repeated under coverage. Coverage matches the local83.93/77.68/84.9/86.53
+statement/branch/function/line percentages. All22 builds, seven UI foundations,
+76 shell cases, diagnostic performance,85 resilience cases/8.6m, seven onboarding,
+13 documents,14 browser storage and21 native cases/one Windows-only journey
+skip pass. Aggregate's unprepared Secret Service check is explicitly skipped;
+prepared actual secure-storage lifecycles pass in the three separately retained
+OS jobs, not by pretending that aggregate skip was an executed lifecycle.
+Native recovery/archive/backup, seven generated contract schemas, UI contrast/
+extraction reports, extension build/package/source checks,831 package/498 crate
+licenses, workspace/full-history secret scans, advisory and Changesets gates
+pass. Cargo retains the same11 allowed warnings and Unix risk disposition.
+
+Requirement-by-requirement disposition for this bounded deletion slice:
+
+| Requirement                                                                                                | Authoritative evidence                                                                                                                                                                | Disposition                                                                                                              |
+| ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Explicit original contact/vault/version and exact consent, including archived views                        | Strict nine-field application target parser, canonical-ID/timestamp tests, original metadata-only action, controller consent/scope tests and actual normal UI                         | Implemented; no name/method/notes retained as deletion metadata, inferred consent or new permission                      |
+| Transactional contact-owned cleanup, confirmed/cyclic histories, unrelated preservation and late rollback  | Real Node/browser/native shared manifestv20/39; repository tests; current167 guard/recovery and actual archive witnesses                                                              | Implemented; preserves companies/jobs/shared sources, recorded text and historical interview IDs; not all-copies erasure |
+| Read-only reconciliation without attributed absence or automatic repeat writes                             | Strict observational result states, actual post-commit lost-ack normal UI, controller original-present/changed/unresolved/absence tests and immutable runtime-context tests           | Implemented; only an explicit identical retry after observing the original version; no orphan purge                      |
+| Root-owned review across reflow/navigation and preservation of competing drafts                            | Controller disposal/context tests, runtime binding tests, live restore/API callback guards and normal browser/real-Rust UI journeys                                                   | Implemented with scoped evidence; not a claim that every possible UI fault/restore permutation was separately exercised  |
+| Ordinary usable confirmation/result UI, offline/reload, literal privacy, focus, keyboard and accessibility | Normal helper on actual local browser/native and exact Chrome151/152 resilience lanes;320px/forced-colors/zero scoped axe violations, acknowledged and uncertain flows                | Proven for the exercised normal journeys; installed interactive WebView/manual acceptance stays separate                 |
+| Historical/current recovery and no undocumented decision/permission change                                 | All six archives, normal160/164/165/167 restore/reopen, unchanged historical SQL/archives/locks, full policy/security/license and exact hosted gates                                  | Proven; schema167 and all Accepted decisions remain unchanged                                                            |
+| Complete INT-007 field-use qualification/review and company relationships                                  | Current evidence contract still explicitly returns public/licensed eligibility not established; no durable qualification/independent contact-source or relationship projections added | Not achieved; remains required next implementation work, not replaced by deletion                                        |
+| Home and product/release completion                                                                        | INT-008 and independent living-checklist gates remain unchecked; diagnostic packages still targetConformant:false, Unix/signing/manual/reference-hardware gates remain                | Not achieved; full goal stays active                                                                                     |
+
+This closes the scoped normal-deletion engineering checkpoint, not the full
+INT-007 item or any distribution/performance/manual/Unix gate. No test,
+manifest or green job is treated as evidence beyond the requirement it actually
+exercises. All local/hosted/log/policy handles are terminal; no duplicate run,
+source/helper/lock/permission/Accepted change or historical failure erasure.
+Only these two fresh hosted proof/checklist receipt documents carry locally,
+to be included with the next verified implementation checkpoint.
+
+The next bounded work must define real durable exact-value public/licensed
+qualification and purpose/review/expiry semantics with explicit normal review.
+The existing evidence reader's constant `not_established` is not completion;
+neither URL/license-note/confirmation metadata nor job-only connector policies
+can grant contact-use rights. Existing job-bound snapshots cannot be made
+independent by inventing a hidden job. Read and reconcile the governing
+source/data/UI/policy records before selecting an additive representation;
+no contact acquisition, provider, permission or Accepted-decision change is
+implicitly authorized. Expiry withholds use basis, not automatic contact
+deletion. Company relationships and normal Home remain afterward.
