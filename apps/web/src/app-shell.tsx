@@ -154,13 +154,22 @@ import { useStoredJobTimeline } from "./stored-job-timeline.js";
 import { useStoredJobNote, type StoredNoteAcknowledgement } from "./stored-job-note.js";
 import { useStoredJobDetails } from "./stored-job-details.js";
 import { StoredCompanyDirectoryView } from "./stored-company-directory-view.js";
+import {
+  COMPANY_JOB_RETURN_KIND,
+  readCompanyJobReturn,
+  type CompanyJobReturn,
+} from "./company-job-navigation.js";
 import { useStoredCompanyEditor } from "./stored-company-workspace-view.js";
 import { StoredContactDirectoryView } from "./stored-contact-directory-view.js";
 import { useStoredContactDeletion } from "./stored-contact-deletion-view.js";
 import { useStoredContactUseWorkflow } from "./stored-contact-use-workflow.js";
 import { useStoredContactEditor } from "./stored-contact-editor-view.js";
 import { useStoredInteractionEntry } from "./stored-interaction-entry.js";
-import type { ContactWorkspaceV1 } from "@coredrill/application";
+import type {
+  ContactWorkspaceV1,
+  CompanyJobSummaryV1,
+  ListCompanyJobsRequestV1,
+} from "@coredrill/application";
 import {
   StoredContactHistoryView,
   useStoredContactHistory,
@@ -319,6 +328,7 @@ interface PipelineNavigationSnapshot {
 }
 
 interface JobRouteState {
+  readonly returnToCompany?: boolean;
   readonly pipelineDepth?: number;
   readonly jobId: string;
   readonly mode: JobWorkspaceMode;
@@ -509,7 +519,7 @@ const readPipelineSnapshot = (value: unknown): PipelineNavigationSnapshot | null
 
 const readJobHistoryState = (
   value: unknown,
-): Pick<JobRouteState, "mode" | "returnSnapshot" | "pipelineDepth"> | null => {
+): Pick<JobRouteState, "mode" | "returnSnapshot" | "pipelineDepth" | "returnToCompany"> | null => {
   if (
     !isRecord(value) ||
     value["kind"] !== JOB_HISTORY_KIND ||
@@ -519,6 +529,7 @@ const readJobHistoryState = (
   }
   return Object.freeze({
     mode: value["mode"],
+    returnToCompany: value["returnToCompany"] === true,
     pipelineDepth:
       typeof value["pipelineDepth"] === "number" &&
       Number.isSafeInteger(value["pipelineDepth"]) &&
@@ -1815,6 +1826,7 @@ const AppShellCatalog = ({
       responsiveContextual: contextual,
       pipelineDepth: historyState?.pipelineDepth ?? 1,
       returnSnapshot: historyState?.returnSnapshot ?? null,
+      returnToCompany: historyState?.returnToCompany === true,
       tab: initialLocation.tab,
     });
   }, [initialLocation]);
@@ -1945,6 +1957,15 @@ const AppShellCatalog = ({
       : null,
   );
   const [companyRevision, setCompanyRevision] = useState(0);
+  const [companyJobReturn, setCompanyJobReturn] = useState<CompanyJobReturn | null>(() => {
+    const saved = readCompanyJobReturn(window.history.state);
+    return !referenceCatalog &&
+      initialLocation.kind === "network" &&
+      initialLocation.tab === "companies" &&
+      initialLocation.recordId === saved?.request.companyId
+      ? saved
+      : null;
+  });
   const [contactRevision, setContactRevision] = useState(0);
   const [networkContactCompanyScope, setNetworkContactCompanyScope] = useState<string | null>(
     initialLocation.kind === "network" ? initialLocation.companyScope : null,
@@ -2022,15 +2043,13 @@ const AppShellCatalog = ({
     >
   >({});
   const storedJobId = workspaceRoute?.jobId;
-  const storedDetailsContent = useStoredJobDetails({
-    jobId:
-      !referenceCatalog && (workspaceRoute?.tab === "overview" || workspaceRoute?.tab === "company")
-        ? workspaceRoute.jobId
-        : null,
+  const storedDetails = useStoredJobDetails({
+    jobId: !referenceCatalog && workspaceRoute !== null ? workspaceRoute.jobId : null,
     tab: workspaceRoute?.tab === "company" ? "company" : "overview",
     api: referenceCatalog ? null : globalThis.coredrillStorageSpike.pipeline,
     rowVersion: storedPipeline?.jobs.find(({ id }) => id === workspaceRoute?.jobId)?.rowVersion,
   });
+  const storedDetailsContent = storedDetails.content;
   const [storedNoteSaved, setStoredNoteSaved] = useState<StoredNoteAcknowledgement | null>(null);
   const storedNoteContent = useStoredJobNote({
     jobId: workspaceRoute?.jobId ?? null,
@@ -2093,7 +2112,10 @@ const AppShellCatalog = ({
         if (result.ok) {
           setStoredJob(result.value);
           setLastActivity("Loaded a stored local job.");
-        } else setLastActivity(result.error.message);
+        } else
+          setLastActivity(
+            "Requirement comparison is unavailable. Selected stored job details are read independently.",
+          );
       })
       .catch(() => {
         if (active) setLastActivity("The stored job could not be loaded. Reload to try again.");
@@ -2152,6 +2174,7 @@ const AppShellCatalog = ({
     )
       return;
     navigationHistory.pushState(null, "", networkUrl("companies", id ?? undefined));
+    setCompanyJobReturn(null);
     setNetworkSelectedCompanyId(id);
     setNetworkTab("companies");
     setActiveDestination("network");
@@ -2432,7 +2455,10 @@ const AppShellCatalog = ({
   const workspaceJob =
     workspaceRoute === null
       ? undefined
-      : (tableRows.find(({ id }) => id === workspaceRoute.jobId) ??
+      : ((storedDetails.value?.job.id === workspaceRoute.jobId
+          ? storedPipelineTableRow(storedDetails.value.job)
+          : undefined) ??
+        tableRows.find(({ id }) => id === workspaceRoute.jobId) ??
         (referenceCatalog
           ? STANDARD_TABLE_ROWS.find(({ id }) => id === workspaceRoute.jobId)
           : undefined) ??
@@ -2451,10 +2477,13 @@ const AppShellCatalog = ({
                 storedPipeline?.jobs.find(({ id }) => id === workspaceJob.id),
               ),
           priority: workspaceJob.priority,
-          sourceFreshness:
-            workspaceJob.capturedDate === null
+          sourceFreshness: referenceCatalog
+            ? workspaceJob.capturedDate === null
               ? "Capture time unknown"
-              : `Captured ${workspaceJob.capturedDate}`,
+              : `Captured ${workspaceJob.capturedDate}`
+            : storedDetails.value?.job.id === workspaceJob.id
+              ? `Saved ${storedDetails.value.job.createdAt.replace("T", " ").replace("Z", " UTC")}`
+              : "Save time unknown",
           sourceLabel: workspaceJob.source,
           status:
             referenceCatalog && applicationSubmissionReview?.jobId === workspaceJob.id
@@ -3598,6 +3627,54 @@ const AppShellCatalog = ({
     );
   };
 
+  const openCompanyRole = (job: CompanyJobSummaryV1, request: ListCompanyJobsRequestV1): void => {
+    if (
+      referenceCatalog ||
+      activeDestination !== "network" ||
+      networkTab !== "companies" ||
+      vaultRestoreSession.needsReopen ||
+      vaultExportSession.busy ||
+      companyEditor.hasDraft ||
+      request.expectedVaultId !== vaultSession?.vault.id ||
+      request.companyId !== networkSelectedCompanyId?.toLowerCase() ||
+      job.companyId !== request.companyId ||
+      window.location.pathname.toLowerCase().replace(/\/$/u, "") !==
+        networkUrl("companies", request.companyId)
+    )
+      return;
+    const saved = readCompanyJobReturn({
+      kind: COMPANY_JOB_RETURN_KIND,
+      request,
+      jobId: job.id,
+      scrollY: window.scrollY,
+    });
+    if (saved === null) return;
+    navigationHistory.replaceState(saved, "", networkUrl("companies", request.companyId));
+    navigationHistory.pushState(
+      {
+        kind: JOB_HISTORY_KIND,
+        mode: "full-page",
+        snapshot: null,
+        returnToCompany: true,
+        pipelineDepth: 1,
+      },
+      "",
+      jobUrl(job.id, "overview"),
+    );
+    setCompanyJobReturn(saved);
+    setActiveDestination("pipeline");
+    setWorkspaceRoute({
+      jobId: job.id,
+      mode: "full-page",
+      responsiveContextual: false,
+      returnSnapshot: null,
+      returnToCompany: true,
+      pipelineDepth: 1,
+      tab: "overview",
+    });
+    setLastActivity("Opened a stored role linked to the viewed company.");
+  };
+
   const navigateToPipelineFallback = (): void => {
     const url = pipelineUrl(pipelineView, pipelineSavedViewId);
     navigationHistory.pushState({ kind: PIPELINE_HISTORY_KIND, snapshot: null }, "", url);
@@ -3607,7 +3684,10 @@ const AppShellCatalog = ({
   };
 
   const closeWorkspace = (): void => {
-    if (workspaceRoute?.returnSnapshot === null || workspaceRoute === null) {
+    if (
+      workspaceRoute === null ||
+      (workspaceRoute.returnSnapshot === null && !workspaceRoute.returnToCompany)
+    ) {
       navigateToPipelineFallback();
       return;
     }
@@ -3622,6 +3702,7 @@ const AppShellCatalog = ({
         mode: workspaceRoute.mode,
         snapshot: workspaceRoute.returnSnapshot,
         pipelineDepth: (workspaceRoute.pipelineDepth ?? 1) + 1,
+        returnToCompany: workspaceRoute.returnToCompany === true,
       },
       "",
       jobUrl(workspaceRoute.jobId, tab),
@@ -4050,6 +4131,7 @@ const AppShellCatalog = ({
 
   const changeNetworkTab = (tab: NetworkTabId): void => {
     if (tab === networkTab) return;
+    setCompanyJobReturn(null);
     navigationHistory.pushState(
       null,
       "",
@@ -4206,6 +4288,7 @@ const AppShellCatalog = ({
             responsiveContextual: historyState?.mode === "contextual",
             pipelineDepth: historyState?.pipelineDepth ?? 1,
             returnSnapshot: historyState?.returnSnapshot ?? null,
+            returnToCompany: historyState?.returnToCompany === true,
             tab: location.tab,
           });
           setLastActivity(`Restored local Job workspace history at ${location.tab}.`);
@@ -4213,6 +4296,12 @@ const AppShellCatalog = ({
         }
         setWorkspaceRoute(null);
         if (location.kind === "network") {
+          const saved = readCompanyJobReturn(event.state);
+          setCompanyJobReturn(
+            location.tab === "companies" && saved?.request.companyId === location.recordId
+              ? saved
+              : null,
+          );
           setActiveDestination("network");
           setNetworkSelectedCompanyId(
             location.tab === "companies" &&
@@ -4693,9 +4782,23 @@ const AppShellCatalog = ({
             onNavigateRecent={openRecent}
           />
         ) : activeDestination === "pipeline" ? (
-          workspaceRoute?.mode === "full-page" && workspaceModel !== null ? (
+          workspaceRoute?.mode === "full-page" && workspaceModel === null && !referenceCatalog ? (
+            <section aria-label="Stored job lookup">
+              <h2>Selected stored job</h2>
+              <p role="status">
+                {storedDetails.busy
+                  ? "Reading the selected stored job…"
+                  : "The selected stored job could not be confirmed."}
+              </p>
+              <button type="button" className="cd-button" onClick={closeWorkspace}>
+                {workspaceRoute.returnToCompany ? "Back to company" : "Back to Pipeline"}
+              </button>
+              {storedDetailsContent}
+            </section>
+          ) : workspaceRoute?.mode === "full-page" && workspaceModel !== null ? (
             <JobWorkspaceFrame
               activeTab={workspaceRoute.tab}
+              returnDestination={workspaceRoute.returnToCompany ? "company" : "pipeline"}
               mode="full-page"
               model={workspaceModel}
               onAction={recordWorkspaceAction}
@@ -5200,6 +5303,9 @@ const AppShellCatalog = ({
           <StoredCompanyDirectoryView
             api={globalThis.coredrillStorageSpike.companyDirectory}
             workspaceApi={globalThis.coredrillStorageSpike.companyWorkspace}
+            jobsApi={globalThis.coredrillStorageSpike.companyJobs}
+            jobReturn={companyJobReturn}
+            onOpenJob={openCompanyRole}
             editor={companyEditor}
             revision={companyRevision}
             mutationBlocked={vaultExportSession.busy}

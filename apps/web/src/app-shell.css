@@ -621,6 +621,28 @@
   margin-inline-start: 0;
 }
 
+.cd-company-jobs {
+  border-block-start: 1px solid var(--color-border);
+  margin-block-start: 1rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.cd-company-jobs ul {
+  min-width: 0;
+  padding-inline-start: 1.25rem;
+}
+
+.cd-company-jobs li {
+  margin-block: 1rem;
+  min-width: 0;
+}
+
+.cd-company-jobs button {
+  max-inline-size: 100%;
+  white-space: normal;
+}
+
 .cd-interaction-entry {
   min-width: 0;
   overflow-wrap: anywhere;

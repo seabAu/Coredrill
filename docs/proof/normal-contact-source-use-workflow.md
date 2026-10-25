@@ -1,7 +1,7 @@
 # Normal contact source-use workflow
 
-Date: 2026-10-25. Status: implemented; complete final-source verification passes.
-Serial extension proof also passes; the new exact hosted checkpoint remains pending.
+Date: 2026-10-25. Status: implemented; complete final-source and serial extension
+verification pass, and exact60081b9 hosted checkpoint is fully green.
 INT-007, company relationships and Home remain open.
 
 ## Implemented behavior
@@ -141,3 +141,57 @@ Final proof formatting and policy31168 consume terminal exit0 and
 Staged whitespace checks pass. The reviewed checkpoint contains28 files and
 includes the pending601a687 hosted closure receipt; the unchanged stash and
 preserved SQL/fixtures/lockfiles remain outside the change.
+
+## Published checkpoint and exact hosted follow-through
+
+Verified implementation `60081b9d4e9a23bcd8b286fa9de2cd413fb4bb97`
+(`feat: add owned contact source-use review forms`) is committed and pushed to
+`origin/main`, including the pending proof/checklist records. The working tree
+was clean immediately after push. A fresh exact
+[Foundation CI40174098874](https://github.com/seabAu/Coredrill/actions/runs/40174098874)
+is queued/running; no hosted success is claimed yet. Its original quiet watcher
+is44614, logging `test-results/contact-use-normal-forms-hosted-watch.log` with
+terminal marker `CONTACT_USE_NORMAL_FORMS_HOSTED_EXIT`. Follow that handle;
+do not restart the run or reuse the independently closed601a687 proof.
+
+This post-push status receipt is carried with the next verified implementation
+checkpoint, following the existing receipt convention; no receipt-only CI loop.
+After exact hosted closure, company relationship projections remain the next
+small unblocked slice before full INT-007 completion. Home and independent
+manual/installed-WebView/reference-hardware/release gates remain open.
+
+## Exact hosted closure
+
+Published `60081b9d4e9a23bcd8b286fa9de2cd413fb4bb97` / CI40174098874 now
+passes all10 required jobs; the PR-only dependency review is skipped. Original
+quiet watcher44614 consumes terminal exit0/CONTACT_USE_NORMAL_FORMS_HOSTED_EXIT=0.
+Complete-log retrieval also consumes exit0 and
+CONTACT_USE_NORMAL_FORMS_HOSTED_COMPLETE_EXIT=0. Both are closed; do not restart.
+Logs: `test-results/contact-use-normal-forms-hosted-{watch,complete}.log`.
+
+The aggregate succeeds in32m22s under the unchanged35m wrapper. Complete logs
+prove227 files/3174 unit passes plus the Windows-only skip, repeated under
+coverage (84.06% statements,77.57% branches,85.39% functions,86.65% lines),
+35types/22lint plus tooling/build/artifact/policy/schema checks,7 UI/76 shell/
+1 diagnostic performance/96 resilience/7 onboarding/13 documents/15 browser
+storage and22 native passes plus the same Windows-only canonical-journey skip.
+The unprepared Unix aggregate explicitly skips the OS secure-store lifecycle;
+separate prepared OS jobs prove store/read/delete without exposing a secret.
+License/secret/audit/Changesets gates pass;11 existing allowed Rust warnings
+remain. Runtime differences across runs are not a claimed performance improvement.
+
+Exact Chrome151 passes21m34s and152 passes21m27s, including the96-case production
+resilience suite and all7 new normal form cases. Firefox153 passes1m4s and154
+passes1m14s with the identical v21/41 storage manifest, not new Firefox form UI
+proof. Extension transfer/Firefox fallback passes9 cases (job2m50s). Windows
+passes14m35s with all23 native adapter cases; macOS8m45s and Ubuntu12m15s each
+execute22 common cases and skip the Windows-only canonical journey. Actual
+Credential Manager, Keychain and prepared Secret Service receipts all show
+store/read/delete and secretExposed:false. Package diagnostics remain distinct
+from manual/installed-WebView/reference-hardware/signing/release acceptance.
+
+This closes the normal source-use UI checkpoint with its carried pending proof
+and checklist updates. It does not prove newly uncommitted company-linked job
+queries, the v22/42 manifest or their runtime/UI composition. Carry this closure
+receipt with that next fully verified implementation; no receipt-only push.
+INT-007 company relationships, Home and the full product goal remain open.

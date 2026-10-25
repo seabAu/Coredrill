@@ -1,4 +1,5 @@
 /** Use-case orchestration and query DTOs over domain ports. */
+export * from "./company-jobs.js";
 export {
   createJobTimelineQuery,
   compareJobTimelineItems,

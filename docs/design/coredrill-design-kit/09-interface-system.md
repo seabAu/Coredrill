@@ -786,6 +786,22 @@ The hosted refresh-focus regression requires capturing action intent before disa
 
 Normal Companies separates the bounded live directory from an owned scalar-detail read, explicit manual creation and local notes editing. There are no manufactured contacts, totals, source/license bases or verification claims. Names/notes retain the accepted full 512/200,000-character bounds; nullable facts and safe HTTP/HTTPS stay distinct from missing data. One session draft retains original vault/company/version and literal fields through tabs, routes and reflow, with pending locks, explicit discard, a cancellable unload warning and no automatic resubmission after uncertain acknowledgement. Readback failures retain stale facts with explicit read-only retry. Label/control associations remain explicit across responsive remounts. Read/action focus restoration waits for committed enabled controls, preserves deliberate focus and revokes retired owners. [Current UI evidence](../../proof/normal-company-workspace-ui-verification.md) distinguishes focused execution from still-required full/hosted/manual gates; full INT-007 is not complete.
 
+### Normal company-linked role pages (2026-10-25)
+
+Normal selected-company detail also has a separately owned linked-role page.
+Explicit archive/first/next/retry controls stay bound to the viewed vault/company
+revision; retained results are visibly stale and cannot open roles after failed
+reads. Pending reads survive reflow, and replacing owner retires publication and
+focus. Normal stored-job navigation does not depend on the active Pipeline page:
+the frame uses validated stored details, retains visible loading/error/retry and
+names the company return. Scoped cursor/IDs/scroll metadata, including the
+navigation coordinator stamp, restore the original page and selected focus after
+Back/Forward/reload; private display text is excluded from history. A changed
+company revision cannot silently rebase that return. Current stage labels remain
+distinct from application outcome history. [Actual UI proof and remaining
+gates](../../proof/company-relationship-progress.md#normal-runtimeui-focused-verification)
+do not close all company relationships or INT-007.
+
 ### Production setup and observed health checkpoint (2026-10-19)
 
 Production setup makes pending saves inert, announces progress, focuses a failure alert, retains editable input and warns before unloading unsaved entries. Completion is not shown before acknowledgement. A saved vault name cannot be silently renamed on a capture retry. The shell badge uses the actual identity and observed storage diagnostics: only ready, durable, writable storage without warnings is healthy. Best-effort/unavailable/read-only storage remains a risk; schema mismatch is a migration warning unless unavailable/read-only takes precedence. Settings shows the browser origin where relevant and offers passive health refresh without requesting persistence permission. Observations are snapshots, not continuous monitoring. The separate onboarding/reference catalog remains explicitly labeled and is not persistence evidence. See [verification](../../proof/production-first-run-verification.md).

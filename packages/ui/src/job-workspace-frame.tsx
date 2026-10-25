@@ -34,6 +34,7 @@ export interface JobWorkspaceFrameModel {
 }
 
 export interface JobWorkspaceFrameProps {
+  readonly returnDestination?: "pipeline" | "company";
   readonly activeTab: JobWorkspaceTabId;
   readonly children?: ReactNode;
   readonly contextualWidth?: number;
@@ -80,6 +81,7 @@ const validateModel = (
 };
 
 export const JobWorkspaceFrame = ({
+  returnDestination = "pipeline",
   activeTab,
   children,
   contextualWidth = 640,
@@ -122,7 +124,13 @@ export const JobWorkspaceFrame = ({
             <p className="cd-job-workspace-company">{model.company}</p>
           </div>
           <button
-            aria-label={mode === "contextual" ? "Close Job workspace" : "Back to Pipeline"}
+            aria-label={
+              mode === "contextual"
+                ? "Close Job workspace"
+                : returnDestination === "company"
+                  ? "Back to company"
+                  : "Back to Pipeline"
+            }
             className="cd-icon-button"
             onClick={onRequestClose}
             type="button"

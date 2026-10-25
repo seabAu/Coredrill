@@ -116,6 +116,10 @@ const PHASE_1_REPOSITORY_CONTRACT_COMPONENTS = Object.freeze({
     rejectAndReconcile:
       "guards contact qualification intent rollback privacy observations lifecycle and owned deletion through actual ports",
   }),
+  companyJobs: component("stored-company-linked-jobs", {
+    readScopedJobs:
+      "reads literal company-linked live job pages with original owner archive cursor and privacy guards",
+  }),
 });
 
 const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
@@ -125,8 +129,8 @@ const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
 );
 
 export const PHASE_1_REPOSITORY_CONTRACT_MANIFEST = Object.freeze({
-  schemaVersion: 21 as const,
-  suiteName: "phase-1-repository-contracts-v21",
+  schemaVersion: 22 as const,
+  suiteName: "phase-1-repository-contracts-v22",
   components: PHASE_1_REPOSITORY_CONTRACT_COMPONENTS,
   caseNames: PHASE_1_REPOSITORY_CONTRACT_CASES,
 });

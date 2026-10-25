@@ -21,6 +21,17 @@ pass full final-source verification and serial extension proof; their exact new
 hosted checkpoint remains open: see [persistence proof](../../proof/contact-field-use-persistence.md)
 and [migration procedure](../../runbooks/schema-182-contact-field-use-evidence.md).
 
+Company relationship integration begins with a version-1 read-only linked-job
+page bound to the original viewed vault/company/revision and independent company
+and job archive scopes. It projects literal job titles and current stored status,
+with bounded live updated-time/ID continuation and canonical anchor checks;
+it selects no private descriptions, notes, contact methods or source bodies and
+reports no totals or inferred application outcomes. The shared repository
+manifest advances to22/42 cases; durable SQL/export schema remains182. Actual
+Node/browser/native query and normal runtime/UI focused proof exist, while full
+checkpoint gates remain in progress. See [company relationship proof and
+remaining requirements](../../proof/company-relationship-progress.md).
+
 Normal contact details now consume metadata-only canonical reviewed-use reads
 independently of initial manual-entry evidence. Only a current active reviewed
 basis may display the exact value; stale/failed/foreign/expired/archived reviewed

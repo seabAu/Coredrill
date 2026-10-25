@@ -3,11 +3,16 @@ import {
   parseCompanyWorkspaceV1,
   type ApplicationResult,
   type CompanyWorkspaceV1,
+  type CompanyJobSummaryV1,
+  type ListCompanyJobsRequestV1,
 } from "@coredrill/application";
 import { entityId } from "@coredrill/domain";
 import { restoreFocusAfterChange } from "@coredrill/ui";
 import { createStoredCompanyEditor, type StoredCompanyDraft } from "./stored-company-editor.js";
 import type { StoredCompanyWorkspaceApi } from "./stored-company-workspace.js";
+import { StoredCompanyJobsView } from "./stored-company-jobs-view.js";
+import type { StoredCompanyJobsApi } from "./stored-company-jobs.js";
+import type { CompanyJobReturn } from "./company-job-navigation.js";
 
 export const useStoredCompanyEditor = (options: {
   readonly api: StoredCompanyWorkspaceApi | undefined;
@@ -366,6 +371,9 @@ export const useStoredCompanyEditor = (options: {
 
 export const StoredCompanyDetails = ({
   api,
+  jobsApi,
+  jobReturn,
+  onOpenJob,
   vaultId,
   companyId,
   revision,
@@ -376,6 +384,9 @@ export const StoredCompanyDetails = ({
   onViewContacts,
 }: {
   readonly api: StoredCompanyWorkspaceApi;
+  readonly jobsApi: StoredCompanyJobsApi | undefined;
+  readonly jobReturn: CompanyJobReturn | null;
+  readonly onOpenJob: (job: CompanyJobSummaryV1, request: ListCompanyJobsRequestV1) => void;
   readonly vaultId: string;
   readonly companyId: string;
   readonly revision: number;
@@ -597,12 +608,19 @@ export const StoredCompanyDetails = ({
               View linked contacts
             </button>
           </div>
+          <StoredCompanyJobsView
+            api={jobsApi}
+            workspace={value}
+            ready={!busy && !stale && visible.error === null}
+            blocked={disabled}
+            restore={jobReturn}
+            onOpenJob={onOpenJob}
+          />
         </>
       ) : null}
       <p>
         These are local stored facts, not a verified employer profile. Contacts, relationship
-        totals, provenance sources and interaction history are not loaded by this scalar detail
-        view.
+        totals, provenance sources and interaction history are not loaded by this detail view.
       </p>
     </section>
   );

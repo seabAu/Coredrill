@@ -208,6 +208,18 @@ full INT-007 and independent release/manual gates remain open.
 - Never guess an email address and present it as fact.
 - No automated message sending in v1. A future draft action is separate from user-controlled sending.
 
+Normal company detail now reads bounded pages of its saved roles with current
+stored stage, independent archived-role choice and first/next/exact retry.
+Failed pages retain visibly stale results; foreign/retired reads cannot publish.
+A role opens its actual local Job workspace, including archived roles outside
+the active Pipeline. Back/Forward and reload restore the original company page
+and focus after scope revalidation; changed company context requires a deliberate
+new first page. The list loads no descriptions, notes, contact methods or source
+bodies and reports no company total or inferred application outcomes. Focused
+browser and real-Rust journeys pass; [complete checkpoint proof remains in
+progress](../../proof/company-relationship-progress.md#normal-runtimeui-focused-verification).
+Company interaction/source/salary/outcome projections remain separate work.
+
 ### Salary intelligence
 
 - Disclosed job range, normalized annual/hourly values, currency, and interval.

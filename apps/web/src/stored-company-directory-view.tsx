@@ -1,5 +1,11 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import type { CompanyWorkspaceV1 } from "@coredrill/application";
+import type {
+  CompanyWorkspaceV1,
+  CompanyJobSummaryV1,
+  ListCompanyJobsRequestV1,
+} from "@coredrill/application";
+import type { StoredCompanyJobsApi } from "./stored-company-jobs.js";
+import type { CompanyJobReturn } from "./company-job-navigation.js";
 import { restoreFocusAfterChange, type NetworkTabId } from "@coredrill/ui";
 import {
   createStoredCompanyDirectoryReader,
@@ -223,6 +229,9 @@ export const StoredCompanyDirectoryView = ({
   onTabChange,
   selectedCompanyId,
   workspaceApi,
+  jobsApi,
+  jobReturn,
+  onOpenJob,
   editor,
   revision,
   mutationBlocked,
@@ -242,6 +251,9 @@ export const StoredCompanyDirectoryView = ({
   readonly onTabChange: (tab: NetworkTabId) => void;
   readonly selectedCompanyId: string | null;
   readonly workspaceApi: StoredCompanyWorkspaceApi | undefined;
+  readonly jobsApi: StoredCompanyJobsApi | undefined;
+  readonly jobReturn: CompanyJobReturn | null;
+  readonly onOpenJob: (job: CompanyJobSummaryV1, request: ListCompanyJobsRequestV1) => void;
   readonly editor: ReturnType<typeof useStoredCompanyEditor>;
   readonly revision: number;
   readonly mutationBlocked: boolean;
@@ -307,6 +319,9 @@ export const StoredCompanyDirectoryView = ({
         {selectedCompanyId !== null && workspaceApi !== undefined ? (
           <StoredCompanyDetails
             api={workspaceApi}
+            jobsApi={jobsApi}
+            jobReturn={jobReturn}
+            onOpenJob={onOpenJob}
             vaultId={vaultId}
             companyId={selectedCompanyId}
             revision={revision}

@@ -62,9 +62,10 @@ export const useStoredJobDetails = ({
     });
     setFocus(null);
   }, [focus, state]);
-  if (jobId === null || api === null) return null;
+  if (jobId === null || api === null)
+    return { content: null, value: null, busy: false, error: null };
   const visible = state?.jobId === jobId ? state : { value: null, busy: true, error: null };
-  return (
+  const content = (
     <div ref={container}>
       <StoredJobDetails
         {...visible}
@@ -81,4 +82,5 @@ export const useStoredJobDetails = ({
       />
     </div>
   );
+  return { content, value: visible.value, busy: visible.busy, error: visible.error };
 };

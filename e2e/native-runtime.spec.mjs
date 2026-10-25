@@ -33,6 +33,8 @@ import { exerciseContactHistory } from "./contact-history-journey.mjs";
 import { createContactEvidenceFixture } from "./contact-evidence-fixture.mjs";
 import { exerciseContactEvidence } from "./contact-evidence-journey.mjs";
 import { exerciseContactUseForms } from "./contact-use-forms-journey.mjs";
+import { createCompanyJobsFixture } from "./company-jobs-fixture.mjs";
+import { exerciseCompanyJobs } from "./company-jobs-journey.mjs";
 import { attachNativeHost } from "./native-proof-host.mjs";
 import {
   createNativeRestoreOperationRecorder,
@@ -394,11 +396,18 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
       const listingComparison = await exerciseStoredListingComparison(page, testInfo);
       const localNote = await exerciseStoredJobNote(page, testInfo);
       Object.assign(journeyProof, { listingComparison, localNote });
-    } else if (journey === "history" || journey === "evidence" || journey === "use-forms") {
+    } else if (
+      journey === "history" ||
+      journey === "evidence" ||
+      journey === "use-forms" ||
+      journey === "company-jobs"
+    ) {
       const fixture =
-        journey === "history"
-          ? await createContactHistoryFixture(testInfo)
-          : await createContactEvidenceFixture(testInfo);
+        journey === "company-jobs"
+          ? await createCompanyJobsFixture(testInfo)
+          : journey === "history"
+            ? await createContactHistoryFixture(testInfo)
+            : await createContactEvidenceFixture(testInfo);
       await writeFile(selectedArchive, fixture.bytes);
       await page.getByRole("link", { name: "Settings", exact: true }).click();
       const restore = page.getByRole("region", { name: "Portable vault restore", exact: true });
@@ -417,17 +426,19 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
       await restore.getByRole("button", { name: "Reload local vault", exact: true }).click();
       Object.assign(
         journeyProof,
-        journey === "history"
-          ? {
-              contactHistory: await exerciseContactHistory(page, testInfo, fixture, "native"),
-            }
-          : journey === "use-forms"
+        journey === "company-jobs"
+          ? { companyJobs: await exerciseCompanyJobs(page, fixture) }
+          : journey === "history"
             ? {
-                contactUseForms: await exerciseContactUseForms(page, fixture),
+                contactHistory: await exerciseContactHistory(page, testInfo, fixture, "native"),
               }
-            : {
-                contactEvidence: await exerciseContactEvidence(page, testInfo, fixture, "native"),
-              },
+            : journey === "use-forms"
+              ? {
+                  contactUseForms: await exerciseContactUseForms(page, fixture),
+                }
+              : {
+                  contactEvidence: await exerciseContactEvidence(page, testInfo, fixture, "native"),
+                },
       );
     } else if (["legacy", "legacy164", "legacy165", "legacy167", "current182"].includes(journey)) {
       const sourceVersion = {
@@ -936,6 +947,7 @@ const exerciseNativeJourney = async (page, testInfo, journey) => {
             "history",
             "evidence",
             "use-forms",
+            "company-jobs",
           ].includes(journey),
           journey,
           invocations,
@@ -979,12 +991,13 @@ for (const [journey, description] of [
   ["history", "recorded contact history from a disclosed synthetic archive"],
   ["evidence", "contact field source evidence from a disclosed synthetic archive"],
   ["use-forms", "normal source-use review forms and retained evidence"],
+  ["company-jobs", "normal company-linked role pages and exact return navigation"],
 ]) {
   test(`normal root uses real native SQLite for ${description} without OPFS fallback`, async ({
     page,
   }, testInfo) => {
     test.setTimeout(120_000);
-    if (journey === "use-forms")
+    if (journey === "use-forms" || journey === "company-jobs")
       await page.clock.setFixedTime(new Date("2026-10-25T16:00:00.000Z"));
     await exerciseNativeJourney(page, testInfo, journey);
   });
