@@ -532,6 +532,16 @@ Use the eval suite in document 05 for every prompt/model/template change. Mock p
 
 ## Release gates
 
+Observed60a7a1a aggregate CI cancellation at35m during final licenses requires
+partitioning the same complete gate. The full local verify remains unchanged;
+verify:static/runtime contain every original command exactly once and run as two
+quality matrix rows under the original35-minute limit. Runtime rebuilds its own
+checkout and retains every complete browser/native suite; all dedicated exact
+browser/native/extension/secret lanes remain. An independent coverage guard checks
+partition, dispatch, full runtime calls and required artifact/report eligibility.
+[Partition evidence](../../proof/ci-foundation-partition-verification.md) keeps
+cancelled/partial runs distinct from still-required fresh exact hosted completion.
+
 INT-007 Network history adds original-vault/archive/canonical-reference validation
 and bounded literal bodies across Node/browser/native. Normal entry reuses the
 immutable record/check context with explicit job selection/no contact inference.

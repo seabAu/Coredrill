@@ -127,6 +127,15 @@ The version-1 contact directory is a minimized read projection over existing con
 
 ## Core entities
 
+The next INT-007 reminder prerequisite reads actual pending reminder rows ordered
+by remind_at/ID, with explicit archived-job scope. Minimized current job/company
+and stored task/interview/application metadata retain separate alert/deadline/
+interview times; no contact inference or private bodies are loaded. Exact original
+vault/canonical parent references, joined-job validation, bounded BLOB metadata
+and lookahead checks run in one read snapshot. SQL/export182 is unchanged; the
+shared test manifest advances to27/47. [Reminder evidence](../../proof/network-reminder-progress.md)
+does not yet prove normal snooze/disable controls or their acknowledgement path.
+
 INT-007 top-level Network history is a minimized projection over existing
 interaction/job/company rows, not a schema migration. Versioned original-vault/
 archive references bind event/time/version, current job/version, nullable contact

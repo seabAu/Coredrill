@@ -24,6 +24,7 @@ const executedComponents = [
   "companySources",
   "companyOutcomes",
   "networkInteractions",
+  "networkReminders",
 ];
 for (const componentName of executedComponents) {
   test(`runs the versioned Phase 1 repository contract component ${componentName} in browser SQLite`, async ({
@@ -38,8 +39,8 @@ for (const componentName of executedComponents) {
       componentName,
     );
 
-    expect(proof.manifest.schemaVersion).toBe(26);
-    expect(proof.manifest.suiteName).toBe("phase-1-repository-contracts-v26");
+    expect(proof.manifest.schemaVersion).toBe(27);
+    expect(proof.manifest.suiteName).toBe("phase-1-repository-contracts-v27");
     expect(Object.keys(proof.manifest.components)).toEqual([
       "tracker",
       "pipeline",
@@ -63,9 +64,10 @@ for (const componentName of executedComponents) {
       "companySources",
       "companyOutcomes",
       "networkInteractions",
+      "networkReminders",
     ]);
     const reviewedCases = proof.manifest.caseNames;
-    expect(reviewedCases).toHaveLength(46);
+    expect(reviewedCases).toHaveLength(47);
     expect(
       Object.values(proof.manifest.components).flatMap((component) =>
         Object.values(component.cases),

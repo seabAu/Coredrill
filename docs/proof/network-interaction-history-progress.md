@@ -185,3 +185,44 @@ secret scanning pass. Whitespace is clean; all36 reviewed files belong to this
 checkpoint, including pending company-outcome receipts. Stash2697 is unchanged.
 Only result records follow the frozen-source full gate. Commit/push is authorized
 with no force or history rewrite; fresh exact hosted success remains required.
+
+## Exact published checkpoint
+
+60a7a1aa6b6d488c8792ae027de1bf5108a744b1 is committed and pushed normally to
+origin/main:36 files,3795 insertions/67 deletions. It includes normal Network
+history/summary/entry, shared26/46 contracts, all tests/design/Changeset records,
+pending company-outcome cancelled hosted closure and living checklist updates.
+HEAD and origin/main match; the tree is clean immediately after push. Stash
+2697ebcec53351a052d8c5c19e2b8e2a52056a70 is unchanged.
+
+Fresh exact [Foundation CI40220879128](https://github.com/seabAu/Coredrill/actions/runs/40220879128)
+is in progress for this SHA. One quiet original watcher writes
+test-results/network-interactions-hosted-watch.log, saved .exit receipt and
+NETWORK_INTERACTIONS_HOSTED_EXIT. Follow that original handle to terminal closure;
+do not restart or supersede it after an observation timeout. This is not hosted
+success. Previous83da8b5/40214118395 remains cancelled, not green proof of this
+new source. Both exact Chrome versions now execute every original suite and
+required artifact across the two smaller lanes, keeping all timeouts unchanged.
+
+Carry these post-push receipts with the next coherent verified implementation;
+no receipt-only push. Fresh exact hosted completion and final INT-007 requirement
+audit precede checking the item and beginning normal INT-008 Home. Later salary,
+AI/discovery and independent release/manual/hardware gates remain open; no full
+goal completion or owner blocker is claimed.
+
+## Exact hosted closure
+
+Original62381 consumes terminal1/NETWORK_INTERACTIONS_HOSTED_EXIT=1 and its saved
+exit receipt. Complete-log retrieval60303 closes0. Exact60a7a1a CI40220879128 is
+cancelled, not green: all11 other required jobs succeed, including all4 split
+Chrome lanes and both Firefox/native/extension/secret coverage; PR-only review
+skips. The aggregate reaches35m during final licenses after all functional,
+archive/backup and schema checks pass. Full logs and jobs JSON retain the exact
+evidence. See [complete-gate partition repair](ci-foundation-partition-verification.md).
+
+The next reminder checkpoint partitions all original local verification commands
+into two existing-quality-job matrix groups, with unchanged35-minute limits and
+every complete runtime suite retained. This does not retrospectively make the
+cancelled run successful. Both original handles are terminal; no watcher restart
+or receipt-only push. Reminder commands/normal controls and final Network audit
+still precede INT-007 closure and Home.

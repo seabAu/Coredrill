@@ -136,6 +136,10 @@ const PHASE_1_REPOSITORY_CONTRACT_COMPONENTS = Object.freeze({
     readVaultHistory:
       "reads viewed-vault interaction pages and complete literal summaries with nullable relationships current company metadata archive and canonical reference guards",
   }),
+  networkReminders: component("stored-network-pending-reminders", {
+    readPendingReminders:
+      "reads original-vault pending reminder pages with actual parent ownership archive scope nullable links bounded literal metadata and no private bodies or writes",
+  }),
 });
 
 const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
@@ -145,8 +149,8 @@ const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
 );
 
 export const PHASE_1_REPOSITORY_CONTRACT_MANIFEST = Object.freeze({
-  schemaVersion: 26 as const,
-  suiteName: "phase-1-repository-contracts-v26",
+  schemaVersion: 27 as const,
+  suiteName: "phase-1-repository-contracts-v27",
   components: PHASE_1_REPOSITORY_CONTRACT_COMPONENTS,
   caseNames: PHASE_1_REPOSITORY_CONTRACT_CASES,
 });

@@ -56,6 +56,8 @@
     "audit:dependencies": "pnpm audit --audit-level=low && cargo audit --file apps/desktop/src-tauri/Cargo.lock",
     "changeset": "changeset",
     "changeset:status": "changeset status",
+    "verify:static": "pnpm format:check && pnpm check:boundaries && pnpm check:foundation-records && pnpm typecheck && pnpm lint && pnpm test:unit && pnpm test:coverage && pnpm build && pnpm check:ui-contrast-report && pnpm check:extraction-quality-report && pnpm check:extension-build && pnpm check:extension-packages && pnpm check:contract-schemas && pnpm check:licenses && pnpm check:secrets && pnpm audit:dependencies && pnpm changeset:status",
+    "verify:runtime": "pnpm test:ui-foundations && pnpm test:app-shell && pnpm test:performance && pnpm test:resilience && pnpm test:onboarding && pnpm test:documents-browser && pnpm test:storage-browser && pnpm test:storage-native && pnpm test:secure-storage && pnpm test:native-archive",
     "verify": "pnpm format:check && pnpm check:boundaries && pnpm check:foundation-records && pnpm typecheck && pnpm lint && pnpm test:unit && pnpm test:coverage && pnpm build && pnpm check:ui-contrast-report && pnpm check:extraction-quality-report && pnpm check:extension-build && pnpm check:extension-packages && pnpm test:ui-foundations && pnpm test:app-shell && pnpm test:performance && pnpm test:resilience && pnpm test:onboarding && pnpm test:documents-browser && pnpm test:storage-browser && pnpm test:storage-native && pnpm test:secure-storage && pnpm test:native-archive && pnpm check:contract-schemas && pnpm check:licenses && pnpm check:secrets && pnpm audit:dependencies && pnpm changeset:status"
   },
   "devDependencies": {

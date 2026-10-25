@@ -18,11 +18,15 @@ permissions:
 
 jobs:
   quality-and-policy:
-    name: Build, static checks, tests, and policy
+    name: Build, static checks, tests, and policy / ${{ matrix.check }}
     runs-on: ubuntu-latest
-    # All functional suites passed, but final license checks reached the 30m job limit.
-    # Infrastructure headroom only: retain every check and individual test timeout.
+    # 60a7a1a completed functional/archive checks but reached35m during licenses.
+    # Partition the entire original gate; retain every check and individual limit.
     timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        check: ["static", "runtime"]
     steps:
       - name: Check out full repository history
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -52,14 +56,19 @@ jobs:
       - name: Install exact dependency graph
         run: pnpm install --frozen-lockfile
 
-      - name: Run foundation gate
-        run: pnpm verify
+      - name: Run static foundation gate
+        if: matrix.check == 'static'
+        run: pnpm verify:static
+
+      - name: Build and run complete runtime foundation gate
+        if: matrix.check == 'runtime'
+        run: pnpm build && pnpm verify:runtime
 
       - name: Upload failed production-journey diagnostics
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: coredrill-failed-production-journeys-${{ github.sha }}
+          name: coredrill-failed-production-journeys-${{ matrix.check }}-${{ github.sha }}
           path: |
             test-results/resilience.json
             test-results/resilience/**
@@ -68,6 +77,7 @@ jobs:
           compression-level: 0
 
       - name: Upload immutable Chromium extension proof
+        if: matrix.check == 'static'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: coredrill-chromium-extension-${{ github.sha }}
@@ -78,9 +88,11 @@ jobs:
           compression-level: 0
 
       - name: Emit reviewed license inventory
+        if: matrix.check == 'static'
         run: pnpm report:licenses > dependency-licenses.json
 
       - name: Emit reviewed Rust license inventory
+        if: matrix.check == 'static'
         run: pnpm report:licenses:rust > dependency-licenses-rust.json
 
   extension-transfer:

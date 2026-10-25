@@ -2,6 +2,7 @@
 export * from "./company-sources.js";
 export * from "./company-outcomes.js";
 export * from "./network-interaction-history.js";
+export * from "./network-reminders.js";
 export * from "./company-interactions.js";
 export * from "./company-jobs.js";
 export {

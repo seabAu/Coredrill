@@ -48,3 +48,25 @@ representative-user/manual accessibility/reference-hardware gates stay separate.
 No Accepted decision, schema, dependency, permission, source connector or product
 goal changes. Post-push outcome receipts carry with the next coherent verified
 implementation rather than a receipt-only push.
+
+## Further current-source audit at60a7a1a
+
+The full corrected-source66536/2594, serial extension72385 and final policy gates
+now pass; exact CI40220879128 remains live through original62381. Current root
+actually supplies company/contact typed runtime APIs, selected details/editors,
+field source/use workflow, company role/history/source/outcome panels and the
+top-level history/explicit-job entry. UI-created company/contact directory tests,
+manual capture/create/notes journeys and the complete native network chain prove
+ordinary stored composition; synthetic restored archives supplement boundary/
+pagination proof without masquerading as unseeded user creation. The former
+unconnected-history gap is repaired, not a remaining missing tab.
+
+One additional explicit numbered-design behavior is still missing: relationship
+reminder snooze/disable. The catalogue NetworkWorkspace has those buttons, but
+the root's recordNetworkAction only changes announcement text; it explicitly
+does not change the relationship record. Normal stored views do not load actual
+reminders. UI-010's component proof and INT-005's task completion/dismissal cannot
+prove independent reminder controls. [Reminder scope and next proof](network-reminder-progress.md)
+therefore remains under active INT-007 before Home, even if current CI closes
+green. This audit does not reclassify that named behavior as a manual/release gate
+or claim all Network integration complete. No Accepted decision change is needed.

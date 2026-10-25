@@ -514,6 +514,14 @@ The normal Companies view reads one actual stored page (up to 25 rows) through a
 - Interaction composer supports note, call, email logged, meeting, referral, and follow-up; no v1 sending.
 - A relationship reminder can be snoozed or disabled without negative language.
 
+Current normal reminder follow-through remains in progress: the catalogue's
+Snooze/Turn off handlers only announce preparation. A new original-vault pending
+reminder metadata query has strict Node/browser/native proof, but normal controls
+and guarded acknowledgement-safe changes still follow. Current job/company links
+must not manufacture contact relationships; alert time stays separate from task
+deadline and interview time. See [reminder scope and proof](../../proof/network-reminder-progress.md).
+This is a remaining INT-007 integration requirement before normal Home.
+
 ### Insights
 
 Default reports:
