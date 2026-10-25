@@ -171,6 +171,7 @@ import { useStoredContactDeletion } from "./stored-contact-deletion-view.js";
 import { useStoredContactUseWorkflow } from "./stored-contact-use-workflow.js";
 import { useStoredContactEditor } from "./stored-contact-editor-view.js";
 import { useStoredInteractionEntry } from "./stored-interaction-entry.js";
+import { StoredNetworkInteractionsView } from "./stored-network-interactions-view.js";
 import type {
   ContactWorkspaceV1,
   CompanyJobSummaryV1,
@@ -2254,6 +2255,7 @@ const AppShellCatalog = ({
     companyScope: string | null;
     revision: number;
   } | null>(null);
+  const [networkInteractionRevision, setNetworkInteractionRevision] = useState(0);
   const interactionEntry = useStoredInteractionEntry({
     api: globalThis.coredrillStorageSpike.interactionRecording,
     vaultId: vaultSession?.vault.id ?? null,
@@ -2265,9 +2267,11 @@ const AppShellCatalog = ({
       networkTab === "contacts" &&
       networkSelectedContactId !== null
         ? "contact"
-        : activeDestination === "pipeline" && workspaceRoute?.tab === "timeline"
-          ? "job"
-          : "hidden",
+        : activeDestination === "network" && networkTab === "interactions"
+          ? "network"
+          : activeDestination === "pipeline" && workspaceRoute?.tab === "timeline"
+            ? "job"
+            : "hidden",
     jobId: workspaceRoute?.jobId ?? null,
     contactId: networkSelectedContactId,
     companyScope: networkContactCompanyScope,
@@ -2282,6 +2286,7 @@ const AppShellCatalog = ({
     exclusive: (vaultId, work) => vaultExportSession.mutate(vaultId, work),
     onSaved: (value) => {
       setStoredNoteSaved({ jobId: value.jobId, id: value.id });
+      setNetworkInteractionRevision((revision) => revision + 1);
       setStoredPipelineRefresh((revision) => revision + 1);
       if (value.contactId !== null) setContactRevision((revision) => revision + 1);
     },
@@ -5390,6 +5395,16 @@ const AppShellCatalog = ({
             interactionsApi={globalThis.coredrillStorageSpike.companyInteractions}
             sourcesApi={globalThis.coredrillStorageSpike.companySources}
             outcomesApi={globalThis.coredrillStorageSpike.companyOutcomes}
+            interactionView={
+              <>
+                {interactionEntry.view}
+                <StoredNetworkInteractionsView
+                  api={globalThis.coredrillStorageSpike.networkInteractions}
+                  vaultId={vaultSession?.vault.id ?? null}
+                  revision={networkInteractionRevision}
+                />
+              </>
+            }
             sourceReturn={companySourceReturn}
             onInspectSourceJob={openCompanySourceJob}
             jobReturn={companyJobReturn}

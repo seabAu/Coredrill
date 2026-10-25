@@ -241,6 +241,14 @@ Bounded first/next/archive/exact retry and fresh first-page reload preserve hone
 state. See [outcome-history implementation and proof](../../proof/company-outcome-history-progress.md).
 Employer-specific public facts and salary observations remain separate work.
 
+Normal Interactions now reads actual local history across the viewed vault,
+including job-only/deleted-contact events and nullable current company links.
+Bounded live pages, explicit archived jobs, deliberate literal summary parts and
+exact retries avoid preloading contact methods/private notes. Current labels are
+not occurrence-time identity evidence. Local entry reuses the original controller
+with explicit active-job selection and no inferred contact. [Network proof](../../proof/network-interaction-history-progress.md)
+distinguishes focused execution from final-source/exact hosted gates.
+
 ### Salary intelligence
 
 - Disclosed job range, normalized annual/hourly values, currency, and interval.

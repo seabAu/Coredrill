@@ -127,6 +127,16 @@ The version-1 contact directory is a minimized read projection over existing con
 
 ## Core entities
 
+INT-007 top-level Network history is a minimized projection over existing
+interaction/job/company rows, not a schema migration. Versioned original-vault/
+archive references bind event/time/version, current job/version, nullable contact
+and nullable company/version, catching FK detachment without assuming a job
+revision. Pages validate lookahead in one snapshot and transport bounded BLOB
+metadata/previews; deliberate scalar-safe body parts retain literal BOM/NUL.
+Archived companies do not filter active-job events; no clock ceiling/totals or
+contact-method lookup is added. SQL/export182 is unchanged; shared26/46 proof is
+in [Network progress](../../proof/network-interaction-history-progress.md).
+
 ### Vault and settings
 
 `vault(id, name, schema_version, created_at, last_opened_at)`  

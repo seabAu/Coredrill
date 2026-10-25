@@ -345,15 +345,16 @@ jobs:
           compression-level: 0
 
   browser-storage-chrome:
-    name: Browser storage / Chrome ${{ matrix.chrome }}
+    name: Browser storage / Chrome ${{ matrix.chrome }} / ${{ matrix.suite }}
     runs-on: ubuntu-latest
-    # f3af852 reached onboarding after all 36 resilience cases passed, then hit 15m.
-    # Execution headroom only; retain every suite and its individual timeout.
+    # 83da8b5 completed all115 resilience and7 onboarding cases but reached25m
+    # before artifacts. Separate existing suites; retain every individual timeout.
     timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
         chrome: ["152.0.7977.54", "151.0.7922.138"]
+        suite: ["storage-shell", "resilience-onboarding"]
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -384,6 +385,7 @@ jobs:
           chrome-version: ${{ matrix.chrome }}
 
       - name: Prove SQLite/OPFS lifecycle
+        if: matrix.suite == 'storage-shell'
         env:
           COREDRILL_BROWSER_EXECUTABLE_PATH: ${{ steps.chrome.outputs.chrome-path }}
           COREDRILL_EXPECTED_BROWSER_VERSION: ${{ matrix.chrome }}
@@ -391,6 +393,7 @@ jobs:
         run: pnpm test:storage-browser
 
       - name: Prove identical Phase 1 repository manifest in browser SQLite
+        if: matrix.suite == 'storage-shell'
         env:
           COREDRILL_BROWSER_EXECUTABLE_PATH: ${{ steps.chrome.outputs.chrome-path }}
           COREDRILL_EXPECTED_BROWSER_VERSION: ${{ matrix.chrome }}
@@ -398,6 +401,7 @@ jobs:
         run: pnpm test:storage-browser
 
       - name: Prove Career Profile repository parity in browser SQLite
+        if: matrix.suite == 'storage-shell'
         env:
           COREDRILL_BROWSER_EXECUTABLE_PATH: ${{ steps.chrome.outputs.chrome-path }}
           COREDRILL_EXPECTED_BROWSER_VERSION: ${{ matrix.chrome }}
@@ -405,26 +409,31 @@ jobs:
         run: pnpm test:storage-browser
 
       - name: Prove local document editing and imports
+        if: matrix.suite == 'storage-shell'
         env:
           COREDRILL_BROWSER_EXECUTABLE_PATH: ${{ steps.chrome.outputs.chrome-path }}
         run: pnpm test:documents-browser
 
       - name: Prove UI foundations and accessibility
+        if: matrix.suite == 'storage-shell'
         env:
           COREDRILL_BROWSER_EXECUTABLE_PATH: ${{ steps.chrome.outputs.chrome-path }}
         run: pnpm test:ui-foundations
 
       - name: Prove responsive application shell and accessibility
+        if: matrix.suite == 'storage-shell'
         env:
           COREDRILL_BROWSER_EXECUTABLE_PATH: ${{ steps.chrome.outputs.chrome-path }}
         run: pnpm test:app-shell
 
       - name: Prove PWA offline, update, storage-failure, and second-tab journeys
+        if: matrix.suite == 'resilience-onboarding'
         env:
           COREDRILL_BROWSER_EXECUTABLE_PATH: ${{ steps.chrome.outputs.chrome-path }}
         run: pnpm test:resilience
 
       - name: Prove first-run paths and disposable demo isolation
+        if: matrix.suite == 'resilience-onboarding'
         env:
           COREDRILL_BROWSER_EXECUTABLE_PATH: ${{ steps.chrome.outputs.chrome-path }}
         run: pnpm test:onboarding
@@ -433,7 +442,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: coredrill-failed-chrome-journeys-${{ matrix.chrome }}-${{ github.sha }}
+          name: coredrill-failed-chrome-journeys-${{ matrix.chrome }}-${{ matrix.suite }}-${{ github.sha }}
           path: |
             test-results/resilience.json
             test-results/resilience/**
@@ -444,6 +453,7 @@ jobs:
           compression-level: 0
 
       - name: Upload document editor, import, and export proof
+        if: matrix.suite == 'storage-shell'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: coredrill-document-editor-chrome-${{ matrix.chrome }}-${{ github.sha }}
@@ -455,6 +465,7 @@ jobs:
           compression-level: 0
 
       - name: Upload UI foundation catalog and accessibility proof
+        if: matrix.suite == 'storage-shell'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: coredrill-ui-foundations-chrome-${{ matrix.chrome }}-${{ github.sha }}
@@ -467,6 +478,7 @@ jobs:
           compression-level: 0
 
       - name: Upload application shell and accessibility proof
+        if: matrix.suite == 'storage-shell'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: coredrill-app-shell-chrome-${{ matrix.chrome }}-${{ github.sha }}
@@ -478,6 +490,7 @@ jobs:
           compression-level: 0
 
       - name: Upload PWA resilience proof
+        if: matrix.suite == 'resilience-onboarding'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: coredrill-resilience-chrome-${{ matrix.chrome }}-${{ github.sha }}
@@ -489,6 +502,7 @@ jobs:
           compression-level: 0
 
       - name: Upload first-run and disposable demo-vault proof
+        if: matrix.suite == 'resilience-onboarding'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: coredrill-onboarding-chrome-${{ matrix.chrome }}-${{ github.sha }}

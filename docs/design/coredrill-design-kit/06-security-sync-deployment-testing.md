@@ -532,6 +532,17 @@ Use the eval suite in document 05 for every prompt/model/template change. Mock p
 
 ## Release gates
 
+INT-007 Network history adds original-vault/archive/canonical-reference validation
+and bounded literal bodies across Node/browser/native. Normal entry reuses the
+immutable record/check context with explicit job selection/no contact inference.
+Unavailable reads retry the exact part; changed owners require Refresh. Read-only
+history preserves archive hashes, and retired owners cannot publish or move focus.
+[Network evidence](../../proof/network-interaction-history-progress.md) records
+focused and complete gates separately. After83da8b5's Chrome152 lane reaches25m
+despite115 resilience/7 onboarding passes, CI partitions the same exact Chrome
+suites into storage/shell and resilience/onboarding lanes. All test/job limits and
+required artifacts remain. Cancelled/partial CI is never green hosted proof.
+
 - No source connector ships without a policy record and fixtures.
 - No AI adapter ships without destination disclosure, secure-key plan, redaction, and eval pass.
 - No schema release ships without web/native migration and restore tests.

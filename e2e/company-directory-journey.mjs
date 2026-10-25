@@ -91,7 +91,18 @@ export const exerciseCompanyDirectory = async (page, testInfo, companyName) => {
   await page.goBack();
   await expect(list).toContainText(companyName);
   await network.getByRole("button", { name: "Interactions", exact: true }).click();
-  await expect(network).toContainText("Stored interactions navigation is not connected yet");
+  const interactions = network.getByRole("region", {
+    name: "Stored Network interaction history",
+    exact: true,
+  });
+  await expect(interactions).toContainText(
+    "No recorded interactions for jobs in this archive scope.",
+  );
+  await expect(interactions.locator("[data-network-interaction]")).toHaveCount(0);
+  await expect(interactions.getByRole("alert")).toHaveCount(0);
+  await expect(
+    network.getByRole("button", { name: "New interaction", exact: true }),
+  ).toBeDisabled();
   await network.getByRole("button", { name: "Companies", exact: true }).click();
   await expect(list).toContainText(companyName);
   await page.reload();

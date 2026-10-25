@@ -11,7 +11,12 @@ import {
 /** Disclosed synthetic archive prerequisite, restored through normal UI; originals stay unchanged. */
 export const createCompanyJobsFixture = async (
   testInfo,
-  { withInteractions = false, withSources = false, withOutcomes = false } = {},
+  {
+    withInteractions = false,
+    withSources = false,
+    withOutcomes = false,
+    withNetworkInteractions = false,
+  } = {},
 ) => {
   const originalPath = path.resolve("fixtures/recovery/phase-1-vault-schema-165-v1.coredrill.zip");
   const originalBytes = await readFile(originalPath);
@@ -64,6 +69,58 @@ export const createCompanyJobsFixture = async (
         at,
       );
     const historySummary = `\uFEFF${"a".repeat(1020)}😀\0尾${"x".repeat(17000)}\uFEFF`;
+    if (withNetworkInteractions) {
+      const occurred = "2026-10-25T15:00:00.000Z";
+      db.prepare(
+        "INSERT INTO company(id,canonical_name,notes,archived_at,created_at,updated_at) VALUES(?,?,?,?,?,?)",
+      ).run(
+        id(9008),
+        "Synthetic Network history company",
+        "PRIVATE Network company notes",
+        at,
+        at,
+        at,
+      );
+      for (const n of [700, 701, 702])
+        db.prepare(
+          "INSERT INTO job(id,company_id,title,description_text,archived_at,created_at,updated_at) VALUES(?,?,?,?,?,?,?)",
+        ).run(
+          id(n),
+          n === 702 ? null : id(9008),
+          `Synthetic Network history job ${n}`,
+          "PRIVATE Network job body",
+          n === 701 ? at : null,
+          at,
+          at,
+        );
+      db.prepare(
+        "INSERT INTO contact(id,company_id,name,email,notes,user_confirmed,created_at,updated_at) VALUES(?,?,?,?,?,1,?,?)",
+      ).run(
+        id(9009),
+        id(9001),
+        "PRIVATE Network contact",
+        "private@example.test",
+        "PRIVATE contact notes",
+        at,
+        at,
+      );
+      for (const n of [...Array.from({ length: 27 }, (_, index) => 40000 + index), 41000, 42000])
+        db.prepare(
+          "INSERT INTO interaction(id,job_id,contact_id,type,direction,summary,occurred_at,created_at,updated_at) VALUES(?,?,?,'note','unknown',?,?,?,?)",
+        ).run(
+          id(n),
+          n === 41000 ? id(701) : n === 42000 ? id(702) : id(700),
+          n % 2 === 0 ? id(9009) : null,
+          n === 40000
+            ? historySummary
+            : n === 40001
+              ? ""
+              : `Synthetic Network interaction ${n} <script>literal</script> 😀`,
+          occurred,
+          occurred,
+          occurred,
+        );
+    }
     if (withInteractions) {
       db.prepare(
         "INSERT INTO company(id,canonical_name,notes,created_at,updated_at) VALUES(?,?,?,?,?)",
@@ -282,6 +339,15 @@ export const createCompanyJobsFixture = async (
       firstIds: Array.from({ length: 10 }, (_, index) => id(index + 100)),
       secondIds: Array.from({ length: 10 }, (_, index) => id(index + 110)),
       originalRecoveryFixtureUnchanged: true,
+      ...(withNetworkInteractions
+        ? {
+            networkFirstIds: Array.from({ length: 10 }, (_, n) => id(40000 + n)),
+            networkSecondIds: Array.from({ length: 10 }, (_, n) => id(40010 + n)),
+            networkArchivedId: id(41000),
+            networkUnknownCompanyId: id(42000),
+            networkSummary: historySummary,
+          }
+        : {}),
       ...(withOutcomes
         ? {
             outcomeCompanyId: id(9007),

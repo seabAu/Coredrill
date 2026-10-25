@@ -247,12 +247,14 @@ export const StoredCompanyDirectoryView = ({
   mutationBlocked,
   onSelectCompany,
   contactView,
+  interactionView,
   contactDraftBlocked,
   onCreateContact,
   onViewContacts,
 }: {
   readonly api: StoredCompanyDirectoryApi | undefined;
   readonly contactView: ReactNode;
+  readonly interactionView: ReactNode;
   readonly contactDraftBlocked: boolean;
   readonly onCreateContact: (company: CompanyWorkspaceV1) => void;
   readonly onViewContacts: (company: CompanyWorkspaceV1) => void;
@@ -302,11 +304,8 @@ export const StoredCompanyDirectoryView = ({
     </nav>
     {activeTab === "contacts" ? (
       contactView
-    ) : activeTab !== "companies" ? (
-      <p>
-        Stored {activeTab} navigation is not connected yet. No records or relationship totals have
-        been loaded for this view.
-      </p>
+    ) : activeTab === "interactions" ? (
+      interactionView
     ) : api === undefined || vaultId === null ? (
       <p>The viewed vault's company directory is unavailable. No companies have been loaded.</p>
     ) : (

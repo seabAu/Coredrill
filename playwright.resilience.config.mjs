@@ -32,6 +32,7 @@ export default defineConfig({
     "stored-company-outcomes.spec.mjs",
     "stored-contact-runtime.spec.mjs",
     "stored-interaction-recording.spec.mjs",
+    "stored-network-interactions.spec.mjs",
     "stored-contact-history.spec.mjs",
     "stored-contact-evidence.spec.mjs",
     "stored-contact-reviewed-use.spec.mjs",

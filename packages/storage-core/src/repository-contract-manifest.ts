@@ -132,6 +132,10 @@ const PHASE_1_REPOSITORY_CONTRACT_COMPONENTS = Object.freeze({
     readRecordedHistory:
       "reads recorded company-linked stage and outcome history with current definitions nullable applications reversal and original owner guards without private notes",
   }),
+  networkInteractions: component("stored-network-interaction-history", {
+    readVaultHistory:
+      "reads viewed-vault interaction pages and complete literal summaries with nullable relationships current company metadata archive and canonical reference guards",
+  }),
 });
 
 const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
@@ -141,8 +145,8 @@ const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
 );
 
 export const PHASE_1_REPOSITORY_CONTRACT_MANIFEST = Object.freeze({
-  schemaVersion: 25 as const,
-  suiteName: "phase-1-repository-contracts-v25",
+  schemaVersion: 26 as const,
+  suiteName: "phase-1-repository-contracts-v26",
   components: PHASE_1_REPOSITORY_CONTRACT_COMPONENTS,
   caseNames: PHASE_1_REPOSITORY_CONTRACT_CASES,
 });

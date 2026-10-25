@@ -169,3 +169,40 @@ Final79998 closes exit0/COMPANY_OUTCOMES_FINAL_HYGIENE_EXIT=0: whole formatting,
 secret scan pass. Whitespace is clean; stash2697 unchanged. All33 known files
 belong to this checkpoint. Only final result records follow before normal commit
 and push, with no force/history rewrite; fresh exact hosted success remains.
+
+## Exact published checkpoint
+
+83da8b5344e27bf18724020529b061d757b488bc is committed and pushed normally to
+origin/main:33 files,2992 insertions/35 deletions, including pending source
+all10-job hosted closure and outcome-history implementation/proof. HEAD and
+origin/main match; the tree is clean directly after push, and stash
+2697ebcec53351a052d8c5c19e2b8e2a52056a70 is unchanged.
+
+[Exact Foundation CI40214118395](https://github.com/seabAu/Coredrill/actions/runs/40214118395)
+is running for this SHA. A single quiet watcher writes
+test-results/company-outcomes-hosted-watch.log, saved .exit receipt and terminal
+COMPANY_OUTCOMES_HOSTED_EXIT. Follow the original handle rather than restarting
+on observation timeout. This is not hosted success. Previousccc342d/40209913081
+is terminal success with closed11165/20477, not proof of this newer source.
+Post-push receipts carry with the next coherent verified implementation rather
+than a receipt-only push. Exact closure and an INT-007 requirement audit precede
+normal Home integration; later salary/public facts and independent release gates
+remain open. No full goal completion claim.
+
+## Exact hosted closure
+
+Original16250 closes exit1/COMPANY_OUTCOMES_HOSTED_EXIT=1; complete-log retrieval
+25349 closes exit0/COMPANY_OUTCOMES_COMPLETE_EXIT=0. Exact83da8b5 CI40214118395
+concludes cancelled, not green:9 required jobs succeed (aggregate foundation,
+Chrome151, both Firefox versions, all3 native platforms, extension and secrets).
+PR-only dependency review skips. Chrome152 job121231444360 runs25m14s and is
+cancelled at the25-minute limit before artifact publication. Complete logs show
+115 resilience cases pass16.2m and7 onboarding cases pass18.9s immediately before
+cancellation. No outcome-history assertion failure is reported, but missing
+artifact/job completion prevents exact hosted success. Preserve this run.
+
+The next coherent Network checkpoint partitions existing Chrome suites into
+storage/shell and resilience/onboarding lanes per exact version. Every suite,
+per-test timeout,25-minute job limit and required artifact remains; failure
+diagnostic names include the lane. Fresh exact-current hosted completion is
+required. Olderccc342d green does not substitute; both original handles are closed.

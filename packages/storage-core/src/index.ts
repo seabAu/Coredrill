@@ -1,6 +1,7 @@
 /** Storage ports, shared repository contracts, and migration coordination. */
 export { createCompanySourcesRepository } from "./company-sources-repository.js";
 export { createCompanyOutcomesRepository } from "./company-outcomes-repository.js";
+export { createNetworkInteractionHistoryRepository } from "./network-interaction-history-repository.js";
 export { createCompanyInteractionsRepository } from "./company-interactions-repository.js";
 export { createCompanyJobsRepository } from "./company-jobs-repository.js";
 export { createCompanyDirectoryRepository } from "./company-directory-repository.js";

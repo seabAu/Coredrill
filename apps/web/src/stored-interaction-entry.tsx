@@ -32,7 +32,7 @@ export const useStoredInteractionEntry = (options: {
   readonly enabled: boolean;
   readonly mutationBlocked: boolean;
   readonly needsReopen: boolean;
-  readonly mode: "job" | "contact" | "hidden";
+  readonly mode: "job" | "contact" | "network" | "hidden";
   readonly jobId: string | null;
   readonly contactId: string | null;
   readonly companyScope: string | null;
@@ -53,13 +53,13 @@ export const useStoredInteractionEntry = (options: {
   const controller = useRef<ReturnType<typeof createStoredInteractionComposer> | null>(null);
   const [model, setModel] = useState<StoredInteractionDraft | null>(null);
   const [selected, setSelected] = useState<{
-    contactId: string;
+    contactId: string | null;
     companyScope: string | null;
     jobId: string;
   } | null>(null);
   const [discard, setDiscard] = useState(false);
   const [surface, setSurface] = useState<{
-    mode: "job" | "contact" | "hidden";
+    mode: "job" | "contact" | "network" | "hidden";
     companyScope: string | null;
   } | null>(null);
   const [inputError, setInputError] = useState<string | null>(null);
@@ -87,6 +87,7 @@ export const useStoredInteractionEntry = (options: {
     setModel(null);
     setDiscard(false);
     setInputError(null);
+    setSelected(null);
     return () => {
       current.dispose();
       if (controller.current === current) controller.current = null;
@@ -139,9 +140,14 @@ export const useStoredInteractionEntry = (options: {
   const chosenJobId =
     options.mode === "job"
       ? options.jobId
-      : selected?.contactId === options.contactId && selected.companyScope === options.companyScope
-        ? selected.jobId
-        : null;
+      : options.mode === "network"
+        ? selected?.contactId === null && selected.companyScope === null
+          ? selected.jobId
+          : null
+        : selected?.contactId === options.contactId &&
+            selected.companyScope === options.companyScope
+          ? selected.jobId
+          : null;
   const job = options.jobs?.find((item) => item.id === chosenJobId);
   const contact = options.contact?.contact;
   const contactMatches =
@@ -166,7 +172,9 @@ export const useStoredInteractionEntry = (options: {
     (options.mode !== "contact" || surface.companyScope === options.companyScope) &&
     (options.mode === "job"
       ? owned.scope.jobId === options.jobId && owned.scope.contactId === null
-      : options.mode === "contact" && owned.scope.contactId === options.contactId);
+      : options.mode === "network"
+        ? owned.scope.jobId === chosenJobId && owned.scope.contactId === null
+        : options.mode === "contact" && owned.scope.contactId === options.contactId);
   const currentOwner = owned !== null && scope !== null && sameInteractionOwner(owned.scope, scope);
   const blocked = options.mutationBlocked || options.needsReopen;
   const requestFocus = (origin: Element | null) => {
@@ -242,18 +250,22 @@ export const useStoredInteractionEntry = (options: {
       </p>
       {model === null ? (
         <>
-          {options.mode === "contact" ? (
+          {options.mode === "contact" || options.mode === "network" ? (
             <>
               <label htmlFor={`${prefix}-job`}>Linked stored job</label>
               <select
                 id={`${prefix}-job`}
                 value={chosenJobId ?? ""}
-                disabled={blocked || options.jobs === null || !contactMatches}
+                disabled={
+                  blocked ||
+                  options.jobs === null ||
+                  (options.mode === "contact" && !contactMatches)
+                }
                 onChange={(event) => {
-                  if (options.contactId !== null)
+                  if (options.mode === "network" || options.contactId !== null)
                     setSelected({
-                      contactId: options.contactId,
-                      companyScope: options.companyScope,
+                      contactId: options.mode === "network" ? null : options.contactId,
+                      companyScope: options.mode === "network" ? null : options.companyScope,
                       jobId: event.currentTarget.value,
                     });
                 }}
@@ -269,9 +281,11 @@ export const useStoredInteractionEntry = (options: {
                 No job or conversation is inferred from a shared company.{" "}
                 {options.jobs === null
                   ? "Stored jobs are loading or unavailable; refresh Pipeline reads before continuing."
-                  : !contactMatches
-                    ? "Wait for current active contact details or refresh their read."
-                    : "Only the selected contact is linked."}
+                  : options.mode === "network"
+                    ? "Only the explicitly selected active job is linked. No contact is linked; use a selected contact's Network history to add that link."
+                    : !contactMatches
+                      ? "Wait for current active contact details or refresh their read."
+                      : "Only the selected contact is linked."}
               </p>
             </>
           ) : (

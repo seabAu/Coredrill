@@ -499,7 +499,15 @@ remaining requirements](../../proof/normal-contact-field-evidence-ui-verificatio
 
 Tabs: Companies, Contacts, Interactions.
 
-The in-progress normal Companies view now reads one actual stored page (up to 25 rows) through a validated viewed-vault query. First/Next/Retry and explicit archive scope remain separate from any vault total or immutable-snapshot claim. Loading is not empty; failed reads retain explicitly stale facts and changed continuation requires First. Literal names and nullable website/domain facts render as inert text, with no remote assets or enrichment. Contacts/Interactions and selected-company detail routes explicitly disclose unconnected data rather than showing catalog records or invented counts. Reflow preserves owned reads, archive/owner replacement hides old facts immediately, and keyboard/focus/offline/reload/browser/real-Rust proof is separate from full verification and installed-WebView acceptance. [Current evidence and remaining INT-007 work](../../proof/normal-company-directory-verification.md).
+Normal Interactions now has viewed-vault-wide stored history and original local
+entry with explicit active-job selection/no inferred contact. Metadata pages omit
+contact names/methods/private notes; current labels are not event-time evidence.
+First/Next/exact retry, explicit archived jobs and fresh-owner Refresh expose
+honest loading/stale states. Deliberate literal summary parts have a24rem
+keyboard-scroll region and owned open/close focus through reflow. [Network proof](../../proof/network-interaction-history-progress.md)
+records current checks; full INT-007 and release acceptance remain open.
+
+The normal Companies view reads one actual stored page (up to 25 rows) through a validated viewed-vault query. First/Next/Retry and explicit archive scope remain separate from any vault total or immutable-snapshot claim. Loading is not empty; failed reads retain explicitly stale facts and changed continuation requires First. Literal names and nullable website/domain facts render as inert text, with no remote assets or enrichment. Contacts, Interactions and selected-company details now have their separately validated stored views, documented in the subsequent implementation records. Reflow preserves owned reads, archive/owner replacement hides old facts immediately, and keyboard/focus/offline/reload/browser/real-Rust proof is separate from full verification and installed-WebView acceptance. [Original directory evidence](../../proof/normal-company-directory-verification.md).
 
 - Company detail relates jobs, contacts, notes, public facts, sources, salary observations, and outcomes.
 - Contact detail shows only user-entered, explicitly public, or licensed fields with provenance.
