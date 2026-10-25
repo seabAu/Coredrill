@@ -120,6 +120,10 @@ const PHASE_1_REPOSITORY_CONTRACT_COMPONENTS = Object.freeze({
     readScopedJobs:
       "reads literal company-linked live job pages with original owner archive cursor and privacy guards",
   }),
+  companyInteractions: component("stored-company-linked-interactions", {
+    readScopedHistory:
+      "reads current-company job interaction pages and exact literal summaries with nullable contact and original owner guards",
+  }),
 });
 
 const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
@@ -129,8 +133,8 @@ const PHASE_1_REPOSITORY_CONTRACT_CASES = Object.freeze(
 );
 
 export const PHASE_1_REPOSITORY_CONTRACT_MANIFEST = Object.freeze({
-  schemaVersion: 22 as const,
-  suiteName: "phase-1-repository-contracts-v22",
+  schemaVersion: 23 as const,
+  suiteName: "phase-1-repository-contracts-v23",
   components: PHASE_1_REPOSITORY_CONTRACT_COMPONENTS,
   caseNames: PHASE_1_REPOSITORY_CONTRACT_CASES,
 });

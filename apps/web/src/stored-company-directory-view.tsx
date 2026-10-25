@@ -5,6 +5,7 @@ import type {
   ListCompanyJobsRequestV1,
 } from "@coredrill/application";
 import type { StoredCompanyJobsApi } from "./stored-company-jobs.js";
+import type { StoredCompanyInteractionsApi } from "./stored-company-interactions.js";
 import type { CompanyJobReturn } from "./company-job-navigation.js";
 import { restoreFocusAfterChange, type NetworkTabId } from "@coredrill/ui";
 import {
@@ -230,6 +231,7 @@ export const StoredCompanyDirectoryView = ({
   selectedCompanyId,
   workspaceApi,
   jobsApi,
+  interactionsApi,
   jobReturn,
   onOpenJob,
   editor,
@@ -252,6 +254,7 @@ export const StoredCompanyDirectoryView = ({
   readonly selectedCompanyId: string | null;
   readonly workspaceApi: StoredCompanyWorkspaceApi | undefined;
   readonly jobsApi: StoredCompanyJobsApi | undefined;
+  readonly interactionsApi: StoredCompanyInteractionsApi | undefined;
   readonly jobReturn: CompanyJobReturn | null;
   readonly onOpenJob: (job: CompanyJobSummaryV1, request: ListCompanyJobsRequestV1) => void;
   readonly editor: ReturnType<typeof useStoredCompanyEditor>;
@@ -320,6 +323,7 @@ export const StoredCompanyDirectoryView = ({
           <StoredCompanyDetails
             api={workspaceApi}
             jobsApi={jobsApi}
+            interactionsApi={interactionsApi}
             jobReturn={jobReturn}
             onOpenJob={onOpenJob}
             vaultId={vaultId}

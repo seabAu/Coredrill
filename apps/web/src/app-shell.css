@@ -643,6 +643,12 @@
   white-space: normal;
 }
 
+.cd-company-interaction-summary {
+  max-block-size: 24rem;
+  overflow: auto;
+  padding: var(--cd-space-2, 0.5rem);
+}
+
 .cd-interaction-entry {
   min-width: 0;
   overflow-wrap: anywhere;

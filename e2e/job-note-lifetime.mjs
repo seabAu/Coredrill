@@ -59,6 +59,11 @@ export const exerciseStoredJobNoteLifetime = async (page, testInfo) => {
       },
     };
   });
+  // Commit the new probe API owner before arming a held read. Otherwise a late
+  // root render can consume the hold in its automatic owner-change read and
+  // leave the intended Refresh click waiting on that very held operation.
+  await page.getByRole("button", { name: "Overview", exact: true }).click();
+  await page.getByRole("button", { name: "Timeline", exact: true }).click();
   await expect(history.getByRole("button", { name: "Refresh history", exact: true })).toBeEnabled();
   await page.evaluate(() => {
     globalThis.coredrillNoteProbe.holdHistory = true;

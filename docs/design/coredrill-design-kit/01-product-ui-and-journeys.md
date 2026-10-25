@@ -218,7 +218,15 @@ new first page. The list loads no descriptions, notes, contact methods or source
 bodies and reports no company total or inferred application outcomes. Focused
 browser and real-Rust journeys pass; [complete checkpoint proof remains in
 progress](../../proof/company-relationship-progress.md#normal-runtimeui-focused-verification).
-Company interaction/source/salary/outcome projections remain separate work.
+Company detail also reads recorded interactions for jobs currently linked to
+that company. It preserves records with nullable/deleted or archived contacts,
+withholds contact methods, and explains that current links are not historical
+employer evidence. Explicit first/next/archive/exact retry and bounded literal
+summary inspection keep failures and partial reads visible. Long summaries stay
+keyboard-scrollable within a bounded region. Reload begins a newly validated live
+page; no totals, messages or inferred outcomes are created. See [actual company
+history proof and remaining gates](../../proof/company-interaction-history-progress.md).
+Company source/salary/outcome projections remain separate work.
 
 ### Salary intelligence
 

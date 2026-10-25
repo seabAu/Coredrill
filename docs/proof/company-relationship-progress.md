@@ -4,8 +4,8 @@ Date: 2026-10-25. Query, shared browser/native storage and normal runtime/UI
 are implemented with focused proof; complete checkpoint gates remain pending.
 No complete company-relationship requirement is claimed.
 
-The normal selected-company scalar view currently loads company facts and notes
-and can navigate to its scoped contacts, but explicitly leaves related jobs,
+At the start of this audit, the normal selected-company scalar view loaded company facts and notes
+and could navigate to its scoped contacts, but explicitly left related jobs,
 sources, salary observations, outcomes and interaction history unloaded. The
 catalog Network model cannot substitute: its array lengths imply totals, its
 empty arrays imply absence, and it assumes related identities are all preloaded.
@@ -266,3 +266,65 @@ license policies and secret scan pass. Staged and unstaged whitespace checks
 are clean. All36 changed files belong to this coherent implementation/proof
 checkpoint; the existing export-work stash remains untouched. Only this result
 record follows frozen product/test source, before normal authorized commit/push.
+
+## Exact published checkpoint
+
+`6fada7e0d15f06f59957c20d5349cf0e6414a58f` is committed and pushed normally to
+origin/main:36 files,3169 insertions/48 deletions, including pending60081b9 proof
+and checklist receipts. The tree was clean immediately after push; stash
+`2697ebcec53351a052d8c5c19e2b8e2a52056a70` is unchanged.
+
+[Exact Foundation CI40182470910](https://github.com/seabAu/Coredrill/actions/runs/40182470910)
+is in progress for that SHA. One original quiet watcher98859 writes
+`test-results/company-jobs-hosted-watch.log` and returns terminal
+`COMPANY_JOBS_HOSTED_EXIT`; follow it rather than restart on an observation timeout.
+No hosted success is claimed yet, and60081b9 results do not cover this source.
+These post-push receipts carry with the next implementation checkpoint, avoiding
+a receipt-only push. Company interaction/source/salary/outcome projections remain
+the next unblocked audit/implementation scope, with Home and release gates separate.
+
+## Observed exact hosted Chrome failures
+
+The original40182470910 watcher98859 remains live for the aggregate. Completed
+Chrome152 job121136237050 fails the single42-case manifest `page.evaluate` at its
+default30-second test limit; no individual repository assertion fails in that log.
+Chrome151 job121136237067 executes all new company-role cases successfully, but
+resilience ends101 passes/1 failure: the existing note-lifetime test waits120s on
+Refresh history after arming a held read; the button becomes disabled while the
+click is pending. Retained exact logs:
+`test-results/company-jobs-hosted-chrome152-failure.log` and
+`test-results/company-jobs-hosted-chrome151-failure.log`. Both failed jobs remain
+failed. Firefox153/154, Windows, macOS, Ubuntu, extension and secrets pass; partial
+success is not exact whole-run closure.
+
+Source inspection identifies a probe setup race: replacing the global API does
+not immediately commit the new React read owner. A later render can start the
+new owner's automatic read after the hold is armed, before the intended Refresh
+click. The follow-up test explicitly visits Overview/Timeline and awaits ready
+history before arming that hold. This is a deterministic setup repair; the old
+unobserved failure is not retrospective proof of its exact internal timing.
+
+The growing browser collection is partitioned by the complete explicit reviewed
+component inventory. Each component executes its unchanged cases with isolated
+database creation/disposal under the original30-second per-test limit. The normal
+full-manifest API remains available for Firefox and native, while component-mode
+proof names its component and exact completed cases. An inventory test rejects a
+missing/reordered executed component. No case, assertion or timeout is removed,
+raised or sampled, and this is not a product-performance improvement claim.
+New local/exact hosted verification is still required before this follow-up closes.
+
+The run is now terminal failure, not superseded: original98859 consumes
+`COMPANY_JOBS_HOSTED_EXIT=1`; complete-log retrieval69370 consumes exit0/
+`COMPANY_JOBS_HOSTED_COMPLETE_EXIT=0`. Aggregate121136237037 also fails the same
+note-probe Refresh wait after101 resilience passes, ending30m27s under the existing
+35m wrapper. Later stages in that failed chain do not run. Seven required jobs
+pass; aggregate and both Chrome jobs fail; PR-only review is skipped. Full logs:
+`test-results/company-jobs-hosted-complete.log`. Do not resume/restart closed98859.
+
+Follow-up58241 consumes terminal0 with35 types/22 lint plus tooling. Serial79449
+passes all19 browser components in42.9s overall (each at most3.9s, original30s
+per-test limit), then all5 note/company-history browser cases31.7s. The note test
+retains every acknowledgement/ownership/refresh/reflow assertion and emits all
+six lifetime stage witnesses. New inventory coverage explicitly checks that every
+reviewed component is executed. Fresh full-source and exact hosted proof remain;
+this local repair does not turn the old failure green.

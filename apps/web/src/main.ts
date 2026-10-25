@@ -147,6 +147,7 @@ import {
   createResumeImportRepository,
   createResumeImportResolutionRepository,
   createPhase1RepositoryContractSuite,
+  defineDatabaseContractSuite,
   createTrackerRepositories,
   defineSqlMigrations,
   openRequirementEvidenceRepository,
@@ -238,6 +239,10 @@ import {
   type StoredCompanyWorkspaceApi,
 } from "./stored-company-workspace.js";
 import { createStoredCompanyJobsApi, type StoredCompanyJobsApi } from "./stored-company-jobs.js";
+import {
+  createStoredCompanyInteractionsApi,
+  type StoredCompanyInteractionsApi,
+} from "./stored-company-interactions.js";
 import {
   createStoredContactDirectoryApi,
   type StoredContactDirectoryApi,
@@ -360,6 +365,7 @@ interface BrowserVaultDeletionCommandInput extends DeleteVaultInput {
 interface Phase1RepositoryContractProof {
   readonly manifest: Phase1RepositoryContractManifest;
   readonly run: DatabaseContractRunResult;
+  readonly componentName?: string;
 }
 
 interface CareerRepositoryContractProof {
@@ -546,6 +552,7 @@ export interface CoredrillStorageSpikeApi {
   readonly companyDirectory: StoredCompanyDirectoryApi;
   readonly companyWorkspace: StoredCompanyWorkspaceApi;
   readonly companyJobs: StoredCompanyJobsApi;
+  readonly companyInteractions: StoredCompanyInteractionsApi;
   readonly contactDirectory: StoredContactDirectoryApi;
   readonly contactWorkspace: StoredContactWorkspaceApi;
   readonly contactDeletion: StoredContactDeletionApi;
@@ -636,7 +643,7 @@ export interface CoredrillStorageSpikeApi {
   delete(): Promise<boolean>;
   runBenchmark(input: StorageBenchmarkInput): Promise<StorageBenchmarkResult>;
   runJobSearchBenchmark(input: StorageBenchmarkInput): Promise<JobSearchBenchmarkResult>;
-  runPhase1RepositoryContracts(): Promise<Phase1RepositoryContractProof>;
+  runPhase1RepositoryContracts(componentName?: string): Promise<Phase1RepositoryContractProof>;
   runCareerRepositoryContracts(): Promise<CareerRepositoryContractProof>;
   runPhase1CanonicalJourney(): Promise<Phase1CanonicalJourneyProof>;
   runPortableArchiveWriterProof(): Promise<PortableArchiveBrowserProof>;
@@ -3402,6 +3409,11 @@ const api: CoredrillStorageSpikeApi = {
     await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
     return client;
   }, careerProfileOperationContext),
+  companyInteractions: createStoredCompanyInteractionsApi(async () => {
+    const client = await getDatabase();
+    await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
+    return client;
+  }, careerProfileOperationContext),
   contactDirectory: createStoredContactDirectoryApi(async () => {
     const client = await getDatabase();
     await applySqlMigrations(client, await migrations(), MIGRATION_APPLIED_AT);
@@ -4101,25 +4113,42 @@ const api: CoredrillStorageSpikeApi = {
       documentRoundTrip: createPhase3DocumentRoundTripWitness(dataBundle),
     });
   },
-  runPhase1RepositoryContracts: async () => {
+  runPhase1RepositoryContracts: async (componentName) => {
+    const component =
+      typeof componentName === "string" &&
+      Object.hasOwn(PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components, componentName)
+        ? PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components[
+            componentName as keyof Phase1RepositoryContractManifest["components"]
+          ]
+        : null;
+    if (componentName !== undefined && component === null)
+      throw new TypeError("Unknown repository contract component.");
     await api.close();
     const reviewedMigrations = await migrations();
-    const run = await runDatabaseContractSuite(
-      createBrowserContractAdapter(),
-      createPhase1RepositoryContractSuite({
-        expectedFts5: true,
-        migrate: async (client, throughVersion) => {
-          await applySqlMigrations(
-            client,
-            reviewedMigrations.slice(0, throughVersion),
-            MIGRATION_APPLIED_AT,
+    const suite = createPhase1RepositoryContractSuite({
+      expectedFts5: true,
+      migrate: async (client, throughVersion) => {
+        await applySqlMigrations(
+          client,
+          reviewedMigrations.slice(0, throughVersion),
+          MIGRATION_APPLIED_AT,
+        );
+      },
+    });
+    const selectedCases =
+      component === null ? null : new Set<string>(Object.values(component.cases));
+    const selected =
+      component === null
+        ? suite
+        : defineDatabaseContractSuite(
+            component.suiteName,
+            suite.cases.filter((entry) => selectedCases?.has(entry.name)),
           );
-        },
-      }),
-    );
+    const run = await runDatabaseContractSuite(createBrowserContractAdapter(), selected);
     return Object.freeze({
       manifest: PHASE_1_REPOSITORY_CONTRACT_MANIFEST,
       run,
+      ...(componentName === undefined ? {} : { componentName }),
     });
   },
   runCareerRepositoryContracts: async () => {

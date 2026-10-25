@@ -403,6 +403,16 @@ Labor/API proxies are not introduced just to hide free API keys unless a source'
 
 ### Repository/storage contracts
 
+The growing current v23/43 repository inventory is executed by every adapter.
+Chromium now partitions the explicit complete component list into separate tests
+under the unchanged30-second per-test timeout and unchanged per-case isolated
+database lifecycle. Each result names its component and exact completed cases;
+the reviewed full version/count/component order and execution list must match.
+No case is sampled or omitted. Firefox WebDriver and Node/native retain the full
+aggregate entry point. This scopes functional-contract test execution rather than
+claiming a reference-hardware performance improvement or relaxing product budgets.
+See [retained prior timeout and follow-up verification](../../proof/company-relationship-progress.md#observed-exact-hosted-chrome-failures).
+
 Run the identical suite against in-memory/reference, browser SQLite worker/OPFS, and native SQLite:
 
 - transactions/rollback, constraints, concurrency/busy handling;

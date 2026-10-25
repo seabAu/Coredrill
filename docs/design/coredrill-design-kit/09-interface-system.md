@@ -802,6 +802,20 @@ distinct from application outcome history. [Actual UI proof and remaining
 gates](../../proof/company-relationship-progress.md#normal-runtimeui-focused-verification)
 do not close all company relationships or INT-007.
 
+### Normal company recorded interactions (2026-10-25)
+
+Company detail separately owns a bounded live interaction page for currently
+linked jobs. It names that scope, retains nullable contact links without loading
+methods, and distinguishes current relationships from occurrence-time employer
+evidence. First/next/archive/exact retry preserve stale/error/empty states and
+retire late owner results. Full literal summaries are deliberate bounded part
+reads with exact retry and explicit partial/complete text. The retained body is
+a labeled keyboard-focusable scroll region capped at24rem; opening and closing
+restore focus only for the still-current owner and preserve deliberate moves.
+Reload starts a freshly validated live page. [Focused normal UI and actual
+browser/native proof](../../proof/company-interaction-history-progress.md) do not
+close source/salary/outcome relationships, full INT-007 or release acceptance.
+
 ### Production setup and observed health checkpoint (2026-10-19)
 
 Production setup makes pending saves inert, announces progress, focuses a failure alert, retains editable input and warns before unloading unsaved entries. Completion is not shown before acknowledgement. A saved vault name cannot be silently renamed on a capture retry. The shell badge uses the actual identity and observed storage diagnostics: only ready, durable, writable storage without warnings is healthy. Best-effort/unavailable/read-only storage remains a risk; schema mismatch is a migration warning unless unavailable/read-only takes precedence. Settings shows the browser origin where relevant and offers passive health refresh without requesting persistence permission. Observations are snapshots, not continuous monitoring. The separate onboarding/reference catalog remains explicitly labeled and is not persistence evidence. See [verification](../../proof/production-first-run-verification.md).

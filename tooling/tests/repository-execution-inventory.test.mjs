@@ -59,4 +59,12 @@ describe("explicit Chromium repository manifest assertions", () => {
     const components = Array.from((match?.[1] ?? "").matchAll(/"([^"]+)"/gu), (item) => item[1]);
     expect(components).toEqual(Object.keys(PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components));
   });
+  it("executes every reviewed component under the unchanged per-test timeout", () => {
+    const match = /const executedComponents = \[([\s\S]*?)\];/u.exec(source);
+    const components = Array.from((match?.[1] ?? "").matchAll(/"([^"]+)"/gu), (item) => item[1]);
+    expect(components).toEqual(Object.keys(PHASE_1_REPOSITORY_CONTRACT_MANIFEST.components));
+    expect(source).toContain("for (const componentName of executedComponents)");
+    expect(source).toContain("runPhase1RepositoryContracts(component)");
+    expect(source).not.toContain("setTimeout(");
+  });
 });

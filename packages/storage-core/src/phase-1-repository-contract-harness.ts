@@ -4,6 +4,7 @@ import { createDiagnosticRepositoryContractSuite } from "./diagnostic-contract-h
 import { createCompanyDirectoryContractSuite } from "./company-directory-contract-harness.js";
 import { createCompanyWorkspaceContractSuite } from "./company-workspace-contract-harness.js";
 import { createCompanyJobsContractSuite } from "./company-jobs-contract-harness.js";
+import { createCompanyInteractionsContractSuite } from "./company-interactions-contract-harness.js";
 import { createContactDirectoryContractSuite } from "./contact-directory-contract-harness.js";
 import { createContactWorkspaceContractSuite } from "./contact-workspace-contract-harness.js";
 import { createContactInteractionHistoryContractSuite } from "./contact-interaction-history-contract-harness.js";
@@ -68,6 +69,7 @@ export const createPhase1RepositoryContractSuite = (
     [createViewedContactDeletionContractSuite(setup), components.viewedContactDeletion],
     [createContactFieldUseContractSuite(setup), components.contactFieldUse],
     [createCompanyJobsContractSuite(setup), components.companyJobs],
+    [createCompanyInteractionsContractSuite(setup), components.companyInteractions],
   ] as const;
 
   for (const [suite, manifestComponent] of suites) {

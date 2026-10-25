@@ -12,6 +12,8 @@ import { createStoredCompanyEditor, type StoredCompanyDraft } from "./stored-com
 import type { StoredCompanyWorkspaceApi } from "./stored-company-workspace.js";
 import { StoredCompanyJobsView } from "./stored-company-jobs-view.js";
 import type { StoredCompanyJobsApi } from "./stored-company-jobs.js";
+import type { StoredCompanyInteractionsApi } from "./stored-company-interactions.js";
+import { StoredCompanyInteractionsView } from "./stored-company-interactions-view.js";
 import type { CompanyJobReturn } from "./company-job-navigation.js";
 
 export const useStoredCompanyEditor = (options: {
@@ -372,6 +374,7 @@ export const useStoredCompanyEditor = (options: {
 export const StoredCompanyDetails = ({
   api,
   jobsApi,
+  interactionsApi,
   jobReturn,
   onOpenJob,
   vaultId,
@@ -385,6 +388,7 @@ export const StoredCompanyDetails = ({
 }: {
   readonly api: StoredCompanyWorkspaceApi;
   readonly jobsApi: StoredCompanyJobsApi | undefined;
+  readonly interactionsApi: StoredCompanyInteractionsApi | undefined;
   readonly jobReturn: CompanyJobReturn | null;
   readonly onOpenJob: (job: CompanyJobSummaryV1, request: ListCompanyJobsRequestV1) => void;
   readonly vaultId: string;
@@ -616,11 +620,16 @@ export const StoredCompanyDetails = ({
             restore={jobReturn}
             onOpenJob={onOpenJob}
           />
+          <StoredCompanyInteractionsView
+            api={interactionsApi}
+            workspace={value}
+            ready={!busy && !stale && visible.error === null}
+          />
         </>
       ) : null}
       <p>
-        These are local stored facts, not a verified employer profile. Contacts, relationship
-        totals, provenance sources and interaction history are not loaded by this detail view.
+        These are local stored facts, not a verified employer profile. Relationship totals,
+        provenance sources, salary observations and application outcomes are not loaded here.
       </p>
     </section>
   );

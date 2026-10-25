@@ -5304,6 +5304,7 @@ const AppShellCatalog = ({
             api={globalThis.coredrillStorageSpike.companyDirectory}
             workspaceApi={globalThis.coredrillStorageSpike.companyWorkspace}
             jobsApi={globalThis.coredrillStorageSpike.companyJobs}
+            interactionsApi={globalThis.coredrillStorageSpike.companyInteractions}
             jobReturn={companyJobReturn}
             onOpenJob={openCompanyRole}
             editor={companyEditor}

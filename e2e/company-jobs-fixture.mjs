@@ -9,7 +9,7 @@ import {
 } from "../packages/storage-core/dist/index.js";
 
 /** Disclosed synthetic archive prerequisite, restored through normal UI; originals stay unchanged. */
-export const createCompanyJobsFixture = async (testInfo) => {
+export const createCompanyJobsFixture = async (testInfo, { withInteractions = false } = {}) => {
   const originalPath = path.resolve("fixtures/recovery/phase-1-vault-schema-165-v1.coredrill.zip");
   const originalBytes = await readFile(originalPath);
   const original = await inspectPortableArchiveV1({
@@ -60,6 +60,55 @@ export const createCompanyJobsFixture = async (testInfo) => {
         at,
         at,
       );
+    const historySummary = `\uFEFF${"a".repeat(1020)}😀\0尾${"x".repeat(17000)}\uFEFF`;
+    if (withInteractions) {
+      db.prepare(
+        "INSERT INTO company(id,canonical_name,notes,created_at,updated_at) VALUES(?,?,?,?,?)",
+      ).run(
+        id(9005),
+        "Synthetic current-linked history company",
+        "PRIVATE history company notes",
+        at,
+        at,
+      );
+      for (const n of [400, 401])
+        db.prepare(
+          "INSERT INTO job(id,company_id,title,description_text,archived_at,created_at,updated_at) VALUES(?,?,?,?,?,?,?)",
+        ).run(
+          id(n),
+          id(9005),
+          `Synthetic history job ${n}`,
+          "PRIVATE history job body",
+          n === 401 ? at : null,
+          at,
+          at,
+        );
+      db.prepare(
+        "INSERT INTO contact(id,company_id,name,email,notes,user_confirmed,created_at,updated_at) VALUES(?,?,?,?,?,1,?,?)",
+      ).run(
+        id(9003),
+        id(9001),
+        "PRIVATE cross-company history contact",
+        "private@example.test",
+        "PRIVATE contact notes",
+        at,
+        at,
+      );
+      for (const n of [...Array.from({ length: 27 }, (_, index) => 10000 + index), 11000, 12000])
+        db.prepare(
+          "INSERT INTO interaction(id,job_id,contact_id,type,direction,summary,occurred_at,created_at,updated_at) VALUES(?,?,?,'note','unknown',?,?,?,?)",
+        ).run(
+          id(n),
+          n === 11000 ? id(401) : n === 12000 ? id(200) : id(400),
+          n % 2 === 0 ? id(9003) : null,
+          n === 10000
+            ? historySummary
+            : `Synthetic company history ${n} <script>literal</script> 😀`,
+          at,
+          at,
+          at,
+        );
+    }
     const session = {
       query: async (statement) => db.prepare(statement.sql).all(...statement.parameters),
     };
@@ -122,6 +171,17 @@ export const createCompanyJobsFixture = async (testInfo) => {
       firstIds: Array.from({ length: 10 }, (_, index) => id(index + 100)),
       secondIds: Array.from({ length: 10 }, (_, index) => id(index + 110)),
       originalRecoveryFixtureUnchanged: true,
+      ...(withInteractions
+        ? {
+            historyCompanyId: id(9005),
+            historyCompanyName: "Synthetic current-linked history company",
+            historyFirstIds: Array.from({ length: 10 }, (_, index) => id(index + 10000)),
+            historySecondIds: Array.from({ length: 10 }, (_, index) => id(index + 10010)),
+            historySummary,
+            historyContactId: id(9003),
+            historyArchivedId: id(11000),
+          }
+        : {}),
     };
   } finally {
     if (!closed) db.close();

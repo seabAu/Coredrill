@@ -32,6 +32,19 @@ Node/browser/native query and normal runtime/UI focused proof exist, while full
 checkpoint gates remain in progress. See [company relationship proof and
 remaining requirements](../../proof/company-relationship-progress.md).
 
+The subsequent company interaction read model advances the shared test manifest
+to v23/43 without changing SQL/export182. Membership follows the mandatory job's
+current company, never a contact's current employer. Vault/company revision and
+independent archive scopes bind occurrence-descending/interaction-ID-ascending
+live pages; references retain interaction/job versions and nullable contact ID.
+Contact deletion's permitted detachment invalidates an older reference despite
+preserving history content/version. Summary previews use at most1,024 UTF-8 bytes;
+explicit complete-summary inspection uses bounded BLOB slices, preserving BOM,
+NUL and scalar boundaries. No contact methods, descriptions, totals or historical
+employer claims are projected. Actual shared adapters and normal browser/native
+UI focused checks pass; complete checkpoint gates remain pending. See [company
+interaction proof](../../proof/company-interaction-history-progress.md).
+
 Normal contact details now consume metadata-only canonical reviewed-use reads
 independently of initial manual-entry evidence. Only a current active reviewed
 basis may display the exact value; stale/failed/foreign/expired/archived reviewed
